@@ -1,0 +1,27 @@
+{
+  "id": "func-sort-table",
+  "label": "排序",
+  "description": "对工作表中的数据按指定列排序",
+  "category": "功能 · 数据操作",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "sortColumn", "label": "排序列", "type": "number", "default": 0, "min": 0, "description": "排序列索引（从 0 开始）" },
+    { "name": "ascending", "label": "升序", "type": "boolean", "default": true, "description": "是否升序排列" },
+    { "name": "hasHeader", "label": "包含表头", "type": "boolean", "default": true, "description": "第一行是否为表头" }
+  ],
+  "inputs": [
+    { "name": "worksheet", "type": "object", "required": true, "description": "工作表对象" },
+    { "name": "sortColumn", "type": "number", "required": false, "description": "排序列覆盖" },
+    { "name": "ascending", "type": "boolean", "required": false, "description": "升序覆盖" }
+  ],
+  "outputs": [
+    { "name": "worksheet", "type": "object", "description": "排序后的工作表" }
+  ],
+  "ports": [
+    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "input", "required": true, "description": "工作表" },
+    { "name": "sortColumn", "label": "排序列", "type": "number", "direction": "input", "description": "排序列索引" },
+    { "name": "ascending", "label": "升序", "type": "boolean", "direction": "input", "description": "是否升序" },
+    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "output", "description": "排序后的工作表" }
+  ]
+}

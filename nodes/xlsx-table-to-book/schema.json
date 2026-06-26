@@ -1,0 +1,47 @@
+{
+  "id": "xlsx-table-to-book",
+  "label": "XLSX.utils.table_to_book",
+  "description": "把 DOM Table 元素转成完整工作簿",
+  "category": "DOM 操作",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "table_to_book"],
+  "inputs": [
+    {
+      "name": "table",
+      "type": "HTMLTableElement",
+      "required": true,
+      "description": "DOM Table 元素"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "workbook",
+      "type": "Workbook",
+      "description": "生成的完整工作簿"
+    }
+  ],
+  "properties": [
+    {
+      "name": "skipHeader",
+      "label": "跳过表头",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时将第一行视为数据行"
+    },
+    {
+      "name": "sheet",
+      "label": "Sheet 名称",
+      "type": "string",
+      "default": "Sheet1",
+      "description": "生成的 Sheet 名称"
+    },
+    {
+      "name": "cellDates",
+      "label": "日期模式",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时将日期存储为 Date 对象"
+    }
+  ]
+}

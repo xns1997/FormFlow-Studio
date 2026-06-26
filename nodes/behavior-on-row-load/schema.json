@@ -1,0 +1,22 @@
+{
+  "id": "behavior-on-row-load",
+  "label": "行加载",
+  "description": "当切换数据行时触发",
+  "category": "行为 · 事件",
+  "kind": "generic",
+  "methods": [],
+  "properties": [],
+  "inputs": [
+    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" }
+  ],
+  "outputs": [
+    { "name": "trigger", "type": "trigger", "description": "触发输出" },
+    { "name": "rowData", "type": "object", "description": "新行数据" },
+    { "name": "rowIndex", "type": "number", "description": "行索引" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发信号" },
+    { "name": "rowData", "label": "行数据", "type": "object", "direction": "output", "description": "新行数据" },
+    { "name": "rowIndex", "label": "行索引", "type": "number", "direction": "output", "description": "行索引" }
+  ]
+}

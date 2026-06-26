@@ -1,0 +1,281 @@
+/* ── Inspector (Dify-style) ──────────────────────────── */
+
+.inspector {
+  width: 320px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.inspector-header h3 { font-size: 12px; font-weight: 600; }
+
+.inspector-head {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.inspector-head .tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.inspector-head .tag.method { background: var(--accent-soft); color: var(--accent); }
+.inspector-head .tag.scenario { background: var(--scenario-soft); color: var(--scenario); }
+.inspector-head .tag.excel-class { background: var(--excel-soft); color: var(--excel); }
+.inspector-head .tag.generic { background: #fff7ed; color: #ea580c; }
+
+.inspector-head h2 { font-size: 15px; font-weight: 700; line-height: 1.3; }
+.inspector-head p { font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+.inspector-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+}
+
+/* ── Port status (compact) ───────────────────────────── */
+
+.port-status {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.port-status h3 {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.port-list { display: flex; flex-direction: column; gap: 3px; }
+
+.port-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.port-item.connected { background: #f0fdf4; }
+.port-item.disconnected { opacity: 0.6; }
+
+.port-direction {
+  display: inline-block;
+  width: 24px;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 1px 0;
+  border-radius: 3px;
+  background: var(--panel-soft);
+}
+
+.port-direction.out { color: var(--accent); }
+
+.port-name { flex: 1; font-weight: 500; }
+.port-type { font-size: 9px; color: var(--muted); font-family: monospace; }
+
+/* ── Schema config (Dify-style) ──────────────────────── */
+
+.schema-config {
+  padding: 10px 0;
+}
+
+.schema-config h3 {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.schema-config .primary {
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+}
+.schema-config .primary:hover { background: #1d4ed8; }
+
+.schema-fields { display: flex; flex-direction: column; gap: 6px; }
+
+.schema-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.schema-field > span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.schema-field > span em.required {
+  font-style: normal;
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.schema-field small {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.schema-field input,
+.schema-field select,
+.schema-field textarea {
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--text);
+  transition: border-color 0.15s;
+}
+
+.schema-field input:focus,
+.schema-field select:focus,
+.schema-field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.schema-field.boolean {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.schema-field.boolean input { width: auto; }
+.schema-field.boolean small { flex: 1; }
+
+.schema-field.color {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.schema-field.color input[type="color"] {
+  width: 32px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.port-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: 600;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.schema-field.port-connected {
+  opacity: 0.6;
+}
+
+.schema-field.port-connected input,
+.schema-field.port-connected select,
+.schema-field.port-connected textarea {
+  background: var(--panel-soft);
+  cursor: not-allowed;
+}
+
+/* ── Result ──────────────────────────────────────────── */
+
+.result-box {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+}
+
+.result-box.error {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.result-box h4 {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.result-box pre {
+  margin: 0;
+  font-size: 11px;
+  font-family: 'SF Mono', 'Menlo', monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+  overflow: auto;
+}
+
+/* Output Ports in Inspector */
+.output-ports {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.output-port-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.output-port-name {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text);
+}
+.output-port-type {
+  font-size: 9px;
+  color: var(--accent);
+  font-family: 'SF Mono', 'Menlo', monospace;
+}
+.output-port-value {
+  margin-top: 2px;
+}

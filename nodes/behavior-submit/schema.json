@@ -1,0 +1,32 @@
+{
+  "id": "behavior-submit",
+  "label": "提交数据",
+  "description": "将表单数据提交（生成变更记录）",
+  "category": "行为 · 动作",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "target", "label": "提交目标", "type": "enum", "enum": ["changeLog", "newExcel", "csv", "json"], "default": "changeLog", "description": "提交输出格式" },
+    { "name": "fileName", "label": "文件名", "type": "string", "default": "output", "description": "输出文件名（不含扩展名）" }
+  ],
+  "inputs": [
+    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
+    { "name": "formData", "type": "object", "required": true, "description": "表单数据" },
+    { "name": "originalData", "type": "object", "required": false, "description": "原始数据" }
+  ],
+  "outputs": [
+    { "name": "success", "type": "trigger", "description": "成功触发" },
+    { "name": "error", "type": "trigger", "description": "失败触发" },
+    { "name": "changeLog", "type": "object", "description": "变更记录" },
+    { "name": "fileData", "type": "any", "description": "输出文件数据" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
+    { "name": "formData", "label": "表单数据", "type": "object", "direction": "input", "required": true, "description": "表单数据" },
+    { "name": "originalData", "label": "原始数据", "type": "object", "direction": "input", "description": "原始数据" },
+    { "name": "success", "label": "成功", "type": "any", "direction": "output", "description": "提交成功" },
+    { "name": "error", "label": "失败", "type": "any", "direction": "output", "description": "提交失败" },
+    { "name": "changeLog", "label": "变更记录", "type": "object", "direction": "output", "description": "变更记录" },
+    { "name": "fileData", "label": "文件数据", "type": "any", "direction": "output", "description": "文件数据" }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "id": "func-find-replace",
+  "label": "查找替换",
+  "description": "在工作表中查找并替换文本",
+  "category": "功能 · 数据操作",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "findText", "label": "查找内容", "type": "string", "default": "", "required": true, "description": "要查找的文本" },
+    { "name": "replaceText", "label": "替换为", "type": "string", "default": "", "description": "替换后的文本" },
+    { "name": "matchCase", "label": "区分大小写", "type": "boolean", "default": false, "description": "是否区分大小写" },
+    { "name": "matchEntireCell", "label": "全匹配", "type": "boolean", "default": false, "description": "是否要求整个单元格匹配" }
+  ],
+  "inputs": [
+    { "name": "worksheet", "type": "object", "required": true, "description": "工作表对象" },
+    { "name": "findText", "type": "string", "required": false, "description": "查找内容覆盖" },
+    { "name": "replaceText", "type": "string", "required": false, "description": "替换内容覆盖" }
+  ],
+  "outputs": [
+    { "name": "worksheet", "type": "object", "description": "修改后的工作表" },
+    { "name": "replacedCount", "type": "number", "description": "替换的单元格数" }
+  ],
+  "ports": [
+    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "input", "required": true, "description": "工作表" },
+    { "name": "findText", "label": "查找", "type": "string", "direction": "input", "description": "查找内容" },
+    { "name": "replaceText", "label": "替换", "type": "string", "direction": "input", "description": "替换为" },
+    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "output", "description": "修改后的工作表" },
+    { "name": "replacedCount", "label": "数量", "type": "number", "direction": "output", "description": "替换数量" }
+  ]
+}

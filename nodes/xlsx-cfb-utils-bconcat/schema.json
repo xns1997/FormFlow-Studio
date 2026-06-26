@@ -1,0 +1,16 @@
+{
+  "id": "xlsx-cfb-utils-bconcat",
+  "label": "XLSX.CFB.utils.bconcat",
+  "description": "合并多个 ArrayBuffer/Uint8Array 为一个",
+  "category": "XLSX · 复合文件",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.CFB.utils",
+  "methodPath": ["CFB", "utils", "bconcat"],
+  "inputs": [
+    { "name": "bufs", "type": "ArrayBuffer[]", "required": true, "description": "要合并的缓冲区数组" }
+  ],
+  "outputs": [
+    { "name": "result", "type": "Uint8Array", "description": "合并后的缓冲区" }
+  ],
+  "properties": []
+}

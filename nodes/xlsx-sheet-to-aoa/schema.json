@@ -1,0 +1,47 @@
+{
+  "id": "xlsx-sheet-to-aoa",
+  "label": "XLSX.utils.sheet_to_aoa",
+  "description": "把 Sheet 转成二维数组",
+  "category": "二维数组",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "sheet_to_aoa"],
+  "inputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "required": true,
+      "description": "要转换的工作表对象"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "array",
+      "type": "unknown[][]",
+      "description": "二维数组，每行是一个数组"
+    }
+  ],
+  "properties": [
+    {
+      "name": "range",
+      "label": "数据范围",
+      "type": "string",
+      "default": "",
+      "description": "如 'A1:C5'，留空则自动检测"
+    },
+    {
+      "name": "raw",
+      "label": "原始值",
+      "type": "boolean",
+      "default": true,
+      "description": "为 true 返回原始值，false 返回格式化文本"
+    },
+    {
+      "name": "header",
+      "label": "表头行号",
+      "type": "number",
+      "default": -1,
+      "description": "指定哪一行作为表头"
+    }
+  ]
+}

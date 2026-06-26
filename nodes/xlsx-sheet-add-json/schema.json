@@ -1,0 +1,67 @@
+{
+  "id": "xlsx-sheet-add-json",
+  "label": "XLSX.utils.sheet_add_json",
+  "description": "向已有 Sheet 追加 JSON 行数据",
+  "category": "Sheet 操作",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "sheet_add_json"],
+  "inputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "required": true,
+      "description": "目标工作表对象"
+    },
+    {
+      "name": "data",
+      "type": "object[]",
+      "required": true,
+      "description": "要追加的 JSON 行数据"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "description": "追加后的工作表"
+    }
+  ],
+  "properties": [
+    {
+      "name": "header",
+      "label": "列名顺序",
+      "type": "array",
+      "default": [],
+      "description": "指定输出列的顺序"
+    },
+    {
+      "name": "skipHeader",
+      "label": "跳过表头",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时不输出表头行"
+    },
+    {
+      "name": "origin",
+      "label": "起始位置",
+      "type": "string",
+      "default": -1,
+      "description": "写入起始位置，-1 表示追加到末尾，或指定 'A1'"
+    },
+    {
+      "name": "dateNF",
+      "label": "日期格式",
+      "type": "string",
+      "default": "yyyy-mm-dd",
+      "description": "日期的输出格式"
+    },
+    {
+      "name": "cellDates",
+      "label": "日期模式",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时将 Date 对象存储为日期类型"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "id": "xlsx-sheet-to-dom",
+  "label": "XLSX.utils.sheet_to_dom",
+  "description": "把 Sheet 转成 DOM Table 元素",
+  "category": "DOM 操作",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "sheet_to_dom"],
+  "inputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "required": true,
+      "description": "要转换的工作表"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "table",
+      "type": "HTMLTableElement",
+      "description": "生成的 DOM Table 元素"
+    }
+  ],
+  "properties": [
+    {
+      "name": "header",
+      "label": "表头行号",
+      "type": "number",
+      "default": -1,
+      "description": "指定哪一行作为表头"
+    },
+    {
+      "name": "editable",
+      "label": "可编辑",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时单元格可编辑"
+    },
+    {
+      "name": "headerRows",
+      "label": "表头行数",
+      "type": "number",
+      "default": 1,
+      "description": "表头区域的行数"
+    },
+    {
+      "name": "skipHidden",
+      "label": "跳过隐藏列",
+      "type": "boolean",
+      "default": false,
+      "description": "是否跳过隐藏的列"
+    }
+  ]
+}

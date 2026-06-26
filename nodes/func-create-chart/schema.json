@@ -1,0 +1,31 @@
+{
+  "id": "func-create-chart",
+  "label": "创建图表",
+  "description": "从数据区域创建图表",
+  "category": "功能 · 图表",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "chartType", "label": "图表类型", "type": "enum", "enum": ["bar", "line", "pie", "scatter", "area", "doughnut", "radar"], "default": "bar", "description": "图表类型" },
+    { "name": "dataRange", "label": "数据范围", "type": "string", "default": "A1:C10", "description": "图表数据的 A1 范围" },
+    { "name": "title", "label": "图表标题", "type": "string", "default": "", "description": "图表标题" },
+    { "name": "width", "label": "宽度", "type": "number", "default": 480, "description": "图表宽度（像素）" },
+    { "name": "height", "label": "高度", "type": "number", "default": 320, "description": "图表高度（像素）" }
+  ],
+  "inputs": [
+    { "name": "worksheet", "type": "object", "required": true, "description": "工作表对象" },
+    { "name": "dataRange", "type": "string", "required": false, "description": "数据范围覆盖" },
+    { "name": "title", "type": "string", "required": false, "description": "标题覆盖" }
+  ],
+  "outputs": [
+    { "name": "worksheet", "type": "object", "description": "修改后的工作表" },
+    { "name": "chartName", "type": "string", "description": "创建的图表名" }
+  ],
+  "ports": [
+    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "input", "required": true, "description": "工作表" },
+    { "name": "dataRange", "label": "数据", "type": "string", "direction": "input", "description": "数据范围" },
+    { "name": "title", "label": "标题", "type": "string", "direction": "input", "description": "图表标题" },
+    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "output", "description": "修改后的工作表" },
+    { "name": "chartName", "label": "图表名", "type": "string", "direction": "output", "description": "图表名" }
+  ]
+}

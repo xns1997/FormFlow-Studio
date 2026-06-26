@@ -1,0 +1,31 @@
+{
+  "id": "func-range-select",
+  "label": "选择区域",
+  "description": "从工作表中选择一个区域，输出区域对象和值",
+  "category": "功能 · 区域",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "address", "label": "区域地址", "type": "string", "default": "A1", "description": "A1 格式地址" }
+  ],
+  "inputs": [
+    { "name": "worksheet", "type": "object", "required": true, "description": "工作表对象" },
+    { "name": "address", "type": "string", "required": false, "description": "地址覆盖" }
+  ],
+  "outputs": [
+    { "name": "range", "type": "object", "description": "区域对象" },
+    { "name": "values", "type": "array", "description": "二维数组值" },
+    { "name": "address", "type": "string", "description": "A1 地址" },
+    { "name": "rowCount", "type": "number", "description": "行数" },
+    { "name": "colCount", "type": "number", "description": "列数" }
+  ],
+  "ports": [
+    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "input", "required": true, "description": "工作表" },
+    { "name": "address", "label": "地址", "type": "string", "direction": "input", "description": "A1 地址" },
+    { "name": "range", "label": "区域", "type": "object", "direction": "output", "description": "区域对象" },
+    { "name": "values", "label": "值", "type": "array", "direction": "output", "description": "二维数组" },
+    { "name": "address", "label": "地址", "type": "string", "direction": "output", "description": "A1 地址" },
+    { "name": "rowCount", "label": "行数", "type": "number", "direction": "output", "description": "行数" },
+    { "name": "colCount", "label": "列数", "type": "number", "direction": "output", "description": "列数" }
+  ]
+}

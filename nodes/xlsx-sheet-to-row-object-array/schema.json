@@ -1,0 +1,20 @@
+{
+  "id": "xlsx-sheet-to-row-object-array",
+  "label": "XLSX.utils.sheet_to_row_object_array",
+  "description": "把 Sheet 转成行对象数组（sheet_to_json 别名）",
+  "category": "XLSX · Sheet 操作",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "sheet_to_row_object_array"],
+  "inputs": [
+    { "name": "worksheet", "type": "Worksheet", "required": true, "description": "工作表对象" }
+  ],
+  "outputs": [
+    { "name": "rows", "type": "object[]", "description": "行对象数组" }
+  ],
+  "properties": [
+    { "name": "header", "label": "表头", "type": "array", "description": "表头数组" },
+    { "name": "defval", "label": "默认值", "type": "string", "default": "", "description": "空值默认" },
+    { "name": "blankrows", "label": "包含空行", "type": "boolean", "default": true, "description": "保留空行" }
+  ]
+}

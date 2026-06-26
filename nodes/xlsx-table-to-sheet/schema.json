@@ -1,0 +1,47 @@
+{
+  "id": "xlsx-table-to-sheet",
+  "label": "XLSX.utils.table_to_sheet",
+  "description": "把 DOM Table 元素转成 Sheet",
+  "category": "DOM 操作",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "table_to_sheet"],
+  "inputs": [
+    {
+      "name": "table",
+      "type": "HTMLTableElement",
+      "required": true,
+      "description": "DOM Table 元素"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "description": "生成的工作表对象"
+    }
+  ],
+  "properties": [
+    {
+      "name": "skipHeader",
+      "label": "跳过表头",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时将第一行视为数据行"
+    },
+    {
+      "name": "cellDates",
+      "label": "日期模式",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时将日期文本存储为 Date 对象"
+    },
+    {
+      "name": "dateNF",
+      "label": "日期格式",
+      "type": "string",
+      "default": "yyyy-mm-dd",
+      "description": "日期的输入格式"
+    }
+  ]
+}

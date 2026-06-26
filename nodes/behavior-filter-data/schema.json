@@ -1,0 +1,28 @@
+{
+  "id": "behavior-filter-data",
+  "label": "筛选数据",
+  "description": "筛选工作表数据",
+  "category": "行为 · 数据",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "sheetName", "label": "Sheet 名", "type": "string", "default": "", "description": "目标 Sheet" },
+    { "name": "filterField", "label": "筛选字段", "type": "string", "default": "", "required": true, "description": "筛选字段名" },
+    { "name": "filterOperator", "label": "运算符", "type": "enum", "enum": ["==", "!=", "contains", ">", "<"], "default": "==", "description": "筛选运算符" },
+    { "name": "filterValue", "label": "筛选值", "type": "string", "default": "", "description": "筛选值" }
+  ],
+  "inputs": [
+    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
+    { "name": "workbook", "type": "object", "required": true, "description": "工作簿对象" }
+  ],
+  "outputs": [
+    { "name": "trigger", "type": "trigger", "description": "触发输出" },
+    { "name": "result", "type": "array", "description": "筛选结果" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
+    { "name": "workbook", "label": "工作簿", "type": "object", "direction": "input", "required": true, "description": "工作簿" },
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发输出" },
+    { "name": "result", "label": "结果", "type": "array", "direction": "output", "description": "筛选结果" }
+  ]
+}

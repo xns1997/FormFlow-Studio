@@ -1,0 +1,33 @@
+{
+  "id": "func-conditional-format",
+  "label": "条件格式",
+  "description": "为区域设置条件格式规则（高亮、数据条、图标集等）",
+  "category": "功能 · 格式",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "rangeAddress", "label": "区域地址", "type": "string", "default": "A1", "description": "应用条件格式的区域" },
+    { "name": "ruleType", "label": "规则类型", "type": "enum", "enum": ["cellValue", "colorScale", "dataBar", "iconSet", "top10", "aboveAverage", "uniqueValues", "textContains", "duplicate"], "default": "cellValue", "description": "条件格式类型" },
+    { "name": "operator", "label": "比较运算符", "type": "enum", "enum": ["between", "notBetween", "equal", "notEqual", "greaterThan", "lessThan", "greaterThanOrEqual", "lessThanOrEqual"], "default": "greaterThan", "description": "比较运算符" },
+    { "name": "value1", "label": "值1", "type": "string", "default": "0", "description": "比较值1" },
+    { "name": "value2", "label": "值2", "type": "string", "default": "100", "description": "比较值2（between 时使用）" },
+    { "name": "fillColor", "label": "填充颜色", "type": "color", "default": "#FFC7CE", "description": "满足条件时的填充颜色" },
+    { "name": "fontColor", "label": "字体颜色", "type": "color", "default": "#9C0006", "description": "满足条件时的字体颜色" }
+  ],
+  "inputs": [
+    { "name": "worksheet", "type": "object", "required": true, "description": "工作表对象" },
+    { "name": "rangeAddress", "type": "string", "required": false, "description": "地址覆盖" },
+    { "name": "ruleType", "type": "string", "required": false, "description": "规则类型覆盖" },
+    { "name": "value1", "type": "string", "required": false, "description": "值1覆盖" }
+  ],
+  "outputs": [
+    { "name": "worksheet", "type": "object", "description": "修改后的工作表" }
+  ],
+  "ports": [
+    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "input", "required": true, "description": "工作表" },
+    { "name": "rangeAddress", "label": "地址", "type": "string", "direction": "input", "description": "区域地址" },
+    { "name": "ruleType", "label": "规则", "type": "enum", "direction": "input", "enum": ["cellValue", "colorScale", "dataBar", "iconSet", "top10", "aboveAverage", "uniqueValues", "textContains", "duplicate"], "description": "规则类型" },
+    { "name": "value1", "label": "值", "type": "string", "direction": "input", "description": "比较值" },
+    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "output", "description": "修改后的工作表" }
+  ]
+}

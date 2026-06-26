@@ -1,0 +1,19 @@
+{
+  "id": "xlsx-sheet-to-txt",
+  "label": "XLSX.utils.sheet_to_txt",
+  "description": "把 Sheet 导出成制表符分隔的纯文本",
+  "category": "XLSX · Sheet 操作",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "sheet_to_txt"],
+  "inputs": [
+    { "name": "worksheet", "type": "Worksheet", "required": true, "description": "工作表对象" }
+  ],
+  "outputs": [
+    { "name": "text", "type": "string", "description": "制表符分隔的纯文本" }
+  ],
+  "properties": [
+    { "name": "FS", "label": "字段分隔符", "type": "string", "default": "\t", "description": "字段分隔符" },
+    { "name": "dateNF", "label": "日期格式", "type": "string", "default": "yyyy-mm-dd", "description": "日期格式" }
+  ]
+}

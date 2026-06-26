@@ -1,0 +1,55 @@
+{
+  "id": "xlsx-writeFile",
+  "label": "XLSX.writeFile",
+  "description": "将工作簿写出为文件，浏览器中会触发下载",
+  "category": "工作簿 IO",
+  "kind": "xlsx-method",
+  "namespace": "XLSX",
+  "methodPath": ["writeFile"],
+  "inputs": [
+    {
+      "name": "workbook",
+      "type": "Workbook",
+      "required": true,
+      "description": "要写出的工作簿对象"
+    },
+    {
+      "name": "filename",
+      "type": "string",
+      "required": true,
+      "description": "输出文件名"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "result",
+      "type": "void",
+      "description": "文件写出操作完成"
+    }
+  ],
+  "properties": [
+    {
+      "name": "bookType",
+      "label": "输出格式",
+      "type": "enum",
+      "enum": ["xlsx", "xlsm", "xlsb", "xls", "csv", "txt", "ods", "fods", "json", "dif", "rtf", "prn", "numbers"],
+      "default": "xlsx",
+      "description": "目标文件格式"
+    },
+    {
+      "name": "type",
+      "label": "输出类型",
+      "type": "enum",
+      "enum": ["array", "binary", "string", "base64", "buffer"],
+      "default": "array",
+      "description": "中间序列化格式"
+    },
+    {
+      "name": "compression",
+      "label": "压缩",
+      "type": "boolean",
+      "default": false,
+      "description": "是否启用 ZIP 压缩"
+    }
+  ]
+}

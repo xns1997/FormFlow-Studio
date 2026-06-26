@@ -1,0 +1,26 @@
+{
+  "id": "func-merge-cells",
+  "label": "合并单元格",
+  "description": "合并或取消合并指定区域的单元格",
+  "category": "功能 · 区域",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "rangeAddress", "label": "区域地址", "type": "string", "default": "A1:C1", "description": "要合并的区域" },
+    { "name": "merge", "label": "合并", "type": "boolean", "default": true, "description": "true=合并，false=取消合并" }
+  ],
+  "inputs": [
+    { "name": "worksheet", "type": "object", "required": true, "description": "工作表对象" },
+    { "name": "rangeAddress", "type": "string", "required": false, "description": "地址覆盖" },
+    { "name": "merge", "type": "boolean", "required": false, "description": "合并开关覆盖" }
+  ],
+  "outputs": [
+    { "name": "worksheet", "type": "object", "description": "修改后的工作表" }
+  ],
+  "ports": [
+    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "input", "required": true, "description": "工作表" },
+    { "name": "rangeAddress", "label": "地址", "type": "string", "direction": "input", "description": "区域地址" },
+    { "name": "merge", "label": "合并", "type": "boolean", "direction": "input", "description": "合并/取消" },
+    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "output", "description": "修改后的工作表" }
+  ]
+}

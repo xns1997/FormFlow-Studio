@@ -1,0 +1,16 @@
+{
+  "id": "xlsx-ssf-is-date",
+  "label": "XLSX.SSF.is_date",
+  "description": "判断格式代码是否为日期格式",
+  "category": "XLSX · 格式化",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.SSF",
+  "methodPath": ["SSF", "is_date"],
+  "inputs": [
+    { "name": "fmt", "type": "string", "required": true, "description": "格式代码" }
+  ],
+  "outputs": [
+    { "name": "isDate", "type": "boolean", "description": "是否为日期格式" }
+  ],
+  "properties": []
+}

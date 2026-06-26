@@ -1,0 +1,53 @@
+{
+  "id": "xlsx-sheet-insert-rows",
+  "label": "XLSX.utils.sheet_insert_rows",
+  "description": "在 Sheet 中插入指定数量的空行",
+  "category": "Sheet 操作",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "sheet_insert_rows"],
+  "inputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "required": true,
+      "description": "目标工作表"
+    },
+    {
+      "name": "start",
+      "type": "number",
+      "required": true,
+      "description": "插入起始行号（1-indexed）"
+    },
+    {
+      "name": "count",
+      "type": "number",
+      "required": true,
+      "description": "要插入的行数"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "description": "操作后的工作表"
+    }
+  ],
+  "properties": [
+    {
+      "name": "origin",
+      "label": "插入方向",
+      "type": "enum",
+      "enum": ["-1", "0", "1"],
+      "default": "-1",
+      "description": "-1 向上插入，0 从指定行开始，1 向下插入"
+    },
+    {
+      "name": "skip",
+      "label": "跳过行数",
+      "type": "number",
+      "default": 0,
+      "description": "跳过前 N 行不插入"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "xlsx-cfb-find",
+  "label": "XLSX.CFB.find",
+  "description": "在复合文件中查找指定路径的条目",
+  "category": "XLSX · 复合文件",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.CFB",
+  "methodPath": ["CFB", "find"],
+  "inputs": [
+    { "name": "cfb", "type": "CFB", "required": true, "description": "复合文件对象" },
+    { "name": "path", "type": "string", "required": true, "description": "要查找的条目路径" }
+  ],
+  "outputs": [
+    { "name": "entry", "type": "object", "description": "找到的条目对象" }
+  ],
+  "properties": []
+}

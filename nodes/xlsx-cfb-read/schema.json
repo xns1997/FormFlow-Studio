@@ -1,0 +1,19 @@
+{
+  "id": "xlsx-cfb-read",
+  "label": "XLSX.CFB.read",
+  "description": "读取复合文件二进制格式",
+  "category": "XLSX · 复合文件",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.CFB",
+  "methodPath": ["CFB", "read"],
+  "inputs": [
+    { "name": "data", "type": "ArrayBuffer | string", "required": true, "description": "要读取的数据" }
+  ],
+  "outputs": [
+    { "name": "cfb", "type": "CFB", "description": "复合文件对象" }
+  ],
+  "properties": [
+    { "name": "type", "label": "数据类型", "type": "enum", "enum": ["buffer", "binary", "array", "base64", "file"], "default": "buffer", "description": "数据编码格式" },
+    { "name": "password", "label": "密码", "type": "string", "default": "", "description": "文件密码" }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "xlsx-cfb-utils-use-zlib",
+  "label": "XLSX.CFB.utils.use_zlib",
+  "description": "设置 CFB 使用的 zlib 实现",
+  "category": "XLSX · 复合文件",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.CFB.utils",
+  "methodPath": ["CFB", "utils", "use_zlib"],
+  "inputs": [
+    { "name": "zlib", "type": "object", "required": true, "description": "zlib 实现对象" }
+  ],
+  "outputs": [
+    { "name": "result", "type": "void", "description": "设置完成" }
+  ],
+  "properties": []
+}

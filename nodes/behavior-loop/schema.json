@@ -1,0 +1,31 @@
+{
+  "id": "behavior-loop",
+  "label": "循环",
+  "description": "遍历数组或重复执行",
+  "category": "行为 · 逻辑",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "loopType", "label": "循环类型", "type": "enum", "enum": ["forEach", "repeat"], "default": "forEach", "description": "循环类型" },
+    { "name": "repeatCount", "label": "重复次数", "type": "number", "default": 1, "min": 1, "max": 1000, "description": "repeat 模式的次数" },
+    { "name": "varName", "label": "迭代变量名", "type": "string", "default": "item", "description": "forEach 模式的迭代变量" }
+  ],
+  "inputs": [
+    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
+    { "name": "items", "type": "array", "required": false, "description": "要遍历的数组" }
+  ],
+  "outputs": [
+    { "name": "each", "type": "trigger", "description": "每次迭代触发" },
+    { "name": "done", "type": "trigger", "description": "循环结束触发" },
+    { "name": "item", "type": "any", "description": "当前项" },
+    { "name": "index", "type": "number", "description": "当前索引" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
+    { "name": "items", "label": "数组", "type": "array", "direction": "input", "description": "遍历数组" },
+    { "name": "each", "label": "每次", "type": "any", "direction": "output", "description": "每次迭代" },
+    { "name": "done", "label": "完成", "type": "any", "direction": "output", "description": "循环结束" },
+    { "name": "item", "label": "当前项", "type": "any", "direction": "output", "description": "当前项" },
+    { "name": "index", "label": "索引", "type": "number", "direction": "output", "description": "当前索引" }
+  ]
+}

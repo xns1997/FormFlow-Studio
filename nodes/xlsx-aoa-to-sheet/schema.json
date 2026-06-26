@@ -1,0 +1,61 @@
+{
+  "id": "xlsx-aoa-to-sheet",
+  "label": "XLSX.utils.aoa_to_sheet",
+  "description": "把二维数组转成 Sheet",
+  "category": "二维数组",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "aoa_to_sheet"],
+  "inputs": [
+    {
+      "name": "data",
+      "type": "unknown[][]",
+      "required": true,
+      "description": "二维数组，每行是一个数组"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "description": "生成的工作表对象"
+    }
+  ],
+  "properties": [
+    {
+      "name": "skipHeader",
+      "label": "跳过表头",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时不输出表头行"
+    },
+    {
+      "name": "origin",
+      "label": "起始位置",
+      "type": "string",
+      "default": "A1",
+      "description": "写入起始单元格地址"
+    },
+    {
+      "name": "cellDates",
+      "label": "日期模式",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时将 Date 对象存储为日期类型"
+    },
+    {
+      "name": "dateNF",
+      "label": "日期格式",
+      "type": "string",
+      "default": "yyyy-mm-dd",
+      "description": "日期的输出格式"
+    },
+    {
+      "name": "sheetStubs",
+      "label": "空值占位",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时为空单元格创建占位对象"
+    }
+  ]
+}

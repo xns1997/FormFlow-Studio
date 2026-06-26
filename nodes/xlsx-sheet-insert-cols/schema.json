@@ -1,0 +1,53 @@
+{
+  "id": "xlsx-sheet-insert-cols",
+  "label": "XLSX.utils.sheet_insert_cols",
+  "description": "在 Sheet 中插入指定数量的空列",
+  "category": "Sheet 操作",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "sheet_insert_cols"],
+  "inputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "required": true,
+      "description": "目标工作表"
+    },
+    {
+      "name": "start",
+      "type": "number",
+      "required": true,
+      "description": "插入起始列号（1-indexed）"
+    },
+    {
+      "name": "count",
+      "type": "number",
+      "required": true,
+      "description": "要插入的列数"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "description": "操作后的工作表"
+    }
+  ],
+  "properties": [
+    {
+      "name": "origin",
+      "label": "插入方向",
+      "type": "enum",
+      "enum": ["-1", "0", "1"],
+      "default": "-1",
+      "description": "-1 向左插入，0 从指定列开始，1 向右插入"
+    },
+    {
+      "name": "skip",
+      "label": "跳过列数",
+      "type": "number",
+      "default": 0,
+      "description": "跳过前 N 列不插入"
+    }
+  ]
+}

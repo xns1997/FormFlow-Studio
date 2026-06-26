@@ -1,0 +1,18 @@
+{
+  "id": "xlsx-sheet-set-array-formula",
+  "label": "XLSX.utils.sheet_set_array_formula",
+  "description": "在 Sheet 中设置数组公式（动态数组公式）",
+  "category": "XLSX · Sheet 操作",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "sheet_set_array_formula"],
+  "inputs": [
+    { "name": "worksheet", "type": "Worksheet", "required": true, "description": "工作表对象" },
+    { "name": "range", "type": "string", "required": true, "description": "目标范围" },
+    { "name": "formula", "type": "string", "required": true, "description": "数组公式" }
+  ],
+  "outputs": [
+    { "name": "worksheet", "type": "Worksheet", "description": "修改后的工作表" }
+  ],
+  "properties": []
+}

@@ -1,0 +1,25 @@
+{
+  "id": "xlsx-decode-row",
+  "label": "XLSX.utils.decode_row",
+  "description": "把行号字符串解码成 0-indexed 行号",
+  "category": "地址编码",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "decode_row"],
+  "inputs": [
+    {
+      "name": "label",
+      "type": "string",
+      "required": true,
+      "description": "1-indexed 的行号字符串"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "row",
+      "type": "number",
+      "description": "0-indexed 的行号"
+    }
+  ],
+  "properties": []
+}

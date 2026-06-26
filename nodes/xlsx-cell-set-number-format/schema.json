@@ -1,0 +1,17 @@
+{
+  "id": "xlsx-cell-set-number-format",
+  "label": "XLSX.utils.cell_set_number_format",
+  "description": "设置单元格的数字格式",
+  "category": "XLSX · 格式化",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "cell_set_number_format"],
+  "inputs": [
+    { "name": "cell", "type": "CellObject", "required": true, "description": "单元格对象" },
+    { "name": "fmt", "type": "string", "required": true, "description": "数字格式代码" }
+  ],
+  "outputs": [
+    { "name": "cell", "type": "CellObject", "description": "修改后的单元格" }
+  ],
+  "properties": []
+}

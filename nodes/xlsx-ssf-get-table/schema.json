@@ -1,0 +1,14 @@
+{
+  "id": "xlsx-ssf-get-table",
+  "label": "XLSX.SSF.get_table",
+  "description": "获取当前数字格式表的 JSON 快照",
+  "category": "XLSX · 格式化",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.SSF",
+  "methodPath": ["SSF", "get_table"],
+  "inputs": [],
+  "outputs": [
+    { "name": "table", "type": "object", "description": "数字格式表 JSON 对象" }
+  ],
+  "properties": []
+}

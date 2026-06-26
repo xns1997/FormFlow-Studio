@@ -1,0 +1,49 @@
+{
+  "name": "formflow-studio",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:server": "npx tsx server/index.ts",
+    "dev:all": "npx concurrently \"npx tsx server/index.ts\" \"vite\"",
+    "server": "npx tsx server/index.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@antv/x6": "^3.1.7",
+    "@antv/x6-react-shape": "^3.0.1",
+    "@icon-park/react": "^1.4.2",
+    "@monaco-editor/react": "^4.7.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.1.0",
+    "@xyflow/react": "^12.11.0",
+    "ag-grid-community": "^35.3.1",
+    "ag-grid-enterprise": "^35.3.1",
+    "ag-grid-react": "^35.3.1",
+    "chart.js": "^4.5.1",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "jszip": "^3.10.1",
+    "monaco-editor": "^0.55.1",
+    "multer": "^2.2.0",
+    "react": "^19.2.7",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.0",
+    "sql.js": "^1.14.1",
+    "tslib": "^2.8.1",
+    "xlsx": "^0.18.5",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.2",
+    "typescript": "^6.0.3",
+    "vite": "^5.4.10"
+  }
+}

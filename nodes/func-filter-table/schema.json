@@ -1,0 +1,29 @@
+{
+  "id": "func-filter-table",
+  "label": "筛选",
+  "description": "对工作表数据应用自动筛选",
+  "category": "功能 · 数据操作",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "rangeAddress", "label": "筛选范围", "type": "string", "default": "A1", "description": "筛选应用的范围" },
+    { "name": "filterColumn", "label": "筛选列", "type": "number", "default": 0, "min": 0, "description": "筛选列索引" },
+    { "name": "filterValues", "label": "筛选值", "type": "string", "default": "", "description": "逗号分隔的筛选值" }
+  ],
+  "inputs": [
+    { "name": "worksheet", "type": "object", "required": true, "description": "工作表对象" },
+    { "name": "rangeAddress", "type": "string", "required": false, "description": "范围覆盖" },
+    { "name": "filterColumn", "type": "number", "required": false, "description": "列索引覆盖" },
+    { "name": "filterValues", "type": "string", "required": false, "description": "筛选值覆盖" }
+  ],
+  "outputs": [
+    { "name": "worksheet", "type": "object", "description": "筛选后的工作表" }
+  ],
+  "ports": [
+    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "input", "required": true, "description": "工作表" },
+    { "name": "rangeAddress", "label": "范围", "type": "string", "direction": "input", "description": "筛选范围" },
+    { "name": "filterColumn", "label": "列", "type": "number", "direction": "input", "description": "列索引" },
+    { "name": "filterValues", "label": "值", "type": "string", "direction": "input", "description": "筛选值" },
+    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "output", "description": "筛选后的工作表" }
+  ]
+}

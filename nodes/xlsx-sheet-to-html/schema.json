@@ -1,0 +1,75 @@
+{
+  "id": "xlsx-sheet-to-html",
+  "label": "XLSX.utils.sheet_to_html",
+  "description": "把 Sheet 导出成 HTML 表格",
+  "category": "Sheet 转换",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "sheet_to_html"],
+  "inputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "required": true,
+      "description": "要转换的工作表对象"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "html",
+      "type": "string",
+      "description": "HTML 表格字符串"
+    }
+  ],
+  "properties": [
+    {
+      "name": "header",
+      "label": "表头行号",
+      "type": "number",
+      "default": -1,
+      "description": "指定哪一行作为表头"
+    },
+    {
+      "name": "id",
+      "label": "表格 ID",
+      "type": "string",
+      "default": "",
+      "description": "生成的 <table> 元素的 id 属性"
+    },
+    {
+      "name": "editable",
+      "label": "可编辑",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时为每个单元格添加 contenteditable 属性"
+    },
+    {
+      "name": "headerRows",
+      "label": "表头行数",
+      "type": "number",
+      "default": 1,
+      "description": "表头区域的行数"
+    },
+    {
+      "name": "footerRows",
+      "label": "表尾行数",
+      "type": "number",
+      "default": 0,
+      "description": "表尾区域的行数"
+    },
+    {
+      "name": "skipHidden",
+      "label": "跳过隐藏列",
+      "type": "boolean",
+      "default": false,
+      "description": "是否跳过隐藏的列"
+    },
+    {
+      "name": "body",
+      "label": "仅返回 body",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 只返回 <tbody> 内容，不含 <table> 标签"
+    }
+  ]
+}

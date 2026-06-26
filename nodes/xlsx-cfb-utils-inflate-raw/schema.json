@@ -1,0 +1,16 @@
+{
+  "id": "xlsx-cfb-utils-inflate-raw",
+  "label": "XLSX.CFB.utils._inflateRaw",
+  "description": "使用 zlib 原始 inflate 解压数据",
+  "category": "XLSX · 复合文件",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.CFB.utils",
+  "methodPath": ["CFB", "utils", "_inflateRaw"],
+  "inputs": [
+    { "name": "data", "type": "Uint8Array | string", "required": true, "description": "要解压的数据" }
+  ],
+  "outputs": [
+    { "name": "decompressed", "type": "Uint8Array", "description": "解压后的数据" }
+  ],
+  "properties": []
+}

@@ -1,0 +1,31 @@
+{
+  "id": "xlsx-book-remove-sheet",
+  "label": "XLSX.utils.book_remove_sheet",
+  "description": "从工作簿中删除指定 Sheet",
+  "category": "工作簿管理",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "book_remove_sheet"],
+  "inputs": [
+    {
+      "name": "workbook",
+      "type": "Workbook",
+      "required": true,
+      "description": "目标工作簿"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "required": true,
+      "description": "要删除的 Sheet 名称"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "workbook",
+      "type": "Workbook",
+      "description": "删除后的工作簿"
+    }
+  ],
+  "properties": []
+}

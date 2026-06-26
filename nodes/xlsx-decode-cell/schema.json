@@ -1,0 +1,25 @@
+{
+  "id": "xlsx-decode-cell",
+  "label": "XLSX.utils.decode_cell",
+  "description": "把 A1 格式的单元格地址解析成坐标对象",
+  "category": "地址编码",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "decode_cell"],
+  "inputs": [
+    {
+      "name": "address",
+      "type": "string",
+      "required": true,
+      "description": "A1 格式的单元格地址，如 'A1', 'C5'"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "cell",
+      "type": "CellAddress",
+      "description": "单元格坐标 {r: 行号, c: 列号}，从 0 开始"
+    }
+  ],
+  "properties": []
+}

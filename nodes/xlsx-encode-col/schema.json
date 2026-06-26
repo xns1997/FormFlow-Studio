@@ -1,0 +1,25 @@
+{
+  "id": "xlsx-encode-col",
+  "label": "XLSX.utils.encode_col",
+  "description": "把列号编码成字母，如 0 → A, 25 → Z, 26 → AA",
+  "category": "地址编码",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "encode_col"],
+  "inputs": [
+    {
+      "name": "col",
+      "type": "number",
+      "required": true,
+      "description": "列号，从 0 开始"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "letter",
+      "type": "string",
+      "description": "列字母"
+    }
+  ],
+  "properties": []
+}

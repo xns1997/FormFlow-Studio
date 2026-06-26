@@ -1,0 +1,18 @@
+{
+  "id": "behavior-stop",
+  "label": "中止执行",
+  "description": "停止后续行为执行",
+  "category": "行为 · 控制",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "reason", "label": "中止原因", "type": "string", "default": "手动中止", "description": "中止原因" }
+  ],
+  "inputs": [
+    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" }
+  ],
+  "outputs": [],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" }
+  ]
+}

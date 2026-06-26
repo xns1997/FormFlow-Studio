@@ -1,0 +1,54 @@
+{
+  "id": "xlsx-sheet-to-formulae",
+  "label": "XLSX.utils.sheet_to_formulae",
+  "description": "把 Sheet 转成公式文本列表",
+  "category": "Sheet 转换",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "sheet_to_formulae"],
+  "inputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "required": true,
+      "description": "要转换的工作表对象"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "formulae",
+      "type": "string[]",
+      "description": "公式文本数组，每项格式为 'CellAddr=Formula'"
+    }
+  ],
+  "properties": [
+    {
+      "name": "dataEditable",
+      "label": "数据可编辑",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时数据单元格也输出为赋值语句"
+    },
+    {
+      "name": "formulae",
+      "label": "仅公式",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时只输出公式单元格"
+    },
+    {
+      "name": "range",
+      "label": "数据范围",
+      "type": "string",
+      "default": "",
+      "description": "如 'A1:C5'，留空则自动检测"
+    },
+    {
+      "name": "skipHidden",
+      "label": "跳过隐藏行",
+      "type": "boolean",
+      "default": false,
+      "description": "是否跳过隐藏的行和列"
+    }
+  ]
+}

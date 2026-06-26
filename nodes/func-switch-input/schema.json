@@ -1,0 +1,28 @@
+{
+  "id": "func-switch-input",
+  "label": "开关",
+  "description": "开关组件，布尔值切换",
+  "category": "功能 · 表单组件",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "fieldName", "label": "字段名", "type": "string", "default": "", "required": true, "description": "绑定字段" },
+    { "name": "defaultValue", "label": "默认值", "type": "boolean", "default": false, "description": "默认状态" }
+  ],
+  "inputs": [
+    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
+    { "name": "value", "type": "boolean", "required": false, "description": "当前值" }
+  ],
+  "outputs": [
+    { "name": "trigger", "type": "trigger", "description": "触发输出" },
+    { "name": "value", "type": "boolean", "description": "开关值" },
+    { "name": "fieldName", "type": "string", "description": "字段名" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
+    { "name": "value", "label": "值", "type": "boolean", "direction": "input", "description": "当前值" },
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发输出" },
+    { "name": "value", "label": "值", "type": "boolean", "direction": "output", "description": "开关值" },
+    { "name": "fieldName", "label": "字段", "type": "string", "direction": "output", "description": "字段名" }
+  ]
+}

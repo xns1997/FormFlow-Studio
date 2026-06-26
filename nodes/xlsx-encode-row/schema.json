@@ -1,0 +1,25 @@
+{
+  "id": "xlsx-encode-row",
+  "label": "XLSX.utils.encode_row",
+  "description": "把行号编码成行号字符串（1-indexed）",
+  "category": "地址编码",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "encode_row"],
+  "inputs": [
+    {
+      "name": "row",
+      "type": "number",
+      "required": true,
+      "description": "行号，从 0 开始"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "label",
+      "type": "string",
+      "description": "1-indexed 的行号字符串"
+    }
+  ],
+  "properties": []
+}

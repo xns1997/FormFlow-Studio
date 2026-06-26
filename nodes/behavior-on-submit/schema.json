@@ -1,0 +1,20 @@
+{
+  "id": "behavior-on-submit",
+  "label": "提交触发",
+  "description": "当用户点击提交按钮时触发",
+  "category": "行为 · 事件",
+  "kind": "generic",
+  "methods": [],
+  "properties": [],
+  "inputs": [
+    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" }
+  ],
+  "outputs": [
+    { "name": "trigger", "type": "trigger", "description": "触发输出" },
+    { "name": "formData", "type": "object", "description": "表单数据" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发信号" },
+    { "name": "formData", "label": "表单数据", "type": "object", "direction": "output", "description": "表单数据" }
+  ]
+}

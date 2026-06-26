@@ -1,0 +1,18 @@
+{
+  "id": "xlsx-cfb-parse",
+  "label": "XLSX.CFB.parse",
+  "description": "解析复合文件二进制数据",
+  "category": "XLSX · 复合文件",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.CFB",
+  "methodPath": ["CFB", "parse"],
+  "inputs": [
+    { "name": "data", "type": "ArrayBuffer | string", "required": true, "description": "复合文件数据" }
+  ],
+  "outputs": [
+    { "name": "cfb", "type": "CFB", "description": "解析后的复合文件对象" }
+  ],
+  "properties": [
+    { "name": "type", "label": "数据类型", "type": "enum", "enum": ["buffer", "binary", "array", "base64"], "default": "buffer", "description": "数据编码格式" }
+  ]
+}

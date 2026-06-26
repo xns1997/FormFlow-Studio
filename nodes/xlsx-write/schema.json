@@ -1,0 +1,77 @@
+{
+  "id": "xlsx-write",
+  "label": "XLSX.write",
+  "description": "把工作簿序列化为指定格式的二进制数据",
+  "category": "工作簿 IO",
+  "kind": "xlsx-method",
+  "namespace": "XLSX",
+  "methodPath": ["write"],
+  "inputs": [
+    {
+      "name": "workbook",
+      "type": "Workbook",
+      "required": true,
+      "description": "要序列化的工作簿对象"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "data",
+      "type": "ArrayBuffer | string",
+      "description": "序列化后的二进制数据或文本"
+    }
+  ],
+  "properties": [
+    {
+      "name": "bookType",
+      "label": "输出格式",
+      "type": "enum",
+      "enum": ["xlsx", "xlsm", "xlsb", "xls", "csv", "txt", "ods", "fods", "json", "dif", "rtf", "prn", "numbers", "html", "slk", "etha"],
+      "default": "xlsx",
+      "description": "目标文件格式"
+    },
+    {
+      "name": "type",
+      "label": "输出类型",
+      "type": "enum",
+      "enum": ["array", "binary", "string", "base64", "buffer", "file"],
+      "default": "array",
+      "description": "返回数据的编码格式"
+    },
+    {
+      "name": "sheet",
+      "label": "指定 Sheet",
+      "type": "string",
+      "default": "",
+      "description": "只写出指定名称的 Sheet，留空则全部写出"
+    },
+    {
+      "name": "compression",
+      "label": "压缩",
+      "type": "boolean",
+      "default": false,
+      "description": "是否启用 ZIP 压缩（仅部分格式支持）"
+    },
+    {
+      "name": "ignoreEC",
+      "label": "忽略错误",
+      "type": "boolean",
+      "default": true,
+      "description": "是否忽略公式错误标记"
+    },
+    {
+      "name": "bookSheets",
+      "label": "仅写 Sheet 名",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时只写出 sheet 名称列表"
+    },
+    {
+      "name": "cellDates",
+      "label": "日期格式化",
+      "type": "boolean",
+      "default": false,
+      "description": "是否将 Date 对象格式化为日期字符串"
+    }
+  ]
+}

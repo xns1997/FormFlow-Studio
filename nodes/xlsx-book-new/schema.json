@@ -1,0 +1,18 @@
+{
+  "id": "xlsx-book-new",
+  "label": "XLSX.utils.book_new",
+  "description": "创建一个空工作簿",
+  "category": "工作簿管理",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "book_new"],
+  "inputs": [],
+  "outputs": [
+    {
+      "name": "workbook",
+      "type": "Workbook",
+      "description": "新创建的空工作簿对象"
+    }
+  ],
+  "properties": []
+}

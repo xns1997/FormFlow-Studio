@@ -1,0 +1,31 @@
+{
+  "id": "xlsx-sheet-get-range",
+  "label": "XLSX.utils.sheet_get_range",
+  "description": "获取 Sheet 指定范围内的单元格对象",
+  "category": "Sheet 操作",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "sheet_get_range"],
+  "inputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "required": true,
+      "description": "工作表对象"
+    },
+    {
+      "name": "range",
+      "type": "string | Range",
+      "required": true,
+      "description": "范围地址如 'A1:C5' 或范围对象"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "cells",
+      "type": "CellObject[]",
+      "description": "范围内的单元格对象数组"
+    }
+  ],
+  "properties": []
+}

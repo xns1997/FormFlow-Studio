@@ -1,0 +1,19 @@
+{
+  "id": "xlsx-stream-to-html",
+  "label": "XLSX.stream.to_html",
+  "description": "流式将 Sheet 转成 HTML 表格",
+  "category": "XLSX · 流式输出",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.stream",
+  "methodPath": ["stream", "to_html"],
+  "inputs": [
+    { "name": "worksheet", "type": "Worksheet", "required": true, "description": "工作表对象" }
+  ],
+  "outputs": [
+    { "name": "stream", "type": "ReadableStream", "description": "可读流" }
+  ],
+  "properties": [
+    { "name": "header", "label": "表头行号", "type": "number", "default": -1, "description": "表头行号" },
+    { "name": "footer", "label": "表尾行号", "type": "number", "default": -1, "description": "表尾行号" }
+  ]
+}

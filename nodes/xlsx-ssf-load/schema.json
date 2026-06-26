@@ -1,0 +1,16 @@
+{
+  "id": "xlsx-ssf-load",
+  "label": "XLSX.SSF.load",
+  "description": "加载自定义数字格式表",
+  "category": "XLSX · 格式化",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.SSF",
+  "methodPath": ["SSF", "load"],
+  "inputs": [
+    { "name": "table", "type": "string", "required": true, "description": "格式表 JSON 字符串" }
+  ],
+  "outputs": [
+    { "name": "result", "type": "void", "description": "加载完成" }
+  ],
+  "properties": []
+}

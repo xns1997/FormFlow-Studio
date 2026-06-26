@@ -1,0 +1,17 @@
+{
+  "id": "xlsx-cfb-writefile",
+  "label": "XLSX.CFB.writeFile",
+  "description": "将复合文件写出为文件",
+  "category": "XLSX · 复合文件",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.CFB",
+  "methodPath": ["CFB", "writeFile"],
+  "inputs": [
+    { "name": "cfb", "type": "CFB", "required": true, "description": "复合文件对象" },
+    { "name": "filename", "type": "string", "required": true, "description": "输出文件名" }
+  ],
+  "outputs": [
+    { "name": "result", "type": "void", "description": "写出完成" }
+  ],
+  "properties": []
+}

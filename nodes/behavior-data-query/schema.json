@@ -1,0 +1,31 @@
+{
+  "id": "behavior-data-query",
+  "label": "数据查询",
+  "description": "查询工作簿中的数据",
+  "category": "行为 · 数据",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "queryType", "label": "查询类型", "type": "enum", "enum": ["getCellValue", "getColumnValues", "findRows", "countRows", "getSheetNames"], "default": "getCellValue", "description": "查询类型" },
+    { "name": "sheetName", "label": "Sheet 名", "type": "string", "default": "", "description": "目标 Sheet" },
+    { "name": "cellAddress", "label": "单元格地址", "type": "string", "default": "A1", "description": "单元格地址" },
+    { "name": "filterField", "label": "筛选字段", "type": "string", "default": "", "description": "筛选字段名" },
+    { "name": "filterValue", "label": "筛选值", "type": "string", "default": "", "description": "筛选值" }
+  ],
+  "inputs": [
+    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
+    { "name": "workbook", "type": "object", "required": true, "description": "工作簿对象" },
+    { "name": "sheetName", "type": "string", "required": false, "description": "Sheet 名覆盖" }
+  ],
+  "outputs": [
+    { "name": "trigger", "type": "trigger", "description": "触发输出" },
+    { "name": "result", "type": "any", "description": "查询结果" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
+    { "name": "workbook", "label": "工作簿", "type": "object", "direction": "input", "required": true, "description": "工作簿" },
+    { "name": "sheetName", "label": "Sheet", "type": "string", "direction": "input", "description": "Sheet 名" },
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发输出" },
+    { "name": "result", "label": "结果", "type": "any", "direction": "output", "description": "查询结果" }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "id": "file_1782272098746",
+  "originalName": "æµè¯ä¸ä¼ æ ·ä¾.xlsx",
+  "storedName": "1782272098737_æµè¯ä¸ä¼ æ ·ä¾.xlsx",
+  "size": 20251,
+  "mimeType": "application/octet-stream",
+  "uploadedAt": "2026-06-24T03:34:58.746Z",
+  "sheets": [
+    {
+      "name": "员工信息",
+      "rowCount": 3,
+      "colCount": 10,
+      "headers": [
+        "员工编号",
+        "姓名",
+        "年龄",
+        "部门",
+        "入职日期",
+        "手机号",
+        "状态",
+        "薪资",
+        "奖金",
+        "技术栈"
+      ]
+    },
+    {
+      "name": "部门表",
+      "rowCount": 3,
+      "colCount": 4,
+      "headers": [
+        "部门",
+        "负责人",
+        "办公城市",
+        "预算"
+      ]
+    },
+    {
+      "name": "审批记录",
+      "rowCount": 2,
+      "colCount": 5,
+      "headers": [
+        "单号",
+        "申请人",
+        "审批状态",
+        "审批意见",
+        "更新时间"
+      ]
+    }
+  ]
+}

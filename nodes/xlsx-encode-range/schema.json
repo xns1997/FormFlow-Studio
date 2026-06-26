@@ -1,0 +1,25 @@
+{
+  "id": "xlsx-encode-range",
+  "label": "XLSX.utils.encode_range",
+  "description": "把范围坐标对象编码成 A1 区间字符串",
+  "category": "地址编码",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "encode_range"],
+  "inputs": [
+    {
+      "name": "range",
+      "type": "Range",
+      "required": true,
+      "description": "范围对象 {s: {r,c}, e: {r,c}}"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "address",
+      "type": "string",
+      "description": "A1 格式的范围地址，如 'A1:C5'"
+    }
+  ],
+  "properties": []
+}

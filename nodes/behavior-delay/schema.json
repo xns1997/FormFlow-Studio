@@ -1,0 +1,21 @@
+{
+  "id": "behavior-delay",
+  "label": "延时",
+  "description": "延迟指定时间后继续执行",
+  "category": "行为 · 控制",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "delayMs", "label": "延时毫秒", "type": "number", "default": 1000, "min": 0, "max": 60000, "description": "延时时间（毫秒）" }
+  ],
+  "inputs": [
+    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" }
+  ],
+  "outputs": [
+    { "name": "trigger", "type": "trigger", "description": "延时后触发" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "延时后触发" }
+  ]
+}

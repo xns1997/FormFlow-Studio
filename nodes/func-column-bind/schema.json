@@ -1,0 +1,33 @@
+{
+  "id": "func-column-bind",
+  "label": "字段绑定",
+  "description": "将组件端口绑定到数据列",
+  "category": "功能 · 数据绑定",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "componentPort", "label": "组件端口", "type": "string", "default": "value", "description": "组件端口名" },
+    { "name": "dataField", "label": "数据字段", "type": "string", "default": "", "required": true, "description": "数据字段名" },
+    { "name": "direction", "label": "绑定方向", "type": "enum", "enum": ["uiToData", "dataToUi", "twoWay"], "default": "twoWay", "description": "绑定方向" },
+    { "name": "formatter", "label": "格式化", "type": "string", "default": "", "description": "格式化表达式" },
+    { "name": "parser", "label": "解析器", "type": "string", "default": "", "description": "解析表达式" }
+  ],
+  "inputs": [
+    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
+    { "name": "uiValue", "type": "any", "required": false, "description": "UI 端的值" },
+    { "name": "dataValue", "type": "any", "required": false, "description": "数据端的值" }
+  ],
+  "outputs": [
+    { "name": "trigger", "type": "trigger", "description": "触发输出" },
+    { "name": "uiValue", "type": "any", "description": "UI 端的值" },
+    { "name": "dataValue", "type": "any", "description": "数据端的值" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发" },
+    { "name": "uiValue", "label": "UI 值", "type": "any", "direction": "input", "description": "UI 值" },
+    { "name": "dataValue", "label": "数据值", "type": "any", "direction": "input", "description": "数据值" },
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发输出" },
+    { "name": "uiValue", "label": "UI 值", "type": "any", "direction": "output", "description": "UI 值" },
+    { "name": "dataValue", "label": "数据值", "type": "any", "direction": "output", "description": "数据值" }
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "id": "xlsx-read",
+  "label": "XLSX.read",
+  "description": "从 ArrayBuffer、二进制字符串或文本中读取工作簿",
+  "category": "工作簿 IO",
+  "kind": "xlsx-method",
+  "namespace": "XLSX",
+  "methodPath": ["read"],
+  "inputs": [
+    {
+      "name": "data",
+      "type": "ArrayBuffer | string | Uint8Array",
+      "required": true,
+      "description": "要读取的数据源"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "workbook",
+      "type": "Workbook",
+      "description": "解析后的工作簿对象，包含 SheetNames 和 Sheets"
+    }
+  ],
+  "properties": [
+    {
+      "name": "type",
+      "label": "数据类型",
+      "type": "enum",
+      "enum": ["array", "binary", "buffer", "file", "string", "base64"],
+      "default": "array",
+      "description": "输入数据的编码格式"
+    },
+    {
+      "name": "cellFormula",
+      "label": "解析公式",
+      "type": "boolean",
+      "default": true,
+      "description": "是否解析单元格公式"
+    },
+    {
+      "name": "cellHTML",
+      "label": "解析 HTML",
+      "type": "boolean",
+      "default": true,
+      "description": "是否保留单元格 HTML 富文本"
+    },
+    {
+      "name": "cellDates",
+      "label": "日期转 Date",
+      "type": "boolean",
+      "default": false,
+      "description": "是否将日期值存储为 JS Date 对象"
+    },
+    {
+      "name": "sheetRows",
+      "label": "行数限制",
+      "type": "number",
+      "default": 0,
+      "min": 0,
+      "description": "0 表示不限制，设为 N 则只读取前 N 行"
+    },
+    {
+      "name": "bookSheets",
+      "label": "仅读 Sheet 名",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时只解析 sheet 名称，不解析内容"
+    },
+    {
+      "name": "bookType",
+      "label": "工作簿类型",
+      "type": "enum",
+      "enum": ["xlsx", "xlsm", "xlsb", "xls", "csv", "txt", "ods", "fods", "json", "dif", "rtf", "prn", "numbers"],
+      "default": "xlsx",
+      "description": "显式指定文件格式，省略则自动检测"
+    },
+    {
+      "name": "raw",
+      "label": "原始值",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时返回原始编码值而非解析值"
+    },
+    {
+      "name": "dense",
+      "label": "稀疏数组",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时使用稀疏数组存储行数据"
+    }
+  ]
+}

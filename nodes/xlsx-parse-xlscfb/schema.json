@@ -1,0 +1,18 @@
+{
+  "id": "xlsx-parse-xlscfb",
+  "label": "XLSX.parse_xlscfb",
+  "description": "解析 CFB 格式的 Excel 文件",
+  "category": "XLSX · 工作簿 IO",
+  "kind": "xlsx-method",
+  "namespace": "XLSX",
+  "methodPath": ["parse_xlscfb"],
+  "inputs": [
+    { "name": "cfb", "type": "CFB", "required": true, "description": "CFB 对象" }
+  ],
+  "outputs": [
+    { "name": "workbook", "type": "Workbook", "description": "工作簿对象" }
+  ],
+  "properties": [
+    { "name": "opts", "label": "选项", "type": "object", "description": "解析选项" }
+  ]
+}

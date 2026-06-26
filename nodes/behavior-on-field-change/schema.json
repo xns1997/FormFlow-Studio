@@ -1,0 +1,27 @@
+{
+  "id": "behavior-on-field-change",
+  "label": "字段变化",
+  "description": "当指定字段值变化时触发",
+  "category": "行为 · 事件",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "fieldName", "label": "字段名", "type": "string", "default": "", "required": true, "description": "监听的字段名" }
+  ],
+  "inputs": [
+    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
+    { "name": "fieldName", "type": "string", "required": false, "description": "字段名覆盖" }
+  ],
+  "outputs": [
+    { "name": "trigger", "type": "trigger", "description": "触发输出" },
+    { "name": "oldValue", "type": "any", "description": "变化前的值" },
+    { "name": "newValue", "type": "any", "description": "变化后的值" },
+    { "name": "fieldName", "type": "string", "description": "变化的字段名" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发信号" },
+    { "name": "oldValue", "label": "旧值", "type": "any", "direction": "output", "description": "变化前的值" },
+    { "name": "newValue", "label": "新值", "type": "any", "direction": "output", "description": "变化后的值" },
+    { "name": "fieldName", "label": "字段名", "type": "string", "direction": "output", "description": "字段名" }
+  ]
+}

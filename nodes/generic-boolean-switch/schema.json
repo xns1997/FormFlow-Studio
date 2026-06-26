@@ -1,0 +1,27 @@
+{
+  "id": "generic-boolean-switch",
+  "label": "布尔开关",
+  "description": "输入一个布尔值，支持切换开关",
+  "category": "通用 · 输入",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    {
+      "name": "value",
+      "label": "布尔值",
+      "type": "boolean",
+      "default": false,
+      "description": "开关状态"
+    }
+  ],
+  "inputs": [
+    { "name": "override", "type": "boolean", "required": false, "description": "外部传入的布尔覆盖值" }
+  ],
+  "outputs": [
+    { "name": "value", "type": "boolean", "description": "当前布尔值" }
+  ],
+  "ports": [
+    { "name": "override", "label": "覆盖", "type": "boolean", "direction": "input", "description": "外部覆盖值" },
+    { "name": "value", "label": "值", "type": "boolean", "direction": "output", "description": "当前布尔值" }
+  ]
+}

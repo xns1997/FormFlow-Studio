@@ -1,0 +1,31 @@
+{
+  "id": "xlsx-sheet-get-cell",
+  "label": "XLSX.utils.sheet_get_cell",
+  "description": "获取 Sheet 指定单元格的对象",
+  "category": "Sheet 操作",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "sheet_get_cell"],
+  "inputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "required": true,
+      "description": "工作表对象"
+    },
+    {
+      "name": "address",
+      "type": "string | CellAddress",
+      "required": true,
+      "description": "单元格地址如 'A1' 或坐标 {r, c}"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "cell",
+      "type": "CellObject",
+      "description": "单元格对象 {v, t, w, f, ...}"
+    }
+  ],
+  "properties": []
+}

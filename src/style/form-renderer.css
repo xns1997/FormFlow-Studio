@@ -1,0 +1,659 @@
+/* ── Form Renderer ────────────────────────────────────── */
+
+.lg-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.lg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lg-field.disabled { opacity: 0.6; }
+.lg-field.has-error .lg-input,
+.lg-field.has-error .lg-textarea,
+.lg-field.has-error .lg-select { border-color: var(--danger); }
+
+.lg-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.lg-required { color: var(--danger); margin-left: 2px; }
+
+.lg-error {
+  font-size: 11px;
+  color: var(--danger);
+}
+
+/* ── Liquid Glass Form Renderer ─────────────────────────── */
+
+.lg-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  max-width: 640px;
+}
+
+.lg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lg-field.disabled { opacity: 0.5; pointer-events: none; }
+.lg-field.has-error .lg-input,
+.lg-field.has-error .lg-textarea,
+.lg-field.has-error .lg-select { border-color: var(--danger); }
+
+.lg-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lg-required { color: var(--danger); font-weight: 700; }
+
+.lg-error {
+  font-size: 11px;
+  color: var(--danger);
+  margin-top: 2px;
+}
+
+/* ── Liquid Glass Input (text / number / date) ──────────── */
+
+.lg-input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  transition: all 0.2s;
+  outline: none;
+}
+
+.lg-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.lg-input.dirty {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.lg-input.error {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px #fee2e2;
+}
+
+/* ── Liquid Glass Textarea ──────────────────────────────── */
+
+.lg-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  resize: vertical;
+  min-height: 80px;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.lg-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.lg-textarea.dirty {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+/* ── Liquid Glass Select ────────────────────────────────── */
+
+.lg-select {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.lg-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.lg-select.dirty {
+  border-color: #f59e0b;
+  background-color: #fffbeb;
+}
+
+/* ── Liquid Glass Radio (iOS style) ─────────────────────── */
+
+.lg-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lg-radio-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lg-radio-item:hover { background: var(--panel-soft); }
+.lg-radio-item.selected { border-color: var(--accent); background: var(--accent-soft); }
+
+.lg-radio-item input { display: none; }
+
+.lg-radio-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.lg-radio-item.selected .lg-radio-circle { border-color: var(--accent); }
+
+.lg-radio-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: transparent;
+  transition: all 0.2s;
+}
+
+.lg-radio-item.selected .lg-radio-dot { background: var(--accent); }
+
+/* ── Liquid Glass Checkbox (iOS style) ──────────────────── */
+
+.lg-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lg-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lg-checkbox-item:hover { background: var(--panel-soft); }
+.lg-checkbox-item.selected { border-color: var(--accent); background: var(--accent-soft); }
+
+.lg-checkbox-item input { display: none; }
+
+.lg-checkbox-box {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 2px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.lg-checkbox-item.selected .lg-checkbox-box { border-color: var(--accent); background: var(--accent); }
+
+.lg-checkbox-check {
+  width: 12px;
+  height: 12px;
+  color: transparent;
+  transition: color 0.2s;
+}
+
+.lg-checkbox-item.selected .lg-checkbox-check { color: #fff; }
+
+/* ── Liquid Glass Switch (iOS toggle) ───────────────────── */
+
+.lg-switch {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.lg-switch input { display: none; }
+
+.lg-switch-track {
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--line);
+  position: relative;
+  transition: background 0.2s;
+}
+
+.lg-switch input:checked + .lg-switch-track { background: var(--accent); }
+
+.lg-switch-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: left 0.2s;
+}
+
+.lg-switch input:checked + .lg-switch-track .lg-switch-thumb { left: 20px; }
+
+/* ── Liquid Glass Rating (star) ─────────────────────────── */
+
+.lg-rating {
+  display: flex;
+  gap: 4px;
+}
+
+.lg-rating-star {
+  font-size: 24px;
+  background: none;
+  border: none;
+  color: var(--line);
+  cursor: pointer;
+  transition: color 0.15s;
+  padding: 0;
+}
+
+.lg-rating-star:hover,
+.lg-rating-star.active { color: #f59e0b; }
+
+/* ── Liquid Glass Button ────────────────────────────────── */
+
+.lg-btn {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  background: var(--panel-soft);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lg-btn:hover { background: var(--line); }
+
+.lg-btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.lg-btn-primary:hover { background: #1d4ed8; }
+
+/* ── Liquid Glass Text (display) ────────────────────────── */
+
+.lg-text {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* ── Liquid Glass Field States ──────────────────────────── */
+
+.lg-field.disabled { opacity: 0.5; pointer-events: none; }
+.lg-field.has-error .lg-input,
+.lg-field.has-error .lg-textarea,
+.lg-field.has-error .lg-select { border-color: var(--danger); }
+
+/* ── Liquid Glass Container (glass card) ────────────────── */
+
+.lg-container-render {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.lg-container-render strong { display: block; font-size: 14px; margin-bottom: 4px; }
+.lg-container-render span { font-size: 12px; color: var(--muted); }
+
+/* ── Range Tag (connection badge) ───────────────────────── */
+
+.lg-range-connect {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.lg-range-connect:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.lg-range-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.lg-range-address {
+  font-family: 'SF Mono', 'Menlo', monospace;
+  font-weight: 600;
+}
+
+.lg-range-disconnect {
+  padding: 0 4px;
+  font-size: 14px;
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.lg-range-disconnect:hover { color: var(--danger); }
+
+/* ── Modal (portal to body) ──────────────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: var(--panel);
+  border-radius: 12px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.2);
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-header h3 { font-size: 15px; font-weight: 700; }
+
+.modal-close {
+  padding: 4px 8px;
+  font-size: 18px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  border-radius: var(--radius);
+}
+
+.modal-close:hover { background: var(--panel-soft); }
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--line);
+}
+
+/* ── Range Selector ─────────────────────────────────────── */
+
+.rs-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rs-field { display: flex; align-items: center; gap: 6px; }
+.rs-field label { font-size: 11px; color: var(--muted); }
+
+.rs-sheets {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.rs-sheet-tab {
+  padding: 4px 10px;
+  font-size: 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  cursor: pointer;
+}
+
+.rs-sheet-tab.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.rs-sheet-count {
+  font-size: 9px;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+.rs-clear-btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--muted);
+}
+
+.rs-header-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+}
+
+.rs-header-select {
+  padding: 3px 8px;
+  font-size: 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.rs-header-check-hint {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.rs-grid-wrapper {
+  flex: 1;
+  overflow: auto;
+  padding: 12px 16px;
+}
+
+.rs-grid {
+  overflow: auto;
+  max-height: 400px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.rs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.rs-table th,
+.rs-table td {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.rs-corner {
+  background: var(--panel-soft);
+  width: 32px;
+}
+
+.rs-col-header {
+  background: var(--panel-soft);
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+
+.rs-col-header:hover { background: var(--accent-soft); }
+.rs-col-header.in-range { background: #dbeafe; }
+.rs-col-header.selected-direct { background: var(--accent); color: #fff; }
+
+.rs-row-num {
+  background: var(--panel-soft);
+  font-weight: 600;
+  text-align: center;
+  width: 32px;
+  cursor: pointer;
+}
+
+.rs-row-num:hover { background: var(--accent-soft); }
+.rs-row-num.in-range { background: #dbeafe; }
+.rs-row-num.selected-direct { background: var(--accent); color: #fff; }
+
+.rs-cell {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.rs-cell:hover { background: var(--panel-soft); }
+.rs-cell.selected { background: #dbeafe; }
+.rs-cell.start { background: var(--accent); color: #fff; }
+
+.rs-header-cell {
+  font-weight: 600;
+  background: var(--panel-soft);
+}
+
+.rs-data-header-row .rs-cell {
+  background: #fef3c7;
+  font-weight: 600;
+}
+
+.rs-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.rs-selection-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.rs-address {
+  font-family: 'SF Mono', 'Menlo', monospace;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.rs-size {
+  color: var(--muted);
+}
+
+.rs-mode-tag {
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: 600;
+  border-radius: 4px;
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.rs-hint {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.rs-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.rs-actions .lg-btn {
+  padding: 7px 16px;
+  font-size: 13px;
+}

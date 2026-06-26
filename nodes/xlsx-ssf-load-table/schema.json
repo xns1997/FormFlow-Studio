@@ -1,0 +1,16 @@
+{
+  "id": "xlsx-ssf-load-table",
+  "label": "XLSX.SSF.load_table",
+  "description": "加载数字格式表（带索引）",
+  "category": "XLSX · 格式化",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.SSF",
+  "methodPath": ["SSF", "load_table"],
+  "inputs": [
+    { "name": "str", "type": "string", "required": true, "description": "格式表 JSON 字符串" }
+  ],
+  "outputs": [
+    { "name": "table", "type": "object", "description": "加载后的格式表" }
+  ],
+  "properties": []
+}

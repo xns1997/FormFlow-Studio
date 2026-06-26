@@ -1,0 +1,25 @@
+{
+  "id": "xlsx-encode-cell",
+  "label": "XLSX.utils.encode_cell",
+  "description": "把单元格坐标对象编码成 A1 地址字符串",
+  "category": "地址编码",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "encode_cell"],
+  "inputs": [
+    {
+      "name": "cell",
+      "type": "CellAddress",
+      "required": true,
+      "description": "单元格坐标 {r: 行号, c: 列号}，从 0 开始"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "address",
+      "type": "string",
+      "description": "A1 格式的单元格地址，如 'A1', 'C5'"
+    }
+  ],
+  "properties": []
+}

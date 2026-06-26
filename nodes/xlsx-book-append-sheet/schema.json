@@ -1,0 +1,46 @@
+{
+  "id": "xlsx-book-append-sheet",
+  "label": "XLSX.utils.book_append_sheet",
+  "description": "向工作簿追加一个 Sheet",
+  "category": "工作簿管理",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "book_append_sheet"],
+  "inputs": [
+    {
+      "name": "workbook",
+      "type": "Workbook",
+      "required": true,
+      "description": "目标工作簿"
+    },
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "required": true,
+      "description": "要追加的工作表"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "required": false,
+      "description": "Sheet 名称，留空则自动生成"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "workbook",
+      "type": "Workbook",
+      "description": "追加后的工作簿"
+    }
+  ],
+  "properties": [
+    {
+      "name": "sheetType",
+      "label": "Sheet 类型",
+      "type": "enum",
+      "enum": ["", "chart", "dialog", "macrosheet", "statsheet"],
+      "default": "",
+      "description": "工作表类型标记"
+    }
+  ]
+}

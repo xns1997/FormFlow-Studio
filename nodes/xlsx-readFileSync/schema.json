@@ -1,0 +1,19 @@
+{
+  "id": "xlsx-readFileSync",
+  "label": "XLSX.readFileSync",
+  "description": "同步读取文件系统中的 Excel 文件",
+  "category": "XLSX · 工作簿 IO",
+  "kind": "xlsx-method",
+  "namespace": "XLSX",
+  "methodPath": ["readFileSync"],
+  "inputs": [
+    { "name": "filename", "type": "string", "required": true, "description": "文件路径" }
+  ],
+  "outputs": [
+    { "name": "workbook", "type": "Workbook", "description": "工作簿对象" }
+  ],
+  "properties": [
+    { "name": "type", "label": "数据类型", "type": "enum", "enum": ["buffer", "array", "binary"], "default": "buffer", "description": "读取方式" },
+    { "name": "bookType", "label": "工作簿类型", "type": "enum", "enum": ["xlsx", "xlsm", "xlsb", "xls", "csv", "ods", "numbers"], "default": "xlsx", "description": "文件格式" }
+  ]
+}

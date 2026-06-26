@@ -1,0 +1,23 @@
+{
+  "id": "behavior-switch-tab",
+  "label": "切换 Tab",
+  "description": "切换到指定的 Tab 页面",
+  "category": "行为 · 导航",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "tabName", "label": "目标 Tab", "type": "enum", "enum": ["数据预览", "表单设计", "行为定义", "测试运行", "设置"], "default": "测试运行", "description": "要切换到的 Tab" }
+  ],
+  "inputs": [
+    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" }
+  ],
+  "outputs": [
+    { "name": "trigger", "type": "trigger", "description": "触发输出" },
+    { "name": "tabName", "type": "string", "description": "目标 Tab" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发输出" },
+    { "name": "tabName", "label": "Tab", "type": "string", "direction": "output", "description": "目标 Tab" }
+  ]
+}

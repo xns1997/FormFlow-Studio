@@ -1,0 +1,19 @@
+{
+  "id": "xlsx-writeXLSX",
+  "label": "XLSX.writeXLSX",
+  "description": "将工作簿序列化为 xlsx 格式二进制数据",
+  "category": "XLSX · 工作簿 IO",
+  "kind": "xlsx-method",
+  "namespace": "XLSX",
+  "methodPath": ["writeXLSX"],
+  "inputs": [
+    { "name": "workbook", "type": "Workbook", "required": true, "description": "工作簿对象" }
+  ],
+  "outputs": [
+    { "name": "data", "type": "ArrayBuffer", "description": "xlsx 二进制数据" }
+  ],
+  "properties": [
+    { "name": "type", "label": "输出类型", "type": "enum", "enum": ["array", "buffer", "binary"], "default": "array", "description": "返回数据格式" },
+    { "name": "compression", "label": "压缩", "type": "boolean", "default": false, "description": "是否启用 ZIP 压缩" }
+  ]
+}

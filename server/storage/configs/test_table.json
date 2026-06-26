@@ -1,0 +1,11 @@
+{
+  "name": "测试表",
+  "columns": {
+    "col1": {
+      "width": 200,
+      "frozen": true
+    }
+  },
+  "id": "test_table",
+  "updatedAt": "2026-06-24T07:01:54.536Z"
+}

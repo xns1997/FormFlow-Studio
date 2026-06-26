@@ -1,0 +1,18 @@
+{
+  "id": "xlsx-ssf-parse-date-code",
+  "label": "XLSX.SSF.parse_date_code",
+  "description": "将 Excel 日期序列号解析为日期对象",
+  "category": "XLSX · 格式化",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.SSF",
+  "methodPath": ["SSF", "parse_date_code"],
+  "inputs": [
+    { "name": "num", "type": "number", "required": true, "description": "Excel 日期序列号" }
+  ],
+  "outputs": [
+    { "name": "date", "type": "object", "description": "解析后的日期对象 {y, m, d, D, T}" }
+  ],
+  "properties": [
+    { "name": "dateNF", "label": "日期格式", "type": "string", "default": "yyyy-mm-dd", "description": "日期格式代码" }
+  ]
+}

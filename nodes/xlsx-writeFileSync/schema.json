@@ -1,0 +1,20 @@
+{
+  "id": "xlsx-writeFileSync",
+  "label": "XLSX.writeFileSync",
+  "description": "将工作簿同步写出为文件",
+  "category": "XLSX · 工作簿 IO",
+  "kind": "xlsx-method",
+  "namespace": "XLSX",
+  "methodPath": ["writeFileSync"],
+  "inputs": [
+    { "name": "workbook", "type": "Workbook", "required": true, "description": "工作簿对象" },
+    { "name": "filename", "type": "string", "required": true, "description": "输出文件名" }
+  ],
+  "outputs": [
+    { "name": "result", "type": "void", "description": "写出完成" }
+  ],
+  "properties": [
+    { "name": "bookType", "label": "输出格式", "type": "enum", "enum": ["xlsx", "xlsm", "xlsb", "xls", "csv", "txt", "ods", "numbers"], "default": "xlsx", "description": "文件格式" },
+    { "name": "type", "label": "输出类型", "type": "enum", "enum": ["array", "buffer", "binary"], "default": "array", "description": "中间序列化格式" }
+  ]
+}

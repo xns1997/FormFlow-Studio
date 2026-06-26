@@ -1,0 +1,16 @@
+{
+  "id": "xlsx-cfb-utils-deflate-raw",
+  "label": "XLSX.CFB.utils._deflateRaw",
+  "description": "使用 zlib 原始 deflate 压缩数据",
+  "category": "XLSX · 复合文件",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.CFB.utils",
+  "methodPath": ["CFB", "utils", "_deflateRaw"],
+  "inputs": [
+    { "name": "data", "type": "Uint8Array | string", "required": true, "description": "要压缩的数据" }
+  ],
+  "outputs": [
+    { "name": "compressed", "type": "Uint8Array", "description": "压缩后的数据" }
+  ],
+  "properties": []
+}

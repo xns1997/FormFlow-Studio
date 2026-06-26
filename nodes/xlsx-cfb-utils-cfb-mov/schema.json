@@ -1,0 +1,18 @@
+{
+  "id": "xlsx-cfb-utils-cfb-mov",
+  "label": "XLSX.CFB.utils.cfb_mov",
+  "description": "移动复合文件中的条目",
+  "category": "XLSX · 复合文件",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.CFB.utils",
+  "methodPath": ["CFB", "utils", "cfb_mov"],
+  "inputs": [
+    { "name": "cfb", "type": "CFB", "required": true, "description": "复合文件对象" },
+    { "name": "old_name", "type": "string", "required": true, "description": "原条目名称" },
+    { "name": "new_name", "type": "string", "required": true, "description": "新条目名称" }
+  ],
+  "outputs": [
+    { "name": "cfb", "type": "CFB", "description": "修改后的复合文件" }
+  ],
+  "properties": []
+}

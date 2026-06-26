@@ -1,0 +1,27 @@
+{
+  "id": "behavior-show-message",
+  "label": "弹出提示",
+  "description": "显示一条提示消息",
+  "category": "行为 · 动作",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "message", "label": "消息内容", "type": "string", "default": "", "required": true, "description": "提示文本" },
+    { "name": "messageType", "label": "类型", "type": "enum", "enum": ["info", "success", "warning", "error"], "default": "info", "description": "消息类型" },
+    { "name": "duration", "label": "显示时长", "type": "number", "default": 3000, "description": "毫秒" }
+  ],
+  "inputs": [
+    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
+    { "name": "message", "type": "string", "required": false, "description": "消息覆盖" }
+  ],
+  "outputs": [
+    { "name": "trigger", "type": "trigger", "description": "触发输出" },
+    { "name": "message", "type": "string", "description": "显示的消息" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
+    { "name": "message", "label": "消息", "type": "string", "direction": "input", "description": "消息内容" },
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发输出" },
+    { "name": "message", "label": "消息", "type": "string", "direction": "output", "description": "消息内容" }
+  ]
+}

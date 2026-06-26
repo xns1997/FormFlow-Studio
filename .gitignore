@@ -17,3 +17,4 @@ playwright-report/
 test-results/
 .mimocode/
 docs/compose/
+.playwright-cli/

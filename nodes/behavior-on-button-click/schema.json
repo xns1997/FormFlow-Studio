@@ -1,0 +1,22 @@
+{
+  "id": "behavior-on-button-click",
+  "label": "按钮点击",
+  "description": "当用户点击按钮时触发",
+  "category": "行为 · 事件",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "buttonName", "label": "按钮名称", "type": "string", "default": "", "description": "按钮标识" }
+  ],
+  "inputs": [
+    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" }
+  ],
+  "outputs": [
+    { "name": "trigger", "type": "trigger", "description": "触发输出" },
+    { "name": "buttonName", "type": "string", "description": "按钮名称" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发信号" },
+    { "name": "buttonName", "label": "按钮名", "type": "string", "direction": "output", "description": "按钮名" }
+  ]
+}

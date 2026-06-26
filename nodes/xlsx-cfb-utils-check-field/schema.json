@@ -1,0 +1,17 @@
+{
+  "id": "xlsx-cfb-utils-check-field",
+  "label": "XLSX.CFB.utils.CheckField",
+  "description": "验证复合文件字段的完整性",
+  "category": "XLSX · 复合文件",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.CFB.utils",
+  "methodPath": ["CFB", "utils", "CheckField"],
+  "inputs": [
+    { "name": "header", "type": "Uint8Array", "required": true, "description": "要验证的头部数据" },
+    { "name": "offset", "type": "number", "required": true, "description": "偏移量" }
+  ],
+  "outputs": [
+    { "name": "valid", "type": "boolean", "description": "是否有效" }
+  ],
+  "properties": []
+}

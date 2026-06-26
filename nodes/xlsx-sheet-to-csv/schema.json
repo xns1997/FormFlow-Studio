@@ -1,0 +1,68 @@
+{
+  "id": "xlsx-sheet-to-csv",
+  "label": "XLSX.utils.sheet_to_csv",
+  "description": "把 Sheet 导出成 CSV 文本",
+  "category": "Sheet 转换",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "sheet_to_csv"],
+  "inputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "required": true,
+      "description": "要转换的工作表对象"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "csv",
+      "type": "string",
+      "description": "CSV 格式文本"
+    }
+  ],
+  "properties": [
+    {
+      "name": "FS",
+      "label": "字段分隔符",
+      "type": "string",
+      "default": ",",
+      "description": "字段之间的分隔符"
+    },
+    {
+      "name": "RS",
+      "label": "行分隔符",
+      "type": "string",
+      "default": "\n",
+      "description": "行之间的分隔符"
+    },
+    {
+      "name": "dateNF",
+      "label": "日期格式",
+      "type": "string",
+      "default": "yyyy-mm-dd",
+      "description": "日期的输出格式"
+    },
+    {
+      "name": "skipHidden",
+      "label": "跳过隐藏列",
+      "type": "boolean",
+      "default": false,
+      "description": "是否跳过隐藏的列"
+    },
+    {
+      "name": "blankrows",
+      "label": "包含空行",
+      "type": "boolean",
+      "default": true,
+      "description": "是否保留全空的行"
+    },
+    {
+      "name": "header",
+      "label": "表头行号",
+      "type": "number",
+      "default": -1,
+      "description": "指定哪一行作为表头"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "id": "xlsx-sheet-add-dom",
+  "label": "XLSX.utils.sheet_add_dom",
+  "description": "将 DOM Table 元素追加到已有 Sheet",
+  "category": "DOM 操作",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "sheet_add_dom"],
+  "inputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "required": true,
+      "description": "目标工作表"
+    },
+    {
+      "name": "table",
+      "type": "HTMLTableElement",
+      "required": true,
+      "description": "要追加的 DOM Table 元素"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "description": "追加后的工作表"
+    }
+  ],
+  "properties": [
+    {
+      "name": "origin",
+      "label": "起始位置",
+      "type": "string",
+      "default": -1,
+      "description": "写入起始位置，-1 表示追加到末尾"
+    },
+    {
+      "name": "skipHeader",
+      "label": "跳过表头",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时不输出表头行"
+    },
+    {
+      "name": "cellDates",
+      "label": "日期模式",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时将日期存储为 Date 对象"
+    }
+  ]
+}

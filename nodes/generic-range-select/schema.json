@@ -1,0 +1,87 @@
+{
+  "id": "generic-range-select",
+  "label": "区域选择器",
+  "description": "选择工作表中的单元格区域，支持 A1 地址、鼠标拖选和键盘输入",
+  "category": "通用 · 选择",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    {
+      "name": "rangeMode",
+      "label": "选择模式",
+      "type": "enum",
+      "enum": ["address", "entireSheet", "usedRange", "row", "column", "custom"],
+      "default": "usedRange",
+      "description": "区域选择方式"
+    },
+    {
+      "name": "address",
+      "label": "区域地址",
+      "type": "string",
+      "default": "",
+      "description": "A1 格式的区域地址，如 'A1:C10'"
+    },
+    {
+      "name": "rowIndex",
+      "label": "行号",
+      "type": "number",
+      "default": 1,
+      "min": 1,
+      "description": "行号（从 1 开始）"
+    },
+    {
+      "name": "colIndex",
+      "label": "列号",
+      "type": "number",
+      "default": 1,
+      "min": 1,
+      "description": "列号（从 1 开始）"
+    },
+    {
+      "name": "rowCount",
+      "label": "行数",
+      "type": "number",
+      "default": 1,
+      "min": 1,
+      "description": "选择的行数"
+    },
+    {
+      "name": "colCount",
+      "label": "列数",
+      "type": "number",
+      "default": 1,
+      "min": 1,
+      "description": "选择的列数"
+    }
+  ],
+  "inputs": [
+    { "name": "worksheet", "type": "Worksheet", "required": true, "description": "输入工作表" },
+    { "name": "rangeMode", "type": "string", "required": false, "description": "选择模式覆盖" },
+    { "name": "address", "type": "string", "required": false, "description": "区域地址" },
+    { "name": "rowIndex", "type": "number", "required": false, "description": "起始行号" },
+    { "name": "colIndex", "type": "number", "required": false, "description": "起始列号" },
+    { "name": "rowCount", "type": "number", "required": false, "description": "行数" },
+    { "name": "colCount", "type": "number", "required": false, "description": "列数" }
+  ],
+  "outputs": [
+    { "name": "range", "type": "Range", "description": "选中的区域对象" },
+    { "name": "address", "type": "string", "description": "A1 格式地址" },
+    { "name": "values", "type": "array", "description": "区域内的值（二维数组）" },
+    { "name": "rowCount", "type": "number", "description": "实际行数" },
+    { "name": "colCount", "type": "number", "description": "实际列数" }
+  ],
+  "ports": [
+    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "input", "required": true, "description": "输入工作表" },
+    { "name": "rangeMode", "label": "选择模式", "type": "enum", "direction": "input", "defaultValue": "usedRange", "enum": ["address", "entireSheet", "usedRange", "row", "column", "custom"], "description": "区域选择方式" },
+    { "name": "address", "label": "地址", "type": "string", "direction": "input", "description": "A1 格式地址" },
+    { "name": "rowIndex", "label": "起始行", "type": "number", "direction": "input", "defaultValue": 1, "description": "起始行号" },
+    { "name": "colIndex", "label": "起始列", "type": "number", "direction": "input", "defaultValue": 1, "description": "起始列号" },
+    { "name": "rowCount", "label": "行数", "type": "number", "direction": "input", "defaultValue": 1, "description": "选择行数" },
+    { "name": "colCount", "label": "列数", "type": "number", "direction": "input", "defaultValue": 1, "description": "选择列数" },
+    { "name": "range", "label": "区域", "type": "object", "direction": "output", "description": "区域对象" },
+    { "name": "address", "label": "地址", "type": "string", "direction": "output", "description": "A1 格式地址" },
+    { "name": "values", "label": "值", "type": "array", "direction": "output", "description": "区域值" },
+    { "name": "rowCount", "label": "行数", "type": "number", "direction": "output", "description": "实际行数" },
+    { "name": "colCount", "label": "列数", "type": "number", "direction": "output", "description": "实际列数" }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "id": "xlsx-book-move-sheet",
+  "label": "XLSX.utils.book_move_sheet",
+  "description": "调整工作簿中 Sheet 的顺序",
+  "category": "工作簿管理",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "book_move_sheet"],
+  "inputs": [
+    {
+      "name": "workbook",
+      "type": "Workbook",
+      "required": true,
+      "description": "目标工作簿"
+    },
+    {
+      "name": "names",
+      "type": "string[]",
+      "required": true,
+      "description": "新的 Sheet 名称顺序"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "workbook",
+      "type": "Workbook",
+      "description": "重排后的工作簿"
+    }
+  ],
+  "properties": []
+}

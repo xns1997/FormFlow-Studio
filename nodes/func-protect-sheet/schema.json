@@ -1,0 +1,28 @@
+{
+  "id": "func-protect-sheet",
+  "label": "保护工作表",
+  "description": "保护或取消保护工作表",
+  "category": "功能 · 安全",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "protect", "label": "启用保护", "type": "boolean", "default": true, "description": "是否启用保护" },
+    { "name": "password", "label": "密码", "type": "string", "default": "", "description": "保护密码" },
+    { "name": "allowSelectLockedCells", "label": "允许选择锁定单元格", "type": "boolean", "default": true, "description": "是否允许选择锁定的单元格" },
+    { "name": "allowSelectUnlockedCells", "label": "允许选择未锁定单元格", "type": "boolean", "default": true, "description": "是否允许选择未锁定的单元格" }
+  ],
+  "inputs": [
+    { "name": "worksheet", "type": "object", "required": true, "description": "工作表对象" },
+    { "name": "protect", "type": "boolean", "required": false, "description": "保护开关覆盖" },
+    { "name": "password", "type": "string", "required": false, "description": "密码覆盖" }
+  ],
+  "outputs": [
+    { "name": "worksheet", "type": "object", "description": "修改后的工作表" }
+  ],
+  "ports": [
+    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "input", "required": true, "description": "工作表" },
+    { "name": "protect", "label": "保护", "type": "boolean", "direction": "input", "description": "启用保护" },
+    { "name": "password", "label": "密码", "type": "string", "direction": "input", "description": "密码" },
+    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "output", "description": "修改后的工作表" }
+  ]
+}

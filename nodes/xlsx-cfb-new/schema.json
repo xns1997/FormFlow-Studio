@@ -1,0 +1,16 @@
+{
+  "id": "xlsx-cfb-new",
+  "label": "XLSX.CFB.utils.cfb_new",
+  "description": "创建新的复合文件对象",
+  "category": "XLSX · 复合文件",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.CFB.utils",
+  "methodPath": ["CFB", "utils", "cfb_new"],
+  "inputs": [],
+  "outputs": [
+    { "name": "cfb", "type": "CFB", "description": "新的复合文件对象" }
+  ],
+  "properties": [
+    { "name": "opts", "label": "选项", "type": "object", "description": "创建选项" }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "xlsx-cfb-utils-cfb-add",
+  "label": "XLSX.CFB.utils.cfb_add",
+  "description": "向复合文件添加条目",
+  "category": "XLSX · 复合文件",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.CFB.utils",
+  "methodPath": ["CFB", "utils", "cfb_add"],
+  "inputs": [
+    { "name": "cfb", "type": "CFB", "required": true, "description": "复合文件对象" },
+    { "name": "name", "type": "string", "required": true, "description": "条目名称" },
+    { "name": "content", "type": "any", "required": false, "description": "条目内容" }
+  ],
+  "outputs": [
+    { "name": "cfb", "type": "CFB", "description": "修改后的复合文件" }
+  ],
+  "properties": [
+    { "name": "opts", "label": "选项", "type": "object", "description": "添加选项" }
+  ]
+}

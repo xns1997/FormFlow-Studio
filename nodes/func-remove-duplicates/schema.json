@@ -1,0 +1,26 @@
+{
+  "id": "func-remove-duplicates",
+  "label": "去重",
+  "description": "删除工作表中的重复行",
+  "category": "功能 · 数据操作",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "columns", "label": "比较列", "type": "string", "default": "", "description": "逗号分隔的列索引，空则比较所有列" },
+    { "name": "hasHeader", "label": "包含表头", "type": "boolean", "default": true, "description": "第一行是否为表头" }
+  ],
+  "inputs": [
+    { "name": "worksheet", "type": "object", "required": true, "description": "工作表对象" },
+    { "name": "columns", "type": "string", "required": false, "description": "列覆盖" }
+  ],
+  "outputs": [
+    { "name": "worksheet", "type": "object", "description": "去重后的工作表" },
+    { "name": "removedCount", "type": "number", "description": "删除的行数" }
+  ],
+  "ports": [
+    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "input", "required": true, "description": "工作表" },
+    { "name": "columns", "label": "列", "type": "string", "direction": "input", "description": "比较列" },
+    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "output", "description": "去重后的工作表" },
+    { "name": "removedCount", "label": "删除数", "type": "number", "direction": "output", "description": "删除行数" }
+  ]
+}

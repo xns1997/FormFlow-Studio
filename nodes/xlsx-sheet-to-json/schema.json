@@ -1,0 +1,90 @@
+{
+  "id": "xlsx-sheet-to-json",
+  "label": "XLSX.utils.sheet_to_json",
+  "description": "把 Sheet 转成 JSON 行数组",
+  "category": "JSON 转换",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "sheet_to_json"],
+  "inputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "required": true,
+      "description": "要转换的工作表对象"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "rows",
+      "type": "object[]",
+      "description": "JSON 行对象数组"
+    }
+  ],
+  "properties": [
+    {
+      "name": "header",
+      "label": "表头配置",
+      "type": "array",
+      "default": [],
+      "description": "指定输出列名数组，留空则使用第一行作为键"
+    },
+    {
+      "name": "range",
+      "label": "数据范围",
+      "type": "string",
+      "default": "",
+      "description": "如 'A1:C5'，留空则自动检测数据范围"
+    },
+    {
+      "name": "skipHidden",
+      "label": "跳过隐藏列",
+      "type": "boolean",
+      "default": false,
+      "description": "是否跳过隐藏的列"
+    },
+    {
+      "name": "raw",
+      "label": "原始值",
+      "type": "boolean",
+      "default": true,
+      "description": "为 true 返回原始值，false 返回格式化后的文本"
+    },
+    {
+      "name": "defval",
+      "label": "空值默认",
+      "type": "string",
+      "default": "",
+      "description": "空单元格的默认填充值"
+    },
+    {
+      "name": "blankrows",
+      "label": "包含空行",
+      "type": "boolean",
+      "default": true,
+      "description": "是否保留全空的行"
+    },
+    {
+      "name": "sheetRows",
+      "label": "行数限制",
+      "type": "number",
+      "default": 0,
+      "min": 0,
+      "description": "0 表示不限制，设为 N 则只转换前 N 行"
+    },
+    {
+      "name": "dateNF",
+      "label": "日期格式",
+      "type": "string",
+      "default": "yyyy-mm-dd",
+      "description": "日期单元格的输出格式"
+    },
+    {
+      "name": "headerRow",
+      "label": "表头行号",
+      "type": "number",
+      "default": -1,
+      "description": "指定哪一行作为表头，-1 表示自动检测"
+    }
+  ]
+}

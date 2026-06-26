@@ -1,0 +1,19 @@
+{
+  "id": "behavior-refresh-data",
+  "label": "刷新数据",
+  "description": "刷新数据源",
+  "category": "行为 · 数据",
+  "kind": "generic",
+  "methods": [],
+  "properties": [],
+  "inputs": [
+    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" }
+  ],
+  "outputs": [
+    { "name": "trigger", "type": "trigger", "description": "触发输出" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发输出" }
+  ]
+}

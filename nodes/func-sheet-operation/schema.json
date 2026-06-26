@@ -1,0 +1,32 @@
+{
+  "id": "func-sheet-operation",
+  "label": "工作表操作",
+  "description": "创建、重命名、复制、删除、移动工作表",
+  "category": "功能 · 工作表",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "operation", "label": "操作", "type": "enum", "enum": ["create", "rename", "delete", "copy", "move"], "default": "create", "description": "要执行的操作" },
+    { "name": "sheetName", "label": "工作表名", "type": "string", "default": "Sheet2", "description": "目标工作表名" },
+    { "name": "newName", "label": "新名称", "type": "string", "default": "", "description": "重命名时的新名称" },
+    { "name": "position", "label": "位置", "type": "number", "default": -1, "description": "移动/复制的目标位置（-1=末尾）" }
+  ],
+  "inputs": [
+    { "name": "workbook", "type": "object", "required": true, "description": "工作簿对象" },
+    { "name": "operation", "type": "string", "required": false, "description": "操作覆盖" },
+    { "name": "sheetName", "type": "string", "required": false, "description": "名称覆盖" },
+    { "name": "newName", "type": "string", "required": false, "description": "新名称覆盖" }
+  ],
+  "outputs": [
+    { "name": "workbook", "type": "object", "description": "修改后的工作簿" },
+    { "name": "sheetNames", "type": "array", "description": "当前所有工作表名" }
+  ],
+  "ports": [
+    { "name": "workbook", "label": "工作簿", "type": "object", "direction": "input", "required": true, "description": "工作簿" },
+    { "name": "operation", "label": "操作", "type": "enum", "direction": "input", "enum": ["create", "rename", "delete", "copy", "move"], "description": "操作类型" },
+    { "name": "sheetName", "label": "表名", "type": "string", "direction": "input", "description": "工作表名" },
+    { "name": "newName", "label": "新名", "type": "string", "direction": "input", "description": "新名称" },
+    { "name": "workbook", "label": "工作簿", "type": "object", "direction": "output", "description": "修改后的工作簿" },
+    { "name": "sheetNames", "label": "所有表名", "type": "array", "direction": "output", "description": "工作表名列表" }
+  ]
+}

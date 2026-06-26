@@ -1,0 +1,68 @@
+{
+  "id": "xlsx-json-to-sheet",
+  "label": "XLSX.utils.json_to_sheet",
+  "description": "把 JSON 行对象数组转成 Sheet",
+  "category": "JSON 转换",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "json_to_sheet"],
+  "inputs": [
+    {
+      "name": "data",
+      "type": "object[]",
+      "required": true,
+      "description": "JSON 行对象数组"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "description": "生成的工作表对象"
+    }
+  ],
+  "properties": [
+    {
+      "name": "header",
+      "label": "列名顺序",
+      "type": "array",
+      "default": [],
+      "description": "指定输出列的顺序，留空则自动从数据中提取"
+    },
+    {
+      "name": "skipHeader",
+      "label": "跳过表头",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时不输出表头行"
+    },
+    {
+      "name": "origin",
+      "label": "起始位置",
+      "type": "string",
+      "default": "A1",
+      "description": "写入起始单元格地址，如 'C3'"
+    },
+    {
+      "name": "dateNF",
+      "label": "日期格式",
+      "type": "string",
+      "default": "yyyy-mm-dd",
+      "description": "Date 对象的输出格式"
+    },
+    {
+      "name": "cellDates",
+      "label": "日期模式",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时将 Date 对象存储为日期类型"
+    },
+    {
+      "name": "fieldDates",
+      "label": "字段日期",
+      "type": "boolean",
+      "default": false,
+      "description": "为 true 时将字段名为日期的值存储为日期"
+    }
+  ]
+}

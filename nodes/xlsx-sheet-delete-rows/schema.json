@@ -1,0 +1,53 @@
+{
+  "id": "xlsx-sheet-delete-rows",
+  "label": "XLSX.utils.sheet_delete_rows",
+  "description": "删除 Sheet 中指定范围的行",
+  "category": "Sheet 操作",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "sheet_delete_rows"],
+  "inputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "required": true,
+      "description": "目标工作表"
+    },
+    {
+      "name": "start",
+      "type": "number",
+      "required": true,
+      "description": "删除起始行号（1-indexed）"
+    },
+    {
+      "name": "count",
+      "type": "number",
+      "required": true,
+      "description": "要删除的行数"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "description": "操作后的工作表"
+    }
+  ],
+  "properties": [
+    {
+      "name": "origin",
+      "label": "删除方向",
+      "type": "enum",
+      "enum": ["-1", "0", "1"],
+      "default": "-1",
+      "description": "-1 从指定行向上，0 从指定行开始，1 从指定行向下"
+    },
+    {
+      "name": "skip",
+      "label": "跳过行数",
+      "type": "number",
+      "default": 0,
+      "description": "跳过前 N 行不删除"
+    }
+  ]
+}

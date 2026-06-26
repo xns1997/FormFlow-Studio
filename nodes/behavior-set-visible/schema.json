@@ -1,0 +1,30 @@
+{
+  "id": "behavior-set-visible",
+  "label": "显示/隐藏",
+  "description": "设置组件的可见性",
+  "category": "行为 · 动作",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "componentId", "label": "组件 ID", "type": "string", "default": "", "required": true, "description": "目标组件" },
+    { "name": "visible", "label": "可见", "type": "boolean", "default": true, "description": "是否可见" }
+  ],
+  "inputs": [
+    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
+    { "name": "componentId", "type": "string", "required": false, "description": "组件 ID 覆盖" },
+    { "name": "visible", "type": "boolean", "required": false, "description": "可见性覆盖" }
+  ],
+  "outputs": [
+    { "name": "trigger", "type": "trigger", "description": "触发输出" },
+    { "name": "componentId", "type": "string", "description": "目标组件" },
+    { "name": "visible", "type": "boolean", "description": "设置的可见性" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
+    { "name": "componentId", "label": "组件", "type": "string", "direction": "input", "description": "组件 ID" },
+    { "name": "visible", "label": "可见", "type": "boolean", "direction": "input", "description": "是否可见" },
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发输出" },
+    { "name": "componentId", "label": "组件", "type": "string", "direction": "output", "description": "目标组件" },
+    { "name": "visible", "label": "可见", "type": "boolean", "direction": "output", "description": "可见性" }
+  ]
+}

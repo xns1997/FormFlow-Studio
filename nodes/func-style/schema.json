@@ -1,0 +1,33 @@
+{
+  "id": "func-style",
+  "label": "创建样式",
+  "description": "定义一个样式对象，包含字体、填充、边框、对齐等属性，可连接到下游节点",
+  "category": "功能 · 样式",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "fontName", "label": "字体", "type": "string", "default": "Calibri", "description": "字体名称" },
+    { "name": "fontSize", "label": "字号", "type": "number", "default": 11, "min": 1, "description": "字体大小" },
+    { "name": "fontBold", "label": "加粗", "type": "boolean", "default": false, "description": "是否加粗" },
+    { "name": "fontItalic", "label": "斜体", "type": "boolean", "default": false, "description": "是否斜体" },
+    { "name": "fontColor", "label": "字体颜色", "type": "color", "default": "#000000", "description": "字体颜色" },
+    { "name": "fillColor", "label": "填充颜色", "type": "color", "default": "#FFFFFF", "description": "背景填充颜色" },
+    { "name": "borderStyle", "label": "边框样式", "type": "enum", "enum": ["None", "Thin", "Medium", "Thick", "Dashed", "Dotted"], "default": "None", "description": "边框线条样式" },
+    { "name": "borderColor", "label": "边框颜色", "type": "color", "default": "#000000", "description": "边框颜色" },
+    { "name": "horizontalAlign", "label": "水平对齐", "type": "enum", "enum": ["General", "Left", "Center", "Right"], "default": "General", "description": "水平对齐方式" },
+    { "name": "verticalAlign", "label": "垂直对齐", "type": "enum", "enum": ["Top", "Center", "Bottom"], "default": "Bottom", "description": "垂直对齐方式" },
+    { "name": "wrapText", "label": "自动换行", "type": "boolean", "default": false, "description": "是否自动换行" },
+    { "name": "numberFormat", "label": "数字格式", "type": "string", "default": "General", "description": "数字格式代码" },
+    { "name": "indentLevel", "label": "缩进", "type": "number", "default": 0, "min": 0, "max": 250, "description": "缩进级别" }
+  ],
+  "inputs": [
+    { "name": "override", "type": "object", "required": false, "description": "外部传入的样式覆盖" }
+  ],
+  "outputs": [
+    { "name": "style", "type": "object", "description": "生成的样式对象" }
+  ],
+  "ports": [
+    { "name": "override", "label": "覆盖", "type": "object", "direction": "input", "description": "外部覆盖" },
+    { "name": "style", "label": "样式", "type": "object", "direction": "output", "description": "样式对象" }
+  ]
+}

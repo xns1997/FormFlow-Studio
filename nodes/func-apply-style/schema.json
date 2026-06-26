@@ -1,0 +1,27 @@
+{
+  "id": "func-apply-style",
+  "label": "应用样式",
+  "description": "将样式对象应用到指定工作表的区域上",
+  "category": "功能 · 样式",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "rangeAddress", "label": "区域地址", "type": "string", "default": "A1", "description": "A1 格式的区域地址" }
+  ],
+  "inputs": [
+    { "name": "workbook", "type": "object", "required": true, "description": "工作簿对象" },
+    { "name": "worksheet", "type": "object", "required": false, "description": "工作表对象" },
+    { "name": "style", "type": "object", "required": true, "description": "样式对象" },
+    { "name": "rangeAddress", "type": "string", "required": false, "description": "区域地址覆盖" }
+  ],
+  "outputs": [
+    { "name": "workbook", "type": "object", "description": "修改后的工作簿" }
+  ],
+  "ports": [
+    { "name": "workbook", "label": "工作簿", "type": "object", "direction": "input", "required": true, "description": "工作簿" },
+    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "input", "description": "工作表" },
+    { "name": "style", "label": "样式", "type": "object", "direction": "input", "required": true, "description": "样式对象" },
+    { "name": "rangeAddress", "label": "地址", "type": "string", "direction": "input", "description": "区域地址" },
+    { "name": "workbook", "label": "工作簿", "type": "object", "direction": "output", "description": "修改后的工作簿" }
+  ]
+}

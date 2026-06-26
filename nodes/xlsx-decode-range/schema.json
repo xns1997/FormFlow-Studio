@@ -1,0 +1,25 @@
+{
+  "id": "xlsx-decode-range",
+  "label": "XLSX.utils.decode_range",
+  "description": "把 A1 格式的范围地址解析成坐标对象",
+  "category": "地址编码",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.utils",
+  "methodPath": ["utils", "decode_range"],
+  "inputs": [
+    {
+      "name": "address",
+      "type": "string",
+      "required": true,
+      "description": "A1 格式的范围地址，如 'A1:C5'"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "range",
+      "type": "Range",
+      "description": "范围对象 {s: {r,c}, e: {r,c}}"
+    }
+  ],
+  "properties": []
+}

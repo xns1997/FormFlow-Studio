@@ -1,0 +1,29 @@
+{
+  "id": "behavior-calculate",
+  "label": "计算",
+  "description": "执行数学或逻辑计算",
+  "category": "行为 · 逻辑",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "expression", "label": "计算表达式", "type": "string", "default": "", "required": true, "description": "JS 表达式，如 a + b * 2" }
+  ],
+  "inputs": [
+    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
+    { "name": "a", "type": "any", "required": false, "description": "变量 a" },
+    { "name": "b", "type": "any", "required": false, "description": "变量 b" },
+    { "name": "c", "type": "any", "required": false, "description": "变量 c" }
+  ],
+  "outputs": [
+    { "name": "trigger", "type": "trigger", "description": "触发输出" },
+    { "name": "result", "type": "number", "description": "计算结果" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
+    { "name": "a", "label": "a", "type": "any", "direction": "input", "description": "变量 a" },
+    { "name": "b", "label": "b", "type": "any", "direction": "input", "description": "变量 b" },
+    { "name": "c", "label": "c", "type": "any", "direction": "input", "description": "变量 c" },
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发输出" },
+    { "name": "result", "label": "结果", "type": "number", "direction": "output", "description": "计算结果" }
+  ]
+}

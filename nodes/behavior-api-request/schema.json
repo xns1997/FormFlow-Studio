@@ -1,0 +1,33 @@
+{
+  "id": "behavior-api-request",
+  "label": "接口请求",
+  "description": "发起 HTTP 接口请求",
+  "category": "行为 · 网络",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "url", "label": "请求地址", "type": "string", "default": "", "required": true, "description": "API URL" },
+    { "name": "method", "label": "请求方法", "type": "enum", "enum": ["GET", "POST", "PUT", "DELETE", "PATCH"], "default": "GET", "description": "HTTP 方法" },
+    { "name": "headers", "label": "请求头", "type": "string", "default": "{}", "description": "JSON 格式请求头" }
+  ],
+  "inputs": [
+    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
+    { "name": "url", "type": "string", "required": false, "description": "URL 覆盖" },
+    { "name": "body", "type": "object", "required": false, "description": "请求体" }
+  ],
+  "outputs": [
+    { "name": "success", "type": "trigger", "description": "成功触发" },
+    { "name": "error", "type": "trigger", "description": "失败触发" },
+    { "name": "response", "type": "object", "description": "响应数据" },
+    { "name": "status", "type": "number", "description": "HTTP 状态码" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
+    { "name": "url", "label": "URL", "type": "string", "direction": "input", "description": "请求地址" },
+    { "name": "body", "label": "请求体", "type": "object", "direction": "input", "description": "请求体" },
+    { "name": "success", "label": "成功", "type": "any", "direction": "output", "description": "请求成功" },
+    { "name": "error", "label": "失败", "type": "any", "direction": "output", "description": "请求失败" },
+    { "name": "response", "label": "响应", "type": "object", "direction": "output", "description": "响应数据" },
+    { "name": "status", "label": "状态码", "type": "number", "direction": "output", "description": "HTTP 状态码" }
+  ]
+}

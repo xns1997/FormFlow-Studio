@@ -1,0 +1,29 @@
+{
+  "id": "behavior-condition",
+  "label": "条件判断",
+  "description": "根据条件判断走不同的分支",
+  "category": "行为 · 逻辑",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    { "name": "operator", "label": "运算符", "type": "enum", "enum": ["==", "!=", ">", "<", ">=", "<=", "contains", "notContains", "isEmpty", "isNotEmpty", "regex"], "default": "==", "description": "比较运算符" },
+    { "name": "compareValue", "label": "比较值", "type": "string", "default": "", "description": "要比较的值" }
+  ],
+  "inputs": [
+    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
+    { "name": "value", "type": "any", "required": true, "description": "要判断的值" },
+    { "name": "compareValue", "type": "any", "required": false, "description": "比较值覆盖" }
+  ],
+  "outputs": [
+    { "name": "true", "type": "trigger", "description": "条件成立时触发" },
+    { "name": "false", "type": "trigger", "description": "条件不成立时触发" },
+    { "name": "value", "type": "any", "description": "透传的值" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
+    { "name": "value", "label": "值", "type": "any", "direction": "input", "required": true, "description": "要判断的值" },
+    { "name": "compareValue", "label": "比较值", "type": "any", "direction": "input", "description": "比较值" },
+    { "name": "true", "label": "成立", "type": "any", "direction": "output", "description": "条件成立" },
+    { "name": "false", "label": "不成立", "type": "any", "direction": "output", "description": "条件不成立" }
+  ]
+}

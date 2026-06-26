@@ -1,0 +1,16 @@
+{
+  "id": "xlsx-cfb-utils-cfb-gc",
+  "label": "XLSX.CFB.utils.cfb_gc",
+  "description": "清理复合文件中的无效条目（垃圾回收）",
+  "category": "XLSX · 复合文件",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.CFB.utils",
+  "methodPath": ["CFB", "utils", "cfb_gc"],
+  "inputs": [
+    { "name": "cfb", "type": "CFB", "required": true, "description": "复合文件对象" }
+  ],
+  "outputs": [
+    { "name": "cfb", "type": "CFB", "description": "清理后的复合文件" }
+  ],
+  "properties": []
+}

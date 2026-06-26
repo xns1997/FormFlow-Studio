@@ -1,0 +1,21 @@
+{
+  "id": "xlsx-stream-to-json",
+  "label": "XLSX.stream.to_json",
+  "description": "流式将 Sheet 转成 JSON 行数组",
+  "category": "XLSX · 流式输出",
+  "kind": "xlsx-method",
+  "namespace": "XLSX.stream",
+  "methodPath": ["stream", "to_json"],
+  "inputs": [
+    { "name": "worksheet", "type": "Worksheet", "required": true, "description": "工作表对象" }
+  ],
+  "outputs": [
+    { "name": "stream", "type": "ReadableStream", "description": "可读流" }
+  ],
+  "properties": [
+    { "name": "header", "label": "表头", "type": "array", "description": "表头数组" },
+    { "name": "raw", "label": "原始值", "type": "boolean", "default": true, "description": "返回原始值" },
+    { "name": "defval", "label": "默认值", "type": "string", "default": "", "description": "空值默认" },
+    { "name": "blankrows", "label": "包含空行", "type": "boolean", "default": true, "description": "保留空行" }
+  ]
+}
