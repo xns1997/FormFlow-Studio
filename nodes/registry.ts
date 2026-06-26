@@ -745,6 +745,8 @@ export async function loadNodeRegistry(): Promise<NodeRegistry> {
       'behavior-switch-tab', 'behavior-refresh-data', 'behavior-log',
       'behavior-delay', 'behavior-set-required', 'behavior-set-default',
       'behavior-clear-field', 'behavior-stop', 'behavior-filter-data', 'behavior-sort-data',
+      'generic-export-excel', 'generic-export-csv', 'generic-export-json', 'generic-export-html',
+      'generic-display-table', 'generic-display-stats',
     ];
 
     for (const dir of packageDirs) {

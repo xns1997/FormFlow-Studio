@@ -1,0 +1,64 @@
+{
+  "id": "generic-display-table",
+  "label": "数据表格",
+  "description": "以表格形式显示数据，支持分页和排序",
+  "category": "通用 · 显示",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    {
+      "name": "title",
+      "label": "标题",
+      "type": "string",
+      "default": "",
+      "description": "表格标题"
+    },
+    {
+      "name": "pageSize",
+      "label": "每页行数",
+      "type": "number",
+      "default": 10,
+      "min": 1,
+      "max": 100,
+      "description": "每页显示的行数"
+    },
+    {
+      "name": "showIndex",
+      "label": "显示行号",
+      "type": "boolean",
+      "default": true,
+      "description": "是否显示行号列"
+    },
+    {
+      "name": "maxRows",
+      "label": "最大行数",
+      "type": "number",
+      "default": 1000,
+      "min": 0,
+      "description": "最大显示行数，0 表示不限制"
+    },
+    {
+      "name": "highlightFirst",
+      "label": "高亮首行",
+      "type": "boolean",
+      "default": false,
+      "description": "是否高亮第一行数据"
+    }
+  ],
+  "inputs": [
+    { "name": "data", "type": "json-rows", "required": true, "description": "要显示的数据" },
+    { "name": "title", "type": "string", "required": false, "description": "标题覆盖" }
+  ],
+  "outputs": [
+    { "name": "data", "type": "json-rows", "description": "透传数据" },
+    { "name": "rowCount", "type": "number", "description": "总行数" },
+    { "name": "colCount", "type": "number", "description": "总列数" }
+  ],
+  "ports": [
+    { "name": "data", "label": "数据", "type": "json-rows", "direction": "input", "required": true, "description": "JSON 行数组" },
+    { "name": "title", "label": "标题", "type": "string", "direction": "input", "description": "标题覆盖" },
+    { "name": "data", "label": "数据", "type": "json-rows", "direction": "output", "description": "透传数据" },
+    { "name": "rowCount", "label": "行数", "type": "number", "direction": "output", "description": "总行数" },
+    { "name": "colCount", "label": "列数", "type": "number", "direction": "output", "description": "总列数" }
+  ]
+}
