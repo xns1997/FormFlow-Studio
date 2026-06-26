@@ -9,7 +9,7 @@ const REPORTS_DIR = join(import.meta.dirname, '..', 'storage', 'reports');
 if (!existsSync(REPORTS_DIR)) mkdirSync(REPORTS_DIR, { recursive: true });
 
 const PYTHON = join(import.meta.dirname, '..', '..', 'venv', 'bin', 'python3');
-const DESCRIBE_SCRIPT = join(import.meta.dirname, '..', '..', 'venv', 'describe.py');
+const DESCRIBE_SCRIPT = join(import.meta.dirname, '..', '..', 'python', 'describe.py');
 
 // GET /api/describe/:fileId - 获取数据描述报告（带缓存）
 router.get('/:fileId', (req, res) => {
