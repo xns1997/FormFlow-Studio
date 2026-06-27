@@ -1,0 +1,19 @@
+{
+  "id": "generic-compare",
+  "label": "差异比较/Compare",
+  "description": "逐字段比较两个输入流，输出差异结果",
+  "category": "通用 · 聚合",
+  "kind": "generic",
+  "properties": [
+    { "name": "matchField", "label": "匹配字段", "type": "string", "default": "", "required": true, "description": "用于匹配的列名" },
+    { "name": "fuzzyMatch", "label": "模糊匹配", "type": "boolean", "default": false, "description": "是否启用模糊匹配" }
+  ],
+  "ports": [
+    { "name": "dataA", "label": "数据A", "type": "json-rows", "direction": "input", "required": true, "description": "第一个数据流" },
+    { "name": "dataB", "label": "数据B", "type": "json-rows", "direction": "input", "required": true, "description": "第二个数据流" },
+    { "name": "onlyA", "label": "仅A", "type": "json-rows", "direction": "output", "description": "仅在A中存在的行" },
+    { "name": "same", "label": "相同", "type": "json-rows", "direction": "output", "description": "两边相同的行" },
+    { "name": "different", "label": "不同", "type": "json-rows", "direction": "output", "description": "两边不同的行" },
+    { "name": "onlyB", "label": "仅B", "type": "json-rows", "direction": "output", "description": "仅在B中存在的行" }
+  ]
+}

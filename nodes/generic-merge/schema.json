@@ -1,0 +1,18 @@
+{
+  "id": "generic-merge",
+  "label": "合并/Merge",
+  "description": "合并两个数据流，支持 Inner/Left/Right/Outer/Non-Matches 5种 Join 类型",
+  "category": "通用 · 聚合",
+  "kind": "generic",
+  "properties": [
+    { "name": "joinType", "label": "Join 类型", "type": "enum", "enum": ["inner", "left", "right", "outer", "non-matches"], "default": "inner", "description": "合并方式" },
+    { "name": "leftKey", "label": "左表匹配字段", "type": "string", "default": "", "required": true, "description": "左表用于匹配的列名" },
+    { "name": "rightKey", "label": "右表匹配字段", "type": "string", "default": "", "required": true, "description": "右表用于匹配的列名" }
+  ],
+  "ports": [
+    { "name": "leftData", "label": "左表", "type": "json-rows", "direction": "input", "required": true, "description": "左表数据" },
+    { "name": "rightData", "label": "右表", "type": "json-rows", "direction": "input", "required": true, "description": "右表数据" },
+    { "name": "data", "label": "结果", "type": "json-rows", "direction": "output", "description": "合并后数据" },
+    { "name": "rowCount", "label": "行数", "type": "number", "direction": "output", "description": "结果行数" }
+  ]
+}

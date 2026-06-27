@@ -1,0 +1,16 @@
+{
+  "id": "generic-append",
+  "label": "追加/Append",
+  "description": "纵向堆叠多个数据表 (UNION ALL)",
+  "category": "通用 · 聚合",
+  "kind": "generic",
+  "properties": [
+    { "name": "deduplicate", "label": "去重", "type": "boolean", "default": false, "description": "是否去除重复行" }
+  ],
+  "ports": [
+    { "name": "data", "label": "数据", "type": "json-rows", "direction": "input", "required": true, "description": "输入数据" },
+    { "name": "extra", "label": "追加数据", "type": "json-rows", "direction": "input", "required": true, "description": "要追加的数据" },
+    { "name": "data", "label": "结果", "type": "json-rows", "direction": "output", "description": "堆叠后数据" },
+    { "name": "rowCount", "label": "行数", "type": "number", "direction": "output", "description": "结果行数" }
+  ]
+}

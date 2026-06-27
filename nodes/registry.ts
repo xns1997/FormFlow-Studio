@@ -747,6 +747,13 @@ export async function loadNodeRegistry(): Promise<NodeRegistry> {
       'behavior-clear-field', 'behavior-stop', 'behavior-filter-data', 'behavior-sort-data',
       'generic-export-excel', 'generic-export-csv', 'generic-export-json', 'generic-export-html',
       'generic-display-table', 'generic-display-stats',
+      'generic-merge', 'generic-append', 'generic-group-by', 'generic-pivot', 'generic-unpivot',
+      'generic-compare', 'generic-sample',
+      'generic-type-cast', 'generic-handle-missing', 'generic-string-manip', 'generic-date-time',
+      'generic-regex-extract', 'generic-rename-columns', 'generic-flatten', 'generic-hash', 'generic-encode',
+      'generic-validate-json', 'generic-validate-xml', 'generic-validate-csv',
+      'generic-unique-check', 'generic-range-check',
+      'generic-database-query', 'generic-websocket', 'generic-pdf-report', 'generic-email-send',
     ];
 
     for (const dir of packageDirs) {

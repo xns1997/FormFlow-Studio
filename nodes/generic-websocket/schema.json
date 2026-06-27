@@ -1,0 +1,17 @@
+{
+  "id": "generic-websocket",
+  "label": "WebSocket",
+  "description": "WebSocket 实时通信",
+  "category": "通用 · 集成",
+  "kind": "generic",
+  "properties": [
+    { "name": "url", "label": "WebSocket URL", "type": "string", "default": "", "required": true, "description": "ws:// 或 wss:// 地址" },
+    { "name": "action", "label": "操作", "type": "enum", "enum": ["connect", "send", "disconnect"], "default": "connect", "description": "操作类型" },
+    { "name": "message", "label": "消息", "type": "string", "default": "", "description": "要发送的消息" }
+  ],
+  "ports": [
+    { "name": "data", "label": "发送数据", "type": "any", "direction": "input", "description": "要发送的数据" },
+    { "name": "received", "label": "接收数据", "type": "any", "direction": "output", "description": "接收到的数据" },
+    { "name": "status", "label": "状态", "type": "string", "direction": "output", "description": "连接状态" }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "generic-range-check",
+  "label": "范围检查/Range Check",
+  "description": "数值/日期范围约束检查",
+  "category": "通用 · 校验",
+  "kind": "generic",
+  "properties": [
+    { "name": "field", "label": "检查字段", "type": "string", "default": "", "required": true, "description": "要检查的列名" },
+    { "name": "minValue", "label": "最小值", "type": "string", "default": "", "description": "最小值（含）" },
+    { "name": "maxValue", "label": "最大值", "type": "string", "default": "", "description": "最大值（含）" },
+    { "name": "dataType", "label": "数据类型", "type": "enum", "enum": ["number", "date", "string"], "default": "number", "description": "比较的数据类型" }
+  ],
+  "ports": [
+    { "name": "data", "label": "数据", "type": "json-rows", "direction": "input", "required": true, "description": "输入数据" },
+    { "name": "passed", "label": "通过行", "type": "json-rows", "direction": "output", "description": "范围内的行" },
+    { "name": "failed", "label": "失败行", "type": "json-rows", "direction": "output", "description": "范围外的行" },
+    { "name": "passRate", "label": "通过率", "type": "number", "direction": "output", "description": "通过百分比" }
+  ]
+}

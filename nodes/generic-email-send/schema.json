@@ -1,0 +1,23 @@
+{
+  "id": "generic-email-send",
+  "label": "发送邮件/Email Send",
+  "description": "发送邮件通知",
+  "category": "通用 · 集成",
+  "kind": "generic",
+  "properties": [
+    { "name": "smtpHost", "label": "SMTP 服务器", "type": "string", "default": "", "required": true, "description": "SMTP 服务器地址" },
+    { "name": "smtpPort", "label": "端口", "type": "number", "default": 587, "description": "SMTP 端口" },
+    { "name": "username", "label": "用户名", "type": "string", "default": "", "description": "登录用户名" },
+    { "name": "password", "label": "密码", "type": "string", "default": "", "description": "登录密码" },
+    { "name": "from", "label": "发件人", "type": "string", "default": "", "required": true, "description": "发件人邮箱" },
+    { "name": "to", "label": "收件人", "type": "string", "default": "", "required": true, "description": "收件人邮箱" },
+    { "name": "subject", "label": "主题", "type": "string", "default": "", "description": "邮件主题" },
+    { "name": "body", "label": "正文", "type": "string", "default": "", "description": "邮件正文" },
+    { "name": "attachData", "label": "附加数据", "type": "boolean", "default": false, "description": "是否将输入数据作为附件" }
+  ],
+  "ports": [
+    { "name": "data", "label": "数据", "type": "any", "direction": "input", "description": "要附加的数据" },
+    { "name": "sent", "label": "已发送", "type": "boolean", "direction": "output", "description": "是否发送成功" },
+    { "name": "error", "label": "错误", "type": "string", "direction": "output", "description": "错误信息" }
+  ]
+}

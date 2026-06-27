@@ -1,0 +1,15 @@
+{
+  "id": "generic-flatten",
+  "label": "嵌套展平/Flatten",
+  "description": "嵌套 JSON/对象展平为平铺列",
+  "category": "通用 · 清洗",
+  "kind": "generic",
+  "properties": [
+    { "name": "separator", "label": "分隔符", "type": "string", "default": ".", "description": "嵌套键的连接符" },
+    { "name": "maxDepth", "label": "最大深度", "type": "number", "default": 5, "min": 1, "max": 20, "description": "展平的最大嵌套层级" }
+  ],
+  "ports": [
+    { "name": "data", "label": "数据", "type": "json-rows", "direction": "input", "required": true, "description": "输入数据" },
+    { "name": "data", "label": "结果", "type": "json-rows", "direction": "output", "description": "展平后数据" }
+  ]
+}

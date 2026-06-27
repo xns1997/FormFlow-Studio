@@ -1,0 +1,15 @@
+{
+  "id": "generic-rename-columns",
+  "label": "字段重命名/Rename Columns",
+  "description": "批量重命名列",
+  "category": "通用 · 清洗",
+  "kind": "generic",
+  "properties": [
+    { "name": "mapping", "label": "映射规则", "type": "json-string", "default": "{}", "required": true, "description": "JSON 格式: {\"旧名\": \"新名\"}" },
+    { "name": "trimSpaces", "label": "去除空格", "type": "boolean", "default": true, "description": "是否去除列名首尾空格" }
+  ],
+  "ports": [
+    { "name": "data", "label": "数据", "type": "json-rows", "direction": "input", "required": true, "description": "输入数据" },
+    { "name": "data", "label": "结果", "type": "json-rows", "direction": "output", "description": "重命名后数据" }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "id": "generic-validate-csv",
+  "label": "CSV 校验/Validate CSV",
+  "description": "基于 Schema 校验 CSV 结构",
+  "category": "通用 · 校验",
+  "kind": "generic",
+  "properties": [
+    { "name": "delimiter", "label": "分隔符", "type": "string", "default": ",", "description": "字段分隔符" },
+    { "name": "requiredFields", "label": "必填字段", "type": "string", "default": "", "description": "逗号分隔的必填列名" },
+    { "name": "uniqueFields", "label": "唯一字段", "type": "string", "default": "", "description": "逗号分隔的唯一列名" },
+    { "name": "patternFields", "label": "正则校验", "type": "json-string", "default": "{}", "description": "JSON: {\"列名\": \"正则\"}" }
+  ],
+  "ports": [
+    { "name": "data", "label": "数据", "type": "csv-string", "direction": "input", "required": true, "description": "CSV 文本" },
+    { "name": "valid", "label": "是否通过", "type": "boolean", "direction": "output", "description": "校验结果" },
+    { "name": "errors", "label": "错误列表", "type": "json-rows", "direction": "output", "description": "校验错误明细" }
+  ]
+}
