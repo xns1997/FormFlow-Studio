@@ -124,6 +124,7 @@ export default function CodeEditor({
     lineNumbers: normalizeLineNumbers(lineNumbers),
     folding: !compact,
     glyphMargin: false,
+    fixedOverflowWidgets: true,
     ...optionsOverride,
   }), [compact, disabled, lineNumbers, optionsOverride]);
 
