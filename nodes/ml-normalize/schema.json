@@ -1,0 +1,17 @@
+{
+  "id": "ml-normalize",
+  "label": "归一化/Normalize",
+  "description": "Min-Max 归一化到指定范围 (Python)",
+  "category": "ML · 预处理",
+  "kind": "generic",
+  "properties": [
+    { "name": "fields", "label": "目标字段", "type": "string", "default": "", "description": "逗号分隔列名，留空处理所有数值列" },
+    { "name": "min", "label": "目标最小值", "type": "number", "default": 0, "description": "归一化后最小值" },
+    { "name": "max", "label": "目标最大值", "type": "number", "default": 1, "description": "归一化后最大值" }
+  ],
+  "ports": [
+    { "name": "data", "label": "数据", "type": "json-rows", "direction": "input", "required": true, "description": "输入数据" },
+    { "name": "data", "label": "结果", "type": "json-rows", "direction": "output", "description": "归一化后数据" },
+    { "name": "params", "label": "参数", "type": "object", "direction": "output", "description": "每列的 min/max 参数" }
+  ]
+}

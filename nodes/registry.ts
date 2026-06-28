@@ -754,6 +754,10 @@ export async function loadNodeRegistry(): Promise<NodeRegistry> {
       'generic-validate-json', 'generic-validate-xml', 'generic-validate-csv',
       'generic-unique-check', 'generic-range-check',
       'generic-database-query', 'generic-websocket', 'generic-pdf-report', 'generic-email-send',
+      'ml-normalize', 'ml-standardize', 'ml-onehot-encode', 'ml-label-encode', 'ml-pca',
+      'ml-feature-select', 'ml-descriptive-stats', 'ml-correlation', 'ml-linear-regression',
+      'ml-kmeans', 'ml-knn', 'ml-decision-tree', 'ml-random-forest', 'ml-naive-bayes', 'ml-svm',
+      'ml-anomaly-detect', 'ml-hypothesis-test', 'ml-time-series',
     ];
 
     for (const dir of packageDirs) {

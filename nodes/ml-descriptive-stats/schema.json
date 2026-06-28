@@ -1,0 +1,1 @@
+{"id":"ml-descriptive-stats","label":"描述性统计","description":"均值/中位数/标准差/分位数等 (Python)","category":"ML · 分析","kind":"generic","properties":[],"ports":[{"name":"data","label":"数据","type":"json-rows","direction":"input","required":true},{"name":"stats","label":"统计结果","type":"object","direction":"output"},{"name":"shape","label":"数据形状","type":"array","direction":"output"}]}

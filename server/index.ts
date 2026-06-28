@@ -8,6 +8,7 @@ import { workflowRouter } from './routes/workflows';
 import { behaviorRouter } from './routes/behaviors';
 import { describeRouter } from './routes/describe';
 import { configRouter } from './routes/configs';
+import mlRouter from './routes/ml';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -24,6 +25,7 @@ app.use('/api/workflows', workflowRouter);
 app.use('/api/behaviors', behaviorRouter);
 app.use('/api/describe', describeRouter);
 app.use('/api/configs', configRouter);
+app.use('/api/ml', mlRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
