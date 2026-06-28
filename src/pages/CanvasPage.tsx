@@ -417,7 +417,32 @@ export default function CanvasPage() {
     }
 
     if (spec.kind === 'scenario' || spec.kind === 'generic' || spec.kind === 'behavior') {
-      updateNodeData(node.id, { outputPreview: `${spec.label} · ${spec.description}`, error: undefined });
+      // 使用执行器执行节点
+      try {
+        const { getExecutor } = await import('../../nodes/executor-registry');
+        const executor = getExecutor(node.data.specId);
+        if (executor) {
+          const props = (() => { try { return JSON.parse(node.data.propertiesJson || '{}'); } catch { return {}; } })();
+          const ctx = {
+            inputs: {},
+            properties: props,
+            tables: project?.srcTable || [],
+            getNodeOutput: () => ({}),
+            checkType: (t: string, v: unknown) => ({ valid: true, normalized: v }),
+            assertType: (t: string, v: unknown) => v,
+          };
+          const result = await executor(ctx);
+          if (result.error) {
+            updateNodeData(node.id, { error: String(result.error), outputPreview: undefined, outputs: undefined });
+          } else {
+            updateNodeData(node.id, { outputs: result, outputPreview: undefined, error: undefined });
+          }
+        } else {
+          updateNodeData(node.id, { outputPreview: `${spec.label} · ${spec.description}`, error: undefined });
+        }
+      } catch (e) {
+        updateNodeData(node.id, { error: e instanceof Error ? e.message : String(e) });
+      }
       return;
     }
     if (spec.kind === 'excel-class') {

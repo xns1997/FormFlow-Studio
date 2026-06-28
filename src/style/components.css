@@ -13,7 +13,8 @@
 .code-editor-container {
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
 }
 
 .code-editor-header {
@@ -66,6 +67,29 @@
   flex: 1;
   border: none;
   border-radius: 0;
+}
+
+/* ── Monaco Suggestion Fix ──────────────────────────── */
+
+.monaco-editor .suggest-widget {
+  z-index: 9999 !important;
+  max-height: 300px !important;
+}
+
+.code-editor-shell {
+  overflow: visible !important;
+}
+
+.code-editor-shell .monaco-editor {
+  overflow: visible !important;
+}
+
+.code-editor-shell .monaco-editor .overflow-guard {
+  overflow: visible !important;
+}
+
+.code-editor-shell .monaco-editor .suggest-widget {
+  position: fixed !important;
 }
 
 /* ── Project Manager ──────────────────────────────────── */
