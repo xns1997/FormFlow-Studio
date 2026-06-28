@@ -6,17 +6,54 @@
   "kind": "generic",
   "methods": [],
   "properties": [
-    { "name": "buttonName", "label": "按钮名称", "type": "string", "default": "", "description": "按钮标识" }
+    {
+      "name": "buttonName",
+      "label": "按钮名称",
+      "type": "string",
+      "default": "",
+      "description": "按钮标识"
+    }
   ],
   "inputs": [
-    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "required": true,
+      "description": "触发信号"
+    }
   ],
   "outputs": [
-    { "name": "trigger", "type": "trigger", "description": "触发输出" },
-    { "name": "buttonName", "type": "string", "description": "按钮名称" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "description": "触发输出"
+    },
+    {
+      "name": "buttonName",
+      "type": "string",
+      "description": "按钮名称"
+    }
   ],
   "ports": [
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发信号" },
-    { "name": "buttonName", "label": "按钮名", "type": "string", "direction": "output", "description": "按钮名" }
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "output",
+      "description": "触发信号"
+    },
+    {
+      "name": "buttonName",
+      "label": "按钮名",
+      "type": "string",
+      "direction": "output",
+      "description": "按钮名"
+    }
+  ],
+  "keywords": [
+    "按钮",
+    "点击",
+    "button",
+    "click"
   ]
 }

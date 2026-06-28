@@ -5,14 +5,46 @@
   "category": "XLSX · Sheet 操作",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "sheet_set_array_formula"],
+  "methodPath": [
+    "utils",
+    "sheet_set_array_formula"
+  ],
   "inputs": [
-    { "name": "worksheet", "type": "Worksheet", "required": true, "description": "工作表对象" },
-    { "name": "range", "type": "string", "required": true, "description": "目标范围" },
-    { "name": "formula", "type": "string", "required": true, "description": "数组公式" }
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "required": true,
+      "description": "工作表对象"
+    },
+    {
+      "name": "range",
+      "type": "string",
+      "required": true,
+      "description": "目标范围"
+    },
+    {
+      "name": "formula",
+      "type": "string",
+      "required": true,
+      "description": "数组公式"
+    }
   ],
   "outputs": [
-    { "name": "worksheet", "type": "Worksheet", "description": "修改后的工作表" }
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "description": "修改后的工作表"
+    }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "formula",
+    "中设置数组公式",
+    "utils",
+    "在",
+    "sheet",
+    "动态数组公式",
+    "array",
+    "set"
+  ]
 }

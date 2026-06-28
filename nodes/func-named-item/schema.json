@@ -6,23 +6,96 @@
   "kind": "generic",
   "methods": [],
   "properties": [
-    { "name": "name", "label": "名称", "type": "string", "default": "MyRange", "required": true, "description": "命名项名称" },
-    { "name": "formula", "label": "公式", "type": "string", "default": "", "description": "命名项引用的公式/地址" }
+    {
+      "name": "name",
+      "label": "名称",
+      "type": "string",
+      "default": "MyRange",
+      "required": true,
+      "description": "命名项名称"
+    },
+    {
+      "name": "formula",
+      "label": "公式",
+      "type": "string",
+      "default": "",
+      "description": "命名项引用的公式/地址"
+    }
   ],
   "inputs": [
-    { "name": "workbook", "type": "object", "required": true, "description": "工作簿对象" },
-    { "name": "name", "type": "string", "required": false, "description": "名称覆盖" },
-    { "name": "formula", "type": "string", "required": false, "description": "公式覆盖" }
+    {
+      "name": "workbook",
+      "type": "object",
+      "required": true,
+      "description": "工作簿对象"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "required": false,
+      "description": "名称覆盖"
+    },
+    {
+      "name": "formula",
+      "type": "string",
+      "required": false,
+      "description": "公式覆盖"
+    }
   ],
   "outputs": [
-    { "name": "workbook", "type": "object", "description": "修改后的工作簿" },
-    { "name": "name", "type": "string", "description": "创建的命名项名" }
+    {
+      "name": "workbook",
+      "type": "object",
+      "description": "修改后的工作簿"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "创建的命名项名"
+    }
   ],
   "ports": [
-    { "name": "workbook", "label": "工作簿", "type": "object", "direction": "input", "required": true, "description": "工作簿" },
-    { "name": "name", "label": "名称", "type": "string", "direction": "input", "description": "命名项名" },
-    { "name": "formula", "label": "公式", "type": "string", "direction": "input", "description": "引用公式" },
-    { "name": "workbook", "label": "工作簿", "type": "object", "direction": "output", "description": "修改后的工作簿" },
-    { "name": "name", "label": "名称", "type": "string", "direction": "output", "description": "命名项名" }
+    {
+      "name": "workbook",
+      "label": "工作簿",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "工作簿"
+    },
+    {
+      "name": "name",
+      "label": "名称",
+      "type": "string",
+      "direction": "input",
+      "description": "命名项名"
+    },
+    {
+      "name": "formula",
+      "label": "公式",
+      "type": "string",
+      "direction": "input",
+      "description": "引用公式"
+    },
+    {
+      "name": "workbook",
+      "label": "工作簿",
+      "type": "object",
+      "direction": "output",
+      "description": "修改后的工作簿"
+    },
+    {
+      "name": "name",
+      "label": "名称",
+      "type": "string",
+      "direction": "output",
+      "description": "命名项名"
+    }
+  ],
+  "keywords": [
+    "命名",
+    "项",
+    "named",
+    "item"
   ]
 }

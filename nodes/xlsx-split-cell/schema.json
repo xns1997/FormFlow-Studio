@@ -5,12 +5,31 @@
   "category": "XLSX · 地址编码",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "split_cell"],
+  "methodPath": [
+    "utils",
+    "split_cell"
+  ],
   "inputs": [
-    { "name": "range", "type": "string", "required": true, "description": "合并区域地址，如 'A1:C5'" }
+    {
+      "name": "range",
+      "type": "string",
+      "required": true,
+      "description": "合并区域地址，如 'A1:C5'"
+    }
   ],
   "outputs": [
-    { "name": "cells", "type": "string[]", "description": "单个单元格地址数组" }
+    {
+      "name": "cells",
+      "type": "string[]",
+      "description": "单个单元格地址数组"
+    }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "将合并单元格地址拆分为单个单元格地址",
+    "split",
+    "utils",
+    "cell",
+    "XLSX"
+  ]
 }

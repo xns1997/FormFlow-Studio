@@ -5,13 +5,61 @@
   "category": "通用 · 清洗",
   "kind": "generic",
   "properties": [
-    { "name": "field", "label": "目标字段", "type": "string", "default": "", "required": true, "description": "要提取的列名" },
-    { "name": "pattern", "label": "正则表达式", "type": "string", "default": "", "required": true, "description": "正则模式" },
-    { "name": "group", "label": "捕获组", "type": "number", "default": 0, "min": 0, "description": "要提取的捕获组索引" },
-    { "name": "newField", "label": "新字段名", "type": "string", "default": "extracted", "description": "结果列名" }
+    {
+      "name": "field",
+      "label": "目标字段",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "要提取的列名"
+    },
+    {
+      "name": "pattern",
+      "label": "正则表达式",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "正则模式"
+    },
+    {
+      "name": "group",
+      "label": "捕获组",
+      "type": "number",
+      "default": 0,
+      "min": 0,
+      "description": "要提取的捕获组索引"
+    },
+    {
+      "name": "newField",
+      "label": "新字段名",
+      "type": "string",
+      "default": "extracted",
+      "description": "结果列名"
+    }
   ],
   "ports": [
-    { "name": "data", "label": "数据", "type": "json-rows", "direction": "input", "required": true, "description": "输入数据" },
-    { "name": "data", "label": "结果", "type": "json-rows", "direction": "output", "description": "提取后数据" }
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true,
+      "description": "输入数据"
+    },
+    {
+      "name": "data",
+      "label": "结果",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "提取后数据"
+    }
+  ],
+  "keywords": [
+    "正则",
+    "提取",
+    "regex",
+    "extract",
+    "pattern",
+    "match"
   ]
 }

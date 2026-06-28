@@ -5,7 +5,10 @@
   "category": "二维数组",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "sheet_to_aoa"],
+  "methodPath": [
+    "utils",
+    "sheet_to_aoa"
+  ],
   "inputs": [
     {
       "name": "worksheet",
@@ -43,5 +46,14 @@
       "default": -1,
       "description": "指定哪一行作为表头"
     }
+  ],
+  "keywords": [
+    "aoa",
+    "utils",
+    "把",
+    "sheet",
+    "转成二维数组",
+    "to",
+    "XLSX"
   ]
 }

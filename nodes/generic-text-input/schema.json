@@ -22,13 +22,41 @@
     }
   ],
   "inputs": [
-    { "name": "override", "type": "string", "required": false, "description": "外部传入的文本覆盖值" }
+    {
+      "name": "override",
+      "type": "string",
+      "required": false,
+      "description": "外部传入的文本覆盖值"
+    }
   ],
   "outputs": [
-    { "name": "value", "type": "string", "description": "当前文本值" }
+    {
+      "name": "value",
+      "type": "string",
+      "description": "当前文本值"
+    }
   ],
   "ports": [
-    { "name": "override", "label": "覆盖", "type": "string", "direction": "input", "description": "外部覆盖值" },
-    { "name": "value", "label": "值", "type": "string", "direction": "output", "description": "当前文本值" }
+    {
+      "name": "override",
+      "label": "覆盖",
+      "type": "string",
+      "direction": "input",
+      "description": "外部覆盖值"
+    },
+    {
+      "name": "value",
+      "label": "值",
+      "type": "string",
+      "direction": "output",
+      "description": "当前文本值"
+    }
+  ],
+  "keywords": [
+    "文本",
+    "输入",
+    "string",
+    "text",
+    "input"
   ]
 }

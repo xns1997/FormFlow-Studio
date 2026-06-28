@@ -5,7 +5,10 @@
   "category": "DOM 操作",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "table_to_book"],
+  "methodPath": [
+    "utils",
+    "table_to_book"
+  ],
   "inputs": [
     {
       "name": "table",
@@ -43,5 +46,15 @@
       "default": false,
       "description": "为 true 时将日期存储为 Date 对象"
     }
+  ],
+  "keywords": [
+    "元素转成完整工作簿",
+    "utils",
+    "把",
+    "book",
+    "to",
+    "table",
+    "dom",
+    "XLSX"
   ]
 }

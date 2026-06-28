@@ -5,7 +5,10 @@
   "category": "Sheet 操作",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "sheet_add_json"],
+  "methodPath": [
+    "utils",
+    "sheet_add_json"
+  ],
   "inputs": [
     {
       "name": "worksheet",
@@ -63,5 +66,15 @@
       "default": false,
       "description": "为 true 时将 Date 对象存储为日期类型"
     }
+  ],
+  "keywords": [
+    "行数据",
+    "add",
+    "utils",
+    "sheet",
+    "向已有",
+    "json",
+    "追加",
+    "XLSX"
   ]
 }

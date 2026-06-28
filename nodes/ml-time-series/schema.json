@@ -1,1 +1,53 @@
-{"id":"ml-time-series","label":"时间序列分析","description":"移动平均 + 趋势分析 (Python)","category":"ML · 分析","kind":"generic","properties":[{"name":"field","label":"数值字段","type":"string","default":"","required":true,"description":"要分析的数值列"},{"name":"periods","label":"周期","type":"number","default":10}],"ports":[{"name":"data","label":"数据","type":"json-rows","direction":"input","required":true},{"name":"moving_average","label":"移动平均","type":"array","direction":"output"},{"name":"trend_slope","label":"趋势斜率","type":"number","direction":"output"}]}
+{
+  "id": "ml-time-series",
+  "label": "时间序列分析",
+  "description": "移动平均 + 趋势分析 (Python)",
+  "category": "ML · 分析",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "field",
+      "label": "数值字段",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "要分析的数值列"
+    },
+    {
+      "name": "periods",
+      "label": "周期",
+      "type": "number",
+      "default": 10
+    }
+  ],
+  "ports": [
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true
+    },
+    {
+      "name": "moving_average",
+      "label": "移动平均",
+      "type": "array",
+      "direction": "output"
+    },
+    {
+      "name": "trend_slope",
+      "label": "趋势斜率",
+      "type": "number",
+      "direction": "output"
+    }
+  ],
+  "keywords": [
+    "时间",
+    "序列",
+    "趋势",
+    "time",
+    "series",
+    "trend",
+    "moving"
+  ]
+}

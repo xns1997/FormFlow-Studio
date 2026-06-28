@@ -5,7 +5,10 @@
   "category": "Sheet 转换",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "sheet_to_formulae"],
+  "methodPath": [
+    "utils",
+    "sheet_to_formulae"
+  ],
   "inputs": [
     {
       "name": "worksheet",
@@ -50,5 +53,14 @@
       "default": false,
       "description": "是否跳过隐藏的行和列"
     }
+  ],
+  "keywords": [
+    "formulae",
+    "utils",
+    "把",
+    "转成公式文本列表",
+    "sheet",
+    "to",
+    "XLSX"
   ]
 }

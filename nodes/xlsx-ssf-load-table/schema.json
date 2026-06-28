@@ -5,12 +5,32 @@
   "category": "XLSX · 格式化",
   "kind": "xlsx-method",
   "namespace": "XLSX.SSF",
-  "methodPath": ["SSF", "load_table"],
+  "methodPath": [
+    "SSF",
+    "load_table"
+  ],
   "inputs": [
-    { "name": "str", "type": "string", "required": true, "description": "格式表 JSON 字符串" }
+    {
+      "name": "str",
+      "type": "string",
+      "required": true,
+      "description": "格式表 JSON 字符串"
+    }
   ],
   "outputs": [
-    { "name": "table", "type": "object", "description": "加载后的格式表" }
+    {
+      "name": "table",
+      "type": "object",
+      "description": "加载后的格式表"
+    }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "load",
+    "带索引",
+    "XLSX",
+    "table",
+    "加载数字格式表",
+    "SSF"
+  ]
 }

@@ -18,7 +18,13 @@
       "name": "varType",
       "label": "变量类型",
       "type": "enum",
-      "enum": ["string", "number", "boolean", "array", "object"],
+      "enum": [
+        "string",
+        "number",
+        "boolean",
+        "array",
+        "object"
+      ],
       "default": "string",
       "description": "变量的数据类型"
     },
@@ -31,17 +37,64 @@
     }
   ],
   "inputs": [
-    { "name": "override", "type": "any", "required": false, "description": "外部覆盖值（优先级高于默认值）" }
+    {
+      "name": "override",
+      "type": "any",
+      "required": false,
+      "description": "外部覆盖值（优先级高于默认值）"
+    }
   ],
   "outputs": [
-    { "name": "value", "type": "any", "description": "变量当前值" },
-    { "name": "varName", "type": "string", "description": "变量名" },
-    { "name": "varType", "type": "string", "description": "变量类型" }
+    {
+      "name": "value",
+      "type": "any",
+      "description": "变量当前值"
+    },
+    {
+      "name": "varName",
+      "type": "string",
+      "description": "变量名"
+    },
+    {
+      "name": "varType",
+      "type": "string",
+      "description": "变量类型"
+    }
   ],
   "ports": [
-    { "name": "override", "label": "覆盖值", "type": "any", "direction": "input", "description": "外部覆盖值" },
-    { "name": "value", "label": "值", "type": "any", "direction": "output", "description": "变量当前值" },
-    { "name": "varName", "label": "变量名", "type": "string", "direction": "output", "description": "变量名" },
-    { "name": "varType", "label": "类型", "type": "string", "direction": "output", "description": "变量类型" }
+    {
+      "name": "override",
+      "label": "覆盖值",
+      "type": "any",
+      "direction": "input",
+      "description": "外部覆盖值"
+    },
+    {
+      "name": "value",
+      "label": "值",
+      "type": "any",
+      "direction": "output",
+      "description": "变量当前值"
+    },
+    {
+      "name": "varName",
+      "label": "变量名",
+      "type": "string",
+      "direction": "output",
+      "description": "变量名"
+    },
+    {
+      "name": "varType",
+      "label": "类型",
+      "type": "string",
+      "direction": "output",
+      "description": "变量类型"
+    }
+  ],
+  "keywords": [
+    "变量",
+    "输入",
+    "variable",
+    "input"
   ]
 }

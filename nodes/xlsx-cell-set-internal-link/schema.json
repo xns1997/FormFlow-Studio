@@ -5,14 +5,45 @@
   "category": "XLSX · 格式化",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "cell_set_internal_link"],
+  "methodPath": [
+    "utils",
+    "cell_set_internal_link"
+  ],
   "inputs": [
-    { "name": "cell", "type": "CellObject", "required": true, "description": "单元格对象" },
-    { "name": "range", "type": "string", "required": true, "description": "目标范围，如 'Sheet2!A1:C5'" },
-    { "name": "tooltip", "type": "string", "required": false, "description": "链接提示文本" }
+    {
+      "name": "cell",
+      "type": "CellObject",
+      "required": true,
+      "description": "单元格对象"
+    },
+    {
+      "name": "range",
+      "type": "string",
+      "required": true,
+      "description": "目标范围，如 'Sheet2!A1:C5'"
+    },
+    {
+      "name": "tooltip",
+      "type": "string",
+      "required": false,
+      "description": "链接提示文本"
+    }
   ],
   "outputs": [
-    { "name": "cell", "type": "CellObject", "description": "修改后的单元格" }
+    {
+      "name": "cell",
+      "type": "CellObject",
+      "description": "修改后的单元格"
+    }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "为单元格设置工作簿内链接",
+    "utils",
+    "link",
+    "cell",
+    "internal",
+    "set",
+    "XLSX"
+  ]
 }

@@ -6,20 +6,71 @@
   "kind": "generic",
   "methods": [],
   "properties": [
-    { "name": "fieldName", "label": "字段名", "type": "string", "default": "", "description": "要校验的字段名" }
+    {
+      "name": "fieldName",
+      "label": "字段名",
+      "type": "string",
+      "default": "",
+      "description": "要校验的字段名"
+    }
   ],
   "inputs": [
-    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
-    { "name": "value", "type": "any", "required": true, "description": "要校验的值" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "value",
+      "type": "any",
+      "required": true,
+      "description": "要校验的值"
+    }
   ],
   "outputs": [
-    { "name": "trigger", "type": "trigger", "description": "触发输出" },
-    { "name": "value", "type": "any", "description": "当前值" },
-    { "name": "isValid", "type": "boolean", "description": "是否有效" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "description": "触发输出"
+    },
+    {
+      "name": "value",
+      "type": "any",
+      "description": "当前值"
+    },
+    {
+      "name": "isValid",
+      "type": "boolean",
+      "description": "是否有效"
+    }
   ],
   "ports": [
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发信号" },
-    { "name": "value", "label": "值", "type": "any", "direction": "input", "required": true, "description": "要校验的值" },
-    { "name": "isValid", "label": "有效", "type": "boolean", "direction": "output", "description": "是否有效" }
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "output",
+      "description": "触发信号"
+    },
+    {
+      "name": "value",
+      "label": "值",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "要校验的值"
+    },
+    {
+      "name": "isValid",
+      "label": "有效",
+      "type": "boolean",
+      "direction": "output",
+      "description": "是否有效"
+    }
+  ],
+  "keywords": [
+    "校验",
+    "validate"
   ]
 }

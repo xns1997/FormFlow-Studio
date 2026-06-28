@@ -6,21 +6,90 @@
   "kind": "generic",
   "methods": [],
   "properties": [
-    { "name": "logLevel", "label": "日志级别", "type": "enum", "enum": ["info", "warn", "error", "debug"], "default": "info", "description": "日志级别" },
-    { "name": "message", "label": "日志内容", "type": "string", "default": "", "required": true, "description": "日志文本" }
+    {
+      "name": "logLevel",
+      "label": "日志级别",
+      "type": "enum",
+      "enum": [
+        "info",
+        "warn",
+        "error",
+        "debug"
+      ],
+      "default": "info",
+      "description": "日志级别"
+    },
+    {
+      "name": "message",
+      "label": "日志内容",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "日志文本"
+    }
   ],
   "inputs": [
-    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
-    { "name": "message", "type": "string", "required": false, "description": "消息覆盖" },
-    { "name": "data", "type": "any", "required": false, "description": "附加数据" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "message",
+      "type": "string",
+      "required": false,
+      "description": "消息覆盖"
+    },
+    {
+      "name": "data",
+      "type": "any",
+      "required": false,
+      "description": "附加数据"
+    }
   ],
   "outputs": [
-    { "name": "trigger", "type": "trigger", "description": "触发输出" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "description": "触发输出"
+    }
   ],
   "ports": [
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
-    { "name": "message", "label": "消息", "type": "string", "direction": "input", "description": "日志内容" },
-    { "name": "data", "label": "数据", "type": "any", "direction": "input", "description": "附加数据" },
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发输出" }
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "message",
+      "label": "消息",
+      "type": "string",
+      "direction": "input",
+      "description": "日志内容"
+    },
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "any",
+      "direction": "input",
+      "description": "附加数据"
+    },
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "output",
+      "description": "触发输出"
+    }
+  ],
+  "keywords": [
+    "日志",
+    "记录",
+    "log",
+    "debug"
   ]
 }

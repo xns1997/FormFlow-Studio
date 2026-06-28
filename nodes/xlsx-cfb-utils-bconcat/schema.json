@@ -5,12 +5,35 @@
   "category": "XLSX · 复合文件",
   "kind": "xlsx-method",
   "namespace": "XLSX.CFB.utils",
-  "methodPath": ["CFB", "utils", "bconcat"],
+  "methodPath": [
+    "CFB",
+    "utils",
+    "bconcat"
+  ],
   "inputs": [
-    { "name": "bufs", "type": "ArrayBuffer[]", "required": true, "description": "要合并的缓冲区数组" }
+    {
+      "name": "bufs",
+      "type": "ArrayBuffer[]",
+      "required": true,
+      "description": "要合并的缓冲区数组"
+    }
   ],
   "outputs": [
-    { "name": "result", "type": "Uint8Array", "description": "合并后的缓冲区" }
+    {
+      "name": "result",
+      "type": "Uint8Array",
+      "description": "合并后的缓冲区"
+    }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "为一个",
+    "utils",
+    "arraybuffer",
+    "合并多个",
+    "bconcat",
+    "uint",
+    "array",
+    "CFB"
+  ]
 }

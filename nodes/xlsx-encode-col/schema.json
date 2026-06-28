@@ -5,7 +5,10 @@
   "category": "地址编码",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "encode_col"],
+  "methodPath": [
+    "utils",
+    "encode_col"
+  ],
   "inputs": [
     {
       "name": "col",
@@ -21,5 +24,15 @@
       "description": "列字母"
     }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "如",
+    "z",
+    "utils",
+    "aa",
+    "col",
+    "encode",
+    "把列号编码成字母",
+    "a"
+  ]
 }

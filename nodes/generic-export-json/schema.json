@@ -45,19 +45,79 @@
     }
   ],
   "inputs": [
-    { "name": "data", "type": "any", "required": true, "description": "要导出的数据" },
-    { "name": "fileName", "type": "string", "required": false, "description": "文件名覆盖" }
+    {
+      "name": "data",
+      "type": "any",
+      "required": true,
+      "description": "要导出的数据"
+    },
+    {
+      "name": "fileName",
+      "type": "string",
+      "required": false,
+      "description": "文件名覆盖"
+    }
   ],
   "outputs": [
-    { "name": "jsonText", "type": "json-string", "description": "生成的 JSON 文本" },
-    { "name": "fileName", "type": "string", "description": "实际使用的文件名" },
-    { "name": "size", "type": "number", "description": "文件大小" }
+    {
+      "name": "jsonText",
+      "type": "json-string",
+      "description": "生成的 JSON 文本"
+    },
+    {
+      "name": "fileName",
+      "type": "string",
+      "description": "实际使用的文件名"
+    },
+    {
+      "name": "size",
+      "type": "number",
+      "description": "文件大小"
+    }
   ],
   "ports": [
-    { "name": "data", "label": "数据", "type": "any", "direction": "input", "required": true, "description": "要导出的数据" },
-    { "name": "fileName", "label": "文件名", "type": "string", "direction": "input", "description": "文件名覆盖" },
-    { "name": "jsonText", "label": "JSON 文本", "type": "json-string", "direction": "output", "description": "JSON 文本" },
-    { "name": "fileName", "label": "文件名", "type": "string", "direction": "output", "description": "实际文件名" },
-    { "name": "size", "label": "大小", "type": "number", "direction": "output", "description": "文件大小" }
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "要导出的数据"
+    },
+    {
+      "name": "fileName",
+      "label": "文件名",
+      "type": "string",
+      "direction": "input",
+      "description": "文件名覆盖"
+    },
+    {
+      "name": "jsonText",
+      "label": "JSON 文本",
+      "type": "json-string",
+      "direction": "output",
+      "description": "JSON 文本"
+    },
+    {
+      "name": "fileName",
+      "label": "文件名",
+      "type": "string",
+      "direction": "output",
+      "description": "实际文件名"
+    },
+    {
+      "name": "size",
+      "label": "大小",
+      "type": "number",
+      "direction": "output",
+      "description": "文件大小"
+    }
+  ],
+  "keywords": [
+    "导出",
+    "json",
+    "下载",
+    "export",
+    "download"
   ]
 }

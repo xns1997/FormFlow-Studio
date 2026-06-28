@@ -5,14 +5,44 @@
   "category": "XLSX · 复合文件",
   "kind": "xlsx-method",
   "namespace": "XLSX.CFB",
-  "methodPath": ["CFB", "write"],
+  "methodPath": [
+    "CFB",
+    "write"
+  ],
   "inputs": [
-    { "name": "cfb", "type": "CFB", "required": true, "description": "复合文件对象" }
+    {
+      "name": "cfb",
+      "type": "CFB",
+      "required": true,
+      "description": "复合文件对象"
+    }
   ],
   "outputs": [
-    { "name": "data", "type": "ArrayBuffer", "description": "二进制数据" }
+    {
+      "name": "data",
+      "type": "ArrayBuffer",
+      "description": "二进制数据"
+    }
   ],
   "properties": [
-    { "name": "type", "label": "输出类型", "type": "enum", "enum": ["buffer", "binary", "array", "base64"], "default": "buffer", "description": "输出格式" }
+    {
+      "name": "type",
+      "label": "输出类型",
+      "type": "enum",
+      "enum": [
+        "buffer",
+        "binary",
+        "array",
+        "base64"
+      ],
+      "default": "buffer",
+      "description": "输出格式"
+    }
+  ],
+  "keywords": [
+    "将复合文件对象序列化为二进制数据",
+    "write",
+    "CFB",
+    "XLSX"
   ]
 }

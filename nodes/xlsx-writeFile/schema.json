@@ -5,7 +5,9 @@
   "category": "工作簿 IO",
   "kind": "xlsx-method",
   "namespace": "XLSX",
-  "methodPath": ["writeFile"],
+  "methodPath": [
+    "writeFile"
+  ],
   "inputs": [
     {
       "name": "workbook",
@@ -32,7 +34,21 @@
       "name": "bookType",
       "label": "输出格式",
       "type": "enum",
-      "enum": ["xlsx", "xlsm", "xlsb", "xls", "csv", "txt", "ods", "fods", "json", "dif", "rtf", "prn", "numbers"],
+      "enum": [
+        "xlsx",
+        "xlsm",
+        "xlsb",
+        "xls",
+        "csv",
+        "txt",
+        "ods",
+        "fods",
+        "json",
+        "dif",
+        "rtf",
+        "prn",
+        "numbers"
+      ],
       "default": "xlsx",
       "description": "目标文件格式"
     },
@@ -40,7 +56,13 @@
       "name": "type",
       "label": "输出类型",
       "type": "enum",
-      "enum": ["array", "binary", "string", "base64", "buffer"],
+      "enum": [
+        "array",
+        "binary",
+        "string",
+        "base64",
+        "buffer"
+      ],
       "default": "array",
       "description": "中间序列化格式"
     },
@@ -51,5 +73,11 @@
       "default": false,
       "description": "是否启用 ZIP 压缩"
     }
+  ],
+  "keywords": [
+    "将工作簿写出为文件",
+    "浏览器中会触发下载",
+    "writeFile",
+    "XLSX"
   ]
 }

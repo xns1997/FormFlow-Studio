@@ -24,7 +24,12 @@
       "name": "style",
       "label": "样式",
       "type": "enum",
-      "enum": ["default", "striped", "bordered", "minimal"],
+      "enum": [
+        "default",
+        "striped",
+        "bordered",
+        "minimal"
+      ],
       "default": "default",
       "description": "表格样式"
     },
@@ -37,19 +42,79 @@
     }
   ],
   "inputs": [
-    { "name": "data", "type": "json-rows", "required": true, "description": "要导出的数据" },
-    { "name": "fileName", "type": "string", "required": false, "description": "文件名覆盖" }
+    {
+      "name": "data",
+      "type": "json-rows",
+      "required": true,
+      "description": "要导出的数据"
+    },
+    {
+      "name": "fileName",
+      "type": "string",
+      "required": false,
+      "description": "文件名覆盖"
+    }
   ],
   "outputs": [
-    { "name": "htmlText", "type": "html-string", "description": "生成的 HTML 文本" },
-    { "name": "fileName", "type": "string", "description": "实际使用的文件名" },
-    { "name": "size", "type": "number", "description": "文件大小" }
+    {
+      "name": "htmlText",
+      "type": "html-string",
+      "description": "生成的 HTML 文本"
+    },
+    {
+      "name": "fileName",
+      "type": "string",
+      "description": "实际使用的文件名"
+    },
+    {
+      "name": "size",
+      "type": "number",
+      "description": "文件大小"
+    }
   ],
   "ports": [
-    { "name": "data", "label": "数据", "type": "json-rows", "direction": "input", "required": true, "description": "JSON 行数组" },
-    { "name": "fileName", "label": "文件名", "type": "string", "direction": "input", "description": "文件名覆盖" },
-    { "name": "htmlText", "label": "HTML 文本", "type": "html-string", "direction": "output", "description": "HTML 文本" },
-    { "name": "fileName", "label": "文件名", "type": "string", "direction": "output", "description": "实际文件名" },
-    { "name": "size", "label": "大小", "type": "number", "direction": "output", "description": "文件大小" }
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true,
+      "description": "JSON 行数组"
+    },
+    {
+      "name": "fileName",
+      "label": "文件名",
+      "type": "string",
+      "direction": "input",
+      "description": "文件名覆盖"
+    },
+    {
+      "name": "htmlText",
+      "label": "HTML 文本",
+      "type": "html-string",
+      "direction": "output",
+      "description": "HTML 文本"
+    },
+    {
+      "name": "fileName",
+      "label": "文件名",
+      "type": "string",
+      "direction": "output",
+      "description": "实际文件名"
+    },
+    {
+      "name": "size",
+      "label": "大小",
+      "type": "number",
+      "direction": "output",
+      "description": "文件大小"
+    }
+  ],
+  "keywords": [
+    "导出",
+    "html",
+    "下载",
+    "export",
+    "download"
   ]
 }

@@ -6,27 +6,128 @@
   "kind": "generic",
   "methods": [],
   "properties": [
-    { "name": "fieldName", "label": "目标字段", "type": "string", "default": "", "required": true, "description": "要设置的字段名" },
-    { "name": "valueType", "label": "值类型", "type": "enum", "enum": ["static", "fromInput", "expression"], "default": "static", "description": "值的来源类型" },
-    { "name": "staticValue", "label": "静态值", "type": "any", "default": "", "description": "静态值" },
-    { "name": "expression", "label": "表达式", "type": "string", "default": "", "description": "JS 表达式" }
+    {
+      "name": "fieldName",
+      "label": "目标字段",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "要设置的字段名"
+    },
+    {
+      "name": "valueType",
+      "label": "值类型",
+      "type": "enum",
+      "enum": [
+        "static",
+        "fromInput",
+        "expression"
+      ],
+      "default": "static",
+      "description": "值的来源类型"
+    },
+    {
+      "name": "staticValue",
+      "label": "静态值",
+      "type": "any",
+      "default": "",
+      "description": "静态值"
+    },
+    {
+      "name": "expression",
+      "label": "表达式",
+      "type": "string",
+      "default": "",
+      "description": "JS 表达式"
+    }
   ],
   "inputs": [
-    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
-    { "name": "value", "type": "any", "required": false, "description": "输入值 (fromInput 模式)" },
-    { "name": "fieldName", "type": "string", "required": false, "description": "字段名覆盖" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "value",
+      "type": "any",
+      "required": false,
+      "description": "输入值 (fromInput 模式)"
+    },
+    {
+      "name": "fieldName",
+      "type": "string",
+      "required": false,
+      "description": "字段名覆盖"
+    }
   ],
   "outputs": [
-    { "name": "trigger", "type": "trigger", "description": "触发输出" },
-    { "name": "fieldName", "type": "string", "description": "目标字段" },
-    { "name": "value", "type": "any", "description": "设置的值" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "description": "触发输出"
+    },
+    {
+      "name": "fieldName",
+      "type": "string",
+      "description": "目标字段"
+    },
+    {
+      "name": "value",
+      "type": "any",
+      "description": "设置的值"
+    }
   ],
   "ports": [
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
-    { "name": "value", "label": "输入值", "type": "any", "direction": "input", "description": "输入值" },
-    { "name": "fieldName", "label": "目标字段", "type": "string", "direction": "input", "description": "字段名" },
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发输出" },
-    { "name": "fieldName", "label": "字段", "type": "string", "direction": "output", "description": "目标字段" },
-    { "name": "value", "label": "值", "type": "any", "direction": "output", "description": "设置的值" }
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "value",
+      "label": "输入值",
+      "type": "any",
+      "direction": "input",
+      "description": "输入值"
+    },
+    {
+      "name": "fieldName",
+      "label": "目标字段",
+      "type": "string",
+      "direction": "input",
+      "description": "字段名"
+    },
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "output",
+      "description": "触发输出"
+    },
+    {
+      "name": "fieldName",
+      "label": "字段",
+      "type": "string",
+      "direction": "output",
+      "description": "目标字段"
+    },
+    {
+      "name": "value",
+      "label": "值",
+      "type": "any",
+      "direction": "output",
+      "description": "设置的值"
+    }
+  ],
+  "keywords": [
+    "赋值",
+    "设置",
+    "set",
+    "value",
+    "assign"
   ]
 }

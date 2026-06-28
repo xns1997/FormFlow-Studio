@@ -5,7 +5,10 @@
   "category": "工作簿管理",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "book_append_sheet"],
+  "methodPath": [
+    "utils",
+    "book_append_sheet"
+  ],
   "inputs": [
     {
       "name": "workbook",
@@ -38,9 +41,23 @@
       "name": "sheetType",
       "label": "Sheet 类型",
       "type": "enum",
-      "enum": ["", "chart", "dialog", "macrosheet", "statsheet"],
+      "enum": [
+        "",
+        "chart",
+        "dialog",
+        "macrosheet",
+        "statsheet"
+      ],
       "default": "",
       "description": "工作表类型标记"
     }
+  ],
+  "keywords": [
+    "append",
+    "utils",
+    "book",
+    "向工作簿追加一个",
+    "sheet",
+    "XLSX"
   ]
 }

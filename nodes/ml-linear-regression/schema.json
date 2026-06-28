@@ -1,1 +1,65 @@
-{"id":"ml-linear-regression","label":"线性回归","description":"简单线性回归分析 (Python)","category":"ML · 分析","kind":"generic","properties":[{"name":"x_field","label":"自变量","type":"string","default":"","required":true,"description":"X 列名"},{"name":"y_field","label":"因变量","type":"string","default":"","required":true,"description":"Y 列名"}],"ports":[{"name":"data","label":"数据","type":"json-rows","direction":"input","required":true},{"name":"slope","label":"斜率","type":"number","direction":"output"},{"name":"intercept","label":"截距","type":"number","direction":"output"},{"name":"r2","label":"R²","type":"number","direction":"output"},{"name":"predictions","label":"预测值","type":"array","direction":"output"}]}
+{
+  "id": "ml-linear-regression",
+  "label": "线性回归",
+  "description": "简单线性回归分析 (Python)",
+  "category": "ML · 分析",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "x_field",
+      "label": "自变量",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "X 列名"
+    },
+    {
+      "name": "y_field",
+      "label": "因变量",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "Y 列名"
+    }
+  ],
+  "ports": [
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true
+    },
+    {
+      "name": "slope",
+      "label": "斜率",
+      "type": "number",
+      "direction": "output"
+    },
+    {
+      "name": "intercept",
+      "label": "截距",
+      "type": "number",
+      "direction": "output"
+    },
+    {
+      "name": "r2",
+      "label": "R²",
+      "type": "number",
+      "direction": "output"
+    },
+    {
+      "name": "predictions",
+      "label": "预测值",
+      "type": "array",
+      "direction": "output"
+    }
+  ],
+  "keywords": [
+    "线性",
+    "回归",
+    "linear",
+    "regression",
+    "predict"
+  ]
+}

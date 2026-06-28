@@ -5,7 +5,10 @@
   "category": "二维数组",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "aoa_to_sheet"],
+  "methodPath": [
+    "utils",
+    "aoa_to_sheet"
+  ],
   "inputs": [
     {
       "name": "data",
@@ -57,5 +60,13 @@
       "default": false,
       "description": "为 true 时为空单元格创建占位对象"
     }
+  ],
+  "keywords": [
+    "aoa",
+    "utils",
+    "把二维数组转成",
+    "sheet",
+    "to",
+    "XLSX"
   ]
 }

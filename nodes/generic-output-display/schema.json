@@ -17,7 +17,12 @@
       "name": "format",
       "label": "显示格式",
       "type": "enum",
-      "enum": ["auto", "json", "text", "table"],
+      "enum": [
+        "auto",
+        "json",
+        "text",
+        "table"
+      ],
       "default": "auto",
       "description": "值的显示格式"
     },
@@ -30,15 +35,54 @@
     }
   ],
   "inputs": [
-    { "name": "value", "type": "any", "required": true, "description": "要显示的值" },
-    { "name": "label", "type": "string", "required": false, "description": "标签覆盖" }
+    {
+      "name": "value",
+      "type": "any",
+      "required": true,
+      "description": "要显示的值"
+    },
+    {
+      "name": "label",
+      "type": "string",
+      "required": false,
+      "description": "标签覆盖"
+    }
   ],
   "outputs": [
-    { "name": "value", "type": "any", "description": "透传的输入值" }
+    {
+      "name": "value",
+      "type": "any",
+      "description": "透传的输入值"
+    }
   ],
   "ports": [
-    { "name": "value", "label": "输入值", "type": "any", "direction": "input", "required": true, "description": "要显示的值" },
-    { "name": "label", "label": "标签", "type": "string", "direction": "input", "description": "标签覆盖" },
-    { "name": "value", "label": "输出值", "type": "any", "direction": "output", "description": "透传的值" }
+    {
+      "name": "value",
+      "label": "输入值",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "要显示的值"
+    },
+    {
+      "name": "label",
+      "label": "标签",
+      "type": "string",
+      "direction": "input",
+      "description": "标签覆盖"
+    },
+    {
+      "name": "value",
+      "label": "输出值",
+      "type": "any",
+      "direction": "output",
+      "description": "透传的值"
+    }
+  ],
+  "keywords": [
+    "输出",
+    "显示",
+    "output",
+    "display"
   ]
 }

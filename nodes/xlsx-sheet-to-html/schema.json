@@ -5,7 +5,10 @@
   "category": "Sheet 转换",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "sheet_to_html"],
+  "methodPath": [
+    "utils",
+    "sheet_to_html"
+  ],
   "inputs": [
     {
       "name": "worksheet",
@@ -71,5 +74,15 @@
       "default": false,
       "description": "为 true 只返回 <tbody> 内容，不含 <table> 标签"
     }
+  ],
+  "keywords": [
+    "表格",
+    "导出成",
+    "utils",
+    "把",
+    "sheet",
+    "to",
+    "html",
+    "XLSX"
   ]
 }

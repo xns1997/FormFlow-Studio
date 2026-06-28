@@ -15,13 +15,41 @@
     }
   ],
   "inputs": [
-    { "name": "override", "type": "boolean", "required": false, "description": "外部传入的布尔覆盖值" }
+    {
+      "name": "override",
+      "type": "boolean",
+      "required": false,
+      "description": "外部传入的布尔覆盖值"
+    }
   ],
   "outputs": [
-    { "name": "value", "type": "boolean", "description": "当前布尔值" }
+    {
+      "name": "value",
+      "type": "boolean",
+      "description": "当前布尔值"
+    }
   ],
   "ports": [
-    { "name": "override", "label": "覆盖", "type": "boolean", "direction": "input", "description": "外部覆盖值" },
-    { "name": "value", "label": "值", "type": "boolean", "direction": "output", "description": "当前布尔值" }
+    {
+      "name": "override",
+      "label": "覆盖",
+      "type": "boolean",
+      "direction": "input",
+      "description": "外部覆盖值"
+    },
+    {
+      "name": "value",
+      "label": "值",
+      "type": "boolean",
+      "direction": "output",
+      "description": "当前布尔值"
+    }
+  ],
+  "keywords": [
+    "布尔",
+    "开关",
+    "boolean",
+    "switch",
+    "toggle"
   ]
 }

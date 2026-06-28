@@ -5,14 +5,40 @@
   "category": "XLSX · 工作簿 IO",
   "kind": "xlsx-method",
   "namespace": "XLSX",
-  "methodPath": ["parse_xlscfb"],
+  "methodPath": [
+    "parse_xlscfb"
+  ],
   "inputs": [
-    { "name": "cfb", "type": "CFB", "required": true, "description": "CFB 对象" }
+    {
+      "name": "cfb",
+      "type": "CFB",
+      "required": true,
+      "description": "CFB 对象"
+    }
   ],
   "outputs": [
-    { "name": "workbook", "type": "Workbook", "description": "工作簿对象" }
+    {
+      "name": "workbook",
+      "type": "Workbook",
+      "description": "工作簿对象"
+    }
   ],
   "properties": [
-    { "name": "opts", "label": "选项", "type": "object", "description": "解析选项" }
+    {
+      "name": "opts",
+      "label": "选项",
+      "type": "object",
+      "description": "解析选项"
+    }
+  ],
+  "keywords": [
+    "excel",
+    "parse",
+    "cfb",
+    "xlscfb",
+    "文件",
+    "解析",
+    "格式的",
+    "XLSX"
   ]
 }

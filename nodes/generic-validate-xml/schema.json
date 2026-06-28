@@ -5,12 +5,49 @@
   "category": "通用 · 校验",
   "kind": "generic",
   "properties": [
-    { "name": "xsdSchema", "label": "XSD Schema", "type": "string", "default": "", "description": "XSD Schema 内容或路径" },
-    { "name": "checkWellFormed", "label": "检查格式", "type": "boolean", "default": true, "description": "是否检查 well-formedness" }
+    {
+      "name": "xsdSchema",
+      "label": "XSD Schema",
+      "type": "string",
+      "default": "",
+      "description": "XSD Schema 内容或路径"
+    },
+    {
+      "name": "checkWellFormed",
+      "label": "检查格式",
+      "type": "boolean",
+      "default": true,
+      "description": "是否检查 well-formedness"
+    }
   ],
   "ports": [
-    { "name": "data", "label": "数据", "type": "string", "direction": "input", "required": true, "description": "XML 字符串" },
-    { "name": "valid", "label": "是否通过", "type": "boolean", "direction": "output", "description": "校验结果" },
-    { "name": "errors", "label": "错误列表", "type": "json-rows", "direction": "output", "description": "校验错误明细" }
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "string",
+      "direction": "input",
+      "required": true,
+      "description": "XML 字符串"
+    },
+    {
+      "name": "valid",
+      "label": "是否通过",
+      "type": "boolean",
+      "direction": "output",
+      "description": "校验结果"
+    },
+    {
+      "name": "errors",
+      "label": "错误列表",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "校验错误明细"
+    }
+  ],
+  "keywords": [
+    "校验",
+    "xml",
+    "validate",
+    "xsd"
   ]
 }

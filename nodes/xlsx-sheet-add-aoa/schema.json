@@ -5,7 +5,10 @@
   "category": "Sheet 操作",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "sheet_add_aoa"],
+  "methodPath": [
+    "utils",
+    "sheet_add_aoa"
+  ],
   "inputs": [
     {
       "name": "worksheet",
@@ -56,5 +59,14 @@
       "default": "yyyy-mm-dd",
       "description": "日期的输出格式"
     }
+  ],
+  "keywords": [
+    "aoa",
+    "add",
+    "utils",
+    "sheet",
+    "向已有",
+    "追加二维数组数据",
+    "XLSX"
   ]
 }

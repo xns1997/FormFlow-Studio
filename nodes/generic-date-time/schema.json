@@ -5,15 +5,91 @@
   "category": "通用 · 清洗",
   "kind": "generic",
   "properties": [
-    { "name": "field", "label": "日期字段", "type": "string", "default": "", "required": true, "description": "要处理的日期列名" },
-    { "name": "operation", "label": "操作", "type": "enum", "enum": ["add", "subtract", "extract", "format", "diff", "round", "now"], "default": "extract", "description": "日期操作" },
-    { "name": "unit", "label": "单位", "type": "enum", "enum": ["year", "month", "day", "hour", "minute", "second", "week"], "default": "day", "description": "时间单位" },
-    { "name": "amount", "label": "数量", "type": "number", "default": 1, "description": "加减的数量" },
-    { "name": "format", "label": "格式", "type": "string", "default": "YYYY-MM-DD", "description": "输出格式" },
-    { "name": "newField", "label": "新字段名", "type": "string", "default": "", "description": "结果存储到新列" }
+    {
+      "name": "field",
+      "label": "日期字段",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "要处理的日期列名"
+    },
+    {
+      "name": "operation",
+      "label": "操作",
+      "type": "enum",
+      "enum": [
+        "add",
+        "subtract",
+        "extract",
+        "format",
+        "diff",
+        "round",
+        "now"
+      ],
+      "default": "extract",
+      "description": "日期操作"
+    },
+    {
+      "name": "unit",
+      "label": "单位",
+      "type": "enum",
+      "enum": [
+        "year",
+        "month",
+        "day",
+        "hour",
+        "minute",
+        "second",
+        "week"
+      ],
+      "default": "day",
+      "description": "时间单位"
+    },
+    {
+      "name": "amount",
+      "label": "数量",
+      "type": "number",
+      "default": 1,
+      "description": "加减的数量"
+    },
+    {
+      "name": "format",
+      "label": "格式",
+      "type": "string",
+      "default": "YYYY-MM-DD",
+      "description": "输出格式"
+    },
+    {
+      "name": "newField",
+      "label": "新字段名",
+      "type": "string",
+      "default": "",
+      "description": "结果存储到新列"
+    }
   ],
   "ports": [
-    { "name": "data", "label": "数据", "type": "json-rows", "direction": "input", "required": true, "description": "输入数据" },
-    { "name": "data", "label": "结果", "type": "json-rows", "direction": "output", "description": "处理后数据" }
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true,
+      "description": "输入数据"
+    },
+    {
+      "name": "data",
+      "label": "结果",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "处理后数据"
+    }
+  ],
+  "keywords": [
+    "日期",
+    "时间",
+    "date",
+    "time",
+    "add",
+    "extract"
   ]
 }

@@ -5,14 +5,40 @@
   "category": "XLSX · 工作簿 IO",
   "kind": "xlsx-method",
   "namespace": "XLSX",
-  "methodPath": ["parse_zip"],
+  "methodPath": [
+    "parse_zip"
+  ],
   "inputs": [
-    { "name": "data", "type": "ArrayBuffer | Uint8Array", "required": true, "description": "ZIP 二进制数据" }
+    {
+      "name": "data",
+      "type": "ArrayBuffer | Uint8Array",
+      "required": true,
+      "description": "ZIP 二进制数据"
+    }
   ],
   "outputs": [
-    { "name": "workbook", "type": "Workbook", "description": "工作簿对象" }
+    {
+      "name": "workbook",
+      "type": "Workbook",
+      "description": "工作簿对象"
+    }
   ],
   "properties": [
-    { "name": "opts", "label": "选项", "type": "object", "description": "解析选项" }
+    {
+      "name": "opts",
+      "label": "选项",
+      "type": "object",
+      "description": "解析选项"
+    }
+  ],
+  "keywords": [
+    "等",
+    "excel",
+    "parse",
+    "xlsm",
+    "文件",
+    "xlsx",
+    "解析",
+    "格式的"
   ]
 }

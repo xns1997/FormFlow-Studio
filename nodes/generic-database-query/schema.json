@@ -5,13 +5,58 @@
   "category": "通用 · 集成",
   "kind": "generic",
   "properties": [
-    { "name": "connectionString", "label": "连接字符串", "type": "string", "default": "", "required": true, "description": "数据库连接字符串" },
-    { "name": "query", "label": "SQL 查询", "type": "string", "default": "", "required": true, "description": "SQL 查询语句" },
-    { "name": "params", "label": "查询参数", "type": "json-string", "default": "[]", "description": "参数化查询的参数数组" }
+    {
+      "name": "connectionString",
+      "label": "连接字符串",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "数据库连接字符串"
+    },
+    {
+      "name": "query",
+      "label": "SQL 查询",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "SQL 查询语句"
+    },
+    {
+      "name": "params",
+      "label": "查询参数",
+      "type": "json-string",
+      "default": "[]",
+      "description": "参数化查询的参数数组"
+    }
   ],
   "ports": [
-    { "name": "params", "label": "参数", "type": "any", "direction": "input", "description": "外部传入的查询参数" },
-    { "name": "data", "label": "结果", "type": "json-rows", "direction": "output", "description": "查询结果" },
-    { "name": "rowCount", "label": "行数", "type": "number", "direction": "output", "description": "结果行数" }
+    {
+      "name": "params",
+      "label": "参数",
+      "type": "any",
+      "direction": "input",
+      "description": "外部传入的查询参数"
+    },
+    {
+      "name": "data",
+      "label": "结果",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "查询结果"
+    },
+    {
+      "name": "rowCount",
+      "label": "行数",
+      "type": "number",
+      "direction": "output",
+      "description": "结果行数"
+    }
+  ],
+  "keywords": [
+    "数据库",
+    "查询",
+    "sql",
+    "database",
+    "query"
   ]
 }

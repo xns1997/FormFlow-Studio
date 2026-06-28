@@ -6,22 +6,91 @@
   "kind": "generic",
   "methods": [],
   "properties": [
-    { "name": "cellAddress", "label": "单元格地址", "type": "string", "default": "A1", "description": "批注目标单元格" },
-    { "name": "content", "label": "批注内容", "type": "string", "default": "", "required": true, "description": "批注文本" },
-    { "name": "author", "label": "作者", "type": "string", "default": "", "description": "作者名称" }
+    {
+      "name": "cellAddress",
+      "label": "单元格地址",
+      "type": "string",
+      "default": "A1",
+      "description": "批注目标单元格"
+    },
+    {
+      "name": "content",
+      "label": "批注内容",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "批注文本"
+    },
+    {
+      "name": "author",
+      "label": "作者",
+      "type": "string",
+      "default": "",
+      "description": "作者名称"
+    }
   ],
   "inputs": [
-    { "name": "worksheet", "type": "object", "required": true, "description": "工作表对象" },
-    { "name": "cellAddress", "type": "string", "required": false, "description": "地址覆盖" },
-    { "name": "content", "type": "string", "required": false, "description": "内容覆盖" }
+    {
+      "name": "worksheet",
+      "type": "object",
+      "required": true,
+      "description": "工作表对象"
+    },
+    {
+      "name": "cellAddress",
+      "type": "string",
+      "required": false,
+      "description": "地址覆盖"
+    },
+    {
+      "name": "content",
+      "type": "string",
+      "required": false,
+      "description": "内容覆盖"
+    }
   ],
   "outputs": [
-    { "name": "worksheet", "type": "object", "description": "修改后的工作表" }
+    {
+      "name": "worksheet",
+      "type": "object",
+      "description": "修改后的工作表"
+    }
   ],
   "ports": [
-    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "input", "required": true, "description": "工作表" },
-    { "name": "cellAddress", "label": "地址", "type": "string", "direction": "input", "description": "单元格地址" },
-    { "name": "content", "label": "内容", "type": "string", "direction": "input", "description": "批注内容" },
-    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "output", "description": "修改后的工作表" }
+    {
+      "name": "worksheet",
+      "label": "工作表",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "工作表"
+    },
+    {
+      "name": "cellAddress",
+      "label": "地址",
+      "type": "string",
+      "direction": "input",
+      "description": "单元格地址"
+    },
+    {
+      "name": "content",
+      "label": "内容",
+      "type": "string",
+      "direction": "input",
+      "description": "批注内容"
+    },
+    {
+      "name": "worksheet",
+      "label": "工作表",
+      "type": "object",
+      "direction": "output",
+      "description": "修改后的工作表"
+    }
+  ],
+  "keywords": [
+    "批注",
+    "注释",
+    "comment",
+    "note"
   ]
 }

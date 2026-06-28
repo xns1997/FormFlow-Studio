@@ -5,12 +5,34 @@
   "category": "XLSX · 复合文件",
   "kind": "xlsx-method",
   "namespace": "XLSX.CFB.utils",
-  "methodPath": ["CFB", "utils", "cfb_gc"],
+  "methodPath": [
+    "CFB",
+    "utils",
+    "cfb_gc"
+  ],
   "inputs": [
-    { "name": "cfb", "type": "CFB", "required": true, "description": "复合文件对象" }
+    {
+      "name": "cfb",
+      "type": "CFB",
+      "required": true,
+      "description": "复合文件对象"
+    }
   ],
   "outputs": [
-    { "name": "cfb", "type": "CFB", "description": "清理后的复合文件" }
+    {
+      "name": "cfb",
+      "type": "CFB",
+      "description": "清理后的复合文件"
+    }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "utils",
+    "清理复合文件中的无效条目",
+    "cfb",
+    "垃圾回收",
+    "CFB",
+    "gc",
+    "XLSX"
+  ]
 }

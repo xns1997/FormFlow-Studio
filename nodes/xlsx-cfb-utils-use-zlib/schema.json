@@ -5,12 +5,35 @@
   "category": "XLSX · 复合文件",
   "kind": "xlsx-method",
   "namespace": "XLSX.CFB.utils",
-  "methodPath": ["CFB", "utils", "use_zlib"],
+  "methodPath": [
+    "CFB",
+    "utils",
+    "use_zlib"
+  ],
   "inputs": [
-    { "name": "zlib", "type": "object", "required": true, "description": "zlib 实现对象" }
+    {
+      "name": "zlib",
+      "type": "object",
+      "required": true,
+      "description": "zlib 实现对象"
+    }
   ],
   "outputs": [
-    { "name": "result", "type": "void", "description": "设置完成" }
+    {
+      "name": "result",
+      "type": "void",
+      "description": "设置完成"
+    }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "实现",
+    "utils",
+    "cfb",
+    "使用的",
+    "设置",
+    "use",
+    "zlib",
+    "CFB"
+  ]
 }

@@ -5,7 +5,10 @@
   "category": "JSON 转换",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "sheet_to_json"],
+  "methodPath": [
+    "utils",
+    "sheet_to_json"
+  ],
   "inputs": [
     {
       "name": "worksheet",
@@ -86,5 +89,15 @@
       "default": -1,
       "description": "指定哪一行作为表头，-1 表示自动检测"
     }
+  ],
+  "keywords": [
+    "行数组",
+    "utils",
+    "把",
+    "转成",
+    "sheet",
+    "to",
+    "json",
+    "XLSX"
   ]
 }

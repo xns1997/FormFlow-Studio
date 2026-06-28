@@ -36,13 +36,40 @@
     }
   ],
   "inputs": [
-    { "name": "override", "type": "number", "required": false, "description": "外部传入的数字覆盖值" }
+    {
+      "name": "override",
+      "type": "number",
+      "required": false,
+      "description": "外部传入的数字覆盖值"
+    }
   ],
   "outputs": [
-    { "name": "value", "type": "number", "description": "当前数字值" }
+    {
+      "name": "value",
+      "type": "number",
+      "description": "当前数字值"
+    }
   ],
   "ports": [
-    { "name": "override", "label": "覆盖", "type": "number", "direction": "input", "description": "外部覆盖值" },
-    { "name": "value", "label": "值", "type": "number", "direction": "output", "description": "当前数字值" }
+    {
+      "name": "override",
+      "label": "覆盖",
+      "type": "number",
+      "direction": "input",
+      "description": "外部覆盖值"
+    },
+    {
+      "name": "value",
+      "label": "值",
+      "type": "number",
+      "direction": "output",
+      "description": "当前数字值"
+    }
+  ],
+  "keywords": [
+    "数字",
+    "输入",
+    "number",
+    "input"
   ]
 }

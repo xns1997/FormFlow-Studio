@@ -1,1 +1,69 @@
-{"id":"ml-hypothesis-test","label":"假设检验","description":"t检验/卡方检验 (Python scipy)","category":"ML · 分析","kind":"generic","properties":[{"name":"field1","label":"字段1","type":"string","default":"","required":true},{"name":"field2","label":"字段2","type":"string","default":"","description":"配对检验时的第二个字段"},{"name":"test_type","label":"检验类型","type":"enum","enum":["ttest","chi2"],"default":"ttest"}],"ports":[{"name":"data","label":"数据","type":"json-rows","direction":"input","required":true},{"name":"statistic","label":"统计量","type":"number","direction":"output"},{"name":"p_value","label":"P值","type":"number","direction":"output"},{"name":"significant","label":"是否显著","type":"boolean","direction":"output"}]}
+{
+  "id": "ml-hypothesis-test",
+  "label": "假设检验",
+  "description": "t检验/卡方检验 (Python scipy)",
+  "category": "ML · 分析",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "field1",
+      "label": "字段1",
+      "type": "string",
+      "default": "",
+      "required": true
+    },
+    {
+      "name": "field2",
+      "label": "字段2",
+      "type": "string",
+      "default": "",
+      "description": "配对检验时的第二个字段"
+    },
+    {
+      "name": "test_type",
+      "label": "检验类型",
+      "type": "enum",
+      "enum": [
+        "ttest",
+        "chi2"
+      ],
+      "default": "ttest"
+    }
+  ],
+  "ports": [
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true
+    },
+    {
+      "name": "statistic",
+      "label": "统计量",
+      "type": "number",
+      "direction": "output"
+    },
+    {
+      "name": "p_value",
+      "label": "P值",
+      "type": "number",
+      "direction": "output"
+    },
+    {
+      "name": "significant",
+      "label": "是否显著",
+      "type": "boolean",
+      "direction": "output"
+    }
+  ],
+  "keywords": [
+    "假设",
+    "检验",
+    "t检验",
+    "卡方",
+    "hypothesis",
+    "test",
+    "p-value"
+  ]
+}

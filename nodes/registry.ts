@@ -11,6 +11,8 @@ export interface FlowNodeSpec {
   properties: SchemaProperty[];
   ports: SchemaPort[];
   argumentHint?: string;
+  keywords?: string[];
+  originalName?: string;
 }
 
 type XlsxNamespace = Record<string, unknown>;
@@ -774,6 +776,8 @@ export async function loadNodeRegistry(): Promise<NodeRegistry> {
             kind: schema.kind || 'generic',
             properties: schema.properties || [],
             ports: schema.ports || [],
+            keywords: schema.keywords || [],
+            originalName: schema.originalName,
           });
         }
       } catch {}

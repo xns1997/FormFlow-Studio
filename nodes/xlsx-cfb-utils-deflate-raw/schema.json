@@ -5,12 +5,35 @@
   "category": "XLSX · 复合文件",
   "kind": "xlsx-method",
   "namespace": "XLSX.CFB.utils",
-  "methodPath": ["CFB", "utils", "_deflateRaw"],
+  "methodPath": [
+    "CFB",
+    "utils",
+    "_deflateRaw"
+  ],
   "inputs": [
-    { "name": "data", "type": "Uint8Array | string", "required": true, "description": "要压缩的数据" }
+    {
+      "name": "data",
+      "type": "Uint8Array | string",
+      "required": true,
+      "description": "要压缩的数据"
+    }
   ],
   "outputs": [
-    { "name": "compressed", "type": "Uint8Array", "description": "压缩后的数据" }
+    {
+      "name": "compressed",
+      "type": "Uint8Array",
+      "description": "压缩后的数据"
+    }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "deflate",
+    "deflateRaw",
+    "utils",
+    "压缩数据",
+    "使用",
+    "原始",
+    "zlib",
+    "CFB"
+  ]
 }

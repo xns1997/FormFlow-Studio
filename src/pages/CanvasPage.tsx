@@ -547,7 +547,15 @@ export default function CanvasPage() {
   if (!registry) return <div className="loading-splash"><div className="loading-spinner" /><p>加载中…</p></div>;
 
   const allSpecs = registry.specs;
-  const visibleSpecs = allSpecs.filter((s) => { if (mode !== 'all' && s.kind !== mode) return false; if (query && !`${s.label} ${s.category} ${s.description}`.toLowerCase().includes(query.toLowerCase())) return false; return true; });
+  const visibleSpecs = allSpecs.filter((s) => {
+    if (mode !== 'all' && s.kind !== mode) return false;
+    if (query) {
+      const q = query.toLowerCase();
+      const searchable = [s.label, s.category, s.description, ...(s.keywords || []), s.originalName || ''].join(' ').toLowerCase();
+      if (!searchable.includes(q)) return false;
+    }
+    return true;
+  });
   const groups: Record<string, FlowNodeSpec[]> = {};
   for (const s of visibleSpecs) { (groups[s.category] = groups[s.category] || []).push(s); }
 
@@ -580,7 +588,25 @@ export default function CanvasPage() {
           <div className="palette-list">
             {Object.entries(groups).map(([cat, specs]) => (
               <section key={cat}><h2>{cat}</h2>
-                {specs.map((s) => <button key={s.id} className="palette-item" onClick={() => addSpecNode(s)}><span>{s.label}</span><small>{s.ports.length} 端口</small></button>)}
+                {specs.map((s) => (
+                  <button key={s.id} className="palette-item" onClick={() => addSpecNode(s)}>
+                    <span>{s.label}</span>
+                    <div className="palette-item-tooltip">
+                      <div className="tooltip-title">{s.label}</div>
+                      {s.originalName && <div className="tooltip-original">{s.originalName}</div>}
+                      <div className="tooltip-desc">{s.description}</div>
+                      <div className="tooltip-meta">
+                        <span>{s.ports.filter(p => p.direction === 'input').length} 入 / {s.ports.filter(p => p.direction === 'output').length} 出</span>
+                        <span>{s.properties.length} 配置</span>
+                      </div>
+                      {s.keywords && s.keywords.length > 0 && (
+                        <div className="tooltip-keywords">
+                          {s.keywords.map((k, i) => <span key={i} className="tooltip-kw">{k}</span>)}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))}
               </section>
             ))}
           </div>

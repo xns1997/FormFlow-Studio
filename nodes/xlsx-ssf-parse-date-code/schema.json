@@ -5,14 +5,42 @@
   "category": "XLSX · 格式化",
   "kind": "xlsx-method",
   "namespace": "XLSX.SSF",
-  "methodPath": ["SSF", "parse_date_code"],
+  "methodPath": [
+    "SSF",
+    "parse_date_code"
+  ],
   "inputs": [
-    { "name": "num", "type": "number", "required": true, "description": "Excel 日期序列号" }
+    {
+      "name": "num",
+      "type": "number",
+      "required": true,
+      "description": "Excel 日期序列号"
+    }
   ],
   "outputs": [
-    { "name": "date", "type": "object", "description": "解析后的日期对象 {y, m, d, D, T}" }
+    {
+      "name": "date",
+      "type": "object",
+      "description": "解析后的日期对象 {y, m, d, D, T}"
+    }
   ],
   "properties": [
-    { "name": "dateNF", "label": "日期格式", "type": "string", "default": "yyyy-mm-dd", "description": "日期格式代码" }
+    {
+      "name": "dateNF",
+      "label": "日期格式",
+      "type": "string",
+      "default": "yyyy-mm-dd",
+      "description": "日期格式代码"
+    }
+  ],
+  "keywords": [
+    "日期序列号解析为日期对象",
+    "XLSX",
+    "excel",
+    "将",
+    "date",
+    "parse",
+    "code",
+    "SSF"
   ]
 }

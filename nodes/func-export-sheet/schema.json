@@ -6,20 +6,89 @@
   "kind": "generic",
   "methods": [],
   "properties": [
-    { "name": "format", "label": "导出格式", "type": "enum", "enum": ["csv", "json", "html", "txt"], "default": "csv", "description": "导出格式" },
-    { "name": "delimiter", "label": "分隔符", "type": "string", "default": ",", "description": "CSV 分隔符" },
-    { "name": "includeHeader", "label": "包含表头", "type": "boolean", "default": true, "description": "是否包含表头" }
+    {
+      "name": "format",
+      "label": "导出格式",
+      "type": "enum",
+      "enum": [
+        "csv",
+        "json",
+        "html",
+        "txt"
+      ],
+      "default": "csv",
+      "description": "导出格式"
+    },
+    {
+      "name": "delimiter",
+      "label": "分隔符",
+      "type": "string",
+      "default": ",",
+      "description": "CSV 分隔符"
+    },
+    {
+      "name": "includeHeader",
+      "label": "包含表头",
+      "type": "boolean",
+      "default": true,
+      "description": "是否包含表头"
+    }
   ],
   "inputs": [
-    { "name": "worksheet", "type": "object", "required": true, "description": "工作表对象" },
-    { "name": "format", "type": "string", "required": false, "description": "格式覆盖" }
+    {
+      "name": "worksheet",
+      "type": "object",
+      "required": true,
+      "description": "工作表对象"
+    },
+    {
+      "name": "format",
+      "type": "string",
+      "required": false,
+      "description": "格式覆盖"
+    }
   ],
   "outputs": [
-    { "name": "text", "type": "string", "description": "导出的文本" }
+    {
+      "name": "text",
+      "type": "string",
+      "description": "导出的文本"
+    }
   ],
   "ports": [
-    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "input", "required": true, "description": "工作表" },
-    { "name": "format", "label": "格式", "type": "enum", "direction": "input", "enum": ["csv", "json", "html", "txt"], "description": "导出格式" },
-    { "name": "text", "label": "文本", "type": "string", "direction": "output", "description": "导出文本" }
+    {
+      "name": "worksheet",
+      "label": "工作表",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "工作表"
+    },
+    {
+      "name": "format",
+      "label": "格式",
+      "type": "enum",
+      "direction": "input",
+      "enum": [
+        "csv",
+        "json",
+        "html",
+        "txt"
+      ],
+      "description": "导出格式"
+    },
+    {
+      "name": "text",
+      "label": "文本",
+      "type": "string",
+      "direction": "output",
+      "description": "导出文本"
+    }
+  ],
+  "keywords": [
+    "导出",
+    "工作表",
+    "export",
+    "sheet"
   ]
 }

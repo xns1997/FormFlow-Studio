@@ -5,7 +5,10 @@
   "category": "DOM 操作",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "sheet_add_dom"],
+  "methodPath": [
+    "utils",
+    "sheet_add_dom"
+  ],
   "inputs": [
     {
       "name": "worksheet",
@@ -49,5 +52,15 @@
       "default": false,
       "description": "为 true 时将日期存储为 Date 对象"
     }
+  ],
+  "keywords": [
+    "add",
+    "utils",
+    "元素追加到已有",
+    "sheet",
+    "将",
+    "table",
+    "dom",
+    "XLSX"
   ]
 }

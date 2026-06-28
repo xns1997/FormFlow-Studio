@@ -6,25 +6,108 @@
   "kind": "generic",
   "methods": [],
   "properties": [
-    { "name": "componentId", "label": "组件 ID", "type": "string", "default": "", "required": true, "description": "目标组件" },
-    { "name": "disabled", "label": "禁用", "type": "boolean", "default": false, "description": "是否禁用" }
+    {
+      "name": "componentId",
+      "label": "组件 ID",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "目标组件"
+    },
+    {
+      "name": "disabled",
+      "label": "禁用",
+      "type": "boolean",
+      "default": false,
+      "description": "是否禁用"
+    }
   ],
   "inputs": [
-    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
-    { "name": "componentId", "type": "string", "required": false, "description": "组件 ID 覆盖" },
-    { "name": "disabled", "type": "boolean", "required": false, "description": "禁用覆盖" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "componentId",
+      "type": "string",
+      "required": false,
+      "description": "组件 ID 覆盖"
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "required": false,
+      "description": "禁用覆盖"
+    }
   ],
   "outputs": [
-    { "name": "trigger", "type": "trigger", "description": "触发输出" },
-    { "name": "componentId", "type": "string", "description": "目标组件" },
-    { "name": "disabled", "type": "boolean", "description": "设置的禁用状态" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "description": "触发输出"
+    },
+    {
+      "name": "componentId",
+      "type": "string",
+      "description": "目标组件"
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "description": "设置的禁用状态"
+    }
   ],
   "ports": [
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
-    { "name": "componentId", "label": "组件", "type": "string", "direction": "input", "description": "组件 ID" },
-    { "name": "disabled", "label": "禁用", "type": "boolean", "direction": "input", "description": "是否禁用" },
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发输出" },
-    { "name": "componentId", "label": "组件", "type": "string", "direction": "output", "description": "目标组件" },
-    { "name": "disabled", "label": "禁用", "type": "boolean", "direction": "output", "description": "禁用状态" }
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "componentId",
+      "label": "组件",
+      "type": "string",
+      "direction": "input",
+      "description": "组件 ID"
+    },
+    {
+      "name": "disabled",
+      "label": "禁用",
+      "type": "boolean",
+      "direction": "input",
+      "description": "是否禁用"
+    },
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "output",
+      "description": "触发输出"
+    },
+    {
+      "name": "componentId",
+      "label": "组件",
+      "type": "string",
+      "direction": "output",
+      "description": "目标组件"
+    },
+    {
+      "name": "disabled",
+      "label": "禁用",
+      "type": "boolean",
+      "direction": "output",
+      "description": "禁用状态"
+    }
+  ],
+  "keywords": [
+    "禁用",
+    "启用",
+    "disabled",
+    "enable"
   ]
 }

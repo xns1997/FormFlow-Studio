@@ -5,13 +5,40 @@
   "category": "XLSX · 复合文件",
   "kind": "xlsx-method",
   "namespace": "XLSX.CFB.utils",
-  "methodPath": ["CFB", "utils", "ReadShift"],
+  "methodPath": [
+    "CFB",
+    "utils",
+    "ReadShift"
+  ],
   "inputs": [
-    { "name": "sz", "type": "number", "required": true, "description": "要读取的字节数" },
-    { "name": "type", "type": "string", "required": false, "description": "数据类型：str, utf16, hex, etc." }
+    {
+      "name": "sz",
+      "type": "number",
+      "required": true,
+      "description": "要读取的字节数"
+    },
+    {
+      "name": "type",
+      "type": "string",
+      "required": false,
+      "description": "数据类型：str, utf16, hex, etc."
+    }
   ],
   "outputs": [
-    { "name": "data", "type": "any", "description": "读取到的数据" }
+    {
+      "name": "data",
+      "type": "any",
+      "description": "读取到的数据"
+    }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "utils",
+    "二进制流中读取指定长度的数据",
+    "cfb",
+    "从",
+    "ReadShift",
+    "CFB",
+    "XLSX"
+  ]
 }

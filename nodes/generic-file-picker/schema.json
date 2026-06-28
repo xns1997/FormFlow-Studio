@@ -12,7 +12,14 @@
       "type": "string",
       "default": ".xlsx,.xls,.csv",
       "description": "允许的文件扩展名，逗号分隔",
-      "port": { "name": "accept", "label": "文件类型", "type": "string", "direction": "input", "defaultValue": ".xlsx,.xls,.csv", "description": "允许的文件扩展名" }
+      "port": {
+        "name": "accept",
+        "label": "文件类型",
+        "type": "string",
+        "direction": "input",
+        "defaultValue": ".xlsx,.xls,.csv",
+        "description": "允许的文件扩展名"
+      }
     },
     {
       "name": "multiple",
@@ -20,35 +27,130 @@
       "type": "boolean",
       "default": false,
       "description": "是否允许选择多个文件",
-      "port": { "name": "multiple", "label": "多选", "type": "boolean", "direction": "input", "defaultValue": false, "description": "是否允许多选" }
+      "port": {
+        "name": "multiple",
+        "label": "多选",
+        "type": "boolean",
+        "direction": "input",
+        "defaultValue": false,
+        "description": "是否允许多选"
+      }
     },
     {
       "name": "readAs",
       "label": "读取方式",
       "type": "enum",
-      "enum": ["arrayBuffer", "text", "dataURL"],
+      "enum": [
+        "arrayBuffer",
+        "text",
+        "dataURL"
+      ],
       "default": "arrayBuffer",
       "description": "文件读取方式"
     }
   ],
   "inputs": [
-    { "name": "trigger", "type": "trigger", "required": true, "description": "触发文件选择" },
-    { "name": "accept", "type": "string", "required": false, "description": "文件类型过滤" },
-    { "name": "multiple", "type": "boolean", "required": false, "description": "允许多选" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "required": true,
+      "description": "触发文件选择"
+    },
+    {
+      "name": "accept",
+      "type": "string",
+      "required": false,
+      "description": "文件类型过滤"
+    },
+    {
+      "name": "multiple",
+      "type": "boolean",
+      "required": false,
+      "description": "允许多选"
+    }
   ],
   "outputs": [
-    { "name": "file", "type": "File", "description": "选中的文件对象" },
-    { "name": "data", "type": "ArrayBuffer", "description": "文件二进制数据" },
-    { "name": "name", "type": "string", "description": "文件名" },
-    { "name": "size", "type": "number", "description": "文件大小(字节)" }
+    {
+      "name": "file",
+      "type": "File",
+      "description": "选中的文件对象"
+    },
+    {
+      "name": "data",
+      "type": "ArrayBuffer",
+      "description": "文件二进制数据"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "文件名"
+    },
+    {
+      "name": "size",
+      "type": "number",
+      "description": "文件大小(字节)"
+    }
   ],
   "ports": [
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发文件选择" },
-    { "name": "accept", "label": "文件类型", "type": "string", "direction": "input", "defaultValue": ".xlsx,.xls,.csv", "description": "允许的文件扩展名" },
-    { "name": "multiple", "label": "多选", "type": "boolean", "direction": "input", "defaultValue": false, "description": "是否允许多选" },
-    { "name": "file", "label": "文件", "type": "File", "direction": "output", "description": "选中的文件对象" },
-    { "name": "data", "label": "数据", "type": "ArrayBuffer", "direction": "output", "description": "文件二进制数据" },
-    { "name": "name", "label": "文件名", "type": "string", "direction": "output", "description": "文件名" },
-    { "name": "size", "label": "大小", "type": "number", "direction": "output", "description": "文件大小" }
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "触发文件选择"
+    },
+    {
+      "name": "accept",
+      "label": "文件类型",
+      "type": "string",
+      "direction": "input",
+      "defaultValue": ".xlsx,.xls,.csv",
+      "description": "允许的文件扩展名"
+    },
+    {
+      "name": "multiple",
+      "label": "多选",
+      "type": "boolean",
+      "direction": "input",
+      "defaultValue": false,
+      "description": "是否允许多选"
+    },
+    {
+      "name": "file",
+      "label": "文件",
+      "type": "File",
+      "direction": "output",
+      "description": "选中的文件对象"
+    },
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "ArrayBuffer",
+      "direction": "output",
+      "description": "文件二进制数据"
+    },
+    {
+      "name": "name",
+      "label": "文件名",
+      "type": "string",
+      "direction": "output",
+      "description": "文件名"
+    },
+    {
+      "name": "size",
+      "label": "大小",
+      "type": "number",
+      "direction": "output",
+      "description": "文件大小"
+    }
+  ],
+  "keywords": [
+    "文件",
+    "上传",
+    "选择",
+    "file",
+    "upload",
+    "pick"
   ]
 }

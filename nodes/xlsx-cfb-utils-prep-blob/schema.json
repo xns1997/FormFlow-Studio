@@ -5,13 +5,40 @@
   "category": "XLSX · 复合文件",
   "kind": "xlsx-method",
   "namespace": "XLSX.CFB.utils",
-  "methodPath": ["CFB", "utils", "prep_blob"],
+  "methodPath": [
+    "CFB",
+    "utils",
+    "prep_blob"
+  ],
   "inputs": [
-    { "name": "blob", "type": "Blob", "required": true, "description": "Blob 对象" },
-    { "name": "offset", "type": "number", "required": false, "description": "起始偏移量" }
+    {
+      "name": "blob",
+      "type": "Blob",
+      "required": true,
+      "description": "Blob 对象"
+    },
+    {
+      "name": "offset",
+      "type": "number",
+      "required": false,
+      "description": "起始偏移量"
+    }
   ],
   "outputs": [
-    { "name": "blob", "type": "Blob", "description": "准备后的 Blob" }
+    {
+      "name": "blob",
+      "type": "Blob",
+      "description": "准备后的 Blob"
+    }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "utils",
+    "准备",
+    "prep",
+    "blob",
+    "对象用于读取操作",
+    "CFB",
+    "XLSX"
+  ]
 }

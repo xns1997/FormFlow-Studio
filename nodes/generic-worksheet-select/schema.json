@@ -10,7 +10,13 @@
       "name": "selectMode",
       "label": "选择模式",
       "type": "enum",
-      "enum": ["byName", "byIndex", "all", "active", "first"],
+      "enum": [
+        "byName",
+        "byIndex",
+        "all",
+        "active",
+        "first"
+      ],
       "default": "active",
       "description": "选择工作表的方式"
     },
@@ -31,23 +37,114 @@
     }
   ],
   "inputs": [
-    { "name": "workbook", "type": "Workbook", "required": true, "description": "输入工作簿对象" },
-    { "name": "selectMode", "type": "string", "required": false, "description": "选择模式覆盖" },
-    { "name": "sheetName", "type": "string", "required": false, "description": "目标工作表名" },
-    { "name": "sheetIndex", "type": "number", "required": false, "description": "目标索引" }
+    {
+      "name": "workbook",
+      "type": "Workbook",
+      "required": true,
+      "description": "输入工作簿对象"
+    },
+    {
+      "name": "selectMode",
+      "type": "string",
+      "required": false,
+      "description": "选择模式覆盖"
+    },
+    {
+      "name": "sheetName",
+      "type": "string",
+      "required": false,
+      "description": "目标工作表名"
+    },
+    {
+      "name": "sheetIndex",
+      "type": "number",
+      "required": false,
+      "description": "目标索引"
+    }
   ],
   "outputs": [
-    { "name": "worksheet", "type": "Worksheet", "description": "选中的工作表" },
-    { "name": "sheetNames", "type": "string[]", "description": "所有工作表名称" },
-    { "name": "selectedIndex", "type": "number", "description": "选中的索引" }
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "description": "选中的工作表"
+    },
+    {
+      "name": "sheetNames",
+      "type": "string[]",
+      "description": "所有工作表名称"
+    },
+    {
+      "name": "selectedIndex",
+      "type": "number",
+      "description": "选中的索引"
+    }
   ],
   "ports": [
-    { "name": "workbook", "label": "工作簿", "type": "object", "direction": "input", "required": true, "description": "输入工作簿" },
-    { "name": "selectMode", "label": "选择模式", "type": "enum", "direction": "input", "defaultValue": "active", "enum": ["byName", "byIndex", "all", "active", "first"], "description": "选择方式" },
-    { "name": "sheetName", "label": "工作表名", "type": "string", "direction": "input", "description": "目标工作表名" },
-    { "name": "sheetIndex", "label": "索引", "type": "number", "direction": "input", "defaultValue": 0, "description": "目标索引" },
-    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "output", "description": "选中的工作表" },
-    { "name": "sheetNames", "label": "所有名称", "type": "array", "direction": "output", "description": "所有工作表名" },
-    { "name": "selectedIndex", "label": "选中索引", "type": "number", "direction": "output", "description": "选中的索引" }
+    {
+      "name": "workbook",
+      "label": "工作簿",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "输入工作簿"
+    },
+    {
+      "name": "selectMode",
+      "label": "选择模式",
+      "type": "enum",
+      "direction": "input",
+      "defaultValue": "active",
+      "enum": [
+        "byName",
+        "byIndex",
+        "all",
+        "active",
+        "first"
+      ],
+      "description": "选择方式"
+    },
+    {
+      "name": "sheetName",
+      "label": "工作表名",
+      "type": "string",
+      "direction": "input",
+      "description": "目标工作表名"
+    },
+    {
+      "name": "sheetIndex",
+      "label": "索引",
+      "type": "number",
+      "direction": "input",
+      "defaultValue": 0,
+      "description": "目标索引"
+    },
+    {
+      "name": "worksheet",
+      "label": "工作表",
+      "type": "object",
+      "direction": "output",
+      "description": "选中的工作表"
+    },
+    {
+      "name": "sheetNames",
+      "label": "所有名称",
+      "type": "array",
+      "direction": "output",
+      "description": "所有工作表名"
+    },
+    {
+      "name": "selectedIndex",
+      "label": "选中索引",
+      "type": "number",
+      "direction": "output",
+      "description": "选中的索引"
+    }
+  ],
+  "keywords": [
+    "工作表",
+    "sheet",
+    "选择",
+    "worksheet",
+    "select"
   ]
 }

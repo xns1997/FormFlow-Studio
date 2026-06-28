@@ -5,7 +5,9 @@
   "category": "工作簿 IO",
   "kind": "xlsx-method",
   "namespace": "XLSX",
-  "methodPath": ["read"],
+  "methodPath": [
+    "read"
+  ],
   "inputs": [
     {
       "name": "data",
@@ -26,7 +28,14 @@
       "name": "type",
       "label": "数据类型",
       "type": "enum",
-      "enum": ["array", "binary", "buffer", "file", "string", "base64"],
+      "enum": [
+        "array",
+        "binary",
+        "buffer",
+        "file",
+        "string",
+        "base64"
+      ],
       "default": "array",
       "description": "输入数据的编码格式"
     },
@@ -70,7 +79,21 @@
       "name": "bookType",
       "label": "工作簿类型",
       "type": "enum",
-      "enum": ["xlsx", "xlsm", "xlsb", "xls", "csv", "txt", "ods", "fods", "json", "dif", "rtf", "prn", "numbers"],
+      "enum": [
+        "xlsx",
+        "xlsm",
+        "xlsb",
+        "xls",
+        "csv",
+        "txt",
+        "ods",
+        "fods",
+        "json",
+        "dif",
+        "rtf",
+        "prn",
+        "numbers"
+      ],
       "default": "xlsx",
       "description": "显式指定文件格式，省略则自动检测"
     },
@@ -88,5 +111,12 @@
       "default": false,
       "description": "为 true 时使用稀疏数组存储行数据"
     }
+  ],
+  "keywords": [
+    "arraybuffer",
+    "二进制字符串或文本中读取工作簿",
+    "从",
+    "read",
+    "XLSX"
   ]
 }

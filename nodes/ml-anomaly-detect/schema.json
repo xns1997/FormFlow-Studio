@@ -1,1 +1,59 @@
-{"id":"ml-anomaly-detect","label":"异常检测","description":"Isolation Forest 异常检测 (Python sklearn)","category":"ML · 挖掘","kind":"generic","properties":[{"name":"fields","label":"特征字段","type":"string","default":"","description":"逗号分隔列名"},{"name":"contamination","label":"异常比例","type":"number","default":0.1,"min":0.01,"max":0.5}],"ports":[{"name":"data","label":"数据","type":"json-rows","direction":"input","required":true},{"name":"data","label":"结果","type":"json-rows","direction":"output"},{"name":"anomaly_count","label":"异常数","type":"number","direction":"output"},{"name":"normal_count","label":"正常数","type":"number","direction":"output"}]}
+{
+  "id": "ml-anomaly-detect",
+  "label": "异常检测",
+  "description": "Isolation Forest 异常检测 (Python sklearn)",
+  "category": "ML · 挖掘",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "fields",
+      "label": "特征字段",
+      "type": "string",
+      "default": "",
+      "description": "逗号分隔列名"
+    },
+    {
+      "name": "contamination",
+      "label": "异常比例",
+      "type": "number",
+      "default": 0.1,
+      "min": 0.01,
+      "max": 0.5
+    }
+  ],
+  "ports": [
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true
+    },
+    {
+      "name": "data",
+      "label": "结果",
+      "type": "json-rows",
+      "direction": "output"
+    },
+    {
+      "name": "anomaly_count",
+      "label": "异常数",
+      "type": "number",
+      "direction": "output"
+    },
+    {
+      "name": "normal_count",
+      "label": "正常数",
+      "type": "number",
+      "direction": "output"
+    }
+  ],
+  "keywords": [
+    "异常",
+    "检测",
+    "离群",
+    "anomaly",
+    "outlier",
+    "isolation"
+  ]
+}

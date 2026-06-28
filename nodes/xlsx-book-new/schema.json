@@ -5,7 +5,10 @@
   "category": "工作簿管理",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "book_new"],
+  "methodPath": [
+    "utils",
+    "book_new"
+  ],
   "inputs": [],
   "outputs": [
     {
@@ -14,5 +17,12 @@
       "description": "新创建的空工作簿对象"
     }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "utils",
+    "创建一个空工作簿",
+    "book",
+    "XLSX",
+    "new"
+  ]
 }

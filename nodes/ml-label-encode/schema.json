@@ -1,1 +1,45 @@
-{"id":"ml-label-encode","label":"Label 编码","description":"将分类列转换为数值标签 (Python)","category":"ML · 预处理","kind":"generic","properties":[{"name":"fields","label":"目标字段","type":"string","default":"","required":true,"description":"逗号分隔的分类列名"}],"ports":[{"name":"data","label":"数据","type":"json-rows","direction":"input","required":true},{"name":"data","label":"结果","type":"json-rows","direction":"output"},{"name":"mapping","label":"映射","type":"object","direction":"output"}]}
+{
+  "id": "ml-label-encode",
+  "label": "Label 编码",
+  "description": "将分类列转换为数值标签 (Python)",
+  "category": "ML · 预处理",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "fields",
+      "label": "目标字段",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "逗号分隔的分类列名"
+    }
+  ],
+  "ports": [
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true
+    },
+    {
+      "name": "data",
+      "label": "结果",
+      "type": "json-rows",
+      "direction": "output"
+    },
+    {
+      "name": "mapping",
+      "label": "映射",
+      "type": "object",
+      "direction": "output"
+    }
+  ],
+  "keywords": [
+    "标签",
+    "编码",
+    "label",
+    "encoding",
+    "factorize"
+  ]
+}

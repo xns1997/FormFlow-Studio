@@ -7,16 +7,58 @@
   "methods": [],
   "properties": [],
   "inputs": [
-    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "required": true,
+      "description": "触发信号"
+    }
   ],
   "outputs": [
-    { "name": "trigger", "type": "trigger", "description": "触发输出" },
-    { "name": "rowData", "type": "object", "description": "当前行数据" },
-    { "name": "sheetName", "type": "string", "description": "当前 Sheet 名" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "description": "触发输出"
+    },
+    {
+      "name": "rowData",
+      "type": "object",
+      "description": "当前行数据"
+    },
+    {
+      "name": "sheetName",
+      "type": "string",
+      "description": "当前 Sheet 名"
+    }
   ],
   "ports": [
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发信号" },
-    { "name": "rowData", "label": "行数据", "type": "object", "direction": "output", "description": "当前行数据" },
-    { "name": "sheetName", "label": "Sheet", "type": "string", "direction": "output", "description": "Sheet 名" }
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "output",
+      "description": "触发信号"
+    },
+    {
+      "name": "rowData",
+      "label": "行数据",
+      "type": "object",
+      "direction": "output",
+      "description": "当前行数据"
+    },
+    {
+      "name": "sheetName",
+      "label": "Sheet",
+      "type": "string",
+      "direction": "output",
+      "description": "Sheet 名"
+    }
+  ],
+  "keywords": [
+    "表单",
+    "加载",
+    "form",
+    "load",
+    "init"
   ]
 }

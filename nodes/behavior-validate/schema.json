@@ -6,27 +6,132 @@
   "kind": "generic",
   "methods": [],
   "properties": [
-    { "name": "fieldName", "label": "字段名", "type": "string", "default": "", "required": true, "description": "要校验的字段" },
-    { "name": "rule", "label": "校验规则", "type": "enum", "enum": ["required", "email", "phone", "number", "minLength", "maxLength", "pattern", "custom"], "default": "required", "description": "校验规则类型" },
-    { "name": "ruleParam", "label": "规则参数", "type": "string", "default": "", "description": "规则参数（如最小长度、正则等）" },
-    { "name": "errorMessage", "label": "错误提示", "type": "string", "default": "", "description": "校验失败时的提示" }
+    {
+      "name": "fieldName",
+      "label": "字段名",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "要校验的字段"
+    },
+    {
+      "name": "rule",
+      "label": "校验规则",
+      "type": "enum",
+      "enum": [
+        "required",
+        "email",
+        "phone",
+        "number",
+        "minLength",
+        "maxLength",
+        "pattern",
+        "custom"
+      ],
+      "default": "required",
+      "description": "校验规则类型"
+    },
+    {
+      "name": "ruleParam",
+      "label": "规则参数",
+      "type": "string",
+      "default": "",
+      "description": "规则参数（如最小长度、正则等）"
+    },
+    {
+      "name": "errorMessage",
+      "label": "错误提示",
+      "type": "string",
+      "default": "",
+      "description": "校验失败时的提示"
+    }
   ],
   "inputs": [
-    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
-    { "name": "value", "type": "any", "required": true, "description": "要校验的值" },
-    { "name": "fieldName", "type": "string", "required": false, "description": "字段名覆盖" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "value",
+      "type": "any",
+      "required": true,
+      "description": "要校验的值"
+    },
+    {
+      "name": "fieldName",
+      "type": "string",
+      "required": false,
+      "description": "字段名覆盖"
+    }
   ],
   "outputs": [
-    { "name": "passed", "type": "trigger", "description": "通过时触发" },
-    { "name": "failed", "type": "trigger", "description": "失败时触发" },
-    { "name": "errorMessage", "type": "string", "description": "错误消息" }
+    {
+      "name": "passed",
+      "type": "trigger",
+      "description": "通过时触发"
+    },
+    {
+      "name": "failed",
+      "type": "trigger",
+      "description": "失败时触发"
+    },
+    {
+      "name": "errorMessage",
+      "type": "string",
+      "description": "错误消息"
+    }
   ],
   "ports": [
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
-    { "name": "value", "label": "值", "type": "any", "direction": "input", "required": true, "description": "要校验的值" },
-    { "name": "fieldName", "label": "字段", "type": "string", "direction": "input", "description": "字段名" },
-    { "name": "passed", "label": "通过", "type": "any", "direction": "output", "description": "校验通过" },
-    { "name": "failed", "label": "失败", "type": "any", "direction": "output", "description": "校验失败" },
-    { "name": "errorMessage", "label": "错误", "type": "string", "direction": "output", "description": "错误消息" }
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "value",
+      "label": "值",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "要校验的值"
+    },
+    {
+      "name": "fieldName",
+      "label": "字段",
+      "type": "string",
+      "direction": "input",
+      "description": "字段名"
+    },
+    {
+      "name": "passed",
+      "label": "通过",
+      "type": "any",
+      "direction": "output",
+      "description": "校验通过"
+    },
+    {
+      "name": "failed",
+      "label": "失败",
+      "type": "any",
+      "direction": "output",
+      "description": "校验失败"
+    },
+    {
+      "name": "errorMessage",
+      "label": "错误",
+      "type": "string",
+      "direction": "output",
+      "description": "错误消息"
+    }
+  ],
+  "keywords": [
+    "校验",
+    "validate",
+    "check"
   ]
 }

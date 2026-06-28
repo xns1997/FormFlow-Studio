@@ -5,7 +5,10 @@
   "category": "工作簿管理",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "book_remove_sheet"],
+  "methodPath": [
+    "utils",
+    "book_remove_sheet"
+  ],
   "inputs": [
     {
       "name": "workbook",
@@ -27,5 +30,13 @@
       "description": "删除后的工作簿"
     }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "从工作簿中删除指定",
+    "utils",
+    "book",
+    "sheet",
+    "remove",
+    "XLSX"
+  ]
 }

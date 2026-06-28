@@ -6,25 +6,117 @@
   "kind": "generic",
   "methods": [],
   "properties": [
-    { "name": "direction", "label": "方向", "type": "enum", "enum": ["next", "prev", "first", "last", "goto"], "default": "next", "description": "导航方向" },
-    { "name": "targetRow", "label": "目标行", "type": "number", "default": 0, "min": 0, "description": "goto 模式的目标行号" }
+    {
+      "name": "direction",
+      "label": "方向",
+      "type": "enum",
+      "enum": [
+        "next",
+        "prev",
+        "first",
+        "last",
+        "goto"
+      ],
+      "default": "next",
+      "description": "导航方向"
+    },
+    {
+      "name": "targetRow",
+      "label": "目标行",
+      "type": "number",
+      "default": 0,
+      "min": 0,
+      "description": "goto 模式的目标行号"
+    }
   ],
   "inputs": [
-    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
-    { "name": "currentRow", "type": "number", "required": false, "description": "当前行号" },
-    { "name": "totalRows", "type": "number", "required": false, "description": "总行数" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "currentRow",
+      "type": "number",
+      "required": false,
+      "description": "当前行号"
+    },
+    {
+      "name": "totalRows",
+      "type": "number",
+      "required": false,
+      "description": "总行数"
+    }
   ],
   "outputs": [
-    { "name": "trigger", "type": "trigger", "description": "触发输出" },
-    { "name": "targetRow", "type": "number", "description": "目标行号" },
-    { "name": "canNavigate", "type": "boolean", "description": "是否可导航" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "description": "触发输出"
+    },
+    {
+      "name": "targetRow",
+      "type": "number",
+      "description": "目标行号"
+    },
+    {
+      "name": "canNavigate",
+      "type": "boolean",
+      "description": "是否可导航"
+    }
   ],
   "ports": [
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发" },
-    { "name": "currentRow", "label": "当前行", "type": "number", "direction": "input", "description": "当前行号" },
-    { "name": "totalRows", "label": "总行数", "type": "number", "direction": "input", "description": "总行数" },
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发输出" },
-    { "name": "targetRow", "label": "目标行", "type": "number", "direction": "output", "description": "目标行号" },
-    { "name": "canNavigate", "label": "可导航", "type": "boolean", "direction": "output", "description": "是否可导航" }
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "触发"
+    },
+    {
+      "name": "currentRow",
+      "label": "当前行",
+      "type": "number",
+      "direction": "input",
+      "description": "当前行号"
+    },
+    {
+      "name": "totalRows",
+      "label": "总行数",
+      "type": "number",
+      "direction": "input",
+      "description": "总行数"
+    },
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "output",
+      "description": "触发输出"
+    },
+    {
+      "name": "targetRow",
+      "label": "目标行",
+      "type": "number",
+      "direction": "output",
+      "description": "目标行号"
+    },
+    {
+      "name": "canNavigate",
+      "label": "可导航",
+      "type": "boolean",
+      "direction": "output",
+      "description": "是否可导航"
+    }
+  ],
+  "keywords": [
+    "导航",
+    "行",
+    "row",
+    "navigate",
+    "prev",
+    "next"
   ]
 }

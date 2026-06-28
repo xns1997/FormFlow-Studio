@@ -1,1 +1,68 @@
-{"id":"ml-svm","label":"SVM 分类","description":"支持向量机分类 (Python sklearn)","category":"ML · 挖掘","kind":"generic","properties":[{"name":"target_field","label":"目标字段","type":"string","default":"","required":true},{"name":"kernel","label":"核函数","type":"enum","enum":["rbf","linear","poly","sigmoid"],"default":"rbf"},{"name":"train_ratio","label":"训练比例","type":"number","default":0.8}],"ports":[{"name":"data","label":"数据","type":"json-rows","direction":"input","required":true},{"name":"accuracy","label":"准确率","type":"number","direction":"output"},{"name":"predictions","label":"预测","type":"array","direction":"output"},{"name":"support_vectors","label":"支持向量数","type":"number","direction":"output"}]}
+{
+  "id": "ml-svm",
+  "label": "SVM 分类",
+  "description": "支持向量机分类 (Python sklearn)",
+  "category": "ML · 挖掘",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "target_field",
+      "label": "目标字段",
+      "type": "string",
+      "default": "",
+      "required": true
+    },
+    {
+      "name": "kernel",
+      "label": "核函数",
+      "type": "enum",
+      "enum": [
+        "rbf",
+        "linear",
+        "poly",
+        "sigmoid"
+      ],
+      "default": "rbf"
+    },
+    {
+      "name": "train_ratio",
+      "label": "训练比例",
+      "type": "number",
+      "default": 0.8
+    }
+  ],
+  "ports": [
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true
+    },
+    {
+      "name": "accuracy",
+      "label": "准确率",
+      "type": "number",
+      "direction": "output"
+    },
+    {
+      "name": "predictions",
+      "label": "预测",
+      "type": "array",
+      "direction": "output"
+    },
+    {
+      "name": "support_vectors",
+      "label": "支持向量数",
+      "type": "number",
+      "direction": "output"
+    }
+  ],
+  "keywords": [
+    "支持向量",
+    "svm",
+    "support",
+    "vector",
+    "kernel"
+  ]
+}

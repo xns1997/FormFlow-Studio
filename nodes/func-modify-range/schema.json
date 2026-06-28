@@ -6,20 +6,77 @@
   "kind": "generic",
   "methods": [],
   "properties": [
-    { "name": "address", "label": "区域地址", "type": "string", "default": "A1", "description": "A1 格式地址" }
+    {
+      "name": "address",
+      "label": "区域地址",
+      "type": "string",
+      "default": "A1",
+      "description": "A1 格式地址"
+    }
   ],
   "inputs": [
-    { "name": "worksheet", "type": "object", "required": true, "description": "工作表对象" },
-    { "name": "values", "type": "array", "required": true, "description": "要写入的二维数组值" },
-    { "name": "address", "type": "string", "required": false, "description": "地址覆盖" }
+    {
+      "name": "worksheet",
+      "type": "object",
+      "required": true,
+      "description": "工作表对象"
+    },
+    {
+      "name": "values",
+      "type": "array",
+      "required": true,
+      "description": "要写入的二维数组值"
+    },
+    {
+      "name": "address",
+      "type": "string",
+      "required": false,
+      "description": "地址覆盖"
+    }
   ],
   "outputs": [
-    { "name": "worksheet", "type": "object", "description": "修改后的工作表" }
+    {
+      "name": "worksheet",
+      "type": "object",
+      "description": "修改后的工作表"
+    }
   ],
   "ports": [
-    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "input", "required": true, "description": "工作表" },
-    { "name": "values", "label": "值", "type": "array", "direction": "input", "required": true, "description": "二维数组" },
-    { "name": "address", "label": "地址", "type": "string", "direction": "input", "description": "区域地址" },
-    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "output", "description": "修改后的工作表" }
+    {
+      "name": "worksheet",
+      "label": "工作表",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "工作表"
+    },
+    {
+      "name": "values",
+      "label": "值",
+      "type": "array",
+      "direction": "input",
+      "required": true,
+      "description": "二维数组"
+    },
+    {
+      "name": "address",
+      "label": "地址",
+      "type": "string",
+      "direction": "input",
+      "description": "区域地址"
+    },
+    {
+      "name": "worksheet",
+      "label": "工作表",
+      "type": "object",
+      "direction": "output",
+      "description": "修改后的工作表"
+    }
+  ],
+  "keywords": [
+    "修改",
+    "区域",
+    "modify",
+    "range"
   ]
 }

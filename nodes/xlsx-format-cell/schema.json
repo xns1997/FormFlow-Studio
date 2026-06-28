@@ -5,15 +5,46 @@
   "category": "XLSX · 格式化",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "format_cell"],
+  "methodPath": [
+    "utils",
+    "format_cell"
+  ],
   "inputs": [
-    { "name": "cell", "type": "CellObject", "required": true, "description": "单元格对象" }
+    {
+      "name": "cell",
+      "type": "CellObject",
+      "required": true,
+      "description": "单元格对象"
+    }
   ],
   "outputs": [
-    { "name": "text", "type": "string", "description": "格式化后的文本" }
+    {
+      "name": "text",
+      "type": "string",
+      "description": "格式化后的文本"
+    }
   ],
   "properties": [
-    { "name": "dateNF", "label": "日期格式", "type": "string", "default": "yyyy-mm-dd", "description": "日期格式" },
-    { "name": "cellStyles", "label": "单元格样式", "type": "boolean", "default": false, "description": "是否应用单元格样式" }
+    {
+      "name": "dateNF",
+      "label": "日期格式",
+      "type": "string",
+      "default": "yyyy-mm-dd",
+      "description": "日期格式"
+    },
+    {
+      "name": "cellStyles",
+      "label": "单元格样式",
+      "type": "boolean",
+      "default": false,
+      "description": "是否应用单元格样式"
+    }
+  ],
+  "keywords": [
+    "format",
+    "格式化单元格值为文本",
+    "utils",
+    "cell",
+    "XLSX"
   ]
 }

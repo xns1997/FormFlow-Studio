@@ -6,25 +6,116 @@
   "kind": "generic",
   "methods": [],
   "properties": [
-    { "name": "tableName", "label": "表格名称", "type": "string", "default": "Table1", "description": "表格显示名称" },
-    { "name": "rangeAddress", "label": "数据范围", "type": "string", "default": "A1", "description": "表格数据的 A1 范围" },
-    { "name": "hasHeader", "label": "包含表头", "type": "boolean", "default": true, "description": "第一行是否为表头" },
-    { "name": "tableStyle", "label": "表格样式", "type": "enum", "enum": ["TableStyleMedium2", "TableStyleLight1", "TableStyleDark1", "TableStyleMedium9", "TableStyleLight6"], "default": "TableStyleMedium2", "description": "预定义表格样式" }
+    {
+      "name": "tableName",
+      "label": "表格名称",
+      "type": "string",
+      "default": "Table1",
+      "description": "表格显示名称"
+    },
+    {
+      "name": "rangeAddress",
+      "label": "数据范围",
+      "type": "string",
+      "default": "A1",
+      "description": "表格数据的 A1 范围"
+    },
+    {
+      "name": "hasHeader",
+      "label": "包含表头",
+      "type": "boolean",
+      "default": true,
+      "description": "第一行是否为表头"
+    },
+    {
+      "name": "tableStyle",
+      "label": "表格样式",
+      "type": "enum",
+      "enum": [
+        "TableStyleMedium2",
+        "TableStyleLight1",
+        "TableStyleDark1",
+        "TableStyleMedium9",
+        "TableStyleLight6"
+      ],
+      "default": "TableStyleMedium2",
+      "description": "预定义表格样式"
+    }
   ],
   "inputs": [
-    { "name": "worksheet", "type": "object", "required": true, "description": "工作表对象" },
-    { "name": "tableName", "type": "string", "required": false, "description": "表格名覆盖" },
-    { "name": "rangeAddress", "type": "string", "required": false, "description": "范围覆盖" }
+    {
+      "name": "worksheet",
+      "type": "object",
+      "required": true,
+      "description": "工作表对象"
+    },
+    {
+      "name": "tableName",
+      "type": "string",
+      "required": false,
+      "description": "表格名覆盖"
+    },
+    {
+      "name": "rangeAddress",
+      "type": "string",
+      "required": false,
+      "description": "范围覆盖"
+    }
   ],
   "outputs": [
-    { "name": "worksheet", "type": "object", "description": "修改后的工作表" },
-    { "name": "tableName", "type": "string", "description": "创建的表格名" }
+    {
+      "name": "worksheet",
+      "type": "object",
+      "description": "修改后的工作表"
+    },
+    {
+      "name": "tableName",
+      "type": "string",
+      "description": "创建的表格名"
+    }
   ],
   "ports": [
-    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "input", "required": true, "description": "工作表" },
-    { "name": "tableName", "label": "名称", "type": "string", "direction": "input", "description": "表格名" },
-    { "name": "rangeAddress", "label": "范围", "type": "string", "direction": "input", "description": "数据范围" },
-    { "name": "worksheet", "label": "工作表", "type": "object", "direction": "output", "description": "修改后的工作表" },
-    { "name": "tableName", "label": "表格名", "type": "string", "direction": "output", "description": "表格名" }
+    {
+      "name": "worksheet",
+      "label": "工作表",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "工作表"
+    },
+    {
+      "name": "tableName",
+      "label": "名称",
+      "type": "string",
+      "direction": "input",
+      "description": "表格名"
+    },
+    {
+      "name": "rangeAddress",
+      "label": "范围",
+      "type": "string",
+      "direction": "input",
+      "description": "数据范围"
+    },
+    {
+      "name": "worksheet",
+      "label": "工作表",
+      "type": "object",
+      "direction": "output",
+      "description": "修改后的工作表"
+    },
+    {
+      "name": "tableName",
+      "label": "表格名",
+      "type": "string",
+      "direction": "output",
+      "description": "表格名"
+    }
+  ],
+  "keywords": [
+    "创建",
+    "表格",
+    "create",
+    "table"
   ]
 }

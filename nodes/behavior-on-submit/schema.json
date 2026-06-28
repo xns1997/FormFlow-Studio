@@ -7,14 +7,43 @@
   "methods": [],
   "properties": [],
   "inputs": [
-    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "required": true,
+      "description": "触发信号"
+    }
   ],
   "outputs": [
-    { "name": "trigger", "type": "trigger", "description": "触发输出" },
-    { "name": "formData", "type": "object", "description": "表单数据" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "description": "触发输出"
+    },
+    {
+      "name": "formData",
+      "type": "object",
+      "description": "表单数据"
+    }
   ],
   "ports": [
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发信号" },
-    { "name": "formData", "label": "表单数据", "type": "object", "direction": "output", "description": "表单数据" }
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "output",
+      "description": "触发信号"
+    },
+    {
+      "name": "formData",
+      "label": "表单数据",
+      "type": "object",
+      "direction": "output",
+      "description": "表单数据"
+    }
+  ],
+  "keywords": [
+    "提交",
+    "submit"
   ]
 }

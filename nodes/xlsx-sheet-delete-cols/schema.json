@@ -5,7 +5,10 @@
   "category": "Sheet 操作",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "sheet_delete_cols"],
+  "methodPath": [
+    "utils",
+    "sheet_delete_cols"
+  ],
   "inputs": [
     {
       "name": "worksheet",
@@ -38,7 +41,11 @@
       "name": "origin",
       "label": "删除方向",
       "type": "enum",
-      "enum": ["-1", "0", "1"],
+      "enum": [
+        "-1",
+        "0",
+        "1"
+      ],
       "default": "-1",
       "description": "-1 从指定列向左，0 从指定列开始，1 从指定列向右"
     },
@@ -49,5 +56,14 @@
       "default": 0,
       "description": "跳过前 N 列不删除"
     }
+  ],
+  "keywords": [
+    "cols",
+    "utils",
+    "delete",
+    "中指定范围的列",
+    "sheet",
+    "删除",
+    "XLSX"
   ]
 }

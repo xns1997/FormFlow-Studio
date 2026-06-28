@@ -5,7 +5,9 @@
   "category": "工作簿 IO",
   "kind": "xlsx-method",
   "namespace": "XLSX",
-  "methodPath": ["write"],
+  "methodPath": [
+    "write"
+  ],
   "inputs": [
     {
       "name": "workbook",
@@ -26,7 +28,24 @@
       "name": "bookType",
       "label": "输出格式",
       "type": "enum",
-      "enum": ["xlsx", "xlsm", "xlsb", "xls", "csv", "txt", "ods", "fods", "json", "dif", "rtf", "prn", "numbers", "html", "slk", "etha"],
+      "enum": [
+        "xlsx",
+        "xlsm",
+        "xlsb",
+        "xls",
+        "csv",
+        "txt",
+        "ods",
+        "fods",
+        "json",
+        "dif",
+        "rtf",
+        "prn",
+        "numbers",
+        "html",
+        "slk",
+        "etha"
+      ],
       "default": "xlsx",
       "description": "目标文件格式"
     },
@@ -34,7 +53,14 @@
       "name": "type",
       "label": "输出类型",
       "type": "enum",
-      "enum": ["array", "binary", "string", "base64", "buffer", "file"],
+      "enum": [
+        "array",
+        "binary",
+        "string",
+        "base64",
+        "buffer",
+        "file"
+      ],
       "default": "array",
       "description": "返回数据的编码格式"
     },
@@ -73,5 +99,10 @@
       "default": false,
       "description": "是否将 Date 对象格式化为日期字符串"
     }
+  ],
+  "keywords": [
+    "write",
+    "把工作簿序列化为指定格式的二进制数据",
+    "XLSX"
   ]
 }

@@ -5,13 +5,69 @@
   "category": "通用 · 清洗",
   "kind": "generic",
   "properties": [
-    { "name": "field", "label": "目标字段", "type": "string", "default": "", "required": true, "description": "要转换的列名" },
-    { "name": "targetType", "label": "目标类型", "type": "enum", "enum": ["string", "number", "boolean", "date"], "default": "string", "description": "转换后的类型" },
-    { "name": "dateFormat", "label": "日期格式", "type": "string", "default": "YYYY-MM-DD", "description": "日期格式模板" },
-    { "name": "onError", "label": "错误处理", "type": "enum", "enum": ["null", "skip", "default"], "default": "null", "description": "转换失败时的处理" }
+    {
+      "name": "field",
+      "label": "目标字段",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "要转换的列名"
+    },
+    {
+      "name": "targetType",
+      "label": "目标类型",
+      "type": "enum",
+      "enum": [
+        "string",
+        "number",
+        "boolean",
+        "date"
+      ],
+      "default": "string",
+      "description": "转换后的类型"
+    },
+    {
+      "name": "dateFormat",
+      "label": "日期格式",
+      "type": "string",
+      "default": "YYYY-MM-DD",
+      "description": "日期格式模板"
+    },
+    {
+      "name": "onError",
+      "label": "错误处理",
+      "type": "enum",
+      "enum": [
+        "null",
+        "skip",
+        "default"
+      ],
+      "default": "null",
+      "description": "转换失败时的处理"
+    }
   ],
   "ports": [
-    { "name": "data", "label": "数据", "type": "json-rows", "direction": "input", "required": true, "description": "输入数据" },
-    { "name": "data", "label": "结果", "type": "json-rows", "direction": "output", "description": "转换后数据" }
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true,
+      "description": "输入数据"
+    },
+    {
+      "name": "data",
+      "label": "结果",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "转换后数据"
+    }
+  ],
+  "keywords": [
+    "类型",
+    "转换",
+    "cast",
+    "convert",
+    "type"
   ]
 }

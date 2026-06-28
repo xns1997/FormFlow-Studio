@@ -5,7 +5,10 @@
   "category": "DOM 操作",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "table_to_sheet"],
+  "methodPath": [
+    "utils",
+    "table_to_sheet"
+  ],
   "inputs": [
     {
       "name": "table",
@@ -43,5 +46,15 @@
       "default": "yyyy-mm-dd",
       "description": "日期的输入格式"
     }
+  ],
+  "keywords": [
+    "utils",
+    "把",
+    "元素转成",
+    "sheet",
+    "to",
+    "table",
+    "dom",
+    "XLSX"
   ]
 }

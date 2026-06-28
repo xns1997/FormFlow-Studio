@@ -5,7 +5,10 @@
   "category": "Sheet 转换",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "sheet_to_csv"],
+  "methodPath": [
+    "utils",
+    "sheet_to_csv"
+  ],
   "inputs": [
     {
       "name": "worksheet",
@@ -64,5 +67,15 @@
       "default": -1,
       "description": "指定哪一行作为表头"
     }
+  ],
+  "keywords": [
+    "导出成",
+    "utils",
+    "把",
+    "文本",
+    "sheet",
+    "csv",
+    "to",
+    "XLSX"
   ]
 }

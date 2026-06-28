@@ -5,12 +5,51 @@
   "category": "通用 · 聚合",
   "kind": "generic",
   "properties": [
-    { "name": "idFields", "label": "保留字段", "type": "string", "default": "", "required": true, "description": "逗号分隔的保留列名" },
-    { "name": "valueName", "label": "值列名", "type": "string", "default": "value", "description": "值列的名称" },
-    { "name": "keyName", "label": "键列名", "type": "string", "default": "variable", "description": "键列的名称" }
+    {
+      "name": "idFields",
+      "label": "保留字段",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "逗号分隔的保留列名"
+    },
+    {
+      "name": "valueName",
+      "label": "值列名",
+      "type": "string",
+      "default": "value",
+      "description": "值列的名称"
+    },
+    {
+      "name": "keyName",
+      "label": "键列名",
+      "type": "string",
+      "default": "variable",
+      "description": "键列的名称"
+    }
   ],
   "ports": [
-    { "name": "data", "label": "数据", "type": "json-rows", "direction": "input", "required": true, "description": "输入数据" },
-    { "name": "data", "label": "结果", "type": "json-rows", "direction": "output", "description": "长格式数据" }
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true,
+      "description": "输入数据"
+    },
+    {
+      "name": "data",
+      "label": "结果",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "长格式数据"
+    }
+  ],
+  "keywords": [
+    "逆透视",
+    "列转行",
+    "unpivot",
+    "melt",
+    "long"
   ]
 }

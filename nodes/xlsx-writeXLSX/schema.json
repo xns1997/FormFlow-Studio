@@ -5,15 +5,50 @@
   "category": "XLSX · 工作簿 IO",
   "kind": "xlsx-method",
   "namespace": "XLSX",
-  "methodPath": ["writeXLSX"],
+  "methodPath": [
+    "writeXLSX"
+  ],
   "inputs": [
-    { "name": "workbook", "type": "Workbook", "required": true, "description": "工作簿对象" }
+    {
+      "name": "workbook",
+      "type": "Workbook",
+      "required": true,
+      "description": "工作簿对象"
+    }
   ],
   "outputs": [
-    { "name": "data", "type": "ArrayBuffer", "description": "xlsx 二进制数据" }
+    {
+      "name": "data",
+      "type": "ArrayBuffer",
+      "description": "xlsx 二进制数据"
+    }
   ],
   "properties": [
-    { "name": "type", "label": "输出类型", "type": "enum", "enum": ["array", "buffer", "binary"], "default": "array", "description": "返回数据格式" },
-    { "name": "compression", "label": "压缩", "type": "boolean", "default": false, "description": "是否启用 ZIP 压缩" }
+    {
+      "name": "type",
+      "label": "输出类型",
+      "type": "enum",
+      "enum": [
+        "array",
+        "buffer",
+        "binary"
+      ],
+      "default": "array",
+      "description": "返回数据格式"
+    },
+    {
+      "name": "compression",
+      "label": "压缩",
+      "type": "boolean",
+      "default": false,
+      "description": "是否启用 ZIP 压缩"
+    }
+  ],
+  "keywords": [
+    "将工作簿序列化为",
+    "格式二进制数据",
+    "xlsx",
+    "writeXLSX",
+    "XLSX"
   ]
 }

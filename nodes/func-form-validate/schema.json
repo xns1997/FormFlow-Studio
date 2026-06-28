@@ -6,25 +6,107 @@
   "kind": "generic",
   "methods": [],
   "properties": [
-    { "name": "fields", "label": "校验字段", "type": "string", "default": "", "description": "逗号分隔的字段名，空则校验全部" },
-    { "name": "rules", "label": "校验规则", "type": "string", "default": "", "description": "JSON 格式规则" }
+    {
+      "name": "fields",
+      "label": "校验字段",
+      "type": "string",
+      "default": "",
+      "description": "逗号分隔的字段名，空则校验全部"
+    },
+    {
+      "name": "rules",
+      "label": "校验规则",
+      "type": "string",
+      "default": "",
+      "description": "JSON 格式规则"
+    }
   ],
   "inputs": [
-    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
-    { "name": "formData", "type": "object", "required": true, "description": "表单数据" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "formData",
+      "type": "object",
+      "required": true,
+      "description": "表单数据"
+    }
   ],
   "outputs": [
-    { "name": "passed", "type": "trigger", "description": "通过" },
-    { "name": "failed", "type": "trigger", "description": "失败" },
-    { "name": "errors", "type": "object", "description": "错误信息" },
-    { "name": "isValid", "type": "boolean", "description": "是否有效" }
+    {
+      "name": "passed",
+      "type": "trigger",
+      "description": "通过"
+    },
+    {
+      "name": "failed",
+      "type": "trigger",
+      "description": "失败"
+    },
+    {
+      "name": "errors",
+      "type": "object",
+      "description": "错误信息"
+    },
+    {
+      "name": "isValid",
+      "type": "boolean",
+      "description": "是否有效"
+    }
   ],
   "ports": [
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发" },
-    { "name": "formData", "label": "表单", "type": "object", "direction": "input", "required": true, "description": "表单数据" },
-    { "name": "passed", "label": "通过", "type": "any", "direction": "output", "description": "通过" },
-    { "name": "failed", "label": "失败", "type": "any", "direction": "output", "description": "失败" },
-    { "name": "errors", "label": "错误", "type": "object", "direction": "output", "description": "错误信息" },
-    { "name": "isValid", "label": "有效", "type": "boolean", "direction": "output", "description": "是否有效" }
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "触发"
+    },
+    {
+      "name": "formData",
+      "label": "表单",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "表单数据"
+    },
+    {
+      "name": "passed",
+      "label": "通过",
+      "type": "any",
+      "direction": "output",
+      "description": "通过"
+    },
+    {
+      "name": "failed",
+      "label": "失败",
+      "type": "any",
+      "direction": "output",
+      "description": "失败"
+    },
+    {
+      "name": "errors",
+      "label": "错误",
+      "type": "object",
+      "direction": "output",
+      "description": "错误信息"
+    },
+    {
+      "name": "isValid",
+      "label": "有效",
+      "type": "boolean",
+      "direction": "output",
+      "description": "是否有效"
+    }
+  ],
+  "keywords": [
+    "表单",
+    "校验",
+    "form",
+    "validate"
   ]
 }

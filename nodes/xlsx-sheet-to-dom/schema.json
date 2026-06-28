@@ -5,7 +5,10 @@
   "category": "DOM 操作",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "sheet_to_dom"],
+  "methodPath": [
+    "utils",
+    "sheet_to_dom"
+  ],
   "inputs": [
     {
       "name": "worksheet",
@@ -50,5 +53,15 @@
       "default": false,
       "description": "是否跳过隐藏的列"
     }
+  ],
+  "keywords": [
+    "utils",
+    "把",
+    "转成",
+    "元素",
+    "sheet",
+    "to",
+    "table",
+    "dom"
   ]
 }

@@ -5,12 +5,35 @@
   "category": "XLSX · 复合文件",
   "kind": "xlsx-method",
   "namespace": "XLSX.CFB.utils",
-  "methodPath": ["CFB", "utils", "_inflateRaw"],
+  "methodPath": [
+    "CFB",
+    "utils",
+    "_inflateRaw"
+  ],
   "inputs": [
-    { "name": "data", "type": "Uint8Array | string", "required": true, "description": "要解压的数据" }
+    {
+      "name": "data",
+      "type": "Uint8Array | string",
+      "required": true,
+      "description": "要解压的数据"
+    }
   ],
   "outputs": [
-    { "name": "decompressed", "type": "Uint8Array", "description": "解压后的数据" }
+    {
+      "name": "decompressed",
+      "type": "Uint8Array",
+      "description": "解压后的数据"
+    }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "解压数据",
+    "utils",
+    "使用",
+    "原始",
+    "inflate",
+    "inflateRaw",
+    "zlib",
+    "CFB"
+  ]
 }

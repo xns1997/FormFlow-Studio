@@ -1,1 +1,58 @@
-{"id":"ml-kmeans","label":"K-Means 聚类","description":"K-Means 无监督聚类 (Python sklearn)","category":"ML · 挖掘","kind":"generic","properties":[{"name":"n_clusters","label":"聚类数","type":"number","default":3,"min":2,"max":20},{"name":"fields","label":"特征字段","type":"string","default":"","description":"逗号分隔列名"}],"ports":[{"name":"data","label":"数据","type":"json-rows","direction":"input","required":true},{"name":"data","label":"结果","type":"json-rows","direction":"output"},{"name":"centers","label":"聚类中心","type":"array","direction":"output"},{"name":"labels","label":"标签","type":"array","direction":"output"}]}
+{
+  "id": "ml-kmeans",
+  "label": "K-Means 聚类",
+  "description": "K-Means 无监督聚类 (Python sklearn)",
+  "category": "ML · 挖掘",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "n_clusters",
+      "label": "聚类数",
+      "type": "number",
+      "default": 3,
+      "min": 2,
+      "max": 20
+    },
+    {
+      "name": "fields",
+      "label": "特征字段",
+      "type": "string",
+      "default": "",
+      "description": "逗号分隔列名"
+    }
+  ],
+  "ports": [
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true
+    },
+    {
+      "name": "data",
+      "label": "结果",
+      "type": "json-rows",
+      "direction": "output"
+    },
+    {
+      "name": "centers",
+      "label": "聚类中心",
+      "type": "array",
+      "direction": "output"
+    },
+    {
+      "name": "labels",
+      "label": "标签",
+      "type": "array",
+      "direction": "output"
+    }
+  ],
+  "keywords": [
+    "聚类",
+    "kmeans",
+    "k-means",
+    "cluster",
+    "unsupervised"
+  ]
+}

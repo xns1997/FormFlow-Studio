@@ -5,7 +5,10 @@
   "category": "JSON 转换",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "json_to_sheet"],
+  "methodPath": [
+    "utils",
+    "json_to_sheet"
+  ],
   "inputs": [
     {
       "name": "data",
@@ -64,5 +67,14 @@
       "default": false,
       "description": "为 true 时将字段名为日期的值存储为日期"
     }
+  ],
+  "keywords": [
+    "utils",
+    "把",
+    "sheet",
+    "to",
+    "json",
+    "行对象数组转成",
+    "XLSX"
   ]
 }

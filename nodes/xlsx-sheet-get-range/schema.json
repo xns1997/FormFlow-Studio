@@ -5,7 +5,10 @@
   "category": "Sheet 操作",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "sheet_get_range"],
+  "methodPath": [
+    "utils",
+    "sheet_get_range"
+  ],
   "inputs": [
     {
       "name": "worksheet",
@@ -27,5 +30,14 @@
       "description": "范围内的单元格对象数组"
     }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "utils",
+    "range",
+    "sheet",
+    "指定范围内的单元格对象",
+    "get",
+    "获取",
+    "XLSX"
+  ]
 }

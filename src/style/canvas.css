@@ -99,6 +99,78 @@
 .canvas-palette .palette-item:hover { background: var(--accent-soft); border-color: #dbeafe; }
 .canvas-palette .palette-item small { color: var(--muted); font-size: 9px; }
 
+/* ── Palette Item Tooltip ───────────────────────────── */
+
+.canvas-palette .palette-item {
+  position: relative;
+}
+
+.canvas-palette .palette-item-tooltip {
+  display: none;
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 0;
+  width: 240px;
+  padding: 10px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 100;
+  pointer-events: none;
+}
+
+.canvas-palette .palette-item:hover .palette-item-tooltip {
+  display: block;
+}
+
+.tooltip-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.tooltip-original {
+  font-size: 10px;
+  font-family: 'SF Mono', 'Menlo', monospace;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.tooltip-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.tooltip-meta {
+  display: flex;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--muted);
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+
+.tooltip-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 6px;
+}
+
+.tooltip-kw {
+  display: inline-block;
+  padding: 1px 5px;
+  font-size: 9px;
+  border-radius: 3px;
+  background: var(--panel-soft);
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+
 .palette-data-source {
   padding: 8px 12px;
   border-bottom: 1px solid var(--line);

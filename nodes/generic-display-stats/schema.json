@@ -31,19 +31,78 @@
     }
   ],
   "inputs": [
-    { "name": "data", "type": "any", "required": true, "description": "要分析的数据" }
+    {
+      "name": "data",
+      "type": "any",
+      "required": true,
+      "description": "要分析的数据"
+    }
   ],
   "outputs": [
-    { "name": "stats", "type": "object", "description": "统计信息对象" },
-    { "name": "rowCount", "type": "number", "description": "总行数" },
-    { "name": "colCount", "type": "number", "description": "总列数" },
-    { "name": "headers", "type": "headers", "description": "字段列表" }
+    {
+      "name": "stats",
+      "type": "object",
+      "description": "统计信息对象"
+    },
+    {
+      "name": "rowCount",
+      "type": "number",
+      "description": "总行数"
+    },
+    {
+      "name": "colCount",
+      "type": "number",
+      "description": "总列数"
+    },
+    {
+      "name": "headers",
+      "type": "headers",
+      "description": "字段列表"
+    }
   ],
   "ports": [
-    { "name": "data", "label": "数据", "type": "any", "direction": "input", "required": true, "description": "要分析的数据" },
-    { "name": "stats", "label": "统计", "type": "object", "direction": "output", "description": "统计信息" },
-    { "name": "rowCount", "label": "行数", "type": "number", "direction": "output", "description": "总行数" },
-    { "name": "colCount", "label": "列数", "type": "number", "direction": "output", "description": "总列数" },
-    { "name": "headers", "label": "字段", "type": "headers", "direction": "output", "description": "字段列表" }
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "要分析的数据"
+    },
+    {
+      "name": "stats",
+      "label": "统计",
+      "type": "object",
+      "direction": "output",
+      "description": "统计信息"
+    },
+    {
+      "name": "rowCount",
+      "label": "行数",
+      "type": "number",
+      "direction": "output",
+      "description": "总行数"
+    },
+    {
+      "name": "colCount",
+      "label": "列数",
+      "type": "number",
+      "direction": "output",
+      "description": "总列数"
+    },
+    {
+      "name": "headers",
+      "label": "字段",
+      "type": "headers",
+      "direction": "output",
+      "description": "字段列表"
+    }
+  ],
+  "keywords": [
+    "统计",
+    "信息",
+    "stats",
+    "statistics",
+    "info"
   ]
 }

@@ -5,7 +5,10 @@
   "category": "地址编码",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "decode_col"],
+  "methodPath": [
+    "utils",
+    "decode_col"
+  ],
   "inputs": [
     {
       "name": "letter",
@@ -21,5 +24,15 @@
       "description": "列号，从 0 开始"
     }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "如",
+    "z",
+    "utils",
+    "aa",
+    "decode",
+    "把列字母解码成列号",
+    "col",
+    "a"
+  ]
 }

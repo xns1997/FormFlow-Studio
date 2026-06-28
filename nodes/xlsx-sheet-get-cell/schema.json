@@ -5,7 +5,10 @@
   "category": "Sheet 操作",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "sheet_get_cell"],
+  "methodPath": [
+    "utils",
+    "sheet_get_cell"
+  ],
   "inputs": [
     {
       "name": "worksheet",
@@ -27,5 +30,14 @@
       "description": "单元格对象 {v, t, w, f, ...}"
     }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "utils",
+    "sheet",
+    "cell",
+    "指定单元格的对象",
+    "get",
+    "获取",
+    "XLSX"
+  ]
 }

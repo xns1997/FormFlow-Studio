@@ -5,14 +5,66 @@
   "category": "通用 · 可视化",
   "kind": "generic",
   "properties": [
-    { "name": "title", "label": "报告标题", "type": "string", "default": "数据报告", "description": "PDF 标题" },
-    { "name": "orientation", "label": "方向", "type": "enum", "enum": ["portrait", "landscape"], "default": "portrait", "description": "页面方向" },
-    { "name": "includeChart", "label": "包含图表", "type": "boolean", "default": true, "description": "是否包含数据图表" },
-    { "name": "autoDownload", "label": "自动下载", "type": "boolean", "default": true, "description": "是否自动下载" }
+    {
+      "name": "title",
+      "label": "报告标题",
+      "type": "string",
+      "default": "数据报告",
+      "description": "PDF 标题"
+    },
+    {
+      "name": "orientation",
+      "label": "方向",
+      "type": "enum",
+      "enum": [
+        "portrait",
+        "landscape"
+      ],
+      "default": "portrait",
+      "description": "页面方向"
+    },
+    {
+      "name": "includeChart",
+      "label": "包含图表",
+      "type": "boolean",
+      "default": true,
+      "description": "是否包含数据图表"
+    },
+    {
+      "name": "autoDownload",
+      "label": "自动下载",
+      "type": "boolean",
+      "default": true,
+      "description": "是否自动下载"
+    }
   ],
   "ports": [
-    { "name": "data", "label": "数据", "type": "json-rows", "direction": "input", "required": true, "description": "报告数据" },
-    { "name": "fileData", "label": "PDF 文件", "type": "file-data", "direction": "output", "description": "生成的 PDF" },
-    { "name": "fileName", "label": "文件名", "type": "string", "direction": "output", "description": "文件名" }
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true,
+      "description": "报告数据"
+    },
+    {
+      "name": "fileData",
+      "label": "PDF 文件",
+      "type": "file-data",
+      "direction": "output",
+      "description": "生成的 PDF"
+    },
+    {
+      "name": "fileName",
+      "label": "文件名",
+      "type": "string",
+      "direction": "output",
+      "description": "文件名"
+    }
+  ],
+  "keywords": [
+    "pdf",
+    "报告",
+    "report"
   ]
 }

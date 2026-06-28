@@ -5,12 +5,31 @@
   "category": "XLSX · 流式输出",
   "kind": "xlsx-method",
   "namespace": "XLSX.stream",
-  "methodPath": ["stream", "set_readable"],
+  "methodPath": [
+    "stream",
+    "set_readable"
+  ],
   "inputs": [
-    { "name": "Readable", "type": "Function", "required": true, "description": "可读流构造函数" }
+    {
+      "name": "Readable",
+      "type": "Function",
+      "required": true,
+      "description": "可读流构造函数"
+    }
   ],
   "outputs": [
-    { "name": "result", "type": "void", "description": "设置完成" }
+    {
+      "name": "result",
+      "type": "void",
+      "description": "设置完成"
+    }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "stream",
+    "设置流式输出的可读流工厂",
+    "set",
+    "readable",
+    "XLSX"
+  ]
 }

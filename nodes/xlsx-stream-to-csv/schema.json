@@ -5,16 +5,56 @@
   "category": "XLSX · 流式输出",
   "kind": "xlsx-method",
   "namespace": "XLSX.stream",
-  "methodPath": ["stream", "to_csv"],
+  "methodPath": [
+    "stream",
+    "to_csv"
+  ],
   "inputs": [
-    { "name": "worksheet", "type": "Worksheet", "required": true, "description": "工作表对象" }
+    {
+      "name": "worksheet",
+      "type": "Worksheet",
+      "required": true,
+      "description": "工作表对象"
+    }
   ],
   "outputs": [
-    { "name": "stream", "type": "ReadableStream", "description": "可读流" }
+    {
+      "name": "stream",
+      "type": "ReadableStream",
+      "description": "可读流"
+    }
   ],
   "properties": [
-    { "name": "FS", "label": "字段分隔符", "type": "string", "default": ",", "description": "字段分隔符" },
-    { "name": "RS", "label": "行分隔符", "type": "string", "default": "\n", "description": "行分隔符" },
-    { "name": "dateNF", "label": "日期格式", "type": "string", "default": "yyyy-mm-dd", "description": "日期格式" }
+    {
+      "name": "FS",
+      "label": "字段分隔符",
+      "type": "string",
+      "default": ",",
+      "description": "字段分隔符"
+    },
+    {
+      "name": "RS",
+      "label": "行分隔符",
+      "type": "string",
+      "default": "\n",
+      "description": "行分隔符"
+    },
+    {
+      "name": "dateNF",
+      "label": "日期格式",
+      "type": "string",
+      "default": "yyyy-mm-dd",
+      "description": "日期格式"
+    }
+  ],
+  "keywords": [
+    "stream",
+    "文本",
+    "转成",
+    "sheet",
+    "csv",
+    "to",
+    "流式将",
+    "XLSX"
   ]
 }

@@ -46,19 +46,80 @@
     }
   ],
   "inputs": [
-    { "name": "data", "type": "json-rows", "required": true, "description": "要显示的数据" },
-    { "name": "title", "type": "string", "required": false, "description": "标题覆盖" }
+    {
+      "name": "data",
+      "type": "json-rows",
+      "required": true,
+      "description": "要显示的数据"
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "required": false,
+      "description": "标题覆盖"
+    }
   ],
   "outputs": [
-    { "name": "data", "type": "json-rows", "description": "透传数据" },
-    { "name": "rowCount", "type": "number", "description": "总行数" },
-    { "name": "colCount", "type": "number", "description": "总列数" }
+    {
+      "name": "data",
+      "type": "json-rows",
+      "description": "透传数据"
+    },
+    {
+      "name": "rowCount",
+      "type": "number",
+      "description": "总行数"
+    },
+    {
+      "name": "colCount",
+      "type": "number",
+      "description": "总列数"
+    }
   ],
   "ports": [
-    { "name": "data", "label": "数据", "type": "json-rows", "direction": "input", "required": true, "description": "JSON 行数组" },
-    { "name": "title", "label": "标题", "type": "string", "direction": "input", "description": "标题覆盖" },
-    { "name": "data", "label": "数据", "type": "json-rows", "direction": "output", "description": "透传数据" },
-    { "name": "rowCount", "label": "行数", "type": "number", "direction": "output", "description": "总行数" },
-    { "name": "colCount", "label": "列数", "type": "number", "direction": "output", "description": "总列数" }
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true,
+      "description": "JSON 行数组"
+    },
+    {
+      "name": "title",
+      "label": "标题",
+      "type": "string",
+      "direction": "input",
+      "description": "标题覆盖"
+    },
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "透传数据"
+    },
+    {
+      "name": "rowCount",
+      "label": "行数",
+      "type": "number",
+      "direction": "output",
+      "description": "总行数"
+    },
+    {
+      "name": "colCount",
+      "label": "列数",
+      "type": "number",
+      "direction": "output",
+      "description": "总列数"
+    }
+  ],
+  "keywords": [
+    "表格",
+    "显示",
+    "分页",
+    "table",
+    "display",
+    "paginated"
   ]
 }

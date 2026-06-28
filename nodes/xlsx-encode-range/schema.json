@@ -5,7 +5,10 @@
   "category": "地址编码",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "encode_range"],
+  "methodPath": [
+    "utils",
+    "encode_range"
+  ],
   "inputs": [
     {
       "name": "range",
@@ -21,5 +24,14 @@
       "description": "A1 格式的范围地址，如 'A1:C5'"
     }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "把范围坐标对象编码成",
+    "utils",
+    "range",
+    "区间字符串",
+    "encode",
+    "a",
+    "XLSX"
+  ]
 }

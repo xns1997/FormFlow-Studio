@@ -5,7 +5,10 @@
   "category": "Sheet 操作",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "sheet_insert_cols"],
+  "methodPath": [
+    "utils",
+    "sheet_insert_cols"
+  ],
   "inputs": [
     {
       "name": "worksheet",
@@ -38,7 +41,11 @@
       "name": "origin",
       "label": "插入方向",
       "type": "enum",
-      "enum": ["-1", "0", "1"],
+      "enum": [
+        "-1",
+        "0",
+        "1"
+      ],
       "default": "-1",
       "description": "-1 向左插入，0 从指定列开始，1 向右插入"
     },
@@ -49,5 +56,14 @@
       "default": 0,
       "description": "跳过前 N 列不插入"
     }
+  ],
+  "keywords": [
+    "insert",
+    "cols",
+    "utils",
+    "在",
+    "sheet",
+    "中插入指定数量的空列",
+    "XLSX"
   ]
 }

@@ -5,12 +5,49 @@
   "category": "通用 · 校验",
   "kind": "generic",
   "properties": [
-    { "name": "schema", "label": "JSON Schema", "type": "json-string", "default": "{}", "description": "JSON Schema 定义" },
-    { "name": "strictMode", "label": "严格模式", "type": "boolean", "default": false, "description": "是否启用严格模式" }
+    {
+      "name": "schema",
+      "label": "JSON Schema",
+      "type": "json-string",
+      "default": "{}",
+      "description": "JSON Schema 定义"
+    },
+    {
+      "name": "strictMode",
+      "label": "严格模式",
+      "type": "boolean",
+      "default": false,
+      "description": "是否启用严格模式"
+    }
   ],
   "ports": [
-    { "name": "data", "label": "数据", "type": "any", "direction": "input", "required": true, "description": "要校验的数据" },
-    { "name": "valid", "label": "是否通过", "type": "boolean", "direction": "output", "description": "校验结果" },
-    { "name": "errors", "label": "错误列表", "type": "json-rows", "direction": "output", "description": "校验错误明细" }
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "要校验的数据"
+    },
+    {
+      "name": "valid",
+      "label": "是否通过",
+      "type": "boolean",
+      "direction": "output",
+      "description": "校验结果"
+    },
+    {
+      "name": "errors",
+      "label": "错误列表",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "校验错误明细"
+    }
+  ],
+  "keywords": [
+    "校验",
+    "json",
+    "validate",
+    "schema"
   ]
 }

@@ -6,25 +6,106 @@
   "kind": "generic",
   "methods": [],
   "properties": [
-    { "name": "fieldName", "label": "字段名", "type": "string", "default": "", "required": true, "description": "目标字段" },
-    { "name": "required", "label": "必填", "type": "boolean", "default": true, "description": "是否必填" }
+    {
+      "name": "fieldName",
+      "label": "字段名",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "目标字段"
+    },
+    {
+      "name": "required",
+      "label": "必填",
+      "type": "boolean",
+      "default": true,
+      "description": "是否必填"
+    }
   ],
   "inputs": [
-    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
-    { "name": "fieldName", "type": "string", "required": false, "description": "字段名覆盖" },
-    { "name": "required", "type": "boolean", "required": false, "description": "必填覆盖" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "fieldName",
+      "type": "string",
+      "required": false,
+      "description": "字段名覆盖"
+    },
+    {
+      "name": "required",
+      "type": "boolean",
+      "required": false,
+      "description": "必填覆盖"
+    }
   ],
   "outputs": [
-    { "name": "trigger", "type": "trigger", "description": "触发输出" },
-    { "name": "fieldName", "type": "string", "description": "字段名" },
-    { "name": "required", "type": "boolean", "description": "必填状态" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "description": "触发输出"
+    },
+    {
+      "name": "fieldName",
+      "type": "string",
+      "description": "字段名"
+    },
+    {
+      "name": "required",
+      "type": "boolean",
+      "description": "必填状态"
+    }
   ],
   "ports": [
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
-    { "name": "fieldName", "label": "字段", "type": "string", "direction": "input", "description": "字段名" },
-    { "name": "required", "label": "必填", "type": "boolean", "direction": "input", "description": "是否必填" },
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发输出" },
-    { "name": "fieldName", "label": "字段", "type": "string", "direction": "output", "description": "字段名" },
-    { "name": "required", "label": "必填", "type": "boolean", "direction": "output", "description": "必填状态" }
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "fieldName",
+      "label": "字段",
+      "type": "string",
+      "direction": "input",
+      "description": "字段名"
+    },
+    {
+      "name": "required",
+      "label": "必填",
+      "type": "boolean",
+      "direction": "input",
+      "description": "是否必填"
+    },
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "output",
+      "description": "触发输出"
+    },
+    {
+      "name": "fieldName",
+      "label": "字段",
+      "type": "string",
+      "direction": "output",
+      "description": "字段名"
+    },
+    {
+      "name": "required",
+      "label": "必填",
+      "type": "boolean",
+      "direction": "output",
+      "description": "必填状态"
+    }
+  ],
+  "keywords": [
+    "必填",
+    "required"
   ]
 }

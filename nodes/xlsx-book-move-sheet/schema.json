@@ -5,7 +5,10 @@
   "category": "工作簿管理",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "book_move_sheet"],
+  "methodPath": [
+    "utils",
+    "book_move_sheet"
+  ],
   "inputs": [
     {
       "name": "workbook",
@@ -27,5 +30,14 @@
       "description": "重排后的工作簿"
     }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "utils",
+    "book",
+    "sheet",
+    "调整工作簿中",
+    "的顺序",
+    "move",
+    "XLSX"
+  ]
 }

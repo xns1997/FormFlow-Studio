@@ -5,13 +5,39 @@
   "category": "XLSX · 复合文件",
   "kind": "xlsx-method",
   "namespace": "XLSX.CFB.utils",
-  "methodPath": ["CFB", "utils", "cfb_del"],
+  "methodPath": [
+    "CFB",
+    "utils",
+    "cfb_del"
+  ],
   "inputs": [
-    { "name": "cfb", "type": "CFB", "required": true, "description": "复合文件对象" },
-    { "name": "name", "type": "string", "required": true, "description": "要删除的条目名称" }
+    {
+      "name": "cfb",
+      "type": "CFB",
+      "required": true,
+      "description": "复合文件对象"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "required": true,
+      "description": "要删除的条目名称"
+    }
   ],
   "outputs": [
-    { "name": "cfb", "type": "CFB", "description": "修改后的复合文件" }
+    {
+      "name": "cfb",
+      "type": "CFB",
+      "description": "修改后的复合文件"
+    }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "del",
+    "utils",
+    "cfb",
+    "从复合文件删除指定条目",
+    "CFB",
+    "XLSX"
+  ]
 }

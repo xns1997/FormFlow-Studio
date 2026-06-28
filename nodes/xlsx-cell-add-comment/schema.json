@@ -5,13 +5,38 @@
   "category": "XLSX · 格式化",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "cell_add_comment"],
+  "methodPath": [
+    "utils",
+    "cell_add_comment"
+  ],
   "inputs": [
-    { "name": "cell", "type": "CellObject", "required": true, "description": "单元格对象" },
-    { "name": "comment", "type": "string", "required": true, "description": "批注内容" }
+    {
+      "name": "cell",
+      "type": "CellObject",
+      "required": true,
+      "description": "单元格对象"
+    },
+    {
+      "name": "comment",
+      "type": "string",
+      "required": true,
+      "description": "批注内容"
+    }
   ],
   "outputs": [
-    { "name": "cell", "type": "CellObject", "description": "修改后的单元格" }
+    {
+      "name": "cell",
+      "type": "CellObject",
+      "description": "修改后的单元格"
+    }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "add",
+    "utils",
+    "cell",
+    "为单元格添加批注",
+    "comment",
+    "XLSX"
+  ]
 }

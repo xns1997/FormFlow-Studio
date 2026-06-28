@@ -5,16 +5,59 @@
   "category": "XLSX · 工作簿管理",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "book_set_sheet_visibility"],
+  "methodPath": [
+    "utils",
+    "book_set_sheet_visibility"
+  ],
   "inputs": [
-    { "name": "workbook", "type": "Workbook", "required": true, "description": "工作簿对象" },
-    { "name": "sheet", "type": "string|number", "required": true, "description": "Sheet 名称或索引" },
-    { "name": "vis", "type": "number", "required": true, "description": "可见性：0=可见, 1=隐藏, 2=超级隐藏" }
+    {
+      "name": "workbook",
+      "type": "Workbook",
+      "required": true,
+      "description": "工作簿对象"
+    },
+    {
+      "name": "sheet",
+      "type": "string|number",
+      "required": true,
+      "description": "Sheet 名称或索引"
+    },
+    {
+      "name": "vis",
+      "type": "number",
+      "required": true,
+      "description": "可见性：0=可见, 1=隐藏, 2=超级隐藏"
+    }
   ],
   "outputs": [
-    { "name": "workbook", "type": "Workbook", "description": "操作后的工作簿" }
+    {
+      "name": "workbook",
+      "type": "Workbook",
+      "description": "操作后的工作簿"
+    }
   ],
   "properties": [
-    { "name": "vis", "label": "可见性", "type": "enum", "enum": ["0", "1", "2"], "default": "0", "description": "0=可见, 1=隐藏, 2=超级隐藏" }
+    {
+      "name": "vis",
+      "label": "可见性",
+      "type": "enum",
+      "enum": [
+        "0",
+        "1",
+        "2"
+      ],
+      "default": "0",
+      "description": "0=可见, 1=隐藏, 2=超级隐藏"
+    }
+  ],
+  "keywords": [
+    "visibility",
+    "utils",
+    "的可见性",
+    "book",
+    "sheet",
+    "设置工作簿中指定",
+    "set",
+    "XLSX"
   ]
 }

@@ -6,24 +6,102 @@
   "kind": "generic",
   "methods": [],
   "properties": [
-    { "name": "fieldName", "label": "字段名", "type": "string", "default": "", "required": true, "description": "绑定字段" },
-    { "name": "format", "label": "日期格式", "type": "string", "default": "yyyy-MM-dd", "description": "日期格式" },
-    { "name": "defaultValue", "label": "默认值", "type": "string", "default": "", "description": "默认日期" }
+    {
+      "name": "fieldName",
+      "label": "字段名",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "绑定字段"
+    },
+    {
+      "name": "format",
+      "label": "日期格式",
+      "type": "string",
+      "default": "yyyy-MM-dd",
+      "description": "日期格式"
+    },
+    {
+      "name": "defaultValue",
+      "label": "默认值",
+      "type": "string",
+      "default": "",
+      "description": "默认日期"
+    }
   ],
   "inputs": [
-    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" },
-    { "name": "value", "type": "string", "required": false, "description": "当前日期值" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "value",
+      "type": "string",
+      "required": false,
+      "description": "当前日期值"
+    }
   ],
   "outputs": [
-    { "name": "trigger", "type": "trigger", "description": "触发输出" },
-    { "name": "value", "type": "string", "description": "日期值" },
-    { "name": "fieldName", "type": "string", "description": "字段名" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "description": "触发输出"
+    },
+    {
+      "name": "value",
+      "type": "string",
+      "description": "日期值"
+    },
+    {
+      "name": "fieldName",
+      "type": "string",
+      "description": "字段名"
+    }
   ],
   "ports": [
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
-    { "name": "value", "label": "值", "type": "string", "direction": "input", "description": "日期值" },
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发输出" },
-    { "name": "value", "label": "值", "type": "string", "direction": "output", "description": "日期值" },
-    { "name": "fieldName", "label": "字段", "type": "string", "direction": "output", "description": "字段名" }
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "value",
+      "label": "值",
+      "type": "string",
+      "direction": "input",
+      "description": "日期值"
+    },
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "output",
+      "description": "触发输出"
+    },
+    {
+      "name": "value",
+      "label": "值",
+      "type": "string",
+      "direction": "output",
+      "description": "日期值"
+    },
+    {
+      "name": "fieldName",
+      "label": "字段",
+      "type": "string",
+      "direction": "output",
+      "description": "字段名"
+    }
+  ],
+  "keywords": [
+    "日期",
+    "选择",
+    "date",
+    "picker"
   ]
 }

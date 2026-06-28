@@ -6,16 +6,53 @@
   "kind": "generic",
   "methods": [],
   "properties": [
-    { "name": "delayMs", "label": "延时毫秒", "type": "number", "default": 1000, "min": 0, "max": 60000, "description": "延时时间（毫秒）" }
+    {
+      "name": "delayMs",
+      "label": "延时毫秒",
+      "type": "number",
+      "default": 1000,
+      "min": 0,
+      "max": 60000,
+      "description": "延时时间（毫秒）"
+    }
   ],
   "inputs": [
-    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "required": true,
+      "description": "触发信号"
+    }
   ],
   "outputs": [
-    { "name": "trigger", "type": "trigger", "description": "延时后触发" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "description": "延时后触发"
+    }
   ],
   "ports": [
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "延时后触发" }
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "output",
+      "description": "延时后触发"
+    }
+  ],
+  "keywords": [
+    "延时",
+    "延迟",
+    "delay",
+    "wait",
+    "sleep"
   ]
 }

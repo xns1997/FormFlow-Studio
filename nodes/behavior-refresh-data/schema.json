@@ -7,13 +7,41 @@
   "methods": [],
   "properties": [],
   "inputs": [
-    { "name": "trigger", "type": "trigger", "required": true, "description": "触发信号" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "required": true,
+      "description": "触发信号"
+    }
   ],
   "outputs": [
-    { "name": "trigger", "type": "trigger", "description": "触发输出" }
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "description": "触发输出"
+    }
   ],
   "ports": [
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "input", "required": true, "description": "触发信号" },
-    { "name": "trigger", "label": "触发", "type": "any", "direction": "output", "description": "触发输出" }
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "output",
+      "description": "触发输出"
+    }
+  ],
+  "keywords": [
+    "刷新",
+    "数据",
+    "refresh",
+    "reload"
   ]
 }

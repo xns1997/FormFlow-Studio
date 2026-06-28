@@ -6,22 +6,90 @@
   "kind": "generic",
   "methods": [],
   "properties": [
-    { "name": "protectStructure", "label": "保护结构", "type": "boolean", "default": true, "description": "是否保护工作簿结构" },
-    { "name": "protectWindows", "label": "保护窗口", "type": "boolean", "default": false, "description": "是否保护工作簿窗口" },
-    { "name": "password", "label": "密码", "type": "string", "default": "", "description": "保护密码" }
+    {
+      "name": "protectStructure",
+      "label": "保护结构",
+      "type": "boolean",
+      "default": true,
+      "description": "是否保护工作簿结构"
+    },
+    {
+      "name": "protectWindows",
+      "label": "保护窗口",
+      "type": "boolean",
+      "default": false,
+      "description": "是否保护工作簿窗口"
+    },
+    {
+      "name": "password",
+      "label": "密码",
+      "type": "string",
+      "default": "",
+      "description": "保护密码"
+    }
   ],
   "inputs": [
-    { "name": "workbook", "type": "object", "required": true, "description": "工作簿对象" },
-    { "name": "protectStructure", "type": "boolean", "required": false, "description": "结构保护覆盖" },
-    { "name": "password", "type": "string", "required": false, "description": "密码覆盖" }
+    {
+      "name": "workbook",
+      "type": "object",
+      "required": true,
+      "description": "工作簿对象"
+    },
+    {
+      "name": "protectStructure",
+      "type": "boolean",
+      "required": false,
+      "description": "结构保护覆盖"
+    },
+    {
+      "name": "password",
+      "type": "string",
+      "required": false,
+      "description": "密码覆盖"
+    }
   ],
   "outputs": [
-    { "name": "workbook", "type": "object", "description": "修改后的工作簿" }
+    {
+      "name": "workbook",
+      "type": "object",
+      "description": "修改后的工作簿"
+    }
   ],
   "ports": [
-    { "name": "workbook", "label": "工作簿", "type": "object", "direction": "input", "required": true, "description": "工作簿" },
-    { "name": "protectStructure", "label": "结构", "type": "boolean", "direction": "input", "description": "保护结构" },
-    { "name": "password", "label": "密码", "type": "string", "direction": "input", "description": "密码" },
-    { "name": "workbook", "label": "工作簿", "type": "object", "direction": "output", "description": "修改后的工作簿" }
+    {
+      "name": "workbook",
+      "label": "工作簿",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "工作簿"
+    },
+    {
+      "name": "protectStructure",
+      "label": "结构",
+      "type": "boolean",
+      "direction": "input",
+      "description": "保护结构"
+    },
+    {
+      "name": "password",
+      "label": "密码",
+      "type": "string",
+      "direction": "input",
+      "description": "密码"
+    },
+    {
+      "name": "workbook",
+      "label": "工作簿",
+      "type": "object",
+      "direction": "output",
+      "description": "修改后的工作簿"
+    }
+  ],
+  "keywords": [
+    "保护",
+    "工作簿",
+    "protect",
+    "workbook"
   ]
 }

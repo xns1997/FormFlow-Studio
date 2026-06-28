@@ -5,7 +5,10 @@
   "category": "地址编码",
   "kind": "xlsx-method",
   "namespace": "XLSX.utils",
-  "methodPath": ["utils", "decode_cell"],
+  "methodPath": [
+    "utils",
+    "decode_cell"
+  ],
   "inputs": [
     {
       "name": "address",
@@ -21,5 +24,14 @@
       "description": "单元格坐标 {r: 行号, c: 列号}，从 0 开始"
     }
   ],
-  "properties": []
+  "properties": [],
+  "keywords": [
+    "utils",
+    "把",
+    "decode",
+    "cell",
+    "a",
+    "格式的单元格地址解析成坐标对象",
+    "XLSX"
+  ]
 }

@@ -5,19 +5,94 @@
   "category": "XLSX · 工作簿 IO",
   "kind": "xlsx-method",
   "namespace": "XLSX",
-  "methodPath": ["readFile"],
+  "methodPath": [
+    "readFile"
+  ],
   "inputs": [
-    { "name": "filename", "type": "string", "required": true, "description": "文件路径" }
+    {
+      "name": "filename",
+      "type": "string",
+      "required": true,
+      "description": "文件路径"
+    }
   ],
   "outputs": [
-    { "name": "workbook", "type": "Workbook", "description": "工作簿对象" }
+    {
+      "name": "workbook",
+      "type": "Workbook",
+      "description": "工作簿对象"
+    }
   ],
   "properties": [
-    { "name": "type", "label": "数据类型", "type": "enum", "enum": ["buffer", "array", "binary", "string", "base64"], "default": "buffer", "description": "读取方式" },
-    { "name": "bookType", "label": "工作簿类型", "type": "enum", "enum": ["xlsx", "xlsm", "xlsb", "xls", "csv", "txt", "ods", "fods", "numbers"], "default": "xlsx", "description": "文件格式" },
-    { "name": "cellFormula", "label": "解析公式", "type": "boolean", "default": true, "description": "是否解析公式" },
-    { "name": "cellDates", "label": "日期转 Date", "type": "boolean", "default": false, "description": "是否转为 Date 对象" },
-    { "name": "sheetRows", "label": "行数限制", "type": "number", "default": 0, "description": "读取行数限制" },
-    { "name": "raw", "label": "原始值", "type": "boolean", "default": false, "description": "返回原始编码值" }
+    {
+      "name": "type",
+      "label": "数据类型",
+      "type": "enum",
+      "enum": [
+        "buffer",
+        "array",
+        "binary",
+        "string",
+        "base64"
+      ],
+      "default": "buffer",
+      "description": "读取方式"
+    },
+    {
+      "name": "bookType",
+      "label": "工作簿类型",
+      "type": "enum",
+      "enum": [
+        "xlsx",
+        "xlsm",
+        "xlsb",
+        "xls",
+        "csv",
+        "txt",
+        "ods",
+        "fods",
+        "numbers"
+      ],
+      "default": "xlsx",
+      "description": "文件格式"
+    },
+    {
+      "name": "cellFormula",
+      "label": "解析公式",
+      "type": "boolean",
+      "default": true,
+      "description": "是否解析公式"
+    },
+    {
+      "name": "cellDates",
+      "label": "日期转 Date",
+      "type": "boolean",
+      "default": false,
+      "description": "是否转为 Date 对象"
+    },
+    {
+      "name": "sheetRows",
+      "label": "行数限制",
+      "type": "number",
+      "default": 0,
+      "description": "读取行数限制"
+    },
+    {
+      "name": "raw",
+      "label": "原始值",
+      "type": "boolean",
+      "default": false,
+      "description": "返回原始编码值"
+    }
+  ],
+  "keywords": [
+    "node",
+    "环境",
+    "从文件系统读取",
+    "excel",
+    "文件",
+    "js",
+    "readFile",
+    "XLSX"
   ]
 }

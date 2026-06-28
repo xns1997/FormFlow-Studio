@@ -5,13 +5,67 @@
   "category": "通用 · 聚合",
   "kind": "generic",
   "properties": [
-    { "name": "rowKey", "label": "行键", "type": "string", "default": "", "required": true, "description": "作为行的列名" },
-    { "name": "colKey", "label": "列键", "type": "string", "default": "", "required": true, "description": "作为列的列名" },
-    { "name": "valueKey", "label": "值键", "type": "string", "default": "", "required": true, "description": "填充单元格的列名" },
-    { "name": "aggFunc", "label": "聚合函数", "type": "enum", "enum": ["sum", "avg", "count", "first", "last"], "default": "sum", "description": "重复值聚合方式" }
+    {
+      "name": "rowKey",
+      "label": "行键",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "作为行的列名"
+    },
+    {
+      "name": "colKey",
+      "label": "列键",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "作为列的列名"
+    },
+    {
+      "name": "valueKey",
+      "label": "值键",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "填充单元格的列名"
+    },
+    {
+      "name": "aggFunc",
+      "label": "聚合函数",
+      "type": "enum",
+      "enum": [
+        "sum",
+        "avg",
+        "count",
+        "first",
+        "last"
+      ],
+      "default": "sum",
+      "description": "重复值聚合方式"
+    }
   ],
   "ports": [
-    { "name": "data", "label": "数据", "type": "json-rows", "direction": "input", "required": true, "description": "输入数据" },
-    { "name": "data", "label": "结果", "type": "json-rows", "direction": "output", "description": "透视结果" }
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true,
+      "description": "输入数据"
+    },
+    {
+      "name": "data",
+      "label": "结果",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "透视结果"
+    }
+  ],
+  "keywords": [
+    "透视",
+    "行转列",
+    "pivot",
+    "cross",
+    "table"
   ]
 }
