@@ -21,7 +21,9 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body, #app { min-height: 100%; margin: 0; }
-body { min-width: 1180px; background: var(--bg); color: var(--text); font-size: 13px; }
+body { min-width: 1180px; background: var(--bg); color: var(--text); font-size: 13px; touch-action: manipulation; }
 button, input, textarea, select { font: inherit; }
 button { cursor: pointer; }
 h1, h2, h3, h4, p { margin: 0; }
+
+.react-flow, .ag-root, .monaco-editor { touch-action: manipulation; }
