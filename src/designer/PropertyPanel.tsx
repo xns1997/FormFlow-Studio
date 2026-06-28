@@ -12,6 +12,30 @@ import { DesignerIcon } from './icons';
 import CodeEditor from '../components/CodeEditor';
 import { ctxSuggestions, jsonSuggestions } from '../components/codeEditorSuggestions';
 
+function getDefaultEventCode(eventKey: string, fieldName: string): string {
+  const templates: Record<string, string> = {
+    onChange: `// 值变化时触发
+// ctx.value    - 当前值
+// ctx.field    - 字段名
+// ctx.values   - 所有表单值
+// ctx.setValue('field', value) - 设置其他字段
+
+ctx.console.log('${fieldName} 变更为:', ctx.value);
+`,
+    onBlur: `// 失焦时触发
+ctx.console.log('${fieldName} 失焦, 当前值:', ctx.value);
+`,
+    onFocus: `// 聚焦时触发
+ctx.console.log('${fieldName} 获得焦点');
+`,
+    onClick: `// 点击时触发
+ctx.console.log('${fieldName} 被点击');
+ctx.console.log('表单数据:', ctx.values);
+`,
+  };
+  return templates[eventKey] || `// ${eventKey}\n`;
+}
+
 interface Props {
   component: DesignComponent | null;
   onUpdate: (id: string, patch: Record<string, any>) => void;
@@ -226,7 +250,7 @@ export function PropertyPanel({ component, onUpdate, onRemove }: Props) {
           <div className="properties-group">
             <h4>事件</h4>
             {control.eventSchema.map((evt) => {
-              const eventCode = component.props.events?.[evt.key] || '';
+              const eventCode = component.props.events?.[evt.key] || getDefaultEventCode(evt.key, component.props.name || component.type);
               return (
                 <div key={evt.key} className="prop-event">
                   <div className="prop-event-header">
