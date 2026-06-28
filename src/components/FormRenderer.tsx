@@ -6,6 +6,37 @@ import RangeSelector from './RangeSelector';
 import ChartWidget, { type MetricConfig } from './ChartWidget';
 import { resolveRange } from '../services/rangeResolver';
 
+function executeEventCode(
+  code: string,
+  ctx: {
+    field: string;
+    value: unknown;
+    values: Record<string, unknown>;
+    setValue: (field: string, val: unknown) => void;
+    component: ComponentNode;
+  }
+): void {
+  if (!code || !code.trim()) return;
+  try {
+    const fn = new Function('ctx', `with(ctx) { ${code} }`);
+    fn({
+      field: ctx.field,
+      value: ctx.value,
+      values: ctx.values,
+      getValue: (f: string) => ctx.values[f],
+      setValue: ctx.setValue,
+      component: ctx.component,
+      console: {
+        log: (...args: unknown[]) => console.log('[Event]', ...args),
+        warn: (...args: unknown[]) => console.warn('[Event]', ...args),
+        error: (...args: unknown[]) => console.error('[Event]', ...args),
+      },
+    });
+  } catch (e) {
+    console.error(`[Event Error] ${ctx.component.name}.${ctx.field}:`, e);
+  }
+}
+
 interface FormRendererProps {
   components: ComponentNode[];
   values: Record<string, unknown>;
@@ -58,10 +89,34 @@ export default function FormRenderer({
               disabled={state.disabled || state.readonly || !!props.disabled || !!props.readonly}
               props={props}
               error={errors[comp.name]}
-              onChange={(val) => onChange(comp.name, val)}
-              onBlur={() => onBlur?.(comp.name)}
-              onFocus={() => onFocus?.(comp.name)}
-              onButtonClick={() => onButtonClick?.(comp.name)}
+              onChange={(val) => {
+                onChange(comp.name, val);
+                const evtCode = (comp.props?.events as Record<string, string>)?.onChange;
+                executeEventCode(evtCode, {
+                  field: comp.name, value: val, values, setValue: onChange, component: comp,
+                });
+              }}
+              onBlur={() => {
+                onBlur?.(comp.name);
+                const evtCode = (comp.props?.events as Record<string, string>)?.onBlur;
+                executeEventCode(evtCode, {
+                  field: comp.name, value: values[comp.name], values, setValue: onChange, component: comp,
+                });
+              }}
+              onFocus={() => {
+                onFocus?.(comp.name);
+                const evtCode = (comp.props?.events as Record<string, string>)?.onFocus;
+                executeEventCode(evtCode, {
+                  field: comp.name, value: values[comp.name], values, setValue: onChange, component: comp,
+                });
+              }}
+              onButtonClick={() => {
+                onButtonClick?.(comp.name);
+                const evtCode = (comp.props?.events as Record<string, string>)?.onClick;
+                executeEventCode(evtCode, {
+                  field: comp.name, value: values[comp.name], values, setValue: onChange, component: comp,
+                });
+              }}
               tables={tables}
             />
             {tables.length > 0 && (
