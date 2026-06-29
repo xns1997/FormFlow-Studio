@@ -17,7 +17,6 @@
 .code-editor-container {
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  overflow: hidden;
 }
 
 .code-editor-header {
@@ -57,6 +56,18 @@
   border-color: rgba(37, 99, 235, 0.35);
 }
 
+.code-editor-shell {
+  overflow: visible;
+}
+
+.code-editor-shell .monaco-editor {
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.code-editor-shell .monaco-editor .suggest-widget {
+  z-index: 99999 !important;
+}
+
 .code-editor-fullscreen {
   position: fixed;
   inset: 0;
@@ -70,16 +81,6 @@
   flex: 1;
   border: none;
   border-radius: 0;
-}
-
-/* ── Monaco Suggestion Fix ──────────────────────────── */
-
-.monaco-editor .suggest-widget {
-  z-index: 99999 !important;
-}
-
-.monaco-editor .overflowingContentWidgets {
-  z-index: 99999 !important;
 }
 
 /* ── Project Manager ──────────────────────────────────── */
