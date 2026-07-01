@@ -4,38 +4,11 @@ import type { SrcTableEntry } from '../project/types';
 import RangeTag from './RangeTag';
 import RangeSelector from './RangeSelector';
 import ChartWidget, { type MetricConfig } from './ChartWidget';
+import CodeEditor from './CodeEditor';
+import { jsonSuggestions } from './codeEditorSuggestions';
+import { formatStructuredProperty, isStructuredProperty, parseStructuredProperty } from '../services/structuredProperties';
 import { resolveRange } from '../services/rangeResolver';
-
-function executeEventCode(
-  code: string,
-  ctx: {
-    field: string;
-    value: unknown;
-    values: Record<string, unknown>;
-    setValue: (field: string, val: unknown) => void;
-    component: ComponentNode;
-  }
-): void {
-  if (!code || !code.trim()) return;
-  try {
-    const fn = new Function('ctx', `with(ctx) { ${code} }`);
-    fn({
-      field: ctx.field,
-      value: ctx.value,
-      values: ctx.values,
-      getValue: (f: string) => ctx.values[f],
-      setValue: ctx.setValue,
-      component: ctx.component,
-      console: {
-        log: (...args: unknown[]) => console.log('[Event]', ...args),
-        warn: (...args: unknown[]) => console.warn('[Event]', ...args),
-        error: (...args: unknown[]) => console.error('[Event]', ...args),
-      },
-    });
-  } catch (e) {
-    console.error(`[Event Error] ${ctx.component.name}.${ctx.field}:`, e);
-  }
-}
+import type { FormControlEventContext } from '../services/formFlowTrigger';
 
 interface FormRendererProps {
   components: ComponentNode[];
@@ -47,6 +20,7 @@ interface FormRendererProps {
   onBlur?: (field: string) => void;
   onFocus?: (field: string) => void;
   onButtonClick?: (buttonName: string) => void;
+  onControlEvent?: (context: FormControlEventContext) => void | Promise<void>;
   tables?: SrcTableEntry[];
   rangeConnections?: Record<string, RangeRef>;
   onRangeChange?: (componentName: string, ref: RangeRef | null) => void;
@@ -54,7 +28,7 @@ interface FormRendererProps {
 
 export default function FormRenderer({
   components, values, originalValues, componentStates, errors, onChange,
-  onBlur, onFocus, onButtonClick,
+  onBlur, onFocus, onButtonClick, onControlEvent,
   tables = [], rangeConnections = {}, onRangeChange,
 }: FormRendererProps) {
   const [connectingField, setConnectingField] = useState<string | null>(null);
@@ -90,31 +64,32 @@ export default function FormRenderer({
               props={props}
               error={errors[comp.name]}
               onChange={(val) => {
+                const nextValues = { ...values, [comp.name]: val };
                 onChange(comp.name, val);
-                const evtCode = (comp.props?.events as Record<string, string>)?.onChange;
-                executeEventCode(evtCode, {
-                  field: comp.name, value: val, values, setValue: onChange, component: comp,
+                void onControlEvent?.({
+                  eventName: 'onChange', field: comp.name, value: val,
+                  values: nextValues, originalValues, component: comp,
                 });
               }}
               onBlur={() => {
                 onBlur?.(comp.name);
-                const evtCode = (comp.props?.events as Record<string, string>)?.onBlur;
-                executeEventCode(evtCode, {
-                  field: comp.name, value: values[comp.name], values, setValue: onChange, component: comp,
+                void onControlEvent?.({
+                  eventName: 'onBlur', field: comp.name, value: values[comp.name],
+                  values, originalValues, component: comp,
                 });
               }}
               onFocus={() => {
                 onFocus?.(comp.name);
-                const evtCode = (comp.props?.events as Record<string, string>)?.onFocus;
-                executeEventCode(evtCode, {
-                  field: comp.name, value: values[comp.name], values, setValue: onChange, component: comp,
+                void onControlEvent?.({
+                  eventName: 'onFocus', field: comp.name, value: values[comp.name],
+                  values, originalValues, component: comp,
                 });
               }}
               onButtonClick={() => {
                 onButtonClick?.(comp.name);
-                const evtCode = (comp.props?.events as Record<string, string>)?.onClick;
-                executeEventCode(evtCode, {
-                  field: comp.name, value: values[comp.name], values, setValue: onChange, component: comp,
+                void onControlEvent?.({
+                  eventName: 'onClick', field: comp.name, value: values[comp.name],
+                  values, originalValues, component: comp,
                 });
               }}
               tables={tables}
@@ -407,7 +382,31 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
       }
       if (designType === 'divider') return <hr className="lg-divider-render" />;
       return <div className="lg-text">{String(props.title ?? props.label ?? '自定义组件')}</div>;
-    default:
+    default: {
+      if (isStructuredProperty(undefined, effectiveValue)) {
+        const jsonStr = formatStructuredProperty(effectiveValue);
+        return (
+          <CodeEditor
+            value={jsonStr}
+            onChange={(next) => {
+              const parsed = parseStructuredProperty(next);
+              if (!parsed.error) onChange(parsed.value);
+            }}
+            language="json"
+            title={name}
+            disabled={disabled}
+            theme="light"
+            height={150}
+            minHeight={80}
+            lineNumbers
+            suggestions={jsonSuggestions}
+            suggestionTriggerCharacters={['"', ':', ',', '{', '[']}
+            options={{ folding: true, lineNumbersMinChars: 2, scrollbar: { vertical: 'hidden', horizontal: 'auto' } }}
+            compact
+            fullscreen={!disabled}
+          />
+        );
+      }
       return (
         <input
           type="text"
@@ -419,5 +418,6 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
           onFocus={onFocus}
         />
       );
+    }
   }
 }

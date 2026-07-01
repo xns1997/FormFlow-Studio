@@ -7,6 +7,7 @@ import type { MetricConfig } from '../../components/ChartWidget';
 import { resolveRange } from '../../services/rangeResolver';
 import { useProjectStore } from '../../project/store';
 import { DesignerIcon } from '../icons';
+import type { PreviewControlRuntime } from '../types';
 
 registerControl({
   type: 'text', label: '文本', category: 'display', icon: '📄',
@@ -80,8 +81,8 @@ registerControl({
   ],
   eventSchema: [{ key: 'onClick', label: '点击', description: '点击图片时触发' }],
   defaultSize: { w: 240, h: 160 },
-  render: ({ component }: { component: DesignComponent }) => (
-    <div style={{ ...ios.glass, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(118,118,128,0.08)', borderRadius: component.props.borderRadius || 0 }}>
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => (
+    <div role={mode === 'preview' ? 'button' : undefined} tabIndex={mode === 'preview' ? 0 : -1} onClick={() => mode === 'preview' && runtime?.emit('onClick', component.props.src)} style={{ ...ios.glass, cursor: mode === 'preview' ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(118,118,128,0.08)', borderRadius: component.props.borderRadius || 0 }}>
       {component.props.src ? (
         <img src={component.props.src} alt={component.props.alt || ''} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: component.props.fit || 'cover', borderRadius: component.props.borderRadius || 0, opacity: component.props.opacity ?? 1 }} />
       ) : (
@@ -115,7 +116,7 @@ registerControl({
   ],
   eventSchema: [{ key: 'onRowClick', label: '行点击', description: '点击表格行时触发' }],
   defaultSize: { w: 360, h: 180 },
-  render: ({ component }: { component: DesignComponent }) => {
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
     const cols = component.props.columns || ['列A', '列B'];
     const rows = component.props.rows || 3;
     return (
@@ -130,7 +131,7 @@ registerControl({
           </thead>
           <tbody>
             {Array.from({ length: rows }, (_, r) => (
-              <tr key={r}>
+              <tr key={r} onClick={() => mode === 'preview' && runtime?.emit('onRowClick', r, { rowIndex: r })} style={{ cursor: mode === 'preview' ? 'pointer' : 'default' }}>
                 {cols.map((_: string, c: number) => (
                   <td key={c} style={{ padding: '9px 10px', borderBottom: component.props.showGrid !== false && r < rows - 1 ? '0.5px solid rgba(60,60,67,0.06)' : 'none', color: component.props.cellColor || '#3a3a3c', background: component.props.striped && r % 2 === 1 ? 'rgba(118,118,128,0.03)' : 'transparent', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>—</td>
                 ))}
@@ -208,7 +209,7 @@ registerControl({
   render: ChartRender,
 });
 
-function ChartRender({ component }: { component: DesignComponent }) {
+function ChartRender({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) {
   const tables = useProjectStore((s) => s.project?.srcTable || []);
   const rangeRef = component.props.rangeRef;
 
@@ -244,7 +245,7 @@ function ChartRender({ component }: { component: DesignComponent }) {
   }, [hasManualConfig, userMets, inferred]);
 
   return (
-    <div style={{ ...ios.glass, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div role={mode === 'preview' ? 'button' : undefined} tabIndex={mode === 'preview' ? 0 : -1} onClick={() => mode === 'preview' && runtime?.emit('onClick')} style={{ ...ios.glass, cursor: mode === 'preview' ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ padding: '10px 14px 0', flexShrink: 0 }}>
         <span style={{ fontSize: 14, fontWeight: 650, color: '#1c1c1e' }}>{component.props.title || '图表'}</span>
         {headers && dimsArr.length > 0 && metsArr.length > 0 && (

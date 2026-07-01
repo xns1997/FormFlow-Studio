@@ -17,13 +17,13 @@
   "inputs": [
     {
       "name": "workbook",
-      "type": "object",
+      "type": "workbook",
       "required": true,
       "description": "工作簿对象"
     },
     {
       "name": "worksheet",
-      "type": "object",
+      "type": "worksheet",
       "required": false,
       "description": "工作表对象"
     },
@@ -43,7 +43,7 @@
   "outputs": [
     {
       "name": "workbook",
-      "type": "object",
+      "type": "workbook",
       "description": "修改后的工作簿"
     }
   ],
@@ -51,7 +51,7 @@
     {
       "name": "workbook",
       "label": "工作簿",
-      "type": "object",
+      "type": "workbook",
       "direction": "input",
       "required": true,
       "description": "工作簿"
@@ -59,7 +59,7 @@
     {
       "name": "worksheet",
       "label": "工作表",
-      "type": "object",
+      "type": "worksheet",
       "direction": "input",
       "description": "工作表"
     },
@@ -81,7 +81,7 @@
     {
       "name": "workbook",
       "label": "工作簿",
-      "type": "object",
+      "type": "workbook",
       "direction": "output",
       "description": "修改后的工作簿"
     }

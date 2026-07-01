@@ -1,6 +1,10 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import CodeEditor from '../components/CodeEditor';
-import { ctxSuggestions } from '../components/codeEditorSuggestions';
+import {
+  createEventContextExtraLib,
+  createEventContextSuggestions,
+  type EventFieldDescriptor,
+} from '../components/codeEditorSuggestions';
 import { useProjectStore } from '../project/store';
 import type { BehaviorFile } from '../project/types';
 
@@ -14,6 +18,24 @@ export default function BehaviorPage() {
   const [newScriptEvent, setNewScriptEvent] = useState('onFieldChange');
 
   const scripts = project?.behaviors || [];
+  const workflows = project?.workflows || [];
+  const fieldDescriptors = useMemo<EventFieldDescriptor[]>(() => {
+    if (!project) return [];
+    const fromTables = project.srcTable.flatMap((table) => table.sheets.flatMap((sheet) => sheet.columns.map((column) => ({
+      name: column.name,
+      type: column.dataType,
+    }))));
+    const fromComponents = project.designs.flatMap((design) => design.components.map((component) => {
+      const name = String(component.fieldBinding || component.props.name || '').trim();
+      if (!name) return null;
+      if (component.type === 'number' || component.type === 'rating') return { name, type: 'number' };
+      if (component.type === 'switch') return { name, type: 'boolean' };
+      if (component.type === 'checkbox') return { name, type: 'array' };
+      if (component.type === 'json' || component.type === 'object') return { name, type: 'object' };
+      return { name, type: 'string' };
+    }).filter(Boolean) as EventFieldDescriptor[]);
+    return [...new Map([...fromTables, ...fromComponents].map((field) => [field.name, field])).values()];
+  }, [project]);
 
   const events = ['onFormLoad', 'onRowLoad', 'onFieldChange', 'onFieldBlur', 'onFieldFocus', 'onButtonClick', 'onValidate', 'onSubmit', 'onSubmitSuccess', 'onSubmitError'];
 
@@ -112,10 +134,22 @@ export default function BehaviorPage() {
               value={editingScript.code}
               onChange={(code) => updateCode(editingScript.id, code)}
               language="javascript"
+              path={`inmemory://model/behavior-${editingScript.id}.js`}
               title={`${editingScript.name} · ${editingScript.event}`}
               theme="light"
-              suggestions={ctxSuggestions}
-              suggestionTriggerCharacters={['.']}
+              extraLibs={[
+                createEventContextExtraLib({
+                  filePath: `inmemory://model/behavior-${editingScript.id}.d.ts`,
+                  fields: fieldDescriptors,
+                  eventName: editingScript.event,
+                }),
+              ]}
+              suggestions={createEventContextSuggestions({
+                fields: fieldDescriptors,
+                workflows,
+                eventName: editingScript.event,
+              })}
+              suggestionTriggerCharacters={['.', "'", '"', '(', '$']}
               lineNumbers
               options={{ minimap: { enabled: true }, folding: true, fontSize: 13, lineHeight: 21 }}
               fullscreen

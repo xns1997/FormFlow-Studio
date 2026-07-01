@@ -6,6 +6,9 @@ import { validateField } from './validator';
 export interface SandboxContext {
   getValue: (fieldId: string) => unknown;
   setValue: (fieldId: string, value: unknown) => void;
+  setField: (fieldId: string, value: unknown) => void;
+  formData: Record<string, unknown>;
+  originalData: Record<string, unknown>;
   setVisible: (componentId: string, visible: boolean) => void;
   setDisabled: (componentId: string, disabled: boolean) => void;
   setRequired: (fieldId: string, required: boolean) => void;
@@ -31,6 +34,14 @@ export function createSandboxContext(
         return addBehaviorLog(next, { timestamp: Date.now(), level: 'info', source: 'js', message: `setValue("${fieldId}", ${JSON.stringify(value)})` });
       });
     },
+    setField: (fieldId: string, value: unknown) => {
+      setState((prev) => {
+        const next = setFormValue(prev, fieldId, value);
+        return addBehaviorLog(next, { timestamp: Date.now(), level: 'info', source: 'js', message: `setField("${fieldId}", ${JSON.stringify(value)})` });
+      });
+    },
+    get formData() { return state.formValues; },
+    get originalData() { return state.originalValues; },
     setVisible: (componentId: string, visible: boolean) => {
       setState((prev) => setComponentState(prev, componentId, { visible }));
     },

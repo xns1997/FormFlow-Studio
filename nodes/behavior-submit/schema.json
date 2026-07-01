@@ -1,11 +1,18 @@
 {
-  "id": "behavior-submit",
+  "id": "behavior:submit",
   "label": "提交数据",
   "description": "将表单数据提交（生成变更记录）",
   "category": "行为 · 动作",
   "kind": "generic",
   "methods": [],
   "properties": [
+    {
+      "name": "validateFirst",
+      "label": "先校验",
+      "type": "boolean",
+      "default": true,
+      "description": "提交前是否先校验"
+    },
     {
       "name": "target",
       "label": "提交目标",
@@ -25,13 +32,52 @@
       "type": "string",
       "default": "output",
       "description": "输出文件名（不含扩展名）"
+    },
+    {
+      "name": "writeBackMode",
+      "label": "元数据写回",
+      "type": "enum",
+      "enum": ["none", "upsert"],
+      "default": "none",
+      "description": "按主键更新或新增项目数据表行"
+    },
+    {
+      "name": "writeBackTableId",
+      "label": "目标数据表 ID",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "writeBackSheetName",
+      "label": "目标工作表",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "writeBackKeyField",
+      "label": "主键列",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "writeBackKeyFormField",
+      "label": "主键表单字段",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "writeBackFieldMap",
+      "label": "字段映射",
+      "type": "json",
+      "default": {},
+      "description": "表单字段名到数据表列名的映射"
     }
   ],
   "inputs": [
     {
       "name": "trigger",
       "type": "trigger",
-      "required": true,
+      "required": false,
       "description": "触发信号"
     },
     {
@@ -67,6 +113,11 @@
       "name": "fileData",
       "type": "any",
       "description": "输出文件数据"
+    },
+    {
+      "name": "writeBack",
+      "type": "object",
+      "description": "由表单运行时应用的元数据写回指令"
     }
   ],
   "ports": [
@@ -75,7 +126,7 @@
       "label": "触发",
       "type": "any",
       "direction": "input",
-      "required": true,
+      "required": false,
       "description": "触发信号"
     },
     {
@@ -120,6 +171,13 @@
       "type": "any",
       "direction": "output",
       "description": "文件数据"
+    },
+    {
+      "name": "writeBack",
+      "label": "元数据写回",
+      "type": "object",
+      "direction": "output",
+      "description": "受控的数据表行更新指令"
     }
   ],
   "keywords": [

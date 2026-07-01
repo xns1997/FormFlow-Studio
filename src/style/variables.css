@@ -26,4 +26,8 @@ button, input, textarea, select { font: inherit; }
 button { cursor: pointer; }
 h1, h2, h3, h4, p { margin: 0; }
 
-.react-flow, .ag-root, .monaco-editor { touch-action: manipulation; }
+.react-flow, .ag-root, .monaco-editor, .react-flow__pane, .react-flow__renderer,
+.page-sidebar, .page-main, .page-inspector, .canvas-inspector, .canvas-palette,
+.rs-grid, .lg-form, .designer-tabbar, .palette-list,
+.x6-graph, .x6-graph-svg, .x6-graph-svg-content, .x6-graph-container,
+.x6-node, .x6-cell { touch-action: manipulation; }

@@ -1,4 +1,5 @@
 import type { SrcTableEntry } from '../src/project/types';
+import type { FlowSideEffect } from '../src/services/flowSideEffects';
 import { checkPortType, assertPortType, checkPortValues, type TypeCheckResult } from './port-types';
 
 export interface NodeExecContext {
@@ -12,6 +13,7 @@ export interface NodeExecContext {
 
 export interface NodeExecResult {
   [portName: string]: unknown;
+  sideEffects?: FlowSideEffect[];
 }
 
 export type NodeExecutorFn = (ctx: NodeExecContext) => Promise<NodeExecResult> | NodeExecResult;

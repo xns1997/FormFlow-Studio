@@ -4,20 +4,22 @@ import {
   createNewProject, saveProjectStructure, listProjects,
   deleteProject as deleteProjectFn, importProjectFile,
 } from '../project/manager';
+import { useProjectStore } from '../project/store';
 
 export default function ProjectsListPage() {
   const navigate = useNavigate();
+  const setProject = useProjectStore((s) => s.setProject);
   const [projectList, setProjectList] = useState<Array<{ id: string; name: string; updatedAt: string; tableCount: number }>>([]);
   const [newName, setNewName] = useState('');
 
-  useEffect(() => { listProjects().then(setProjectList); }, []);
+  useEffect(() => { listProjects().then(setProjectList).catch(() => {}); }, []);
 
   const createProject = useCallback(async () => {
     const name = newName.trim() || `项目 ${projectList.length + 1}`;
     const project = createNewProject(name);
-    await saveProjectStructure(project);
-    const list = await listProjects();
-    setProjectList(list);
+    try { await saveProjectStructure(project); } catch {}
+    try { setProjectList(await listProjects()); } catch {}
+    setProject(project);
     setNewName('');
     navigate(`/project/${project.config.id}`);
   }, [newName, projectList.length, navigate]);
@@ -28,9 +30,8 @@ export default function ProjectsListPage() {
 
   const deleteProject = useCallback(async (id: string, name: string) => {
     if (confirm(`确定删除项目 "${name}"？`)) {
-      await deleteProjectFn(id);
-      const list = await listProjects();
-      setProjectList(list);
+      try { await deleteProjectFn(id); } catch {}
+      try { setProjectList(await listProjects()); } catch {}
     }
   }, []);
 
@@ -69,15 +70,15 @@ export default function ProjectsListPage() {
       if (t.files?.[0]) {
         try {
           const project = await importProjectFile(t.files[0]);
-          await saveProjectStructure(project);
-          const list = await listProjects();
-          setProjectList(list);
+          setProject(project);
+          try { await saveProjectStructure(project); } catch {}
+          try { setProjectList(await listProjects()); } catch {}
           navigate(`/project/${project.config.id}`);
         } catch (err) { alert('导入失败: ' + String(err)); }
       }
     };
     input.click();
-  }, [navigate]);
+  }, [navigate, setProject]);
 
   return (
     <div className="page-container projects-page">

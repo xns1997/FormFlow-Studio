@@ -2,6 +2,7 @@ import React from 'react';
 import { registerControl } from '../registry';
 import type { DesignComponent } from '../../project/types';
 import { controlText, ios } from './styles';
+import type { PreviewControlRuntime } from '../types';
 
 registerControl({
   type: 'card', label: '卡片', category: 'container', icon: '🃏',
@@ -24,8 +25,8 @@ registerControl({
   ],
   eventSchema: [{ key: 'onDrop', label: '放入控件', description: '控件放入卡片时触发' }],
   defaultSize: { w: 360, h: 220 },
-  render: ({ component }: { component: DesignComponent }) => (
-    <div style={{ width: '100%', height: '100%', minWidth: 0, boxSizing: 'border-box', padding: '0 2px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => (
+    <div onDragOver={(event) => { if (mode === 'preview') event.preventDefault(); }} onDrop={(event) => { if (mode !== 'preview') return; event.preventDefault(); runtime?.emit('onDrop', event.dataTransfer.getData('text/plain'), { files: Array.from(event.dataTransfer.files), types: Array.from(event.dataTransfer.types) }); }} style={{ width: '100%', height: '100%', minWidth: 0, boxSizing: 'border-box', padding: '0 2px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {component.props.title && (
         <div style={controlText({ fontSize: 12, fontWeight: 650, color: '#8e8e93', padding: '6px 4px 4px', textTransform: 'uppercase', flexShrink: 0 })}>
           {component.props.title}
@@ -68,24 +69,26 @@ registerControl({
   ],
   eventSchema: [{ key: 'onTabChange', label: '切换标签', description: '切换标签页时触发' }],
   defaultSize: { w: 360, h: 220 },
-  render: ({ component }: { component: DesignComponent }) => {
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
     const tabs = component.props.tabs || ['选项一', '选项二'];
     const activeColor = component.props.activeColor || '#007aff';
     const inactiveColor = component.props.inactiveColor || '#8e8e93';
+    const active = Number(runtime?.value ?? component.props.defaultTab ?? 0);
     return (
       <div style={{ width: '100%', height: '100%', minWidth: 0, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 6, padding: 6, overflow: 'hidden' }}>
         <div style={{ display: 'flex', minWidth: 0, background: 'rgba(118,118,128,0.10)', borderRadius: 9, padding: 2, flexShrink: 0 }}>
           {tabs.map((t: string, i: number) => (
-            <div key={i} style={{
+            <button type="button" key={i} onClick={() => mode === 'preview' && runtime?.emit('onTabChange', i, { index: i, label: t })} style={{
               flex: 1, minWidth: 0, padding: '5px 6px', fontSize: 13, fontWeight: 600, textAlign: 'center', borderRadius: 7,
-              background: i === 0 ? 'rgba(255,255,255,0.8)' : 'transparent',
-              color: i === 0 ? activeColor : inactiveColor,
-              boxShadow: i === 0 ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
+              border: 'none', cursor: mode === 'preview' ? 'pointer' : 'default',
+              background: i === active ? 'rgba(255,255,255,0.8)' : 'transparent',
+              color: i === active ? activeColor : inactiveColor,
+              boxShadow: i === active ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
               backdropFilter: 'blur(20px)',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>
               {t}
-            </div>
+            </button>
           ))}
         </div>
         <div style={{ flex: 1, minHeight: 0, background: 'rgba(118,118,128,0.06)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c7c7cc', fontSize: 11 }}>

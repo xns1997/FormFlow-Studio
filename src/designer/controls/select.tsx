@@ -1,7 +1,15 @@
 import React from 'react';
 import { registerControl } from '../registry';
 import type { DesignComponent } from '../../project/types';
-import { controlText, ios } from './styles';
+import { controlText, ios, requiredMark } from './styles';
+import type { PreviewControlRuntime } from '../types';
+
+const renderLabel = (label: string, required?: boolean) => (
+  <>
+    {label}
+    {required && <span style={requiredMark}>*</span>}
+  </>
+);
 
 registerControl({
   type: 'select', label: '下拉选择', category: 'select', icon: '📋',
@@ -31,15 +39,29 @@ registerControl({
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 240, h: 72 },
-  render: ({ component }: { component: DesignComponent }) => (
-    <div style={ios.field}>
-      <label style={ios.label}>{component.props.label || '选择'}</label>
-      <div style={{ ...ios.control, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, cursor: 'pointer' }}>
-        <span style={{ ...ios.muted, fontSize: component.props.fontSize || 14 }}>{component.props.placeholder || '请选择'}</span>
-        <span style={{ fontSize: 10, color: '#8e8e93', flexShrink: 0 }}>▼</span>
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
+    const opts = component.props.options || [];
+    if (mode === 'preview') {
+      return (
+        <div style={ios.field}>
+          <label style={ios.label}>{renderLabel(component.props.label || '选择', component.props.required)}</label>
+          <select style={{ ...ios.control, cursor: 'pointer' }} value={String(runtime?.value ?? '')} disabled={!!component.props.disabled} onChange={(event) => runtime?.emit('onChange', event.target.value)} onBlur={() => runtime?.emit('onBlur')} onFocus={() => runtime?.emit('onFocus')}>
+            <option value="" disabled>{component.props.placeholder || '请选择'}</option>
+            {opts.map((o: any, i: number) => <option key={i} value={o.value || o}>{o.label || o}</option>)}
+          </select>
+        </div>
+      );
+    }
+    return (
+      <div style={ios.field}>
+        <label style={ios.label}>{renderLabel(component.props.label || '选择', component.props.required)}</label>
+        <div style={{ ...ios.control, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, cursor: 'default' }}>
+          <span style={{ ...ios.muted, fontSize: component.props.fontSize || 14 }}>{component.props.placeholder || '请选择'}</span>
+          <span style={{ fontSize: 10, color: '#8e8e93', flexShrink: 0 }}>▼</span>
+        </div>
       </div>
-    </div>
-  ),
+    );
+  },
 });
 
 registerControl({
@@ -73,17 +95,22 @@ registerControl({
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 240, h: 150 },
-  render: ({ component }: { component: DesignComponent }) => {
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
     const opts = component.props.options || [];
+    const selectedValue = runtime?.value ?? (opts[0]?.value ?? opts[0]);
     return (
       <div style={ios.field}>
-        <label style={ios.label}>{component.props.label || '单选'}</label>
+        <label style={ios.label}>{renderLabel(component.props.label || '单选', component.props.required)}</label>
         <div style={ios.naturalPanel}>
           {opts.map((o: any, i: number) => (
-            <div key={i} style={{ ...ios.row, borderBottom: i < opts.length - 1 ? ios.row.borderBottom : 'none' }}>
+            <div key={i} style={{ ...ios.row, borderBottom: i < opts.length - 1 ? ios.row.borderBottom : 'none', cursor: mode === 'preview' ? 'pointer' : 'default' }}
+              tabIndex={mode === 'preview' ? 0 : -1}
+              onFocus={() => runtime?.emit('onFocus')}
+              onBlur={() => runtime?.emit('onBlur')}
+              onClick={() => mode === 'preview' && !component.props.disabled && runtime?.emit('onChange', o.value ?? o)}>
               <span style={controlText({ fontSize: component.props.fontSize || 14, color: component.props.color || '#1c1c1e' })}>{o.label || o}</span>
-              <div style={{ width: 21, height: 21, borderRadius: 999, border: i === 0 ? '2px solid #007aff' : '2px solid rgba(118,118,128,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                {i === 0 && <div style={{ width: 11, height: 11, borderRadius: 999, background: '#007aff' }} />}
+              <div style={{ width: 21, height: 21, borderRadius: 999, border: (o.value ?? o) === selectedValue ? '2px solid #007aff' : '2px solid rgba(118,118,128,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {(o.value ?? o) === selectedValue && <div style={{ width: 11, height: 11, borderRadius: 999, background: '#007aff' }} />}
               </div>
             </div>
           ))}
@@ -127,17 +154,25 @@ registerControl({
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 240, h: 150 },
-  render: ({ component }: { component: DesignComponent }) => {
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
     const opts = component.props.options || [];
+    const checkedValues = Array.isArray(runtime?.value) ? runtime.value : [];
+    const toggle = (i: number) => {
+      if (mode !== 'preview' || component.props.disabled) return;
+      const optionValue = opts[i]?.value ?? opts[i];
+      const next = checkedValues.includes(optionValue) ? checkedValues.filter((value) => value !== optionValue) : [...checkedValues, optionValue];
+      runtime?.emit('onChange', next);
+    };
     return (
       <div style={ios.field}>
-        <label style={ios.label}>{component.props.label || '多选'}</label>
+        <label style={ios.label}>{renderLabel(component.props.label || '多选', component.props.required)}</label>
         <div style={ios.naturalPanel}>
           {opts.map((o: any, i: number) => (
-            <div key={i} style={{ ...ios.row, borderBottom: i < opts.length - 1 ? ios.row.borderBottom : 'none' }}>
+            <div key={i} style={{ ...ios.row, borderBottom: i < opts.length - 1 ? ios.row.borderBottom : 'none', cursor: mode === 'preview' ? 'pointer' : 'default' }}
+              tabIndex={mode === 'preview' ? 0 : -1} onFocus={() => runtime?.emit('onFocus')} onBlur={() => runtime?.emit('onBlur')} onClick={() => toggle(i)}>
               <span style={controlText({ fontSize: component.props.fontSize || 14, color: component.props.color || '#1c1c1e' })}>{o.label || o}</span>
-              <div style={{ width: 21, height: 21, borderRadius: 6, border: i === 0 ? '2px solid #007aff' : '2px solid rgba(118,118,128,0.35)', background: i === 0 ? '#007aff' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                {i === 0 && <span style={{ color: '#fff', fontSize: 13, fontWeight: 800 }}>✓</span>}
+              <div style={{ width: 21, height: 21, borderRadius: 6, border: checkedValues.includes(o.value ?? o) ? '2px solid #007aff' : '2px solid rgba(118,118,128,0.35)', background: checkedValues.includes(o.value ?? o) ? '#007aff' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {checkedValues.includes(o.value ?? o) && <span style={{ color: '#fff', fontSize: 13, fontWeight: 800 }}>✓</span>}
               </div>
             </div>
           ))}

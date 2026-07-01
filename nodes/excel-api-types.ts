@@ -1,4 +1,4 @@
-export type PropertyType = 'string' | 'number' | 'boolean' | 'enum' | 'array' | 'object' | 'range' | 'color' | 'any'
+export type PropertyType = 'string' | 'number' | 'boolean' | 'enum' | 'array' | 'object' | 'json' | 'range' | 'color' | 'any'
   | 'workbook' | 'worksheet' | 'cell' | 'address' | 'cell-ref'
   | 'json-rows' | 'aoa' | 'headers' | 'options' | 'file-data'
   | 'csv-string' | 'html-string' | 'json-string'
@@ -52,19 +52,6 @@ export interface SchemaOutput {
   name: string;
   type: string;
   description: string;
-}
-
-export interface ExcelApiNodeSchema {
-  id: string;
-  label: string;
-  description: string;
-  category: string;
-  kind: 'excel-class' | 'xlsx-method' | 'scenario' | 'generic';
-  methods: string[];
-  properties: SchemaProperty[];
-  inputs: SchemaInput[];
-  outputs: SchemaOutput[];
-  ports?: SchemaPort[];
 }
 
 export type NodeExecutor = (args: unknown[], properties: Record<string, unknown>) => unknown;

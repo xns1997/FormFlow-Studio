@@ -1,0 +1,345 @@
+{
+  "config": {
+    "id": "case_regression",
+    "name": "测试用例 2 · 回归分析",
+    "description": "广告投入与销售额线性回归",
+    "version": "1.0.0",
+    "createdAt": "2026-06-30T08:00:00.000Z",
+    "updatedAt": "2026-06-30T08:00:00.000Z",
+    "author": "FormFlow QA",
+    "tags": [
+      "回归测试",
+      "可运行案例"
+    ]
+  },
+  "srcTable": [
+    {
+      "id": "regression",
+      "fileName": "广告销售.json",
+      "fileSize": 129,
+      "fileType": "json",
+      "uploadedAt": "2026-06-30T08:00:00.000Z",
+      "dataHash": "test-regression",
+      "sheets": [
+        {
+          "name": "回归样本",
+          "rowCount": 6,
+          "colCount": 2,
+          "headers": [
+            "广告投入",
+            "销售额"
+          ],
+          "columns": [
+            {
+              "name": "广告投入",
+              "index": 0,
+              "dataType": "number",
+              "nullable": false,
+              "uniqueCount": 6,
+              "sampleValues": [
+                10,
+                20,
+                30,
+                40,
+                50
+              ]
+            },
+            {
+              "name": "销售额",
+              "index": 1,
+              "dataType": "number",
+              "nullable": false,
+              "uniqueCount": 6,
+              "sampleValues": [
+                30,
+                50,
+                70,
+                90,
+                110
+              ]
+            }
+          ],
+          "preview": [
+            {
+              "广告投入": 10,
+              "销售额": 30
+            },
+            {
+              "广告投入": 20,
+              "销售额": 50
+            },
+            {
+              "广告投入": 30,
+              "销售额": 70
+            },
+            {
+              "广告投入": 40,
+              "销售额": 90
+            },
+            {
+              "广告投入": 50,
+              "销售额": 110
+            },
+            {
+              "广告投入": 60,
+              "销售额": 130
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "id": "wf_regression",
+      "name": "广告投入线性回归",
+      "description": "计算斜率、截距、R² 和样本预测值",
+      "nodes": [
+        {
+          "id": "rows",
+          "type": "formflow",
+          "specId": "generic:variable-input",
+          "position": {
+            "x": 60,
+            "y": 200
+          },
+          "data": {
+            "specId": "generic:variable-input",
+            "propertiesJson": "{\"varName\":\"rows\",\"varType\":\"array\",\"varValue\":[{\"广告投入\":10,\"销售额\":30},{\"广告投入\":20,\"销售额\":50},{\"广告投入\":30,\"销售额\":70},{\"广告投入\":40,\"销售额\":90},{\"广告投入\":50,\"销售额\":110},{\"广告投入\":60,\"销售额\":130}]}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "regression",
+          "type": "formflow",
+          "specId": "ml:linear-regression",
+          "position": {
+            "x": 360,
+            "y": 200
+          },
+          "data": {
+            "specId": "ml:linear-regression",
+            "propertiesJson": "{\"x_field\":\"广告投入\",\"y_field\":\"销售额\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "slope",
+          "type": "formflow",
+          "specId": "generic:output-display",
+          "position": {
+            "x": 700,
+            "y": 80
+          },
+          "data": {
+            "specId": "generic:output-display",
+            "propertiesJson": "{}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "r2",
+          "type": "formflow",
+          "specId": "generic:output-display",
+          "position": {
+            "x": 700,
+            "y": 260
+          },
+          "data": {
+            "specId": "generic:output-display",
+            "propertiesJson": "{}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "predictions",
+          "type": "formflow",
+          "specId": "generic:output-display",
+          "position": {
+            "x": 700,
+            "y": 440
+          },
+          "data": {
+            "specId": "generic:output-display",
+            "propertiesJson": "{}",
+            "connectedPortsJson": "[]"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "r1",
+          "source": "rows",
+          "target": "regression",
+          "sourceHandle": "out:value",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "r2",
+          "source": "regression",
+          "target": "slope",
+          "sourceHandle": "out:slope",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "r3",
+          "source": "regression",
+          "target": "r2",
+          "sourceHandle": "out:r2",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "r4",
+          "source": "regression",
+          "target": "predictions",
+          "sourceHandle": "out:predictions",
+          "targetHandle": "in:value"
+        }
+      ],
+      "createdAt": "2026-06-30T08:00:00.000Z",
+      "updatedAt": "2026-06-30T08:00:00.000Z"
+    }
+  ],
+  "behaviors": [],
+  "outputs": [],
+  "designs": [
+    {
+      "id": "design_regression",
+      "name": "回归分析表单",
+      "viewport": {
+        "zoom": 1,
+        "panX": 0,
+        "panY": 0
+      },
+      "gridSize": 12,
+      "components": [
+        {
+          "id": "form_root",
+          "type": "form",
+          "x": 40,
+          "y": 40,
+          "width": 900,
+          "height": 650,
+          "zIndex": 0,
+          "props": {
+            "title": "广告投入回归分析",
+            "subtitle": "基于历史投入与销售额拟合线性模型",
+            "background": "#f2f2f7",
+            "padding": 20,
+            "showFooter": false
+          },
+          "children": [
+            "button_1",
+            "chart_2",
+            "text_3"
+          ]
+        },
+        {
+          "id": "button_1",
+          "type": "button",
+          "x": 100,
+          "y": 150,
+          "width": 300,
+          "height": 52,
+          "props": {
+            "label": "运行线性回归",
+            "name": "runRegression",
+            "flowTriggers": {
+              "onClick": {
+                "enabled": true,
+                "workflowId": "wf_regression",
+                "parameterMap": {
+                  "rows": [
+                    {
+                      "广告投入": 10,
+                      "销售额": 30
+                    },
+                    {
+                      "广告投入": 20,
+                      "销售额": 50
+                    },
+                    {
+                      "广告投入": 30,
+                      "销售额": 70
+                    },
+                    {
+                      "广告投入": 40,
+                      "销售额": 90
+                    },
+                    {
+                      "广告投入": 50,
+                      "销售额": 110
+                    },
+                    {
+                      "广告投入": 60,
+                      "销售额": 130
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "parentId": "form_root",
+          "zIndex": 2
+        },
+        {
+          "id": "chart_2",
+          "type": "chart",
+          "x": 440,
+          "y": 130,
+          "width": 420,
+          "height": 300,
+          "props": {
+            "name": "regressionChart",
+            "title": "广告投入与销售额",
+            "chartType": "line",
+            "chartData": {
+              "labels": [
+                "10",
+                "20",
+                "30",
+                "40",
+                "50",
+                "60"
+              ],
+              "datasets": [
+                {
+                  "label": "销售额",
+                  "data": [
+                    30,
+                    50,
+                    70,
+                    90,
+                    110,
+                    130
+                  ]
+                }
+              ]
+            },
+            "showValues": true
+          },
+          "parentId": "form_root",
+          "zIndex": 2
+        },
+        {
+          "id": "text_3",
+          "type": "text",
+          "x": 100,
+          "y": 250,
+          "width": 300,
+          "height": 100,
+          "props": {
+            "content": "预期模型：销售额 = 2 × 广告投入 + 10，R² = 1",
+            "fontSize": 16,
+            "lineHeight": 1.6
+          },
+          "parentId": "form_root",
+          "zIndex": 2
+        }
+      ],
+      "bindings": [],
+      "createdAt": "2026-06-30T08:00:00.000Z",
+      "updatedAt": "2026-06-30T08:00:00.000Z"
+    }
+  ]
+}

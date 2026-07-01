@@ -11,7 +11,7 @@
   "inputs": [
     {
       "name": "data",
-      "type": "ArrayBuffer | string | Uint8Array",
+      "type": "file-data",
       "required": true,
       "description": "要读取的数据源"
     }
@@ -19,7 +19,7 @@
   "outputs": [
     {
       "name": "workbook",
-      "type": "Workbook",
+      "type": "workbook",
       "description": "解析后的工作簿对象，包含 SheetNames 和 Sheets"
     }
   ],
@@ -76,26 +76,11 @@
       "description": "为 true 时只解析 sheet 名称，不解析内容"
     },
     {
-      "name": "bookType",
-      "label": "工作簿类型",
-      "type": "enum",
-      "enum": [
-        "xlsx",
-        "xlsm",
-        "xlsb",
-        "xls",
-        "csv",
-        "txt",
-        "ods",
-        "fods",
-        "json",
-        "dif",
-        "rtf",
-        "prn",
-        "numbers"
-      ],
-      "default": "xlsx",
-      "description": "显式指定文件格式，省略则自动检测"
+      "name": "bookVBA",
+      "label": "保留 VBA",
+      "type": "boolean",
+      "default": true,
+      "description": "读取并保留宏工作簿中的 VBA 数据"
     },
     {
       "name": "raw",

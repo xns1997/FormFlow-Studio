@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { DesignFile } from '../project/types';
 import { createDesignFile } from '../project/types';
 
@@ -14,6 +14,18 @@ interface Props {
 export function TabBar({ designs, activeId, onSelect, onClose, onCreate, onRename }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const barRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      el.scrollLeft += e.deltaY;
+    };
+    el.addEventListener('wheel', handler, { passive: true });
+    return () => el.removeEventListener('wheel', handler);
+  }, []);
 
   const handleCreate = () => {
     const design = createDesignFile(`设计 ${designs.length + 1}`);
@@ -32,11 +44,8 @@ export function TabBar({ designs, activeId, onSelect, onClose, onCreate, onRenam
 
   return (
     <div
+      ref={barRef}
       className="designer-tabbar"
-      onWheel={(e) => {
-        if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
-        e.currentTarget.scrollLeft += e.deltaY;
-      }}
     >
       <div className="designer-tab-list">
         {designs.map((d) => (

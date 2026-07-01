@@ -5,7 +5,7 @@ export const execute: NodeExecutor = (args, props) => {
   const [worksheet, findOverride, replaceOverride] = args;
   const ws = worksheet as any;
   const findText = (findOverride as string) || (props.findText as string) || '';
-  const replaceText = (replaceOverride as string) || (props.replaceText as string) ?? '';
+  const replaceText = (replaceOverride as string) || (props.replaceText as string) || '';
   if (!ws || !findText) return { worksheet: ws, replacedCount: 0 };
 
   let count = 0;

@@ -1,0 +1,768 @@
+{
+  "config": {
+    "id": "proj_new",
+    "name": "示例项目 - 数据分析与表单",
+    "description": "包含数据处理、回归分析、图表绘制、信息录入四个流程的完整示例",
+    "version": "1.0.0",
+    "createdAt": "2026-06-29T00:00:00.000Z",
+    "updatedAt": "2026-06-29T00:00:00.000Z",
+    "author": "FormFlow Studio",
+    "tags": ["示例", "数据分析", "表单"]
+  },
+  "srcTable": [
+    {
+      "id": "tbl_sales",
+      "fileName": "销售数据.xlsx",
+      "fileSize": 24576,
+      "fileType": "xlsx",
+      "uploadedAt": "2026-06-29T00:00:00.000Z",
+      "dataHash": "abc123",
+      "sheets": [
+        {
+          "name": "销售记录",
+          "rowCount": 20,
+          "colCount": 6,
+          "headers": ["日期", "产品", "地区", "数量", "单价", "金额"],
+          "columns": [
+            { "name": "日期", "index": 0, "dataType": "string", "nullable": false, "uniqueCount": 12, "sampleValues": ["2026-01-15", "2026-02-20", "2026-03-10"] },
+            { "name": "产品", "index": 1, "dataType": "enum", "nullable": false, "uniqueCount": 4, "sampleValues": ["产品A", "产品B", "产品C", "产品D"] },
+            { "name": "地区", "index": 2, "dataType": "enum", "nullable": false, "uniqueCount": 3, "sampleValues": ["华东", "华南", "华北"] },
+            { "name": "数量", "index": 3, "dataType": "number", "nullable": false, "uniqueCount": 15, "sampleValues": [100, 200, 300] },
+            { "name": "单价", "index": 4, "dataType": "number", "nullable": false, "uniqueCount": 8, "sampleValues": [10, 25, 50] },
+            { "name": "金额", "index": 5, "dataType": "number", "nullable": false, "uniqueCount": 18, "sampleValues": [1000, 5000, 15000] }
+          ],
+          "preview": [
+            { "日期": "2026-01-15", "产品": "产品A", "地区": "华东", "数量": 120, "单价": 25, "金额": 3000 },
+            { "日期": "2026-01-20", "产品": "产品B", "地区": "华南", "数量": 80, "单价": 50, "金额": 4000 },
+            { "日期": "2026-02-10", "产品": "产品A", "地区": "华北", "数量": 200, "单价": 25, "金额": 5000 },
+            { "日期": "2026-02-15", "产品": "产品C", "地区": "华东", "数量": 150, "单价": 30, "金额": 4500 },
+            { "日期": "2026-03-05", "产品": "产品B", "地区": "华南", "数量": 90, "单价": 50, "金额": 4500 },
+            { "日期": "2026-03-10", "产品": "产品D", "地区": "华北", "数量": 300, "单价": 10, "金额": 3000 },
+            { "日期": "2026-03-20", "产品": "产品A", "地区": "华东", "数量": 180, "单价": 25, "金额": 4500 },
+            { "日期": "2026-04-05", "产品": "产品C", "地区": "华南", "数量": 220, "单价": 30, "金额": 6600 },
+            { "日期": "2026-04-10", "产品": "产品B", "地区": "华北", "数量": 110, "单价": 50, "金额": 5500 },
+            { "日期": "2026-04-15", "产品": "产品D", "地区": "华东", "数量": 400, "单价": 10, "金额": 4000 },
+            { "日期": "2026-05-01", "产品": "产品A", "地区": "华南", "数量": 160, "单价": 25, "金额": 4000 },
+            { "日期": "2026-05-10", "产品": "产品B", "地区": "华北", "数量": 95, "单价": 50, "金额": 4750 },
+            { "日期": "2026-05-15", "产品": "产品C", "地区": "华东", "数量": 280, "单价": 30, "金额": 8400 },
+            { "日期": "2026-06-01", "产品": "产品D", "地区": "华南", "数量": 350, "单价": 10, "金额": 3500 },
+            { "日期": "2026-06-05", "产品": "产品A", "地区": "华北", "数量": 140, "单价": 25, "金额": 3500 },
+            { "日期": "2026-06-10", "产品": "产品B", "地区": "华东", "数量": 105, "单价": 50, "金额": 5250 },
+            { "日期": "2026-06-15", "产品": "产品C", "地区": "华南", "数量": 190, "单价": 30, "金额": 5700 },
+            { "日期": "2026-06-20", "产品": "产品D", "地区": "华北", "数量": 500, "单价": 10, "金额": 5000 },
+            { "日期": "2026-06-25", "产品": "产品A", "地区": "华东", "数量": 170, "单价": 25, "金额": 4250 },
+            { "日期": "2026-06-28", "产品": "产品B", "地区": "华南", "数量": 88, "单价": 50, "金额": 4400 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tbl_employees",
+      "fileName": "员工信息.xlsx",
+      "fileSize": 18432,
+      "fileType": "xlsx",
+      "uploadedAt": "2026-06-29T00:00:00.000Z",
+      "dataHash": "def456",
+      "sheets": [
+        {
+          "name": "员工档案",
+          "rowCount": 10,
+          "colCount": 7,
+          "headers": ["工号", "姓名", "部门", "职位", "入职日期", "薪资", "绩效评分"],
+          "columns": [
+            { "name": "工号", "index": 0, "dataType": "string", "nullable": false, "uniqueCount": 10, "sampleValues": ["E001", "E002", "E003"] },
+            { "name": "姓名", "index": 1, "dataType": "string", "nullable": false, "uniqueCount": 10, "sampleValues": ["张三", "李四", "王五"] },
+            { "name": "部门", "index": 2, "dataType": "enum", "nullable": false, "uniqueCount": 4, "sampleValues": ["技术部", "销售部", "市场部", "财务部"] },
+            { "name": "职位", "index": 3, "dataType": "enum", "nullable": false, "uniqueCount": 5, "sampleValues": ["工程师", "经理", "主管"] },
+            { "name": "入职日期", "index": 4, "dataType": "string", "nullable": false, "uniqueCount": 10, "sampleValues": ["2020-03-15", "2021-06-01"] },
+            { "name": "薪资", "index": 5, "dataType": "number", "nullable": false, "uniqueCount": 10, "sampleValues": [8000, 12000, 15000] },
+            { "name": "绩效评分", "index": 6, "dataType": "number", "nullable": true, "uniqueCount": 8, "sampleValues": [85, 90, 78] }
+          ],
+          "preview": [
+            { "工号": "E001", "姓名": "张三", "部门": "技术部", "职位": "高级工程师", "入职日期": "2020-03-15", "薪资": 18000, "绩效评分": 92 },
+            { "工号": "E002", "姓名": "李四", "部门": "销售部", "职位": "销售经理", "入职日期": "2019-08-01", "薪资": 22000, "绩效评分": 88 },
+            { "工号": "E003", "姓名": "王五", "部门": "技术部", "职位": "工程师", "入职日期": "2021-06-15", "薪资": 15000, "绩效评分": 85 },
+            { "工号": "E004", "姓名": "赵六", "部门": "市场部", "职位": "市场专员", "入职日期": "2022-01-10", "薪资": 12000, "绩效评分": 78 },
+            { "工号": "E005", "姓名": "钱七", "部门": "财务部", "职位": "财务主管", "入职日期": "2018-11-20", "薪资": 20000, "绩效评分": 95 },
+            { "工号": "E006", "姓名": "孙八", "部门": "技术部", "职位": "工程师", "入职日期": "2023-03-01", "薪资": 14000, "绩效评分": 82 },
+            { "工号": "E007", "姓名": "周九", "部门": "销售部", "职位": "销售代表", "入职日期": "2022-09-15", "薪资": 10000, "绩效评分": 76 },
+            { "工号": "E008", "姓名": "吴十", "部门": "技术部", "职位": "技术总监", "入职日期": "2017-05-01", "薪资": 30000, "绩效评分": 96 },
+            { "工号": "E009", "姓名": "郑十一", "部门": "市场部", "职位": "市场经理", "入职日期": "2020-07-20", "薪资": 19000, "绩效评分": 90 },
+            { "工号": "E010", "姓名": "冯十二", "部门": "财务部", "职位": "会计", "入职日期": "2021-12-01", "薪资": 11000, "绩效评分": null }
+          ]
+        }
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "id": "wf_data_processing",
+      "name": "流程1: 数据清洗与聚合",
+      "description": "演示数据处理全流程：筛选 → 排序 → 类型转换 → 缺失值处理 → 分组聚合 → 导出",
+      "createdAt": "2026-06-29T00:00:00.000Z",
+      "updatedAt": "2026-06-29T00:00:00.000Z",
+      "nodes": [
+        {
+          "id": "dp_ws",
+          "type": "formflow",
+          "specId": "generic:worksheet-select",
+          "position": { "x": 50, "y": 200 },
+          "data": {
+            "specId": "generic:worksheet-select",
+            "label": "选择工作表",
+            "kind": "generic",
+            "category": "通用 · 数据源",
+            "description": "选择要处理的工作表",
+            "propertiesJson": "{\"sheetName\":\"销售记录\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "dp_sheet_to_json",
+          "type": "formflow",
+          "specId": "method:XLSX.utils.sheet_to_json",
+          "position": { "x": 300, "y": 200 },
+          "data": {
+            "specId": "method:XLSX.utils.sheet_to_json",
+            "label": "Sheet 转 JSON",
+            "kind": "xlsx-method",
+            "category": "XLSX · 转换",
+            "description": "将工作表转为 JSON 行数据",
+            "propertiesJson": "{}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "dp_filter",
+          "type": "formflow",
+          "specId": "generic:filter",
+          "position": { "x": 550, "y": 100 },
+          "data": {
+            "specId": "generic:filter",
+            "label": "筛选",
+            "kind": "generic",
+            "category": "通用 · 数据处理",
+            "description": "筛选金额 > 4000 的记录",
+            "propertiesJson": "{\"field\":\"金额\",\"operator\":\">\",\"value\":4000}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "dp_sort",
+          "type": "formflow",
+          "specId": "generic:sort",
+          "position": { "x": 550, "y": 300 },
+          "data": {
+            "specId": "generic:sort",
+            "label": "排序",
+            "kind": "generic",
+            "category": "通用 · 数据处理",
+            "description": "按金额降序排列",
+            "propertiesJson": "{\"field\":\"金额\",\"order\":\"desc\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "dp_type_cast",
+          "type": "formflow",
+          "specId": "generic:type-cast",
+          "position": { "x": 800, "y": 100 },
+          "data": {
+            "specId": "generic:type-cast",
+            "label": "类型转换",
+            "kind": "generic",
+            "category": "通用 · 清洗",
+            "description": "将数量转为数字类型",
+            "propertiesJson": "{\"field\":\"数量\",\"targetType\":\"number\",\"onError\":\"null\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "dp_handle_missing",
+          "type": "formflow",
+          "specId": "generic:handle-missing",
+          "position": { "x": 800, "y": 300 },
+          "data": {
+            "specId": "generic:handle-missing",
+            "label": "缺失值处理",
+            "kind": "generic",
+            "category": "通用 · 清洗",
+            "description": "用 0 填充缺失的金额",
+            "propertiesJson": "{\"field\":\"金额\",\"strategy\":\"fill\",\"fillValue\":0}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "dp_group",
+          "type": "formflow",
+          "specId": "generic:group-by",
+          "position": { "x": 1050, "y": 200 },
+          "data": {
+            "specId": "generic:group-by",
+            "label": "分组聚合",
+            "kind": "generic",
+            "category": "通用 · 聚合",
+            "description": "按产品分组，求金额总和",
+            "propertiesJson": "{\"groupByField\":\"产品\",\"aggField\":\"金额\",\"aggFunc\":\"sum\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "dp_display",
+          "type": "formflow",
+          "specId": "generic:display-table",
+          "position": { "x": 1300, "y": 200 },
+          "data": {
+            "specId": "generic:display-table",
+            "label": "结果展示",
+            "kind": "generic",
+            "category": "通用 · 展示",
+            "description": "展示聚合结果",
+            "propertiesJson": "{\"maxRows\":20}",
+            "connectedPortsJson": "[]"
+          }
+        }
+      ],
+      "edges": [
+        { "id": "e_dp_1", "source": "dp_ws", "target": "dp_sheet_to_json", "sourceHandle": "out:worksheet", "targetHandle": "in:worksheet" },
+        { "id": "e_dp_2", "source": "dp_sheet_to_json", "target": "dp_filter", "sourceHandle": "out:data", "targetHandle": "in:data" },
+        { "id": "e_dp_3", "source": "dp_filter", "target": "dp_sort", "sourceHandle": "out:result", "targetHandle": "in:data" },
+        { "id": "e_dp_4", "source": "dp_sort", "target": "dp_type_cast", "sourceHandle": "out:result", "targetHandle": "in:data" },
+        { "id": "e_dp_5", "source": "dp_type_cast", "target": "dp_handle_missing", "sourceHandle": "out:data", "targetHandle": "in:data" },
+        { "id": "e_dp_6", "source": "dp_handle_missing", "target": "dp_group", "sourceHandle": "out:data", "targetHandle": "in:data" },
+        { "id": "e_dp_7", "source": "dp_group", "target": "dp_display", "sourceHandle": "out:data", "targetHandle": "in:data" }
+      ]
+    },
+    {
+      "id": "wf_regression",
+      "name": "流程2: 回归分析",
+      "description": "演示统计分析全流程：数据源 → 描述性统计 → 相关性分析 → 线性回归",
+      "createdAt": "2026-06-29T00:00:00.000Z",
+      "updatedAt": "2026-06-29T00:00:00.000Z",
+      "nodes": [
+        {
+          "id": "rg_ws",
+          "type": "formflow",
+          "specId": "generic:worksheet-select",
+          "position": { "x": 50, "y": 200 },
+          "data": {
+            "specId": "generic:worksheet-select",
+            "label": "选择工作表",
+            "kind": "generic",
+            "category": "通用 · 数据源",
+            "description": "选择员工档案",
+            "propertiesJson": "{\"sheetName\":\"员工档案\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "rg_sheet_json",
+          "type": "formflow",
+          "specId": "method:XLSX.utils.sheet_to_json",
+          "position": { "x": 300, "y": 200 },
+          "data": {
+            "specId": "method:XLSX.utils.sheet_to_json",
+            "label": "Sheet 转 JSON",
+            "kind": "xlsx-method",
+            "category": "XLSX · 转换",
+            "description": "转为 JSON 数据",
+            "propertiesJson": "{}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "rg_stats",
+          "type": "formflow",
+          "specId": "ml:descriptive-stats",
+          "position": { "x": 550, "y": 80 },
+          "data": {
+            "specId": "ml:descriptive-stats",
+            "label": "描述性统计",
+            "kind": "generic",
+            "category": "机器学习 · 分析",
+            "description": "计算薪资和绩效的统计指标",
+            "propertiesJson": "{}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "rg_corr",
+          "type": "formflow",
+          "specId": "ml:correlation",
+          "position": { "x": 550, "y": 280 },
+          "data": {
+            "specId": "ml:correlation",
+            "label": "相关性分析",
+            "kind": "generic",
+            "category": "机器学习 · 分析",
+            "description": "分析薪资与绩效的相关性",
+            "propertiesJson": "{\"fields\":\"薪资,绩效评分\",\"method\":\"pearson\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "rg_regression",
+          "type": "formflow",
+          "specId": "ml:linear-regression",
+          "position": { "x": 800, "y": 180 },
+          "data": {
+            "specId": "ml:linear-regression",
+            "label": "线性回归",
+            "kind": "generic",
+            "category": "机器学习 · 回归",
+            "description": "薪资(X) → 绩效(Y) 线性回归",
+            "propertiesJson": "{\"x_field\":\"薪资\",\"y_field\":\"绩效评分\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "rg_display",
+          "type": "formflow",
+          "specId": "generic:display-stats",
+          "position": { "x": 1050, "y": 180 },
+          "data": {
+            "specId": "generic:display-stats",
+            "label": "统计结果展示",
+            "kind": "generic",
+            "category": "通用 · 展示",
+            "description": "展示分析结果",
+            "propertiesJson": "{}",
+            "connectedPortsJson": "[]"
+          }
+        }
+      ],
+      "edges": [
+        { "id": "e_rg_1", "source": "rg_ws", "target": "rg_sheet_json", "sourceHandle": "out:worksheet", "targetHandle": "in:worksheet" },
+        { "id": "e_rg_2", "source": "rg_sheet_json", "target": "rg_stats", "sourceHandle": "out:data", "targetHandle": "in:data" },
+        { "id": "e_rg_3", "source": "rg_sheet_json", "target": "rg_corr", "sourceHandle": "out:data", "targetHandle": "in:data" },
+        { "id": "e_rg_4", "source": "rg_sheet_json", "target": "rg_regression", "sourceHandle": "out:data", "targetHandle": "in:data" },
+        { "id": "e_rg_5", "source": "rg_stats", "target": "rg_display", "sourceHandle": "out:stats", "targetHandle": "in:data" }
+      ]
+    },
+    {
+      "id": "wf_chart",
+      "name": "流程3: 图表绘制",
+      "description": "演示图表生成全流程：数据源 → 筛选 → 分组 → 生成柱状图/饼图/折线图",
+      "createdAt": "2026-06-29T00:00:00.000Z",
+      "updatedAt": "2026-06-29T00:00:00.000Z",
+      "nodes": [
+        {
+          "id": "ch_ws",
+          "type": "formflow",
+          "specId": "generic:worksheet-select",
+          "position": { "x": 50, "y": 200 },
+          "data": {
+            "specId": "generic:worksheet-select",
+            "label": "选择工作表",
+            "kind": "generic",
+            "category": "通用 · 数据源",
+            "description": "选择销售记录",
+            "propertiesJson": "{\"sheetName\":\"销售记录\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "ch_sheet_json",
+          "type": "formflow",
+          "specId": "method:XLSX.utils.sheet_to_json",
+          "position": { "x": 300, "y": 200 },
+          "data": {
+            "specId": "method:XLSX.utils.sheet_to_json",
+            "label": "Sheet 转 JSON",
+            "kind": "xlsx-method",
+            "category": "XLSX · 转换",
+            "description": "转为 JSON",
+            "propertiesJson": "{}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "ch_group",
+          "type": "formflow",
+          "specId": "generic:group-by",
+          "position": { "x": 550, "y": 120 },
+          "data": {
+            "specId": "generic:group-by",
+            "label": "按产品分组",
+            "kind": "generic",
+            "category": "通用 · 聚合",
+            "description": "按产品分组求金额总和",
+            "propertiesJson": "{\"groupByField\":\"产品\",\"aggField\":\"金额\",\"aggFunc\":\"sum\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "ch_group_region",
+          "type": "formflow",
+          "specId": "generic:group-by",
+          "position": { "x": 550, "y": 320 },
+          "data": {
+            "specId": "generic:group-by",
+            "label": "按地区分组",
+            "kind": "generic",
+            "category": "通用 · 聚合",
+            "description": "按地区分组求数量总和",
+            "propertiesJson": "{\"groupByField\":\"地区\",\"aggField\":\"数量\",\"aggFunc\":\"sum\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "ch_bar",
+          "type": "formflow",
+          "specId": "func:create-chart",
+          "position": { "x": 800, "y": 50 },
+          "data": {
+            "specId": "func:create-chart",
+            "label": "柱状图 - 产品销售额",
+            "kind": "generic",
+            "category": "功能 · 图表",
+            "description": "按产品展示销售额柱状图",
+            "propertiesJson": "{\"chartType\":\"bar\",\"title\":\"产品销售额对比\",\"xField\":\"产品\",\"yField\":\"sum_金额\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "ch_pie",
+          "type": "formflow",
+          "specId": "func:create-chart",
+          "position": { "x": 800, "y": 220 },
+          "data": {
+            "specId": "func:create-chart",
+            "label": "饼图 - 地区销量占比",
+            "kind": "generic",
+            "category": "功能 · 图表",
+            "description": "按地区展示销量饼图",
+            "propertiesJson": "{\"chartType\":\"pie\",\"title\":\"地区销量占比\",\"xField\":\"地区\",\"yField\":\"sum_数量\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "ch_line",
+          "type": "formflow",
+          "specId": "func:create-chart",
+          "position": { "x": 800, "y": 390 },
+          "data": {
+            "specId": "func:create-chart",
+            "label": "折线图 - 月度趋势",
+            "kind": "generic",
+            "category": "功能 · 图表",
+            "description": "按月份展示金额趋势",
+            "propertiesJson": "{\"chartType\":\"line\",\"title\":\"月度销售趋势\",\"xField\":\"日期\",\"yField\":\"金额\"}",
+            "connectedPortsJson": "[]"
+          }
+        }
+      ],
+      "edges": [
+        { "id": "e_ch_1", "source": "ch_ws", "target": "ch_sheet_json", "sourceHandle": "out:worksheet", "targetHandle": "in:worksheet" },
+        { "id": "e_ch_2", "source": "ch_sheet_json", "target": "ch_group", "sourceHandle": "out:data", "targetHandle": "in:data" },
+        { "id": "e_ch_3", "source": "ch_sheet_json", "target": "ch_group_region", "sourceHandle": "out:data", "targetHandle": "in:data" },
+        { "id": "e_ch_4", "source": "ch_sheet_json", "target": "ch_line", "sourceHandle": "out:data", "targetHandle": "in:data" },
+        { "id": "e_ch_5", "source": "ch_group", "target": "ch_bar", "sourceHandle": "out:data", "targetHandle": "in:data" },
+        { "id": "e_ch_6", "source": "ch_group_region", "target": "ch_pie", "sourceHandle": "out:data", "targetHandle": "in:data" }
+      ]
+    },
+    {
+      "id": "wf_form_entry",
+      "name": "流程4: 信息录入与修改",
+      "description": "演示表单操作全流程：表单校验 → 条件判断 → 设值 → 计算 → 提交",
+      "createdAt": "2026-06-29T00:00:00.000Z",
+      "updatedAt": "2026-06-29T00:00:00.000Z",
+      "nodes": [
+        {
+          "id": "fe_trigger",
+          "type": "formflow",
+          "specId": "behavior-on-form-load",
+          "position": { "x": 50, "y": 200 },
+          "data": {
+            "specId": "behavior-on-form-load",
+            "label": "表单加载",
+            "kind": "behavior",
+            "category": "行为 · 事件",
+            "description": "表单加载时触发",
+            "propertiesJson": "{}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "fe_data_query",
+          "type": "formflow",
+          "specId": "behavior-data-query",
+          "position": { "x": 300, "y": 200 },
+          "data": {
+            "specId": "behavior-data-query",
+            "label": "查询员工数据",
+            "kind": "behavior",
+            "category": "行为 · 数据",
+            "description": "从员工档案查询数据",
+            "propertiesJson": "{\"sheetName\":\"员工档案\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "fe_validate",
+          "type": "formflow",
+          "specId": "func-form-validate",
+          "position": { "x": 550, "y": 100 },
+          "data": {
+            "specId": "func-form-validate",
+            "label": "表单校验",
+            "kind": "generic",
+            "category": "功能 · 表单",
+            "description": "校验姓名、薪资必填，薪资>0",
+            "propertiesJson": "{\"fields\":\"姓名,薪资\",\"rules\":\"{\\\"姓名\\\":{\\\"required\\\":true},\\\"薪资\\\":{\\\"required\\\":true,\\\"min\\\":0}}\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "fe_condition",
+          "type": "formflow",
+          "specId": "behavior-condition",
+          "position": { "x": 550, "y": 320 },
+          "data": {
+            "specId": "behavior-condition",
+            "label": "绩效判断",
+            "kind": "behavior",
+            "category": "行为 · 逻辑",
+            "description": "判断绩效评分是否 >= 90",
+            "propertiesJson": "{\"fieldName\":\"绩效评分\",\"operator\":\">=\",\"value\":90}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "fe_set_bonus",
+          "type": "formflow",
+          "specId": "behavior-set-value",
+          "position": { "x": 800, "y": 80 },
+          "data": {
+            "specId": "behavior-set-value",
+            "label": "设置奖金",
+            "kind": "behavior",
+            "category": "行为 · 设值",
+            "description": "绩效>=90时设置奖金=薪资*0.2",
+            "propertiesJson": "{\"fieldName\":\"奖金\",\"valueType\":\"expression\",\"expression\":\"(inputs.formData?.薪资 || 0) * 0.2\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "fe_set_normal",
+          "type": "formflow",
+          "specId": "behavior-set-value",
+          "position": { "x": 800, "y": 260 },
+          "data": {
+            "specId": "behavior-set-value",
+            "label": "设置普通奖金",
+            "kind": "behavior",
+            "category": "行为 · 设值",
+            "description": "绩效<90时设置奖金=薪资*0.1",
+            "propertiesJson": "{\"fieldName\":\"奖金\",\"valueType\":\"expression\",\"expression\":\"(inputs.formData?.薪资 || 0) * 0.1\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "fe_calculate",
+          "type": "formflow",
+          "specId": "behavior-calculate",
+          "position": { "x": 1050, "y": 170 },
+          "data": {
+            "specId": "behavior-calculate",
+            "label": "计算总薪酬",
+            "kind": "behavior",
+            "category": "行为 · 计算",
+            "description": "总薪酬 = 薪资 + 奖金",
+            "propertiesJson": "{\"expression\":\"(inputs.formData?.薪资 || 0) + (inputs.formData?.奖金 || 0)\",\"targetField\":\"总薪酬\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "fe_show_msg",
+          "type": "formflow",
+          "specId": "behavior-show-message",
+          "position": { "x": 1050, "y": 350 },
+          "data": {
+            "specId": "behavior-show-message",
+            "label": "显示提示",
+            "kind": "behavior",
+            "category": "行为 · UI",
+            "description": "显示校验失败消息",
+            "propertiesJson": "{\"message\":\"请检查必填项\",\"messageType\":\"error\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "fe_submit",
+          "type": "formflow",
+          "specId": "behavior-submit",
+          "position": { "x": 1300, "y": 170 },
+          "data": {
+            "specId": "behavior-submit",
+            "label": "提交表单",
+            "kind": "behavior",
+            "category": "行为 · 提交",
+            "description": "提交表单数据",
+            "propertiesJson": "{\"target\":\"changeLog\"}",
+            "connectedPortsJson": "[]"
+          }
+        }
+      ],
+      "edges": [
+        { "id": "e_fe_1", "source": "fe_trigger", "target": "fe_data_query", "sourceHandle": "out:formData", "targetHandle": "in:formData" },
+        { "id": "e_fe_2", "source": "fe_data_query", "target": "fe_validate", "sourceHandle": "out:data", "targetHandle": "in:formData" },
+        { "id": "e_fe_3", "source": "fe_data_query", "target": "fe_condition", "sourceHandle": "out:data", "targetHandle": "in:formData" },
+        { "id": "e_fe_4", "source": "fe_condition", "target": "fe_set_bonus", "sourceHandle": "out:true", "targetHandle": "in:formData" },
+        { "id": "e_fe_5", "source": "fe_condition", "target": "fe_set_normal", "sourceHandle": "out:false", "targetHandle": "in:formData" },
+        { "id": "e_fe_6", "source": "fe_set_bonus", "target": "fe_calculate", "sourceHandle": "out:formData", "targetHandle": "in:formData" },
+        { "id": "e_fe_7", "source": "fe_set_normal", "target": "fe_calculate", "sourceHandle": "out:formData", "targetHandle": "in:formData" },
+        { "id": "e_fe_8", "source": "fe_calculate", "target": "fe_submit", "sourceHandle": "out:formData", "targetHandle": "in:formData" },
+        { "id": "e_fe_9", "source": "fe_validate", "target": "fe_show_msg", "sourceHandle": "out:failed", "targetHandle": "in:formData" }
+      ]
+    }
+  ],
+  "behaviors": [
+    {
+      "id": "bh_salary_calc",
+      "name": "薪资计算脚本",
+      "event": "onFieldChange",
+      "code": "// 当薪资或绩效变化时自动计算奖金\nconst salary = ctx.getValue('薪资') || 0;\nconst perf = ctx.getValue('绩效评分') || 0;\nconst bonus = perf >= 90 ? salary * 0.2 : salary * 0.1;\nctx.setValue('奖金', Math.round(bonus * 100) / 100);\nctx.setValue('总薪酬', Math.round((salary + bonus) * 100) / 100);\nctx.showMessage('奖金已计算: ' + bonus, 'info');",
+      "priority": 1,
+      "enabled": true,
+      "createdAt": "2026-06-29T00:00:00.000Z",
+      "updatedAt": "2026-06-29T00:00:00.000Z"
+    }
+  ],
+  "outputs": [],
+  "designs": [
+    {
+      "id": "design_employee_form",
+      "name": "员工信息录入表单",
+      "viewport": { "zoom": 1, "panX": 0, "panY": 0 },
+      "gridSize": 10,
+      "components": [
+        {
+          "id": "comp_title",
+          "type": "text",
+          "x": 20,
+          "y": 20,
+          "width": 600,
+          "height": 40,
+          "props": { "text": "员工信息录入", "fontSize": 24, "fontWeight": "bold" },
+          "zIndex": 1
+        },
+        {
+          "id": "comp_id",
+          "type": "input",
+          "x": 20,
+          "y": 80,
+          "width": 280,
+          "height": 40,
+          "props": { "label": "工号", "placeholder": "E001", "required": true },
+          "fieldBinding": "工号",
+          "zIndex": 2
+        },
+        {
+          "id": "comp_name",
+          "type": "input",
+          "x": 320,
+          "y": 80,
+          "width": 280,
+          "height": 40,
+          "props": { "label": "姓名", "placeholder": "请输入姓名", "required": true },
+          "fieldBinding": "姓名",
+          "zIndex": 2
+        },
+        {
+          "id": "comp_dept",
+          "type": "select",
+          "x": 20,
+          "y": 140,
+          "width": 280,
+          "height": 40,
+          "props": { "label": "部门", "options": ["技术部", "销售部", "市场部", "财务部"], "required": true },
+          "fieldBinding": "部门",
+          "zIndex": 2
+        },
+        {
+          "id": "comp_position",
+          "type": "input",
+          "x": 320,
+          "y": 140,
+          "width": 280,
+          "height": 40,
+          "props": { "label": "职位", "placeholder": "请输入职位" },
+          "fieldBinding": "职位",
+          "zIndex": 2
+        },
+        {
+          "id": "comp_hire_date",
+          "type": "datePicker",
+          "x": 20,
+          "y": 200,
+          "width": 280,
+          "height": 40,
+          "props": { "label": "入职日期", "required": true },
+          "fieldBinding": "入职日期",
+          "zIndex": 2
+        },
+        {
+          "id": "comp_salary",
+          "type": "numberInput",
+          "x": 320,
+          "y": 200,
+          "width": 280,
+          "height": 40,
+          "props": { "label": "薪资", "min": 0, "required": true },
+          "fieldBinding": "薪资",
+          "zIndex": 2
+        },
+        {
+          "id": "comp_perf",
+          "type": "numberInput",
+          "x": 20,
+          "y": 260,
+          "width": 280,
+          "height": 40,
+          "props": { "label": "绩效评分", "min": 0, "max": 100 },
+          "fieldBinding": "绩效评分",
+          "zIndex": 2
+        },
+        {
+          "id": "comp_bonus",
+          "type": "numberInput",
+          "x": 320,
+          "y": 260,
+          "width": 280,
+          "height": 40,
+          "props": { "label": "奖金", "readonly": true },
+          "fieldBinding": "奖金",
+          "zIndex": 2
+        },
+        {
+          "id": "comp_total",
+          "type": "numberInput",
+          "x": 20,
+          "y": 320,
+          "width": 280,
+          "height": 40,
+          "props": { "label": "总薪酬", "readonly": true },
+          "fieldBinding": "总薪酬",
+          "zIndex": 2
+        },
+        {
+          "id": "comp_submit",
+          "type": "button",
+          "x": 200,
+          "y": 390,
+          "width": 200,
+          "height": 44,
+          "props": { "text": "提交", "variant": "primary" },
+          "zIndex": 3
+        }
+      ],
+      "bindings": [
+        { "id": "bind_salary_bonus", "sourceId": "comp_salary", "targetId": "comp_bonus", "type": "behavior", "config": { "event": "onChange", "action": "calculateBonus" } },
+        { "id": "bind_perf_bonus", "sourceId": "comp_perf", "targetId": "comp_bonus", "type": "behavior", "config": { "event": "onChange", "action": "calculateBonus" } }
+      ],
+      "createdAt": "2026-06-29T00:00:00.000Z",
+      "updatedAt": "2026-06-29T00:00:00.000Z"
+    }
+  ]
+}

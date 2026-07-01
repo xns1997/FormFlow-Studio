@@ -58,7 +58,7 @@
     },
     {
       "name": "workbook",
-      "type": "object",
+      "type": "workbook",
       "required": true,
       "description": "工作簿对象"
     },
@@ -93,7 +93,7 @@
     {
       "name": "workbook",
       "label": "工作簿",
-      "type": "object",
+      "type": "workbook",
       "direction": "input",
       "required": true,
       "description": "工作簿"

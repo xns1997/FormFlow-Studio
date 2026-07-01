@@ -17,14 +17,14 @@
       "name": "min",
       "label": "最小值",
       "type": "number",
-      "default": -Infinity,
+      "default": -1e308,
       "description": "允许的最小值"
     },
     {
       "name": "max",
       "label": "最大值",
       "type": "number",
-      "default": Infinity,
+      "default": 1e308,
       "description": "允许的最大值"
     },
     {

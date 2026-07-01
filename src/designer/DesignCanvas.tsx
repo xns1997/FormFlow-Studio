@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { type ResizeHandle, useDesigner } from './useDesigner';
 import { DesignerIcon } from './icons';
+import { PreviewCanvas } from './PreviewCanvas';
+import { useProjectStore } from '../project/store';
 
 interface Props {
   designer: ReturnType<typeof useDesigner>;
@@ -9,6 +11,8 @@ interface Props {
 export function DesignCanvas({ designer }: Props) {
   const { containerRef, initGraph, mode } = designer;
   const lastPlacementRef = useRef<{ type: string; x: number; y: number; at: number } | null>(null);
+  const workflows = useProjectStore((state) => state.project?.workflows || []);
+  const tables = useProjectStore((state) => state.project?.srcTable || []);
 
   useEffect(() => { initGraph(); }, [initGraph]);
 
@@ -85,8 +89,12 @@ export function DesignCanvas({ designer }: Props) {
       </div>
       <div
         ref={containerRef}
-        className="designer-canvas"
+        className={`designer-canvas ${mode === 'preview' ? 'designer-canvas-hidden' : ''}`}
+        aria-hidden={mode === 'preview'}
       />
+      {mode === 'preview' && (
+        <PreviewCanvas components={designer.components} zoom={designer.zoom} workflows={workflows} tables={tables} />
+      )}
       {mode === 'design' && designer.selectionOverlay && (
         <div
           className="designer-selection-overlay"

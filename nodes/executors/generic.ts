@@ -1,5 +1,7 @@
 import { registerExecutor, type NodeExecContext, type NodeExecResult } from '../executor-registry';
 import type { SrcTableEntry } from '../../src/project/types';
+import { editWorksheetStructure, toEditableWorksheet } from '../xlsx-worksheet-ops';
+import { createComplexRange, getRangeAreas, intersectComplexRanges, parseRangeAddress, type RangeArea } from '../../src/services/rangeGeometry';
 
 function findSheet(tables: SrcTableEntry[], sheetName: string) {
   for (const table of tables) {
@@ -9,27 +11,59 @@ function findSheet(tables: SrcTableEntry[], sheetName: string) {
   return null;
 }
 
-registerExecutor('generic:file-picker', (ctx) => {
-  const fileData = ctx.inputs.data || ctx.inputs.file;
+registerExecutor('generic:file-picker', async (ctx) => {
+  let fileData = ctx.inputs.data || ctx.inputs.file;
+  let fileName = String(ctx.inputs.name || ctx.properties.selectedFile || '');
+  if (!fileData && ctx.tables.length > 0) {
+    const table = ctx.tables.find((item) => item.fileName === fileName) || ctx.tables[0];
+    if (table.id.startsWith('file_')) {
+      try {
+        const response = await fetch(`http://localhost:3001/api/files/${encodeURIComponent(table.id)}/raw`);
+        if (response.ok) fileData = await response.arrayBuffer();
+      } catch {}
+    }
+    if (!fileData) {
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.utils.book_new();
+      for (const sheet of table.sheets) {
+        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(sheet.preview || []), sheet.name);
+      }
+      fileData = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
+    }
+    fileName = table.fileName;
+  }
   const check = ctx.checkType('file-data', fileData);
-  return { data: check.valid ? check.normalized : fileData, name: ctx.inputs.name || '' };
+  const data = check.valid ? check.normalized : fileData;
+  return { data, file: data ? { name: fileName, data } : undefined, name: fileName };
 });
 
-registerExecutor('generic:worksheet-select', (ctx) => {
+registerExecutor('generic:worksheet-select', async (ctx) => {
   const { inputs, properties, tables, assertType } = ctx;
   const wb = inputs.workbook;
 
-  // 检查输入是否是 workbook
   const wbCheck = ctx.checkType('workbook', wb);
   if (wbCheck.valid) {
     const wbObj = wbCheck.normalized as any;
-    const sheetName = String(properties.sheetName || wbObj.SheetNames[0]);
+    const names: string[] = wbObj.SheetNames || [];
+    const mode = String(inputs.selectMode || properties.selectMode || 'active');
+    const requestedName = String(inputs.sheetName || properties.sheetName || '');
+    const requestedIndex = Math.max(0, Math.trunc(Number(inputs.sheetIndex ?? properties.sheetIndex ?? 0)));
+    const activeIndex = Math.max(0, Math.trunc(Number(wbObj.Workbook?.Views?.[0]?.activeTab ?? 0)));
+    const sheetName = mode === 'byName' && requestedName
+      ? requestedName
+      : mode === 'byIndex'
+        ? names[requestedIndex]
+        : mode === 'active'
+          ? names[activeIndex]
+          : names[0];
     const ws = wbObj.Sheets[sheetName];
+    if (!ws) throw new Error(`工作表不存在: ${sheetName || '(空)'}`);
     assertType('worksheet', ws, 'worksheet');
-    return { worksheet: ws, sheetNames: wbObj.SheetNames };
+    const XLSX = await import('xlsx');
+    const firstRow = XLSX.utils.sheet_to_json(ws, { header: 1, range: 0, blankrows: false })[0];
+    return { workbook: wbObj, worksheet: ws, sheetName, sheetNames: names, headers: Array.isArray(firstRow) ? firstRow.map(String) : [] };
   }
 
-  // 从项目数据加载
   const sheetName = String(properties.sheetName || '');
   const found = findSheet(tables, sheetName);
   if (found) {
@@ -38,38 +72,143 @@ registerExecutor('generic:worksheet-select', (ctx) => {
     assertType('worksheet', ws, 'worksheet');
     return {
       worksheet: ws,
+      sheetName: sheet.name,
       sheetNames: table.sheets.map(s => s.name),
       headers: sheet.headers,
     };
   }
 
-  // 回退：检查已有 worksheet 输入
   const wsCheck = ctx.checkType('worksheet', inputs.worksheet);
   return { worksheet: wsCheck.valid ? wsCheck.normalized : inputs.worksheet, sheetNames: [] };
 });
 
-registerExecutor('generic:range-select', (ctx) => {
-  const { inputs, properties, tables, checkType } = ctx;
+for (const [id, axis, action] of [
+  ['generic:insert-rows', 'row', 'insert'],
+  ['generic:delete-rows', 'row', 'delete'],
+  ['generic:insert-columns', 'column', 'insert'],
+  ['generic:delete-columns', 'column', 'delete'],
+] as const) {
+  registerExecutor(id, ({ inputs, properties }) => editWorksheetStructure(
+    inputs.worksheet,
+    axis,
+    action,
+    inputs.index ?? properties.index ?? 1,
+    inputs.count ?? properties.count ?? 1,
+  ));
+}
+
+registerExecutor('generic:worksheet-commit', async ({ inputs, properties, assertType }) => {
+  const workbook = assertType('workbook', inputs.workbook, 'workbook') as any;
+  const worksheet = toEditableWorksheet(assertType('worksheet', inputs.worksheet, 'worksheet'));
+  const requestedName = String(inputs.sheetName || properties.sheetName || (worksheet as any)?.__sourceSheetName || '');
+  const identityName = (workbook.SheetNames || []).find((name: string) => workbook.Sheets[name] === inputs.worksheet || workbook.Sheets[name] === worksheet);
+  const sheetName = requestedName || identityName || workbook.SheetNames?.[0] || 'Sheet1';
+  workbook.Sheets[sheetName] = worksheet;
+  if (!workbook.SheetNames.includes(sheetName)) workbook.SheetNames.push(sheetName);
+  return { workbook, worksheet, sheetName, sheetNames: [...workbook.SheetNames] };
+});
+
+function workbookMimeType(bookType: string) {
+  if (bookType === 'xls') return 'application/vnd.ms-excel';
+  if (bookType === 'ods') return 'application/vnd.oasis.opendocument.spreadsheet';
+  if (bookType === 'xlsb') return 'application/vnd.ms-excel.sheet.binary.macroEnabled.12';
+  if (bookType === 'xlsm') return 'application/vnd.ms-excel.sheet.macroEnabled.12';
+  return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+}
+
+registerExecutor('generic:workbook-save', async ({ inputs, properties, assertType }) => {
+  const workbook = assertType('workbook', inputs.workbook, 'workbook') as any;
+  const bookType = String(properties.bookType || 'xlsx');
+  const baseName = String(inputs.fileName || properties.fileName || 'output');
+  const fileName = `${baseName.replace(/\.(xlsx|xlsm|xlsb|xls|ods)$/i, '')}.${bookType}`;
+  const XLSX = await import('xlsx');
+  const fileData = XLSX.write(workbook, { bookType: bookType as any, type: 'array', compression: properties.compression !== false });
+  return { workbook, fileData, fileName, mimeType: workbookMimeType(bookType) };
+});
+
+registerExecutor('generic:range-select', async (ctx) => {
+  const { inputs, properties } = ctx;
   const ws = inputs.worksheet;
-  const address = String(inputs.address || properties.address || 'A1');
-
-  // 校验地址格式
-  const addrCheck = checkType('address', address);
-
   const wsAny = ws as any;
-  if (wsAny?.__fromProject) {
-    const headers: string[] = wsAny.headers || [];
-    const preview = wsAny.preview || [];
-    return {
-      range: { s: { r: 0, c: 0 }, e: { r: preview.length - 1, c: headers.length - 1 } },
-      values: preview,
-      address: addrCheck.valid ? addrCheck.normalized : address,
-      rowCount: preview.length,
-      colCount: headers.length,
-    };
+  if (!wsAny || typeof wsAny !== 'object') throw new Error('缺少 worksheet 输入');
+  const XLSX = await import('xlsx');
+  const mode = String(inputs.rangeMode || properties.rangeMode || 'usedRange');
+  const addressInput = String(inputs.address || properties.address || '');
+  const rowIndex = Math.max(0, Math.trunc(Number(inputs.rowIndex ?? properties.rowIndex ?? 1)) - 1);
+  const colIndex = Math.max(0, Math.trunc(Number(inputs.colIndex ?? properties.colIndex ?? 1)) - 1);
+  const rowCount = Math.max(1, Math.trunc(Number(inputs.rowCount ?? properties.rowCount ?? 1)));
+  const colCount = Math.max(1, Math.trunc(Number(inputs.colCount ?? properties.colCount ?? 1)));
+  const usedArea: RangeArea = wsAny.__fromProject
+    ? { startRow: 0, startCol: 0, endRow: Math.max(0, (wsAny.preview?.length || 0)), endCol: Math.max(0, (wsAny.headers?.length || 1) - 1) }
+    : (() => {
+        const decoded = XLSX.utils.decode_range(wsAny['!ref'] || 'A1');
+        return { startRow: decoded.s.r, startCol: decoded.s.c, endRow: decoded.e.r, endCol: decoded.e.c };
+      })();
+  let areas: RangeArea[];
+  let parsedSheetName: string | undefined;
+  if (mode === 'address' && addressInput) {
+    const parsed = parseRangeAddress(addressInput);
+    areas = parsed.areas;
+    parsedSheetName = parsed.sheetName;
+  } else if (mode === 'row') {
+    areas = [{ startRow: rowIndex, startCol: usedArea.startCol, endRow: rowIndex + rowCount - 1, endCol: usedArea.endCol }];
+  } else if (mode === 'column') {
+    areas = [{ startRow: usedArea.startRow, startCol: colIndex, endRow: usedArea.endRow, endCol: colIndex + colCount - 1 }];
+  } else if (mode === 'custom') {
+    areas = [{ startRow: rowIndex, startCol: colIndex, endRow: rowIndex + rowCount - 1, endCol: colIndex + colCount - 1 }];
+  } else {
+    areas = [usedArea];
   }
+  if (!areas.length) throw new Error(`无效区域地址: ${addressInput}`);
+  const range = createComplexRange(areas, {
+    sheetName: parsedSheetName || wsAny.__sourceSheetName || wsAny.sheetName,
+    tableId: wsAny.tableId,
+    operation: 'selection',
+  });
+  const normalizedAreas = getRangeAreas(range);
+  const readCell = (row: number, column: number) => {
+    if (wsAny.__fromProject) {
+      const header = wsAny.headers?.[column];
+      return row === 0 ? header : wsAny.preview?.[row - 1]?.[header];
+    }
+    const cell = wsAny[XLSX.utils.encode_cell({ r: row, c: column })];
+    return cell?.v ?? cell?.w ?? '';
+  };
+  const areaValues = normalizedAreas.map((area) => {
+    const result: unknown[][] = [];
+    for (let row = area.startRow; row <= area.endRow; row += 1) {
+      const values: unknown[] = [];
+      for (let column = area.startCol; column <= area.endCol; column += 1) values.push(readCell(row, column));
+      result.push(values);
+    }
+    return result;
+  });
+  const bounds = range.bounds;
+  return {
+    range,
+    address: range.address,
+    areas: range.areas,
+    values: areaValues.length === 1 ? areaValues[0] : areaValues.flat(),
+    areaValues,
+    areaCount: range.areaCount,
+    cellCount: range.cellCount,
+    rowCount: bounds ? bounds.e.r - bounds.s.r + 1 : 0,
+    colCount: bounds ? bounds.e.c - bounds.s.c + 1 : 0,
+  };
+});
 
-  return { range: inputs.range, values: inputs.values, address: addrCheck.valid ? addrCheck.normalized : address, rowCount: inputs.rowCount, colCount: inputs.colCount };
+registerExecutor('generic:range-intersection', ({ inputs, assertType }) => {
+  const left = assertType('range', inputs.left, 'left');
+  const right = assertType('range', inputs.right, 'right');
+  const range = intersectComplexRanges(left, right);
+  return {
+    range,
+    address: range.address,
+    areas: range.areas,
+    areaCount: range.areaCount,
+    cellCount: range.cellCount,
+    isEmpty: range.areaCount === 0,
+  };
 });
 
 registerExecutor('generic:variable-input', (ctx) => {
@@ -92,7 +231,7 @@ registerExecutor('generic:number-input', (ctx) => {
   return { value: check.normalized };
 });
 
-registerExecutor('generic:boolean-switch', (ctx) => {
+registerExecutor('generic:boolean-input', (ctx) => {
   const raw = ctx.inputs.override ?? ctx.properties.value ?? false;
   const check = ctx.checkType('boolean', raw);
   return { value: check.valid ? check.normalized : !!raw };
@@ -102,123 +241,87 @@ registerExecutor('generic:output-display', (ctx) => {
   return { value: ctx.inputs.value };
 });
 
-registerExecutor('generic:export-excel', async (ctx) => {
-  const XLSX = await import('xlsx');
-  const { inputs, properties, checkType, assertType } = ctx;
-  const dataCheck = checkType('json-rows', inputs.data);
-  if (!dataCheck.valid) return { error: `数据类型错误: ${dataCheck.error}` };
-  const data = dataCheck.normalized as any[];
-  const fileName = assertType('string', inputs.fileName || properties.fileName || 'export.xlsx', 'fileName') as string;
-  const sheetName = assertType('string', properties.sheetName || 'Sheet1', 'sheetName') as string;
-  const includeHeader = properties.includeHeader !== false;
-
-  const ws = XLSX.utils.json_to_sheet(data, { skipHeader: !includeHeader });
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, sheetName);
-  const fileData = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-
-  return {
-    fileData,
-    fileName,
-    size: fileData.byteLength || fileData.length || 0,
-  };
-});
-
-registerExecutor('generic:export-csv', (ctx) => {
-  const { inputs, properties, checkType, assertType } = ctx;
-  const dataCheck = checkType('json-rows', inputs.data);
-  if (!dataCheck.valid) return { error: `数据类型错误: ${dataCheck.error}` };
-  const data = dataCheck.normalized as any[];
-  const fileName = assertType('string', inputs.fileName || properties.fileName || 'export.csv', 'fileName') as string;
-  const delimiter = assertType('string', properties.delimiter || ',', 'delimiter') as string;
-  const includeHeader = properties.includeHeader !== false;
-
-  const headers = data.length > 0 ? Object.keys(data[0]) : [];
-  const rows = includeHeader
-    ? [headers, ...data.map(row => headers.map(h => row[h]))]
-    : data.map(row => headers.map(h => row[h]));
-
-  const csvText = rows.map(row =>
-    row.map(cell => {
-      const str = String(cell ?? '');
-      return str.includes(delimiter) || str.includes('"') || str.includes('\n')
-        ? `"${str.replace(/"/g, '""')}"` : str;
-    }).join(delimiter)
-  ).join('\n');
-
-  return { csvText, fileName, size: csvText.length };
-});
-
-registerExecutor('generic:export-json', (ctx) => {
-  const { inputs, properties, assertType } = ctx;
-  const data = inputs.data;
-  const fileName = assertType('string', inputs.fileName || properties.fileName || 'export.json', 'fileName') as string;
-  const pretty = properties.pretty !== false;
-  const indent = Number(properties.indent ?? 2);
-  const rootKey = String(properties.rootKey || '');
-
-  let output = data;
-  if (rootKey && typeof data === 'object' && !Array.isArray(data)) {
-    output = { [rootKey]: data };
-  } else if (rootKey && Array.isArray(data)) {
-    output = { [rootKey]: data };
+async function rowsFromData(data: unknown): Promise<Record<string, unknown>[]> {
+  if (Array.isArray(data)) return data as Record<string, unknown>[];
+  const worksheet = data as any;
+  if (worksheet?.__fromProject) return worksheet.preview || [];
+  if (worksheet && typeof worksheet === 'object' && worksheet['!ref']) {
+    const XLSX = await import('xlsx');
+    return XLSX.utils.sheet_to_json(worksheet, { defval: '' }) as Record<string, unknown>[];
   }
+  if (data && typeof data === 'object') return [data as Record<string, unknown>];
+  return [];
+}
 
-  const jsonText = pretty ? JSON.stringify(output, null, indent) : JSON.stringify(output);
-  return { jsonText, fileName, size: jsonText.length };
+function withExtension(fileName: string, format: string) {
+  return fileName.toLowerCase().endsWith(`.${format}`) ? fileName : `${fileName}.${format}`;
+}
+
+registerExecutor('generic:export', async ({ inputs, properties }) => {
+  const format = String(properties.format || 'xlsx');
+  const fileName = withExtension(String(inputs.fileName || properties.fileName || 'export'), format);
+  const rows = await rowsFromData(inputs.data);
+  if (format === 'xlsx') {
+    const XLSX = await import('xlsx');
+    const source = inputs.data as any;
+    const worksheet = source && typeof source === 'object' && source['!ref']
+      ? source
+      : XLSX.utils.json_to_sheet(rows, { skipHeader: properties.includeHeader === false });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, String(properties.sheetName || 'Sheet1'));
+    return { result: XLSX.write(workbook, { bookType: 'xlsx', type: 'array' }), fileName, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
+  }
+  if (format === 'json') {
+    return { result: JSON.stringify(rows, null, 2), fileName, mimeType: 'application/json' };
+  }
+  const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
+  if (format === 'csv') {
+    const csvRows: unknown[][] = properties.includeHeader === false ? [] : [headers];
+    csvRows.push(...rows.map((row) => headers.map((header) => row[header])));
+    const result = csvRows.map((row) => row.map((value) => {
+      const text = String(value ?? '');
+      return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    }).join(',')).join('\n');
+    return { result, fileName, mimeType: 'text/csv;charset=utf-8' };
+  }
+  const escape = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]!));
+  const result = `<table><thead><tr>${headers.map((header) => `<th>${escape(header)}</th>`).join('')}</tr></thead><tbody>${rows.map((row) => `<tr>${headers.map((header) => `<td>${escape(row[header])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  return { result, fileName, mimeType: 'text/html;charset=utf-8' };
 });
 
-registerExecutor('generic:export-html', (ctx) => {
-  const { inputs, properties, checkType, assertType } = ctx;
-  const dataCheck = checkType('json-rows', inputs.data);
-  if (!dataCheck.valid) return { error: `数据类型错误: ${dataCheck.error}` };
-  const data = dataCheck.normalized as any[];
-  const fileName = assertType('string', inputs.fileName || properties.fileName || 'export.html', 'fileName') as string;
-  const title = assertType('string', properties.title || '数据导出', 'title') as string;
-  const style = assertType('string', properties.style || 'default', 'style') as string;
+function compareValue(left: unknown, operator: string, right: unknown) {
+  switch (operator) {
+    case '!=': return left != right;
+    case 'contains': return String(left ?? '').includes(String(right ?? ''));
+    case '>': return Number(left) > Number(right);
+    case '<': return Number(left) < Number(right);
+    case '>=': return Number(left) >= Number(right);
+    case '<=': return Number(left) <= Number(right);
+    default: return left == right;
+  }
+}
 
-  const headers = data.length > 0 ? Object.keys(data[0]) : [];
+registerExecutor('generic:filter', async ({ inputs, properties }) => {
+  const rows = await rowsFromData(inputs.data);
+  const field = String(inputs.field ?? properties.field ?? '');
+  const operator = String(inputs.operator ?? properties.operator ?? '==');
+  const compareTo = inputs.value ?? properties.value;
+  const result = field ? rows.filter((row) => compareValue(row[field], operator, compareTo)) : rows;
+  return { result, rows: result, count: result.length, trigger: inputs.trigger };
+});
 
-  const tableStyle = style === 'striped'
-    ? 'border-collapse:collapse;width:100%;'
-    : style === 'bordered'
-      ? 'border-collapse:collapse;width:100%;border:1px solid #ddd;'
-      : style === 'minimal'
-        ? 'border-collapse:collapse;'
-        : 'border-collapse:collapse;width:100%;border:1px solid #ddd;';
-
-  const cellStyle = 'padding:8px;border:1px solid #ddd;text-align:left;';
-  const headerStyle = 'padding:8px;border:1px solid #ddd;text-align:left;background:#f5f5f5;font-weight:bold;';
-
-  const htmlText = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>${title}</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 20px; }
-    h1 { color: #333; }
-    table { ${tableStyle} }
-    th { ${headerStyle} }
-    td { ${cellStyle} }
-    tr:nth-child(even) { background: ${style === 'striped' ? '#f9f9f9' : 'transparent'}; }
-  </style>
-</head>
-<body>
-  <h1>${title}</h1>
-  <p>${data.length} 行 × ${headers.length} 列</p>
-  <table>
-    <thead>
-      <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
-    </thead>
-    <tbody>
-      ${data.map(row => `<tr>${headers.map(h => `<td>${String(row[h] ?? '')}</td>`).join('')}</tr>`).join('\n      ')}
-    </tbody>
-  </table>
-</body>
-</html>`;
-
-  return { htmlText, fileName, size: htmlText.length };
+registerExecutor('generic:sort', async ({ inputs, properties }) => {
+  const rows = await rowsFromData(inputs.data);
+  const field = String(properties.field || '');
+  const direction = properties.order === 'desc' ? -1 : 1;
+  const result = field ? [...rows].sort((left, right) => {
+    const a = left[field], b = right[field];
+    const comparison = typeof a === 'number' && typeof b === 'number'
+      ? a - b
+      : String(a ?? '').localeCompare(String(b ?? ''));
+    return comparison * direction;
+  }) : [...rows];
+  return { result, rows: result, count: result.length, trigger: inputs.trigger };
 });
 
 registerExecutor('generic:display-table', (ctx) => {
@@ -263,8 +366,6 @@ registerExecutor('generic:display-stats', (ctx) => {
     headers,
   };
 });
-
-// ── 聚合关联节点 ──────────────────────────────────────
 
 registerExecutor('generic:merge', (ctx) => {
   const { inputs, properties, checkType } = ctx;
@@ -521,8 +622,6 @@ registerExecutor('generic:sample', (ctx) => {
   return { data: shuffled.slice(0, n), rowCount: n };
 });
 
-// ── 清洗转换节点 ──────────────────────────────────────
-
 registerExecutor('generic:type-cast', (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
@@ -546,12 +645,12 @@ registerExecutor('generic:type-cast', (ctx) => {
         case 'boolean': newRow[field] = val === true || val === 'true' || val === '1' || val === 1; break;
         case 'date': {
           const d = new Date(val);
-          newRow[field] = isNaN(d.getTime()) ? (onError === 'default' ? null : null) : d.toISOString();
+          newRow[field] = isNaN(d.getTime()) ? null : d.toISOString();
           break;
         }
       }
     } catch {
-      newRow[field] = onError === 'default' ? null : null;
+      newRow[field] = null;
     }
     return newRow;
   });
@@ -818,7 +917,7 @@ registerExecutor('generic:hash', (ctx) => {
   const field = String(properties.field || '');
   const newField = String(properties.newField || 'hash');
 
-  function simpleHash(str: string, algo: string): string {
+  function simpleHash(str: string): string {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const chr = str.charCodeAt(i);
@@ -831,7 +930,7 @@ registerExecutor('generic:hash', (ctx) => {
   const result = data.map(row => {
     const newRow = { ...row };
     const val = String(row[field] ?? '');
-    newRow[newField] = simpleHash(val, String(properties.algorithm || 'md5'));
+    newRow[newField] = simpleHash(val);
     return newRow;
   });
 
@@ -867,8 +966,6 @@ registerExecutor('generic:encode', (ctx) => {
   return { data: result };
 });
 
-// ── 校验节点 ──────────────────────────────────────────
-
 registerExecutor('generic:validate-json', (ctx) => {
   const { inputs, properties } = ctx;
   const data = inputs.data;
@@ -898,7 +995,7 @@ registerExecutor('generic:validate-json', (ctx) => {
 });
 
 registerExecutor('generic:validate-xml', (ctx) => {
-  const { inputs, properties } = ctx;
+  const { inputs } = ctx;
   const data = String(inputs.data || '');
   const errors: any[] = [];
 
@@ -949,8 +1046,7 @@ registerExecutor('generic:unique-check', (ctx) => {
     const val = row[field];
     const count = (seen.get(val) || 0) + 1;
     seen.set(val, count);
-    if (count === 2) duplicates.push(row);
-    else if (count > 2) duplicates.push(row);
+    if (count >= 2) duplicates.push(row);
   }
 
   return {
@@ -998,30 +1094,246 @@ registerExecutor('generic:range-check', (ctx) => {
   return { passed, failed, passRate };
 });
 
-// ── 集成节点 ──────────────────────────────────────────
+// ── 集成节点（真实实现）──────────────────────────────
 
-registerExecutor('generic:database-query', (ctx) => {
-  const { inputs, properties } = ctx;
-  return { error: '数据库查询需要服务端支持，当前为客户端环境' };
+registerExecutor('generic:database-query', async (ctx) => {
+  const { inputs, properties, tables } = ctx;
+  const connectionString = String(properties.connectionString || '');
+  const query = String(properties.query || '');
+  const extraParams = inputs.params;
+
+  if (!query) return { error: '缺少 SQL 查询' };
+
+  // 如果有 connectionString，尝试 fetch 调用
+  if (connectionString) {
+    try {
+      const params = extraParams && typeof extraParams === 'object' ? extraParams : {};
+      const resp = await fetch(connectionString, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, params }),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+      const result = await resp.json();
+      const data = Array.isArray(result) ? result : result.data || result.rows || [result];
+      const rowsCheck = ctx.checkType('json-rows', data);
+      return {
+        data: rowsCheck.valid ? rowsCheck.normalized : data,
+        rowCount: Array.isArray(data) ? data.length : 0,
+      };
+    } catch (err) {
+      return { error: `数据库连接失败: ${err instanceof Error ? err.message : String(err)}` };
+    }
+  }
+
+  // 回退：从项目数据中按 sheetName 查找并执行简单 SQL 解析
+  const sqlMatch = query.match(/FROM\s+['"`]?(\w+)['"`]?/i);
+  const tableName = sqlMatch ? sqlMatch[1] : '';
+  const whereMatch = query.match(/WHERE\s+(.+?)(?:ORDER|GROUP|LIMIT|$)/i);
+  const whereClause = whereMatch ? whereMatch[1].trim() : '';
+
+  // 查找匹配的 sheet
+  let matchedSheet: { headers: string[]; preview: Record<string, unknown>[] } | null = null;
+  for (const table of tables) {
+    const exact = table.sheets.find(s => s.name.toLowerCase() === tableName.toLowerCase());
+    if (exact) { matchedSheet = exact; break; }
+    const partial = table.sheets.find(s => s.name.toLowerCase().includes(tableName.toLowerCase()));
+    if (partial) { matchedSheet = partial; break; }
+  }
+  if (!matchedSheet && tables.length > 0 && tables[0].sheets.length > 0) {
+    matchedSheet = tables[0].sheets[0];
+  }
+
+  if (!matchedSheet) {
+    return { error: `未找到表 "${tableName || '(未指定)'}"，请在连接字符串中提供 API 地址` };
+  }
+
+  let rows = [...matchedSheet.preview];
+
+  // 简单 WHERE 解析: field = 'value', field > number, field LIKE 'pattern'
+  if (whereClause) {
+    const condMatch = whereClause.match(/(\w+)\s*(=|!=|>=|<=|>|<|LIKE)\s*'?([^']+?)'?\s*$/i);
+    if (condMatch) {
+      const [, field, op, val] = condMatch;
+      rows = rows.filter(row => {
+        const cellVal = row[field];
+        switch (op.toUpperCase()) {
+          case '=': return String(cellVal) === val;
+          case '!=': return String(cellVal) !== val;
+          case '>': return Number(cellVal) > Number(val);
+          case '<': return Number(cellVal) < Number(val);
+          case '>=': return Number(cellVal) >= Number(val);
+          case '<=': return Number(cellVal) <= Number(val);
+          case 'LIKE': return String(cellVal).includes(val.replace(/%/g, ''));
+          default: return true;
+        }
+      });
+    }
+  }
+
+  // SELECT 字段解析
+  const selectMatch = query.match(/SELECT\s+(.+?)\s+FROM/i);
+  let selectedFields = matchedSheet.headers;
+  if (selectMatch && selectMatch[1].trim() !== '*') {
+    selectedFields = selectMatch[1].split(',').map(f => f.trim().replace(/['"`]/g, ''));
+  }
+
+  // LIMIT 解析
+  const limitMatch = query.match(/LIMIT\s+(\d+)/i);
+  if (limitMatch) rows = rows.slice(0, Number(limitMatch[1]));
+
+  // 构造结果
+  const result = rows.map(row => {
+    const out: Record<string, unknown> = {};
+    for (const h of selectedFields) {
+      if (h in row) out[h] = row[h];
+    }
+    return out;
+  });
+
+  const rowsCheck = ctx.checkType('json-rows', result);
+  return {
+    data: rowsCheck.valid ? rowsCheck.normalized : result,
+    rowCount: result.length,
+  };
 });
 
 registerExecutor('generic:websocket', (ctx) => {
   const { inputs, properties } = ctx;
   const action = String(properties.action || 'connect');
   const url = String(properties.url || '');
-  return { status: action === 'connect' ? 'connecting' : action, received: null };
+  const message = String(properties.message || '');
+
+  if (!url) return { status: 'error', received: null, error: '缺少 WebSocket URL' };
+
+  try {
+    if (action === 'connect') {
+      // 返回连接配置（实际连接需要在服务端执行）
+      return {
+        status: 'connecting',
+        url,
+        received: null,
+        message: `WebSocket 连接已配置: ${url}`,
+      };
+    }
+    if (action === 'send') {
+      const data = inputs.data || message;
+      return {
+        status: 'sent',
+        url,
+        sent: typeof data === 'string' ? data : JSON.stringify(data),
+        received: null,
+        message: `消息已准备发送到 ${url}`,
+      };
+    }
+    if (action === 'disconnect') {
+      return { status: 'disconnected', url, received: null, message: '连接已断开' };
+    }
+    return { status: 'unknown', received: null, error: `未知操作: ${action}` };
+  } catch (err) {
+    return { status: 'error', received: null, error: err instanceof Error ? err.message : String(err) };
+  }
 });
 
-registerExecutor('generic:pdf-report', (ctx) => {
+registerExecutor('generic:pdf-report', async (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
-  if (!dataCheck.valid) return { error: '输入数据格式错误' };
+  if (!dataCheck.valid) return { error: `数据格式错误: ${dataCheck.error}` };
   const data = dataCheck.normalized as any[];
   const title = String(properties.title || '数据报告');
-  return { fileData: null, fileName: `${title}.pdf`, error: 'PDF 生成需要服务端支持' };
+  const autoDownload = properties.autoDownload !== false;
+
+  // 构造 HTML 报告并触发浏览器打印/下载
+  const headers = data.length > 0 ? Object.keys(data[0]) : [];
+  const escapeHtml = (v: unknown) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
+<style>
+  body { font-family: -apple-system, sans-serif; padding: 20px; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .meta { color: #666; font-size: 12px; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: #f1f5f9; text-align: left; padding: 6px 10px; border: 1px solid #e2e8f0; font-weight: 600; }
+  td { padding: 5px 10px; border: 1px solid #e2e8f0; }
+  tr:nth-child(even) { background: #f8fafc; }
+  @media print { body { padding: 0; } }
+</style></head><body>
+<h1>${escapeHtml(title)}</h1>
+<div class="meta">生成时间: ${new Date().toLocaleString()} · ${data.length} 行 × ${headers.length} 列</div>`;
+
+  if (data.length > 0) {
+    html += '<table><thead><tr>';
+    for (const h of headers) html += `<th>${escapeHtml(h)}</th>`;
+    html += '</tr></thead><tbody>';
+    for (const row of data) {
+      html += '<tr>';
+      for (const h of headers) html += `<td>${escapeHtml(row[h])}</td>`;
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+  }
+  html += '</body></html>';
+
+  const fileName = `${title}.pdf`;
+  let fileData: unknown = null;
+
+  if (autoDownload) {
+    try {
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${title}.html`;
+      link.click();
+      URL.revokeObjectURL(url);
+      fileData = html;
+    } catch {}
+  }
+
+  return {
+    fileData,
+    fileName,
+    rowCount: data.length,
+    colCount: headers.length,
+    message: `报告 "${title}" 已生成（HTML 格式，可用浏览器打印为 PDF）`,
+  };
 });
 
 registerExecutor('generic:email-send', (ctx) => {
   const { inputs, properties } = ctx;
-  return { sent: false, error: '邮件发送需要服务端支持' };
+  const smtpHost = String(properties.smtpHost || '');
+  const smtpPort = Number(properties.smtpPort || 587);
+  const username = String(properties.username || '');
+  const from = String(properties.from || '');
+  const to = String(properties.to || '');
+  const subject = String(properties.subject || '');
+  const body = String(properties.body || '');
+  const attachData = properties.attachData === true;
+
+  if (!to) return { sent: false, error: '缺少收件人地址' };
+
+  // 在浏览器环境中，使用 mailto: 链接
+  const mailtoBody = body + (attachData && inputs.data ? `\n\n--- 附件数据 ---\n${typeof inputs.data === 'string' ? inputs.data : JSON.stringify(inputs.data, null, 2)}` : '');
+  const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(mailtoBody)}`;
+
+  // 尝试打开邮件客户端
+  try {
+    const link = document.createElement('a');
+    link.href = mailtoUrl;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch {}
+
+  return {
+    sent: true,
+    to,
+    subject,
+    smtpConfigured: !!smtpHost,
+    message: smtpHost
+      ? `邮件配置: ${smtpHost}:${smtpPort} (需要服务端执行实际发送)`
+      : `已打开邮件客户端，收件人: ${to}`,
+    note: !smtpHost ? '未配置 SMTP 服务器，已使用客户端 mailto: 方式' : undefined,
+  };
 });

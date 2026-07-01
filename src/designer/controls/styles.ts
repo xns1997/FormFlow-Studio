@@ -110,6 +110,12 @@ export const ios = {
   } satisfies React.CSSProperties,
 };
 
+export const requiredMark: React.CSSProperties = {
+  color: '#ff3b30',
+  marginLeft: 4,
+  fontWeight: 700,
+};
+
 export const controlText = (overrides: React.CSSProperties = {}): React.CSSProperties => ({
   flex: overrides.flex,
   minWidth: 0,

@@ -1,0 +1,83 @@
+.output-preview-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: min(820px, calc(92vh - 58px));
+  min-height: 360px;
+}
+
+.output-preview-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-soft);
+}
+
+.output-preview-summary { min-width: 0; margin-right: auto; }
+.output-preview-toolbar label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; }
+.output-preview-toolbar select,
+.output-preview-toolbar button {
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 11px;
+}
+.output-preview-toolbar button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.output-preview-toolbar button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.output-preview-tabs { display: inline-flex; padding: 2px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
+.output-preview-tabs button { height: 24px; border: 0; background: transparent; }
+.output-preview-tabs button.active { color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.output-preview-search {
+  position: relative;
+  min-width: 180px;
+  height: 30px;
+  padding: 0 5px 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel);
+}
+.output-preview-search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.output-preview-search > span { color: var(--muted); font-size: 14px; }
+.output-preview-search input { min-width: 0; width: 100%; height: 26px; padding: 0; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 11px; }
+.output-preview-search button { width: 22px; height: 22px; padding: 0; border: 0; background: transparent; color: var(--muted); }
+
+.output-preview-body { min-height: 0; overflow: hidden; background: var(--panel); }
+.output-preview-table-wrap { width: 100%; height: 100%; overflow: auto; }
+.output-preview-table { min-width: 100%; border-collapse: separate; border-spacing: 0; font-size: 11px; }
+.output-preview-table th,
+.output-preview-table td { max-width: 360px; padding: 7px 10px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.output-preview-table th { position: sticky; top: 0; z-index: 2; background: var(--panel-soft); color: var(--text); font-weight: 600; }
+.output-preview-table .output-preview-row-number {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: 54px;
+  min-width: 54px;
+  max-width: 54px;
+  padding-right: 9px;
+  background: var(--panel-soft);
+  color: var(--muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.output-preview-table thead .output-preview-row-number { z-index: 3; }
+.output-preview-table tbody tr:hover td { background: var(--accent-soft); }
+.output-preview-raw { width: 100%; height: 100%; margin: 0; padding: 16px; overflow: auto; background: #0f172a; color: #dbeafe; font: 11px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre; }
+.output-preview-raw.wrap { white-space: pre-wrap; word-break: break-word; }
+.output-preview-html { width: 100%; height: 100%; border: 0; background: #fff; }
+.output-preview-empty { display: grid; place-items: center; align-content: center; gap: 10px; height: 100%; padding: 32px; color: var(--muted); text-align: center; }
+.output-preview-empty p { max-width: 520px; }
+.output-preview-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-height: 42px; padding: 6px 14px; border-top: 1px solid var(--line); background: var(--panel-soft); }
+.output-preview-pagination span { margin-right: auto; color: var(--muted); font-size: 11px; }
+.output-preview-pagination button { padding: 5px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); font-size: 11px; }
+.output-preview-pagination button:disabled { opacity: .45; cursor: default; }
+
+@media (max-width: 760px) {
+  .output-preview-toolbar { flex-wrap: wrap; }
+  .output-preview-summary { flex-basis: 100%; }
+}

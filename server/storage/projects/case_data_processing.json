@@ -1,0 +1,414 @@
+{
+  "config": {
+    "id": "case_data_processing",
+    "name": "测试用例 1 · 数据处理",
+    "description": "销售数据动态筛选、排序和分组聚合",
+    "version": "1.0.0",
+    "createdAt": "2026-06-30T08:00:00.000Z",
+    "updatedAt": "2026-06-30T08:00:00.000Z",
+    "author": "FormFlow QA",
+    "tags": [
+      "回归测试",
+      "可运行案例"
+    ]
+  },
+  "srcTable": [
+    {
+      "id": "sales",
+      "fileName": "销售订单.json",
+      "fileSize": 274,
+      "fileType": "json",
+      "uploadedAt": "2026-06-30T08:00:00.000Z",
+      "dataHash": "test-sales",
+      "sheets": [
+        {
+          "name": "销售订单",
+          "rowCount": 5,
+          "colCount": 5,
+          "headers": [
+            "订单号",
+            "产品",
+            "地区",
+            "金额",
+            "数量"
+          ],
+          "columns": [
+            {
+              "name": "订单号",
+              "index": 0,
+              "dataType": "string",
+              "nullable": false,
+              "uniqueCount": 5,
+              "sampleValues": [
+                "SO-001",
+                "SO-002",
+                "SO-003",
+                "SO-004",
+                "SO-005"
+              ]
+            },
+            {
+              "name": "产品",
+              "index": 1,
+              "dataType": "string",
+              "nullable": false,
+              "uniqueCount": 3,
+              "sampleValues": [
+                "笔记本",
+                "显示器",
+                "笔记本",
+                "键盘",
+                "显示器"
+              ]
+            },
+            {
+              "name": "地区",
+              "index": 2,
+              "dataType": "string",
+              "nullable": false,
+              "uniqueCount": 3,
+              "sampleValues": [
+                "华东",
+                "华南",
+                "华北",
+                "华东",
+                "华北"
+              ]
+            },
+            {
+              "name": "金额",
+              "index": 3,
+              "dataType": "number",
+              "nullable": false,
+              "uniqueCount": 5,
+              "sampleValues": [
+                6800,
+                2400,
+                9200,
+                680,
+                3200
+              ]
+            },
+            {
+              "name": "数量",
+              "index": 4,
+              "dataType": "number",
+              "nullable": false,
+              "uniqueCount": 4,
+              "sampleValues": [
+                2,
+                3,
+                3,
+                8,
+                4
+              ]
+            }
+          ],
+          "preview": [
+            {
+              "订单号": "SO-001",
+              "产品": "笔记本",
+              "地区": "华东",
+              "金额": 6800,
+              "数量": 2
+            },
+            {
+              "订单号": "SO-002",
+              "产品": "显示器",
+              "地区": "华南",
+              "金额": 2400,
+              "数量": 3
+            },
+            {
+              "订单号": "SO-003",
+              "产品": "笔记本",
+              "地区": "华北",
+              "金额": 9200,
+              "数量": 3
+            },
+            {
+              "订单号": "SO-004",
+              "产品": "键盘",
+              "地区": "华东",
+              "金额": 680,
+              "数量": 8
+            },
+            {
+              "订单号": "SO-005",
+              "产品": "显示器",
+              "地区": "华北",
+              "金额": 3200,
+              "数量": 4
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "id": "wf_data_processing",
+      "name": "销售数据清洗与聚合",
+      "description": "按表单阈值筛选、排序并按产品汇总销售额",
+      "nodes": [
+        {
+          "id": "rows",
+          "type": "formflow",
+          "specId": "generic:variable-input",
+          "position": {
+            "x": 40,
+            "y": 180
+          },
+          "data": {
+            "specId": "generic:variable-input",
+            "propertiesJson": "{\"varName\":\"rows\",\"varType\":\"array\",\"varValue\":[{\"订单号\":\"SO-001\",\"产品\":\"笔记本\",\"地区\":\"华东\",\"金额\":6800,\"数量\":2},{\"订单号\":\"SO-002\",\"产品\":\"显示器\",\"地区\":\"华南\",\"金额\":2400,\"数量\":3},{\"订单号\":\"SO-003\",\"产品\":\"笔记本\",\"地区\":\"华北\",\"金额\":9200,\"数量\":3},{\"订单号\":\"SO-004\",\"产品\":\"键盘\",\"地区\":\"华东\",\"金额\":680,\"数量\":8},{\"订单号\":\"SO-005\",\"产品\":\"显示器\",\"地区\":\"华北\",\"金额\":3200,\"数量\":4}]}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "filter",
+          "type": "formflow",
+          "specId": "generic:filter",
+          "position": {
+            "x": 300,
+            "y": 180
+          },
+          "data": {
+            "specId": "generic:filter",
+            "propertiesJson": "{\"field\":\"金额\",\"operator\":\">=\",\"value\":1000}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "sort",
+          "type": "formflow",
+          "specId": "generic:sort",
+          "position": {
+            "x": 540,
+            "y": 180
+          },
+          "data": {
+            "specId": "generic:sort",
+            "propertiesJson": "{\"field\":\"金额\",\"order\":\"desc\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "group",
+          "type": "formflow",
+          "specId": "generic:group-by",
+          "position": {
+            "x": 780,
+            "y": 180
+          },
+          "data": {
+            "specId": "generic:group-by",
+            "propertiesJson": "{\"groupByField\":\"产品\",\"aggField\":\"金额\",\"aggFunc\":\"sum\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "display",
+          "type": "formflow",
+          "specId": "generic:display-table",
+          "position": {
+            "x": 1020,
+            "y": 180
+          },
+          "data": {
+            "specId": "generic:display-table",
+            "propertiesJson": "{}",
+            "connectedPortsJson": "[]"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "d1",
+          "source": "rows",
+          "target": "filter",
+          "sourceHandle": "out:value",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "d2",
+          "source": "filter",
+          "target": "sort",
+          "sourceHandle": "out:result",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "d3",
+          "source": "sort",
+          "target": "group",
+          "sourceHandle": "out:result",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "d4",
+          "source": "group",
+          "target": "display",
+          "sourceHandle": "out:data",
+          "targetHandle": "in:data"
+        }
+      ],
+      "createdAt": "2026-06-30T08:00:00.000Z",
+      "updatedAt": "2026-06-30T08:00:00.000Z"
+    }
+  ],
+  "behaviors": [],
+  "outputs": [],
+  "designs": [
+    {
+      "id": "design_data_processing",
+      "name": "销售数据处理表单",
+      "viewport": {
+        "zoom": 1,
+        "panX": 0,
+        "panY": 0
+      },
+      "gridSize": 12,
+      "components": [
+        {
+          "id": "form_root",
+          "type": "form",
+          "x": 40,
+          "y": 40,
+          "width": 900,
+          "height": 650,
+          "zIndex": 0,
+          "props": {
+            "title": "销售数据处理",
+            "subtitle": "输入最低金额并执行筛选、排序和产品聚合",
+            "background": "#f2f2f7",
+            "padding": 20,
+            "showFooter": false
+          },
+          "children": [
+            "number_1",
+            "button_2",
+            "table_3",
+            "text_4"
+          ]
+        },
+        {
+          "id": "number_1",
+          "type": "number",
+          "x": 100,
+          "y": 150,
+          "width": 260,
+          "height": 72,
+          "props": {
+            "label": "最低订单金额",
+            "name": "minAmount",
+            "defaultValue": 1000,
+            "min": 0,
+            "step": 100
+          },
+          "parentId": "form_root",
+          "zIndex": 2
+        },
+        {
+          "id": "button_2",
+          "type": "button",
+          "x": 100,
+          "y": 250,
+          "width": 300,
+          "height": 52,
+          "props": {
+            "label": "执行数据处理",
+            "name": "runDataProcessing",
+            "variant": "primary",
+            "flowTriggers": {
+              "onClick": {
+                "enabled": true,
+                "workflowId": "wf_data_processing",
+                "parameterMap": {
+                  "rows": [
+                    {
+                      "订单号": "SO-001",
+                      "产品": "笔记本",
+                      "地区": "华东",
+                      "金额": 6800,
+                      "数量": 2
+                    },
+                    {
+                      "订单号": "SO-002",
+                      "产品": "显示器",
+                      "地区": "华南",
+                      "金额": 2400,
+                      "数量": 3
+                    },
+                    {
+                      "订单号": "SO-003",
+                      "产品": "笔记本",
+                      "地区": "华北",
+                      "金额": 9200,
+                      "数量": 3
+                    },
+                    {
+                      "订单号": "SO-004",
+                      "产品": "键盘",
+                      "地区": "华东",
+                      "金额": 680,
+                      "数量": 8
+                    },
+                    {
+                      "订单号": "SO-005",
+                      "产品": "显示器",
+                      "地区": "华北",
+                      "金额": 3200,
+                      "数量": 4
+                    }
+                  ],
+                  "filter.value": "$form.minAmount"
+                }
+              }
+            }
+          },
+          "parentId": "form_root",
+          "zIndex": 2
+        },
+        {
+          "id": "table_3",
+          "type": "table",
+          "x": 440,
+          "y": 140,
+          "width": 430,
+          "height": 260,
+          "props": {
+            "name": "salesPreview",
+            "columns": [
+              "订单号",
+              "产品",
+              "地区",
+              "金额",
+              "数量"
+            ],
+            "rows": 5
+          },
+          "parentId": "form_root",
+          "zIndex": 2
+        },
+        {
+          "id": "text_4",
+          "type": "text",
+          "x": 100,
+          "y": 340,
+          "width": 700,
+          "height": 60,
+          "props": {
+            "content": "结果链路：筛选 → 金额降序 → 产品汇总 → 表格输出",
+            "fontSize": 15,
+            "color": "#248a3d"
+          },
+          "parentId": "form_root",
+          "zIndex": 2
+        }
+      ],
+      "bindings": [],
+      "createdAt": "2026-06-30T08:00:00.000Z",
+      "updatedAt": "2026-06-30T08:00:00.000Z"
+    }
+  ]
+}

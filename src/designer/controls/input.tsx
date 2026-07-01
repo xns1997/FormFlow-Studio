@@ -1,7 +1,15 @@
 import React from 'react';
 import { registerControl } from '../registry';
 import type { DesignComponent } from '../../project/types';
-import { controlText, ios } from './styles';
+import { controlText, ios, requiredMark } from './styles';
+import type { PreviewControlRuntime } from '../types';
+
+const renderLabel = (label: string, required?: boolean) => (
+  <>
+    {label}
+    {required && <span style={requiredMark}>*</span>}
+  </>
+);
 
 registerControl({
   type: 'input', label: '文本输入', category: 'basic', icon: '✏️',
@@ -41,10 +49,10 @@ registerControl({
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 240, h: 72 },
-  render: ({ component }: { component: DesignComponent }) => (
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => (
     <div style={ios.field}>
-      <label style={ios.label}>{component.props.label || 'Label'}</label>
-      <input style={{ ...ios.control, fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', textAlign: component.props.textAlign || 'left' }} placeholder={component.props.placeholder || ''} disabled />
+      <label style={ios.label}>{renderLabel(component.props.label || 'Label', component.props.required)}</label>
+      <input style={{ ...ios.control, fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', textAlign: component.props.textAlign || 'left' }} value={String(runtime?.value ?? '')} placeholder={component.props.placeholder || ''} readOnly={!!component.props.readonly} disabled={mode !== 'preview' || !!component.props.disabled} onChange={(event) => runtime?.emit('onChange', event.target.value)} onBlur={() => runtime?.emit('onBlur')} onFocus={() => runtime?.emit('onFocus')} />
     </div>
   ),
 });
@@ -81,10 +89,10 @@ registerControl({
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 280, h: 132 },
-  render: ({ component }: { component: DesignComponent }) => (
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => (
     <div style={ios.field}>
-      <label style={ios.label}>{component.props.label || 'Label'}</label>
-      <textarea style={{ ...ios.fillControl, resize: 'none', fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', lineHeight: component.props.lineHeight || 1.5 }} placeholder={component.props.placeholder || ''} disabled />
+      <label style={ios.label}>{renderLabel(component.props.label || 'Label', component.props.required)}</label>
+      <textarea style={{ ...ios.fillControl, resize: 'none', fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', lineHeight: component.props.lineHeight || 1.5 }} value={String(runtime?.value ?? '')} placeholder={component.props.placeholder || ''} readOnly={!!component.props.readonly} disabled={mode !== 'preview' || !!component.props.disabled} onChange={(event) => runtime?.emit('onChange', event.target.value)} onBlur={() => runtime?.emit('onBlur')} onFocus={() => runtime?.emit('onFocus')} />
     </div>
   ),
 });
@@ -126,10 +134,10 @@ registerControl({
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 220, h: 72 },
-  render: ({ component }: { component: DesignComponent }) => (
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => (
     <div style={ios.field}>
-      <label style={ios.label}>{component.props.label || 'Label'}</label>
-      <input style={{ ...ios.control, fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', textAlign: component.props.textAlign || 'left' }} type="number" placeholder={component.props.placeholder || ''} disabled />
+      <label style={ios.label}>{renderLabel(component.props.label || 'Label', component.props.required)}</label>
+      <input style={{ ...ios.control, fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', textAlign: component.props.textAlign || 'left' }} type="number" value={String(runtime?.value ?? '')} min={component.props.min} max={component.props.max} step={component.props.step} placeholder={component.props.placeholder || ''} readOnly={!!component.props.readonly} disabled={mode !== 'preview' || !!component.props.disabled} onChange={(event) => runtime?.emit('onChange', event.target.value === '' ? '' : Number(event.target.value))} onBlur={() => runtime?.emit('onBlur')} onFocus={() => runtime?.emit('onFocus')} />
     </div>
   ),
 });
@@ -168,13 +176,10 @@ registerControl({
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 220, h: 72 },
-  render: ({ component }: { component: DesignComponent }) => (
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => (
     <div style={ios.field}>
-      <label style={ios.label}>{component.props.label || '日期'}</label>
-      <div style={{ ...ios.control, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <span style={{ ...ios.muted, fontSize: component.props.fontSize || 14 }}>{component.props.placeholder || '选择日期'}</span>
-        <span style={{ fontSize: 14, flexShrink: 0 }}>📅</span>
-      </div>
+      <label style={ios.label}>{renderLabel(component.props.label || '日期', component.props.required)}</label>
+      {mode === 'preview' ? <input type={component.props.showTime ? 'datetime-local' : 'date'} style={{ ...ios.control, fontSize: component.props.fontSize || 14 }} value={String(runtime?.value ?? '')} min={component.props.minDate || undefined} max={component.props.maxDate || undefined} readOnly={!!component.props.readonly} disabled={!!component.props.disabled} onChange={(event) => runtime?.emit('onChange', event.target.value)} onBlur={() => runtime?.emit('onBlur')} onFocus={() => runtime?.emit('onFocus')} /> : <div style={{ ...ios.control, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}><span style={{ ...ios.muted, fontSize: component.props.fontSize || 14 }}>{component.props.placeholder || '选择日期'}</span><span style={{ fontSize: 14, flexShrink: 0 }}>📅</span></div>}
     </div>
   ),
 });
@@ -200,12 +205,13 @@ registerControl({
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }],
   defaultSize: { w: 180, h: 52 },
-  render: ({ component }: { component: DesignComponent }) => {
-    const checked = component.props.defaultValue !== false;
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
+    const checked = runtime ? !!runtime.value : component.props.defaultValue !== false;
     const activeColor = component.props.activeColor || '#34c759';
     const inactiveColor = component.props.inactiveColor || 'rgba(118,118,128,0.18)';
     return (
-      <div style={{ ...ios.naturalPanel, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', gap: 10 }}>
+      <div style={{ ...ios.naturalPanel, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', gap: 10, cursor: mode === 'preview' ? 'pointer' : 'default' }}
+        onClick={() => mode === 'preview' && !component.props.disabled && runtime?.emit('onChange', !checked)}>
         <span style={ios.label}>{component.props.label || '启用'}</span>
         <div style={{ width: 46, height: 28, borderRadius: 999, background: checked ? activeColor : inactiveColor, position: 'relative', flexShrink: 0, transition: 'background 0.2s', boxShadow: 'inset 0 0 0 0.5px rgba(0,0,0,0.05)' }}>
           <div style={{ width: 24, height: 24, borderRadius: 999, background: '#fff', position: 'absolute', top: 2, left: checked ? 20 : 2, boxShadow: '0 2px 6px rgba(0,0,0,0.18)', transition: 'left 0.2s' }} />
@@ -242,17 +248,18 @@ registerControl({
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }],
   defaultSize: { w: 220, h: 52 },
-  render: ({ component }: { component: DesignComponent }) => {
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
     const max = component.props.max || 5;
-    const val = component.props.defaultValue || 3;
+    const val = Number(runtime?.value ?? component.props.defaultValue ?? 0);
     const activeColor = component.props.activeColor || '#ff9500';
     const inactiveColor = component.props.inactiveColor || '#e5e5ea';
     return (
       <div style={{ ...ios.naturalPanel, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', gap: 8 }}>
-        <span style={ios.label}>{component.props.label || '评分'}</span>
+        <span style={ios.label}>{renderLabel(component.props.label || '评分', component.props.required)}</span>
         <div style={{ display: 'flex', gap: 2, flexShrink: 0, alignItems: 'center' }}>
           {Array.from({ length: max }, (_, i) => (
-            <span key={i} style={{ fontSize: 20, color: i < val ? activeColor : inactiveColor }}>★</span>
+            <span key={i} style={{ fontSize: 20, color: i < val ? activeColor : inactiveColor, cursor: mode === 'preview' ? 'pointer' : 'default' }}
+              onClick={() => mode === 'preview' && !component.props.disabled && runtime?.emit('onChange', i + 1)}>★</span>
           ))}
           {component.props.showText && <span style={{ fontSize: 12, color: '#8e8e93', marginLeft: 4 }}>{val}/{max}</span>}
         </div>
@@ -291,7 +298,7 @@ registerControl({
   ],
   eventSchema: [{ key: 'onClick', label: '点击', description: '按钮点击时触发' }],
   defaultSize: { w: 180, h: 48 },
-  render: ({ component }: { component: DesignComponent }) => {
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
     const p = component.props;
     const isPrimary = p.variant === 'primary';
     const isDanger = p.variant === 'danger';
@@ -300,11 +307,12 @@ registerControl({
     const textColor = p.color || (isPrimary || isDanger ? '#fff' : isGhost ? '#007aff' : '#007aff');
     return (
       <div style={{ width: '100%', height: '100%', minWidth: 0, display: 'flex', alignItems: 'flex-start', boxSizing: 'border-box', padding: 4 }}>
-        <button style={{
+        <button type="button" disabled={!!p.disabled || !!p.loading} onClick={() => runtime?.emit('onClick')} style={{
           width: p.fullWidth ? '100%' : '100%', minWidth: 0, minHeight: 40, padding: '10px 14px',
           fontSize: p.fontSize || 16, fontWeight: p.fontWeight || 650,
           border: isGhost ? '1px solid rgba(0,122,255,0.3)' : 'none',
-          borderRadius: p.borderRadius ?? 10, background: bg, color: textColor, cursor: 'default',
+          borderRadius: p.borderRadius ?? 10, background: bg, color: textColor,
+          cursor: mode === 'preview' ? 'pointer' : 'default',
           ...controlText(),
           boxShadow: isPrimary || isDanger ? '0 4px 12px rgba(0,122,255,0.18)' : 'inset 0 1px 0 rgba(255,255,255,0.55)',
           backdropFilter: 'blur(20px)',

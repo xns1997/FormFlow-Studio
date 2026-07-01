@@ -8,7 +8,6 @@ export {
 } from '../nodes/registry';
 
 export {
-  type ExcelApiNodeSchema,
   type SchemaProperty,
   type SchemaPort,
   type PropertyType,

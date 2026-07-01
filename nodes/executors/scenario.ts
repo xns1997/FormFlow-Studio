@@ -82,11 +82,26 @@ registerExecutor('scenario:sheet-preview', async (ctx) => {
   };
 });
 
-registerExecutor('scenario:cell-address-toolkit', (ctx) => {
-  const addrCheck = ctx.checkType('address', ctx.inputs.address);
-  const cellCheck = ctx.checkType('cell', ctx.inputs.coords);
+registerExecutor('scenario:cell-address-toolkit', async (ctx) => {
+  const XLSX = await getXlsx();
+  const operation = String(ctx.inputs.operation || ctx.properties.operation || 'decodeCell');
+  const value = ctx.inputs.value;
+  let result: unknown;
+  switch (operation) {
+    case 'encodeCell': result = XLSX.utils.encode_cell(value as any); break;
+    case 'decodeCell': result = XLSX.utils.decode_cell(String(value)); break;
+    case 'encodeRange': result = XLSX.utils.encode_range(value as any); break;
+    case 'decodeRange': result = XLSX.utils.decode_range(String(value)); break;
+    case 'encodeRow': result = XLSX.utils.encode_row(Number(value)); break;
+    case 'decodeRow': result = XLSX.utils.decode_row(String(value)); break;
+    case 'encodeColumn': result = XLSX.utils.encode_col(Number(value)); break;
+    case 'decodeColumn': result = XLSX.utils.decode_col(String(value)); break;
+    case 'splitCell': result = (XLSX.utils as any).split_cell(String(value)); break;
+    default: throw new Error(`未知地址操作: ${operation}`);
+  }
   return {
-    address: addrCheck.valid ? addrCheck.normalized : ctx.inputs.address,
-    coords: cellCheck.valid ? cellCheck.normalized : ctx.inputs.coords,
+    result,
+    ...(typeof result === 'string' ? { address: result } : {}),
+    ...(result && typeof result === 'object' && !Array.isArray(result) ? { coords: result } : {}),
   };
 });

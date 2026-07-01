@@ -24,7 +24,7 @@
   "inputs": [
     {
       "name": "worksheet",
-      "type": "object",
+      "type": "worksheet",
       "required": true,
       "description": "工作表对象"
     },
@@ -44,7 +44,7 @@
   "outputs": [
     {
       "name": "worksheet",
-      "type": "object",
+      "type": "worksheet",
       "description": "修改后的工作表"
     }
   ],
@@ -52,7 +52,7 @@
     {
       "name": "worksheet",
       "label": "工作表",
-      "type": "object",
+      "type": "worksheet",
       "direction": "input",
       "required": true,
       "description": "工作表"
@@ -74,7 +74,7 @@
     {
       "name": "worksheet",
       "label": "工作表",
-      "type": "object",
+      "type": "worksheet",
       "direction": "output",
       "description": "修改后的工作表"
     }

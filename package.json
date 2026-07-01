@@ -8,6 +8,7 @@
     "dev:server": "npx tsx server/index.ts",
     "dev:all": "npx concurrently \"npx tsx server/index.ts\" \"vite\"",
     "server": "npx tsx server/index.ts",
+    "test": "npx tsx --test src/**/*.test.ts",
     "typecheck": "tsc --noEmit",
     "build": "vite build",
     "preview": "vite preview"
@@ -30,6 +31,7 @@
     "jszip": "^3.10.1",
     "monaco-editor": "^0.55.1",
     "multer": "^2.2.0",
+    "pinyin-pro": "3.28.1",
     "react": "^19.2.7",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.7",

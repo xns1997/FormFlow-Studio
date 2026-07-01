@@ -80,9 +80,9 @@ export default function FormDesignerPage() {
 
   return (
     <div className="designer-layout">
-      <div className="designer-toolbar">
-        <button onClick={handleSave} className="toolbar-btn">保存</button>
-        <button onClick={handlePreview} className="toolbar-btn">预览/导出</button>
+      <div className={`designer-toolbar ${designer.mode === 'preview' ? 'preview-active' : ''}`}>
+        {designer.mode === 'design' && <button onClick={handleSave} className="toolbar-btn">保存</button>}
+        {designer.mode === 'design' && <button onClick={handlePreview} className="toolbar-btn">预览/导出</button>}
         <span className="toolbar-sep" />
         <span className="toolbar-info">
           {designs.find((d) => d.id === activeId)?.name || '—'} · {designer.components.length} 个控件
@@ -96,20 +96,21 @@ export default function FormDesignerPage() {
         onCreate={handleCreate}
         onRename={handleRename}
       />
-      <div className="designer-body">
-        <LeftPanel
+      <div className={`designer-body ${designer.mode === 'preview' ? 'preview-active' : ''}`}>
+        {designer.mode === 'design' && <LeftPanel
           components={designer.components}
           selectedId={designer.selectedId}
           onSelect={designer.setSelectedId}
           onRemove={designer.removeComponent}
           onReparent={designer.reparentComponent}
-        />
+        />}
         <DesignCanvas designer={designer} />
-        <PropertyPanel
+        {designer.mode === 'design' && <PropertyPanel
           component={selectedComponent}
+          components={designer.components}
           onUpdate={designer.updateComponentProps}
           onRemove={designer.removeComponent}
-        />
+        />}
       </div>
       <InterfaceTreeModal nodes={interfaceNodes} onClose={() => setInterfaceNodes(null)} />
     </div>

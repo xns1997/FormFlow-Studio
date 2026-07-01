@@ -59,6 +59,9 @@ importers:
       multer:
         specifier: ^2.2.0
         version: 2.2.0
+      pinyin-pro:
+        specifier: 3.28.1
+        version: 3.28.1
       react:
         specifier: ^19.2.7
         version: 19.2.7
@@ -1042,6 +1045,9 @@ packages:
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
+
+  pinyin-pro@3.28.1:
+    resolution: {integrity: sha512-oqz8ulwRgtUXRi0vbqEfGNly19zpyCxYrjhkk5TibGcgSW6eNwS5woajCXRwqURi8Ehc2yOFTiB4uNoZ+NJOnA==}
 
   postcss@8.5.15:
     resolution: {integrity: sha512-FfR8sjd4em2T6fb3I2MwAJU7HWVMr9zba+enmQeeWFfCbm+UOC/0X4DS8XtpUTMwWMGbjKYP7xjfNekzyGmB3A==}
@@ -2215,6 +2221,8 @@ snapshots:
   path-to-regexp@8.4.2: {}
 
   picocolors@1.1.1: {}
+
+  pinyin-pro@3.28.1: {}
 
   postcss@8.5.15:
     dependencies:

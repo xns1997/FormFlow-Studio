@@ -82,7 +82,22 @@ registerExecutor('ml:linear-regression', async (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: `数据格式错误: ${dataCheck.error}` };
-  return callML('linear_regression', { data: dataCheck.normalized, x_field: properties.x_field || '', y_field: properties.y_field || '' });
+  const data = dataCheck.normalized as Record<string, unknown>[];
+  const xField = String(properties.x_field || '');
+  const yField = String(properties.y_field || '');
+  const points = data.map((row) => [Number(row[xField]), Number(row[yField])] as const)
+    .filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
+  if (points.length < 2) return { error: '线性回归至少需要两条有效数据' };
+  const meanX = points.reduce((sum, [x]) => sum + x, 0) / points.length;
+  const meanY = points.reduce((sum, [, y]) => sum + y, 0) / points.length;
+  const denominator = points.reduce((sum, [x]) => sum + (x - meanX) ** 2, 0);
+  if (denominator === 0) return { error: `自变量 ${xField} 没有变化，无法回归` };
+  const slope = points.reduce((sum, [x, y]) => sum + (x - meanX) * (y - meanY), 0) / denominator;
+  const intercept = meanY - slope * meanX;
+  const predictions = points.map(([x]) => slope * x + intercept);
+  const total = points.reduce((sum, [, y]) => sum + (y - meanY) ** 2, 0);
+  const residual = points.reduce((sum, [, y], index) => sum + (y - predictions[index]) ** 2, 0);
+  return { slope, intercept, r2: total === 0 ? 1 : 1 - residual / total, predictions };
 });
 
 registerExecutor('ml:hypothesis-test', async (ctx) => {

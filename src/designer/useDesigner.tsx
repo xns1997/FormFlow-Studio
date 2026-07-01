@@ -15,7 +15,7 @@ const DesignNodeView = ({ node }: { node: any }) => {
       className={`ios-design-node ${data.selected ? 'selected' : ''}`}
       style={{ width: '100%', height: '100%', minWidth: 0, maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}
     >
-      <C component={data.designComponent} selected={data.selected} />
+      <C component={data.designComponent} selected={data.selected} mode={data.mode} />
     </div>
   );
 };
@@ -154,6 +154,7 @@ export function useDesigner() {
       componentType: component.type,
       designComponent: component,
       selected,
+      mode: modeRef.current,
     });
   }, []);
 
@@ -889,19 +890,6 @@ export function useDesigner() {
       modeRef.current = next;
       if (next === 'preview') {
         selectComponent(null);
-        graph.disableSelection();
-        graph.getNodes().forEach(node => {
-          node.setProp('draggable', false);
-          node.setProp('resizable', false);
-        });
-        graph.disableKeyboard();
-      } else {
-        graph.enableSelection();
-        graph.getNodes().forEach(node => {
-          node.setProp('draggable', true);
-          node.setProp('resizable', true);
-        });
-        graph.enableKeyboard();
       }
       return next;
     });

@@ -118,6 +118,13 @@ reg('cell', (v) => {
 reg('range', (v) => {
   if (v === null || v === undefined) return { valid: false, error: 'range 为空' };
   const r = v as any;
+  if (r.kind === 'complex-range' && Array.isArray(r.areas)) {
+    const validAreas = r.areas.every((area: any) => area?.s && area?.e
+      && [area.s.r, area.s.c, area.e.r, area.e.c].every(Number.isFinite));
+    return validAreas
+      ? { valid: true, normalized: v }
+      : { valid: false, error: '复杂 range 的 areas 坐标无效' };
+  }
   if (r.s && r.e && typeof r.s.r === 'number' && typeof r.s.c === 'number') return { valid: true, normalized: v };
   if (r.startRow !== undefined && r.startCol !== undefined && r.endRow !== undefined && r.endCol !== undefined) {
     return { valid: true, normalized: { s: { r: r.startRow, c: r.startCol }, e: { r: r.endRow, c: r.endCol } } };
@@ -128,8 +135,11 @@ reg('range', (v) => {
 reg('address', (v) => {
   const s = String(v || '');
   if (s === '') return { valid: true, normalized: '' };
-  // A1 format: Sheet1!A1:C10 or A1:C10 or A1
-  if (/^([^!]+!)?[A-Z]+\d+(:[A-Z]+\d+)?$/.test(s)) return { valid: true, normalized: s };
+  // A1 format，支持逗号分隔的复杂区域，如 Sheet1!A1:B2,D4:E5
+  const parts = s.split(/[,;]/).map((part) => part.trim());
+  if (parts.length > 0 && parts.every((part) => /^(?:(?:'[^']*(?:''[^']*)*'|[^!]+)!)?[A-Z]+\d+(?::[A-Z]+\d+)?$/i.test(part))) {
+    return { valid: true, normalized: s };
+  }
   return { valid: false, error: `期望 A1 格式地址，实际: ${s}` };
 });
 

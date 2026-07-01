@@ -220,6 +220,14 @@ function CellDisplayer({ value }: { value: unknown }) {
 
 function RangeDisplayer({ value }: { value: unknown }) {
   const r = value as any;
+  if (r?.kind === 'complex-range' && Array.isArray(r.areas)) {
+    return (
+      <span className={`td-range ${r.areaCount === 0 ? 'td-error' : ''}`} title={r.address || '空交集'}>
+        <span className="td-range-addr">{r.address || '∅ 空交集'}</span>
+        <span className="td-dim">{r.areaCount}区 · {r.cellCount}格</span>
+      </span>
+    );
+  }
   if (r?.s && r?.e) {
     const colName = (i: number) => { let s = ''; let n = i; do { s = String.fromCharCode(65 + (n % 26)) + s; n = Math.floor(n / 26) - 1; } while (n >= 0); return s; };
     const start = `${colName(r.s.c)}${r.s.r + 1}`;

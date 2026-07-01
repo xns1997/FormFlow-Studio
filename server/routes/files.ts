@@ -161,6 +161,22 @@ router.get('/:id', (req, res) => {
   } catch (e) { res.status(500).json({ error: '读取元数据失败', detail: String(e) }); }
 });
 
+// GET /api/files/:id/raw - 下载上传时保存的原始文件
+router.get('/:id/raw', (req, res) => {
+  try {
+    const metaPath = join(FILES_DIR, `${req.params.id}.meta.json`);
+    if (!existsSync(metaPath)) return res.status(404).json({ error: '文件元数据不存在', detail: `ID: ${req.params.id}` });
+    const meta = JSON.parse(readFileSync(metaPath, 'utf-8'));
+    const filePath = join(FILES_DIR, meta.storedName);
+    if (!existsSync(filePath)) return res.status(404).json({ error: '原始文件不存在', detail: `存储名: ${meta.storedName}` });
+    res.setHeader('Content-Type', meta.mimeType || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(meta.originalName || meta.storedName)}`);
+    res.sendFile(filePath);
+  } catch (e) {
+    res.status(500).json({ error: '读取原始文件失败', detail: String(e) });
+  }
+});
+
 // GET /api/files/:id/data - 读取文件数据
 router.get('/:id/data', (req, res) => {
   try {

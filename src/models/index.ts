@@ -311,6 +311,11 @@ export interface RangeRef {
   endRow: number;
   endCol: number;
   firstRowIsHeader?: boolean;
+  /** 精确的多区域选择；未提供时使用顶层起止坐标。 */
+  areas?: Array<{ startRow: number; startCol: number; endRow: number; endCol: number }>;
+  /** 交集模式中参与运算的原始选区，用于重新打开选择器继续编辑。 */
+  sourceAreas?: Array<{ startRow: number; startCol: number; endRow: number; endCol: number }>;
+  operation?: 'selection' | 'intersection';
 }
 
 export interface RangeValue {
@@ -320,4 +325,7 @@ export interface RangeValue {
   headers: string[];
   data: unknown[][];
   singleValue?: unknown;
+  areas?: Array<{ address: string; rows: number; cols: number; data: unknown[][] }>;
+  areaCount?: number;
+  cellCount?: number;
 }

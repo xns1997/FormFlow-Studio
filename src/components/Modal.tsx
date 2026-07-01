@@ -8,9 +8,20 @@ interface ModalProps {
   width?: string | number;
   maxWidth?: string | number;
   maxHeight?: string | number;
+  overlayClassName?: string;
+  containerClassName?: string;
 }
 
-export default function Modal({ open, onClose, children, width = '90vw', maxWidth = 820, maxHeight = '85vh' }: ModalProps) {
+export default function Modal({
+  open,
+  onClose,
+  children,
+  width = '90vw',
+  maxWidth = 820,
+  maxHeight = '85vh',
+  overlayClassName,
+  containerClassName,
+}: ModalProps) {
   const backdropRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,12 +39,12 @@ export default function Modal({ open, onClose, children, width = '90vw', maxWidt
 
   return createPortal(
     <div
-      className="modal-overlay"
+      className={['modal-overlay', overlayClassName].filter(Boolean).join(' ')}
       ref={backdropRef}
       onClick={(e) => { if (e.target === backdropRef.current) onClose(); }}
     >
       <div
-        className="modal-container"
+        className={['modal-container', containerClassName].filter(Boolean).join(' ')}
         style={{ width, maxWidth, maxHeight }}
         onClick={(e) => e.stopPropagation()}
       >

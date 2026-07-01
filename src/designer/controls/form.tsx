@@ -2,6 +2,7 @@ import React from 'react';
 import { registerControl } from '../registry';
 import type { DesignComponent } from '../../project/types';
 import { controlText } from './styles';
+import type { PreviewControlRuntime } from '../types';
 
 registerControl({
   type: 'form', label: '表单窗体', category: 'container', icon: '📋',
@@ -34,7 +35,7 @@ registerControl({
     { key: 'onReset', label: '重置', description: '表单重置时触发' },
   ],
   defaultSize: { w: 640, h: 720 },
-  render: ({ component }: { component: DesignComponent }) => {
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
     const p = component.props;
     return (
       <div style={{
@@ -60,10 +61,10 @@ registerControl({
         </div>
         {p.showFooter !== false && (
           <div style={{ display: 'flex', minWidth: 0, gap: 8, marginTop: 16, flexShrink: 0 }}>
-            <button style={{ flex: 1, minWidth: 0, padding: '11px 14px', fontSize: 16, fontWeight: 650, border: 'none', borderRadius: 10, background: 'rgba(118,118,128,0.10)', color: '#007aff', cursor: 'default', backdropFilter: 'blur(20px)', ...controlText() }}>
+            <button type="button" onClick={() => mode === 'preview' && runtime?.emit('onReset', {})} style={{ flex: 1, minWidth: 0, padding: '11px 14px', fontSize: 16, fontWeight: 650, border: 'none', borderRadius: 10, background: 'rgba(118,118,128,0.10)', color: '#007aff', cursor: mode === 'preview' ? 'pointer' : 'default', backdropFilter: 'blur(20px)', ...controlText() }}>
               {p.resetText || '重置'}
             </button>
-            <button style={{ flex: 2, minWidth: 0, padding: '11px 14px', fontSize: 16, fontWeight: 650, border: 'none', borderRadius: 10, background: 'linear-gradient(180deg, #0a84ff 0%, #007aff 100%)', color: '#fff', cursor: 'default', boxShadow: '0 4px 12px rgba(0,122,255,0.18)', ...controlText() }}>
+            <button type="button" onClick={() => mode === 'preview' && runtime?.emit('onSubmit', runtime.values)} style={{ flex: 2, minWidth: 0, padding: '11px 14px', fontSize: 16, fontWeight: 650, border: 'none', borderRadius: 10, background: 'linear-gradient(180deg, #0a84ff 0%, #007aff 100%)', color: '#fff', cursor: mode === 'preview' ? 'pointer' : 'default', boxShadow: '0 4px 12px rgba(0,122,255,0.18)', ...controlText() }}>
               {p.submitText || '提交'}
             </button>
           </div>

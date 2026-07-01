@@ -12,6 +12,9 @@ import FormRenderer from '../components/FormRenderer';
 import { useProjectStore } from '../project/store';
 import type { ComponentNode, ColumnSchema, RangeRef } from '../models';
 import { DesignerIcon } from '../designer/icons';
+import type { FormControlEventContext } from '../services/formFlowTrigger';
+import { executeFormControlEvent } from '../services/formEventExecutor';
+import type { ProjectStructure } from '../project/types';
 
 interface SheetData { name: string; data: Record<string, unknown>[]; headers: string[]; }
 
@@ -26,6 +29,7 @@ const DEFAULT_RULES: BehaviorRule[] = [
 
 export default function TestPage() {
   const project = useProjectStore((s) => s.project);
+  const setProject = useProjectStore((s) => s.setProject);
   const [sheets, setSheets] = useState<SheetData[]>([]);
   const [activeSheet, setActiveSheet] = useState(0);
   const [runtime, setRuntime] = useState<RuntimeState>(createRuntimeState);
@@ -34,6 +38,25 @@ export default function TestPage() {
   const [rangeConnections, setRangeConnections] = useState<Record<string, RangeRef>>({});
   const runtimeRef = useRef(runtime);
   useEffect(() => { runtimeRef.current = runtime; }, [runtime]);
+  const rulesRef = useRef(behaviorRules);
+  useEffect(() => { rulesRef.current = behaviorRules; }, [behaviorRules]);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleImportProject = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text) as ProjectStructure;
+      if (!data.config) { alert('无效的项目文件'); return; }
+      data.config.id = `proj_${Date.now()}`;
+      data.config.updatedAt = new Date().toISOString();
+      setProject(data);
+    } catch (err) {
+      alert(`导入失败: ${err instanceof Error ? err.message : String(err)}`);
+    }
+    if (fileRef.current) fileRef.current.value = '';
+  }, [setProject]);
 
   const pendingRowData = useSharedDataStore((s) => s.pendingRowData);
   const pendingRowSource = useSharedDataStore((s) => s.pendingRowSource);
@@ -50,12 +73,20 @@ export default function TestPage() {
   // 加载项目行为规则
   useEffect(() => {
     if (!project?.behaviors?.length) return;
+    const eventMap: Record<string, string> = {
+      onFormLoad: 'formLoad', onRowLoad: 'rowLoad',
+      onFieldChange: 'fieldChange', onFieldBlur: 'fieldBlur', onFieldFocus: 'fieldFocus',
+      onButtonClick: 'buttonClick', onSubmit: 'submit',
+      formLoad: 'formLoad', rowLoad: 'rowLoad',
+      fieldChange: 'fieldChange', fieldBlur: 'fieldBlur', fieldFocus: 'fieldFocus',
+      buttonClick: 'buttonClick', submit: 'submit',
+    };
     const loaded: BehaviorRule[] = project.behaviors.map((b) => ({
       id: b.id,
       name: b.name,
       enabled: b.enabled,
       priority: b.priority,
-      trigger: { type: b.event as any || 'formLoad' },
+      trigger: { type: (eventMap[b.event] || b.event || 'formLoad') as any },
       conditions: [],
       actions: [{ type: 'executeScript' as any, scriptCode: b.code }],
       sideEffects: [],
@@ -72,15 +103,33 @@ export default function TestPage() {
       headers: s.headers,
     })));
     if (loaded.length > 0) {
+      // 如果有设计器表单，找到字段匹配度最高的 sheet
+      let bestIdx = 0;
+      const design = project.designs?.[0];
+      if (design?.components?.length) {
+        const bindings = design.components.filter(c => c.fieldBinding).map(c => c.fieldBinding!);
+        if (bindings.length > 0) {
+          let bestScore = -1;
+          loaded.forEach((sheet, idx) => {
+            const score = bindings.filter(b => sheet.headers.includes(b)).length;
+            if (score > bestScore) { bestScore = score; bestIdx = idx; }
+          });
+        }
+      }
       setSheets(loaded);
-      setActiveSheet(0);
+      setActiveSheet(bestIdx);
+      const firstRow = loaded[bestIdx].data[0] || {};
       setRuntime((prev) => {
-        let next = doSwitchRow(prev, loaded[0].name, 0, loaded[0].data[0] || {});
+        let next = doSwitchRow(prev, loaded[bestIdx].name, 0, firstRow);
         next = addBehaviorLog(next, { timestamp: Date.now(), level: 'info', source: 'system', message: `从项目加载 ${project.srcTable.length} 个数据表` });
         return next;
       });
-      // formLoad 触发
-      executeAllRules(behaviorRules, 'formLoad', createRuntimeState(), setRuntime);
+      // formLoad + fieldChange 触发（延迟确保 rules 已更新）
+      const initState = { ...createRuntimeState(), formValues: firstRow, originalValues: firstRow };
+      executeAllRules(rulesRef.current, 'formLoad', initState, setRuntime);
+      setTimeout(() => {
+        executeAllRules(rulesRef.current, 'fieldChange', runtimeRef.current, setRuntime);
+      }, 100);
     }
   }, [project]);
 
@@ -135,6 +184,23 @@ export default function TestPage() {
     setRuntime((prev) => addBehaviorLog(prev, { timestamp: Date.now(), level: 'info', source: 'event', message: `buttonClick: ${buttonName}` }));
     executeAllRules(behaviorRules, 'buttonClick', runtimeRef.current, setRuntime);
   }, [behaviorRules]);
+
+  const handleControlEvent = useCallback(async (context: FormControlEventContext) => {
+    const result = await executeFormControlEvent(context, {
+      workflows: project?.workflows || [],
+      tables: project?.srcTable || [],
+      setValue: updateField,
+    });
+    if (!result.callbackExecuted && !result.flowExecuted && !result.error) return;
+    setRuntime((prev) => addBehaviorLog(prev, {
+      timestamp: Date.now(),
+      level: result.error ? 'error' : 'info',
+      source: 'form-event',
+      message: result.error
+        ? `${context.field}.${context.eventName} 执行失败：${result.error.message}`
+        : `${context.field}.${context.eventName} 执行完成（回调 ${result.callbackExecuted ? '已执行' : '无'}，流程 ${result.flowResults.length} 次）`,
+    }));
+  }, [project, updateField]);
 
   // ── 提交 ────────────────────────────────────────────
 
@@ -206,11 +272,16 @@ export default function TestPage() {
     <div className="page-layout">
       {/* 左侧：数据表选择 + 行为规则 */}
       <div className="page-sidebar">
-        <div className="page-section-header"><span>测试数据</span></div>
+        <div className="page-section-header">
+          <span>测试数据</span>
+          <input ref={fileRef} type="file" accept=".json,.formflow.json" style={{ display: 'none' }} onChange={handleImportProject} />
+          <button onClick={() => fileRef.current?.click()} style={{ padding: '2px 8px', fontSize: 10, border: '1px solid var(--line)', borderRadius: 4, background: 'var(--panel)', cursor: 'pointer' }}>导入项目</button>
+        </div>
         <div className="page-section-body">
           {sheets.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--muted)', fontSize: 12 }}>
               <p>暂无数据表</p>
+              <p style={{ fontSize: 10, marginTop: 8 }}>点击上方"导入项目"加载 JSON 文件</p>
             </div>
           ) : sheets.map((s, i) => (
             <div key={s.name} className={`sidebar-item ${activeSheet === i ? 'active' : ''}`} onClick={() => doSwitchSheet(i)}>
@@ -264,6 +335,7 @@ export default function TestPage() {
               onBlur={handleFieldBlur}
               onFocus={handleFieldFocus}
               onButtonClick={handleButtonClick}
+              onControlEvent={handleControlEvent}
               tables={project?.srcTable || []}
               rangeConnections={rangeConnections}
               onRangeChange={handleRangeChange}

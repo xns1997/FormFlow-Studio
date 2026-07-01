@@ -2,31 +2,37 @@ import type { DesignComponent } from '../project/types';
 import type { ComponentNode, ComponentEvent } from '../models';
 
 export function exportToComponentNodes(components: DesignComponent[]): ComponentNode[] {
-  return components.map((dc, index) => ({
-    id: dc.id,
-    type: mapControlType(dc.type),
-    name: dc.props.name || dc.type + '_' + index,
-    label: dc.props.label || dc.props.title || dc.props.content || dc.type,
-    props: {
-      ...dc.props,
-      designType: dc.type,
-      x: dc.x,
-      y: dc.y,
-      width: dc.width,
-      height: dc.height,
-      zIndex: dc.zIndex,
-      parentId: dc.parentId,
-      children: dc.children,
-    },
-    layout: {
-      row: Math.round(dc.y / 50),
-      col: Math.round(dc.x / 100),
-      colSpan: Math.round(dc.width / 100) || 1,
-      rowSpan: Math.round(dc.height / 50) || 1,
-    },
-    ports: buildPorts(dc),
-    events: buildEvents(dc),
-  }));
+  return components.map((dc, index) => {
+    const events = buildEvents(dc);
+    const eventsMap: Record<string, string> = {};
+    for (const evt of events) eventsMap[evt.name] = evt.handler;
+    return {
+      id: dc.id,
+      type: mapControlType(dc.type),
+      name: dc.fieldBinding || dc.props.name || dc.type + '_' + index,
+      label: dc.props.label || dc.props.text || dc.props.title || dc.props.content || dc.type,
+      props: {
+        ...dc.props,
+        events: { ...dc.props.events, ...eventsMap },
+        designType: dc.type,
+        x: dc.x,
+        y: dc.y,
+        width: dc.width,
+        height: dc.height,
+        zIndex: dc.zIndex,
+        parentId: dc.parentId,
+        children: dc.children,
+      },
+      layout: {
+        row: Math.round(dc.y / 50),
+        col: Math.round(dc.x / 100),
+        colSpan: Math.round(dc.width / 100) || 1,
+        rowSpan: Math.round(dc.height / 50) || 1,
+      },
+      ports: buildPorts(dc),
+      events,
+    };
+  });
 }
 
 function mapControlType(type: string): ComponentNode['type'] {
@@ -34,6 +40,7 @@ function mapControlType(type: string): ComponentNode['type'] {
     input: 'input',
     textarea: 'textarea',
     number: 'numberInput',
+    numberInput: 'numberInput',
     select: 'select',
     radio: 'radio',
     checkbox: 'checkbox',

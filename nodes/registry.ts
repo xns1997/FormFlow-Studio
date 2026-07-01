@@ -1,6 +1,6 @@
-import type { ExcelApiNodeSchema, SchemaProperty, SchemaPort } from './excel-api-types';
+import type { PropertyType, SchemaProperty, SchemaPort } from './excel-api-types';
 
-export type UnifiedNodeKind = 'xlsx-method' | 'scenario' | 'excel-class' | 'generic' | 'behavior';
+export type UnifiedNodeKind = 'xlsx-method' | 'scenario' | 'generic' | 'behavior';
 
 export interface FlowNodeSpec {
   id: string;
@@ -201,11 +201,12 @@ function methodToPorts(namespace: string, fullName: string, fn: Function): { pro
         { name: 'bookType', label: '工作簿类型', type: 'enum', enum: ['xlsx', 'xlsm', 'xlsb', 'xls', 'csv', 'ods', 'numbers'], default: 'xlsx', description: '文件格式' },
         { name: 'cellFormula', label: '解析公式', type: 'boolean', default: true, description: '是否解析公式' },
         { name: 'cellDates', label: '日期转 Date', type: 'boolean', default: false, description: '是否转为 Date 对象' },
+        { name: 'bookVBA', label: '保留 VBA', type: 'boolean', default: true, description: '读取并保留宏工作簿中的 VBA 数据' },
         { name: 'sheetRows', label: '行数限制', type: 'number', default: 0, description: '读取行数限制' },
       ],
       ports: [
-        { name: 'data', label: '数据', type: 'any', direction: 'input', required: true, description: '输入数据' },
-        { name: 'workbook', label: '工作簿', type: 'object', direction: 'output', description: '解析后的工作簿' },
+        { name: 'data', label: '数据', type: 'file-data', direction: 'input', required: true, description: '输入文件数据' },
+        { name: 'workbook', label: '工作簿', type: 'workbook', direction: 'output', description: '解析后的工作簿' },
       ],
     },
     'write': {
@@ -215,7 +216,7 @@ function methodToPorts(namespace: string, fullName: string, fn: Function): { pro
         { name: 'compression', label: '压缩', type: 'boolean', default: false, description: '是否启用 ZIP 压缩' },
       ],
       ports: [
-        { name: 'workbook', label: '工作簿', type: 'object', direction: 'input', required: true, description: '工作簿对象' },
+        { name: 'workbook', label: '工作簿', type: 'workbook', direction: 'input', required: true, description: '工作簿对象' },
         { name: 'data', label: '数据', type: 'any', direction: 'output', description: '序列化后的数据' },
       ],
     },
@@ -225,7 +226,7 @@ function methodToPorts(namespace: string, fullName: string, fn: Function): { pro
         { name: 'type', label: '输出类型', type: 'enum', enum: ['array', 'buffer', 'binary'], default: 'array', description: '序列化格式' },
       ],
       ports: [
-        { name: 'workbook', label: '工作簿', type: 'object', direction: 'input', required: true, description: '工作簿对象' },
+        { name: 'workbook', label: '工作簿', type: 'workbook', direction: 'input', required: true, description: '工作簿对象' },
         { name: 'filename', label: '文件名', type: 'string', direction: 'input', required: true, description: '输出文件名' },
         { name: 'result', label: '结果', type: 'any', direction: 'output', description: '写出结果' },
       ],
@@ -239,8 +240,9 @@ function methodToPorts(namespace: string, fullName: string, fn: Function): { pro
         { name: 'dateNF', label: '日期格式', type: 'string', default: 'yyyy-mm-dd', description: '日期格式' },
       ],
       ports: [
-        { name: 'worksheet', label: '工作表', type: 'object', direction: 'input', required: true, description: '工作表对象' },
+        { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'input', required: true, description: '工作表对象' },
         { name: 'rows', label: 'JSON 行', type: 'array', direction: 'output', description: 'JSON 行数组' },
+        { name: 'headers', label: '表头', type: 'headers', direction: 'output', description: '自动识别的表头' },
       ],
     },
     'json_to_sheet': {
@@ -251,7 +253,7 @@ function methodToPorts(namespace: string, fullName: string, fn: Function): { pro
       ],
       ports: [
         { name: 'data', label: 'JSON 数据', type: 'array', direction: 'input', required: true, description: 'JSON 行数组' },
-        { name: 'worksheet', label: '工作表', type: 'object', direction: 'output', description: '生成的工作表' },
+        { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'output', description: '生成的工作表' },
       ],
     },
     'aoa_to_sheet': {
@@ -261,7 +263,7 @@ function methodToPorts(namespace: string, fullName: string, fn: Function): { pro
       ],
       ports: [
         { name: 'data', label: '二维数组', type: 'array', direction: 'input', required: true, description: '二维数组数据' },
-        { name: 'worksheet', label: '工作表', type: 'object', direction: 'output', description: '生成的工作表' },
+        { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'output', description: '生成的工作表' },
       ],
     },
     'sheet_to_csv': {
@@ -270,7 +272,7 @@ function methodToPorts(namespace: string, fullName: string, fn: Function): { pro
         { name: 'dateNF', label: '日期格式', type: 'string', default: 'yyyy-mm-dd', description: '日期格式' },
       ],
       ports: [
-        { name: 'worksheet', label: '工作表', type: 'object', direction: 'input', required: true, description: '工作表对象' },
+        { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'input', required: true, description: '工作表对象' },
         { name: 'csv', label: 'CSV 文本', type: 'string', direction: 'output', description: 'CSV 文本' },
       ],
     },
@@ -279,7 +281,7 @@ function methodToPorts(namespace: string, fullName: string, fn: Function): { pro
         { name: 'header', label: '表头行号', type: 'number', default: -1, description: '表头行号' },
       ],
       ports: [
-        { name: 'worksheet', label: '工作表', type: 'object', direction: 'input', required: true, description: '工作表对象' },
+        { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'input', required: true, description: '工作表对象' },
         { name: 'html', label: 'HTML', type: 'string', direction: 'output', description: 'HTML 表格' },
       ],
     },
@@ -289,15 +291,15 @@ function methodToPorts(namespace: string, fullName: string, fn: Function): { pro
         { name: 'skipHeader', label: '跳过表头', type: 'boolean', default: false, description: '不输出表头' },
       ],
       ports: [
-        { name: 'worksheet', label: '工作表', type: 'object', direction: 'input', required: true, description: '工作表对象' },
+        { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'input', required: true, description: '工作表对象' },
         { name: 'data', label: 'JSON 数据', type: 'array', direction: 'input', required: true, description: 'JSON 行数组' },
-        { name: 'worksheet', label: '工作表', type: 'object', direction: 'output', description: '修改后的工作表' },
+        { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'output', description: '修改后的工作表' },
       ],
     },
     'book_new': {
       properties: [],
       ports: [
-        { name: 'workbook', label: '工作簿', type: 'object', direction: 'output', description: '新工作簿' },
+        { name: 'workbook', label: '工作簿', type: 'workbook', direction: 'output', description: '新工作簿' },
       ],
     },
     'book_append_sheet': {
@@ -305,22 +307,22 @@ function methodToPorts(namespace: string, fullName: string, fn: Function): { pro
         { name: 'sheetName', label: 'Sheet 名', type: 'string', default: '', description: 'Sheet 名称' },
       ],
       ports: [
-        { name: 'workbook', label: '工作簿', type: 'object', direction: 'input', required: true, description: '工作簿对象' },
-        { name: 'worksheet', label: '工作表', type: 'object', direction: 'input', required: true, description: '要追加的工作表' },
-        { name: 'workbook', label: '工作簿', type: 'object', direction: 'output', description: '修改后的工作簿' },
+        { name: 'workbook', label: '工作簿', type: 'workbook', direction: 'input', required: true, description: '工作簿对象' },
+        { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'input', required: true, description: '要追加的工作表' },
+        { name: 'workbook', label: '工作簿', type: 'workbook', direction: 'output', description: '修改后的工作簿' },
       ],
     },
     'encode_cell': {
       properties: [],
       ports: [
         { name: 'cell', label: '坐标', type: 'object', direction: 'input', required: true, description: '{r, c} 坐标' },
-        { name: 'address', label: '地址', type: 'string', direction: 'output', description: 'A1 地址' },
+        { name: 'address', label: '地址', type: 'address', direction: 'output', description: 'A1 地址' },
       ],
     },
     'decode_cell': {
       properties: [],
       ports: [
-        { name: 'address', label: '地址', type: 'string', direction: 'input', required: true, description: 'A1 地址' },
+        { name: 'address', label: '地址', type: 'address', direction: 'input', required: true, description: 'A1 地址' },
         { name: 'cell', label: '坐标', type: 'object', direction: 'output', description: '{r, c} 坐标' },
       ],
     },
@@ -328,13 +330,13 @@ function methodToPorts(namespace: string, fullName: string, fn: Function): { pro
       properties: [],
       ports: [
         { name: 'range', label: '范围', type: 'object', direction: 'input', required: true, description: '{s:{r,c}, e:{r,c}}' },
-        { name: 'address', label: '地址', type: 'string', direction: 'output', description: 'A1 区间' },
+        { name: 'address', label: '地址', type: 'address', direction: 'output', description: 'A1 区间' },
       ],
     },
     'decode_range': {
       properties: [],
       ports: [
-        { name: 'address', label: '地址', type: 'string', direction: 'input', required: true, description: 'A1 区间' },
+        { name: 'address', label: '地址', type: 'address', direction: 'input', required: true, description: 'A1 区间' },
         { name: 'range', label: '范围', type: 'object', direction: 'output', description: '范围对象' },
       ],
     },
@@ -371,7 +373,7 @@ function methodToPorts(namespace: string, fullName: string, fn: Function): { pro
         { name: 'raw', label: '原始值', type: 'boolean', default: true, description: '返回原始值' },
       ],
       ports: [
-        { name: 'worksheet', label: '工作表', type: 'object', direction: 'input', required: true, description: '工作表对象' },
+        { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'input', required: true, description: '工作表对象' },
         { name: 'data', label: '二维数组', type: 'array', direction: 'output', description: '二维数组' },
       ],
     },
@@ -385,9 +387,9 @@ function methodToPorts(namespace: string, fullName: string, fn: Function): { pro
         { name: 'origin', label: '起始位置', type: 'string', default: -1, description: '起始位置' },
       ],
       ports: [
-        { name: 'worksheet', label: '工作表', type: 'object', direction: 'input', required: true, description: '工作表对象' },
+        { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'input', required: true, description: '工作表对象' },
         { name: 'data', label: '数据', type: 'array', direction: 'input', required: true, description: '要追加的数据' },
-        { name: 'worksheet', label: '工作表', type: 'object', direction: 'output', description: '修改后的工作表' },
+        { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'output', description: '修改后的工作表' },
       ],
     };
   }
@@ -398,10 +400,10 @@ function methodToPorts(namespace: string, fullName: string, fn: Function): { pro
         { name: 'count', label: '数量', type: 'number', default: 1, min: 1, description: '插入/删除的数量' },
       ],
       ports: [
-        { name: 'worksheet', label: '工作表', type: 'object', direction: 'input', required: true, description: '工作表对象' },
+        { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'input', required: true, description: '工作表对象' },
         { name: 'start', label: '起始', type: 'number', direction: 'input', required: true, description: '起始位置' },
         { name: 'count', label: '数量', type: 'number', direction: 'input', description: '操作数量' },
-        { name: 'worksheet', label: '工作表', type: 'object', direction: 'output', description: '修改后的工作表' },
+        { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'output', description: '修改后的工作表' },
       ],
     };
   }
@@ -441,35 +443,49 @@ function collectXlsxMethods(namespace: string, value: unknown, prefix: string[] 
   });
 }
 
-function propertyToPort(prop: SchemaProperty): SchemaPort {
-  if (prop.port) return prop.port;
-  return {
-    name: prop.name,
-    label: prop.label,
-    type: prop.type,
-    direction: 'input',
-    required: prop.required,
-    defaultValue: prop.default,
-    description: prop.description,
-  };
+function normalizeSchemaType(type: string): PropertyType {
+  const normalized = type.toLowerCase();
+  if (normalized === 'json') return 'json';
+  if (normalized.includes('arraybuffer') || normalized.includes('uint8array') || normalized.includes('buffer') || normalized.includes('binary')) return 'file-data';
+  if (normalized.includes('[]') || normalized.includes('array')) return 'array';
+  if (normalized.includes('string')) return 'string';
+  if (normalized.includes('number') || normalized.includes('integer')) return 'number';
+  if (normalized.includes('boolean')) return 'boolean';
+  if (normalized.includes('workbook')) return 'workbook';
+  if (normalized.includes('worksheet')) return 'worksheet';
+  if (normalized.includes('range')) return 'range';
+  if (normalized.includes('cell')) return 'cell';
+  return 'object';
 }
 
-function excelApiClassToSpec(node: ExcelApiNodeSchema): FlowNodeSpec {
-  const props = node.properties;
-  const explicitPorts = node.ports || [];
-  const propPorts = props.map(propertyToPort);
-  const inputPorts = explicitPorts.filter(p => p.direction === 'input' || p.direction === 'both');
-  const outputPorts = explicitPorts.filter(p => p.direction === 'output' || p.direction === 'both');
-  const allPorts = [...inputPorts, ...propPorts.filter(pp => !inputPorts.some(ip => ip.name === pp.name)), ...outputPorts];
-
+function createStructureNodeSpec(
+  id: 'generic:insert-rows' | 'generic:delete-rows' | 'generic:insert-columns' | 'generic:delete-columns',
+  label: string,
+  axis: 'row' | 'column',
+  action: 'insert' | 'delete',
+): FlowNodeSpec {
+  const targetLabel = axis === 'row' ? '行' : '列';
+  const actionLabel = action === 'insert' ? '插入' : '删除';
   return {
-    id: `excel:${node.id}`,
-    label: node.label,
-    description: node.description,
-    category: `Excel API · ${node.category}`,
-    kind: 'excel-class',
-    properties: props,
-    ports: allPorts,
+    id,
+    label,
+    description: `在工作表指定位置${actionLabel}${targetLabel}，保留并移动现有单元格、样式、公式和合并区域`,
+    category: '功能 · 表格编辑',
+    kind: 'generic',
+    properties: [
+      { name: 'index', label: `起始${targetLabel}`, type: 'number', default: 1, min: 1, required: true, description: `从 1 开始的${targetLabel}号` },
+      { name: 'count', label: `${targetLabel}数`, type: 'number', default: 1, min: 1, required: true, description: `要${actionLabel}的${targetLabel}数` },
+    ],
+    ports: [
+      { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'input', required: true, description: '要编辑的工作表' },
+      { name: 'index', label: `起始${targetLabel}`, type: 'number', direction: 'input', defaultValue: 1, description: `覆盖起始${targetLabel}` },
+      { name: 'count', label: `${targetLabel}数`, type: 'number', direction: 'input', defaultValue: 1, description: `覆盖${targetLabel}数` },
+      { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'output', description: '编辑后的工作表' },
+      { name: 'affectedCount', label: '影响数量', type: 'number', direction: 'output', description: `${actionLabel}的${targetLabel}数` },
+      { name: 'rowCount', label: '当前行数', type: 'number', direction: 'output', description: '编辑后的行数' },
+      { name: 'colCount', label: '当前列数', type: 'number', direction: 'output', description: '编辑后的列数' },
+    ],
+    keywords: [label, `${actionLabel}${targetLabel}`, `${action} ${axis}`, '表格结构', '数据表处理'],
   };
 }
 
@@ -489,7 +505,7 @@ const genericNodeSpecs: FlowNodeSpec[] = [
       { name: 'accept', label: '类型', type: 'string', direction: 'input', defaultValue: '.xlsx,.xls,.csv', description: '文件类型' },
       { name: 'multiple', label: '多选', type: 'boolean', direction: 'input', defaultValue: false, description: '多选' },
       { name: 'file', label: '文件', type: 'object', direction: 'output', description: '文件对象' },
-      { name: 'data', label: '数据', type: 'any', direction: 'output', description: '文件数据' },
+      { name: 'data', label: '文件数据', type: 'file-data', direction: 'output', description: '可直接传给 XLSX.read 的原始文件数据' },
       { name: 'name', label: '文件名', type: 'string', direction: 'output', description: '文件名' },
     ],
   },
@@ -505,12 +521,15 @@ const genericNodeSpecs: FlowNodeSpec[] = [
       { name: 'sheetIndex', label: '索引', type: 'number', default: 0, min: 0, description: '目标索引' },
     ],
     ports: [
-      { name: 'workbook', label: '工作簿', type: 'object', direction: 'input', required: true, description: '输入工作簿' },
+      { name: 'workbook', label: '工作簿', type: 'workbook', direction: 'input', required: true, description: '输入工作簿' },
       { name: 'selectMode', label: '模式', type: 'enum', direction: 'input', defaultValue: 'active', enum: ['byName', 'byIndex', 'active', 'first'], description: '选择方式' },
       { name: 'sheetName', label: '表名', type: 'string', direction: 'input', description: '工作表名' },
       { name: 'sheetIndex', label: '索引', type: 'number', direction: 'input', defaultValue: 0, description: '索引' },
-      { name: 'worksheet', label: '工作表', type: 'object', direction: 'output', description: '选中的工作表' },
+      { name: 'workbook', label: '工作簿', type: 'workbook', direction: 'output', description: '透传输入工作簿' },
+      { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'output', description: '选中的工作表' },
+      { name: 'sheetName', label: '表名', type: 'string', direction: 'output', description: '实际选中的工作表名' },
       { name: 'sheetNames', label: '所有名称', type: 'array', direction: 'output', description: '所有工作表名' },
+      { name: 'headers', label: '表头', type: 'headers', direction: 'output', description: '选中工作表的列名' },
     ],
   },
   {
@@ -528,17 +547,87 @@ const genericNodeSpecs: FlowNodeSpec[] = [
       { name: 'colCount', label: '列数', type: 'number', default: 1, min: 1, description: '列数' },
     ],
     ports: [
-      { name: 'worksheet', label: '工作表', type: 'object', direction: 'input', required: true, description: '输入工作表' },
+      { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'input', required: true, description: '输入工作表' },
       { name: 'rangeMode', label: '模式', type: 'enum', direction: 'input', defaultValue: 'usedRange', enum: ['address', 'entireSheet', 'usedRange', 'row', 'column', 'custom'], description: '选择方式' },
-      { name: 'address', label: '地址', type: 'string', direction: 'input', description: 'A1 地址' },
+      { name: 'address', label: '地址', type: 'address', direction: 'input', description: '支持逗号分隔的 A1 复杂地址' },
       { name: 'rowIndex', label: '起始行', type: 'number', direction: 'input', defaultValue: 1, description: '行号' },
       { name: 'colIndex', label: '起始列', type: 'number', direction: 'input', defaultValue: 1, description: '列号' },
       { name: 'rowCount', label: '行数', type: 'number', direction: 'input', defaultValue: 1, description: '行数' },
       { name: 'colCount', label: '列数', type: 'number', direction: 'input', defaultValue: 1, description: '列数' },
-      { name: 'range', label: '区域', type: 'object', direction: 'output', description: '区域对象' },
-      { name: 'address', label: '地址', type: 'string', direction: 'output', description: 'A1 地址' },
+      { name: 'range', label: '复杂区域', type: 'range', direction: 'output', description: '含一个或多个精确子区域的 Range' },
+      { name: 'address', label: '地址', type: 'address', direction: 'output', description: '逗号分隔的 A1 复杂地址' },
+      { name: 'areas', label: '子区域', type: 'array', direction: 'output', description: '规范化的非重叠子区域' },
       { name: 'values', label: '值', type: 'array', direction: 'output', description: '区域值' },
+      { name: 'areaValues', label: '分区值', type: 'array', direction: 'output', description: '按子区域分组的二维数组' },
+      { name: 'areaCount', label: '区域数', type: 'number', direction: 'output', description: '子区域数量' },
+      { name: 'cellCount', label: '单元格数', type: 'number', direction: 'output', description: '去重后的单元格总数' },
+      { name: 'rowCount', label: '行数', type: 'number', direction: 'output', description: '区域行数' },
+      { name: 'colCount', label: '列数', type: 'number', direction: 'output', description: '区域列数' },
     ],
+  },
+  {
+    id: 'generic:range-intersection',
+    label: '区域交集',
+    description: '计算两个普通或复杂 Range 的精确交集，保留所有不连续子区域',
+    category: '功能 · 选择节点',
+    kind: 'generic',
+    properties: [],
+    ports: [
+      { name: 'left', label: '区域 A', type: 'range', direction: 'input', required: true, description: '第一个普通或复杂 Range' },
+      { name: 'right', label: '区域 B', type: 'range', direction: 'input', required: true, description: '第二个普通或复杂 Range' },
+      { name: 'range', label: '交集区域', type: 'range', direction: 'output', description: '规范化的复杂 Range，允许为空或包含多个子区域' },
+      { name: 'address', label: '交集地址', type: 'address', direction: 'output', description: '逗号分隔的 A1 地址' },
+      { name: 'areas', label: '子区域', type: 'array', direction: 'output', description: '交集中的非重叠子区域' },
+      { name: 'areaCount', label: '区域数', type: 'number', direction: 'output', description: '交集子区域数量' },
+      { name: 'cellCount', label: '单元格数', type: 'number', direction: 'output', description: '交集单元格总数' },
+      { name: 'isEmpty', label: '是否为空', type: 'boolean', direction: 'output', description: '两个 Range 是否没有交集' },
+    ],
+    keywords: ['交集', '相交区域', '重叠单元格', 'intersection', 'intersect', 'overlap', '复杂 range'],
+  },
+  createStructureNodeSpec('generic:insert-rows', '插入行', 'row', 'insert'),
+  createStructureNodeSpec('generic:delete-rows', '删除行', 'row', 'delete'),
+  createStructureNodeSpec('generic:insert-columns', '插入列', 'column', 'insert'),
+  createStructureNodeSpec('generic:delete-columns', '删除列', 'column', 'delete'),
+  {
+    id: 'generic:worksheet-commit',
+    label: '工作表写回工作簿',
+    description: '把修改后的工作表替换或追加到原工作簿，保留其他工作表',
+    category: '功能 · 文件输出',
+    kind: 'generic',
+    properties: [
+      { name: 'sheetName', label: '工作表名', type: 'string', default: '', description: '留空时自动识别原工作表名' },
+    ],
+    ports: [
+      { name: 'workbook', label: '原工作簿', type: 'workbook', direction: 'input', required: true, description: '需要写回的原工作簿' },
+      { name: 'worksheet', label: '修改后工作表', type: 'worksheet', direction: 'input', required: true, description: '数据处理后的工作表' },
+      { name: 'sheetName', label: '工作表名', type: 'string', direction: 'input', description: '覆盖目标工作表名' },
+      { name: 'workbook', label: '更新后工作簿', type: 'workbook', direction: 'output', description: '包含修改且保留其他 Sheet 的工作簿' },
+      { name: 'worksheet', label: '已写回工作表', type: 'worksheet', direction: 'output', description: '已挂载到工作簿的工作表' },
+      { name: 'sheetName', label: '工作表名', type: 'string', direction: 'output', description: '实际写回的工作表名' },
+      { name: 'sheetNames', label: '全部工作表', type: 'array', direction: 'output', description: '工作簿中的全部工作表名' },
+    ],
+    keywords: ['写回工作簿', '替换工作表', '提交修改', 'commit worksheet', '保存 Sheet'],
+  },
+  {
+    id: 'generic:workbook-save',
+    label: '保存工作簿文件',
+    description: '将包含全部工作表和数据改动的工作簿序列化为可下载文件',
+    category: '功能 · 文件输出',
+    kind: 'generic',
+    properties: [
+      { name: 'fileName', label: '文件名', type: 'string', default: 'output', required: true, description: '输出文件名，可不写扩展名' },
+      { name: 'bookType', label: '文件格式', type: 'enum', enum: ['xlsx', 'xlsm', 'xlsb', 'xls', 'ods'], default: 'xlsx', description: '工作簿输出格式' },
+      { name: 'compression', label: '启用压缩', type: 'boolean', default: true, description: '压缩生成的工作簿文件' },
+    ],
+    ports: [
+      { name: 'workbook', label: '工作簿', type: 'workbook', direction: 'input', required: true, description: '更新后的完整工作簿' },
+      { name: 'fileName', label: '文件名', type: 'string', direction: 'input', description: '覆盖输出文件名' },
+      { name: 'workbook', label: '工作簿', type: 'workbook', direction: 'output', description: '透传完整工作簿' },
+      { name: 'fileData', label: '文件数据', type: 'file-data', direction: 'output', description: '可下载的工作簿二进制数据' },
+      { name: 'fileName', label: '文件名', type: 'string', direction: 'output', description: '包含扩展名的文件名' },
+      { name: 'mimeType', label: 'MIME 类型', type: 'string', direction: 'output', description: '文件内容类型' },
+    ],
+    keywords: ['保存 Excel', '写出文件', '下载工作簿', '回写文件', 'save workbook', 'write file'],
   },
   {
     id: 'generic:variable-input',
@@ -590,9 +679,9 @@ const genericNodeSpecs: FlowNodeSpec[] = [
     ],
   },
   {
-    id: 'generic:boolean-switch',
-    label: '布尔开关',
-    description: '输入一个布尔值',
+    id: 'generic:boolean-input',
+    label: '布尔输入',
+    description: '输入或接收一个布尔值，可作为开关控件的数据源',
     category: '功能 · 输入节点',
     kind: 'generic',
     properties: [
@@ -602,6 +691,69 @@ const genericNodeSpecs: FlowNodeSpec[] = [
       { name: 'override', label: '覆盖', type: 'boolean', direction: 'input', description: '外部覆盖' },
       { name: 'value', label: '值', type: 'boolean', direction: 'output', description: '当前布尔值' },
     ],
+    keywords: ['布尔开关', '开关', 'switch', 'boolean'],
+  },
+  {
+    id: 'generic:export',
+    label: '数据导出',
+    description: '将 JSON 行、工作表或普通数据导出为 Excel、CSV、JSON 或 HTML',
+    category: '功能 · 导出',
+    kind: 'generic',
+    properties: [
+      { name: 'format', label: '格式', type: 'enum', enum: ['xlsx', 'csv', 'json', 'html'], default: 'xlsx', description: '导出格式' },
+      { name: 'fileName', label: '文件名', type: 'string', default: 'export', description: '不含扩展名的文件名' },
+      { name: 'sheetName', label: '工作表名', type: 'string', default: 'Sheet1', description: 'Excel 工作表名' },
+      { name: 'includeHeader', label: '包含表头', type: 'boolean', default: true, description: '是否包含表头' },
+    ],
+    ports: [
+      { name: 'data', label: '数据', type: 'any', direction: 'input', required: true, description: 'JSON 行、工作表或普通数据' },
+      { name: 'fileName', label: '文件名', type: 'string', direction: 'input', description: '覆盖文件名' },
+      { name: 'result', label: '结果', type: 'any', direction: 'output', description: '文件数据或文本' },
+      { name: 'fileName', label: '文件名', type: 'string', direction: 'output', description: '完整文件名' },
+      { name: 'mimeType', label: 'MIME 类型', type: 'string', direction: 'output', description: '内容类型' },
+    ],
+    keywords: ['导出 Excel', '导出 CSV', '导出 JSON', '导出 HTML', '导出工作表', 'export'],
+  },
+  {
+    id: 'generic:filter',
+    label: '数据筛选',
+    description: '按字段、运算符和值筛选 JSON 行或工作表数据',
+    category: '功能 · 数据操作',
+    kind: 'generic',
+    properties: [
+      { name: 'field', label: '字段', type: 'string', default: '', required: true, description: '字段名或列名' },
+      { name: 'operator', label: '运算符', type: 'enum', enum: ['==', '!=', 'contains', '>', '<', '>=', '<='], default: '==', description: '比较方式' },
+      { name: 'value', label: '筛选值', type: 'any', default: '', description: '用于比较的值' },
+    ],
+    ports: [
+      { name: 'data', label: '数据', type: 'any', direction: 'input', required: true, description: 'JSON 行或工作表' },
+      { name: 'trigger', label: '触发', type: 'any', direction: 'input', description: '可选触发信号' },
+      { name: 'result', label: '结果', type: 'any', direction: 'output', description: '筛选后的数据' },
+      { name: 'rows', label: '数据行', type: 'json-rows', direction: 'output', description: '筛选后的 JSON 行' },
+      { name: 'count', label: '数量', type: 'number', direction: 'output', description: '结果行数' },
+      { name: 'trigger', label: '触发', type: 'any', direction: 'output', description: '透传触发信号' },
+    ],
+    keywords: ['筛选', '筛选数据', '表格筛选', 'filter'],
+  },
+  {
+    id: 'generic:sort',
+    label: '数据排序',
+    description: '按字段和顺序排列 JSON 行或工作表数据',
+    category: '功能 · 数据操作',
+    kind: 'generic',
+    properties: [
+      { name: 'field', label: '字段', type: 'string', default: '', required: true, description: '字段名或列名' },
+      { name: 'order', label: '顺序', type: 'enum', enum: ['asc', 'desc'], default: 'asc', description: '升序或降序' },
+    ],
+    ports: [
+      { name: 'data', label: '数据', type: 'any', direction: 'input', required: true, description: 'JSON 行或工作表' },
+      { name: 'trigger', label: '触发', type: 'any', direction: 'input', description: '可选触发信号' },
+      { name: 'result', label: '结果', type: 'any', direction: 'output', description: '排序后的数据' },
+      { name: 'rows', label: '数据行', type: 'json-rows', direction: 'output', description: '排序后的 JSON 行' },
+      { name: 'count', label: '数量', type: 'number', direction: 'output', description: '结果行数' },
+      { name: 'trigger', label: '触发', type: 'any', direction: 'output', description: '透传触发信号' },
+    ],
+    keywords: ['排序', '排序数据', '表格排序', 'sort'],
   },
   {
     id: 'generic:output-display',
@@ -632,7 +784,7 @@ const scenarioSpecs: FlowNodeSpec[] = [
     properties: [],
     ports: [
       { name: 'fileData', label: '文件数据', type: 'any', direction: 'input', required: true, description: '文件 ArrayBuffer' },
-      { name: 'workbook', label: '工作簿', type: 'object', direction: 'output', description: '解析后的工作簿' },
+      { name: 'workbook', label: '工作簿', type: 'workbook', direction: 'output', description: '解析后的工作簿' },
       { name: 'jsonData', label: 'JSON 数据', type: 'array', direction: 'output', description: 'JSON 行数据' },
       { name: 'schema', label: '字段模型', type: 'object', direction: 'output', description: '字段类型推断结果' },
     ],
@@ -658,9 +810,9 @@ const scenarioSpecs: FlowNodeSpec[] = [
     kind: 'scenario',
     properties: [],
     ports: [
-      { name: 'worksheet', label: '工作表', type: 'object', direction: 'input', required: true, description: '目标工作表' },
+      { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'input', required: true, description: '目标工作表' },
       { name: 'rows', label: '行数据', type: 'array', direction: 'input', required: true, description: '要追加的行' },
-      { name: 'worksheet', label: '工作表', type: 'object', direction: 'output', description: '修改后的工作表' },
+      { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'output', description: '修改后的工作表' },
     ],
   },
   {
@@ -671,7 +823,7 @@ const scenarioSpecs: FlowNodeSpec[] = [
     kind: 'scenario',
     properties: [],
     ports: [
-      { name: 'worksheet', label: '工作表', type: 'object', direction: 'input', required: true, description: '要预览的工作表' },
+      { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'input', required: true, description: '要预览的工作表' },
       { name: 'jsonPreview', label: 'JSON', type: 'array', direction: 'output', description: 'JSON 预览' },
       { name: 'csvPreview', label: 'CSV', type: 'string', direction: 'output', description: 'CSV 预览' },
       { name: 'htmlPreview', label: 'HTML', type: 'string', direction: 'output', description: 'HTML 预览' },
@@ -683,11 +835,17 @@ const scenarioSpecs: FlowNodeSpec[] = [
     description: '封装单元格、列、行、范围的编码和解码。',
     category: '功能 · 场景地址',
     kind: 'scenario',
-    properties: [],
-    ports: [
-      { name: 'address', label: '地址', type: 'string', direction: 'both', description: 'A1 格式地址' },
-      { name: 'coords', label: '坐标', type: 'object', direction: 'both', description: '{r, c} 坐标' },
+    properties: [
+      { name: 'operation', label: '操作', type: 'enum', enum: ['encodeCell', 'decodeCell', 'encodeRange', 'decodeRange', 'encodeRow', 'decodeRow', 'encodeColumn', 'decodeColumn', 'splitCell'], default: 'decodeCell', description: '地址转换方式' },
     ],
+    ports: [
+      { name: 'value', label: '输入', type: 'any', direction: 'input', required: true, description: '地址、坐标、行号或列号' },
+      { name: 'operation', label: '操作', type: 'string', direction: 'input', description: '覆盖转换方式' },
+      { name: 'result', label: '结果', type: 'any', direction: 'output', description: '转换结果' },
+      { name: 'address', label: '地址', type: 'string', direction: 'output', description: '地址、行号或列号编码结果' },
+      { name: 'coords', label: '坐标', type: 'object', direction: 'output', description: '坐标类结果' },
+    ],
+    keywords: ['地址编码', '地址解码', 'encode', 'decode', 'split_cell'],
   },
 ];
 
@@ -701,16 +859,53 @@ export interface NodeRegistry {
 let registryInstance: NodeRegistry | null = null;
 let registryPromise: Promise<NodeRegistry> | null = null;
 
+export const EXPECTED_NODE_COUNT = 131;
+
+export const CURATED_XLSX_METHODS = new Set([
+  'XLSX.read',
+  'XLSX.utils.json_to_sheet',
+  'XLSX.utils.aoa_to_sheet',
+  'XLSX.utils.sheet_to_json',
+  'XLSX.utils.sheet_add_json',
+  'XLSX.utils.sheet_add_aoa',
+  'XLSX.utils.sheet_get_cell',
+  'XLSX.utils.sheet_to_formulae',
+  'XLSX.utils.book_new',
+  'XLSX.utils.book_append_sheet',
+  'XLSX.utils.sheet_set_array_formula',
+  'XLSX.utils.cell_set_hyperlink',
+  'XLSX.utils.cell_set_internal_link',
+  'XLSX.utils.format_cell',
+]);
+
+const DISCOVERY_KEYWORDS: Record<string, string[]> = {
+  'generic:file-picker': ['文件上传', '导入 Excel', '打开文件', 'upload', 'browse'],
+  'generic:worksheet-select': ['选择工作表', 'Sheet 选择', '标签页', 'worksheet', 'tab'],
+  'generic:range-select': ['区域选择', '范围选择', 'A1 地址', 'range', 'area'],
+  'generic:range-intersection': ['区域交集', '重叠范围', '复杂区域', 'intersection', 'intersect', 'overlap'],
+  'generic:variable-input': ['变量', '参数', '常量', 'variable', 'parameter', 'constant'],
+  'generic:text-input': ['文本', '字符串', '输入框', 'text', 'string', 'input'],
+  'generic:number-input': ['数字', '数值', '输入框', 'number', 'numeric', 'input'],
+  'generic:output-display': ['输出', '显示', '查看结果', '预览', '调试', 'output', 'preview'],
+  'scenario:excel-to-json-schema': ['读取 Excel', '导入表格', '生成字段', 'schema', 'import'],
+  'scenario:json-to-xlsx-export': ['导出 Excel', 'JSON 导出', 'xlsx', 'export'],
+  'scenario:append-rows': ['追加行', '新增明细', 'append', 'rows'],
+  'scenario:sheet-preview': ['工作表预览', '多格式', 'JSON CSV HTML', 'preview'],
+};
+
 export async function loadNodeRegistry(): Promise<NodeRegistry> {
   if (registryInstance) return registryInstance;
   if (registryPromise) return registryPromise;
 
   registryPromise = (async () => {
-    const [xlsxRoot, excelApiModule] = await Promise.all([
+    const [xlsxRoot, , executorRegistry, packageModules] = await Promise.all([
       loadXlsxModule(),
-      import('./excel-api-registry'),
       import('./executors'),
+      import('./executor-registry'),
+      import('./package-modules').catch(() => ({ schemaModules: {}, funcExecutorModules: {} })),
     ]);
+
+    const schemaModules: Record<string, any> = packageModules.schemaModules;
 
     const namespaceRoots: Array<{ namespace: string; value: unknown }> = [
       { namespace: 'XLSX', value: xlsxRoot },
@@ -720,24 +915,50 @@ export async function loadNodeRegistry(): Promise<NodeRegistry> {
       { namespace: 'XLSX.stream', value: xlsxRoot.stream },
     ];
 
-    const xlsxSpecs = namespaceRoots.flatMap(({ namespace, value }) =>
+    const generatedXlsxSpecs = namespaceRoots.flatMap(({ namespace, value }) =>
       collectXlsxMethods(namespace, value),
     );
-
-    const excelApiSpecs = excelApiModule.excelApiNodes.map(excelApiClassToSpec);
+    const xlsxSchemasByMethod = new Map<string, Record<string, any>>();
+    for (const schema of Object.values(schemaModules)) {
+      if (!schema?.id?.startsWith('xlsx-') || !Array.isArray(schema.methodPath)) continue;
+      xlsxSchemasByMethod.set(`XLSX.${schema.methodPath.join('.')}`, schema);
+    }
+    const xlsxSpecs = generatedXlsxSpecs.filter((spec) => CURATED_XLSX_METHODS.has(spec.id.replace(/^method:/, ''))).map((spec) => {
+      const schema = xlsxSchemasByMethod.get(spec.id.replace(/^method:/, ''));
+      if (!schema) return spec;
+      const declaredPorts: SchemaPort[] = (schema.ports || []).length > 0
+        ? schema.ports
+        : [
+            ...(schema.inputs || []).map((input: any) => ({
+              name: input.name, label: input.name, type: normalizeSchemaType(input.type), direction: 'input' as const,
+              required: input.required, description: input.description || input.name,
+            })),
+            ...(schema.outputs || []).map((output: any) => ({
+              name: output.name, label: output.name, type: normalizeSchemaType(output.type), direction: 'output' as const,
+              description: output.description || output.name,
+            })),
+          ];
+      for (const generatedPort of spec.ports) {
+        if (generatedPort.name === '_args' || generatedPort.name === 'result') continue;
+        if (!declaredPorts.some((port) => port.name === generatedPort.name && port.direction === generatedPort.direction)) {
+          declaredPorts.push(generatedPort);
+        }
+      }
+      return { ...spec, category: '高级 · XLSX', properties: schema.properties || spec.properties, ports: declaredPorts, keywords: schema.keywords || spec.keywords };
+    });
 
     // 动态加载 func-* 和 behavior-* 节点的 schema.json
     const packageNodeSpecs: FlowNodeSpec[] = [];
     const packageDirs = [
-      'func-style', 'func-apply-style', 'func-range-select', 'func-modify-range',
-      'func-create-table', 'func-sort-table', 'func-filter-table', 'func-data-validation',
+      'func-style', 'func-apply-style', 'func-modify-range',
+      'func-create-table', 'func-data-validation',
       'func-conditional-format', 'func-add-comment', 'func-named-item',
       'func-protect-sheet', 'func-create-chart', 'func-merge-cells',
       'func-find-replace', 'func-remove-duplicates', 'func-protect-workbook',
-      'func-sheet-operation', 'func-copy-range', 'func-export-sheet',
+      'func-sheet-operation', 'func-copy-range',
       'func-select-input', 'func-radio-input', 'func-checkbox-input',
-      'func-date-input', 'func-switch-input', 'func-rating-input',
-      'func-form-submit', 'func-form-validate', 'func-row-navigator', 'func-column-bind',
+      'func-date-input',
+      'func-form-validate', 'func-row-navigator', 'func-column-bind',
       'behavior-on-form-load', 'behavior-on-field-change', 'behavior-on-submit',
       'behavior-on-validate', 'behavior-on-button-click', 'behavior-on-row-load',
       'behavior-condition', 'behavior-set-value', 'behavior-set-visible',
@@ -746,8 +967,7 @@ export async function loadNodeRegistry(): Promise<NodeRegistry> {
       'behavior-js-script', 'behavior-loop', 'behavior-data-query',
       'behavior-switch-tab', 'behavior-refresh-data', 'behavior-log',
       'behavior-delay', 'behavior-set-required', 'behavior-set-default',
-      'behavior-clear-field', 'behavior-stop', 'behavior-filter-data', 'behavior-sort-data',
-      'generic-export-excel', 'generic-export-csv', 'generic-export-json', 'generic-export-html',
+      'behavior-clear-field', 'behavior-stop',
       'generic-display-table', 'generic-display-stats',
       'generic-merge', 'generic-append', 'generic-group-by', 'generic-pivot', 'generic-unpivot',
       'generic-compare', 'generic-sample',
@@ -762,28 +982,44 @@ export async function loadNodeRegistry(): Promise<NodeRegistry> {
       'ml-anomaly-detect', 'ml-hypothesis-test', 'ml-time-series',
     ];
 
+    const packageExecutorModules: Record<string, any> = packageModules.funcExecutorModules;
     for (const dir of packageDirs) {
-      try {
-        const schemaUrl = new URL(`./${dir}/schema.json`, import.meta.url);
-        const resp = await fetch(schemaUrl);
-        if (resp.ok) {
-          const schema = await resp.json();
-          packageNodeSpecs.push({
-            id: schema.id,
-            label: schema.label,
-            description: schema.description,
-            category: schema.category,
-            kind: schema.kind || 'generic',
-            properties: schema.properties || [],
-            ports: schema.ports || [],
-            keywords: schema.keywords || [],
-            originalName: schema.originalName,
-          });
-        }
-      } catch {}
+      const schema = schemaModules[`./${dir}/schema.json`];
+      if (!schema) continue;
+      const packageId = typeof schema.id === 'string' && schema.id.startsWith('generic-')
+        ? `generic:${schema.id.slice('generic-'.length)}`
+        : typeof schema.id === 'string' && schema.id.startsWith('ml-')
+          ? `ml:${schema.id.slice('ml-'.length)}`
+          : schema.id;
+      packageNodeSpecs.push({
+        id: packageId,
+        label: schema.label,
+        description: schema.description,
+        category: schema.category,
+        kind: packageId.startsWith('behavior-') || packageId.startsWith('behavior:') ? 'behavior' : (schema.kind || 'generic'),
+        properties: schema.properties || [],
+        ports: schema.ports || [],
+        keywords: schema.keywords || [],
+        originalName: schema.originalName,
+      });
+
+      const packageExecutor = packageExecutorModules[`./${dir}/index.ts`]?.execute;
+      if (dir.startsWith('func-') && typeof packageExecutor === 'function') {
+        executorRegistry.registerExecutor(packageId, async (ctx) => {
+          const inputPorts = (schema.ports || []).filter((port: any) => port.direction === 'input' || port.direction === 'both');
+          const args = inputPorts.map((port: any) => ctx.inputs[port.name]);
+          const result = await packageExecutor(args, ctx.properties);
+          if (result && typeof result === 'object' && !Array.isArray(result)) return result;
+          const output = (schema.ports || []).find((port: any) => port.direction === 'output' || port.direction === 'both');
+          return { [output?.name || 'result']: result };
+        });
+      }
     }
 
-    const allSpecs = [...scenarioSpecs, ...genericNodeSpecs, ...packageNodeSpecs, ...xlsxSpecs, ...excelApiSpecs];
+    const allSpecs = [...scenarioSpecs, ...genericNodeSpecs, ...packageNodeSpecs, ...xlsxSpecs].map((spec) => ({
+      ...spec,
+      keywords: [...new Set([...(spec.keywords || []), ...(DISCOVERY_KEYWORDS[spec.id] || [])])],
+    }));
     const deduped = allSpecs.filter(
       (spec, i, arr) => arr.findIndex((s) => s.id === spec.id) === i,
     );

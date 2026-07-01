@@ -1,11 +1,9 @@
 import type { RangeRef, RangeValue } from '../models';
 import type { SrcTableEntry } from '../project/types';
+import { formatRangeAddress, getRangeAreas, type RangeArea } from './rangeGeometry';
 
 export function rangeToAddress(ref: RangeRef): string {
-  const colName = (i: number) => { let s = ''; let n = i; do { s = String.fromCharCode(65 + (n % 26)) + s; n = Math.floor(n / 26) - 1; } while (n >= 0); return s; };
-  const start = `${colName(ref.startCol)}${ref.startRow + 1}`;
-  const end = ref.startRow === ref.endRow && ref.startCol === ref.endCol ? '' : `${colName(ref.endCol)}${ref.endRow + 1}`;
-  return `${ref.sheetName}!${start}${end ? ':' + end : ''}`;
+  return formatRangeAddress(getRangeAreas(ref), ref.sheetName);
 }
 
 function looksLikeHeaderRow(firstRow: unknown[], restRows: unknown[][]): boolean {
@@ -29,52 +27,59 @@ export function resolveRange(ref: RangeRef, tables: SrcTableEntry[]): RangeValue
   const sheet = table.sheets.find(s => s.name === ref.sheetName);
   if (!sheet) return null;
 
-  const cols = ref.endCol - ref.startCol + 1;
-
-  // 读取原始行数据
-  const rawRows: unknown[][] = [];
-  for (let r = ref.startRow; r <= ref.endRow; r++) {
-    const row: unknown[] = [];
-    const rowData = sheet.preview[r];
-    for (let c = ref.startCol; c <= ref.endCol; c++) {
-      const colName = sheet.headers[c];
-      row.push(rowData ? rowData[colName] : undefined);
+  const resolveArea = (area: RangeArea) => {
+    const rawRows: unknown[][] = [];
+    for (let r = area.startRow; r <= area.endRow; r++) {
+      const row: unknown[] = [];
+      const rowData = sheet.preview[r];
+      for (let c = area.startCol; c <= area.endCol; c++) {
+        const column = sheet.headers[c];
+        row.push(rowData ? rowData[column] : undefined);
+      }
+      rawRows.push(row);
     }
-    rawRows.push(row);
-  }
 
-  let headers: string[];
-  let data: unknown[][];
+    let headers: string[];
+    let data: unknown[][];
 
-  if (ref.firstRowIsHeader === true) {
-    // 明确指定首行为标题
-    headers = rawRows.length > 0 ? rawRows[0].map(v => String(v ?? '')) : [];
-    data = rawRows.slice(1);
-  } else if (ref.firstRowIsHeader === false) {
-    // 明确指定首行不是标题
-    headers = [];
-    for (let c = ref.startCol; c <= ref.endCol; c++) {
-      headers.push(sheet.headers[c] || `Col${c + 1}`);
-    }
-    data = rawRows;
-  } else {
-    // 未指定 → 自动检测
-    if (rawRows.length >= 2 && looksLikeHeaderRow(rawRows[0], rawRows.slice(1))) {
+    if (ref.firstRowIsHeader === true || (ref.firstRowIsHeader === undefined && rawRows.length >= 2 && looksLikeHeaderRow(rawRows[0], rawRows.slice(1)))) {
       headers = rawRows[0].map(v => String(v ?? ''));
       data = rawRows.slice(1);
     } else {
       headers = [];
-      for (let c = ref.startCol; c <= ref.endCol; c++) {
+      for (let c = area.startCol; c <= area.endCol; c++) {
         headers.push(sheet.headers[c] || `Col${c + 1}`);
       }
       data = rawRows;
     }
-  }
+    return { area, rawRows, headers, data };
+  };
 
+  const areaResults = getRangeAreas(ref).map(resolveArea);
+  if (!areaResults.length) return null;
+  const rawRows = areaResults.flatMap((result) => result.rawRows);
+  const data = areaResults.flatMap((result) => result.data);
+  const headers = areaResults[0].headers;
   const address = rangeToAddress(ref);
-  const singleValue = rawRows.length === 1 && cols === 1 ? rawRows[0]?.[0] : undefined;
+  const cellCount = areaResults.reduce((sum, result) => sum + result.rawRows.reduce((rowSum, row) => rowSum + row.length, 0), 0);
+  const singleValue = cellCount === 1 ? rawRows[0]?.[0] : undefined;
 
-  return { address, rows: data.length, cols, headers, data, singleValue };
+  return {
+    address,
+    rows: data.length,
+    cols: Math.max(0, ...areaResults.map((result) => result.area.endCol - result.area.startCol + 1)),
+    headers,
+    data,
+    singleValue,
+    areas: areaResults.map((result) => ({
+      address: formatRangeAddress([result.area]),
+      rows: result.data.length,
+      cols: result.area.endCol - result.area.startCol + 1,
+      data: result.data,
+    })),
+    areaCount: areaResults.length,
+    cellCount,
+  };
 }
 
 export function getRangePreview(ref: RangeRef, tables: SrcTableEntry[], maxRows = 5): string[][] {

@@ -21,7 +21,6 @@
 }
 
 .flow-node.scenario { border-left-color: var(--scenario); }
-.flow-node.excel-class { border-left-color: var(--excel); }
 .flow-node.generic { border-left-color: #ea580c; }
 .flow-node.behavior { border-left-color: #8b5cf6; }
 .flow-node.method { border-left-color: var(--accent); }
@@ -224,6 +223,7 @@
 
 .flow-node-preview {
   max-height: 60px;
+  height: 60px;
   margin: 0;
   overflow: auto;
   background: #f0fdf4;
@@ -231,8 +231,9 @@
   padding: 4px 8px;
   font-size: 10px;
   color: #0f5132;
-  white-space: pre-wrap;
+  white-space: pre;
   word-break: break-all;
+  overscroll-behavior: contain;
 }
 
 /* ── Loading ─────────────────────────────────────────── */
