@@ -6,19 +6,15 @@
 
 ## P0 · 必须修复
 
-### 1. 测试套件为空
-- 13 个 `.test.ts` 文件全部报 "No test suite found"
-- 补充核心模块测试：
-  - `flowEngine` — 拓扑排序 + 节点执行 + 数据传递
-  - `rangeResolver` — Range 解析 + 地址转换 + 超Z列号
-  - `behaviorEngine` — 规则触发 + 条件判断 + 脚本执行
-  - `scriptSandbox` — 沙箱上下文 + formData + setValue
-  - `executor-registry` — 注册 + 查找 + 类型检查
-  - `port-types` — 27种类型校验 + 兼容性
+### ~~1. 测试套件为空~~ ✅ 已解决
+- 原因：测试用 `node:test` 编写，但用 `vitest` 运行导致 "No test suite found"
+- 正确命令：`npx tsx --test src/**/*.test.ts`
+- 65 个测试全部通过（13 个文件）
 
-### 2. 重复行为规则清理
-- `behavior.ts` 中 `behavior-set-value`、`behavior-set-visible`、`behavior-set-disabled`、`behavior-set-required`、`behavior-calculate`、`behavior-show-message`、`behavior-validate`、`behavior-api-request`、`behavior-js-script`、`behavior-loop`、`behavior-data-query`、`behavior-switch-tab`、`behavior-refresh-data`、`behavior-log`、`behavior-delay`、`behavior-clear-field`、`behavior-stop` 全部注册了两次
-- 删除 397~563 行的重复块
+### ~~2. 重复行为规则清理~~ ✅ 已完成
+- 删除了 `behavior.ts` 中 18 个重复的 registerExecutor 调用
+- 保留带 `sideEffects` 的版本（更完整）
+- 文件从 626 行缩减到 360 行
 
 ---
 
@@ -114,8 +110,8 @@
 
 | # | 任务 | 优先级 | 状态 |
 |---|------|--------|------|
-| 1 | 测试套件补充 | P0 | ⬜ |
-| 2 | 重复行为规则清理 | P0 | ⬜ |
+| 1 | 测试套件验证 | P0 | ✅ |
+| 2 | 重复行为规则清理 | P0 | ✅ |
 | 3 | 流程结果持久化 | P1 | ⬜ |
 | 4 | 设计器→测试打通 | P1 | ⬜ |
 | 5 | 错误处理增强 | P1 | ⬜ |
