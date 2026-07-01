@@ -1,128 +1,134 @@
 # FormFlow Studio — TODO
 
-> 基于 v0.2.0 状态，按优先级排列
+> v0.2.1 状态，按优先级排列
 
 ---
 
 ## P0 · 必须修复
 
-### 1. Monaco Suggest Widget 文字颜色
-- **问题**: 用户反馈 suggest 弹框有框但文字白色不可见
-- **根因**: Monaco 内部 CSS (`monaco-icon-label`, `.label-name`) 优先级高于自定义 CSS；`defineTheme` 的 `editorSuggestWidget.foreground` 可能未覆盖所有子元素
-- **方案**: 
-  - 在 `handleMount` 中通过 `instance._themeService` 或 DOM 查询强制注入颜色
-  - 或注册 Monaco `ICodeEditorService` 自定义 token colorization
-  - 或降级方案：用 `editor.onDidCreateSuggestWidget` 直接操作 DOM
+### 1. 测试套件为空
+- 13 个 `.test.ts` 文件全部报 "No test suite found"
+- 补充核心模块测试：
+  - `flowEngine` — 拓扑排序 + 节点执行 + 数据传递
+  - `rangeResolver` — Range 解析 + 地址转换 + 超Z列号
+  - `behaviorEngine` — 规则触发 + 条件判断 + 脚本执行
+  - `scriptSandbox` — 沙箱上下文 + formData + setValue
+  - `executor-registry` — 注册 + 查找 + 类型检查
+  - `port-types` — 27种类型校验 + 兼容性
 
-### 2. 测试套件为空
-- **问题**: 13 个 `.test.ts` 文件全部报 "No test suite found"
-- **方案**: 为核心模块补充测试用例
-  - `flowEngine.test.ts` — 流程拓扑排序 + 节点执行
-  - `rangeResolver.test.ts` — Range 解析 + 地址转换
-  - `behaviorEngine.test.ts` — 规则触发 + 条件判断
-  - `scriptSandbox.test.ts` — 沙箱上下文 + setValue/getValue
-  - `executor-registry.test.ts` — 注册 + 执行
-  - `port-types.test.ts` — 类型检查 + 兼容性
+### 2. 重复行为规则清理
+- `behavior.ts` 中 `behavior-set-value`、`behavior-set-visible`、`behavior-set-disabled`、`behavior-set-required`、`behavior-calculate`、`behavior-show-message`、`behavior-validate`、`behavior-api-request`、`behavior-js-script`、`behavior-loop`、`behavior-data-query`、`behavior-switch-tab`、`behavior-refresh-data`、`behavior-log`、`behavior-delay`、`behavior-clear-field`、`behavior-stop` 全部注册了两次
+- 删除 397~563 行的重复块
 
 ---
 
-## P1 · 重要增强
+## P1 · 核心功能闭环
 
 ### 3. 流程执行结果持久化
 - 节点执行后 outputs 存在 React state 中，刷新丢失
-- 方案: 执行结果写入 `node.data.outputs` 并随项目保存
-- 需要: `saveWorkflow` 时包含 outputs
+- 执行结果写入 `node.data.outputs` 并随 workflow 保存
+- `saveWorkflow` 时包含最新 outputs
 
-### 4. 表单设计器 → 测试运行数据打通
+### 4. 设计器 → 测试运行数据打通
 - 设计器预览模式的表单值不传递到 TestPage
-- 方案: 设计器预览模式的 formValues 写入 sharedDataStore
+- 预览模式 formValues 写入 sharedDataStore
 - TestPage 读取并初始化
 
 ### 5. 节点执行错误处理增强
-- 部分节点执行失败时 error 信息不够详细
-- 方案: 每个 executor 添加 try-catch + 上下文信息
-- 错误显示在节点上的 `.flow-node-error` 区域
+- 部分 executor 的 catch 块只返回 `{ error: ... }` 没有上下文
+- 每个 executor 的 catch 添加：节点名、输入摘要、属性摘要
+- 错误显示在 `.flow-node-error` 区域时可展开查看堆栈
 
 ### 6. 流程调试模式
-- 逐步执行节点、查看每个节点的输入/输出
-- 方案: CanvasPage 添加「单步执行」按钮
-- 高亮当前执行节点 + 显示中间结果
+- CanvasPage 添加「单步执行」按钮
+- 高亮当前执行节点（黄色边框）
+- Inspector 显示当前节点的 inputs / outputs / error
+- 支持断点（节点右键 → 设置断点）
 
 ### 7. 表单控件事件 → 流程触发完善
-- `flowTriggers` 配置已存在但未完整测试
-- 方案: 确保每个控件事件都能正确触发绑定的流程
-- 添加触发日志到行为面板
+- `flowTriggers` 配置已存在但未端到端验证
+- 确保 onChange / onBlur / onClick 都能触发绑定的流程
+- 触发日志写入行为面板
+- 流程执行结果回写到表单字段
 
 ---
 
 ## P2 · 体验优化
 
 ### 8. AG Grid 暗色主题适配
-- 当前只有浅色主题
-- 方案: 检测系统主题或添加主题切换
+- 检测系统 `prefers-color-scheme` 或添加手动切换
+- 同步 Monaco / X6 / AG Grid 三套主题
 
 ### 9. 数据预览大文件优化
 - 超过 10000 行的 Excel 加载缓慢
-- 方案: 虚拟滚动 + 分页加载 + Web Worker 解析
+- Web Worker 解析 + 虚拟滚动 + 流式分页
 
 ### 10. 流程画布小地图增强
-- MiniMap 节点颜色应匹配 category
-- 方案: 自定义 MiniMap nodeColor 回调
+- MiniMap 节点颜色匹配 category（generic/blue, behavior/purple, func/orange, ml/green）
+- 自定义 `nodeColor` 回调
 
-### 11. 节点搜索结果排序优化
-- 拼音搜索已支持但结果排序可优化
-- 方案: 精确匹配 > 前缀匹配 > 包含匹配
+### 11. 节点搜索排序优化
+- 精确匹配 > 前缀匹配 > 包含匹配 > 拼音匹配
+- 搜索结果按使用频率加权
 
 ### 12. 表单设计器撤销/重做完善
-- 当前 undo/redo 基于 X6 History
-- 方案: 确保属性面板修改也纳入撤销栈
+- 属性面板修改纳入 X6 History 撤销栈
+- 批量操作（多选移动）作为单次撤销
 
 ### 13. 导出功能增强
-- 支持导出为 HTML 单文件（嵌入表单 + 数据 + 行为）
-- 支持导出为 React 组件代码
-- 方案: 新增 `exportToHtml()` 和 `exportToReact()` 
+- 导出为 HTML 单文件（嵌入表单 + 数据 + 行为 + 样式）
+- 导出为 React 组件代码（TSX + CSS）
+- 导出为 PDF 报告
+
+### 14. 工作流版本管理
+- 保存工作流历史版本
+- 支持回退到历史版本
+- 版本对比 diff
 
 ---
 
 ## P3 · 技术债
 
-### 14. CSS 模块化收尾
-- `src/style.css` 仍存在但未导入（遗留文件）
-- 方案: 删除 `src/style.css`
-
-### 15. 重复行为规则
-- `behavior.ts` 中 `behavior-set-value`、`behavior-set-visible` 等注册了两次
-- 方案: 删除重复注册
+### 15. CSS 遗留清理
+- 删除未导入的 `src/style.css`
+- 合并重复的 `.suggest-widget` 规则（components.css 中有两处）
 
 ### 16. 类型安全增强
-- 部分 `as any` 类型断言可收紧
-- 方案: 逐步替换为具体类型
+- 逐步替换 `as any` 为具体类型
+- 关键路径：FlowNodeData、DesignComponent.props、executor context
 
 ### 17. E2E 测试
-- 当前无 Playwright 测试用例
-- 方案: 为关键流程编写 E2E 测试
-  - 导入项目 → 数据预览 → 流程执行 → 表单填写 → 提交
+- Playwright 关键流程测试：
+  - 导入项目 → 数据预览 → 切换 Sheet
+  - 流程画布 → 添加节点 → 连接 → 执行
+  - 表单设计器 → 添加控件 → 预览模式交互
+  - 测试运行 → 切换行 → 编辑 → 提交
+
+### 18. 国际化准备
+- 硬编码中文字符串提取到常量
+- 节点 label/description 已有中英文混合，统一策略
 
 ---
 
 ## 进度追踪
 
-| # | 任务 | 状态 | 负责 |
-|---|------|------|------|
-| 1 | Monaco Suggest 文字颜色 | ⬜ 待开始 | |
-| 2 | 测试套件补充 | ⬜ 待开始 | |
-| 3 | 流程执行结果持久化 | ⬜ 待开始 | |
-| 4 | 设计器→测试数据打通 | ⬜ 待开始 | |
-| 5 | 节点执行错误处理 | ⬜ 待开始 | |
-| 6 | 流程调试模式 | ⬜ 待开始 | |
-| 7 | 控件事件→流程触发 | ⬜ 待开始 | |
-| 8 | AG Grid 暗色主题 | ⬜ 待开始 | |
-| 9 | 大文件优化 | ⬜ 待开始 | |
-| 10 | MiniMap 颜色 | ⬜ 待开始 | |
-| 11 | 搜索排序优化 | ⬜ 待开始 | |
-| 12 | 撤销/重做完善 | ⬜ 待开始 | |
-| 13 | 导出功能增强 | ⬜ 待开始 | |
-| 14 | CSS 清理 | ⬜ 待开始 | |
-| 15 | 重复规则清理 | ⬜ 待开始 | |
-| 16 | 类型安全增强 | ⬜ 待开始 | |
-| 17 | E2E 测试 | ⬜ 待开始 | |
+| # | 任务 | 优先级 | 状态 |
+|---|------|--------|------|
+| 1 | 测试套件补充 | P0 | ⬜ |
+| 2 | 重复行为规则清理 | P0 | ⬜ |
+| 3 | 流程结果持久化 | P1 | ⬜ |
+| 4 | 设计器→测试打通 | P1 | ⬜ |
+| 5 | 错误处理增强 | P1 | ⬜ |
+| 6 | 流程调试模式 | P1 | ⬜ |
+| 7 | 控件事件→流程触发 | P1 | ⬜ |
+| 8 | AG Grid 暗色主题 | P2 | ⬜ |
+| 9 | 大文件优化 | P2 | ⬜ |
+| 10 | MiniMap 颜色 | P2 | ⬜ |
+| 11 | 搜索排序优化 | P2 | ⬜ |
+| 12 | 撤销/重做完善 | P2 | ⬜ |
+| 13 | 导出功能增强 | P2 | ⬜ |
+| 14 | 工作流版本管理 | P2 | ⬜ |
+| 15 | CSS 清理 | P3 | ⬜ |
+| 16 | 类型安全增强 | P3 | ⬜ |
+| 17 | E2E 测试 | P3 | ⬜ |
+| 18 | 国际化准备 | P3 | ⬜ |
