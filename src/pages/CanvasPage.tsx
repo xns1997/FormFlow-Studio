@@ -658,6 +658,33 @@ export default function CanvasPage() {
     }
   }, [nodes, edges, currentWorkflowId, project, addWorkflow, updateWorkflow]);
 
+  const exportAsJson = useCallback(() => {
+    const data = { nodes: nodes.map(n => ({ id: n.id, specId: n.data.specId, position: n.position, data: n.data })), edges: edges.map(e => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle })) };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `flow_${Date.now()}.json`; a.click();
+    URL.revokeObjectURL(url);
+  }, [nodes, edges]);
+
+  const exportAsHtml = useCallback(() => {
+    const flowData = { nodes: nodes.map(n => ({ id: n.id, specId: n.data.specId, label: n.data.label, position: n.position })), edges: edges.map(e => ({ source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle })) };
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>FormFlow - ${project?.config.name || 'Flow'}</title>
+<style>body{font-family:-apple-system,sans-serif;margin:20px;background:#f5f5f7}h1{font-size:20px;margin-bottom:4px}.meta{color:#666;font-size:12px;margin-bottom:16px}table{width:100%;border-collapse:collapse;font-size:12px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)}th{background:#f1f5f9;text-align:left;padding:8px 12px;border-bottom:2px solid #e2e8f0;font-weight:600}td{padding:6px 12px;border-bottom:1px solid #e5e7eb}tr:hover{background:#f8fafc}.node{display:inline-block;padding:4px 10px;margin:2px;border-radius:6px;font-size:11px;font-weight:500}.kind-generic{background:#dbeafe;color:#1e40af}.kind-behavior{background:#f3e8ff;color:#7c3aed}.kind-xlsx-method{background:#dcfce7;color:#166534}.kind-scenario{background:#ecfdf5;color:#0f766e}svg{max-width:100%;height:auto}</style></head><body>
+<h1>${project?.config.name || 'FormFlow'}</h1>
+<div class="meta">Generated ${new Date().toLocaleString()} · ${flowData.nodes.length} nodes · ${flowData.edges.length} edges</div>
+<h2>Nodes</h2><table><thead><tr><th>ID</th><th>Label</th><th>Kind</th><th>Spec</th><th>Position</th></tr></thead><tbody>
+${flowData.nodes.map(n => `<tr><td><code>${n.id}</code></td><td>${n.label}</td><td><span class="node kind-${n.specId.split(':')[0]}">${n.specId.split(':')[0]}</span></td><td><code>${n.specId}</code></td><td>(${Math.round(n.position.x)}, ${Math.round(n.position.y)})</td></tr>`).join('')}
+</tbody></table>
+<h2>Edges</h2><table><thead><tr><th>Source</th><th>Target</th><th>Source Port</th><th>Target Port</th></tr></thead><tbody>
+${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.target}</code></td><td>${e.sourceHandle || '-'}</td><td>${e.targetHandle || '-'}</td></tr>`).join('')}
+</tbody></table>
+</body></html>`;
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `flow_${Date.now()}.html`; a.click();
+    URL.revokeObjectURL(url);
+  }, [nodes, edges, project]);
+
   const loadWorkflow = useCallback((wfId: string) => {
     const wf = project?.workflows.find((w) => w.id === wfId);
     if (!wf || !registry) return;
@@ -816,6 +843,11 @@ export default function CanvasPage() {
           <button className="primary" onClick={runFlow} disabled={flowRunning || nodes.length === 0}>
             {flowRunning ? '执行中…' : '▶ 运行流程'}
           </button>
+          <select onChange={(e) => { if (e.target.value === 'json') exportAsJson(); else if (e.target.value === 'html') exportAsHtml(); e.target.value = ''; }} style={{ fontSize: 11, padding: '2px 6px' }}>
+            <option value="">导出…</option>
+            <option value="json">JSON</option>
+            <option value="html">HTML</option>
+          </select>
           <button onClick={stepFlow} disabled={flowRunning || nodes.length === 0} title="单步执行" style={{ fontSize: 11 }}>
             ⏭ 单步
           </button>

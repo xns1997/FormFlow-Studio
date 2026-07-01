@@ -192,14 +192,10 @@ export default function DataPreviewPage() {
     const loadRows = async () => {
       setLoading(true);
       const fallbackRows = activeSheet.preview || [];
-      const pageSize = Math.max(
-        activeSheet.rowCount || 0,
-        fallbackRows.length,
-        500,
-      );
+      const serverPageSize = Math.min(activeSheet.rowCount || fallbackRows.length, 5000);
       try {
         const res = await fetch(
-          `http://localhost:3001/api/data/${encodeURIComponent(selectedTable.id)}/${encodeURIComponent(activeSheet.name)}/rows?page=1&pageSize=${pageSize}`,
+          `http://localhost:3001/api/data/${encodeURIComponent(selectedTable.id)}/${encodeURIComponent(activeSheet.name)}/rows?page=1&pageSize=${serverPageSize}`,
         );
         if (!res.ok) throw new Error(`rows api failed: ${res.status}`);
         const data = await res.json();
@@ -208,7 +204,9 @@ export default function DataPreviewPage() {
         setTotalRows(data.total ?? data.rows?.length ?? fallbackRows.length);
       } catch {
         if (cancelled) return;
-        setRows(withRowIds(fallbackRows));
+        // Limit fallback to prevent OOM on large files
+        const limited = fallbackRows.length > 5000 ? fallbackRows.slice(0, 5000) : fallbackRows;
+        setRows(withRowIds(limited));
         setTotalRows(activeSheet.rowCount || fallbackRows.length);
       } finally {
         if (!cancelled) setLoading(false);

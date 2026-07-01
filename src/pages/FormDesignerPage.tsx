@@ -6,6 +6,7 @@ import { LeftPanel } from '../designer/LeftPanel';
 import { PropertyPanel } from '../designer/PropertyPanel';
 import { TabBar } from '../designer/TabBar';
 import { useProjectStore } from '../project/store';
+import { useSharedDataStore } from '../services/sharedDataStore';
 import type { DesignFile } from '../project/types';
 import type { ComponentNode } from '../models';
 import { createDesignFile } from '../project/types';
@@ -68,11 +69,28 @@ export default function FormDesignerPage() {
     setDesigns((prev) => prev.map((d) => d.id === id ? { ...d, name } : d));
   }, []);
 
+  const setPendingRowData = useSharedDataStore((s) => s.setPendingRowData);
+
   const handlePreview = useCallback(() => {
     const comps = designer.exportDesign();
     const nodes = exportToComponentNodes(comps);
     setInterfaceNodes(nodes);
   }, [designer]);
+
+  const handleSendToTest = useCallback(() => {
+    // Collect default values from design components
+    const comps = designer.components;
+    const values: Record<string, unknown> = {};
+    for (const comp of comps) {
+      const name = comp.fieldBinding || comp.props?.name;
+      if (name && comp.props?.defaultValue !== undefined) {
+        values[name] = comp.props.defaultValue;
+      }
+    }
+    if (Object.keys(values).length > 0) {
+      setPendingRowData(values, 'form-designer');
+    }
+  }, [designer, setPendingRowData]);
 
   const selectedComponent = designer.selectedId
     ? designer.components.find((c) => c.id === designer.selectedId) || null
@@ -83,6 +101,7 @@ export default function FormDesignerPage() {
       <div className={`designer-toolbar ${designer.mode === 'preview' ? 'preview-active' : ''}`}>
         {designer.mode === 'design' && <button onClick={handleSave} className="toolbar-btn">保存</button>}
         {designer.mode === 'design' && <button onClick={handlePreview} className="toolbar-btn">预览/导出</button>}
+        {designer.mode === 'preview' && <button onClick={handleSendToTest} className="toolbar-btn">发送到测试</button>}
         <span className="toolbar-sep" />
         <span className="toolbar-info">
           {designs.find((d) => d.id === activeId)?.name || '—'} · {designer.components.length} 个控件
