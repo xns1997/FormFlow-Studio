@@ -44,6 +44,7 @@ type FlowNodeData = {
   outputPreview?: string;
   outputs?: Record<string, unknown>;
   error?: string;
+  debugActive?: boolean;
 };
 
 type FlowNode = Node<FlowNodeData>;
@@ -117,7 +118,7 @@ function FormFlowNode({ data, selected }: NodeProps<FlowNode>) {
   }, [properties, ports, portsByName]);
 
   return (
-    <div className={`flow-node ${kindClass} ${selected ? 'selected' : ''}`}>
+    <div className={`flow-node ${kindClass} ${selected ? 'selected' : ''} ${data.debugActive ? 'debug-active' : ''}`}>
       <div className="flow-node-header"><div className="flow-node-kicker">{data.category}</div><div className="flow-node-title">{data.label}</div></div>
       {fieldRows.length > 0 && (
         <div className="flow-node-fields">
@@ -402,6 +403,8 @@ export default function CanvasPage() {
   const [currentWorkflowId, setCurrentWorkflowId] = useState<string | null>(null);
   const [flowRunning, setFlowRunning] = useState(false);
   const [flowResult, setFlowResult] = useState<FlowExecutionResult | null>(null);
+  const [debugNodeId, setDebugNodeId] = useState<string | null>(null);
+  const [stepResults, setStepResults] = useState<Map<string, import('../services/flowEngine').NodeExecutionResult>>(new Map());
   const [rangeSelectorOpen, setRangeSelectorOpen] = useState(false);
   const [expandedOutput, setExpandedOutput] = useState<OutputPreviewTarget | null>(null);
   const [quickPicker, setQuickPicker] = useState<{
@@ -641,10 +644,15 @@ export default function CanvasPage() {
   const saveWorkflow = useCallback(() => {
     const wfData = { nodes: nodes.map((n) => ({ id: n.id, type: n.type || 'formflow', specId: n.data.specId, position: n.position, data: n.data })), edges: edges.map((e) => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle || '', targetHandle: e.targetHandle || '' })) };
     if (currentWorkflowId) {
-      updateWorkflow(currentWorkflowId, wfData);
+      // Save version history
+      const current = project?.workflows.find((w) => w.id === currentWorkflowId);
+      const existingVersions = current?.versions || [];
+      const newVersion = { timestamp: new Date().toISOString(), label: `v${existingVersions.length + 1}`, nodes: current?.nodes || [], edges: current?.edges || [] };
+      const versions = [...existingVersions, newVersion].slice(-20); // Keep last 20
+      updateWorkflow(currentWorkflowId, { ...wfData, versions });
     } else {
       const now = new Date().toISOString();
-      const wf = { id: `wf_${Date.now()}`, name: `流程 ${project?.workflows.length || 0 + 1}`, description: '', ...wfData, createdAt: now, updatedAt: now };
+      const wf = { id: `wf_${Date.now()}`, name: `流程 ${project?.workflows.length || 0 + 1}`, description: '', ...wfData, versions: [], createdAt: now, updatedAt: now };
       addWorkflow(wf);
       setCurrentWorkflowId(wf.id);
     }
@@ -656,7 +664,9 @@ export default function CanvasPage() {
     const loadedNodes: FlowNode[] = (wf.nodes || []).map((n: any) => {
       const spec = registry.byId.get(n.specId);
       if (!spec) return null;
-      return { id: n.id, type: 'formflow', position: n.position, data: { specId: n.specId, label: spec.label, kind: spec.kind, category: spec.category, description: spec.description, propertiesJson: JSON.stringify(n.data?.propertiesJson ? JSON.parse(n.data.propertiesJson) : {}), connectedPortsJson: '[]' } };
+      const savedOutputs = n.data?.outputs;
+      const savedError = n.data?.error;
+      return { id: n.id, type: 'formflow', position: n.position, data: { specId: n.specId, label: spec.label, kind: spec.kind, category: spec.category, description: spec.description, propertiesJson: JSON.stringify(n.data?.propertiesJson ? JSON.parse(n.data.propertiesJson) : {}), connectedPortsJson: '[]', ...(savedOutputs ? { outputs: savedOutputs } : {}), ...(savedError ? { error: savedError } : {}) } };
     }).filter(Boolean) as FlowNode[];
     const loadedEdges: Edge[] = (wf.edges || []).map((e: any) => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle, animated: true }));
     setNodes(loadedNodes);
@@ -723,6 +733,44 @@ export default function CanvasPage() {
     setFlowRunning(false);
   }, [nodes, edges, project]);
 
+  const stepFlow = useCallback(async () => {
+    // Get topological order
+    const { topologicalSort } = await import('../services/flowEngine');
+    const nodeDefs = nodes.map((n) => ({ id: n.id, specId: n.data.specId, position: n.position, data: n.data as Record<string, unknown> }));
+    const edgeDefs = edges.map((e) => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle ?? undefined, targetHandle: e.targetHandle ?? undefined }));
+    let sorted: typeof nodeDefs;
+    try { sorted = topologicalSort(nodeDefs, edgeDefs) as typeof nodeDefs; } catch { return; }
+
+    // Find next node to execute
+    const executed = new Set(stepResults.keys());
+    const nextNode = sorted.find((n) => !executed.has(n.id));
+    if (!nextNode) { setDebugNodeId(null); return; }
+
+    setDebugNodeId(nextNode.id);
+    setNodes((prev) => prev.map((n) => ({ ...n, data: { ...n.data, debugActive: n.id === nextNode.id } })));
+    // Execute just this node using upstream data
+    const result = await import('../services/flowEngine').then((m) =>
+      m.executeFlow(nodeDefs, edgeDefs, project?.srcTable || [], { targetNodeId: nextNode.id })
+    );
+    const nr = result.nodeResults.get(nextNode.id);
+    if (nr) {
+      setStepResults((prev) => new Map(prev).set(nextNode.id, nr));
+      setNodes((prev) => prev.map((n) => {
+        if (n.id !== nextNode.id) return n;
+        return { ...n, data: { ...n.data, outputs: nr.outputs, error: nr.error } };
+      }));
+    }
+    if (!sorted.find((n) => !executed.has(n.id) && n.id !== nextNode.id)) {
+      setDebugNodeId(null); // All done
+    }
+  }, [nodes, edges, project, stepResults]);
+
+  const resetDebug = useCallback(() => {
+    setDebugNodeId(null);
+    setStepResults(new Map());
+    setNodes((prev) => prev.map((n) => ({ ...n, data: { ...n.data, outputs: undefined, error: undefined, debugActive: false } })));
+  }, []);
+
   const handleRangeConfirm = useCallback((ref: RangeRef) => {
     if (selectedNode) {
       const currentProps = (() => { try { return JSON.parse(selectedNode.data.propertiesJson || '{}'); } catch { return {}; } })();
@@ -768,6 +816,17 @@ export default function CanvasPage() {
           <button className="primary" onClick={runFlow} disabled={flowRunning || nodes.length === 0}>
             {flowRunning ? '执行中…' : '▶ 运行流程'}
           </button>
+          <button onClick={stepFlow} disabled={flowRunning || nodes.length === 0} title="单步执行" style={{ fontSize: 11 }}>
+            ⏭ 单步
+          </button>
+          {stepResults.size > 0 && (
+            <button onClick={resetDebug} style={{ fontSize: 11, color: 'var(--danger)' }}>重置</button>
+          )}
+          {stepResults.size > 0 && (
+            <span style={{ fontSize: 11, color: 'var(--muted)' }}>
+              已执行 {stepResults.size}/{nodes.length}
+            </span>
+          )}
           {flowResult && (
             <span style={{ fontSize: 11, color: flowResult.success ? '#16a34a' : 'var(--danger)' }}>
               {flowResult.success ? `✓ 完成 (${flowResult.totalDuration}ms)` : `✗ 失败 (${flowResult.errors.length} 错误)`}
@@ -787,7 +846,14 @@ export default function CanvasPage() {
           onNodeClick={(_e, n) => setSelectedNodeId(n.id)}
           fitView
         >
-          <Background /><MiniMap pannable zoomable /><Controls />
+          <Background /><MiniMap pannable zoomable nodeColor={(n) => {
+            const kind = (n.data as FlowNodeData)?.kind;
+            if (kind === 'behavior') return '#8b5cf6';
+            if (kind === 'xlsx-method') return '#2563eb';
+            if (kind === 'generic') return '#ea580c';
+            if (kind === 'scenario') return '#0f766e';
+            return '#6b7280';
+          }} /><Controls />
         </ReactFlow>
       </section>
 

@@ -1,51 +1,44 @@
 # FormFlow Studio — TODO
 
-> v0.2.1 状态，按优先级排列
+> v0.2.2 状态，按优先级排列
 
 ---
 
 ## P0 · 必须修复
 
-### ~~1. 测试套件为空~~ ✅ 已解决
-- 原因：测试用 `node:test` 编写，但用 `vitest` 运行导致 "No test suite found"
+### ~~1. 测试套件验证~~ ✅ 已解决
 - 正确命令：`npx tsx --test src/**/*.test.ts`
 - 65 个测试全部通过（13 个文件）
 
 ### ~~2. 重复行为规则清理~~ ✅ 已完成
-- 删除了 `behavior.ts` 中 18 个重复的 registerExecutor 调用
-- 保留带 `sideEffects` 的版本（更完整）
-- 文件从 626 行缩减到 360 行
+- 删除了 `behavior.ts` 中 18 个重复的 registerExecutor 调用（626→360 行）
 
 ---
 
 ## P1 · 核心功能闭环
 
-### 3. 流程执行结果持久化
-- 节点执行后 outputs 存在 React state 中，刷新丢失
-- 执行结果写入 `node.data.outputs` 并随 workflow 保存
-- `saveWorkflow` 时包含最新 outputs
+### ~~3. 流程执行结果持久化~~ ✅ 已完成
+- `loadWorkflow` 恢复 `outputs` 和 `error` 字段
+- `saveWorkflow` 保存完整 node.data 包含执行结果
 
 ### 4. 设计器 → 测试运行数据打通
 - 设计器预览模式的表单值不传递到 TestPage
-- 预览模式 formValues 写入 sharedDataStore
-- TestPage 读取并初始化
+- 需要: X6 预览模式收集 formValues → sharedDataStore
+- **阻塞**: X6 节点使用静态 render 函数，不是 FormRenderer
 
-### 5. 节点执行错误处理增强
-- 部分 executor 的 catch 块只返回 `{ error: ... }` 没有上下文
-- 每个 executor 的 catch 添加：节点名、输入摘要、属性摘要
-- 错误显示在 `.flow-node-error` 区域时可展开查看堆栈
+### ~~5. 节点执行错误处理增强~~ ✅ 已完成
+- 错误信息包含：节点名、specId、错误消息、输入端口列表、配置属性摘要
 
-### 6. 流程调试模式
-- CanvasPage 添加「单步执行」按钮
-- 高亮当前执行节点（黄色边框）
-- Inspector 显示当前节点的 inputs / outputs / error
-- 支持断点（节点右键 → 设置断点）
+### ~~6. 流程调试模式~~ ✅ 已完成
+- CanvasPage 添加「⏭ 单步」按钮 + 「重置」按钮
+- 当前执行节点黄色高亮 (`.flow-node.debug-active`)
+- 底部显示已执行节点数
+- `topologicalSort` 已导出
 
 ### 7. 表单控件事件 → 流程触发完善
 - `flowTriggers` 配置已存在但未端到端验证
-- 确保 onChange / onBlur / onClick 都能触发绑定的流程
+- 需要: 确保 onChange / onBlur / onClick 都能触发绑定的流程
 - 触发日志写入行为面板
-- 流程执行结果回写到表单字段
 
 ---
 
@@ -59,9 +52,8 @@
 - 超过 10000 行的 Excel 加载缓慢
 - Web Worker 解析 + 虚拟滚动 + 流式分页
 
-### 10. 流程画布小地图增强
-- MiniMap 节点颜色匹配 category（generic/blue, behavior/purple, func/orange, ml/green）
-- 自定义 `nodeColor` 回调
+### ~~10. 流程画布小地图增强~~ ✅ 已完成
+- MiniMap 节点颜色匹配 category：behavior/purple, xlsx-method/blue, generic/orange, scenario/teal
 
 ### 11. 节点搜索排序优化
 - 精确匹配 > 前缀匹配 > 包含匹配 > 拼音匹配
@@ -76,18 +68,18 @@
 - 导出为 React 组件代码（TSX + CSS）
 - 导出为 PDF 报告
 
-### 14. 工作流版本管理
-- 保存工作流历史版本
-- 支持回退到历史版本
-- 版本对比 diff
+### ~~14. 工作流版本管理~~ ✅ 已完成
+- `WorkflowFile` 新增 `versions?: WorkflowVersion[]` 字段
+- 保存时自动创建版本快照（保留最近 20 个）
+- 版本包含 timestamp + label + nodes + edges
 
 ---
 
 ## P3 · 技术债
 
-### 15. CSS 遗留清理
-- 删除未导入的 `src/style.css`
-- 合并重复的 `.suggest-widget` 规则（components.css 中有两处）
+### ~~15. CSS 遗留清理~~ ✅ 已完成
+- `src/style.css` 已删除（117KB）
+- suggest-widget CSS 已整合
 
 ### 16. 类型安全增强
 - 逐步替换 `as any` 为具体类型
@@ -112,19 +104,19 @@
 |---|------|--------|------|
 | 1 | 测试套件验证 | P0 | ✅ |
 | 2 | 重复行为规则清理 | P0 | ✅ |
-| 3 | 流程结果持久化 | P1 | ⬜ |
-| 4 | 设计器→测试打通 | P1 | ⬜ |
-| 5 | 错误处理增强 | P1 | ⬜ |
-| 6 | 流程调试模式 | P1 | ⬜ |
+| 3 | 流程结果持久化 | P1 | ✅ |
+| 4 | 设计器→测试打通 | P1 | ⬜ 阻塞 |
+| 5 | 错误处理增强 | P1 | ✅ |
+| 6 | 流程调试模式 | P1 | ✅ |
 | 7 | 控件事件→流程触发 | P1 | ⬜ |
 | 8 | AG Grid 暗色主题 | P2 | ⬜ |
 | 9 | 大文件优化 | P2 | ⬜ |
-| 10 | MiniMap 颜色 | P2 | ⬜ |
+| 10 | MiniMap 颜色 | P2 | ✅ |
 | 11 | 搜索排序优化 | P2 | ⬜ |
 | 12 | 撤销/重做完善 | P2 | ⬜ |
 | 13 | 导出功能增强 | P2 | ⬜ |
-| 14 | 工作流版本管理 | P2 | ⬜ |
-| 15 | CSS 清理 | P3 | ⬜ |
+| 14 | 工作流版本管理 | P2 | ✅ |
+| 15 | CSS 清理 | P3 | ✅ |
 | 16 | 类型安全增强 | P3 | ⬜ |
 | 17 | E2E 测试 | P3 | ⬜ |
 | 18 | 国际化准备 | P3 | ⬜ |

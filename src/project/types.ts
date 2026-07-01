@@ -318,12 +318,20 @@ export interface DistributionInfo {
 
 // ── 流程文件 ──────────────────────────────────────
 
+export interface WorkflowVersion {
+  timestamp: string;
+  label: string;
+  nodes: WorkflowNode[];
+  edges: WorkflowEdge[];
+}
+
 export interface WorkflowFile {
   id: string;
   name: string;
   description: string;
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
+  versions?: WorkflowVersion[];
   createdAt: string;
   updatedAt: string;
 }

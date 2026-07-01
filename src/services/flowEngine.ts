@@ -46,7 +46,7 @@ export interface FlowExecutionResult {
   totalDuration: number;
 }
 
-function topologicalSort(nodes: FlowNodeDef[], edges: FlowEdgeDef[]): FlowNodeDef[] {
+export function topologicalSort(nodes: FlowNodeDef[], edges: FlowEdgeDef[]): FlowNodeDef[] {
   const inDegree = new Map<string, number>();
   const adjacency = new Map<string, string[]>();
 
@@ -419,10 +419,12 @@ export async function executeFlow(
     const colonIdx = node.specId.indexOf(':');
     const kind = colonIdx > -1 ? node.specId.slice(0, colonIdx) : 'unknown';
     const name = colonIdx > -1 ? node.specId.slice(colonIdx + 1) : node.specId;
+    let inputs: Record<string, unknown> = {};
+    let properties: Record<string, unknown> = {};
 
     try {
       const spec = getRegistrySync()?.byId.get(node.specId);
-      const properties = (() => {
+      properties = (() => {
         try {
           const raw = (node.data as any)?.propertiesJson;
           const configured = typeof raw === 'string' ? JSON.parse(raw) : (raw || {});
@@ -437,7 +439,7 @@ export async function executeFlow(
           injectedInputs.override = options.variables![variableName];
         }
       }
-      let inputs = { ...injectedInputs, ...collectInputs(node.id, edges, nodeOutputs) };
+      inputs = { ...injectedInputs, ...collectInputs(node.id, edges, nodeOutputs) };
       inputs = validateConnectedInputs(spec, inputs);
       let outputs: Record<string, unknown>;
 
@@ -472,7 +474,15 @@ export async function executeFlow(
       });
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : String(e);
-      errors.push(`节点 ${name}: ${errMsg}`);
+      const inputKeys = Object.keys(inputs || {}).filter(k => !k.startsWith('_'));
+      const propKeys = Object.keys(properties || {}).filter(k => properties[k] !== undefined && properties[k] !== '');
+      const context = [
+        `节点 ${name} (${node.specId})`,
+        `错误: ${errMsg}`,
+        inputKeys.length > 0 ? `输入端口: ${inputKeys.join(', ')}` : null,
+        propKeys.length > 0 ? `配置: ${propKeys.slice(0, 5).join(', ')}` : null,
+      ].filter(Boolean).join(' | ');
+      errors.push(context);
       nodeOutputs.set(node.id, {});
       nodeResults.set(node.id, {
         nodeId: node.id,
@@ -481,7 +491,7 @@ export async function executeFlow(
         success: false,
         outputs: {},
         sideEffects: [],
-        error: errMsg,
+        error: context,
         duration: Date.now() - nodeStart,
       });
     }

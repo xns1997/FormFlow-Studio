@@ -25,6 +25,7 @@
 .flow-node.behavior { border-left-color: #8b5cf6; }
 .flow-node.method { border-left-color: var(--accent); }
 .flow-node.selected { outline: 2px solid rgba(37, 99, 235, 0.3); }
+.flow-node.debug-active { outline: 3px solid #f59e0b; box-shadow: 0 0 12px rgba(245, 158, 11, 0.4); }
 
 .flow-node-kicker {
   font-size: 9px;
