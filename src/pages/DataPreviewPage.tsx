@@ -8,6 +8,9 @@ import React, {
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
 import "ag-grid-community/styles/ag-theme-quartz.css";
+
+const prefersDark = typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+const agThemeClass = prefersDark ? 'ag-theme-quartz-dark' : 'ag-theme-quartz';
 import { useProjectStore } from "../project/store";
 import { useSharedDataStore } from "../services/sharedDataStore";
 import {
@@ -559,7 +562,7 @@ export default function DataPreviewPage() {
               ) : (
                 <div
                   className={[
-                    "ag-theme-quartz",
+                    agThemeClass,
                     "data-preview-grid",
                     currentConfig?.alternateRowColor === false
                       ? "no-zebra"
