@@ -5,6 +5,7 @@ import {
   deleteProject as deleteProjectFn, importProjectFile,
 } from '../project/manager';
 import { useProjectStore } from '../project/store';
+import { buildProjectPath } from '../services/routes';
 
 export default function ProjectsListPage() {
   const navigate = useNavigate();
@@ -21,11 +22,11 @@ export default function ProjectsListPage() {
     try { setProjectList(await listProjects()); } catch {}
     setProject(project);
     setNewName('');
-    navigate(`/project/${project.config.id}`);
+    navigate(buildProjectPath(project.config.id));
   }, [newName, projectList.length, navigate]);
 
   const openProject = useCallback((id: string) => {
-    navigate(`/project/${id}`);
+    navigate(buildProjectPath(id));
   }, [navigate]);
 
   const deleteProject = useCallback(async (id: string, name: string) => {
@@ -73,7 +74,7 @@ export default function ProjectsListPage() {
           setProject(project);
           try { await saveProjectStructure(project); } catch {}
           try { setProjectList(await listProjects()); } catch {}
-          navigate(`/project/${project.config.id}`);
+          navigate(buildProjectPath(project.config.id));
         } catch (err) { alert('导入失败: ' + String(err)); }
       }
     };

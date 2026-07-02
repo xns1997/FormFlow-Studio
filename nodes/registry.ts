@@ -859,7 +859,7 @@ export interface NodeRegistry {
 let registryInstance: NodeRegistry | null = null;
 let registryPromise: Promise<NodeRegistry> | null = null;
 
-export const EXPECTED_NODE_COUNT = 131;
+export const EXPECTED_NODE_COUNT = 132;
 
 export const CURATED_XLSX_METHODS = new Set([
   'XLSX.read',
@@ -964,7 +964,7 @@ export async function loadNodeRegistry(): Promise<NodeRegistry> {
       'behavior-condition', 'behavior-set-value', 'behavior-set-visible',
       'behavior-set-disabled', 'behavior-calculate', 'behavior-show-message',
       'behavior-validate', 'behavior-submit', 'behavior-api-request',
-      'behavior-js-script', 'behavior-loop', 'behavior-data-query',
+      'behavior-js-script', 'behavior-loop', 'behavior-data-query', 'behavior-row-lookup',
       'behavior-switch-tab', 'behavior-refresh-data', 'behavior-log',
       'behavior-delay', 'behavior-set-required', 'behavior-set-default',
       'behavior-clear-field', 'behavior-stop',

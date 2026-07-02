@@ -16,6 +16,140 @@ import type { FormControlEventContext } from '../services/formFlowTrigger';
 import { executeFormControlEvent } from '../services/formEventExecutor';
 import type { ProjectStructure } from '../project/types';
 
+// ── 智能行切换器 ─────────────────────────────────────────
+function RowSwitcher({ sheet, currentRow, onSwitch, dirtyFields }: {
+  sheet: SheetData; currentRow: number; onSwitch: (idx: number) => void; dirtyFields: Set<string>;
+}) {
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const summaryHeaders = useMemo(() => sheet.headers.slice(0, 3), [sheet.headers]);
+
+  const getRowSummary = useCallback((row: Record<string, unknown>, idx: number) => {
+    const parts = summaryHeaders.map((h) => {
+      const v = row[h];
+      return v != null && v !== '' ? String(v) : null;
+    }).filter(Boolean);
+    const label = parts.length > 0 ? parts.join(' · ') : `第 ${idx + 1} 行`;
+    return label;
+  }, [summaryHeaders]);
+
+  const filtered = useMemo(() => {
+    if (!query.trim()) return sheet.data.map((row, idx) => ({ row, idx }));
+    const q = query.toLowerCase();
+    return sheet.data
+      .map((row, idx) => ({ row, idx }))
+      .filter(({ row, idx }) => {
+        const summary = getRowSummary(row, idx).toLowerCase();
+        const fullText = sheet.headers.map((h) => String(row[h] ?? '')).join(' ').toLowerCase();
+        return summary.includes(q) || fullText.includes(q);
+      });
+  }, [sheet, query, getRowSummary]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !listRef.current) return;
+    const active = listRef.current.querySelector('.row-option-active');
+    if (active) active.scrollIntoView({ block: 'nearest' });
+  }, [open, currentRow]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (!open) { setOpen(true); return; }
+      const nextIdx = Math.min(currentRow + 1, sheet.data.length - 1);
+      onSwitch(nextIdx);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!open) { setOpen(true); return; }
+      const prevIdx = Math.max(currentRow - 1, 0);
+      onSwitch(prevIdx);
+    } else if (e.key === 'Escape') {
+      setOpen(false);
+      setQuery('');
+    } else if (e.key === 'Enter' && open && filtered.length > 0) {
+      e.preventDefault();
+      const match = filtered.find((f) => f.idx === currentRow) || filtered[0];
+      onSwitch(match.idx);
+      setOpen(false);
+      setQuery('');
+    }
+  };
+
+  const handleSelect = (idx: number) => {
+    onSwitch(idx);
+    setOpen(false);
+    setQuery('');
+  };
+
+  const currentSummary = getRowSummary(sheet.data[currentRow] || {}, currentRow);
+  const progress = sheet.data.length > 0 ? ((currentRow + 1) / sheet.data.length * 100) : 0;
+
+  return (
+    <div className="row-switcher" ref={containerRef} onKeyDown={handleKeyDown}>
+      <div className="row-switcher-bar">
+        <button className="row-nav-btn" onClick={() => onSwitch(Math.max(0, currentRow - 1))} disabled={currentRow === 0} title="上一行 (↑)">‹</button>
+        <div className="row-switcher-trigger" onClick={() => { setOpen(!open); setTimeout(() => inputRef.current?.focus(), 50); }}>
+          <span className="row-switcher-summary">{currentSummary}</span>
+          <span className="row-switcher-badge">{currentRow + 1}/{sheet.data.length}</span>
+          {dirtyFields.size > 0 && <span className="row-switcher-dirty">{dirtyFields.size}</span>}
+        </div>
+        <button className="row-nav-btn" onClick={() => onSwitch(Math.min(sheet.data.length - 1, currentRow + 1))} disabled={currentRow >= sheet.data.length - 1} title="下一行 (↓)">›</button>
+      </div>
+      <div className="row-progress-track">
+        <div className="row-progress-fill" style={{ width: `${progress}%` }} />
+      </div>
+      {open && (
+        <div className="row-dropdown">
+          <div className="row-dropdown-search">
+            <span className="row-dropdown-icon">⌕</span>
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="搜索行数据…"
+              className="row-dropdown-input"
+              autoFocus
+            />
+            {query && <button className="row-dropdown-clear" onClick={() => setQuery('')}>×</button>}
+          </div>
+          <div className="row-dropdown-list" ref={listRef}>
+            {filtered.length === 0 ? (
+              <div className="row-dropdown-empty">无匹配结果</div>
+            ) : (
+              filtered.map(({ row, idx }) => (
+                <div
+                  key={idx}
+                  className={`row-option ${idx === currentRow ? 'row-option-active' : ''}`}
+                  onClick={() => handleSelect(idx)}
+                >
+                  <span className="row-option-num">{idx + 1}</span>
+                  <span className="row-option-label">{getRowSummary(row, idx)}</span>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="row-dropdown-footer">
+            <span>↑↓ 导航 · Enter 选择 · Esc 关闭</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface SheetData { name: string; data: Record<string, unknown>[]; headers: string[]; }
 
 function doSwitchRow(prev: RuntimeState, sheetName: string, rowIdx: number, rowData: Record<string, unknown>): RuntimeState {
@@ -36,11 +170,64 @@ export default function TestPage() {
   const [behaviorRules, setBehaviorRules] = useState<BehaviorRule[]>(DEFAULT_RULES);
   const [bindingErrors, setBindingErrors] = useState<BindingError[]>([]);
   const [rangeConnections, setRangeConnections] = useState<Record<string, RangeRef>>({});
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const runtimeRef = useRef(runtime);
   useEffect(() => { runtimeRef.current = runtime; }, [runtime]);
   const rulesRef = useRef(behaviorRules);
   useEffect(() => { rulesRef.current = behaviorRules; }, [behaviorRules]);
   const fileRef = useRef<HTMLInputElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
+  const handleSubmitRef = useRef<() => void>(() => {});
+
+  // ── 全局键盘快捷键 ────────────────────────────────────
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const tag = target.tagName;
+      const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+      const inMonaco = target.closest('.monaco-editor');
+
+      // Ctrl+Enter / Cmd+Enter → 提交
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleSubmitRef.current();
+        return;
+      }
+
+      // Enter → 跳转下一个字段（非 textarea、非 Monaco）
+      if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.shiftKey && isInput && tag !== 'TEXTAREA' && !inMonaco) {
+        e.preventDefault();
+        const form = mainRef.current?.querySelector('.lg-form');
+        if (!form) return;
+        const inputs = Array.from(form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+          'input:not([type="hidden"]):not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly]), select:not([disabled])'
+        ));
+        const idx = inputs.indexOf(target as HTMLInputElement);
+        if (idx >= 0 && idx < inputs.length - 1) {
+          inputs[idx + 1].focus();
+        }
+        return;
+      }
+
+      // Shift+Enter → 跳转上一个字段
+      if (e.key === 'Enter' && e.shiftKey && isInput && tag !== 'TEXTAREA' && !inMonaco) {
+        e.preventDefault();
+        const form = mainRef.current?.querySelector('.lg-form');
+        if (!form) return;
+        const inputs = Array.from(form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+          'input:not([type="hidden"]):not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly]), select:not([disabled])'
+        ));
+        const idx = inputs.indexOf(target as HTMLInputElement);
+        if (idx > 0) {
+          inputs[idx - 1].focus();
+        }
+        return;
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleImportProject = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -74,12 +261,26 @@ export default function TestPage() {
   useEffect(() => {
     if (!project?.behaviors?.length) return;
     const eventMap: Record<string, string> = {
+      // 基础事件
       onFormLoad: 'formLoad', onRowLoad: 'rowLoad',
       onFieldChange: 'fieldChange', onFieldBlur: 'fieldBlur', onFieldFocus: 'fieldFocus',
       onButtonClick: 'buttonClick', onSubmit: 'submit',
+      onSubmitSuccess: 'submitSuccess', onSubmitError: 'submitError',
+      onValidate: 'validate', onDataSourceChange: 'dataSourceChange', onTabChange: 'tabChange',
       formLoad: 'formLoad', rowLoad: 'rowLoad',
       fieldChange: 'fieldChange', fieldBlur: 'fieldBlur', fieldFocus: 'fieldFocus',
       buttonClick: 'buttonClick', submit: 'submit',
+      submitSuccess: 'submitSuccess', submitError: 'submitError',
+      validate: 'validate', dataSourceChange: 'dataSourceChange', tabChange: 'tabChange',
+      // 扩展事件
+      onFormReady: 'formReady', onFormReset: 'formReset', onBeforeSubmit: 'beforeSubmit',
+      onFieldKeyDown: 'fieldKeyDown', onFieldPaste: 'fieldPaste', onFieldClear: 'fieldClear',
+      onRowAdd: 'rowAdd', onRowDelete: 'rowDelete', onRowSelect: 'rowSelect',
+      onDataImport: 'dataImport', onDataExport: 'dataExport', onValueChange: 'valueChange',
+      formReady: 'formReady', formReset: 'formReset', beforeSubmit: 'beforeSubmit',
+      fieldKeyDown: 'fieldKeyDown', fieldPaste: 'fieldPaste', fieldClear: 'fieldClear',
+      rowAdd: 'rowAdd', rowDelete: 'rowDelete', rowSelect: 'rowSelect',
+      dataImport: 'dataImport', dataExport: 'dataExport', valueChange: 'valueChange',
     };
     const loaded: BehaviorRule[] = project.behaviors.map((b) => ({
       id: b.id,
@@ -124,10 +325,11 @@ export default function TestPage() {
         next = addBehaviorLog(next, { timestamp: Date.now(), level: 'info', source: 'system', message: `从项目加载 ${project.srcTable.length} 个数据表` });
         return next;
       });
-      // formLoad + fieldChange 触发（延迟确保 rules 已更新）
+      // formLoad + formReady + fieldChange 触发（延迟确保 rules 已更新）
       const initState = { ...createRuntimeState(), formValues: firstRow, originalValues: firstRow };
       executeAllRules(rulesRef.current, 'formLoad', initState, setRuntime);
       setTimeout(() => {
+        executeAllRules(rulesRef.current, 'formReady', runtimeRef.current, setRuntime);
         executeAllRules(rulesRef.current, 'fieldChange', runtimeRef.current, setRuntime);
       }, 100);
     }
@@ -140,8 +342,10 @@ export default function TestPage() {
       next = addBehaviorLog(next, { timestamp: Date.now(), level: 'info', source: 'data-preview', message: `从数据预览导入: ${pendingRowSource}` });
       return next;
     });
+    // dataImport 事件触发
+    executeAllRules(behaviorRules, 'dataImport', runtimeRef.current, setRuntime);
     clearPendingRowData();
-  }, [pendingRowData, pendingRowSource, clearPendingRowData]);
+  }, [pendingRowData, pendingRowSource, clearPendingRowData, behaviorRules]);
 
   const doSwitchSheet = useCallback((idx: number) => {
     setActiveSheet(idx);
@@ -158,16 +362,19 @@ export default function TestPage() {
       next = addBehaviorLog(next, { timestamp: Date.now(), level: 'info', source: 'system', message: `切换到第 ${rowIdx + 1} 行` });
       return next;
     });
-    // rowLoad 触发
+    // rowLoad + rowSelect 触发
     executeAllRules(behaviorRules, 'rowLoad', runtimeRef.current, setRuntime);
+    executeAllRules(behaviorRules, 'rowSelect', runtimeRef.current, setRuntime);
   }, [sheets, activeSheet, behaviorRules]);
 
   // ── 控件事件 → 行为引擎 ──────────────────────────────
 
   const updateField = useCallback((field: string, value: unknown) => {
     setRuntime((prev) => setFormValue(prev, field, value));
-    // fieldChange 触发行为规则
-    executeAllRules(behaviorRules, 'fieldChange', { ...runtimeRef.current, formValues: { ...runtimeRef.current.formValues, [field]: value } }, setRuntime);
+    const updatedState = { ...runtimeRef.current, formValues: { ...runtimeRef.current.formValues, [field]: value } };
+    // fieldChange + valueChange 触发行为规则
+    executeAllRules(behaviorRules, 'fieldChange', updatedState, setRuntime);
+    executeAllRules(behaviorRules, 'valueChange', updatedState, setRuntime);
   }, [behaviorRules]);
 
   const handleFieldBlur = useCallback((field: string) => {
@@ -183,6 +390,21 @@ export default function TestPage() {
   const handleButtonClick = useCallback((buttonName: string) => {
     setRuntime((prev) => addBehaviorLog(prev, { timestamp: Date.now(), level: 'info', source: 'event', message: `buttonClick: ${buttonName}` }));
     executeAllRules(behaviorRules, 'buttonClick', runtimeRef.current, setRuntime);
+  }, [behaviorRules]);
+
+  const handleFieldKeyDown = useCallback((field: string, e: React.KeyboardEvent) => {
+    setRuntime((prev) => addBehaviorLog(prev, { timestamp: Date.now(), level: 'debug', source: 'event', message: `fieldKeyDown: ${field} (${e.key})` }));
+    executeAllRules(behaviorRules, 'fieldKeyDown', runtimeRef.current, setRuntime);
+  }, [behaviorRules]);
+
+  const handleFieldPaste = useCallback((field: string, e: React.ClipboardEvent) => {
+    setRuntime((prev) => addBehaviorLog(prev, { timestamp: Date.now(), level: 'debug', source: 'event', message: `fieldPaste: ${field}` }));
+    executeAllRules(behaviorRules, 'fieldPaste', runtimeRef.current, setRuntime);
+  }, [behaviorRules]);
+
+  const handleFieldClear = useCallback((field: string) => {
+    setRuntime((prev) => addBehaviorLog(prev, { timestamp: Date.now(), level: 'debug', source: 'event', message: `fieldClear: ${field}` }));
+    executeAllRules(behaviorRules, 'fieldClear', runtimeRef.current, setRuntime);
   }, [behaviorRules]);
 
   const handleControlEvent = useCallback(async (context: FormControlEventContext) => {
@@ -202,9 +424,19 @@ export default function TestPage() {
     }));
   }, [project, updateField]);
 
+  // ── Toast ──────────────────────────────────────────────
+
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ message, type });
+    toastTimerRef.current = setTimeout(() => setToast(null), 2200);
+  }, []);
+
   // ── 提交 ────────────────────────────────────────────
 
   const handleSubmit = useCallback(async () => {
+    // beforeSubmit + submit
+    await executeAllRules(behaviorRules, 'beforeSubmit', runtime, setRuntime);
     await executeAllRules(behaviorRules, 'submit', runtime, setRuntime);
     const sheet = sheets[activeSheet];
     if (sheet) {
@@ -221,12 +453,18 @@ export default function TestPage() {
       if (next.submitResult?.success) next = addBehaviorLog(next, { timestamp: Date.now(), level: 'info', source: 'submit', message: `提交成功，${next.submitResult.changeLog.length} 项变更` });
       return next;
     });
-    // submitSuccess / submitError
+    // submitSuccess / submitError + toast
     setTimeout(() => {
       const s = runtimeRef.current;
       executeAllRules(behaviorRules, s.submitResult?.success ? 'submitSuccess' : 'submitError', s, setRuntime);
+      if (s.submitResult?.success) {
+        showToast(`已保存 · ${s.submitResult.changeLog.length} 项变更`, 'success');
+      } else {
+        showToast('校验失败，请检查表单', 'error');
+      }
     }, 50);
-  }, [sheets, activeSheet, runtime, behaviorRules]);
+  }, [sheets, activeSheet, runtime, behaviorRules, showToast]);
+  handleSubmitRef.current = handleSubmit;
 
   const handleExport = useCallback((format: string) => {
     const sheet = sheets[activeSheet];
@@ -234,7 +472,9 @@ export default function TestPage() {
     if (format === 'json') downloadJson(generateChangeLogJson(runtime), `${sheet.name}_changes.json`);
     else if (format === 'excel') downloadExcel(generateNewExcel(sheet.data, runtime.formValues, runtime.currentRow, sheet.name), `${sheet.name}_modified.xlsx`);
     else if (format === 'csv') downloadCsv(generateChangeLogCsv(runtime), `${sheet.name}_changes.csv`);
-  }, [runtime, sheets, activeSheet]);
+    // dataExport 事件触发
+    executeAllRules(behaviorRules, 'dataExport', runtimeRef.current, setRuntime);
+  }, [runtime, sheets, activeSheet, behaviorRules]);
 
   const currentSheet = sheets[activeSheet];
   const fields = currentSheet?.headers || [];
@@ -307,12 +547,17 @@ export default function TestPage() {
       </div>
 
       {/* 中间：表单预览 */}
-      <div className="page-main">
+      <div className="page-main" ref={mainRef}>
         <div className="page-section-header">
-          <span>{currentSheet ? `行 ${runtime.currentRow + 1}/${currentSheet.data.length}` : '表单预览'}</span>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <button onClick={() => doSwitchRowNum(Math.max(0, runtime.currentRow - 1))} disabled={runtime.currentRow === 0} style={{ padding: '3px 8px', fontSize: 11, border: '1px solid var(--line)', borderRadius: 4 }}>上一行</button>
-            <button onClick={() => doSwitchRowNum(runtime.currentRow + 1)} disabled={!currentSheet || runtime.currentRow >= currentSheet.data.length - 1} style={{ padding: '3px 8px', fontSize: 11, border: '1px solid var(--line)', borderRadius: 4 }}>下一行</button>
+          {currentSheet ? (
+            <RowSwitcher
+              sheet={currentSheet}
+              currentRow={runtime.currentRow}
+              onSwitch={doSwitchRowNum}
+              dirtyFields={runtime.dirtyFields}
+            />
+          ) : <span>表单预览</span>}
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
             <button className="primary" onClick={handleSubmit} style={{ padding: '3px 10px', fontSize: 11 }}>提交</button>
             <select onChange={(e) => e.target.value && handleExport(e.target.value)} style={{ padding: '3px 6px', fontSize: 11, border: '1px solid var(--line)', borderRadius: 4 }}>
               <option value="">导出…</option><option value="json">JSON</option><option value="excel">Excel</option><option value="csv">CSV</option>
@@ -325,21 +570,34 @@ export default function TestPage() {
               <p>选择左侧数据表开始测试</p>
             </div>
           ) : (
-            <FormRenderer
-              components={activeComponents}
-              values={{ ...resolvedRanges, ...runtime.formValues }}
-              originalValues={runtime.originalValues}
-              componentStates={runtime.componentStates}
-              errors={runtime.validationErrors}
-              onChange={updateField}
-              onBlur={handleFieldBlur}
-              onFocus={handleFieldFocus}
-              onButtonClick={handleButtonClick}
-              onControlEvent={handleControlEvent}
-              tables={project?.srcTable || []}
-              rangeConnections={rangeConnections}
-              onRangeChange={handleRangeChange}
-            />
+            <>
+              <FormRenderer
+                components={activeComponents}
+                values={{ ...resolvedRanges, ...runtime.formValues }}
+                originalValues={runtime.originalValues}
+                componentStates={runtime.componentStates}
+                errors={runtime.validationErrors}
+                onChange={updateField}
+                onBlur={handleFieldBlur}
+                onFocus={handleFieldFocus}
+                onKeyDown={handleFieldKeyDown}
+                onPaste={handleFieldPaste}
+                onClear={handleFieldClear}
+                onButtonClick={handleButtonClick}
+                onControlEvent={handleControlEvent}
+                tables={project?.srcTable || []}
+                rangeConnections={rangeConnections}
+                onRangeChange={handleRangeChange}
+                autoFocus
+                autoFocusKey={runtime.currentRow}
+              />
+              <div className="keyboard-hint-bar">
+                <span><kbd>Enter</kbd> 下一字段</span>
+                <span><kbd>Shift+Enter</kbd> 上一字段</span>
+                <span><kbd>Ctrl+Enter</kbd> 提交</span>
+                <span><kbd>↑↓</kbd> 切换行</span>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -400,6 +658,7 @@ export default function TestPage() {
           )}
         </div>
       </div>
+      {toast && <div className={`toast toast-${toast.type}`}>{toast.type === 'success' ? '✓ ' : toast.type === 'error' ? '✕ ' : 'ℹ '}{toast.message}</div>}
     </div>
   );
 }

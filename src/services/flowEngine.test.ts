@@ -25,12 +25,12 @@ const edge = (id: string, source: string, target: string, sourcePort: string, ta
   targetHandle: `in:${targetPort}`,
 });
 
-test('curated registry is fixed at 131 executable nodes with unique IDs and ports', async () => {
+test('curated registry is fixed at 132 executable nodes with unique IDs and ports', async () => {
   const root = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
   const registrySource = readFileSync(join(root, 'nodes/registry.ts'), 'utf8');
   const packageBlock = registrySource.split('const packageDirs = [')[1]?.split('];')[0] || '';
   const packageDirs = [...packageBlock.matchAll(/'([^']+)'/g)].map((match) => match[1]);
-  assert.equal(packageDirs.length, 94);
+  assert.equal(packageDirs.length, 95);
   assert.equal(new Set(packageDirs).size, packageDirs.length);
   assert.equal(CURATED_XLSX_METHODS.size, 14);
 
@@ -101,6 +101,78 @@ test('external variables override matching variable-input nodes by varName', asy
   assert.equal(result.success, true, result.errors.join('\n'));
   assert.equal(result.nodeResults.get('source')?.outputs.value, '表单传入值');
   assert.equal(result.nodeResults.get('target')?.outputs.value, '表单传入值');
+});
+
+test('behavior-row-lookup returns patches for unique hit and warnings for miss or multiple hits', async () => {
+  await loadNodeRegistry();
+  const table = {
+    id: 'product_catalog',
+    fileName: '商品档案.json',
+    fileSize: 1,
+    fileType: 'json' as const,
+    uploadedAt: '2026-07-02T00:00:00.000Z',
+    dataHash: 'lookup-test',
+    sheets: [{
+      name: '商品档案',
+      rowCount: 3,
+      colCount: 3,
+      headers: ['商品编号', '商品名称', '状态'],
+      columns: [],
+      preview: [
+        { 商品编号: 'P-1', 商品名称: '鼠标', 状态: '上架' },
+        { 商品编号: 'P-2', 商品名称: '键盘', 状态: '上架' },
+        { 商品编号: 'P-3', 商品名称: '键盘', 状态: '下架' },
+      ],
+    }],
+  };
+
+  const hit = await executeFlow([
+    node('lookup', 'behavior-row-lookup', {
+      tableId: 'product_catalog',
+      sheetName: '商品档案',
+      loadedFieldName: 'loadedProductId',
+      loadedColumn: '商品编号',
+      enableComponentId: 'save_button',
+      fieldMap: { 商品编号: 'productId', 商品名称: 'productName' },
+      originalFieldMap: { 商品名称: 'originalProductName' },
+    }),
+  ], [], [table], {
+    nodeInputs: { lookup: { filter: { 商品编号: 'P-1', 商品名称: '鼠标' } } },
+  });
+  assert.equal(hit.success, true, hit.errors.join('\n'));
+  assert.equal(hit.nodeResults.get('lookup')?.outputs.matched, true);
+  assert.equal(hit.sideEffects.some((effect) => effect.kind === 'set-component-disabled' && effect.componentId === 'save_button' && effect.disabled === false), true);
+  assert.equal(hit.sideEffects.some((effect) => effect.kind === 'set-form-value' && effect.field === 'loadedProductId' && effect.value === 'P-1'), true);
+
+  const miss = await executeFlow([
+    node('lookup', 'behavior-row-lookup', {
+      tableId: 'product_catalog',
+      sheetName: '商品档案',
+      loadedFieldName: 'loadedProductId',
+      loadedColumn: '商品编号',
+      enableComponentId: 'save_button',
+    }),
+  ], [], [table], {
+    nodeInputs: { lookup: { filter: { 商品编号: 'P-404', 商品名称: '不存在' } } },
+  });
+  assert.equal(miss.success, true, miss.errors.join('\n'));
+  assert.equal(miss.nodeResults.get('lookup')?.outputs.matched, false);
+  assert.equal(miss.nodeResults.get('lookup')?.outputs.message, '未找到匹配记录');
+  assert.equal(miss.sideEffects.some((effect) => effect.kind === 'set-component-disabled' && effect.disabled === true), true);
+
+  const multiple = await executeFlow([
+    node('lookup', 'behavior-row-lookup', {
+      tableId: 'product_catalog',
+      sheetName: '商品档案',
+      loadedFieldName: 'loadedProductId',
+      loadedColumn: '商品编号',
+    }),
+  ], [], [table], {
+    nodeInputs: { lookup: { filter: { 商品名称: '键盘' } } },
+  });
+  assert.equal(multiple.success, true, multiple.errors.join('\n'));
+  assert.equal(multiple.nodeResults.get('lookup')?.outputs.matched, false);
+  assert.equal(multiple.nodeResults.get('lookup')?.outputs.message, '匹配到多条记录，请收窄条件');
 });
 
 test('connected inputs take precedence over direct external port injection', async () => {

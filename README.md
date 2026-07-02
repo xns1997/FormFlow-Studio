@@ -1,6 +1,6 @@
-# FormFlow Studio
+# FormFlow Studio v0.3.0
 
-**Excel 表单编排框架** —— 可视化流程编排 + 表单设计器 + 数据预览 + 测试运行
+**Excel 表单编排框架** —— 可视化流程编排 + 表单设计器 + 数据预览 + 测试运行 + 行为定义
 
 > 将 Excel 数据表转化为可交互的表单应用，通过拖拽式节点编排数据处理流程，无需编写后端代码。
 
@@ -50,15 +50,27 @@
 
 ### 行为引擎
 - Trigger / Condition / Action / SideEffect 四元组
-- 脚本沙箱（getValue / setValue / formData / setField / showMessage / querySheet）
+- **24 种事件**：formLoad, formReady, formReset, rowLoad, rowSelect, rowAdd, rowDelete, fieldChange, fieldBlur, fieldFocus, fieldKeyDown, fieldPaste, fieldClear, valueChange, buttonClick, beforeSubmit, submit, submitSuccess, submitError, validate, dataImport, dataExport, dataSourceChange, tabChange
+- **16 种动作**：setValue, clearValue, setVisible, setHidden, setEnabled, setDisabled, setRequired, setOptional, showMessage, logMessage, switchTab, executeScript, submitData, callApi, refreshData, navigate
+- 脚本沙箱（getValue / setValue / formData / setField / showMessage / querySheet / submit）
 - 事件名自动映射（onFieldChange → fieldChange）
 - 行为日志实时追踪
+- **可视化规则构建器**：触发器/条件/动作 UI，与代码双向同步，自然语言预览
+- **行为模板库**：14 个预置模板（联动/计算/校验/查询/提交/UI），一键插入
+- **行为测试面板**：模拟数据输入、运行测试、执行日志展示
+- **行为导入导出**：JSON 格式导入/导出/下载
+- 行为文档中心（全局 `/docs`，支持从项目工作区和项目设置回跳）+ 行为页右侧快速 Reference
 
 ### 测试运行
+- **智能行切换器**：可搜索下拉行选择器，显示关键字段摘要，支持关键词模糊搜索，↑↓ 快捷键导航
 - 完整表单预览 + 运行时状态面板
-- 行切换（上一行 / 下一行）+ 行为规则触发
+- **自动聚焦与键盘流**：行切换后自动聚焦首个字段，Enter 跳下一字段，Ctrl+Enter 提交
+- **即时校验**：必填项进度条，字段 blur 后内联校验，校验通过绿色对勾动画
+- **分步向导模式**：字段 > 6 个时自动启用，步骤条导航，slide 过渡动画
+- **卡片式布局**：layout="card" 模式，每 4 个字段自动分组为圆角卡片
+- **情感化反馈**：提交成功 toast 通知，dirty 字段橙色竖条标记
 - 变更记录追踪 + 提交 / 导出（JSON / Excel / CSV）
-- 表单控件事件执行（onChange / onBlur / onClick）
+- 表单控件事件执行（onChange / onBlur / onClick / onKeyDown / onPaste）
 - 流程触发器（控件事件 → 调用编排流程）
 - **表单可填**：字段自动填充、行为规则自动计算
 
@@ -114,6 +126,34 @@ pnpm test
 
 ---
 
+## 行为文档
+
+- 仓库手册：`docs/behavior-event-reference.md`
+- 全局文档页：访问 `/docs`
+- 项目工作区：访问 `/projects/:id/workspace/:tab`
+- 项目设置页：访问 `/projects/:id/settings/:section`
+- 行为页右侧的 `Reference` 面板提供当前事件的快速摘要，并支持跳转到完整文档页
+
+### 行为模板库
+
+| 类别 | 模板 | 说明 |
+|------|------|------|
+| 联动 | 字段显隐联动 | 当某个字段值变化时，显示或隐藏另一个字段 |
+| 联动 | 下拉选项联动 | 根据父级选择动态设置子级选项 |
+| 联动 | 条件禁用字段 | 满足条件时禁用某些字段 |
+| 计算 | 自动乘法计算 | 两个字段相乘自动填充结果 |
+| 计算 | 薪资计算 | 根据基本工资和绩效自动计算奖金和总薪酬 |
+| 计算 | 日期差值计算 | 计算两个日期之间的天数差 |
+| 校验 | 条件校验 | 满足特定条件时才进行校验 |
+| 校验 | 提交前校验 | 提交前检查必填字段和业务规则 |
+| 查询 | 查询数据表 | 根据字段值查询数据表中的其他信息 |
+| 提交 | 提交前格式化 | 提交前自动格式化数据 |
+| 提交 | 表单加载默认值 | 表单加载时自动填充默认值 |
+| UI | 提交成功提示 | 提交成功后显示自定义提示 |
+| UI | 行切换日志 | 切换数据行时记录日志 |
+
+---
+
 ## 技术栈
 
 | 技术 | 用途 |
@@ -135,9 +175,11 @@ pnpm test
 ```
 ├── src/
 │   ├── components/       # 通用组件
-│   │   ├── FormRenderer.tsx        # 表单渲染器（支持 Monaco 编辑对象/数组）
+│   │   ├── FormRenderer.tsx        # 表单渲染器（向导模式 + 卡片布局 + 自动聚焦）
 │   │   ├── CodeEditor.tsx          # Monaco 编辑器封装（自定义主题 + 智能提示）
 │   │   ├── RangeSelector.tsx       # Excel 级选区组件
+│   │   ├── RuleBuilder.tsx         # 可视化规则构建器（双向同步）
+│   │   ├── BehaviorTestPanel.tsx   # 行为测试面板
 │   │   ├── TypeDisplayer.tsx       # 27 种类型可视化展示
 │   │   ├── OutputPreviewModal.tsx  # 输出预览弹窗（表格 / Monaco / HTML）
 │   │   └── ChartWidget.tsx         # 图表组件
@@ -155,7 +197,9 @@ pnpm test
 │   │   └── BehaviorPage.tsx        # 行为定义
 │   ├── services/
 │   │   ├── flowEngine.ts           # 流程执行引擎
-│   │   ├── behaviorEngine.ts       # 行为引擎
+│   │   ├── behaviorEngine.ts       # 行为引擎（24 事件 + 16 动作）
+│   │   ├── behaviorTemplates.ts    # 行为模板库（14 个预置模板）
+│   │   ├── behaviorIO.ts           # 行为导入导出服务
 │   │   ├── scriptSandbox.ts        # 脚本沙箱（formData / setField）
 │   │   └── rangeResolver.ts        # Range 解析器
 │   ├── project/

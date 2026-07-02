@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import type { DesignComponent, WorkflowFile } from '../project/types';
+import type { DesignComponent, FormLinkageAction, FormLinkageCondition, FormLinkageRule, WorkflowFile } from '../project/types';
 import type { RangeRef } from '../models';
 import type { MetricConfig } from '../components/ChartWidget';
 import { getControl } from './registry';
@@ -39,6 +39,42 @@ async (ctx) => {
 }`,
   };
   return templates[eventKey] || `// ${eventKey}\n`;
+}
+
+function createRuleId(prefix: string) {
+  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+}
+
+function createDefaultLinkageCondition(field?: string): FormLinkageCondition {
+  return {
+    id: createRuleId('cond'),
+    field,
+    operator: 'equals',
+    value: '',
+  };
+}
+
+function createDefaultLinkageAction(): FormLinkageAction {
+  return {
+    id: createRuleId('action'),
+    type: 'setValue',
+    targetField: '',
+    valueSource: 'event',
+  };
+}
+
+function createDefaultLinkageRule(eventName: string, fieldName: string): FormLinkageRule {
+  return {
+    id: createRuleId('rule'),
+    name: `${eventName} 联动`,
+    trigger: { eventName, sourceField: fieldName },
+    conditions: [createDefaultLinkageCondition(fieldName)],
+    conditionMode: 'all',
+    actions: [createDefaultLinkageAction()],
+    scope: 'current-form',
+    enabled: true,
+    priority: 10,
+  };
 }
 
 interface Props {
@@ -294,6 +330,259 @@ function FlowTriggerEditor({
   );
 }
 
+function LinkageRulesEditor({
+  eventName,
+  fieldName,
+  rules,
+  fields,
+  components,
+  workflows,
+  onChange,
+}: {
+  eventName: string;
+  fieldName: string;
+  rules: FormLinkageRule[];
+  fields: string[];
+  components: DesignComponent[];
+  workflows: WorkflowFile[];
+  onChange: (next: FormLinkageRule[]) => void;
+}) {
+  const componentOptions = components
+    .map((component) => ({ id: component.id, label: String(component.props.label || component.props.name || component.type || component.id) }))
+    .filter((option) => option.id);
+
+  const updateRule = (ruleId: string, patch: Partial<FormLinkageRule>) => {
+    onChange(rules.map((rule) => rule.id === ruleId ? { ...rule, ...patch } : rule));
+  };
+
+  const updateConditions = (ruleId: string, updater: (conditions: FormLinkageCondition[]) => FormLinkageCondition[]) => {
+    onChange(rules.map((rule) => rule.id === ruleId ? { ...rule, conditions: updater(rule.conditions) } : rule));
+  };
+
+  const updateActions = (ruleId: string, updater: (actions: FormLinkageAction[]) => FormLinkageAction[]) => {
+    onChange(rules.map((rule) => rule.id === ruleId ? { ...rule, actions: updater(rule.actions) } : rule));
+  };
+
+  return (
+    <div className="prop-linkage-editor">
+      {rules.map((rule) => (
+        <div key={rule.id} className="prop-linkage-rule">
+          <div className="prop-linkage-rule-head">
+            <input
+              value={rule.name}
+              onChange={(event) => updateRule(rule.id, { name: event.target.value })}
+              placeholder="规则名称"
+            />
+            <label><input type="checkbox" checked={rule.enabled} onChange={(event) => updateRule(rule.id, { enabled: event.target.checked })} />启用</label>
+            <label>优先级<input type="number" value={rule.priority} onChange={(event) => updateRule(rule.id, { priority: Number(event.target.value) || 0 })} /></label>
+            <button type="button" onClick={() => onChange(rules.filter((item) => item.id !== rule.id))}>删除</button>
+          </div>
+          <div className="prop-linkage-grid">
+            <label className="prop-field">
+              <span>触发事件</span>
+              <input type="text" value={eventName} disabled />
+            </label>
+            <label className="prop-field">
+              <span>来源字段</span>
+              <select value={rule.trigger.sourceField || fieldName} onChange={(event) => updateRule(rule.id, { trigger: { ...rule.trigger, sourceField: event.target.value } })}>
+                {[fieldName, ...fields.filter((item) => item !== fieldName)].map((field) => <option key={field} value={field}>{field}</option>)}
+              </select>
+            </label>
+            <label className="prop-field">
+              <span>条件关系</span>
+              <select value={rule.conditionMode || 'all'} onChange={(event) => updateRule(rule.id, { conditionMode: event.target.value as 'all' | 'any' })}>
+                <option value="all">全部满足</option>
+                <option value="any">任意满足</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="prop-linkage-section">
+            <div className="prop-linkage-section-head">
+              <strong>条件</strong>
+              <button type="button" onClick={() => updateConditions(rule.id, (conditions) => [...conditions, createDefaultLinkageCondition(fieldName)])}>添加条件</button>
+            </div>
+            {rule.conditions.map((condition) => (
+              <div key={condition.id} className="prop-linkage-row">
+                <select value={condition.field || ''} onChange={(event) => updateConditions(rule.id, (conditions) => conditions.map((item) => item.id === condition.id ? { ...item, field: event.target.value } : item))}>
+                  {fields.map((field) => <option key={field} value={field}>{field}</option>)}
+                </select>
+                <select value={condition.operator} onChange={(event) => updateConditions(rule.id, (conditions) => conditions.map((item) => item.id === condition.id ? { ...item, operator: event.target.value as FormLinkageCondition['operator'] } : item))}>
+                  <option value="equals">等于</option>
+                  <option value="notEquals">不等于</option>
+                  <option value="isEmpty">为空</option>
+                  <option value="isNotEmpty">非空</option>
+                  <option value="contains">包含</option>
+                  <option value="greaterThan">大于</option>
+                  <option value="lessThan">小于</option>
+                  <option value="greaterOrEqual">大于等于</option>
+                  <option value="lessOrEqual">小于等于</option>
+                </select>
+                {!['isEmpty', 'isNotEmpty'].includes(condition.operator) && (
+                  <input
+                    type="text"
+                    value={String(condition.value ?? '')}
+                    placeholder="比较值"
+                    onChange={(event) => updateConditions(rule.id, (conditions) => conditions.map((item) => item.id === condition.id ? { ...item, value: event.target.value } : item))}
+                  />
+                )}
+                <button type="button" onClick={() => updateConditions(rule.id, (conditions) => conditions.filter((item) => item.id !== condition.id))}>×</button>
+              </div>
+            ))}
+          </div>
+
+          <div className="prop-linkage-section">
+            <div className="prop-linkage-section-head">
+              <strong>动作</strong>
+              <button type="button" onClick={() => updateActions(rule.id, (actions) => [...actions, createDefaultLinkageAction()])}>添加动作</button>
+            </div>
+            {rule.actions.map((action) => (
+              <div key={action.id} className="prop-linkage-action-card">
+                <div className="prop-linkage-row">
+                  <select value={action.type} onChange={(event) => updateActions(rule.id, (actions) => actions.map((item) => item.id === action.id ? { ...item, type: event.target.value as FormLinkageAction['type'] } : item))}>
+                    <option value="setValue">设置字段值</option>
+                    <option value="setVisible">显示/隐藏控件</option>
+                    <option value="setDisabled">启用/禁用控件</option>
+                    <option value="setRequired">设置字段必填</option>
+                    <option value="showMessage">显示提示</option>
+                    <option value="runWorkflow">执行流程</option>
+                  </select>
+                  <button type="button" onClick={() => updateActions(rule.id, (actions) => actions.filter((item) => item.id !== action.id))}>删除</button>
+                </div>
+
+                {action.type === 'setValue' && (
+                  <div className="prop-linkage-grid">
+                    <label className="prop-field">
+                      <span>目标字段</span>
+                      <select value={action.targetField || ''} onChange={(event) => updateActions(rule.id, (actions) => actions.map((item) => item.id === action.id ? { ...item, targetField: event.target.value } : item))}>
+                        <option value="">选择字段</option>
+                        {fields.map((field) => <option key={field} value={field}>{field}</option>)}
+                      </select>
+                    </label>
+                    <label className="prop-field">
+                      <span>值来源</span>
+                      <select value={action.valueSource || 'static'} onChange={(event) => updateActions(rule.id, (actions) => actions.map((item) => item.id === action.id ? { ...item, valueSource: event.target.value as FormLinkageAction['valueSource'] } : item))}>
+                        <option value="event">当前事件值</option>
+                        <option value="field">其他字段值</option>
+                        <option value="static">静态值</option>
+                      </select>
+                    </label>
+                    {action.valueSource === 'field' ? (
+                      <label className="prop-field">
+                        <span>来源字段</span>
+                        <select value={action.sourceField || ''} onChange={(event) => updateActions(rule.id, (actions) => actions.map((item) => item.id === action.id ? { ...item, sourceField: event.target.value } : item))}>
+                          <option value="">选择字段</option>
+                          {fields.map((field) => <option key={field} value={field}>{field}</option>)}
+                        </select>
+                      </label>
+                    ) : action.valueSource === 'static' ? (
+                      <label className="prop-field">
+                        <span>静态值</span>
+                        <input type="text" value={String(action.value ?? '')} onChange={(event) => updateActions(rule.id, (actions) => actions.map((item) => item.id === action.id ? { ...item, value: event.target.value } : item))} />
+                      </label>
+                    ) : null}
+                  </div>
+                )}
+
+                {action.type === 'setVisible' && (
+                  <div className="prop-linkage-grid">
+                    <label className="prop-field">
+                      <span>目标控件</span>
+                      <select value={action.targetComponentId || ''} onChange={(event) => updateActions(rule.id, (actions) => actions.map((item) => item.id === action.id ? { ...item, targetComponentId: event.target.value } : item))}>
+                        <option value="">选择控件</option>
+                        {componentOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                      </select>
+                    </label>
+                    <label className="prop-field">
+                      <span>动作</span>
+                      <select value={action.visible === false ? 'hide' : 'show'} onChange={(event) => updateActions(rule.id, (actions) => actions.map((item) => item.id === action.id ? { ...item, visible: event.target.value === 'show' } : item))}>
+                        <option value="show">显示</option>
+                        <option value="hide">隐藏</option>
+                      </select>
+                    </label>
+                  </div>
+                )}
+
+                {action.type === 'setDisabled' && (
+                  <div className="prop-linkage-grid">
+                    <label className="prop-field">
+                      <span>目标控件</span>
+                      <select value={action.targetComponentId || ''} onChange={(event) => updateActions(rule.id, (actions) => actions.map((item) => item.id === action.id ? { ...item, targetComponentId: event.target.value } : item))}>
+                        <option value="">选择控件</option>
+                        {componentOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                      </select>
+                    </label>
+                    <label className="prop-field">
+                      <span>动作</span>
+                      <select value={action.disabled ? 'disable' : 'enable'} onChange={(event) => updateActions(rule.id, (actions) => actions.map((item) => item.id === action.id ? { ...item, disabled: event.target.value === 'disable' } : item))}>
+                        <option value="disable">禁用</option>
+                        <option value="enable">启用</option>
+                      </select>
+                    </label>
+                  </div>
+                )}
+
+                {action.type === 'setRequired' && (
+                  <div className="prop-linkage-grid">
+                    <label className="prop-field">
+                      <span>目标字段</span>
+                      <select value={action.targetField || ''} onChange={(event) => updateActions(rule.id, (actions) => actions.map((item) => item.id === action.id ? { ...item, targetField: event.target.value } : item))}>
+                        <option value="">选择字段</option>
+                        {fields.map((field) => <option key={field} value={field}>{field}</option>)}
+                      </select>
+                    </label>
+                    <label className="prop-field">
+                      <span>动作</span>
+                      <select value={action.required === false ? 'optional' : 'required'} onChange={(event) => updateActions(rule.id, (actions) => actions.map((item) => item.id === action.id ? { ...item, required: event.target.value === 'required' } : item))}>
+                        <option value="required">设为必填</option>
+                        <option value="optional">取消必填</option>
+                      </select>
+                    </label>
+                  </div>
+                )}
+
+                {action.type === 'showMessage' && (
+                  <div className="prop-linkage-grid">
+                    <label className="prop-field">
+                      <span>提示内容</span>
+                      <input type="text" value={action.message || ''} onChange={(event) => updateActions(rule.id, (actions) => actions.map((item) => item.id === action.id ? { ...item, message: event.target.value } : item))} />
+                    </label>
+                    <label className="prop-field">
+                      <span>类型</span>
+                      <select value={action.level || 'info'} onChange={(event) => updateActions(rule.id, (actions) => actions.map((item) => item.id === action.id ? { ...item, level: event.target.value as FormLinkageAction['level'] } : item))}>
+                        <option value="info">信息</option>
+                        <option value="success">成功</option>
+                        <option value="warning">警告</option>
+                        <option value="error">错误</option>
+                      </select>
+                    </label>
+                  </div>
+                )}
+
+                {action.type === 'runWorkflow' && (
+                  <div className="prop-linkage-grid">
+                    <label className="prop-field">
+                      <span>目标流程</span>
+                      <select value={action.workflowId || ''} onChange={(event) => updateActions(rule.id, (actions) => actions.map((item) => item.id === action.id ? { ...item, workflowId: event.target.value } : item))}>
+                        <option value="">当前绑定流程</option>
+                        {workflows.map((workflow) => <option key={workflow.id} value={workflow.id}>{workflow.name}</option>)}
+                      </select>
+                    </label>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      <button type="button" className="prop-linkage-add" onClick={() => onChange([...rules, createDefaultLinkageRule(eventName, fieldName)])}>
+        + 添加联动规则
+      </button>
+    </div>
+  );
+}
+
 export function PropertyPanel({ component, components = [], onUpdate, onRemove }: Props) {
   const workflows = useProjectStore((state) => state.project?.workflows || []);
   const tables = useProjectStore((state) => state.project?.srcTable || []);
@@ -398,12 +687,32 @@ export function PropertyPanel({ component, components = [], onUpdate, onRemove }
             {control.eventSchema.map((evt) => {
               const eventCode = component.props.events?.[evt.key] || getDefaultEventCode(evt.key, component.props.name || component.type);
               const flowTriggers = (component.props.flowTriggers || {}) as Record<string, FormFlowTriggerConfig>;
+              const linkageRuleMap = (component.props.linkageRules || {}) as Record<string, FormLinkageRule[]>;
+              const eventRules = linkageRuleMap[evt.key] || [];
+              const impactFields = [...new Set(eventRules.flatMap((rule) => rule.actions.map((action) => action.targetField).filter(Boolean) as string[]))];
+              const impactComponents = [...new Set(eventRules.flatMap((rule) => rule.actions.map((action) => action.targetComponentId).filter(Boolean) as string[]))];
               return (
                 <div key={evt.key} className="prop-event">
                   <div className="prop-event-header">
                     <span className="prop-event-key">{evt.key}</span>
                     <span className="prop-event-label">{evt.label}</span>
                   </div>
+                  <div className="prop-event-section">
+                    <div className="prop-event-section-title">联动规则</div>
+                    <LinkageRulesEditor
+                      eventName={evt.key}
+                      fieldName={String(component.fieldBinding || component.props.name || component.type)}
+                      rules={eventRules}
+                      fields={fields}
+                      components={components}
+                      workflows={workflows}
+                      onChange={(nextRules) => onUpdate(component.id, {
+                        linkageRules: { ...linkageRuleMap, [evt.key]: nextRules },
+                      })}
+                    />
+                  </div>
+                  <div className="prop-event-section">
+                    <div className="prop-event-section-title">流程绑定</div>
                   <FlowTriggerEditor
                     value={flowTriggers[evt.key]}
                     workflows={workflows}
@@ -413,6 +722,9 @@ export function PropertyPanel({ component, components = [], onUpdate, onRemove }
                       flowTriggers: { ...flowTriggers, [evt.key]: trigger },
                     })}
                   />
+                  </div>
+                  <div className="prop-event-section">
+                    <div className="prop-event-section-title">高级脚本</div>
                   <CodeEditor
                     value={eventCode}
                     placeholder={evt.description}
@@ -445,6 +757,16 @@ export function PropertyPanel({ component, components = [], onUpdate, onRemove }
                       onUpdate(component.id, { events });
                     }}
                   />
+                  </div>
+                  <div className="prop-event-impact">
+                    <strong>影响面</strong>
+                    <div>
+                      {impactFields.length > 0 ? <span>字段：{impactFields.join('、')}</span> : <span>字段：—</span>}
+                      {impactComponents.length > 0 ? <span>控件：{impactComponents.join('、')}</span> : <span>控件：—</span>}
+                      <span>流程：{flowTriggers[evt.key]?.workflowId || '—'}</span>
+                      <span>脚本：{eventCode.trim() ? `${eventCode.trim().split('\n').length} 行` : '—'}</span>
+                    </div>
+                  </div>
                 </div>
               );
             })}

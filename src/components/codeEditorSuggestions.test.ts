@@ -24,6 +24,8 @@ test('event suggestions are generated from current fields, event and workflows',
   assert.ok(suggestions.some((item) => item.label === 'ctx.values.active' && item.detail?.includes('boolean')));
   assert.ok(suggestions.some((item) => item.label === '运行流程 客户审批' && item.insertText?.includes('flow-1')));
   assert.ok(suggestions.some((item) => item.label === 'typed async callback' && item.insertText?.includes('FormEventContext')));
+  assert.ok(suggestions.some((item) => item.label === 'ctx.previousValue'));
+  assert.ok(suggestions.some((item) => item.label === 'ctx.detail.previousValue'));
 });
 
 test('flow parameter suggestions include declared variables and current form fields', () => {
@@ -47,4 +49,15 @@ test('event extra lib carries current field and value typing', () => {
   assert.match(lib.content, /value: CurrentEventValue;/);
   assert.match(lib.content, /"active"\?: boolean;/);
   assert.match(lib.content, /setValue<K extends EventFieldName>/);
+  assert.match(lib.content, /detail: \{ previousValue: CurrentEventValue;/);
+  assert.match(lib.content, /changedFields: EventFieldName\[\]/);
+});
+
+test('event-specific suggestions follow the selected behavior event', () => {
+  const tab = createEventContextSuggestions({ eventName: 'onTabChange' });
+  assert.ok(tab.some((item) => item.label === 'ctx.detail.index'));
+  assert.ok(tab.some((item) => item.label === 'ctx.detail.previousIndex'));
+  assert.ok(!tab.some((item) => item.label === 'ctx.detail.files'));
+  const drop = createEventContextSuggestions({ eventName: 'onDrop' });
+  assert.ok(drop.some((item) => item.label === 'ctx.detail.files'));
 });

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Outlet, useParams, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { useProjectStore } from '../project/store';
 
 export default function ProjectDetailPage() {
@@ -21,6 +21,5 @@ export default function ProjectDetailPage() {
 
   if (loading) return <div className="loading-splash"><div className="loading-spinner" /><p>加载项目…</p></div>;
   if (!project) return <div className="loading-splash"><p>项目不存在</p><button onClick={() => navigate('/projects')}>返回列表</button></div>;
-
   return <Outlet />;
 }

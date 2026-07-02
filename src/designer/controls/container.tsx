@@ -26,7 +26,7 @@ registerControl({
   eventSchema: [{ key: 'onDrop', label: '放入控件', description: '控件放入卡片时触发' }],
   defaultSize: { w: 360, h: 220 },
   render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => (
-    <div onDragOver={(event) => { if (mode === 'preview') event.preventDefault(); }} onDrop={(event) => { if (mode !== 'preview') return; event.preventDefault(); runtime?.emit('onDrop', event.dataTransfer.getData('text/plain'), { files: Array.from(event.dataTransfer.files), types: Array.from(event.dataTransfer.types) }); }} style={{ width: '100%', height: '100%', minWidth: 0, boxSizing: 'border-box', padding: '0 2px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div onDragOver={(event) => { if (mode === 'preview') event.preventDefault(); }} onDrop={(event) => { if (mode !== 'preview') return; event.preventDefault(); const text = event.dataTransfer.getData('text/plain'); runtime?.emit('onDrop', text, { text, files: Array.from(event.dataTransfer.files), types: Array.from(event.dataTransfer.types) }); }} style={{ width: '100%', height: '100%', minWidth: 0, boxSizing: 'border-box', padding: '0 2px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {component.props.title && (
         <div style={controlText({ fontSize: 12, fontWeight: 650, color: '#8e8e93', padding: '6px 4px 4px', textTransform: 'uppercase', flexShrink: 0 })}>
           {component.props.title}

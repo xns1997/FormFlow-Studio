@@ -20,6 +20,17 @@ export interface FormControlEventContext {
   originalValues?: Record<string, unknown>;
   detail?: unknown;
   component: ComponentNode;
+  /** Value before this interaction. For form-level events this is the original form snapshot. */
+  previousValue?: unknown;
+  /** Milliseconds since Unix epoch when the event context was created. */
+  timestamp?: number;
+  /** Whether the current field differs from its original value. */
+  dirty?: boolean;
+  /** Form fields whose current values differ from the original snapshot. */
+  changedFields?: string[];
+  /** Stable aliases useful to scripts and workflow parameter mappings. */
+  componentId?: string;
+  componentType?: string;
 }
 
 function resolvePath(source: unknown, path: string[]): unknown {
@@ -42,12 +53,18 @@ export function resolveFormFlowValue(expression: unknown, context: FormControlEv
     '$component': context.component,
     '$componentId': context.component.id,
     '$detail': context.detail,
+    '$previousValue': context.previousValue,
+    '$timestamp': context.timestamp,
+    '$dirty': context.dirty,
+    '$changedFields': context.changedFields || [],
+    '$context': context,
   };
   if (Object.prototype.hasOwnProperty.call(exact, expression)) return exact[expression];
   if (expression.startsWith('$form.')) return resolvePath(context.values, expression.slice(6).split('.'));
   if (expression.startsWith('$original.')) return resolvePath(context.originalValues || {}, expression.slice(10).split('.'));
   if (expression.startsWith('$component.')) return resolvePath(context.component, expression.slice(11).split('.'));
   if (expression.startsWith('$detail.')) return resolvePath(context.detail, expression.slice(8).split('.'));
+  if (expression.startsWith('$context.')) return resolvePath(context, expression.slice(9).split('.'));
   return expression;
 }
 
@@ -60,6 +77,12 @@ export function resolveFormFlowParameters(config: FormFlowTriggerConfig, context
     formData: context.values,
     componentId: context.component.id,
     component: context.component,
+    previousValue: context.previousValue,
+    timestamp: context.timestamp,
+    dirty: context.dirty,
+    changedFields: context.changedFields || [],
+    detail: context.detail,
+    context,
   };
   for (const [name, expression] of Object.entries(config.parameterMap || {})) {
     defaults[name] = resolveFormFlowValue(expression, context);
@@ -120,6 +143,12 @@ export function createDefaultParameterMap(workflow: WorkflowFile | undefined, co
     if (name === 'values' || name === 'formData') return [name, '$values'];
     if (name === 'field') return [name, '$field'];
     if (name === 'event') return [name, '$event'];
+    if (name === 'previousValue') return [name, '$previousValue'];
+    if (name === 'timestamp') return [name, '$timestamp'];
+    if (name === 'dirty') return [name, '$dirty'];
+    if (name === 'changedFields') return [name, '$changedFields'];
+    if (name === 'detail') return [name, '$detail'];
+    if (name === 'context') return [name, '$context'];
     return [name, `$form.${name}`];
   }));
 }

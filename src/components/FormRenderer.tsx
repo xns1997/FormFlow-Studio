@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { ComponentNode, ComponentType, RangeRef } from '../models';
 import type { SrcTableEntry } from '../project/types';
 import RangeTag from './RangeTag';
@@ -19,92 +19,241 @@ interface FormRendererProps {
   onChange: (field: string, value: unknown) => void;
   onBlur?: (field: string) => void;
   onFocus?: (field: string) => void;
+  onKeyDown?: (field: string, e: React.KeyboardEvent) => void;
+  onPaste?: (field: string, e: React.ClipboardEvent) => void;
+  onClear?: (field: string) => void;
   onButtonClick?: (buttonName: string) => void;
   onControlEvent?: (context: FormControlEventContext) => void | Promise<void>;
   tables?: SrcTableEntry[];
   rangeConnections?: Record<string, RangeRef>;
   onRangeChange?: (componentName: string, ref: RangeRef | null) => void;
+  autoFocus?: boolean;
+  autoFocusKey?: string | number;
+  wizardMode?: 'auto' | 'always' | 'never';
+  layout?: 'flat' | 'card';
 }
+
+const WIZARD_FIELD_THRESHOLD = 6;
+const WIZARD_STEP_SIZE = 4;
+const CARD_GROUP_SIZE = 4;
 
 export default function FormRenderer({
   components, values, originalValues, componentStates, errors, onChange,
-  onBlur, onFocus, onButtonClick, onControlEvent,
+  onBlur, onFocus, onKeyDown, onPaste, onClear, onButtonClick, onControlEvent,
   tables = [], rangeConnections = {}, onRangeChange,
+  autoFocus, autoFocusKey, wizardMode = 'auto', layout = 'flat',
 }: FormRendererProps) {
   const [connectingField, setConnectingField] = useState<string | null>(null);
+  const [touched, setTouched] = useState<Set<string>>(new Set());
+  const [currentStep, setCurrentStep] = useState(0);
+  const formRef = useRef<HTMLDivElement>(null);
 
   const handleRangeConfirm = useCallback((ref: RangeRef) => {
     if (connectingField && onRangeChange) onRangeChange(connectingField, ref);
     setConnectingField(null);
   }, [connectingField, onRangeChange]);
 
+  // Auto-focus first editable input
+  useEffect(() => {
+    if (!autoFocus || !formRef.current) return;
+    const timer = setTimeout(() => {
+      const el = formRef.current?.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+        'input:not([type="hidden"]):not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly]), select:not([disabled])'
+      );
+      el?.focus();
+    }, 80);
+    return () => clearTimeout(timer);
+  }, [autoFocus, autoFocusKey]);
+
+  // Required field progress
+  const requiredFields = components.filter((c) => {
+    const state = componentStates[c.id] || { visible: true };
+    if (!state.visible) return false;
+    return !!normalizeRenderProps(c).required;
+  });
+  const filledRequired = requiredFields.filter((c) => {
+    const v = values[c.name];
+    return v != null && v !== '' && !(Array.isArray(v) && v.length === 0);
+  });
+  const requiredProgress = requiredFields.length > 0 ? `${filledRequired.length}/${requiredFields.length}` : null;
+
+  const handleFieldBlur = useCallback((field: string) => {
+    setTouched((prev) => new Set(prev).add(field));
+  }, []);
+
+  // ── Wizard mode: group visible editable components into steps ──
+  const visibleComponents = components.filter((c) => {
+    const state = componentStates[c.id] || { visible: true };
+    return state.visible;
+  });
+  const editableTypes = new Set(['input', 'numberInput', 'textarea', 'select', 'radio', 'checkbox', 'datePicker', 'switch', 'rating']);
+  const editableCount = visibleComponents.filter((c) => editableTypes.has(c.type)).length;
+  const isWizard = wizardMode === 'always' || (wizardMode === 'auto' && editableCount > WIZARD_FIELD_THRESHOLD);
+
+  const steps: ComponentNode[][] = useMemo(() => {
+    if (!isWizard) return [components];
+    const result: ComponentNode[][] = [];
+    let current: ComponentNode[] = [];
+    for (const comp of components) {
+      current.push(comp);
+      if (current.length >= WIZARD_STEP_SIZE && editableTypes.has(comp.type)) {
+        result.push(current);
+        current = [];
+      }
+    }
+    if (current.length > 0) result.push(current);
+    return result;
+  }, [components, isWizard]);
+
+  const totalSteps = steps.length;
+  const safeStep = Math.min(currentStep, totalSteps - 1);
+  const stepComponents = isWizard ? steps[safeStep] || [] : components;
+
+  // Reset step when components change significantly
+  useEffect(() => {
+    if (currentStep >= totalSteps) setCurrentStep(0);
+  }, [totalSteps, currentStep]);
+
+  // ── Render a single field ──
+  const renderField = (comp: ComponentNode) => {
+    const state = componentStates[comp.id] || { visible: true, disabled: false, readonly: false };
+    if (!state.visible) return null;
+    const props = normalizeRenderProps(comp);
+    const hasError = !!errors[comp.name];
+    const isTouched = touched.has(comp.name);
+    const isDirty = JSON.stringify(values[comp.name]) !== JSON.stringify(originalValues[comp.name]);
+    const showSuccess = isTouched && !hasError && isDirty && !!props.required;
+    const rangeRef = rangeConnections[comp.name] || null;
+    const showChrome = !['text', 'upload', 'table', 'container', 'tabs', 'custom'].includes(comp.type);
+    return (
+      <div key={comp.id} className={`lg-field ${state.disabled ? 'disabled' : ''} ${hasError && isTouched ? 'has-error' : ''} ${isDirty ? 'dirty-indicator' : ''}`}>
+        {showChrome && (
+          <label className="lg-label">
+            {comp.label}
+            {!!props.required && <span className="lg-required">*</span>}
+            {showSuccess && <span className="lg-valid-check">✓</span>}
+          </label>
+        )}
+        <FormFieldInput
+          type={comp.type}
+          name={comp.name}
+          value={values[comp.name]}
+          originalValue={originalValues[comp.name]}
+          disabled={state.disabled || state.readonly || !!props.disabled || !!props.readonly}
+          props={props}
+          error={isTouched ? errors[comp.name] : undefined}
+          onChange={(val) => {
+            const nextValues = { ...values, [comp.name]: val };
+            onChange(comp.name, val);
+            void onControlEvent?.({
+              eventName: 'onChange', field: comp.name, value: val,
+              values: nextValues, originalValues, component: comp, previousValue: values[comp.name], timestamp: Date.now(),
+            });
+          }}
+          onBlur={() => {
+            handleFieldBlur(comp.name);
+            onBlur?.(comp.name);
+            void onControlEvent?.({
+              eventName: 'onBlur', field: comp.name, value: values[comp.name],
+              values, originalValues, component: comp, previousValue: values[comp.name], timestamp: Date.now(),
+            });
+          }}
+          onFocus={() => {
+            onFocus?.(comp.name);
+            void onControlEvent?.({
+              eventName: 'onFocus', field: comp.name, value: values[comp.name],
+              values, originalValues, component: comp, previousValue: values[comp.name], timestamp: Date.now(),
+            });
+          }}
+          onKeyDown={onKeyDown ? (e) => onKeyDown(comp.name, e) : undefined}
+          onPaste={onPaste ? (e) => onPaste(comp.name, e) : undefined}
+          onClear={onClear ? () => onClear(comp.name) : undefined}
+          onButtonClick={() => {
+            onButtonClick?.(comp.name);
+            void onControlEvent?.({
+              eventName: 'onClick', field: comp.name, value: values[comp.name],
+              values, originalValues, component: comp, previousValue: values[comp.name], timestamp: Date.now(),
+            });
+          }}
+          tables={tables}
+        />
+        {tables.length > 0 && (
+          <RangeTag
+            range={rangeRef}
+            onConnect={() => setConnectingField(comp.name)}
+            onDisconnect={() => onRangeChange?.(comp.name, null)}
+          />
+        )}
+        {hasError && isTouched && <span className="lg-error">{errors[comp.name]}</span>}
+      </div>
+    );
+  };
+
   return (
-    <div className="lg-form">
-      {components.map((comp) => {
-        const state = componentStates[comp.id] || { visible: true, disabled: false, readonly: false };
-        if (!state.visible) return null;
-        const props = normalizeRenderProps(comp);
-        const hasError = !!errors[comp.name];
-        const rangeRef = rangeConnections[comp.name] || null;
-        const showChrome = !['text', 'upload', 'table', 'container', 'tabs', 'custom'].includes(comp.type);
-        return (
-          <div key={comp.id} className={`lg-field ${state.disabled ? 'disabled' : ''} ${hasError ? 'has-error' : ''}`}>
-            {showChrome && (
-              <label className="lg-label">
-                {comp.label}
-                {!!props.required && <span className="lg-required">*</span>}
-              </label>
-            )}
-            <FormFieldInput
-              type={comp.type}
-              name={comp.name}
-              value={values[comp.name]}
-              originalValue={originalValues[comp.name]}
-              disabled={state.disabled || state.readonly || !!props.disabled || !!props.readonly}
-              props={props}
-              error={errors[comp.name]}
-              onChange={(val) => {
-                const nextValues = { ...values, [comp.name]: val };
-                onChange(comp.name, val);
-                void onControlEvent?.({
-                  eventName: 'onChange', field: comp.name, value: val,
-                  values: nextValues, originalValues, component: comp,
-                });
-              }}
-              onBlur={() => {
-                onBlur?.(comp.name);
-                void onControlEvent?.({
-                  eventName: 'onBlur', field: comp.name, value: values[comp.name],
-                  values, originalValues, component: comp,
-                });
-              }}
-              onFocus={() => {
-                onFocus?.(comp.name);
-                void onControlEvent?.({
-                  eventName: 'onFocus', field: comp.name, value: values[comp.name],
-                  values, originalValues, component: comp,
-                });
-              }}
-              onButtonClick={() => {
-                onButtonClick?.(comp.name);
-                void onControlEvent?.({
-                  eventName: 'onClick', field: comp.name, value: values[comp.name],
-                  values, originalValues, component: comp,
-                });
-              }}
-              tables={tables}
-            />
-            {tables.length > 0 && (
-              <RangeTag
-                range={rangeRef}
-                onConnect={() => setConnectingField(comp.name)}
-                onDisconnect={() => onRangeChange?.(comp.name, null)}
-              />
-            )}
-            {errors[comp.name] && <span className="lg-error">{errors[comp.name]}</span>}
+    <div className={`lg-form ${isWizard ? 'lg-form-wizard' : ''}`} ref={formRef}>
+      {/* Required progress */}
+      {requiredProgress && (
+        <div className="lg-required-progress">
+          <div className="lg-required-progress-bar">
+            <div className="lg-required-progress-fill" style={{ width: `${(filledRequired.length / requiredFields.length) * 100}%` }} />
           </div>
-        );
-      })}
+          <span className="lg-required-progress-text">必填项 {requiredProgress}</span>
+        </div>
+      )}
+
+      {/* Wizard step bar */}
+      {isWizard && totalSteps > 1 && (
+        <div className="lg-wizard-bar">
+          {steps.map((_, i) => (
+            <button
+              key={i}
+              className={`lg-wizard-step ${i === safeStep ? 'active' : i < safeStep ? 'done' : ''}`}
+              onClick={() => setCurrentStep(i)}
+              type="button"
+            >
+              <span className="lg-wizard-step-num">{i < safeStep ? '✓' : i + 1}</span>
+              <span className="lg-wizard-step-label">步骤 {i + 1}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Fields */}
+      <div className={isWizard ? 'lg-wizard-body' : ''}>
+        {layout === 'card' ? (
+          <CardGroup components={stepComponents} renderField={renderField} groupSize={CARD_GROUP_SIZE} />
+        ) : (
+          stepComponents.map(renderField)
+        )}
+      </div>
+
+      {/* Wizard navigation */}
+      {isWizard && totalSteps > 1 && (
+        <div className="lg-wizard-nav">
+          <button
+            className="lg-btn"
+            onClick={() => setCurrentStep(Math.max(0, safeStep - 1))}
+            disabled={safeStep === 0}
+            type="button"
+          >
+            上一步
+          </button>
+          <span className="lg-wizard-nav-info">{safeStep + 1} / {totalSteps}</span>
+          {safeStep < totalSteps - 1 ? (
+            <button
+              className="lg-btn lg-btn-primary"
+              onClick={() => setCurrentStep(Math.min(totalSteps - 1, safeStep + 1))}
+              type="button"
+            >
+              下一步
+            </button>
+          ) : (
+            <button className="lg-btn lg-btn-primary" type="button" onClick={() => onButtonClick?.('__submit')}>
+              完成
+            </button>
+          )}
+        </div>
+      )}
 
       {connectingField && tables.length > 0 && (
         <RangeSelector
@@ -138,12 +287,48 @@ function toOptions(options: unknown): Array<{ label: string; value: string }> {
   });
 }
 
-function FormFieldInput({ type, name, value, originalValue, disabled, props, error, onChange, onBlur, onFocus, onButtonClick, tables }: {
+// ── Card grouping ──────────────────────────────────────────
+const editableCardTypes = new Set(['input', 'numberInput', 'textarea', 'select', 'radio', 'checkbox', 'datePicker', 'switch', 'rating']);
+
+function CardGroup({ components, renderField, groupSize }: {
+  components: ComponentNode[];
+  renderField: (comp: ComponentNode) => React.ReactNode;
+  groupSize: number;
+}) {
+  const groups: ComponentNode[][] = useMemo(() => {
+    const result: ComponentNode[][] = [];
+    let current: ComponentNode[] = [];
+    for (const comp of components) {
+      current.push(comp);
+      if (editableCardTypes.has(comp.type) && current.length >= groupSize) {
+        result.push(current);
+        current = [];
+      }
+    }
+    if (current.length > 0) result.push(current);
+    return result;
+  }, [components, groupSize]);
+
+  return (
+    <div className="lg-card-groups">
+      {groups.map((group, i) => (
+        <div key={i} className="lg-card">
+          {group.map(renderField)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FormFieldInput({ type, name, value, originalValue, disabled, props, error, onChange, onBlur, onFocus, onKeyDown, onPaste, onClear, onButtonClick, tables }: {
   type: ComponentType; name: string; value: unknown; originalValue: unknown;
   disabled: boolean; props: Record<string, unknown>; error?: string;
   onChange: (val: unknown) => void;
   onBlur: () => void;
   onFocus: () => void;
+  onKeyDown?: (e: React.KeyboardEvent) => void;
+  onPaste?: (e: React.ClipboardEvent) => void;
+  onClear?: () => void;
   onButtonClick: () => void;
   tables: SrcTableEntry[];
 }) {
@@ -166,23 +351,30 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
           onFocus={onFocus}
+          onKeyDown={onKeyDown}
+          onPaste={onPaste}
         />
       );
     case 'numberInput':
       return (
-        <input
-          type="number"
-          className={`lg-input ${dirtyClass} ${errorClass}`}
-          value={String(effectiveValue ?? '')}
-          placeholder={props.placeholder as string}
-          disabled={disabled}
-          min={props.min as number}
-          max={props.max as number}
-          step={props.step as number}
-          onChange={(e) => onChange(Number(e.target.value))}
-          onBlur={onBlur}
+        <>
+          <input
+            type="number"
+            className={`lg-input ${dirtyClass} ${errorClass}`}
+            value={String(effectiveValue ?? '')}
+            placeholder={props.placeholder as string}
+            disabled={disabled}
+            min={props.min as number}
+            max={props.max as number}
+            step={props.step as number}
+            onChange={(e) => onChange(Number(e.target.value))}
+            onBlur={onBlur}
           onFocus={onFocus}
         />
+          {(props.min != null || props.max != null) && (
+            <span className="lg-hint">范围：{props.min != null ? String(props.min) : '—'} ~ {props.max != null ? String(props.max) : '—'}</span>
+          )}
+        </>
       );
     case 'textarea':
       return (

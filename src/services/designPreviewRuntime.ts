@@ -1,4 +1,5 @@
 import type { DesignComponent, SrcTableEntry, WorkflowFile } from '../project/types';
+import type { FormEventExecutionTrace } from '../project/types';
 import type { ComponentNode } from '../models';
 import { exportToComponentNodes } from '../designer/export';
 import type { FormFlowTriggerConfig } from './formFlowTrigger';
@@ -13,6 +14,8 @@ export interface DesignPreviewEventContext {
   values: Record<string, unknown>;
   originalValues?: Record<string, unknown>;
   component: DesignComponent;
+  previousValue?: unknown;
+  timestamp?: number;
 }
 
 export interface DesignPreviewEventResult {
@@ -21,6 +24,7 @@ export interface DesignPreviewEventResult {
   flowResult?: FlowExecutionResult;
   flowResults?: FlowExecutionResult[];
   callbackResult?: unknown;
+  trace: FormEventExecutionTrace;
   error?: Error;
 }
 
@@ -41,6 +45,7 @@ export async function executeDesignPreviewEvent(
     setVisible?: (componentId: string, visible: boolean) => void;
     setDisabled?: (componentId: string, disabled: boolean) => void;
     setRequired?: (field: string, required: boolean) => void;
+    showMessage?: (message: string, level?: 'info' | 'success' | 'warning' | 'error') => void;
     callbacks?: Record<string, FormEventCallback>;
   },
 ): Promise<DesignPreviewEventResult> {
@@ -54,6 +59,8 @@ export async function executeDesignPreviewEvent(
     values: context.values,
     originalValues: context.originalValues || {},
     component: asComponentNode(context.component),
+    previousValue: context.previousValue,
+    timestamp: context.timestamp,
   }, {
     workflows: options.workflows,
     tables: options.tables,
@@ -61,6 +68,7 @@ export async function executeDesignPreviewEvent(
     setVisible: options.setVisible,
     setDisabled: options.setDisabled,
     setRequired: options.setRequired,
+    showMessage: options.showMessage,
     callbacks: options.callbacks,
     code,
     trigger,
@@ -71,6 +79,7 @@ export async function executeDesignPreviewEvent(
     flowExecuted: result.flowExecuted,
     flowResult: result.flowResult,
     flowResults: result.flowResults,
+    trace: result.trace,
     error: result.error,
   };
 }

@@ -49,37 +49,46 @@ export function DesignCanvas({ designer }: Props) {
       onDrop={handleDrop}
     >
       <div className="canvas-floating-toolbar" aria-label="画布工具">
-        {/* 模式切换 */}
-        <button
-          type="button"
-          className={`mode-toggle ${mode === 'preview' ? 'active' : ''}`}
-          onClick={designer.toggleMode}
-          title={mode === 'preview' ? '切换到设计模式' : '切换到预览模式'}
-        >
-          <DesignerIcon name={mode === 'preview' ? 'design' : 'preview'} />
-          {mode === 'preview' ? '设计' : '预览'}
-        </button>
-        <span />
+        <div className="toolbar-group toolbar-group-mode">
+          <button
+            type="button"
+            className={`mode-toggle ${mode === 'preview' ? 'active' : ''}`}
+            onClick={designer.toggleMode}
+            title={mode === 'preview' ? '切换到设计模式' : '切换到预览模式'}
+          >
+            <DesignerIcon name={mode === 'preview' ? 'design' : 'preview'} />
+            {mode === 'preview' ? '设计' : '预览'}
+          </button>
+        </div>
         {mode === 'design' && (
           <>
-            <button type="button" onClick={designer.undo} title="撤销"><DesignerIcon name="undo" /></button>
-            <button type="button" onClick={designer.redo} title="重做"><DesignerIcon name="redo" /></button>
-            <span />
-            <button type="button" onClick={designer.copy} title="复制"><DesignerIcon name="copy" /></button>
-            <button type="button" onClick={designer.paste} title="粘贴"><DesignerIcon name="paste" /></button>
-            <button type="button" onClick={designer.duplicate} title="复制一份"><DesignerIcon name="duplicate" /></button>
-            <button type="button" onClick={designer.deleteSelected} title="删除"><DesignerIcon name="delete" /></button>
-            <span />
-            <button type="button" onClick={designer.bringToFront} title="置顶"><DesignerIcon name="bringToFront" /></button>
-            <button type="button" onClick={designer.sendToBack} title="置底"><DesignerIcon name="sendToBack" /></button>
-            <span />
+            <span className="toolbar-divider" />
+            <div className="toolbar-group">
+              <button type="button" onClick={designer.undo} title="撤销"><DesignerIcon name="undo" /></button>
+              <button type="button" onClick={designer.redo} title="重做"><DesignerIcon name="redo" /></button>
+            </div>
+            <span className="toolbar-divider" />
+            <div className="toolbar-group">
+              <button type="button" onClick={designer.copy} title="复制"><DesignerIcon name="copy" /></button>
+              <button type="button" onClick={designer.paste} title="粘贴"><DesignerIcon name="paste" /></button>
+              <button type="button" onClick={designer.duplicate} title="复制一份"><DesignerIcon name="duplicate" /></button>
+              <button type="button" onClick={designer.deleteSelected} title="删除"><DesignerIcon name="delete" /></button>
+            </div>
+            <span className="toolbar-divider" />
+            <div className="toolbar-group">
+              <button type="button" onClick={designer.bringToFront} title="置顶"><DesignerIcon name="bringToFront" /></button>
+              <button type="button" onClick={designer.sendToBack} title="置底"><DesignerIcon name="sendToBack" /></button>
+            </div>
           </>
         )}
-        <button type="button" onClick={designer.zoomOut} title="缩小"><DesignerIcon name="zoomOut" /></button>
-        <strong>{Math.round(designer.zoom * 100)}%</strong>
-        <button type="button" onClick={designer.zoomIn} title="放大"><DesignerIcon name="zoomIn" /></button>
-        <button type="button" onClick={designer.fitContent} title="适应内容"><DesignerIcon name="fitContent" /></button>
-        <button type="button" onClick={designer.resetView} title="重置视图"><DesignerIcon name="resetView" /></button>
+        <span className="toolbar-divider" />
+        <div className="toolbar-group toolbar-group-zoom">
+          <button type="button" onClick={designer.zoomOut} title="缩小"><DesignerIcon name="zoomOut" /></button>
+          <span className="zoom-value">{Math.round(designer.zoom * 100)}%</span>
+          <button type="button" onClick={designer.zoomIn} title="放大"><DesignerIcon name="zoomIn" /></button>
+          <button type="button" onClick={designer.fitContent} title="适应内容"><DesignerIcon name="fitContent" /></button>
+          <button type="button" onClick={designer.resetView} title="重置视图"><DesignerIcon name="resetView" /></button>
+        </div>
       </div>
       <div className="canvas-status-pill">
         {mode === 'preview'

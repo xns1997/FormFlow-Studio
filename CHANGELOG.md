@@ -1,5 +1,51 @@
 # Changelog
 
+## [0.3.0] - 2026-07-01
+
+### 交互体验优化 — 降低填表感
+- **智能行切换器**: 可搜索下拉行选择器，显示前 3 列摘要，支持关键词模糊搜索，↑↓ 快捷键导航，行进度条
+- **自动聚焦与键盘流**: 行切换后自动聚焦首个可编辑字段，Enter 跳下一字段，Shift+Enter 跳上一字段，Ctrl+Enter 提交，底部快捷键提示条
+- **即时校验与引导**: 必填项进度条（3/7），字段 blur 后内联校验，校验通过绿色对勾动画，数字字段范围提示
+- **情感化反馈**: 提交成功 toast 通知，dirty 字段左侧橙色竖条标记，变更数量 badge
+- **分步向导模式**: 可编辑字段 > 6 个时自动启用，步骤条导航，slide 过渡动画，上一步/下一步按钮
+- **卡片式布局**: layout="card" 模式，每 4 个字段自动分组为圆角卡片，带阴影和 hover 效果
+
+### 行为定义系统完善
+- **补全动作执行器**: 新增 setRequired, setOptional, switchTab, submitData, callApi, refreshData, navigate 7 个动作
+- **行为模板库**: 14 个预置模板（联动/计算/校验/查询/提交/UI），一键插入
+- **可视化规则构建器**: 触发器/条件/动作 UI，与代码双向同步，自然语言预览
+- **行为测试与调试**: 测试面板，模拟数据输入，运行测试，执行日志展示
+- **行为导入导出**: JSON 格式导入/导出/下载，支持批量操作
+
+### 行为事件扩展（12 个新事件）
+- `onFormReady`: 表单完全加载就绪后触发
+- `onFormReset`: 表单重置时触发
+- `onBeforeSubmit`: 提交前触发（可拦截）
+- `onFieldKeyDown`: 字段内按键时触发
+- `onFieldPaste`: 粘贴内容到字段时触发
+- `onFieldClear`: 清空字段时触发
+- `onRowAdd`: 新增数据行时触发
+- `onRowDelete`: 删除数据行时触发
+- `onRowSelect`: 选择数据行时触发
+- `onDataImport`: 数据导入时触发
+- `onDataExport`: 数据导出时触发
+- `onValueChange`: 任意字段值变化时触发
+
+### 新增文件
+- `src/services/behaviorTemplates.ts` — 行为模板库
+- `src/services/behaviorIO.ts` — 行为导入导出服务
+- `src/components/RuleBuilder.tsx` — 可视化规则构建器
+- `src/components/BehaviorTestPanel.tsx` — 行为测试面板
+
+### 改动文件
+- `src/services/behaviorEngine.ts` — TriggerType 扩展到 24 个，补全 7 个动作执行器
+- `src/pages/TestPage.tsx` — RowSwitcher 组件、toast、键盘快捷键、新事件触发器
+- `src/pages/BehaviorPage.tsx` — 模板按钮、导入导出、可视化/代码模式切换、测试面板
+- `src/components/FormRenderer.tsx` — autoFocus、wizardMode、layout、onKeyDown/onPaste/onClear
+- `src/style/form-renderer.css` — RowSwitcher、toast、wizard、card、键盘提示条样式
+
+---
+
 ## [0.2.0] - 2026-06-30
 
 ### 全部节点执行器真实可运行

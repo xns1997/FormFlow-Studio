@@ -1,0 +1,145 @@
+{
+  "id": "behavior-row-lookup",
+  "label": "查找单条记录",
+  "description": "按条件查找唯一记录并将结果回填到表单字段",
+  "category": "行为 · 数据",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    {
+      "name": "tableId",
+      "label": "数据表 ID",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "目标项目数据表 ID"
+    },
+    {
+      "name": "sheetName",
+      "label": "工作表名",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "目标工作表名"
+    },
+    {
+      "name": "loadedFieldName",
+      "label": "已加载字段",
+      "type": "string",
+      "default": "loadedRowId",
+      "description": "查找成功后写入的内部状态字段"
+    },
+    {
+      "name": "loadedColumn",
+      "label": "已加载列",
+      "type": "string",
+      "default": "",
+      "description": "写入内部状态字段时使用的源列名"
+    },
+    {
+      "name": "enableComponentId",
+      "label": "启用组件 ID",
+      "type": "string",
+      "default": "",
+      "description": "查找成功后解禁、失败时禁用的组件 ID"
+    },
+    {
+      "name": "fieldMap",
+      "label": "回填字段映射",
+      "type": "json",
+      "default": {},
+      "description": "数据列名到表单字段名的映射"
+    },
+    {
+      "name": "originalFieldMap",
+      "label": "原始字段映射",
+      "type": "json",
+      "default": {},
+      "description": "数据列名到隐藏原始字段名的映射"
+    },
+    {
+      "name": "successMessage",
+      "label": "成功提示",
+      "type": "string",
+      "default": "已加载记录",
+      "description": "查找成功时展示的提示"
+    },
+    {
+      "name": "notFoundMessage",
+      "label": "未找到提示",
+      "type": "string",
+      "default": "未找到匹配记录",
+      "description": "未找到时展示的提示"
+    },
+    {
+      "name": "multipleMessage",
+      "label": "多条命中提示",
+      "type": "string",
+      "default": "匹配到多条记录，请收窄条件",
+      "description": "命中多条时展示的提示"
+    }
+  ],
+  "inputs": [
+    {
+      "name": "filter",
+      "type": "object",
+      "required": true,
+      "description": "精确匹配条件对象"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "matched",
+      "type": "boolean",
+      "description": "是否命中唯一记录"
+    },
+    {
+      "name": "row",
+      "type": "object",
+      "description": "命中的记录"
+    },
+    {
+      "name": "message",
+      "type": "string",
+      "description": "查找结果提示"
+    }
+  ],
+  "ports": [
+    {
+      "name": "filter",
+      "label": "条件",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "精确匹配条件对象"
+    },
+    {
+      "name": "matched",
+      "label": "命中",
+      "type": "boolean",
+      "direction": "output",
+      "description": "是否命中唯一记录"
+    },
+    {
+      "name": "row",
+      "label": "记录",
+      "type": "object",
+      "direction": "output",
+      "description": "命中的记录"
+    },
+    {
+      "name": "message",
+      "label": "提示",
+      "type": "string",
+      "direction": "output",
+      "description": "结果提示"
+    }
+  ],
+  "keywords": [
+    "查找",
+    "lookup",
+    "record",
+    "query",
+    "find"
+  ]
+}

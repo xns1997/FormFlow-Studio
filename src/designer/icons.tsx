@@ -82,6 +82,7 @@ const ICONS: Record<string, IconComponent> = {
   chart: ChartHistogram,
   card: CardTwo,
   tabs: DocDetail,
+  docs: DocDetail,
   divider: Minus,
   form: Form,
   projects: List,

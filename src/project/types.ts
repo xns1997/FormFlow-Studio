@@ -20,6 +20,7 @@
 
 export interface ProjectStructure {
   config: ProjectConfig;
+  settings?: ProjectSettings;
   srcTable: SrcTableEntry[];
   workflows: WorkflowFile[];
   behaviors: BehaviorFile[];
@@ -36,6 +37,57 @@ export interface ProjectConfig {
   updatedAt: string;
   author: string;
   tags: string[];
+}
+
+export interface ProjectSettings {
+  behavior: ProjectBehaviorSettings;
+  publish: ProjectPublishSettings;
+  updatedAt: string;
+}
+
+export interface ProjectBehaviorSettings {
+  enableJsScripts: boolean;
+  enableNodeBehavior: boolean;
+  scriptTimeout: number;
+  errorStrategy: 'show-error' | 'silent';
+  loopProtection: number;
+}
+
+export interface ProjectPublishSettings {
+  format: 'json' | 'xlsx' | 'csv' | 'html';
+  allowWriteBack: boolean;
+  generateChangeLog: boolean;
+  outputFileName: string;
+}
+
+export function createDefaultProjectSettings(): ProjectSettings {
+  return {
+    behavior: {
+      enableJsScripts: true,
+      enableNodeBehavior: true,
+      scriptTimeout: 5000,
+      errorStrategy: 'show-error',
+      loopProtection: 100,
+    },
+    publish: {
+      format: 'json',
+      allowWriteBack: false,
+      generateChangeLog: true,
+      outputFileName: 'formflow-export',
+    },
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export function normalizeProjectSettings(settings: ProjectSettings | undefined): ProjectSettings {
+  const defaults = createDefaultProjectSettings();
+  return {
+    ...defaults,
+    ...settings,
+    behavior: { ...defaults.behavior, ...(settings?.behavior || {}) },
+    publish: { ...defaults.publish, ...(settings?.publish || {}) },
+    updatedAt: settings?.updatedAt || defaults.updatedAt,
+  };
 }
 
 // ── 数据表缓存 ──────────────────────────────────────
@@ -383,11 +435,96 @@ export interface TableInfoCache {
   lastUpdated: string;
 }
 
+export type FormMode = 'create' | 'edit' | 'detail' | 'lookup-edit';
+
+export type FormLinkageOperator =
+  | 'equals'
+  | 'notEquals'
+  | 'isEmpty'
+  | 'isNotEmpty'
+  | 'contains'
+  | 'greaterThan'
+  | 'lessThan'
+  | 'greaterOrEqual'
+  | 'lessOrEqual';
+
+export type FormActionType =
+  | 'setValue'
+  | 'setVisible'
+  | 'setDisabled'
+  | 'setRequired'
+  | 'showMessage'
+  | 'runWorkflow';
+
+export interface FormLinkageTrigger {
+  eventName: string;
+  sourceField?: string;
+  sourceComponentId?: string;
+}
+
+export interface FormLinkageCondition {
+  id: string;
+  field?: string;
+  operator: FormLinkageOperator;
+  value?: unknown;
+}
+
+export interface FormLinkageAction {
+  id: string;
+  type: FormActionType;
+  targetField?: string;
+  targetComponentId?: string;
+  value?: unknown;
+  valueSource?: 'static' | 'event' | 'field';
+  sourceField?: string;
+  visible?: boolean;
+  disabled?: boolean;
+  required?: boolean;
+  message?: string;
+  level?: 'info' | 'success' | 'warning' | 'error';
+  workflowId?: string;
+  parameters?: Record<string, unknown>;
+}
+
+export interface FormLinkageRule {
+  id: string;
+  name: string;
+  trigger: FormLinkageTrigger;
+  conditions: FormLinkageCondition[];
+  conditionMode?: 'all' | 'any';
+  actions: FormLinkageAction[];
+  scope?: 'current-form' | 'current-component' | 'target-fields';
+  enabled: boolean;
+  priority: number;
+}
+
+export interface FormEventExecutionStage {
+  id: string;
+  type: 'rule' | 'script' | 'flow';
+  label: string;
+  status: 'success' | 'skipped' | 'error';
+  details?: string[];
+}
+
+export interface FormEventExecutionTrace {
+  eventName: string;
+  field: string;
+  stages: FormEventExecutionStage[];
+  effects: {
+    updatedFields: string[];
+    updatedComponents: string[];
+    requiredFields: string[];
+    messages: Array<{ level: 'info' | 'success' | 'warning' | 'error'; message: string }>;
+  };
+}
+
 // ── 表单设计器 ──────────────────────────────────────
 
 export interface DesignFile {
   id: string;
   name: string;
+  formMode?: FormMode;
+  templateKey?: string;
   viewport: { zoom: number; panX: number; panY: number };
   gridSize: number;
   components: DesignComponent[];
@@ -421,10 +558,12 @@ export interface DesignBinding {
   config: Record<string, any>;
 }
 
-export function createDesignFile(name: string): DesignFile {
+export function createDesignFile(name: string, options: Partial<Pick<DesignFile, 'formMode' | 'templateKey'>> = {}): DesignFile {
   return {
     id: `design_${Date.now()}`,
     name,
+    formMode: options.formMode,
+    templateKey: options.templateKey,
     viewport: { zoom: 1, panX: 0, panY: 0 },
     gridSize: 10,
     components: [],

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { DesignFile } from '../project/types';
 import { createDesignFile } from '../project/types';
+import { DESIGN_TEMPLATES, createDesignFromTemplate } from './designTemplates';
 
 interface Props {
   designs: DesignFile[];
@@ -14,6 +15,7 @@ interface Props {
 export function TabBar({ designs, activeId, onSelect, onClose, onCreate, onRename }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,9 +29,12 @@ export function TabBar({ designs, activeId, onSelect, onClose, onCreate, onRenam
     return () => el.removeEventListener('wheel', handler);
   }, []);
 
-  const handleCreate = () => {
-    const design = createDesignFile(`设计 ${designs.length + 1}`);
+  const handleCreate = (templateKey = 'blank') => {
+    const design = templateKey === 'blank'
+      ? createDesignFile(`设计 ${designs.length + 1}`)
+      : createDesignFromTemplate(templateKey, designs.length + 1);
     onCreate(design);
+    setMenuOpen(false);
   };
 
   const startRename = (id: string, name: string) => {
@@ -76,7 +81,24 @@ export function TabBar({ designs, activeId, onSelect, onClose, onCreate, onRenam
           </div>
         ))}
       </div>
-      <button className="designer-tab-add" onClick={handleCreate}>+</button>
+      <div className="designer-tab-actions">
+        <button className="designer-tab-add" onClick={() => setMenuOpen((value) => !value)}>+</button>
+        {menuOpen && (
+          <div className="designer-template-menu">
+            {DESIGN_TEMPLATES.map((template) => (
+              <button
+                key={template.key}
+                type="button"
+                className="designer-template-item"
+                onClick={() => handleCreate(template.key)}
+              >
+                <strong>{template.label}</strong>
+                <span>{template.description}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

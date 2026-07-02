@@ -70,7 +70,7 @@ test('parameter resolution includes built-in event context and custom mappings',
   const parameters = resolveFormFlowParameters({
     enabled: true,
     workflowId: 'flow-1',
-    parameterMap: { city: '$form.address.city', oldName: '$original.customerName' },
+    parameterMap: { city: '$form.address.city', oldName: '$original.customerName', entireContext: '$context' },
   }, context);
   assert.equal(parameters.value, '新客户');
   assert.equal(parameters.field, 'customerName');
@@ -78,6 +78,7 @@ test('parameter resolution includes built-in event context and custom mappings',
   assert.equal(parameters.city, '杭州');
   assert.equal(parameters.oldName, '旧客户');
   assert.deepEqual(parameters.formData, context.values);
+  assert.equal((parameters.entireContext as FormControlEventContext).eventName, 'onChange');
 });
 
 test('nodeId.port parameters are separated from workflow variables', () => {
@@ -115,5 +116,16 @@ test('default mappings match declared variable names', () => {
     value: '$value',
     formData: '$values',
     city: '$form.city',
+  });
+});
+
+test('default mappings expose enriched event variables by their conventional names', () => {
+  const targetWorkflow = workflow([
+    flowNode('old', 'generic:variable-input', { varName: 'previousValue' }),
+    flowNode('changed', 'generic:variable-input', { varName: 'changedFields' }),
+    flowNode('detail', 'generic:variable-input', { varName: 'detail' }),
+  ]);
+  assert.deepEqual(createDefaultParameterMap(targetWorkflow, 'customerName'), {
+    previousValue: '$previousValue', changedFields: '$changedFields', detail: '$detail',
   });
 });

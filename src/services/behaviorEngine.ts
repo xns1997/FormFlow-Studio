@@ -5,9 +5,15 @@ import type { SrcTableEntry } from '../project/types';
 import { createSandboxContext } from './scriptSandbox';
 
 export type TriggerType =
+  // 基础事件（原有）
   | 'formLoad' | 'rowLoad' | 'fieldChange' | 'fieldBlur' | 'fieldFocus'
   | 'buttonClick' | 'validate' | 'submit' | 'submitSuccess' | 'submitError'
-  | 'dataSourceChange' | 'tabChange';
+  | 'dataSourceChange' | 'tabChange'
+  // 扩展事件（新增 12 个）
+  | 'formReady' | 'formReset' | 'beforeSubmit'
+  | 'fieldKeyDown' | 'fieldPaste' | 'fieldClear'
+  | 'rowAdd' | 'rowDelete' | 'rowSelect'
+  | 'dataImport' | 'dataExport' | 'valueChange';
 
 export type ConditionOperator =
   | '==' | '!=' | '>' | '<' | '>=' | '<='
@@ -164,6 +170,121 @@ export async function executeAction(action: ActionConfig, state: RuntimeState, s
         cs[action.targetComponent!] = { ...cs[action.targetComponent!], disabled: true };
         return { ...prev, componentStates: cs };
       });
+      break;
+    case 'setRequired':
+      if (action.targetField) setState((prev) => {
+        const cs = { ...prev.componentStates };
+        const current = cs[action.targetField!] || { visible: true, disabled: false, readonly: false, loading: false };
+        cs[action.targetField!] = { ...current, required: true } as any;
+        return {
+          ...prev,
+          componentStates: cs,
+          behaviorLogs: [...prev.behaviorLogs, {
+            timestamp: Date.now(), level: 'info', source: 'behavior-engine',
+            message: `setRequired("${action.targetField}", true)`,
+          }],
+        };
+      });
+      break;
+    case 'setOptional':
+      if (action.targetField) setState((prev) => {
+        const cs = { ...prev.componentStates };
+        const current = cs[action.targetField!] || { visible: true, disabled: false, readonly: false, loading: false };
+        cs[action.targetField!] = { ...current, required: false } as any;
+        return {
+          ...prev,
+          componentStates: cs,
+          behaviorLogs: [...prev.behaviorLogs, {
+            timestamp: Date.now(), level: 'info', source: 'behavior-engine',
+            message: `setRequired("${action.targetField}", false)`,
+          }],
+        };
+      });
+      break;
+    case 'switchTab':
+      if (action.tabName) setState((prev) => ({
+        ...prev,
+        behaviorLogs: [...prev.behaviorLogs, {
+          timestamp: Date.now(), level: 'info', source: 'behavior-engine',
+          message: `switchTab("${action.tabName}")`,
+        }],
+      }));
+      break;
+    case 'submitData':
+      if (onSubmit) {
+        setState((prev) => ({
+          ...prev,
+          behaviorLogs: [...prev.behaviorLogs, {
+            timestamp: Date.now(), level: 'info', source: 'behavior-engine',
+            message: 'submitData 触发',
+          }],
+        }));
+        onSubmit();
+      }
+      break;
+    case 'callApi':
+      if (action.apiUrl) {
+        setState((prev) => ({
+          ...prev,
+          behaviorLogs: [...prev.behaviorLogs, {
+            timestamp: Date.now(), level: 'info', source: 'behavior-engine',
+            message: `callApi ${action.apiMethod || 'GET'} ${action.apiUrl}`,
+          }],
+        }));
+        try {
+          const method = action.apiMethod || 'GET';
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
+          const response = await fetch(action.apiUrl!, {
+            method,
+            signal: controller.signal,
+            headers: { 'Content-Type': 'application/json' },
+          });
+          clearTimeout(timeoutId);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const data = await response.json();
+          setState((prev) => ({
+            ...prev,
+            behaviorLogs: [...prev.behaviorLogs, {
+              timestamp: Date.now(), level: 'info', source: 'behavior-engine',
+              message: `callApi 成功: ${JSON.stringify(data).slice(0, 100)}`,
+              data,
+            }],
+          }));
+        } catch (e) {
+          setState((prev) => ({
+            ...prev,
+            behaviorLogs: [...prev.behaviorLogs, {
+              timestamp: Date.now(), level: 'error', source: 'behavior-engine',
+              message: `callApi 失败: ${e instanceof Error ? e.message : String(e)}`,
+            }],
+          }));
+        }
+      }
+      break;
+    case 'refreshData':
+      setState((prev) => ({
+        ...prev,
+        behaviorLogs: [...prev.behaviorLogs, {
+          timestamp: Date.now(), level: 'info', source: 'behavior-engine',
+          message: 'refreshData 触发（重新加载当前行）',
+        }],
+      }));
+      break;
+    case 'navigate':
+      if (action.value) {
+        const url = String(action.value);
+        setState((prev) => ({
+          ...prev,
+          behaviorLogs: [...prev.behaviorLogs, {
+            timestamp: Date.now(), level: 'info', source: 'behavior-engine',
+            message: `navigate → ${url}`,
+          }],
+        }));
+        if (typeof window !== 'undefined') {
+          window.location.href = url;
+        }
+      }
       break;
     case 'showMessage':
       setState((prev) => ({

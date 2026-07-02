@@ -60,6 +60,24 @@ test('function-style async callbacks can set values and return a result', async 
   assert.equal(writes.summary, '新客户:test');
 });
 
+test('runtime enriches generic and event-specific context values', async () => {
+  const result = await executeFormControlEvent(context, {
+    workflows: [], setValue: () => {},
+    code: `return {
+      previousValue: ctx.previousValue,
+      dirty: ctx.dirty,
+      changedFields: ctx.changedFields,
+      componentId: ctx.componentId,
+      detail: ctx.detail
+    };`,
+  });
+  assert.equal(result.error, undefined);
+  assert.deepEqual(result.callbackResult, {
+    previousValue: '旧客户', dirty: true, changedFields: ['customerName'], componentId: 'field-1',
+    detail: { previousValue: '旧客户', value: '新客户', source: 'test' },
+  });
+});
+
 test('callbacks can directly control preview visibility, disabled and required state', async () => {
   const visibleCalls: Array<[string, boolean]> = [];
   const disabledCalls: Array<[string, boolean]> = [];
@@ -81,6 +99,37 @@ test('callbacks can directly control preview visibility, disabled and required s
   assert.deepEqual(visibleCalls, [['field-1', false]]);
   assert.deepEqual(disabledCalls, [['field-1', true]]);
   assert.deepEqual(requiredCalls, [['customerName', true]]);
+});
+
+test('configured linkage rules run before the advanced script and can show traceable effects', async () => {
+  const writes: Array<[string, unknown]> = [];
+  const messages: string[] = [];
+  const result = await executeFormControlEvent(context, {
+    workflows: [],
+    linkageRules: [{
+      id: 'rule-1',
+      name: '同步摘要',
+      trigger: { eventName: 'onChange', sourceField: 'customerName' },
+      enabled: true,
+      priority: 10,
+      conditionMode: 'all',
+      conditions: [{ id: 'cond-1', field: 'customerName', operator: 'isNotEmpty' }],
+      actions: [
+        { id: 'action-1', type: 'setValue', targetField: 'summary', valueSource: 'event' },
+        { id: 'action-2', type: 'showMessage', message: '已触发规则', level: 'success' },
+      ],
+    }],
+    setValue: (field, value) => { writes.push([field, value]); },
+    showMessage: (message) => { messages.push(message); },
+    code: `return ctx.getValue('summary');`,
+  });
+  assert.equal(result.error, undefined);
+  assert.deepEqual(writes, [['summary', '新客户']]);
+  assert.deepEqual(messages, ['已触发规则']);
+  assert.equal(result.callbackResult, '新客户');
+  assert.equal(result.trace.stages.some((stage) => stage.type === 'rule' && stage.status === 'success'), true);
+  assert.equal(result.trace.effects.updatedFields.includes('summary'), true);
+  assert.equal(result.trace.effects.messages[0]?.message, '已触发规则');
 });
 
 test('callbacks can call host-registered functions by name', async () => {

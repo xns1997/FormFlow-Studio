@@ -5,7 +5,7 @@
     "description": "员工信息录入、修改和变更记录",
     "version": "1.0.0",
     "createdAt": "2026-06-30T08:00:00.000Z",
-    "updatedAt": "2026-07-01T04:48:58.426Z",
+    "updatedAt": "2026-07-01T10:23:28.211Z",
     "author": "FormFlow QA",
     "tags": [
       "回归测试",
@@ -19,7 +19,7 @@
       "fileSize": 60,
       "fileType": "json",
       "uploadedAt": "2026-06-30T08:00:00.000Z",
-      "dataHash": "writeback-1782881338424-0",
+      "dataHash": "writeback-1782900316075-0",
       "sheets": [
         {
           "name": "员工档案",
@@ -70,7 +70,7 @@
               "nullable": false,
               "uniqueCount": 1,
               "sampleValues": [
-                "P6"
+                "P5"
               ]
             },
             {
@@ -89,7 +89,7 @@
               "员工编号": "E-1001",
               "姓名": "林晓云",
               "部门": "产品部",
-              "职级": "P6",
+              "职级": "P5",
               "在职": false
             }
           ]
@@ -187,7 +187,38 @@
       "updatedAt": "2026-06-30T08:00:00.000Z"
     }
   ],
-  "behaviors": [],
+  "behaviors": [
+    {
+      "id": "bh_1782901369060",
+      "name": "薪资计算",
+      "event": "onFieldChange",
+      "code": "// 薪资计算\nconst salary = Number(ctx.getValue('薪资')) || 0;\nconst perf = Number(ctx.getValue('绩效评分')) || 0;\nconst bonusRate = perf >= 90 ? 0.2 : perf >= 70 ? 0.1 : 0.05;\nconst bonus = Math.round(salary * bonusRate * 100) / 100;\nctx.setValue('奖金', bonus);\nctx.setValue('总薪酬', salary + bonus);",
+      "priority": 10,
+      "enabled": true,
+      "createdAt": "2026-07-01T10:22:49.060Z",
+      "updatedAt": "2026-07-01T10:22:49.060Z"
+    },
+    {
+      "id": "bh_1782901400645",
+      "name": "自动乘法计算",
+      "event": "onFieldChange",
+      "code": "// 自动乘法计算\n// 总价 = 单价 × 数量\nconst price = Number(ctx.getValue('单价')) || 0;\nconst qty = Number(ctx.getValue('数量')) || 0;\nctx.setValue('总价', Math.round(price * qty * 100) / 100);",
+      "priority": 10,
+      "enabled": true,
+      "createdAt": "2026-07-01T10:23:20.645Z",
+      "updatedAt": "2026-07-01T10:23:20.645Z"
+    },
+    {
+      "id": "bh_1782901408207",
+      "name": "条件校验",
+      "event": "onFieldBlur",
+      "code": "// 条件校验\n// 年龄 >= 18 才允许填写「驾照号」\nconst age = Number(ctx.getValue('年龄')) || 0;\nconst license = ctx.getValue('驾照号');\nif (age < 18 && license) {\n  ctx.showMessage('未满18岁不能填写驾照号', 'error');\n  ctx.setValue('驾照号', '');\n}",
+      "priority": 10,
+      "enabled": true,
+      "createdAt": "2026-07-01T10:23:28.207Z",
+      "updatedAt": "2026-07-01T10:23:28.207Z"
+    }
+  ],
   "outputs": [],
   "designs": [
     {

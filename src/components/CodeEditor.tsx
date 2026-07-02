@@ -95,6 +95,7 @@ type SuggestionMode =
   | 'top-level'
   | 'ctx-member'
   | 'ctx-values-member'
+  | 'ctx-detail-member'
   | 'field-name'
   | 'json-object-key'
   | 'json-object-value'
@@ -108,6 +109,9 @@ function resolveCompletionInsertText(item: CodeEditorSuggestion, completionPrefi
   }
   if (completionPrefix.endsWith('ctx.values.') && rawInsertText.startsWith('ctx.values.')) {
     return rawInsertText.slice('ctx.values.'.length);
+  }
+  if (completionPrefix.endsWith('ctx.detail.') && rawInsertText.startsWith('ctx.detail.')) {
+    return rawInsertText.slice('ctx.detail.'.length);
   }
   if ((mode === 'json-object-key' || mode === 'json-string-value') && /^".*"$/.test(rawInsertText)) {
     return rawInsertText.slice(1, -1);
@@ -239,6 +243,7 @@ function resolveCompletionMode(language: CodeEditorLanguage, fullPrefix: string,
   if (language === 'json') return inferJsonCompletionMode(fullPrefix);
   const normalized = fullPrefix.replace(/\s+/g, ' ');
   if (/ctx\.(?:getValue|setValue)\(\s*['"][^'"]*$/.test(normalized)) return 'field-name';
+  if (completionPrefix.endsWith('ctx.detail.')) return 'ctx-detail-member';
   if (completionPrefix.endsWith('ctx.values.')) return 'ctx-values-member';
   if (completionPrefix.endsWith('ctx.')) return 'ctx-member';
   return 'top-level';

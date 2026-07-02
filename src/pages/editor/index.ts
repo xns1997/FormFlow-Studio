@@ -1,0 +1,10 @@
+export { default as ProjectDetailPage } from '../ProjectDetailPage';
+export { default as WorkspaceLayout } from '../WorkspaceLayout';
+export { default as ProjectSettingsLayout } from '../ProjectSettingsLayout';
+export { default as DataPreviewPage } from '../DataPreviewPage';
+export { CanvasWithProvider } from '../CanvasPage';
+export { default as BehaviorPage } from '../BehaviorPage';
+export { default as TestPage } from '../TestPage';
+export { default as SettingsPage } from '../SettingsPage';
+export { default as FormDesignerPage } from '../FormDesignerPage';
+export { default as LegacyProjectRedirectPage } from '../LegacyProjectRedirectPage';

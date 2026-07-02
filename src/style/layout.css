@@ -62,12 +62,13 @@
 .app-nav {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 0 20px;
-  height: 44px;
+  gap: 12px;
+  padding: 0 16px;
+  height: 40px;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
+  overflow-x: auto;
 }
 
 .nav-brand {
@@ -101,19 +102,21 @@
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 10px;
+  padding: 5px 9px;
   border-radius: var(--radius);
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
   text-decoration: none;
   transition: all 0.15s;
+  white-space: nowrap;
 }
 
 .nav-link:hover { background: var(--panel-soft); color: var(--text); }
@@ -127,6 +130,39 @@
 .app-main {
   flex: 1;
   overflow: hidden;
+}
+
+.nav-context {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.nav-links-context {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.nav-links-doc {
+  margin-left: auto;
+}
+
+.nav-project-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.nav-link-subtle {
+  color: #64748b;
 }
 
 /* ── Page Container ───────────────────────────────────── */
@@ -153,6 +189,56 @@
   border-radius: var(--radius);
   border: 1px solid var(--line);
   background: var(--panel);
+}
+
+@media (max-width: 960px) {
+  .nav-title {
+    display: none;
+  }
+
+  .nav-context {
+    gap: 8px;
+  }
+
+  .nav-project-badge {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.system-settings-lead {
+  margin: 0 0 16px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.settings-version-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-version-item,
+.settings-summary-card {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-soft);
+}
+
+.settings-version-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-version-item small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
 }
 
 @media (max-width: 1240px) {

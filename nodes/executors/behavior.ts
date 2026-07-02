@@ -321,6 +321,67 @@ registerExecutor('behavior-data-query', (ctx) => {
   return { data: [], count: 0, headers: [] };
 });
 
+registerExecutor('behavior-row-lookup', (ctx) => {
+  const tableId = String(ctx.properties.tableId || '');
+  const sheetName = String(ctx.properties.sheetName || '');
+  const filter = (ctx.inputs.filter && typeof ctx.inputs.filter === 'object' ? ctx.inputs.filter : {}) as Record<string, unknown>;
+  const fieldMap = typeof ctx.properties.fieldMap === 'string' ? JSON.parse(ctx.properties.fieldMap || '{}') : (ctx.properties.fieldMap || {});
+  const originalFieldMap = typeof ctx.properties.originalFieldMap === 'string' ? JSON.parse(ctx.properties.originalFieldMap || '{}') : (ctx.properties.originalFieldMap || {});
+  const loadedFieldName = String(ctx.properties.loadedFieldName || 'loadedRowId');
+  const loadedColumn = String(ctx.properties.loadedColumn || '');
+  const enableComponentId = String(ctx.properties.enableComponentId || '');
+  const successMessage = String(ctx.properties.successMessage || '已加载记录');
+  const notFoundMessage = String(ctx.properties.notFoundMessage || '未找到匹配记录');
+  const multipleMessage = String(ctx.properties.multipleMessage || '匹配到多条记录，请收窄条件');
+
+  const table = ctx.tables.find((item) => item.id === tableId);
+  const sheet = table?.sheets.find((item) => item.name === sheetName);
+  if (!table || !sheet) {
+    throw new Error(`查找目标不存在: ${tableId || '(table)'} / ${sheetName || '(sheet)'}`);
+  }
+
+  const rows = sheet.preview.filter((row) => Object.entries(filter).every(([key, value]) => row[key] === value));
+  const matched = rows.length === 1;
+  const row = matched ? rows[0] : undefined;
+  const message = rows.length === 0 ? notFoundMessage : rows.length > 1 ? multipleMessage : successMessage;
+  const sideEffects: FlowSideEffect[] = [];
+
+  if (matched && row) {
+    for (const [column, field] of Object.entries(fieldMap as Record<string, string>)) {
+      if (!field) continue;
+      sideEffects.push(normalizeFlowSideEffect({ kind: 'set-form-value', field, value: row[column] })!);
+    }
+    for (const [column, field] of Object.entries(originalFieldMap as Record<string, string>)) {
+      if (!field) continue;
+      sideEffects.push(normalizeFlowSideEffect({ kind: 'set-form-value', field, value: row[column] })!);
+    }
+    if (loadedFieldName) {
+      const keyValue = loadedColumn ? row[loadedColumn] : '';
+      sideEffects.push(normalizeFlowSideEffect({ kind: 'set-form-value', field: loadedFieldName, value: keyValue ?? '' })!);
+    }
+    if (enableComponentId) {
+      sideEffects.push(normalizeFlowSideEffect({ kind: 'set-component-disabled', componentId: enableComponentId, disabled: false })!);
+    }
+  } else {
+    if (loadedFieldName) {
+      sideEffects.push(normalizeFlowSideEffect({ kind: 'set-form-value', field: loadedFieldName, value: '' })!);
+    }
+    if (enableComponentId) {
+      sideEffects.push(normalizeFlowSideEffect({ kind: 'set-component-disabled', componentId: enableComponentId, disabled: true })!);
+    }
+  }
+
+  if (message) {
+    sideEffects.push(normalizeFlowSideEffect({
+      kind: 'show-message',
+      message,
+      level: matched ? 'success' : 'warning',
+    })!);
+  }
+
+  return { matched, row, message, sideEffects };
+});
+
 registerExecutor('behavior-switch-tab', (ctx) => {
   const tabName = ctx.assertType('string', ctx.properties.tabName || ctx.inputs.tabName || '', 'tabName') as string;
   return { trigger: ctx.inputs.trigger, tabName };

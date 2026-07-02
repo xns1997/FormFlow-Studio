@@ -3,7 +3,9 @@
 import type {
   ProjectStructure, SrcTableEntry, TableConfig,
   WorkflowFile, BehaviorFile, OutputFile, DesignFile,
+  ProjectSettings,
 } from './types';
+import { createDefaultProjectSettings, normalizeProjectSettings } from './types';
 
 const API_BASE = 'http://localhost:3001/api';
 
@@ -27,7 +29,7 @@ export async function saveProjectStructure(project: ProjectStructure): Promise<v
 
 export async function loadProjectStructure(projectId: string): Promise<ProjectStructure | null> {
   try {
-    return await request(`/projects/${projectId}`);
+    return normalizeProjectStructure(await request(`/projects/${projectId}`));
   } catch { return null; }
 }
 
@@ -54,11 +56,19 @@ export function createNewProject(name: string = '我的项目'): ProjectStructur
       author: '',
       tags: [],
     },
+    settings: { ...createDefaultProjectSettings(), updatedAt: now },
     srcTable: [],
     workflows: [],
     behaviors: [],
     outputs: [],
     designs: [],
+  };
+}
+
+export function normalizeProjectStructure(project: ProjectStructure): ProjectStructure {
+  return {
+    ...project,
+    settings: normalizeProjectSettings(project.settings as ProjectSettings | undefined),
   };
 }
 
@@ -231,7 +241,7 @@ export function importProjectFile(file: File): Promise<ProjectStructure> {
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const project = JSON.parse(reader.result as string) as ProjectStructure;
+        const project = normalizeProjectStructure(JSON.parse(reader.result as string) as ProjectStructure);
         project.config.id = `proj_${Date.now()}`;
         project.config.updatedAt = new Date().toISOString();
         resolve(project);

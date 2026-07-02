@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import type { DesignComponent, SrcTableEntry, WorkflowFile } from '../project/types';
+import type { DesignComponent, FormEventExecutionTrace, SrcTableEntry, WorkflowFile } from '../project/types';
 import { getControl } from './registry';
 import {
   executeDesignPreviewEvent,
@@ -80,6 +80,17 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
     return details;
   }, []);
 
+  const formatTraceDetails = useCallback((trace: FormEventExecutionTrace) => {
+    const details: string[] = [];
+    const ruleStages = trace.stages.filter((stage) => stage.type === 'rule');
+    const matchedRules = ruleStages.filter((stage) => stage.status === 'success').length;
+    if (ruleStages.length > 0) details.push(`规则 ${matchedRules}/${ruleStages.length} 命中`);
+    if (trace.stages.some((stage) => stage.type === 'script' && stage.status === 'success')) details.push('已执行高级脚本');
+    if (trace.stages.some((stage) => stage.type === 'flow' && stage.status === 'success')) details.push('已执行绑定流程');
+    if (trace.effects.messages.length > 0) details.push(`直接提示 ${trace.effects.messages.length} 条`);
+    return details;
+  }, []);
+
   const emit = useCallback(async (component: DesignComponent, eventName: string, value?: unknown, detail?: unknown) => {
     const field = getDesignComponentField(component);
     const resetValues = eventName === 'onReset'
@@ -96,9 +107,11 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
       visible: new Set<string>(),
       disabled: new Set<string>(),
       required: new Set<string>(),
+      messages: [] as Array<{ message: string; level: 'info' | 'success' | 'warning' | 'error' }>,
     };
     let result: DesignPreviewEventResult = await executeDesignPreviewEvent({
       eventName, field, value: nextValue, detail, values: nextValues, originalValues, component,
+      previousValue: values[field], timestamp: key,
     }, {
       workflows,
       tables,
@@ -118,15 +131,20 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
         directEffects.required.add(nextField);
         setPreviewRequired(nextField, required);
       },
+      showMessage: (message, level = 'info') => {
+        directEffects.messages.push({ message, level });
+      },
     });
     let persisted = false;
-    let successLabel = `${field}.${eventName}`;
+    let successLabel = directEffects.messages[directEffects.messages.length - 1]?.message || `${field}.${eventName}`;
     let successDetails = formatStatusDetails({
       formValues: directEffects.formValues.size,
       visible: directEffects.visible.size,
       disabled: directEffects.disabled.size,
       required: directEffects.required.size,
+      messages: directEffects.messages.length,
     });
+    successDetails = [...successDetails, ...formatTraceDetails(result.trace)];
     if (!result.error && result.flowResults?.length && project) {
       try {
         let nextProject = project;
@@ -160,6 +178,8 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
         }
         if (effectResult.messages.length > 0) {
           successLabel = `${field}.${eventName}: ${effectResult.messages[effectResult.messages.length - 1].message}`;
+        } else if (directEffects.messages.length > 0) {
+          successLabel = `${field}.${eventName}: ${directEffects.messages[directEffects.messages.length - 1].message}`;
         }
         const applied = effectResult.applied;
         successDetails = formatStatusDetails({
@@ -168,8 +188,9 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
           visible: new Set([...directEffects.visible, ...Object.keys(effectResult.componentVisibilityPatches)]).size,
           disabled: new Set([...directEffects.disabled, ...Object.keys(effectResult.componentDisabledPatches)]).size,
           required: new Set([...directEffects.required, ...Object.keys(effectResult.fieldRequiredPatches)]).size,
-          messages: effectResult.messages.length,
+          messages: effectResult.messages.length + directEffects.messages.length,
         });
+        successDetails = [...successDetails, ...formatTraceDetails(result.trace)];
         if (applied > 0) {
           await persistProject(nextProject);
           persisted = true;
@@ -185,7 +206,7 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
       persisted,
       details: result.error ? [] : successDetails,
     } : current);
-  }, [components, originalValues, persistProject, project, tables, values, workflows, setFieldValue, setPreviewVisible, setPreviewDisabled, setPreviewRequired, formatStatusDetails]);
+  }, [components, originalValues, persistProject, project, tables, values, workflows, setFieldValue, setPreviewVisible, setPreviewDisabled, setPreviewRequired, formatStatusDetails, formatTraceDetails]);
 
   const bounds = useMemo(() => {
     const maxX = Math.max(960, ...components.map((component) => component.x + component.width + 80));
