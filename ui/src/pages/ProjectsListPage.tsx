@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  createNewProject, saveProjectStructure, listProjects,
-  deleteProject as deleteProjectFn, importProjectFile,
+  createNewProject, createProjectStructure, listProjects,
+  cloneProject, deleteProject as deleteProjectFn, importProjectFile, loadProjectStructure,
 } from '../project/manager';
 import { useProjectStore } from '../project/store';
 import { buildProjectPath } from '../services/routes';
@@ -18,7 +18,7 @@ export default function ProjectsListPage() {
   const createProject = useCallback(async () => {
     const name = newName.trim() || `项目 ${projectList.length + 1}`;
     const project = createNewProject(name);
-    try { await saveProjectStructure(project); } catch {}
+    try { await createProjectStructure(project); } catch {}
     try { setProjectList(await listProjects()); } catch {}
     setProject(project);
     setNewName('');
@@ -37,21 +37,15 @@ export default function ProjectsListPage() {
   }, []);
 
   const duplicateProject = useCallback(async (id: string, name: string) => {
-    const data = await fetch(`http://localhost:3001/api/projects/${id}`).then((r) => r.json()).catch(() => null);
-    if (!data) return;
-    data.config.id = `proj_${Date.now()}`;
-    data.config.name = `${name} (副本)`;
-    data.config.createdAt = new Date().toISOString();
-    data.config.updatedAt = new Date().toISOString();
-    await saveProjectStructure(data);
+    await cloneProject(id);
     const list = await listProjects();
     setProjectList(list);
   }, []);
 
   const exportProject = useCallback((id: string, name: string) => {
-    fetch(`http://localhost:3001/api/projects/${id}`)
-      .then((r) => r.json())
+    loadProjectStructure(id)
       .then((data) => {
+        if (!data) return;
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -72,7 +66,7 @@ export default function ProjectsListPage() {
         try {
           const project = await importProjectFile(t.files[0]);
           setProject(project);
-          try { await saveProjectStructure(project); } catch {}
+          try { await createProjectStructure(project); } catch {}
           try { setProjectList(await listProjects()); } catch {}
           navigate(buildProjectPath(project.config.id));
         } catch (err) { alert('导入失败: ' + String(err)); }

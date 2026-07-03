@@ -1,8 +1,8 @@
 // 后端 API 客户端
 
-const API_BASE = 'http://localhost:3001/api';
+export const API_BASE = (import.meta.env.VITE_API_BASE || '/api').replace(/\/$/, '');
 
-async function request(path: string, options?: RequestInit) {
+export async function request(path: string, options?: RequestInit) {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { 'Content-Type': 'application/json' },
     ...options,
@@ -15,11 +15,11 @@ async function request(path: string, options?: RequestInit) {
 
 export const projectApi = {
   list: () => request('/projects'),
-  get: (id: string) => request(`/projects/${id}`),
+  get: (id: string) => request(`/projects/${encodeURIComponent(id)}`),
   create: (data: any) => request('/projects', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id: string, data: any) => request(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  remove: (id: string) => request(`/projects/${id}`, { method: 'DELETE' }),
-  clone: (id: string) => request(`/projects/${id}/clone`, { method: 'POST' }),
+  update: (id: string, data: any) => request(`/projects/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(data) }),
+  remove: (id: string) => request(`/projects/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  clone: (id: string) => request(`/projects/${encodeURIComponent(id)}/clone`, { method: 'POST' }),
 };
 
 // ── 文件管理 ──────────────────────────────────────

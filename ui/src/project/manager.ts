@@ -6,41 +6,36 @@ import type {
   ProjectSettings,
 } from './types';
 import { createDefaultProjectSettings, normalizeProjectSettings } from './types';
-
-const API_BASE = 'http://localhost:3001/api';
-
-async function request(path: string, options?: RequestInit) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
-  if (!res.ok) throw new Error(`API Error: ${res.status}`);
-  return res.json();
-}
+import { projectApi } from '../services/api';
 
 // ── 项目 CRUD ──────────────────────────────────────
 
 export async function saveProjectStructure(project: ProjectStructure): Promise<void> {
-  await request(`/projects/${project.config.id}`, {
-    method: 'PUT',
-    body: JSON.stringify(project),
-  });
+  await projectApi.update(project.config.id, project);
+}
+
+export async function createProjectStructure(project: ProjectStructure): Promise<ProjectStructure> {
+  return normalizeProjectStructure(await projectApi.create(project));
 }
 
 export async function loadProjectStructure(projectId: string): Promise<ProjectStructure | null> {
   try {
-    return normalizeProjectStructure(await request(`/projects/${projectId}`));
+    return normalizeProjectStructure(await projectApi.get(projectId));
   } catch { return null; }
 }
 
 export async function listProjects(): Promise<Array<{ id: string; name: string; updatedAt: string; tableCount: number }>> {
   try {
-    return await request('/projects');
+    return await projectApi.list();
   } catch { return []; }
 }
 
 export async function deleteProject(projectId: string): Promise<void> {
-  await request(`/projects/${projectId}`, { method: 'DELETE' });
+  await projectApi.remove(projectId);
+}
+
+export async function cloneProject(projectId: string): Promise<ProjectStructure> {
+  return normalizeProjectStructure(await projectApi.clone(projectId));
 }
 
 export function createNewProject(name: string = '我的项目'): ProjectStructure {
