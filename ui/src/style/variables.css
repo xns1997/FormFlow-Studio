@@ -1,0 +1,46 @@
+:root {
+  color-scheme: light;
+  --bg: #f4f7fb;
+  --panel: #ffffff;
+  --panel-soft: #f8fafc;
+  --line: #e5e7eb;
+  --text: #172033;
+  --muted: #6b7280;
+  --accent: #2563eb;
+  --accent-soft: #eff6ff;
+  --scenario: #0f766e;
+  --scenario-soft: #ecfdf5;
+  --excel: #7c3aed;
+  --excel-soft: #f5f3ff;
+  --danger: #b42318;
+  --danger-soft: #fef2f2;
+  --success: #16a34a;
+  --success-soft: #f0fdf4;
+  --warning: #d97706;
+  --warning-soft: #fffbeb;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06);
+  --radius: 6px;
+  --radius-sm: 4px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-full: 999px;
+  --z-dropdown: 100;
+  --z-modal: 1000;
+  --z-toast: 2000;
+  --z-tooltip: 3000;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #app { min-height: 100%; margin: 0; }
+body { min-width: 1180px; background: var(--bg); color: var(--text); font-size: 13px; touch-action: manipulation; }
+button, input, textarea, select { font: inherit; }
+button { cursor: pointer; }
+h1, h2, h3, h4, p { margin: 0; }
+
+.react-flow, .ag-root, .monaco-editor, .react-flow__pane, .react-flow__renderer,
+.page-sidebar, .page-main, .page-inspector, .canvas-inspector, .canvas-palette,
+.rs-grid, .lg-form, .designer-tabbar, .palette-list,
+.x6-graph, .x6-graph-svg, .x6-graph-svg-content, .x6-graph-container,
+.x6-node, .x6-cell { touch-action: manipulation; }

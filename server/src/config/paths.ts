@@ -1,0 +1,15 @@
+import { join } from 'node:path';
+
+export const REPOSITORY_ROOT = join(import.meta.dirname, '..', '..', '..');
+export const SERVER_DATA_DIR = join(REPOSITORY_ROOT, 'server', 'data');
+export const PROJECTS_DIR = join(REPOSITORY_ROOT, 'projects', 'data');
+export const PYTHON_SERVICE_DIR = join(REPOSITORY_ROOT, 'python-service');
+export const PYTHON_EXECUTABLE = join(REPOSITORY_ROOT, 'venv', 'bin', 'python3');
+
+export function serverDataPath(...segments: string[]): string {
+  return join(SERVER_DATA_DIR, ...segments);
+}
+
+export function pythonServicePath(...segments: string[]): string {
+  return join(PYTHON_SERVICE_DIR, ...segments);
+}

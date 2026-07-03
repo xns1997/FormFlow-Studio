@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.4.0] - 2026-07-03
+
+### 仓库目录重构
+- 前端统一迁入 `ui/`，包含应用源码、节点包、Vite 配置、TypeScript 配置和 Playwright 测试
+- Express 后端整理为 `server/src/`，运行数据集中到 `server/data/`
+- Python 数据分析与 ML 能力整理为 `python-service/`，源码与环境安装文件分离
+- 示例项目和服务端项目持久化数据集中到 `projects/example/` 与 `projects/data/`
+- 新增 `server/src/config/paths.ts`，统一管理仓库、服务数据、项目和 Python 服务路径
+- 更新开发、构建、测试、E2E 和服务启动命令以适配新结构
+
+### Vite 8 与节点包自动发现
+- 升级到 Vite 8.1 和 `@vitejs/plugin-react` 6，构建配置切换到 `build.rolldownOptions`
+- 使用 `import.meta.glob` 按目录约定自动发现节点 schema 和执行器，移除注册表中的手写节点目录清单
+- 提炼节点 ID 标准化、schema 转换、执行器加载等通用方法
+- 节点执行器改为动态导入，生产构建按 `assets/nodes/<节点包>-<hash>.js` 独立分块
+- 自动注册表覆盖 133 个唯一节点；验证 136 个节点执行入口均有对应独立 chunk
+
+### 工程质量
+- 新增节点包发现测试并更新目录感知型注册表测试
+- 补齐 `@playwright/test` 开发依赖和 `test:e2e` 命令
+- 更新 E2E 路由断言和可访问性定位器，5 项浏览器流程全部通过
+- 当前验证基线：95 项单元测试、5 项 E2E、TypeScript 类型检查、Vite 生产构建、后端 API 冒烟测试和 Python 语法检查
+
+---
+
 ## [0.3.0] - 2026-07-01
 
 ### 交互体验优化 — 降低填表感

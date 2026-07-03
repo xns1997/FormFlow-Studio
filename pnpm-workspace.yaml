@@ -1,3 +1,5 @@
 allowBuilds:
   electron: true
   esbuild: true
+minimumReleaseAgeExclude:
+  - vite@8.1.3

@@ -1,4 +1,4 @@
-# FormFlow Studio v0.3.0
+# FormFlow Studio v0.4.0
 
 **Excel 表单编排框架** —— 可视化流程编排 + 表单设计器 + 数据预览 + 测试运行 + 行为定义
 
@@ -109,11 +109,17 @@ pnpm typecheck
 
 # 测试
 pnpm test
+
+# 端到端测试
+pnpm test:e2e
+
+# 初始化 Python 服务环境
+bash python-service/setup.sh
 ```
 
 ## 示例项目
 
-`proj_new/project.json` 包含 4 个完整流程 + 1 个表单设计：
+`projects/example/project.json` 包含 4 个完整流程 + 1 个表单设计：
 
 | 流程 | 节点 | 说明 |
 |------|------|------|
@@ -122,7 +128,7 @@ pnpm test
 | 图表绘制 | 7 | 按产品分组 → 柱状图 / 饼图 / 折线图 |
 | 信息录入与修改 | 9 | 表单校验 → 条件判断 → 奖金计算 → 提交 |
 
-导入方式：打开应用 → 项目列表 → 导入项目 → 选择 `proj_new/project.json`
+导入方式：打开应用 → 项目列表 → 导入项目 → 选择 `projects/example/project.json`
 
 ---
 
@@ -159,7 +165,7 @@ pnpm test
 | 技术 | 用途 |
 |------|------|
 | React 19 + TypeScript | 前端框架 |
-| Vite | 构建工具 |
+| Vite 8 | 构建工具（Rolldown） |
 | @xyflow/react | 流程画布 |
 | @antv/x6 | 表单设计器画布 |
 | AG Grid | 数据表格 |
@@ -173,65 +179,49 @@ pnpm test
 ## 项目结构
 
 ```
-├── src/
-│   ├── components/       # 通用组件
-│   │   ├── FormRenderer.tsx        # 表单渲染器（向导模式 + 卡片布局 + 自动聚焦）
-│   │   ├── CodeEditor.tsx          # Monaco 编辑器封装（自定义主题 + 智能提示）
-│   │   ├── RangeSelector.tsx       # Excel 级选区组件
-│   │   ├── RuleBuilder.tsx         # 可视化规则构建器（双向同步）
-│   │   ├── BehaviorTestPanel.tsx   # 行为测试面板
-│   │   ├── TypeDisplayer.tsx       # 27 种类型可视化展示
-│   │   ├── OutputPreviewModal.tsx  # 输出预览弹窗（表格 / Monaco / HTML）
-│   │   └── ChartWidget.tsx         # 图表组件
-│   ├── designer/         # 表单设计器
-│   │   ├── useDesigner.tsx         # 设计器 Hook（预览模式锁定拖拽）
-│   │   ├── DesignCanvas.tsx        # 画布组件
-│   │   ├── PropertyPanel.tsx       # 属性面板（Monaco 事件编辑）
-│   │   ├── controls/               # 14 种控件定义（预览模式可交互）
-│   │   └── export.ts               # 设计 → ComponentNode 导出
-│   ├── pages/
-│   │   ├── DataPreviewPage.tsx     # 数据预览
-│   │   ├── CanvasPage.tsx          # 流程编排（节点执行器真实运行）
-│   │   ├── FormDesignerPage.tsx    # 表单设计器
-│   │   ├── TestPage.tsx            # 测试运行（表单可填 + 行为触发）
-│   │   └── BehaviorPage.tsx        # 行为定义
-│   ├── services/
-│   │   ├── flowEngine.ts           # 流程执行引擎
-│   │   ├── behaviorEngine.ts       # 行为引擎（24 事件 + 16 动作）
-│   │   ├── behaviorTemplates.ts    # 行为模板库（14 个预置模板）
-│   │   ├── behaviorIO.ts           # 行为导入导出服务
-│   │   ├── scriptSandbox.ts        # 脚本沙箱（formData / setField）
-│   │   └── rangeResolver.ts        # Range 解析器
-│   ├── project/
-│   │   ├── store.ts                # Zustand store（离线兼容）
-│   │   ├── types.ts                # 项目类型定义
-│   │   └── manager.ts              # 项目管理 API
-│   └── style/                      # 模块化 CSS
-│       ├── variables.css           # CSS 变量 + X6 touch-action
-│       ├── components.css          # Monaco 浅色主题
-│       ├── canvas.css              # 流程画布 + 输出端口
-│       ├── form-renderer.css       # 表单渲染器 + Range Selector
-│       └── designer.css            # 表单设计器
-├── nodes/
-│   ├── registry.ts                 # 节点注册表
-│   ├── executor-registry.ts        # 执行器注册表
-│   ├── port-types.ts               # 27 种端口类型
-│   └── executors/                  # 节点执行器（全部可运行）
-│       ├── generic.ts              # 44 个通用节点
-│       ├── behavior.ts             # 26 个行为节点
-│       ├── func.ts                 # 23 个功能节点
-│       ├── ml.ts                   # 18 个 ML 节点
-│       └── scenario.ts             # 5 个场景节点
-├── proj_new/                       # 示例项目
-│   ├── project.json                # 4 流程 + 2 数据表 + 1 表单
-│   └── import.ts                   # 导入说明
-├── server/                         # Express 后端
-│   ├── index.ts                    # 服务器入口
-│   └── routes/ml.ts                # ML API
-└── python/                         # Python ML 后端
-    ├── ml_engine.py                # scikit-learn ML 操作
-    └── describe.py                 # 数据分析
+├── ui/                         # React + TypeScript + Vite 8 前端
+│   ├── src/
+│   │   ├── components/        # 通用 UI 与业务组件
+│   │   ├── designer/          # 表单设计器、控件和画布
+│   │   ├── pages/             # 路由页面
+│   │   ├── project/           # 项目状态、类型和持久化客户端
+│   │   ├── services/          # 流程、行为、预览和数据服务
+│   │   └── style/             # 模块化样式
+│   ├── nodes/                 # 约定式节点包
+│   │   ├── <node>/
+│   │   │   ├── schema.json    # 节点元数据（必需）
+│   │   │   └── index.ts       # execute 实现（可选）
+│   │   ├── executors/         # 分类公共执行器
+│   │   ├── node-packages.ts   # 节点包发现与标准化方法
+│   │   ├── package-modules.ts # import.meta.glob 入口
+│   │   └── registry.ts        # 统一节点注册表
+│   ├── e2e/                   # Playwright 测试
+│   ├── index.html
+│   ├── vite.config.ts         # Vite 8 / Rolldown 配置
+│   └── tsconfig.json
+├── server/                    # Express 后端
+│   ├── src/
+│   │   ├── config/paths.ts    # 服务、项目和 Python 路径中心
+│   │   ├── routes/            # API 路由
+│   │   └── index.ts           # 服务入口
+│   └── data/                  # 上传、缓存、报告和配置
+├── python-service/            # Python 数据分析与 ML 服务
+│   ├── src/
+│   │   ├── describe.py
+│   │   └── ml_engine.py
+│   ├── requirements.txt
+│   └── setup.sh
+├── projects/                  # 项目资产
+│   ├── example/               # 可导入示例项目
+│   └── data/                  # 后端项目持久化数据
+├── docs/                      # 使用与事件参考文档
+├── scripts/                   # 项目数据生成脚本
+└── package.json               # 仓库统一命令入口
 ```
+
+### 节点包约定
+
+Vite 8 通过 `import.meta.glob('./*/schema.json')` 自动识别 `ui/nodes` 下的节点包。新增节点只需创建目录和 `schema.json`，无需再维护手写目录清单；存在 `index.ts` 时执行器按需加载，生产构建输出为独立的 `assets/nodes/<节点包>-<hash>.js` chunk。
 
 ---
 

@@ -4,14 +4,15 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "dev:server": "npx tsx server/index.ts",
-    "dev:all": "npx concurrently \"npx tsx server/index.ts\" \"vite\"",
-    "server": "npx tsx server/index.ts",
-    "test": "npx tsx --test src/**/*.test.ts",
-    "typecheck": "tsc --noEmit",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "vite ui",
+    "dev:server": "npx tsx server/src/index.ts",
+    "dev:all": "npx concurrently \"pnpm dev:server\" \"pnpm dev\"",
+    "server": "npx tsx server/src/index.ts",
+    "test": "npx tsx --test ui/src/**/*.test.ts ui/nodes/**/*.test.ts",
+    "typecheck": "tsc --noEmit -p ui/tsconfig.json",
+    "build": "vite build ui",
+    "preview": "vite preview ui",
+    "test:e2e": "playwright test --config ui/playwright.config.ts"
   },
   "dependencies": {
     "@antv/x6": "^3.1.7",
@@ -42,10 +43,11 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.1.2",
+    "@vitejs/plugin-react": "^6.0.3",
     "typescript": "^6.0.3",
-    "vite": "^5.4.10"
+    "vite": "^8.1.3"
   }
 }

@@ -1,6 +1,6 @@
-import { executeFlow, type FlowNodeDef, type FlowEdgeDef } from './src/services/flowEngine';
-import { loadNodeRegistry } from './nodes/registry';
-import type { SrcTableEntry } from './src/project/types';
+import { executeFlow, type FlowNodeDef, type FlowEdgeDef } from './ui/src/services/flowEngine';
+import { loadNodeRegistry } from './ui/nodes/registry';
+import type { SrcTableEntry } from './ui/src/project/types';
 
 const testTable: SrcTableEntry = {
   id: 'test', fileName: 'test.csv', fileSize: 512, fileType: 'csv',

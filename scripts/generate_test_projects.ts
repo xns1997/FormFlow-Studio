@@ -1,10 +1,10 @@
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { DesignComponent, DesignFile, ProjectStructure, SrcTableEntry, WorkflowFile } from '../src/project/types';
+import type { DesignComponent, DesignFile, ProjectStructure, SrcTableEntry, WorkflowFile } from '../ui/src/project/types';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const projectsDir = join(root, 'server', 'storage', 'projects');
+const projectsDir = join(root, 'projects', 'data');
 const now = '2026-06-30T08:00:00.000Z';
 
 type Row = Record<string, unknown>;
