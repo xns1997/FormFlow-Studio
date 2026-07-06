@@ -41,6 +41,7 @@ export async function executeDesignPreviewEvent(
   options: {
     workflows: WorkflowFile[];
     tables?: SrcTableEntry[];
+    components?: DesignComponent[];
     setValue: (field: string, value: unknown) => void;
     setVisible?: (componentId: string, visible: boolean) => void;
     setDisabled?: (componentId: string, disabled: boolean) => void;
@@ -70,6 +71,7 @@ export async function executeDesignPreviewEvent(
     setRequired: options.setRequired,
     showMessage: options.showMessage,
     callbacks: options.callbacks,
+    components: (options.components || [context.component]).map(asComponentNode),
     code,
     trigger,
   });

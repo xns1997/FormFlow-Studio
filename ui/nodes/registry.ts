@@ -859,7 +859,7 @@ export interface NodeRegistry {
 let registryInstance: NodeRegistry | null = null;
 let registryPromise: Promise<NodeRegistry> | null = null;
 
-export const EXPECTED_NODE_COUNT = 133;
+export const EXPECTED_NODE_COUNT = 134;
 
 export const CURATED_XLSX_METHODS = new Set([
   'XLSX.read',

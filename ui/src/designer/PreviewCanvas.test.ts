@@ -61,3 +61,15 @@ test('preview initial values can fall back to sheet single-key config when bindi
   }] satisfies SrcTableEntry[];
   assert.equal(getPreviewInitialValue(keyDrivenComponent, keyedTables), '持久化姓名');
 });
+
+test('preview initial values use structured defaults for new control types', () => {
+  assert.deepEqual(getPreviewInitialValue({
+    id: 'tags', type: 'tagInput', x: 0, y: 0, width: 100, height: 40, props: {},
+  }, tables), []);
+  assert.deepEqual(getPreviewInitialValue({
+    id: 'range', type: 'dateRange', x: 0, y: 0, width: 100, height: 40, props: {},
+  }, tables), { start: '', end: '' });
+  assert.deepEqual(getPreviewInitialValue({
+    id: 'files', type: 'upload', x: 0, y: 0, width: 100, height: 40, props: {},
+  }, tables), []);
+});

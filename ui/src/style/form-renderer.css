@@ -3,15 +3,16 @@
 .lg-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px;
-  max-width: 640px;
+  gap: 22px;
+  padding: 28px;
+  max-width: 860px;
+  margin: 0 auto;
 }
 
 .lg-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .lg-field.disabled { opacity: 0.5; pointer-events: none; }
@@ -20,12 +21,13 @@
 .lg-field.has-error .lg-select { border-color: var(--danger); }
 
 .lg-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  letter-spacing: 0.02em;
 }
 
 .lg-required { color: var(--danger); font-weight: 700; }
@@ -34,25 +36,28 @@
   font-size: 11px;
   color: var(--danger);
   margin-top: 2px;
+  line-height: 1.45;
 }
 
 /* ── Liquid Glass Input (text / number / date) ──────────── */
 
 .lg-input {
   width: 100%;
-  padding: 10px 14px;
+  min-height: 48px;
+  padding: 12px 16px;
   font-size: 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  background: var(--panel);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.92));
   color: var(--text);
   transition: all 0.2s;
   outline: none;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255,255,255,0.9);
 }
 
 .lg-input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  box-shadow: 0 0 0 4px rgba(37,99,235,0.12), 0 14px 28px rgba(37,99,235,0.1);
 }
 
 .lg-input.dirty {
@@ -69,21 +74,22 @@
 
 .lg-textarea {
   width: 100%;
-  padding: 10px 14px;
+  padding: 12px 16px;
   font-size: 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  background: var(--panel);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.92));
   color: var(--text);
   resize: vertical;
-  min-height: 80px;
+  min-height: 108px;
   transition: all 0.2s;
   outline: none;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255,255,255,0.9);
 }
 
 .lg-textarea:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  box-shadow: 0 0 0 4px rgba(37,99,235,0.12), 0 14px 28px rgba(37,99,235,0.1);
 }
 
 .lg-textarea.dirty {
@@ -95,11 +101,12 @@
 
 .lg-select {
   width: 100%;
-  padding: 10px 14px;
+  min-height: 48px;
+  padding: 12px 16px;
   font-size: 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  background: var(--panel);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 16px;
+  background-color: rgba(255,255,255,0.96);
   color: var(--text);
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
@@ -112,7 +119,7 @@
 
 .lg-select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  box-shadow: 0 0 0 4px rgba(37,99,235,0.12), 0 14px 28px rgba(37,99,235,0.1);
 }
 
 .lg-select.dirty {
@@ -132,15 +139,17 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  border: 1px solid rgba(148,163,184,0.18);
+  border-radius: 18px;
   cursor: pointer;
   transition: all 0.2s;
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 8px 20px rgba(15,23,42,0.04);
 }
 
-.lg-radio-item:hover { background: var(--panel-soft); }
-.lg-radio-item.selected { border-color: var(--accent); background: var(--accent-soft); }
+.lg-radio-item:hover { background: #fff; border-color: rgba(37,99,235,0.2); }
+.lg-radio-item.selected { border-color: rgba(37,99,235,0.35); background: linear-gradient(180deg, rgba(239,246,255,0.9), rgba(219,234,254,0.66)); }
 
 .lg-radio-item input { display: none; }
 
@@ -180,15 +189,17 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  border: 1px solid rgba(148,163,184,0.18);
+  border-radius: 18px;
   cursor: pointer;
   transition: all 0.2s;
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 8px 20px rgba(15,23,42,0.04);
 }
 
-.lg-checkbox-item:hover { background: var(--panel-soft); }
-.lg-checkbox-item.selected { border-color: var(--accent); background: var(--accent-soft); }
+.lg-checkbox-item:hover { background: #fff; border-color: rgba(37,99,235,0.2); }
+.lg-checkbox-item.selected { border-color: rgba(37,99,235,0.35); background: linear-gradient(180deg, rgba(239,246,255,0.9), rgba(219,234,254,0.66)); }
 
 .lg-checkbox-item input { display: none; }
 
@@ -226,45 +237,76 @@
 .lg-switch input { display: none; }
 
 .lg-switch-track {
-  width: 44px;
-  height: 26px;
-  border-radius: 13px;
-  background: var(--line);
+  width: 50px;
+  height: 30px;
+  border-radius: 999px;
+  background: #cbd5e1;
   position: relative;
   transition: background 0.2s;
+  box-shadow: inset 0 1px 3px rgba(15,23,42,0.18);
 }
 
 .lg-switch input:checked + .lg-switch-track { background: var(--accent); }
 
 .lg-switch-thumb {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: #fff;
   position: absolute;
-  top: 2px;
-  left: 2px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  top: 3px;
+  left: 3px;
+  box-shadow: 0 6px 12px rgba(15,23,42,0.18);
   transition: left 0.2s;
 }
 
-.lg-switch input:checked + .lg-switch-track .lg-switch-thumb { left: 20px; }
+.lg-switch input:checked + .lg-switch-track .lg-switch-thumb { left: 23px; }
 
 /* ── Liquid Glass Rating (star) ─────────────────────────── */
 
 .lg-rating {
   display: flex;
-  gap: 4px;
+  gap: 8px;
 }
 
 .lg-rating-star {
-  font-size: 24px;
+  font-size: 28px;
   background: none;
   border: none;
   color: var(--line);
   cursor: pointer;
   transition: color 0.15s;
   padding: 0;
+  text-shadow: 0 6px 14px rgba(245,158,11,0.12);
+}
+
+.lg-segmented {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid rgba(148,163,184,0.18);
+  border-radius: 18px;
+  background: rgba(248,250,252,0.92);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+.lg-segmented-item {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.lg-segmented-item.active {
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(239,246,255,0.9));
+  color: var(--accent);
+  box-shadow: 0 10px 18px rgba(37,99,235,0.12);
 }
 
 .lg-rating-star:hover,
@@ -273,32 +315,35 @@
 /* ── Liquid Glass Button ────────────────────────────────── */
 
 .lg-btn {
-  padding: 10px 20px;
+  min-height: 48px;
+  padding: 12px 22px;
   font-size: 14px;
-  font-weight: 600;
-  border: none;
-  border-radius: var(--radius-lg);
-  background: var(--panel-soft);
+  font-weight: 700;
+  border: 1px solid rgba(148,163,184,0.16);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.94));
   color: var(--text);
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: 0 10px 24px rgba(15,23,42,0.08);
 }
 
-.lg-btn:hover { background: var(--line); }
+.lg-btn:hover { transform: translateY(-1px); }
 
 .lg-btn-primary {
-  background: var(--accent);
+  background: linear-gradient(180deg, #3b82f6, #2563eb);
   color: #fff;
+  border-color: rgba(37,99,235,0.28);
 }
 
-.lg-btn-primary:hover { background: #1d4ed8; }
+.lg-btn-primary:hover { background: linear-gradient(180deg, #2563eb, #1d4ed8); }
 
 /* ── Liquid Glass Text (display) ────────────────────────── */
 
 .lg-text {
   font-size: 14px;
   color: var(--text);
-  line-height: 1.5;
+  line-height: 1.7;
 }
 
 /* ── Liquid Glass Field States ──────────────────────────── */
@@ -311,14 +356,181 @@
 /* ── Liquid Glass Container (glass card) ────────────────── */
 
 .lg-container-render {
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-xl);
-  background: var(--panel);
+  padding: 18px 20px;
+  border: 1px solid rgba(148,163,184,0.16);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.96));
+  box-shadow: 0 18px 36px rgba(15,23,42,0.06);
 }
 
-.lg-container-render strong { display: block; font-size: 14px; margin-bottom: 4px; }
-.lg-container-render span { font-size: 12px; color: var(--muted); }
+.lg-container-render strong { display: block; font-size: 15px; margin-bottom: 6px; color: #0f172a; }
+.lg-container-render span { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+.lg-tag-input {
+  padding: 8px 10px;
+  border: 1px solid rgba(148,163,184,0.18);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.94));
+  box-shadow: 0 10px 24px rgba(15,23,42,0.05);
+}
+
+.lg-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.lg-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(37,99,235,0.1);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.lg-tag-input-field {
+  flex: 1 1 140px;
+  min-width: 120px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  padding: 6px 4px;
+}
+
+.lg-date-range {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.lg-date-range-sep {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.lg-picker-shell {
+  position: relative;
+  width: 100%;
+}
+
+.lg-picker-shell .lg-input {
+  padding-right: 42px;
+}
+
+.lg-picker-trigger {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 999px;
+  background: rgba(37,99,235,0.1);
+  color: var(--accent);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.lg-picker-native {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  width: 28px;
+  height: 28px;
+  transform: translateY(-50%);
+  opacity: 0.01;
+  pointer-events: none;
+}
+
+.lg-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 1px dashed rgba(148,163,184,0.4);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,245,249,0.9));
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lg-upload:hover {
+  border-color: rgba(37,99,235,0.45);
+  box-shadow: 0 14px 28px rgba(37,99,235,0.08);
+}
+
+.lg-upload-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.lg-upload-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lg-upload-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(148,163,184,0.14);
+}
+
+.lg-upload-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.lg-upload-file-icon {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(37,99,235,0.12);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.lg-upload-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lg-upload-meta strong,
+.lg-upload-meta span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* ── Range Tag (connection badge) ───────────────────────── */
 
@@ -1388,4 +1600,146 @@
 
 .lg-card .lg-field {
   margin: 0;
+}
+
+.lg-render-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid rgba(148,163,184,0.18);
+  border-radius: 18px;
+  background: rgba(255,255,255,0.96);
+  box-shadow: 0 12px 28px rgba(15,23,42,0.05);
+}
+
+.lg-render-table th,
+.lg-render-table td {
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 12px;
+}
+
+.lg-render-table th {
+  background: rgba(248,250,252,0.96);
+  color: #475569;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(148,163,184,0.14);
+}
+
+.lg-render-table td {
+  color: #0f172a;
+  border-bottom: 1px solid rgba(148,163,184,0.1);
+}
+
+.lg-render-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.lg-tabs-render {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 20px;
+  background: rgba(248,250,252,0.92);
+  border: 1px solid rgba(148,163,184,0.18);
+}
+
+.lg-tabs-render button {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.lg-tabs-render button.active {
+  background: linear-gradient(180deg, rgba(255,255,255,1), rgba(239,246,255,0.92));
+  color: var(--accent);
+  box-shadow: 0 10px 24px rgba(37,99,235,0.1);
+}
+
+.lg-steps-render {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.lg-step-item {
+  flex: 1 1 120px;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(148,163,184,0.18);
+  border-radius: 18px;
+  background: rgba(255,255,255,0.94);
+  color: #64748b;
+}
+
+.lg-step-item.active,
+.lg-step-item.done {
+  border-color: rgba(37,99,235,0.2);
+  background: linear-gradient(180deg, rgba(239,246,255,0.9), rgba(219,234,254,0.66));
+  color: var(--accent);
+}
+
+.lg-step-dot {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #cbd5e1;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.lg-step-item.active .lg-step-dot,
+.lg-step-item.done .lg-step-dot {
+  background: var(--accent);
+}
+
+.lg-step-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.lg-divider-render {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(148,163,184,0.5), transparent);
+}
+
+@media (max-width: 720px) {
+  .lg-form {
+    padding: 20px 16px;
+    gap: 18px;
+  }
+
+  .lg-date-range {
+    grid-template-columns: 1fr;
+  }
+
+  .lg-date-range-sep {
+    justify-self: center;
+  }
+
+  .lg-tabs-render,
+  .lg-segmented,
+  .lg-steps-render {
+    flex-direction: column;
+  }
 }

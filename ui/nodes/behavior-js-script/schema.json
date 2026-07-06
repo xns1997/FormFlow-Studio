@@ -7,71 +7,31 @@
   "methods": [],
   "properties": [
     {
+      "name": "inputPorts",
+      "label": "传入定义",
+      "type": "port-definition",
+      "default": "{\"trigger\":\"trigger\",\"context\":\"object\"}",
+      "description": "使用对象定义输入端口，例如 {\"trigger\":\"trigger\",\"context\":\"object\"}"
+    },
+    {
+      "name": "outputPorts",
+      "label": "传出定义",
+      "type": "port-definition",
+      "default": "{\"trigger\":\"trigger\",\"result\":\"any\"}",
+      "description": "使用对象定义输出端口，例如 {\"trigger\":\"trigger\",\"result\":\"any\"}"
+    },
+    {
       "name": "script",
       "label": "脚本内容",
-      "type": "string",
-      "default": "",
+      "type": "code",
+      "default": "return {\n  trigger: inputs.trigger,\n  result: inputs.context,\n};",
       "required": true,
-      "description": "JS 脚本代码"
+      "description": "函数体，可直接使用 inputs / properties / ctx"
     }
   ],
-  "inputs": [
-    {
-      "name": "trigger",
-      "type": "trigger",
-      "required": true,
-      "description": "触发信号"
-    },
-    {
-      "name": "context",
-      "type": "object",
-      "required": false,
-      "description": "上下文变量"
-    }
-  ],
-  "outputs": [
-    {
-      "name": "trigger",
-      "type": "trigger",
-      "description": "触发输出"
-    },
-    {
-      "name": "result",
-      "type": "any",
-      "description": "脚本返回值"
-    }
-  ],
-  "ports": [
-    {
-      "name": "trigger",
-      "label": "触发",
-      "type": "any",
-      "direction": "input",
-      "required": true,
-      "description": "触发信号"
-    },
-    {
-      "name": "context",
-      "label": "上下文",
-      "type": "object",
-      "direction": "input",
-      "description": "上下文变量"
-    },
-    {
-      "name": "trigger",
-      "label": "触发",
-      "type": "any",
-      "direction": "output",
-      "description": "触发输出"
-    },
-    {
-      "name": "result",
-      "label": "结果",
-      "type": "any",
-      "direction": "output",
-      "description": "返回值"
-    }
-  ],
+  "inputs": [],
+  "outputs": [],
+  "ports": [],
   "keywords": [
     "脚本",
     "javascript",

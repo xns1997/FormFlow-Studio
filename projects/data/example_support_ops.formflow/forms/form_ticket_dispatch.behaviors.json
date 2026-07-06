@@ -1,0 +1,14 @@
+{
+  "behaviors": [
+    {
+      "id": "bh_dispatch_init",
+      "name": "打开处理表单时加载待分派工单",
+      "event": "onFormLoad",
+      "code": "const rows = ctx.querySheet('service_tickets').filter((row) => row?.状态 === '待分派');\nctx.setValue('工单列表', rows);\nctx.setValue('处理提示', `已加载 ${rows.length} 条待分派工单`);",
+      "priority": 10,
+      "enabled": true,
+      "createdAt": "2026-07-06T09:00:00.000Z",
+      "updatedAt": "2026-07-06T09:00:00.000Z"
+    }
+  ]
+}

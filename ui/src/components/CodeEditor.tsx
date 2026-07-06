@@ -430,10 +430,24 @@ export default function CodeEditor({
     beforeMount?.(monaco);
   };
 
+  const blurEditorIfAutoFocused = (instance: editor.IStandaloneCodeEditor) => {
+    window.setTimeout(() => {
+      const domNode = instance.getDomNode();
+      const activeElement = document.activeElement as HTMLElement | null;
+      if (!domNode || !activeElement) return;
+      if (!domNode.contains(activeElement)) return;
+      if (typeof activeElement.blur === 'function') activeElement.blur();
+      if (document.activeElement === activeElement && typeof (document.body as HTMLElement).focus === 'function') {
+        document.body.focus();
+      }
+    }, 0);
+  };
+
   const handleMount: OnMount = (instance, monaco) => {
     editorRef.current = instance;
     monacoRef.current = monaco;
     instance.layout();
+    blurEditorIfAutoFocused(instance);
     const disposables = [
       instance.onDidFocusEditorWidget(() => handlersRef.current.onFocus?.()),
       instance.onDidBlurEditorWidget(() => handlersRef.current.onBlur?.()),
@@ -559,7 +573,6 @@ export default function CodeEditor({
     const id = window.setTimeout(() => {
       window.dispatchEvent(new Event('resize'));
       editorRef.current?.layout();
-      editorRef.current?.focus();
     }, 40);
     return () => window.clearTimeout(id);
   }, [fullOpen]);

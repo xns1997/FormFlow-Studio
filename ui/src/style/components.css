@@ -26,6 +26,110 @@
 
 /* ── Monaco Code Editor ──────────────────────────────── */
 
+/* ── Antd Form Controls ─────────────────────────────── */
+
+.ff-antd-form-scope {
+  width: 100%;
+}
+
+.ff-antd-form-scope .ff-antd-control,
+.ff-antd-form-scope .ff-antd-number,
+.ff-antd-form-scope .ff-antd-picker,
+.ff-antd-form-scope .ff-antd-select {
+  width: 100%;
+}
+
+.ff-antd-form-scope .ant-input,
+.ff-antd-form-scope .ant-input-number,
+.ff-antd-form-scope .ant-select-selector,
+.ff-antd-form-scope .ant-picker,
+.ff-antd-form-scope .ant-picker-range,
+.ff-antd-form-scope .ant-input-affix-wrapper,
+.ff-antd-form-scope .ant-input-number-affix-wrapper,
+.ff-antd-form-scope .ant-segmented,
+.ff-antd-form-scope .ant-upload-wrapper .ant-upload-drag {
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.94));
+  border-color: rgba(148,163,184,0.22);
+  box-shadow: 0 10px 22px rgba(15,23,42,0.05), inset 0 1px 0 rgba(255,255,255,0.85);
+}
+
+.ff-antd-form-scope .ant-input,
+.ff-antd-form-scope .ant-input-number-input,
+.ff-antd-form-scope .ant-select-selection-placeholder,
+.ff-antd-form-scope .ant-select-selection-item,
+.ff-antd-form-scope .ant-picker-input > input,
+.ff-antd-form-scope .ant-picker-range-separator,
+.ff-antd-form-scope .ant-radio-wrapper,
+.ff-antd-form-scope .ant-checkbox-wrapper {
+  font-size: 14px;
+}
+
+.ff-antd-form-scope .ant-picker {
+  min-height: 42px;
+}
+
+.ff-antd-form-scope .ant-picker-range {
+  display: flex;
+}
+
+.ff-antd-form-scope .ant-input-number {
+  width: 100%;
+}
+
+.ff-antd-form-scope .ant-input-number-input-wrap {
+  width: 100%;
+}
+
+.ff-antd-form-scope .ff-antd-textarea.ant-input {
+  min-height: 96px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  resize: none;
+}
+
+.ff-antd-form-scope .ff-antd-radio-group.vertical,
+.ff-antd-form-scope .ff-antd-checkbox-group.vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ff-antd-form-scope .ff-antd-radio-group.horizontal,
+.ff-antd-form-scope .ff-antd-checkbox-group.horizontal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ff-antd-form-scope .ant-radio-wrapper,
+.ff-antd-form-scope .ant-checkbox-wrapper {
+  margin-inline-start: 0;
+}
+
+.ff-antd-form-scope .ff-antd-upload .ant-upload {
+  padding: 16px;
+}
+
+.ff-antd-form-scope .ff-antd-button.ant-btn {
+  min-height: 42px;
+  border-radius: 14px;
+  font-weight: 600;
+  box-shadow: 0 10px 20px rgba(37,99,235,0.16);
+}
+
+.ff-antd-form-scope .ff-antd-switch.ant-switch {
+  background: rgba(100,116,139,0.28);
+}
+
+.ff-antd-form-scope .ff-antd-switch.ant-switch.ant-switch-checked {
+  background: #2563eb;
+}
+
+.ff-antd-form-scope .ff-antd-rate {
+  color: #f59e0b;
+}
+
 .code-editor-frame {
   position: relative;
   width: 100%;

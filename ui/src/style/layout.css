@@ -2,7 +2,7 @@
 
 .app-shell {
   display: grid;
-  grid-template-columns: 280px 1fr 320px;
+  grid-template-columns: 280px 1fr var(--right-panel-width);
   gap: 0;
   height: 100vh;
 }
@@ -242,7 +242,8 @@
 }
 
 .settings-page-body {
-  width: min(100%, 920px);
+  width: 100%;
+  max-width: 920px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -250,7 +251,8 @@
 }
 
 .settings-page-body--wide {
-  width: min(100%, 1080px);
+  width: 100%;
+  max-width: 1080px;
 }
 
 .settings-toolbar {
@@ -364,9 +366,10 @@
 }
 
 .page-inspector {
-  width: 280px;
+  width: var(--right-panel-width);
   flex-shrink: 0;
   background: var(--panel);
+  min-width: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -387,6 +390,8 @@
 .page-section-body {
   flex: 1 1 0;
   min-height: 0;
+  min-width: 0;
+  width: 100%;
   overflow-y: auto;
   padding: 8px 12px;
   display: flex;
@@ -396,6 +401,8 @@
 .page-main > .page-section-body > * {
   flex: 1 1 0;
   min-height: 0;
+  min-width: 0;
+  width: 100%;
 }
 
 /* ── Sidebar Items ──────────────────────────────────── */

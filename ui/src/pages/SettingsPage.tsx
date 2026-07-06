@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useProjectStore } from '../project/store';
 import { normalizeProjectStructure } from '../project/manager';
-import { createVersion, getVersions, restoreVersion, type ProjectVersion } from '../services/projectManager';
+import { createVersion, getVersions, restoreVersion, type ProjectVersion } from '../services/projectVersionHistory';
 import { buildDocsPath, type ProjectSettingsSection } from '../services/routes';
 
 const sectionMeta: Record<ProjectSettingsSection, { title: string; description: string; docSlug?: string }> = {
@@ -11,10 +11,14 @@ const sectionMeta: Record<ProjectSettingsSection, { title: string; description: 
   behavior: { title: '行为', description: '配置脚本执行、节点行为和异常处理策略。', docSlug: 'field-change' },
   publish: { title: '发布', description: '控制导出格式、写回行为和变更日志。', docSlug: 'submit' },
 };
+const settingsSections = Object.keys(sectionMeta) as ProjectSettingsSection[];
 
 export default function SettingsPage() {
-  const { id = '', section: rawSection = 'general' } = useParams<{ id: string; section?: ProjectSettingsSection }>();
-  const section = (rawSection in sectionMeta ? rawSection : 'general') as ProjectSettingsSection;
+  const { id = '', section: rawSection } = useParams<{ id: string; section?: ProjectSettingsSection }>();
+  const isEmbeddedMode = !rawSection;
+  const [embeddedSection, setEmbeddedSection] = useState<ProjectSettingsSection>('general');
+  const routeSection = rawSection && rawSection in sectionMeta ? rawSection : 'general';
+  const section = (isEmbeddedMode ? embeddedSection : routeSection) as ProjectSettingsSection;
   const project = useProjectStore((s) => s.project);
   const setProject = useProjectStore((s) => s.setProject);
   const [saved, setSaved] = useState(false);
@@ -25,6 +29,11 @@ export default function SettingsPage() {
   useEffect(() => {
     if (project) setVersions(getVersions(project.config.id));
   }, [project]);
+
+  useEffect(() => {
+    if (!isEmbeddedMode) return;
+    setEmbeddedSection('general');
+  }, [isEmbeddedMode, project?.config.id]);
 
   const save = useCallback(async () => {
     if (!project) return;
@@ -67,7 +76,7 @@ export default function SettingsPage() {
 
   const saveVersion = useCallback(() => {
     if (!project) return;
-    createVersion(project as any, versionLabel || `版本 ${versions.length + 1}`);
+    createVersion(project, versionLabel || `版本 ${versions.length + 1}`);
     setVersions(getVersions(project.config.id));
     setVersionLabel('');
   }, [project, versionLabel, versions]);
@@ -75,7 +84,7 @@ export default function SettingsPage() {
   const restoreVer = useCallback((versionId: string) => {
     if (!project) return;
     const restored = restoreVersion(project.config.id, versionId);
-    if (restored) setProject(normalizeProjectStructure(restored as any));
+    if (restored) setProject(normalizeProjectStructure(restored));
   }, [project, setProject]);
 
   const docLink = useMemo(() => buildDocsPath(sectionMeta[section].docSlug, {
@@ -87,8 +96,8 @@ export default function SettingsPage() {
   if (!project || !projectSettings) return <div className="loading-splash"><p>未选择项目</p></div>;
 
   return (
-    <div className="page-layout">
-      <div className="page-main">
+    <div className="page-layout project-settings-layout">
+      <div className="page-main project-settings-main">
         <div className="page-section-header">
           <span>项目设置 · {sectionMeta[section].title}</span>
           <div className="settings-toolbar-actions">
@@ -97,7 +106,21 @@ export default function SettingsPage() {
           </div>
         </div>
         <div className="page-section-body">
-          <div className="settings-page-body">
+          <div className="settings-page-body project-settings-body">
+          {isEmbeddedMode && (
+            <div className="project-settings-section-tabs">
+              {settingsSections.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className={section === item ? 'sheet-tab active' : 'sheet-tab'}
+                  onClick={() => setEmbeddedSection(item)}
+                >
+                  {sectionMeta[item].title}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="settings-toolbar">
             <p className="system-settings-lead" style={{ margin: 0 }}>{sectionMeta[section].description}</p>
           </div>
@@ -184,7 +207,7 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-      <div className="page-inspector">
+      <div className="page-inspector project-settings-inspector">
         <div className="page-section-header">
           <span>配置摘要</span>
           <span>{project.config.name}</span>

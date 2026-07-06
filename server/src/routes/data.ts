@@ -78,6 +78,74 @@ router.get('/:fileId/:sheetName/columns', (req, res) => {
   } catch (e) { res.status(500).json({ error: String(e) }); }
 });
 
+// POST /api/data/:fileId/:sheetName/rows - 新增行
+router.post('/:fileId/:sheetName/rows', (req, res) => {
+  try {
+    const { fileId, sheetName } = req.params;
+    const dataPath = join(DATA_DIR, `${fileId}_${sheetName}.json`);
+    if (!existsSync(dataPath)) return res.status(404).json({ error: '数据不存在' });
+
+    const cache = JSON.parse(readFileSync(dataPath, 'utf-8'));
+    const newRow = req.body;
+    if (!newRow || typeof newRow !== 'object') return res.status(400).json({ error: '无效的行数据' });
+
+    cache.data.push(newRow);
+    cache.rowCount = cache.data.length;
+    writeFileSync(dataPath, JSON.stringify(cache, null, 2));
+
+    res.json({ success: true, rowIndex: cache.data.length - 1, total: cache.data.length });
+  } catch (e) {
+    console.error('[add-row]', e);
+    res.status(500).json({ error: '新增行失败', detail: String(e) });
+  }
+});
+
+// PUT /api/data/:fileId/:sheetName/rows/:rowIdx - 更新行
+router.put('/:fileId/:sheetName/rows/:rowIdx', (req, res) => {
+  try {
+    const { fileId, sheetName, rowIdx } = req.params;
+    const dataPath = join(DATA_DIR, `${fileId}_${sheetName}.json`);
+    if (!existsSync(dataPath)) return res.status(404).json({ error: '数据不存在' });
+
+    const cache = JSON.parse(readFileSync(dataPath, 'utf-8'));
+    const idx = parseInt(rowIdx);
+    if (isNaN(idx) || idx < 0 || idx >= cache.data.length) return res.status(400).json({ error: '无效的行索引' });
+
+    const patch = req.body;
+    if (!patch || typeof patch !== 'object') return res.status(400).json({ error: '无效的更新数据' });
+
+    cache.data[idx] = { ...cache.data[idx], ...patch };
+    writeFileSync(dataPath, JSON.stringify(cache, null, 2));
+
+    res.json({ success: true, rowIndex: idx, row: cache.data[idx] });
+  } catch (e) {
+    console.error('[update-row]', e);
+    res.status(500).json({ error: '更新行失败', detail: String(e) });
+  }
+});
+
+// DELETE /api/data/:fileId/:sheetName/rows/:rowIdx - 删除行
+router.delete('/:fileId/:sheetName/rows/:rowIdx', (req, res) => {
+  try {
+    const { fileId, sheetName, rowIdx } = req.params;
+    const dataPath = join(DATA_DIR, `${fileId}_${sheetName}.json`);
+    if (!existsSync(dataPath)) return res.status(404).json({ error: '数据不存在' });
+
+    const cache = JSON.parse(readFileSync(dataPath, 'utf-8'));
+    const idx = parseInt(rowIdx);
+    if (isNaN(idx) || idx < 0 || idx >= cache.data.length) return res.status(400).json({ error: '无效的行索引' });
+
+    cache.data.splice(idx, 1);
+    cache.rowCount = cache.data.length;
+    writeFileSync(dataPath, JSON.stringify(cache, null, 2));
+
+    res.json({ success: true, rowIndex: idx, total: cache.data.length });
+  } catch (e) {
+    console.error('[delete-row]', e);
+    res.status(500).json({ error: '删除行失败', detail: String(e) });
+  }
+});
+
 // POST /api/data/export - 导出数据
 router.post('/export', (req, res) => {
   try {

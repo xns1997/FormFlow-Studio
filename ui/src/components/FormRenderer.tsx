@@ -5,10 +5,31 @@ import RangeTag from './RangeTag';
 import RangeSelector from './RangeSelector';
 import ChartWidget, { type MetricConfig } from './ChartWidget';
 import CodeEditor from './CodeEditor';
+import {
+  AntdActionButton,
+  AntdCheckboxInput,
+  AntdDateInput,
+  AntdDateRangeInput,
+  AntdNumberInput,
+  AntdRadioInput,
+  AntdRateInput,
+  AntdSegmentedInput,
+  AntdSelectInput,
+  AntdSwitchInput,
+  AntdTagInput,
+  AntdTextAreaInput,
+  AntdTextInput,
+  AntdTimeInput,
+  AntdUploadInput,
+  FormAntdProvider,
+  toOptions,
+  type UploadFileValue,
+} from './AntdFormControls';
 import { jsonSuggestions } from './codeEditorSuggestions';
 import { formatStructuredProperty, isStructuredProperty, parseStructuredProperty } from '../services/structuredProperties';
 import { resolveRange } from '../services/rangeResolver';
 import type { FormControlEventContext } from '../services/formFlowTrigger';
+import { getRuntimeComponentType, isEditableComponentType, normalizeDateTimeValue, shouldShowFieldChrome } from '../services/controlTypes';
 
 interface FormRendererProps {
   components: ComponentNode[];
@@ -86,8 +107,7 @@ export default function FormRenderer({
     const state = componentStates[c.id] || { visible: true };
     return state.visible;
   });
-  const editableTypes = new Set(['input', 'numberInput', 'textarea', 'select', 'radio', 'checkbox', 'datePicker', 'switch', 'rating']);
-  const editableCount = visibleComponents.filter((c) => editableTypes.has(c.type)).length;
+  const editableCount = visibleComponents.filter((c) => isEditableComponentType(c.type)).length;
   const isWizard = wizardMode === 'always' || (wizardMode === 'auto' && editableCount > WIZARD_FIELD_THRESHOLD);
 
   const steps: ComponentNode[][] = useMemo(() => {
@@ -96,7 +116,7 @@ export default function FormRenderer({
     let current: ComponentNode[] = [];
     for (const comp of components) {
       current.push(comp);
-      if (current.length >= WIZARD_STEP_SIZE && editableTypes.has(comp.type)) {
+      if (current.length >= WIZARD_STEP_SIZE && isEditableComponentType(comp.type)) {
         result.push(current);
         current = [];
       }
@@ -124,7 +144,7 @@ export default function FormRenderer({
     const isDirty = JSON.stringify(values[comp.name]) !== JSON.stringify(originalValues[comp.name]);
     const showSuccess = isTouched && !hasError && isDirty && !!props.required;
     const rangeRef = rangeConnections[comp.name] || null;
-    const showChrome = !['text', 'upload', 'table', 'container', 'tabs', 'custom'].includes(comp.type);
+    const showChrome = shouldShowFieldChrome(comp.type);
     return (
       <div key={comp.id} className={`lg-field ${state.disabled ? 'disabled' : ''} ${hasError && isTouched ? 'has-error' : ''} ${isDirty ? 'dirty-indicator' : ''}`}>
         {showChrome && (
@@ -173,6 +193,19 @@ export default function FormRenderer({
             void onControlEvent?.({
               eventName: 'onClick', field: comp.name, value: values[comp.name],
               values, originalValues, component: comp, previousValue: values[comp.name], timestamp: Date.now(),
+            });
+          }}
+          onTableRowClick={(rowIndex, row) => {
+            void onControlEvent?.({
+              eventName: 'onRowClick',
+              field: comp.name,
+              value: rowIndex,
+              values,
+              originalValues,
+              component: comp,
+              previousValue: values[comp.name],
+              timestamp: Date.now(),
+              detail: { rowIndex, row },
             });
           }}
           tables={tables}
@@ -275,21 +308,30 @@ function normalizeRenderProps(comp: ComponentNode): Record<string, unknown> {
   };
 }
 
-function toOptions(options: unknown): Array<{ label: string; value: string }> {
-  if (!Array.isArray(options)) return [];
-  return options.map((option) => {
-    if (option && typeof option === 'object') {
-      const record = option as Record<string, unknown>;
-      const value = record.value ?? record.label ?? '';
-      return { label: String(record.label ?? value), value: String(value) };
-    }
-    return { label: String(option), value: String(option) };
-  });
+function normalizeFileList(files: unknown): UploadFileValue[] {
+  return Array.isArray(files) ? files.filter((item) => item && typeof item === 'object').map((item) => {
+    const record = item as Record<string, unknown>;
+    return {
+      name: String(record.name ?? '未命名文件'),
+      size: Number(record.size ?? 0),
+      type: String(record.type ?? ''),
+      url: typeof record.url === 'string' ? record.url : undefined,
+    };
+  }) : [];
+}
+
+function normalizeDateRangeValue(value: unknown): { start: string; end: string } {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const record = value as Record<string, unknown>;
+    return {
+      start: normalizeDateTimeValue(record.start, 'date'),
+      end: normalizeDateTimeValue(record.end, 'date'),
+    };
+  }
+  return { start: '', end: '' };
 }
 
 // ── Card grouping ──────────────────────────────────────────
-const editableCardTypes = new Set(['input', 'numberInput', 'textarea', 'select', 'radio', 'checkbox', 'datePicker', 'switch', 'rating']);
-
 function CardGroup({ components, renderField, groupSize }: {
   components: ComponentNode[];
   renderField: (comp: ComponentNode) => React.ReactNode;
@@ -300,7 +342,12 @@ function CardGroup({ components, renderField, groupSize }: {
     let current: ComponentNode[] = [];
     for (const comp of components) {
       current.push(comp);
-      if (editableCardTypes.has(comp.type) && current.length >= groupSize) {
+      if (isEditableComponentType(comp.type)) {
+        if (current.length >= groupSize) {
+          result.push(current);
+          current = [];
+        }
+      } else if (current.length >= groupSize) {
         result.push(current);
         current = [];
       }
@@ -320,7 +367,7 @@ function CardGroup({ components, renderField, groupSize }: {
   );
 }
 
-function FormFieldInput({ type, name, value, originalValue, disabled, props, error, onChange, onBlur, onFocus, onKeyDown, onPaste, onClear, onButtonClick, tables }: {
+function FormFieldInput({ type, name, value, originalValue, disabled, props, error, onChange, onBlur, onFocus, onKeyDown, onPaste, onClear, onButtonClick, onTableRowClick, tables }: {
   type: ComponentType; name: string; value: unknown; originalValue: unknown;
   disabled: boolean; props: Record<string, unknown>; error?: string;
   onChange: (val: unknown) => void;
@@ -330,47 +377,49 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
   onPaste?: (e: React.ClipboardEvent) => void;
   onClear?: () => void;
   onButtonClick: () => void;
+  onTableRowClick?: (rowIndex: number, row: Record<string, unknown>) => void;
   tables: SrcTableEntry[];
 }) {
   const isDirty = JSON.stringify(value) !== JSON.stringify(originalValue);
   const dirtyClass = isDirty ? 'dirty' : '';
   const errorClass = error ? 'error' : '';
   const designType = props.designType as string | undefined;
+  const runtimeType = getRuntimeComponentType(type);
   const defaultValue = props.defaultValue;
   const effectiveValue = value ?? defaultValue;
+  const optionList = toOptions(props.options);
 
-  switch (type) {
+  switch (runtimeType) {
     case 'input':
       return (
-        <input
-          type="text"
-          className={`lg-input ${dirtyClass} ${errorClass}`}
-          value={String(effectiveValue ?? '')}
-          placeholder={props.placeholder as string}
-          disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
-          onFocus={onFocus}
-          onKeyDown={onKeyDown}
-          onPaste={onPaste}
-        />
+        <FormAntdProvider>
+          <AntdTextInput
+            value={String(effectiveValue ?? '')}
+            placeholder={props.placeholder as string}
+            disabled={disabled}
+            onChange={onChange as (value: string) => void}
+            onBlur={onBlur}
+            onFocus={onFocus}
+          />
+        </FormAntdProvider>
       );
     case 'numberInput':
       return (
         <>
-          <input
-            type="number"
-            className={`lg-input ${dirtyClass} ${errorClass}`}
-            value={String(effectiveValue ?? '')}
-            placeholder={props.placeholder as string}
-            disabled={disabled}
-            min={props.min as number}
-            max={props.max as number}
-            step={props.step as number}
-            onChange={(e) => onChange(Number(e.target.value))}
-            onBlur={onBlur}
-          onFocus={onFocus}
-        />
+          <FormAntdProvider>
+            <AntdNumberInput
+              value={effectiveValue === '' ? '' : (effectiveValue as number | string | null)}
+              placeholder={props.placeholder as string}
+              disabled={disabled}
+              min={props.min as number}
+              max={props.max as number}
+              step={props.step as number}
+              style={{ width: '100%' }}
+              onChange={(next) => onChange(next === '' ? '' : Number(next))}
+              onBlur={onBlur}
+              onFocus={onFocus}
+            />
+          </FormAntdProvider>
           {(props.min != null || props.max != null) && (
             <span className="lg-hint">范围：{props.min != null ? String(props.min) : '—'} ~ {props.max != null ? String(props.max) : '—'}</span>
           )}
@@ -378,135 +427,169 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
       );
     case 'textarea':
       return (
-        <textarea
-          className={`lg-textarea ${dirtyClass}`}
-          value={String(effectiveValue ?? '')}
-          placeholder={props.placeholder as string}
-          disabled={disabled}
-          rows={props.rows as number || 3}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
-          onFocus={onFocus}
-        />
+        <FormAntdProvider>
+          <AntdTextAreaInput
+            value={String(effectiveValue ?? '')}
+            placeholder={props.placeholder as string}
+            disabled={disabled}
+            rows={props.rows as number || 3}
+            autoSize={props.autoResize ? { minRows: props.rows as number || 3, maxRows: 8 } : false}
+            onChange={onChange as (value: string) => void}
+            onBlur={onBlur}
+            onFocus={onFocus}
+          />
+        </FormAntdProvider>
       );
     case 'select':
       return (
-        <select
-          className={`lg-select ${dirtyClass}`}
-          value={String(effectiveValue ?? '')}
-          disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
-          onFocus={onFocus}
-        >
-          <option value="">{props.placeholder as string || '请选择'}</option>
-          {toOptions(props.options).map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-        </select>
+        <FormAntdProvider>
+          <AntdSelectInput
+            value={Array.isArray(effectiveValue) ? effectiveValue.map(String) : String(effectiveValue ?? '')}
+            disabled={disabled}
+            options={optionList}
+            multiple={!!props.multiple}
+            placeholder={props.placeholder as string || '请选择'}
+            onChange={onChange as (value: string | string[]) => void}
+            onBlur={onBlur}
+            onFocus={onFocus}
+          />
+        </FormAntdProvider>
+      );
+    case 'segmented':
+      return (
+        <FormAntdProvider>
+          <AntdSegmentedInput
+            value={String(effectiveValue ?? '')}
+            disabled={disabled}
+            options={optionList}
+            block
+            onChange={(next) => { onChange(next); onBlur(); }}
+          />
+        </FormAntdProvider>
       );
     case 'radio':
       return (
-        <div className="lg-radio-group">
-          {toOptions(props.options).map((opt) => {
-            const isSelected = effectiveValue === opt.value;
-            return (
-              <label
-                key={opt.value}
-                className={`lg-radio-item ${isSelected ? 'selected' : ''}`}
-                onClick={() => { if (!disabled) { onChange(opt.value); onBlur(); } }}
-              >
-                <input type="radio" name={name} value={opt.value} checked={isSelected} disabled={disabled} readOnly />
-                <span className="lg-radio-circle"><span className="lg-radio-dot" /></span>
-                <span>{opt.label}</span>
-              </label>
-            );
-          })}
-        </div>
+        <FormAntdProvider>
+          <AntdRadioInput
+            value={String(effectiveValue ?? '')}
+            disabled={disabled}
+            options={optionList}
+            direction={(props.direction as 'vertical' | 'horizontal') || 'vertical'}
+            onChange={(next) => { onChange(next); onBlur(); }}
+          />
+        </FormAntdProvider>
       );
     case 'checkbox':
       return (
-        <div className="lg-checkbox-group">
-          {toOptions(props.options).map((opt) => {
-            const current = Array.isArray(effectiveValue) ? effectiveValue : [];
-            const isChecked = current.includes(opt.value);
-            return (
-              <label
-                key={opt.value}
-                className={`lg-checkbox-item ${isChecked ? 'selected' : ''}`}
-                onClick={() => {
-                  if (disabled) return;
-                  const arr = [...current];
-                  if (isChecked) arr.splice(arr.indexOf(opt.value), 1); else arr.push(opt.value);
-                  onChange(arr);
-                  onBlur();
-                }}
-              >
-                <input type="checkbox" checked={isChecked} disabled={disabled} readOnly />
-                <span className="lg-checkbox-box">
-                  <svg className="lg-checkbox-check" viewBox="0 0 12 12" fill="none">
-                    <path d="M2.5 6L5 8.5L9.5 3.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </span>
-                <span>{opt.label}</span>
-              </label>
-            );
-          })}
-        </div>
+        <FormAntdProvider>
+          <AntdCheckboxInput
+            value={Array.isArray(effectiveValue) ? effectiveValue.map(String) : []}
+            disabled={disabled}
+            options={optionList}
+            direction={(props.direction as 'vertical' | 'horizontal') || 'vertical'}
+            onChange={(next) => { onChange(next); onBlur(); }}
+          />
+        </FormAntdProvider>
+      );
+    case 'tagInput':
+      return (
+        <FormAntdProvider>
+          <AntdTagInput
+            disabled={disabled}
+            value={Array.isArray(effectiveValue) ? effectiveValue.map(String) : []}
+            placeholder={String(props.placeholder || '输入后按 Enter 添加标签')}
+            onChange={onChange as (value: string[]) => void}
+            onBlur={onBlur}
+            onFocus={onFocus}
+          />
+        </FormAntdProvider>
       );
     case 'datePicker':
       return (
-        <input
-          type="date"
-          className={`lg-input ${dirtyClass}`}
-          value={String(effectiveValue ?? '').slice(0, 10)}
-          disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
-          onFocus={onFocus}
-        />
+        <FormAntdProvider>
+          <AntdDateInput
+            value={normalizeDateTimeValue(effectiveValue, props.showTime ? 'datetime' : 'date')}
+            placeholder={String(props.placeholder || (props.showTime ? '选择日期时间' : '选择日期'))}
+            disabled={disabled}
+            showTime={!!props.showTime}
+            format={String(props.format || (props.showTime ? 'YYYY-MM-DD HH:mm' : 'YYYY-MM-DD'))}
+            min={normalizeDateTimeValue(props.minDate, props.showTime ? 'datetime' : 'date')}
+            max={normalizeDateTimeValue(props.maxDate, props.showTime ? 'datetime' : 'date')}
+            onChange={onChange as (value: string) => void}
+            onBlur={onBlur}
+            onFocus={onFocus}
+          />
+        </FormAntdProvider>
       );
+    case 'timePicker':
+      return (
+        <FormAntdProvider>
+          <AntdTimeInput
+            value={normalizeDateTimeValue(effectiveValue, 'time')}
+            placeholder={String(props.placeholder || (props.showSeconds ? 'HH:mm:ss' : 'HH:mm'))}
+            disabled={disabled}
+            format={String(props.format || (props.showSeconds ? 'HH:mm:ss' : 'HH:mm'))}
+            showSeconds={!!props.showSeconds}
+            onChange={onChange as (value: string) => void}
+            onBlur={onBlur}
+            onFocus={onFocus}
+          />
+        </FormAntdProvider>
+      );
+    case 'dateRange': {
+      const rangeValue = normalizeDateRangeValue(effectiveValue);
+      return (
+        <FormAntdProvider>
+          <AntdDateRangeInput
+            value={rangeValue}
+            disabled={disabled}
+            placeholder={[
+              String(props.startPlaceholder || '开始日期'),
+              String(props.endPlaceholder || '结束日期'),
+            ]}
+            format={String(props.format || 'YYYY-MM-DD')}
+            onChange={onChange as (value: { start: string; end: string }) => void}
+            onBlur={onBlur}
+            onFocus={onFocus}
+          />
+        </FormAntdProvider>
+      );
+    }
     case 'switch':
       return (
-        <label className="lg-switch">
-          <input
-            type="checkbox"
+        <FormAntdProvider>
+          <AntdSwitchInput
             checked={!!effectiveValue}
             disabled={disabled}
-            onChange={(e) => { onChange(e.target.checked); onBlur(); }}
+            onChange={(next) => { onChange(next); onBlur(); }}
           />
-          <span className="lg-switch-track"><span className="lg-switch-thumb" /></span>
-        </label>
+        </FormAntdProvider>
       );
     case 'rating':
       return (
-        <div className="lg-rating">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button
-              key={n}
-              type="button"
-              className={`lg-rating-star ${(Number(effectiveValue) || 0) >= n ? 'active' : ''}`}
-              disabled={disabled}
-              onClick={() => { onChange(n); onBlur(); }}
-            >
-              ★
-            </button>
-          ))}
-        </div>
+        <FormAntdProvider>
+          <AntdRateInput
+            value={Number(effectiveValue) || 0}
+            count={Number(props.max) || 5}
+            disabled={disabled}
+            onChange={(next) => { onChange(next); onBlur(); }}
+          />
+        </FormAntdProvider>
       );
     case 'button':
       return (
-        <button
-          type="button"
-          className="lg-btn lg-btn-primary"
-          disabled={disabled}
-          onClick={onButtonClick}
-        >
-          {props.label as string || '按钮'}
-        </button>
+        <FormAntdProvider>
+          <AntdActionButton
+            label={props.label as string || '按钮'}
+            disabled={disabled}
+            variant={props.variant === 'ghost' ? 'ghost' : props.variant === 'default' ? 'outline' : 'solid'}
+            onClick={onButtonClick}
+          />
+        </FormAntdProvider>
       );
     case 'text':
       return <div className="lg-text">{String(effectiveValue ?? props.content ?? '')}</div>;
-    case 'upload':
-    case 'imageUpload':
+    case 'image':
       return props.src ? (
         <img
           src={String(props.src)}
@@ -515,22 +598,69 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
             width: '100%',
             maxHeight: Number(props.height) || 240,
             objectFit: (props.fit as any) || 'cover',
-            borderRadius: Number(props.borderRadius) || 0,
+            borderRadius: Number(props.borderRadius) || 18,
             opacity: Number(props.opacity ?? 1),
           }}
         />
       ) : <div className="lg-text">{String(props.alt ?? '图片')}</div>;
+    case 'upload':
+      return (
+        <FormAntdProvider>
+          <AntdUploadInput
+            disabled={disabled}
+            files={normalizeFileList(effectiveValue)}
+            onChange={onChange as (files: UploadFileValue[]) => void}
+          />
+        </FormAntdProvider>
+      );
+    case 'imageUpload':
+      return (
+        <FormAntdProvider>
+          <AntdUploadInput
+            disabled={disabled}
+            imageOnly
+            files={normalizeFileList(effectiveValue)}
+            onChange={onChange as (files: UploadFileValue[]) => void}
+          />
+        </FormAntdProvider>
+      );
     case 'table': {
-      const columns = Array.isArray(props.columns) ? props.columns.map(String) : [];
-      const rows = Math.max(1, Number(props.rows) || 3);
+      const configuredColumns = Array.isArray(props.columns) ? props.columns.map(String) : [];
+      const rawRows = Array.isArray(effectiveValue)
+        ? effectiveValue
+        : Array.isArray(props.data)
+          ? props.data
+          : [];
+      const normalizedRows = rawRows
+        .map((row) => {
+          if (row && typeof row === 'object' && !Array.isArray(row)) return row as Record<string, unknown>;
+          if (Array.isArray(row)) {
+            return Object.fromEntries(row.map((cell, index) => [configuredColumns[index] || `列${index + 1}`, cell]));
+          }
+          return { value: row };
+        });
+      const derivedColumns = normalizedRows.length > 0
+        ? [...new Set(normalizedRows.flatMap((row) => Object.keys(row)))]
+        : [];
+      const columns = configuredColumns.length > 0 ? configuredColumns : derivedColumns;
+      const placeholderRows = Math.max(1, Number(props.rows) || 3);
+      const displayRows = normalizedRows.length > 0
+        ? normalizedRows
+        : Array.from({ length: placeholderRows }, () => Object.fromEntries(columns.map((column) => [column, '-'])));
       return (
         <table className="lg-render-table">
           <thead>
             <tr>{columns.map((column) => <th key={column}>{column}</th>)}</tr>
           </thead>
           <tbody>
-            {Array.from({ length: rows }, (_, row) => (
-              <tr key={row}>{columns.map((column) => <td key={column}>-</td>)}</tr>
+            {displayRows.map((row, rowIndex) => (
+              <tr
+                key={rowIndex}
+                onClick={() => onTableRowClick?.(rowIndex, row)}
+                style={{ cursor: onTableRowClick ? 'pointer' : 'default' }}
+              >
+                {columns.map((column) => <td key={column}>{String(row[column] ?? '-')}</td>)}
+              </tr>
             ))}
           </tbody>
         </table>
@@ -540,8 +670,38 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
       return (
         <div className="lg-tabs-render">
           {toOptions(props.tabs).map((tab, index) => (
-            <span key={tab.value} className={index === Number(props.defaultTab ?? 0) ? 'active' : ''}>{tab.label}</span>
+            <button
+              key={tab.value}
+              type="button"
+              className={index === Number(effectiveValue ?? props.defaultTab ?? 0) ? 'active' : ''}
+              disabled={disabled}
+              onClick={() => { if (!disabled) onChange(index); }}
+            >
+              {tab.label}
+            </button>
           ))}
+        </div>
+      );
+    case 'steps':
+      return (
+        <div className="lg-steps-render">
+          {toOptions(props.steps || props.tabs).map((step, index) => {
+            const activeIndex = Number(effectiveValue ?? props.defaultStep ?? 0);
+            const done = index < activeIndex;
+            const active = index === activeIndex;
+            return (
+              <button
+                key={step.value}
+                type="button"
+                className={`lg-step-item ${active ? 'active' : ''} ${done ? 'done' : ''}`}
+                disabled={disabled}
+                onClick={() => { if (!disabled) onChange(index); }}
+              >
+                <span className="lg-step-dot">{done ? '✓' : index + 1}</span>
+                <span className="lg-step-label">{step.label}</span>
+              </button>
+            );
+          })}
         </div>
       );
     case 'container':
@@ -600,12 +760,10 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
         );
       }
       return (
-        <input
-          type="text"
-          className={`lg-input ${dirtyClass}`}
+        <AntdTextInput
           value={String(effectiveValue ?? '')}
           disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(next) => onChange(next)}
           onBlur={onBlur}
           onFocus={onFocus}
         />

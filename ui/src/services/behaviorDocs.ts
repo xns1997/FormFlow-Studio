@@ -69,6 +69,7 @@ const controlOnlyContextFields: BehaviorReferenceField[] = [
   { name: 'ctx.component', type: 'FormEventComponent', description: '当前控件定义，可读取 id、type、props 等信息。' },
   { name: 'ctx.componentId', type: 'string', description: '当前控件 ID，便于控制显隐和跳转文档。' },
   { name: 'ctx.componentType', type: 'string', description: '当前控件类型，例如 input、tabs、table。' },
+  { name: 'ctx.controls', type: 'Record<string, FormEventControlHandle>', description: '按控件 name 或 componentId 暴露的运行时控件句柄，可直接访问 value / visible / disabled / required。' },
   { name: 'ctx.previousValue', type: 'unknown', description: '事件发生前的字段值。表单级事件通常是旧快照。' },
   { name: 'ctx.timestamp', type: 'number', description: '事件上下文创建时的毫秒时间戳。' },
   { name: 'ctx.dirty', type: 'boolean', description: '当前字段值是否相对原始值发生变化。' },
@@ -112,6 +113,7 @@ const scriptApis: BehaviorApiReference[] = [
 ];
 
 const controlApis: BehaviorApiReference[] = [
+  { name: 'ctx.controls', signature: 'ctx.controls.controlName.value = nextValue', description: '通过控件句柄直接读写其它控件。支持 value / visible / disabled / required。' },
   { name: 'ctx.getValue', signature: 'ctx.getValue(fieldId)', description: '读取任意字段的当前值。' },
   { name: 'ctx.setValue', signature: 'await ctx.setValue(fieldId, value)', description: '异步修改字段值。' },
   { name: 'ctx.setVisible', signature: 'await ctx.setVisible(componentId, visible)', description: '异步修改控件显隐。' },
@@ -222,8 +224,11 @@ export const behaviorEventDocs: BehaviorEventDocEntry[] = [
     summary: '用户点击行为按钮时触发。',
     triggerWhen: '按钮类组件点击后触发。',
     detailFields: [],
-    suggestions: ['适合执行提交前检查、切换页签或显式调用流程。'],
-    examples: [{ title: '点击后提示', code: "ctx.showMessage('按钮事件已触发', 'success');" }],
+    suggestions: ['适合执行提交前检查、切换页签或显式调用流程。', '如果只是同一表单内的轻量联动，优先直接使用 ctx.controls.<控件名>。'],
+    examples: [
+      { title: '点击后提示', code: "ctx.showMessage('按钮事件已触发', 'success');" },
+      { title: '点击后把结果写进表格', code: "const rows = (await ctx.runConfiguredWorkflow()).nodeResults.get('filter')?.outputs.result || [];\nctx.controls.resultTable.value = rows;" },
+    ],
     relatedEvents: ['onSubmit', 'onBeforeSubmit'],
   }),
   createEventDoc({
@@ -537,8 +542,11 @@ export const behaviorEventDocs: BehaviorEventDocEntry[] = [
       { path: 'ctx.detail.y', description: '点击纵坐标。' },
       { path: 'ctx.detail.button', description: '鼠标按键编号。' },
     ],
-    suggestions: ['按钮点击里优先显式调用 runConfiguredWorkflow 或 runWorkflow，行为更可控。'],
-    examples: [{ title: '点击后执行已绑定流程', code: 'await ctx.runConfiguredWorkflow({ value: ctx.value });' }],
+    suggestions: ['按钮点击里优先显式调用 runConfiguredWorkflow 或 runWorkflow，行为更可控。', '如果只是把结果回填到同一表单控件，优先用 ctx.controls 直接赋值。'],
+    examples: [
+      { title: '点击后执行已绑定流程', code: 'await ctx.runConfiguredWorkflow({ value: ctx.value });' },
+      { title: '把流程结果写到表格控件', code: "const result = await ctx.runConfiguredWorkflow();\nctx.controls.resultTable.value = result.nodeResults.get('filter')?.outputs.result || [];" },
+    ],
     relatedEvents: ['onSubmit', 'onTabChange'],
   }),
   createEventDoc({
@@ -676,8 +684,41 @@ export const behaviorTopicDocs: BehaviorTopicDocEntry[] = [
         shortcuts: [
           { path: 'ctx.value', description: '当前事件值。' },
           { path: 'ctx.values.customerName', description: '读取指定字段当前值。' },
+          { path: 'ctx.controls.customerName.value', description: '直接读取名为 customerName 的控件值。' },
+          { path: 'ctx.controls.resultTable.visible = true', description: '直接切换目标控件显示状态。' },
           { path: 'ctx.previousValue', description: '当前字段旧值。' },
           { path: 'ctx.changedFields', description: '全部变化字段。' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'topic:control-handles-reference',
+    slug: 'control-handles-reference',
+    title: 'ctx.controls Reference',
+    summary: '控件事件脚本里的控件句柄能力。适合做字段间赋值、表格回填、显隐和禁用联动。',
+    sections: [
+      {
+        title: '控件句柄结构',
+        body: '每个控件会按 name 和 componentId 同时挂到 ctx.controls 上。最常见的访问方式是 ctx.controls.<控件名>。',
+        fields: [
+          { name: 'ctx.controls.customerName.value', type: 'unknown', description: '当前控件值；支持直接赋值。' },
+          { name: 'ctx.controls.resultTable.visible', type: 'boolean', description: '控件显示状态；支持直接赋值。' },
+          { name: 'ctx.controls.submitButton.disabled', type: 'boolean', description: '控件禁用状态；支持直接赋值。' },
+          { name: 'ctx.controls.amount.required', type: 'boolean', description: '字段是否必填；支持直接赋值。' },
+          { name: 'ctx.controls.customerName.component', type: 'FormEventComponent', description: '底层控件定义，可读取 type、props、id。' },
+        ],
+      },
+      {
+        title: '推荐场景',
+        body: '同表单内的轻量联动优先用 ctx.controls；只有在需要节点编排、复用流程或复杂数据转换时再调用 ctx.runConfiguredWorkflow / ctx.runWorkflow。',
+      },
+      {
+        title: '代码示例',
+        shortcuts: [
+          { path: "ctx.controls.summaryPreview.value = `${ctx.controls.name.value}：${ctx.controls.note.value}`", description: '空白表单模板：按钮点击后生成摘要。' },
+          { path: "ctx.controls.saveLead.disabled = !ctx.controls.customerName.value", description: '数据录入模板：根据名称是否为空启用保存按钮。' },
+          { path: "ctx.controls.approvalResults.value = rows", description: '审批模板：把流程结果直接写进右侧表格。' },
         ],
       },
     ],

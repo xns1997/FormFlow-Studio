@@ -10,6 +10,7 @@
 - 文档首页：`/docs`
 - 上下文总览：`/docs/context-reference`
 - 流程参数 reference：`/docs/flow-parameter-reference`
+- 控件句柄 reference：`/docs/control-handles-reference`
 - 如果从项目工作区进入，会自动带上 `fromProject / fromPage / fromTab` 参数，便于返回原页面
 
 ## 通用上下文
@@ -31,6 +32,31 @@
 - `ctx.component`
 - `ctx.componentId`
 - `ctx.componentType`
+- `ctx.controls`
+
+## ctx.controls
+
+`ctx.controls` 会按控件 `name` 和 `componentId` 暴露运行时句柄，适合做同表单内的直接联动。
+
+常见属性：
+
+- `ctx.controls.customerName.value`
+- `ctx.controls.resultTable.visible`
+- `ctx.controls.submitButton.disabled`
+- `ctx.controls.amount.required`
+
+示例：
+
+```ts
+ctx.controls.summaryPreview.value = `${ctx.controls.name.value}：${ctx.controls.note.value}`
+ctx.controls.saveLead.disabled = !ctx.controls.customerName.value
+ctx.controls.approvalResults.value = rows
+```
+
+建议：
+
+- 同表单内的轻量联动优先用 `ctx.controls`
+- 需要复杂计算、节点编排或跨流程复用时，再用 `ctx.runConfiguredWorkflow()` / `ctx.runWorkflow()`
 
 ## 流程参数变量
 

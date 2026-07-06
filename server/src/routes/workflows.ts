@@ -1,20 +1,10 @@
 import { Router } from 'express';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join } from 'path';
-import { PROJECTS_DIR } from '../config/paths';
+import { readProjectPackage, writeProjectPackage } from '../services/project-package-store';
 
 const router = Router();
 
-function projectPath(id: string) { return join(PROJECTS_DIR, `${id}.json`); }
-
-function loadProject(id: string) {
-  if (!existsSync(projectPath(id))) return null;
-  return JSON.parse(readFileSync(projectPath(id), 'utf-8'));
-}
-
-function saveProject(project: any) {
-  writeFileSync(projectPath(project.config.id), JSON.stringify(project, null, 2));
-}
+const loadProject = readProjectPackage;
+const saveProject = writeProjectPackage;
 
 // GET /api/workflows/:projectId - 获取所有流程
 router.get('/:projectId', (req, res) => {

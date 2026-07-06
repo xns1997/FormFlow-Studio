@@ -1,0 +1,31 @@
+{
+  "sheets": [
+    {
+      "tableId": "service_tickets",
+      "sheetName": "服务工单",
+      "updatedAt": "2026-07-06T09:00:00.000Z",
+      "behaviors": [
+        {
+          "id": "bh_sheet_ticket_import_defaults",
+          "name": "导入工单时补默认状态",
+          "event": "onDataImport",
+          "code": "if (!ctx.value?.状态) ctx.value.状态 = '待分派';\nif (!ctx.value?.优先级) ctx.value.优先级 = '中';",
+          "priority": 10,
+          "enabled": true,
+          "createdAt": "2026-07-06T09:00:00.000Z",
+          "updatedAt": "2026-07-06T09:00:00.000Z"
+        },
+        {
+          "id": "bh_sheet_ticket_before_submit",
+          "name": "写回前清洗工单字段",
+          "event": "onBeforeSubmit",
+          "code": "const customer = String(ctx.getValue('客户名称') || '').trim();\nctx.setValue('客户名称', customer);\nif (!ctx.getValue('处理说明')) ctx.setValue('处理说明', '');",
+          "priority": 10,
+          "enabled": true,
+          "createdAt": "2026-07-06T09:00:00.000Z",
+          "updatedAt": "2026-07-06T09:00:00.000Z"
+        }
+      ]
+    }
+  ]
+}

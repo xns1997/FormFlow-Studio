@@ -4,6 +4,7 @@ import type { MetricConfig, AggFn, PostCalc, ColDataType } from '../components/C
 import { AGG_OPTIONS, POST_CALC_OPTIONS, detectColType } from '../components/ChartWidget';
 import { resolveRange } from '../services/rangeResolver';
 import { useProjectStore } from '../project/store';
+import { AntdNumberInput, AntdSelectInput } from '../components/AntdFormControls';
 
 export type ColRole = 'dimension' | 'metric' | 'skip';
 
@@ -121,45 +122,38 @@ export default function DimMetricField({ rangeRef, dimensions, metrics, onChange
           <div key={ci} className={`dm-row dm-${cfg.role}`}>
             <span className="dm-col" title={h}>{h || `列${ci}`}</span>
             <span className={`dm-type-badge dm-type-${dtype}`}>{typeLabels[dtype]}</span>
-            <select
-              className="dm-sel"
+            <AntdSelectInput
               value={cfg.role}
-              onChange={(e) => handleChange(ci, { role: e.target.value as ColRole })}
-            >
-              <option value="dimension">维度</option>
-              <option value="metric">指标</option>
-              <option value="skip">忽略</option>
-            </select>
+              options={[
+                { label: '维度', value: 'dimension' },
+                { label: '指标', value: 'metric' },
+                { label: '忽略', value: 'skip' },
+              ]}
+              onChange={(next) => handleChange(ci, { role: next as ColRole })}
+            />
             {cfg.role !== 'skip' ? (
-              <select
-                className="dm-sel"
+              <AntdSelectInput
                 value={aggOpts.some(o => o.value === cfg.agg) ? cfg.agg : aggOpts[0]?.value || 'group'}
-                onChange={(e) => handleChange(ci, { agg: e.target.value as AggFn })}
-              >
-                {aggOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
+                options={aggOpts.map((option) => ({ label: option.label, value: option.value }))}
+                onChange={(next) => handleChange(ci, { agg: next as AggFn })}
+              />
             ) : (
               <span className="dm-placeholder">—</span>
             )}
             {isMet && NSTD_TYPES.has(cfg.agg) ? (
-              <input
-                className="dm-n-input"
-                type="number"
+              <AntdNumberInput
                 min={0.5}
                 max={10}
                 step={0.5}
                 value={cfg.n}
-                title="N 倍标准差"
-                onChange={(e) => handleChange(ci, { n: Number(e.target.value) || 2 })}
+                onChange={(next) => handleChange(ci, { n: Number(next) || 2 })}
               />
             ) : isMet && postOpts.length > 1 ? (
-              <select
-                className="dm-sel"
+              <AntdSelectInput
                 value={cfg.post}
-                onChange={(e) => handleChange(ci, { post: e.target.value as PostCalc })}
-              >
-                {postOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
+                options={postOpts.map((option) => ({ label: option.label, value: option.value }))}
+                onChange={(next) => handleChange(ci, { post: next as PostCalc })}
+              />
             ) : (
               <span className="dm-placeholder">—</span>
             )}

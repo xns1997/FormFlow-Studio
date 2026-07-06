@@ -1,0 +1,12 @@
+{
+  "sources": [
+    {
+      "id": "renewable_generation",
+      "fileName": "新能源发电量.json",
+      "fileType": "json",
+      "metaFile": "renewable_generation.meta.json",
+      "behaviorsFile": "renewable_generation.behaviors.json",
+      "uploadedAt": "2026-07-06T18:00:00.000Z"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "generic-custom-js",
+  "label": "自定义 JS 节点",
+  "description": "执行自定义 JavaScript 代码，支持配置输入输出端口",
+  "category": "功能 · 脚本",
+  "kind": "generic",
+  "properties": [
+    { "name": "inputPorts", "label": "输入端口", "type": "port-definition", "default": "{\"a\":\"any\",\"b\":\"any\"}", "description": "使用对象定义输入端口，例如 {\"a\":\"number\",\"b\":\"number\"}" },
+    { "name": "outputPorts", "label": "输出端口", "type": "port-definition", "default": "{\"out\":\"any\"}", "description": "使用对象定义输出端口，例如 {\"out\":\"number\"}" },
+    { "name": "code", "label": "JS 代码", "type": "code", "default": "// inputs: 输入端口值对象\n// properties: 节点属性\nreturn { out: inputs.a + inputs.b };", "required": true, "description": "函数体，可用 inputs / properties" }
+  ],
+  "ports": [],
+  "keywords": ["脚本", "javascript", "custom", "自定义"]
+}

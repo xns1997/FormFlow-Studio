@@ -2,6 +2,7 @@ import { getRegistrySync, resolveMethod, type FlowNodeSpec } from '../flowRegist
 import { getExecutor, hasExecutor, type NodeExecContext } from '../../nodes/executor-registry';
 import { checkPortType, assertPortType } from '../../nodes/port-types';
 import type { SrcTableEntry } from '../project/types';
+import { getNodeEffectivePorts, resolveNodeProperties } from './customJsNode';
 import { extractNodeSideEffects, type FlowSideEffect } from './flowSideEffects';
 
 let xlsxCache: any = null;
@@ -373,17 +374,16 @@ export interface ExecuteFlowOptions {
 function validateConnectedInputs(spec: FlowNodeSpec | undefined, inputs: Record<string, unknown>) {
   if (!spec) return inputs;
   const normalized = { ...inputs };
-  for (const port of spec.ports.filter((item) => item.direction === 'input' || item.direction === 'both')) {
+  for (const port of (spec.ports || []).filter((item) => item.direction === 'input' || item.direction === 'both')) {
     if (!Object.prototype.hasOwnProperty.call(inputs, port.name)) continue;
     normalized[port.name] = assertPortType(port.type, inputs[port.name], port.name);
   }
   return normalized;
 }
 
-function validateOutputs(spec: FlowNodeSpec | undefined, outputs: Record<string, unknown>) {
-  if (!spec) return outputs;
+function validateOutputs(ports: FlowNodeSpec['ports'], outputs: Record<string, unknown>) {
   const normalized = { ...outputs };
-  for (const port of spec.ports.filter((item) => item.direction === 'output' || item.direction === 'both')) {
+  for (const port of ports.filter((item) => item.direction === 'output' || item.direction === 'both')) {
     if (!Object.prototype.hasOwnProperty.call(outputs, port.name)) continue;
     normalized[port.name] = assertPortType(port.type, outputs[port.name], port.name);
   }
@@ -424,14 +424,8 @@ export async function executeFlow(
 
     try {
       const spec = getRegistrySync()?.byId.get(node.specId);
-      properties = (() => {
-        try {
-          const raw = (node.data as any)?.propertiesJson;
-          const configured = typeof raw === 'string' ? JSON.parse(raw) : (raw || {});
-          const defaults = Object.fromEntries((spec?.properties || []).filter((property) => property.default !== undefined).map((property) => [property.name, property.default]));
-          return { ...defaults, ...configured };
-        } catch { return {}; }
-      })();
+      properties = resolveNodeProperties(spec, (node.data as any)?.propertiesJson);
+      const effectivePorts = getNodeEffectivePorts(spec, properties);
       const injectedInputs = { ...(options.nodeInputs?.[node.id] || {}) };
       if (node.specId === 'generic:variable-input') {
         const variableName = String(properties.varName || '');
@@ -440,7 +434,7 @@ export async function executeFlow(
         }
       }
       inputs = { ...injectedInputs, ...collectInputs(node.id, edges, nodeOutputs) };
-      inputs = validateConnectedInputs(spec, inputs);
+      inputs = validateConnectedInputs({ ...spec, ports: effectivePorts } as FlowNodeSpec, inputs);
       let outputs: Record<string, unknown>;
 
       // 优先使用注册的执行器
@@ -458,7 +452,7 @@ export async function executeFlow(
         throw new Error(`节点缺少执行器: ${node.specId}`);
       }
 
-      outputs = validateOutputs(spec, outputs);
+      outputs = validateOutputs(effectivePorts, outputs);
       const nodeSideEffects = extractNodeSideEffects(outputs);
       sideEffects.push(...nodeSideEffects);
 

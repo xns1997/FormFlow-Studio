@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DesignComponent, FormEventExecutionTrace, SrcTableEntry, WorkflowFile } from '../project/types';
 import { getControl } from './registry';
 import {
@@ -36,6 +36,41 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
   const [fieldRequired, setFieldRequired] = useState<Record<string, boolean>>({});
   const [status, setStatus] = useState<EventStatus | null>(null);
 
+  // ── 表单 → 工作表同步（防抖） ──────────────────────
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSyncsRef = useRef<Array<{ tableId: string; sheetName: string; keyField: string; keyValue: unknown; column: string; value: unknown }>>([]);
+
+  const flushSyncs = useCallback(() => {
+    if (pendingSyncsRef.current.length === 0 || !project) return;
+    const syncs = pendingSyncsRef.current.splice(0);
+    let nextProject = { ...project, srcTable: project.srcTable.map((t) => ({ ...t, sheets: t.sheets.map((s) => ({ ...s, preview: [...s.preview] })) })) };
+    let changed = false;
+    for (const sync of syncs) {
+      const table = nextProject.srcTable.find((t) => t.id === sync.tableId);
+      if (!table) continue;
+      const sheet = table.sheets.find((s) => s.name === sync.sheetName);
+      if (!sheet) continue;
+      const row = sheet.preview.find((r) => r[sync.keyField] === sync.keyValue);
+      if (row && Object.prototype.hasOwnProperty.call(row, sync.column)) {
+        row[sync.column] = sync.value;
+        changed = true;
+      }
+    }
+    if (changed) persistProject(nextProject);
+  }, [project, persistProject]);
+
+  const queueTableSync = useCallback((field: string, value: unknown) => {
+    const component = components.find((c) => getDesignComponentField(c) === field);
+    if (!component) return;
+    const binding = component.props.tableBinding as { tableId?: string; sheetName?: string; keyField?: string; keyValue?: unknown; column?: string } | undefined;
+    if (!binding?.tableId || !binding.sheetName || !binding.keyField || binding.keyValue == null || !binding.column) return;
+    pendingSyncsRef.current.push({ tableId: binding.tableId, sheetName: binding.sheetName, keyField: binding.keyField, keyValue: binding.keyValue, column: binding.column, value });
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(flushSyncs, 500);
+  }, [components, flushSyncs]);
+
+  useEffect(() => () => { if (syncTimerRef.current) clearTimeout(syncTimerRef.current); }, []);
+
   useEffect(() => {
     const initial = Object.fromEntries(components.map((component) => [getDesignComponentField(component), getPreviewInitialValue(component, tables)]));
     setValues(initial);
@@ -48,7 +83,8 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
 
   const setFieldValue = useCallback((field: string, value: unknown) => {
     setValues((current) => ({ ...current, [field]: value }));
-  }, []);
+    queueTableSync(field, value);
+  }, [queueTableSync]);
 
   const setPreviewVisible = useCallback((componentId: string, visible: boolean) => {
     setComponentVisibility((current) => ({ ...current, [componentId]: visible }));
@@ -115,6 +151,7 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
     }, {
       workflows,
       tables,
+      components,
       setValue: (nextField, nextFieldValue) => {
         directEffects.formValues.add(nextField);
         setFieldValue(nextField, nextFieldValue);

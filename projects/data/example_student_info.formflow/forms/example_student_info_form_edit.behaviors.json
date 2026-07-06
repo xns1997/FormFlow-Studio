@@ -1,0 +1,14 @@
+{
+  "behaviors": [
+    {
+      "id": "example_student_info_edit_load",
+      "name": "打开修改表单时加载默认列表",
+      "event": "onFormLoad",
+      "code": "const rows = ctx.querySheet('students'); await ctx.setValue('example_student_info_列表', rows); await ctx.setValue('处理提示', `已加载 ${rows.length} 条记录`);",
+      "priority": 10,
+      "enabled": true,
+      "createdAt": "2026-07-06T18:00:00.000Z",
+      "updatedAt": "2026-07-06T18:00:00.000Z"
+    }
+  ]
+}

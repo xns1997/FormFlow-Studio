@@ -11,6 +11,10 @@ export function buildProjectPath(projectId: string) {
   return `/projects/${projectId}`;
 }
 
+export function buildEditorPath(projectId: string) {
+  return `/projects/${projectId}/editor`;
+}
+
 export function buildWorkspacePath(projectId: string, tab?: WorkspaceTab) {
   return tab ? `/projects/${projectId}/workspace/${tab}` : `/projects/${projectId}/workspace`;
 }
@@ -32,6 +36,10 @@ export function buildDocsPath(slug?: string, source?: {
   if (source.fromTab) search.set('fromTab', source.fromTab);
   const query = search.toString();
   return query ? `${base}?${query}` : base;
+}
+
+export function buildUsagePath(projectId: string) {
+  return `/projects/${projectId}/usage`;
 }
 
 export function buildSystemSettingsPath(section?: SystemSettingsSection) {

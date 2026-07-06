@@ -3,6 +3,14 @@ import { registerControl } from '../registry';
 import type { DesignComponent } from '../../project/types';
 import { controlText, ios, requiredMark } from './styles';
 import type { PreviewControlRuntime } from '../types';
+import {
+  AntdCheckboxInput,
+  AntdRadioInput,
+  AntdSegmentedInput,
+  AntdSelectInput,
+  FormAntdProvider,
+  toOptions,
+} from '../../components/AntdFormControls';
 
 const renderLabel = (label: string, required?: boolean) => (
   <>
@@ -40,26 +48,64 @@ registerControl({
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 240, h: 72 },
   render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
-    const opts = component.props.options || [];
-    if (mode === 'preview') {
-      return (
-        <div style={ios.field}>
-          <label style={ios.label}>{renderLabel(component.props.label || '选择', component.props.required)}</label>
-          <select style={{ ...ios.control, cursor: 'pointer' }} value={String(runtime?.value ?? '')} disabled={!!component.props.disabled} onChange={(event) => runtime?.emit('onChange', event.target.value)} onBlur={() => runtime?.emit('onBlur')} onFocus={() => runtime?.emit('onFocus')}>
-            <option value="" disabled>{component.props.placeholder || '请选择'}</option>
-            {opts.map((o: any, i: number) => <option key={i} value={o.value || o}>{o.label || o}</option>)}
-          </select>
-        </div>
-      );
-    }
+    const opts = toOptions(component.props.options || []);
     return (
+      <FormAntdProvider>
       <div style={ios.field}>
         <label style={ios.label}>{renderLabel(component.props.label || '选择', component.props.required)}</label>
-        <div style={{ ...ios.control, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, cursor: 'default' }}>
-          <span style={{ ...ios.muted, fontSize: component.props.fontSize || 14 }}>{component.props.placeholder || '请选择'}</span>
-          <span style={{ fontSize: 10, color: '#8e8e93', flexShrink: 0 }}>▼</span>
-        </div>
+        <AntdSelectInput
+          value={component.props.multiple ? (Array.isArray(runtime?.value) ? runtime?.value.map(String) : []) : String(runtime?.value ?? '')}
+          options={opts}
+          multiple={!!component.props.multiple}
+          placeholder={component.props.placeholder || '请选择'}
+          disabled={mode !== 'preview' || !!component.props.disabled}
+          onChange={(next) => runtime?.emit('onChange', next)}
+          onBlur={() => runtime?.emit('onBlur')}
+          onFocus={() => runtime?.emit('onFocus')}
+        />
       </div>
+      </FormAntdProvider>
+    );
+  },
+});
+
+registerControl({
+  type: 'segmented', label: '分段选择', category: 'select', icon: '🧩',
+  defaultProps: {
+    label: '分段选择', name: '', required: false, disabled: false,
+    options: [{ label: '待处理', value: 'pending' }, { label: '进行中', value: 'processing' }, { label: '完成', value: 'done' }],
+    rangeRef: null,
+  },
+  propSchema: [
+    { key: 'label', label: '标签', type: 'string', group: '基础' },
+    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'required', label: '必填', type: 'boolean', group: '校验' },
+    { key: 'disabled', label: '禁用', type: 'boolean', group: '校验' },
+    { key: 'options', label: '选项 (JSON)', type: 'json', group: '数据' },
+    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+  ],
+  eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
+  defaultSize: { w: 280, h: 72 },
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
+    const opts = toOptions(component.props.options || []);
+    const selectedValue = String(runtime?.value ?? opts[0]?.value ?? '');
+    return (
+      <FormAntdProvider>
+      <div style={ios.field}>
+        <label style={ios.label}>{renderLabel(component.props.label || '分段选择', component.props.required)}</label>
+        <AntdSegmentedInput
+          value={selectedValue}
+          options={opts}
+          disabled={mode !== 'preview' || !!component.props.disabled}
+          block
+          onChange={(next) => {
+            runtime?.emit('onFocus');
+            runtime?.emit('onChange', next);
+            runtime?.emit('onBlur');
+          }}
+        />
+      </div>
+      </FormAntdProvider>
     );
   },
 });
@@ -96,26 +142,21 @@ registerControl({
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 240, h: 150 },
   render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
-    const opts = component.props.options || [];
-    const selectedValue = runtime?.value ?? (opts[0]?.value ?? opts[0]);
+    const opts = toOptions(component.props.options || []);
+    const selectedValue = String(runtime?.value ?? opts[0]?.value ?? '');
     return (
+      <FormAntdProvider>
       <div style={ios.field}>
         <label style={ios.label}>{renderLabel(component.props.label || '单选', component.props.required)}</label>
-        <div style={ios.naturalPanel}>
-          {opts.map((o: any, i: number) => (
-            <div key={i} style={{ ...ios.row, borderBottom: i < opts.length - 1 ? ios.row.borderBottom : 'none', cursor: mode === 'preview' ? 'pointer' : 'default' }}
-              tabIndex={mode === 'preview' ? 0 : -1}
-              onFocus={() => runtime?.emit('onFocus')}
-              onBlur={() => runtime?.emit('onBlur')}
-              onClick={() => mode === 'preview' && !component.props.disabled && runtime?.emit('onChange', o.value ?? o)}>
-              <span style={controlText({ fontSize: component.props.fontSize || 14, color: component.props.color || '#1c1c1e' })}>{o.label || o}</span>
-              <div style={{ width: 21, height: 21, borderRadius: 999, border: (o.value ?? o) === selectedValue ? '2px solid #007aff' : '2px solid rgba(118,118,128,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                {(o.value ?? o) === selectedValue && <div style={{ width: 11, height: 11, borderRadius: 999, background: '#007aff' }} />}
-              </div>
-            </div>
-          ))}
-        </div>
+        <AntdRadioInput
+          value={selectedValue}
+          options={opts}
+          direction={component.props.direction === 'horizontal' ? 'horizontal' : 'vertical'}
+          disabled={mode !== 'preview' || !!component.props.disabled}
+          onChange={(next) => runtime?.emit('onChange', next)}
+        />
       </div>
+      </FormAntdProvider>
     );
   },
 });
@@ -155,29 +196,21 @@ registerControl({
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 240, h: 150 },
   render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
-    const opts = component.props.options || [];
-    const checkedValues = Array.isArray(runtime?.value) ? runtime.value : [];
-    const toggle = (i: number) => {
-      if (mode !== 'preview' || component.props.disabled) return;
-      const optionValue = opts[i]?.value ?? opts[i];
-      const next = checkedValues.includes(optionValue) ? checkedValues.filter((value) => value !== optionValue) : [...checkedValues, optionValue];
-      runtime?.emit('onChange', next);
-    };
+    const opts = toOptions(component.props.options || []);
+    const checkedValues = Array.isArray(runtime?.value) ? runtime.value.map(String) : [];
     return (
+      <FormAntdProvider>
       <div style={ios.field}>
         <label style={ios.label}>{renderLabel(component.props.label || '多选', component.props.required)}</label>
-        <div style={ios.naturalPanel}>
-          {opts.map((o: any, i: number) => (
-            <div key={i} style={{ ...ios.row, borderBottom: i < opts.length - 1 ? ios.row.borderBottom : 'none', cursor: mode === 'preview' ? 'pointer' : 'default' }}
-              tabIndex={mode === 'preview' ? 0 : -1} onFocus={() => runtime?.emit('onFocus')} onBlur={() => runtime?.emit('onBlur')} onClick={() => toggle(i)}>
-              <span style={controlText({ fontSize: component.props.fontSize || 14, color: component.props.color || '#1c1c1e' })}>{o.label || o}</span>
-              <div style={{ width: 21, height: 21, borderRadius: 6, border: checkedValues.includes(o.value ?? o) ? '2px solid #007aff' : '2px solid rgba(118,118,128,0.35)', background: checkedValues.includes(o.value ?? o) ? '#007aff' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                {checkedValues.includes(o.value ?? o) && <span style={{ color: '#fff', fontSize: 13, fontWeight: 800 }}>✓</span>}
-              </div>
-            </div>
-          ))}
-        </div>
+        <AntdCheckboxInput
+          value={checkedValues}
+          options={opts}
+          direction={component.props.direction === 'horizontal' ? 'horizontal' : 'vertical'}
+          disabled={mode !== 'preview' || !!component.props.disabled}
+          onChange={(next) => runtime?.emit('onChange', next)}
+        />
       </div>
+      </FormAntdProvider>
     );
   },
 });

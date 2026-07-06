@@ -1,0 +1,277 @@
+{
+  "id": "example_renewable_generation_form_analysis",
+  "name": "统计分析",
+  "formMode": "detail",
+  "viewport": {
+    "zoom": 1,
+    "panX": 0,
+    "panY": 0
+  },
+  "gridSize": 10,
+  "createdAt": "2026-07-06T18:00:00.000Z",
+  "updatedAt": "2026-07-06T18:00:00.000Z",
+  "bindings": [],
+  "components": [
+    {
+      "id": "example_renewable_generation_analysis_title",
+      "type": "text",
+      "x": 24,
+      "y": 24,
+      "width": 900,
+      "height": 40,
+      "zIndex": 1,
+      "props": {
+        "name": "example_renewable_generation_analysis_title",
+        "content": "新能源发电量 · 统计分析 / 批量处理 / 预测",
+        "fontSize": 22,
+        "color": "#0f172a",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "example_renewable_generation_analysis_hint",
+      "type": "text",
+      "x": 24,
+      "y": 70,
+      "width": 900,
+      "height": 28,
+      "zIndex": 1,
+      "fieldBinding": "分析说明",
+      "props": {
+        "name": "example_renewable_generation_analysis_hint",
+        "content": "分析说明",
+        "fontSize": 13,
+        "color": "#475569"
+      }
+    },
+    {
+      "id": "example_renewable_generation_stats_filter",
+      "type": "select",
+      "x": 24,
+      "y": 116,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "统计场站",
+      "props": {
+        "name": "统计场站",
+        "label": "统计场站",
+        "options": [
+          "全部",
+          "青海光伏一站",
+          "甘肃风电二场",
+          "宁夏储能联营"
+        ],
+        "defaultValue": "全部"
+      }
+    },
+    {
+      "id": "example_renewable_generation_batch_param",
+      "type": "number",
+      "x": 264,
+      "y": 116,
+      "width": 180,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "修正系数",
+      "props": {
+        "name": "修正系数",
+        "label": "修正系数%",
+        "defaultValue": 3,
+        "min": 0
+      }
+    },
+    {
+      "id": "example_renewable_generation_predict_param",
+      "type": "number",
+      "x": 464,
+      "y": 116,
+      "width": 180,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "预测天数",
+      "props": {
+        "name": "预测天数",
+        "label": "预测天数",
+        "defaultValue": 3,
+        "min": 1
+      }
+    },
+    {
+      "id": "example_renewable_generation_stats_btn",
+      "type": "button",
+      "x": 664,
+      "y": 116,
+      "width": 120,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "example_renewable_generation_stats_btn",
+        "label": "统计分析",
+        "variant": "primary",
+        "events": {
+          "onClick": "const result = await ctx.runConfiguredWorkflow({\n  rows: ctx.querySheet('renewable_generation'),\n  \"siteName\": String(ctx.getValue('统计场站') || '全部')\n});\nconst outputs = result.nodeResults.get('script')?.outputs || {};\nawait ctx.setValue('统计结果', outputs.rows || []);\nawait ctx.setValue('统计摘要', outputs.summary || '');\nreturn outputs.summary || '';"
+        },
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "example_renewable_generation_wf_stats"
+          }
+        }
+      }
+    },
+    {
+      "id": "example_renewable_generation_batch_btn",
+      "type": "button",
+      "x": 804,
+      "y": 116,
+      "width": 120,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "example_renewable_generation_batch_btn",
+        "label": "批量处理",
+        "variant": "primary",
+        "events": {
+          "onClick": "const result = await ctx.runConfiguredWorkflow({\n  rows: ctx.querySheet('renewable_generation'),\n  \"siteName\": String(ctx.getValue('统计场站') || '全部'),\n  \"adjustRatio\": Number(ctx.getValue('修正系数') || 0)\n});\nconst outputs = result.nodeResults.get('script')?.outputs || {};\nawait ctx.setValue('批量结果', outputs.rows || []);\nawait ctx.setValue('批量摘要', outputs.summary || '');\nreturn outputs.summary || '';"
+        },
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "example_renewable_generation_wf_batch"
+          }
+        }
+      }
+    },
+    {
+      "id": "example_renewable_generation_predict_btn",
+      "type": "button",
+      "x": 944,
+      "y": 116,
+      "width": 120,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "example_renewable_generation_predict_btn",
+        "label": "预测",
+        "variant": "primary",
+        "events": {
+          "onClick": "const result = await ctx.runConfiguredWorkflow({\n  rows: ctx.querySheet('renewable_generation'),\n  \"siteName\": String(ctx.getValue('统计场站') || '全部'),\n  \"days\": Number(ctx.getValue('预测天数') || 1)\n});\nconst outputs = result.nodeResults.get('script')?.outputs || {};\nawait ctx.setValue('预测结果', outputs.rows || []);\nawait ctx.setValue('预测摘要', outputs.summary || '');\nreturn outputs.summary || '';"
+        },
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "example_renewable_generation_wf_predict"
+          }
+        }
+      }
+    },
+    {
+      "id": "example_renewable_generation_stats_summary",
+      "type": "textarea",
+      "x": 24,
+      "y": 206,
+      "width": 340,
+      "height": 100,
+      "zIndex": 2,
+      "fieldBinding": "统计摘要",
+      "props": {
+        "name": "统计摘要",
+        "label": "统计摘要",
+        "readonly": true,
+        "rows": 4
+      }
+    },
+    {
+      "id": "example_renewable_generation_stats_table",
+      "type": "table",
+      "x": 384,
+      "y": 206,
+      "width": 680,
+      "height": 180,
+      "zIndex": 2,
+      "fieldBinding": "统计结果",
+      "props": {
+        "name": "统计结果",
+        "columns": [
+          "场站",
+          "记录数",
+          "总发电量",
+          "平均可用率"
+        ],
+        "rows": 5
+      }
+    },
+    {
+      "id": "example_renewable_generation_batch_summary",
+      "type": "textarea",
+      "x": 24,
+      "y": 410,
+      "width": 340,
+      "height": 100,
+      "zIndex": 2,
+      "fieldBinding": "批量摘要",
+      "props": {
+        "name": "批量摘要",
+        "label": "批量处理摘要",
+        "readonly": true,
+        "rows": 4
+      }
+    },
+    {
+      "id": "example_renewable_generation_batch_table",
+      "type": "table",
+      "x": 384,
+      "y": 410,
+      "width": 680,
+      "height": 180,
+      "zIndex": 2,
+      "fieldBinding": "批量结果",
+      "props": {
+        "name": "批量结果",
+        "columns": [
+          "记录ID",
+          "场站",
+          "修正后净发电量",
+          "是否异常"
+        ],
+        "rows": 5
+      }
+    },
+    {
+      "id": "example_renewable_generation_predict_summary",
+      "type": "textarea",
+      "x": 24,
+      "y": 614,
+      "width": 340,
+      "height": 100,
+      "zIndex": 2,
+      "fieldBinding": "预测摘要",
+      "props": {
+        "name": "预测摘要",
+        "label": "预测摘要",
+        "readonly": true,
+        "rows": 4
+      }
+    },
+    {
+      "id": "example_renewable_generation_predict_table",
+      "type": "table",
+      "x": 384,
+      "y": 614,
+      "width": 680,
+      "height": 180,
+      "zIndex": 2,
+      "fieldBinding": "预测结果",
+      "props": {
+        "name": "预测结果",
+        "columns": [
+          "日期",
+          "预测场站",
+          "预测发电量MWh"
+        ],
+        "rows": 5
+      }
+    }
+  ]
+}

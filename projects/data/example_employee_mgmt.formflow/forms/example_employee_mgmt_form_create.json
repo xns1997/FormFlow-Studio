@@ -1,0 +1,224 @@
+{
+  "id": "example_employee_mgmt_form_create",
+  "name": "数据录入",
+  "formMode": "create",
+  "viewport": {
+    "zoom": 1,
+    "panX": 0,
+    "panY": 0
+  },
+  "gridSize": 10,
+  "createdAt": "2026-07-06T18:00:00.000Z",
+  "updatedAt": "2026-07-06T18:00:00.000Z",
+  "bindings": [],
+  "components": [
+    {
+      "id": "example_employee_mgmt_create_title",
+      "type": "text",
+      "x": 24,
+      "y": 24,
+      "width": 760,
+      "height": 40,
+      "zIndex": 1,
+      "props": {
+        "name": "example_employee_mgmt_create_title",
+        "content": "员工在职信息 · 数据录入",
+        "fontSize": 22,
+        "color": "#0f172a",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "example_employee_mgmt_create_hint",
+      "type": "text",
+      "x": 24,
+      "y": 70,
+      "width": 760,
+      "height": 28,
+      "zIndex": 1,
+      "fieldBinding": "状态提示",
+      "props": {
+        "name": "example_employee_mgmt_create_hint",
+        "content": "状态提示",
+        "fontSize": 13,
+        "color": "#475569"
+      }
+    },
+    {
+      "id": "example_employee_mgmt_create_0",
+      "type": "number",
+      "x": 24,
+      "y": 116,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "员工ID",
+      "props": {
+        "name": "员工ID",
+        "label": "员工ID",
+        "required": false,
+        "readonly": true,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_employee_mgmt_create_1",
+      "type": "input",
+      "x": 276,
+      "y": 116,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "姓名",
+      "props": {
+        "name": "姓名",
+        "label": "姓名",
+        "required": true,
+        "readonly": false,
+        "placeholder": "请输入姓名"
+      }
+    },
+    {
+      "id": "example_employee_mgmt_create_2",
+      "type": "select",
+      "x": 528,
+      "y": 116,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "部门",
+      "props": {
+        "name": "部门",
+        "label": "部门",
+        "required": true,
+        "readonly": false,
+        "placeholder": "",
+        "options": [
+          "技术部",
+          "销售部",
+          "人事部",
+          "财务部"
+        ]
+      }
+    },
+    {
+      "id": "example_employee_mgmt_create_3",
+      "type": "input",
+      "x": 24,
+      "y": 196,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "岗位",
+      "props": {
+        "name": "岗位",
+        "label": "岗位",
+        "required": true,
+        "readonly": false,
+        "placeholder": "请输入岗位"
+      }
+    },
+    {
+      "id": "example_employee_mgmt_create_4",
+      "type": "datePicker",
+      "x": 276,
+      "y": 196,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "入职日期",
+      "props": {
+        "name": "入职日期",
+        "label": "入职日期",
+        "required": true,
+        "readonly": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_employee_mgmt_create_5",
+      "type": "switch",
+      "x": 528,
+      "y": 196,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "在职",
+      "props": {
+        "name": "在职",
+        "label": "在职",
+        "required": false,
+        "readonly": false,
+        "defaultValue": true
+      }
+    },
+    {
+      "id": "example_employee_mgmt_create_6",
+      "type": "number",
+      "x": 24,
+      "y": 276,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "月薪",
+      "props": {
+        "name": "月薪",
+        "label": "月薪",
+        "required": true,
+        "readonly": false,
+        "placeholder": "单位：元"
+      }
+    },
+    {
+      "id": "example_employee_mgmt_create_submit",
+      "type": "button",
+      "x": 24,
+      "y": 368,
+      "width": 220,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "example_employee_mgmt_create_submit",
+        "label": "保存录入",
+        "variant": "primary",
+        "events": {
+          "onClick": "if (!ctx.getValue('姓名') && ctx.getValue('姓名') !== 0) return ctx.showMessage('请填写姓名', 'error');\nif (!ctx.getValue('部门') && ctx.getValue('部门') !== 0) return ctx.showMessage('请填写部门', 'error');\nif (!ctx.getValue('岗位') && ctx.getValue('岗位') !== 0) return ctx.showMessage('请填写岗位', 'error');\nif (!ctx.getValue('入职日期') && ctx.getValue('入职日期') !== 0) return ctx.showMessage('请填写入职日期', 'error');\nif (!ctx.getValue('月薪') && ctx.getValue('月薪') !== 0) return ctx.showMessage('请填写月薪', 'error');\nlet currentId = Number(ctx.getValue('员工ID') || 0);\nif (!currentId) {\n  currentId = (() => { const rows = ctx.querySheet('employees');\nconst maxId = rows.reduce((max, row) => Math.max(max, Number(row?.员工ID) || 0), 0);\nreturn maxId + 1; })();\n  await ctx.setValue('员工ID', currentId);\n}\n\nawait ctx.runConfiguredWorkflow();\nconst nextId = (() => { const rows = ctx.querySheet('employees');\nconst maxId = rows.reduce((max, row) => Math.max(max, Number(row?.员工ID) || 0), 0);\nreturn maxId + 1; })();\nawait ctx.setValue('员工ID', nextId);\nawait ctx.setValue('部门', \"技术部\");\nawait ctx.setValue('入职日期', \"2026-07-06\");\nawait ctx.setValue('在职', true);\nawait ctx.setValue('姓名', '');\nawait ctx.setValue('岗位', '');\nawait ctx.setValue('月薪', '');\nawait ctx.setValue('状态提示', '表单已重置，可继续录入。');\nawait ctx.showMessage(`员工在职信息已新增：${currentId}`, 'success');"
+        },
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "example_employee_mgmt_wf_create",
+            "parameterMap": {
+              "submit.formData": {
+                "员工ID": "$form.员工ID",
+                "姓名": "$form.姓名",
+                "部门": "$form.部门",
+                "岗位": "$form.岗位",
+                "入职日期": "$form.入职日期",
+                "在职": "$form.在职",
+                "月薪": "$form.月薪"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "example_employee_mgmt_create_reset",
+      "type": "button",
+      "x": 264,
+      "y": 368,
+      "width": 180,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "example_employee_mgmt_create_reset",
+        "label": "重置表单",
+        "variant": "outline",
+        "events": {
+          "onClick": "const nextId = (() => { const rows = ctx.querySheet('employees');\nconst maxId = rows.reduce((max, row) => Math.max(max, Number(row?.员工ID) || 0), 0);\nreturn maxId + 1; })();\nawait ctx.setValue('员工ID', nextId);\nawait ctx.setValue('部门', \"技术部\");\nawait ctx.setValue('入职日期', \"2026-07-06\");\nawait ctx.setValue('在职', true);\nawait ctx.setValue('姓名', '');\nawait ctx.setValue('岗位', '');\nawait ctx.setValue('月薪', '');\nawait ctx.setValue('状态提示', '表单已重置，可继续录入。');"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,279 @@
+{
+  "id": "example_employee_mgmt_form_analysis",
+  "name": "统计分析",
+  "formMode": "detail",
+  "viewport": {
+    "zoom": 1,
+    "panX": 0,
+    "panY": 0
+  },
+  "gridSize": 10,
+  "createdAt": "2026-07-06T18:00:00.000Z",
+  "updatedAt": "2026-07-06T18:00:00.000Z",
+  "bindings": [],
+  "components": [
+    {
+      "id": "example_employee_mgmt_analysis_title",
+      "type": "text",
+      "x": 24,
+      "y": 24,
+      "width": 900,
+      "height": 40,
+      "zIndex": 1,
+      "props": {
+        "name": "example_employee_mgmt_analysis_title",
+        "content": "员工在职信息 · 统计分析 / 批量处理 / 预测",
+        "fontSize": 22,
+        "color": "#0f172a",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "example_employee_mgmt_analysis_hint",
+      "type": "text",
+      "x": 24,
+      "y": 70,
+      "width": 900,
+      "height": 28,
+      "zIndex": 1,
+      "fieldBinding": "分析说明",
+      "props": {
+        "name": "example_employee_mgmt_analysis_hint",
+        "content": "分析说明",
+        "fontSize": 13,
+        "color": "#475569"
+      }
+    },
+    {
+      "id": "example_employee_mgmt_stats_filter",
+      "type": "select",
+      "x": 24,
+      "y": 116,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "统计部门",
+      "props": {
+        "name": "统计部门",
+        "label": "统计部门",
+        "options": [
+          "全部",
+          "技术部",
+          "销售部",
+          "人事部",
+          "财务部"
+        ],
+        "defaultValue": "全部"
+      }
+    },
+    {
+      "id": "example_employee_mgmt_batch_param",
+      "type": "number",
+      "x": 264,
+      "y": 116,
+      "width": 180,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "调薪百分比",
+      "props": {
+        "name": "调薪百分比",
+        "label": "调薪百分比",
+        "defaultValue": 5,
+        "min": 0
+      }
+    },
+    {
+      "id": "example_employee_mgmt_predict_param",
+      "type": "number",
+      "x": 464,
+      "y": 116,
+      "width": 180,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "预测月数",
+      "props": {
+        "name": "预测月数",
+        "label": "预测月数",
+        "defaultValue": 3,
+        "min": 1
+      }
+    },
+    {
+      "id": "example_employee_mgmt_stats_btn",
+      "type": "button",
+      "x": 664,
+      "y": 116,
+      "width": 120,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "example_employee_mgmt_stats_btn",
+        "label": "统计分析",
+        "variant": "primary",
+        "events": {
+          "onClick": "const result = await ctx.runConfiguredWorkflow({\n  rows: ctx.querySheet('employees'),\n  \"department\": String(ctx.getValue('统计部门') || '全部')\n});\nconst outputs = result.nodeResults.get('script')?.outputs || {};\nawait ctx.setValue('统计结果', outputs.rows || []);\nawait ctx.setValue('统计摘要', outputs.summary || '');\nreturn outputs.summary || '';"
+        },
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "example_employee_mgmt_wf_stats"
+          }
+        }
+      }
+    },
+    {
+      "id": "example_employee_mgmt_batch_btn",
+      "type": "button",
+      "x": 804,
+      "y": 116,
+      "width": 120,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "example_employee_mgmt_batch_btn",
+        "label": "批量处理",
+        "variant": "primary",
+        "events": {
+          "onClick": "const result = await ctx.runConfiguredWorkflow({\n  rows: ctx.querySheet('employees'),\n  \"department\": String(ctx.getValue('统计部门') || '全部'),\n  \"raisePercent\": Number(ctx.getValue('调薪百分比') || 0)\n});\nconst outputs = result.nodeResults.get('script')?.outputs || {};\nawait ctx.setValue('批量结果', outputs.rows || []);\nawait ctx.setValue('批量摘要', outputs.summary || '');\nreturn outputs.summary || '';"
+        },
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "example_employee_mgmt_wf_batch"
+          }
+        }
+      }
+    },
+    {
+      "id": "example_employee_mgmt_predict_btn",
+      "type": "button",
+      "x": 944,
+      "y": 116,
+      "width": 120,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "example_employee_mgmt_predict_btn",
+        "label": "预测",
+        "variant": "primary",
+        "events": {
+          "onClick": "const result = await ctx.runConfiguredWorkflow({\n  rows: ctx.querySheet('employees'),\n  \"department\": String(ctx.getValue('统计部门') || '全部'),\n  \"months\": Number(ctx.getValue('预测月数') || 1)\n});\nconst outputs = result.nodeResults.get('script')?.outputs || {};\nawait ctx.setValue('预测结果', outputs.rows || []);\nawait ctx.setValue('预测摘要', outputs.summary || '');\nreturn outputs.summary || '';"
+        },
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "example_employee_mgmt_wf_predict"
+          }
+        }
+      }
+    },
+    {
+      "id": "example_employee_mgmt_stats_summary",
+      "type": "textarea",
+      "x": 24,
+      "y": 206,
+      "width": 340,
+      "height": 100,
+      "zIndex": 2,
+      "fieldBinding": "统计摘要",
+      "props": {
+        "name": "统计摘要",
+        "label": "统计摘要",
+        "readonly": true,
+        "rows": 4
+      }
+    },
+    {
+      "id": "example_employee_mgmt_stats_table",
+      "type": "table",
+      "x": 384,
+      "y": 206,
+      "width": 680,
+      "height": 180,
+      "zIndex": 2,
+      "fieldBinding": "统计结果",
+      "props": {
+        "name": "统计结果",
+        "columns": [
+          "部门",
+          "人数",
+          "在职人数",
+          "平均月薪"
+        ],
+        "rows": 5
+      }
+    },
+    {
+      "id": "example_employee_mgmt_batch_summary",
+      "type": "textarea",
+      "x": 24,
+      "y": 410,
+      "width": 340,
+      "height": 100,
+      "zIndex": 2,
+      "fieldBinding": "批量摘要",
+      "props": {
+        "name": "批量摘要",
+        "label": "批量处理摘要",
+        "readonly": true,
+        "rows": 4
+      }
+    },
+    {
+      "id": "example_employee_mgmt_batch_table",
+      "type": "table",
+      "x": 384,
+      "y": 410,
+      "width": 680,
+      "height": 180,
+      "zIndex": 2,
+      "fieldBinding": "批量结果",
+      "props": {
+        "name": "批量结果",
+        "columns": [
+          "员工ID",
+          "姓名",
+          "部门",
+          "原月薪",
+          "调整后月薪"
+        ],
+        "rows": 5
+      }
+    },
+    {
+      "id": "example_employee_mgmt_predict_summary",
+      "type": "textarea",
+      "x": 24,
+      "y": 614,
+      "width": 340,
+      "height": 100,
+      "zIndex": 2,
+      "fieldBinding": "预测摘要",
+      "props": {
+        "name": "预测摘要",
+        "label": "预测摘要",
+        "readonly": true,
+        "rows": 4
+      }
+    },
+    {
+      "id": "example_employee_mgmt_predict_table",
+      "type": "table",
+      "x": 384,
+      "y": 614,
+      "width": 680,
+      "height": 180,
+      "zIndex": 2,
+      "fieldBinding": "预测结果",
+      "props": {
+        "name": "预测结果",
+        "columns": [
+          "月份",
+          "预测在职人数",
+          "预测人工成本"
+        ],
+        "rows": 5
+      }
+    }
+  ]
+}

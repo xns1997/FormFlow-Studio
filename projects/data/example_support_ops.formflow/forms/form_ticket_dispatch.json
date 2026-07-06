@@ -1,0 +1,274 @@
+{
+  "id": "form_ticket_dispatch",
+  "name": "查询与处理",
+  "formMode": "lookup-edit",
+  "viewport": {
+    "zoom": 1,
+    "panX": 0,
+    "panY": 0
+  },
+  "gridSize": 10,
+  "createdAt": "2026-07-06T09:00:00.000Z",
+  "updatedAt": "2026-07-06T09:00:00.000Z",
+  "bindings": [],
+  "components": [
+    {
+      "id": "dispatch_title",
+      "type": "text",
+      "x": 24,
+      "y": 24,
+      "width": 620,
+      "height": 40,
+      "zIndex": 1,
+      "props": {
+        "content": "查询与处理工单",
+        "fontSize": 22,
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "dispatch_hint",
+      "type": "text",
+      "x": 24,
+      "y": 68,
+      "width": 720,
+      "height": 28,
+      "zIndex": 1,
+      "fieldBinding": "处理提示",
+      "props": {
+        "name": "dispatchHint",
+        "content": "先筛选，再点击表格中的工单进入处理。",
+        "fontSize": 13,
+        "color": "#64748b"
+      }
+    },
+    {
+      "id": "dispatch_filter",
+      "type": "select",
+      "x": 24,
+      "y": 116,
+      "width": 180,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "筛选状态",
+      "props": {
+        "name": "filterStatus",
+        "label": "状态筛选",
+        "options": [
+          "待分派",
+          "处理中",
+          "已完成"
+        ],
+        "defaultValue": "待分派"
+      }
+    },
+    {
+      "id": "dispatch_search",
+      "type": "button",
+      "x": 224,
+      "y": 116,
+      "width": 180,
+      "height": 50,
+      "zIndex": 2,
+      "props": {
+        "name": "searchTickets",
+        "label": "查询工单",
+        "variant": "primary",
+        "events": {
+          "onClick": "const result = await ctx.runConfiguredWorkflow();\nconst rows = result.nodeResults.get('filter')?.outputs.result || [];\nawait ctx.setValue('工单列表', rows);\nctx.setValue('处理提示', `已筛选出 ${rows.length} 条工单`);"
+        },
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "wf_filter_open_tickets",
+            "parameterMap": {
+              "filter.value": "$form.筛选状态"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "dispatch_table",
+      "type": "table",
+      "x": 24,
+      "y": 196,
+      "width": 520,
+      "height": 240,
+      "zIndex": 2,
+      "fieldBinding": "工单列表",
+      "props": {
+        "name": "ticketTable",
+        "columns": [
+          "工单ID",
+          "客户名称",
+          "问题类型",
+          "优先级",
+          "状态",
+          "处理人"
+        ],
+        "rows": 4,
+        "events": {
+          "onRowClick": "const row = ctx.detail?.row || {};\nawait ctx.setValue('工单ID', row.工单ID || '');\nawait ctx.setValue('客户名称', row.客户名称 || '');\nawait ctx.setValue('问题类型', row.问题类型 || '');\nawait ctx.setValue('优先级', row.优先级 || '中');\nawait ctx.setValue('状态', row.状态 || '待分派');\nawait ctx.setValue('处理人', row.处理人 || '');\nawait ctx.setValue('创建日期', row.创建日期 || '');\nawait ctx.setValue('处理说明', row.处理说明 || '');\nawait ctx.setValue('原始工单ID', row.工单ID || '');\nawait ctx.setValue('原始客户名称', row.客户名称 || '');\nawait ctx.setValue('原始问题类型', row.问题类型 || '');\nawait ctx.setValue('原始优先级', row.优先级 || '');\nawait ctx.setValue('原始状态', row.状态 || '');\nawait ctx.setValue('原始处理人', row.处理人 || '');\nawait ctx.setValue('原始创建日期', row.创建日期 || '');\nawait ctx.setValue('原始处理说明', row.处理说明 || '');\nctx.setValue('处理提示', `已载入工单 ${row.工单ID}`);"
+        }
+      }
+    },
+    {
+      "id": "dispatch_id",
+      "type": "number",
+      "x": 568,
+      "y": 196,
+      "width": 180,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "工单ID",
+      "props": {
+        "name": "editingTicketId",
+        "label": "工单ID",
+        "readonly": true
+      }
+    },
+    {
+      "id": "dispatch_customer",
+      "type": "input",
+      "x": 568,
+      "y": 276,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "客户名称",
+      "props": {
+        "name": "editingCustomer",
+        "label": "客户名称",
+        "readonly": true
+      }
+    },
+    {
+      "id": "dispatch_type",
+      "type": "input",
+      "x": 808,
+      "y": 276,
+      "width": 180,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "问题类型",
+      "props": {
+        "name": "editingIssueType",
+        "label": "问题类型",
+        "readonly": true
+      }
+    },
+    {
+      "id": "dispatch_priority",
+      "type": "select",
+      "x": 568,
+      "y": 356,
+      "width": 180,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "优先级",
+      "props": {
+        "name": "editingPriority",
+        "label": "优先级",
+        "options": [
+          "低",
+          "中",
+          "高"
+        ]
+      }
+    },
+    {
+      "id": "dispatch_status",
+      "type": "select",
+      "x": 768,
+      "y": 356,
+      "width": 180,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "状态",
+      "props": {
+        "name": "editingStatus",
+        "label": "状态",
+        "options": [
+          "待分派",
+          "处理中",
+          "已完成"
+        ]
+      }
+    },
+    {
+      "id": "dispatch_owner",
+      "type": "input",
+      "x": 568,
+      "y": 436,
+      "width": 180,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "处理人",
+      "props": {
+        "name": "editingOwner",
+        "label": "处理人"
+      }
+    },
+    {
+      "id": "dispatch_note",
+      "type": "textarea",
+      "x": 768,
+      "y": 436,
+      "width": 220,
+      "height": 110,
+      "zIndex": 2,
+      "fieldBinding": "处理说明",
+      "props": {
+        "name": "editingNote",
+        "label": "处理说明",
+        "placeholder": "填写派单、跟进或完成备注"
+      }
+    },
+    {
+      "id": "dispatch_update",
+      "type": "button",
+      "x": 568,
+      "y": 566,
+      "width": 220,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "saveTicketUpdate",
+        "label": "保存处理结果",
+        "variant": "primary",
+        "events": {
+          "onClick": "const id = Number(ctx.getValue('工单ID') || 0);\nif (!id) return ctx.showMessage('请先从左侧表格选择工单', 'error');\nawait ctx.runConfiguredWorkflow();\nctx.setValue('处理提示', `工单 ${id} 已更新`);\nawait ctx.showMessage(`工单 ${id} 已同步`, 'success');"
+        },
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "wf_update_ticket",
+            "parameterMap": {
+              "submit.formData": {
+                "工单ID": "$form.工单ID",
+                "客户名称": "$form.客户名称",
+                "问题类型": "$form.问题类型",
+                "优先级": "$form.优先级",
+                "状态": "$form.状态",
+                "处理人": "$form.处理人",
+                "创建日期": "$form.创建日期",
+                "处理说明": "$form.处理说明"
+              },
+              "submit.originalData": {
+                "工单ID": "$form.原始工单ID",
+                "客户名称": "$form.原始客户名称",
+                "问题类型": "$form.原始问题类型",
+                "优先级": "$form.原始优先级",
+                "状态": "$form.原始状态",
+                "处理人": "$form.原始处理人",
+                "创建日期": "$form.原始创建日期",
+                "处理说明": "$form.原始处理说明"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

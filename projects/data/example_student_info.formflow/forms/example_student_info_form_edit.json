@@ -1,0 +1,304 @@
+{
+  "id": "example_student_info_form_edit",
+  "name": "数据修改",
+  "formMode": "lookup-edit",
+  "viewport": {
+    "zoom": 1,
+    "panX": 0,
+    "panY": 0
+  },
+  "gridSize": 10,
+  "createdAt": "2026-07-06T18:00:00.000Z",
+  "updatedAt": "2026-07-06T18:00:00.000Z",
+  "bindings": [],
+  "components": [
+    {
+      "id": "example_student_info_edit_title",
+      "type": "text",
+      "x": 24,
+      "y": 24,
+      "width": 760,
+      "height": 40,
+      "zIndex": 1,
+      "props": {
+        "name": "example_student_info_edit_title",
+        "content": "学生信息 · 数据修改",
+        "fontSize": 22,
+        "color": "#0f172a",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "example_student_info_edit_hint",
+      "type": "text",
+      "x": 24,
+      "y": 70,
+      "width": 760,
+      "height": 28,
+      "zIndex": 1,
+      "fieldBinding": "处理提示",
+      "props": {
+        "name": "example_student_info_edit_hint",
+        "content": "处理提示",
+        "fontSize": 13,
+        "color": "#475569"
+      }
+    },
+    {
+      "id": "example_student_info_search_filter",
+      "type": "select",
+      "x": 24,
+      "y": 116,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "筛选班级",
+      "props": {
+        "name": "筛选班级",
+        "label": "筛选班级",
+        "options": [
+          "全部",
+          "高一(1)班",
+          "高一(2)班",
+          "高一(3)班"
+        ],
+        "defaultValue": "全部"
+      }
+    },
+    {
+      "id": "example_student_info_search_btn",
+      "type": "button",
+      "x": 264,
+      "y": 116,
+      "width": 180,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "example_student_info_search_btn",
+        "label": "查询记录",
+        "variant": "primary",
+        "events": {
+          "onClick": "const filterValue = String(ctx.getValue('筛选班级') || '全部');\nconst rows = ctx.querySheet('students').filter((row) => filterValue === '全部' || String(row?.班级 ?? '') === filterValue);\nawait ctx.setValue('example_student_info_列表', rows);\nawait ctx.setValue('处理提示', `已加载 ${rows.length} 条记录`);"
+        }
+      }
+    },
+    {
+      "id": "example_student_info_result_table",
+      "type": "table",
+      "x": 24,
+      "y": 196,
+      "width": 520,
+      "height": 260,
+      "zIndex": 2,
+      "fieldBinding": "example_student_info_列表",
+      "props": {
+        "name": "example_student_info_列表",
+        "columns": [
+          "学号",
+          "姓名",
+          "班级",
+          "语文",
+          "数学",
+          "英语",
+          "出勤率",
+          "风险等级"
+        ],
+        "rows": 5,
+        "events": {
+          "onRowClick": "const row = ctx.detail?.row || {};\nawait ctx.setValue('学号', row.学号 ?? '');\nawait ctx.setValue('姓名', row.姓名 ?? '');\nawait ctx.setValue('班级', row.班级 ?? '');\nawait ctx.setValue('语文', row.语文 ?? '');\nawait ctx.setValue('数学', row.数学 ?? '');\nawait ctx.setValue('英语', row.英语 ?? '');\nawait ctx.setValue('出勤率', row.出勤率 ?? '');\nawait ctx.setValue('风险等级', row.风险等级 ?? '');\nawait ctx.setValue('原始学号', row.学号 ?? '');\nawait ctx.setValue('原始姓名', row.姓名 ?? '');\nawait ctx.setValue('原始班级', row.班级 ?? '');\nawait ctx.setValue('原始语文', row.语文 ?? '');\nawait ctx.setValue('原始数学', row.数学 ?? '');\nawait ctx.setValue('原始英语', row.英语 ?? '');\nawait ctx.setValue('原始出勤率', row.出勤率 ?? '');\nawait ctx.setValue('原始风险等级', row.风险等级 ?? '');\nawait ctx.setValue('处理提示', `已载入 学号：${row.学号 || ''}`);"
+        }
+      }
+    },
+    {
+      "id": "example_student_info_edit_0",
+      "type": "number",
+      "x": 568,
+      "y": 196,
+      "width": 200,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "学号",
+      "props": {
+        "name": "学号",
+        "label": "学号",
+        "required": false,
+        "readonly": true,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_student_info_edit_1",
+      "type": "input",
+      "x": 788,
+      "y": 196,
+      "width": 200,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "姓名",
+      "props": {
+        "name": "姓名",
+        "label": "姓名",
+        "required": true,
+        "readonly": false,
+        "placeholder": "请输入姓名"
+      }
+    },
+    {
+      "id": "example_student_info_edit_2",
+      "type": "select",
+      "x": 568,
+      "y": 276,
+      "width": 200,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "班级",
+      "props": {
+        "name": "班级",
+        "label": "班级",
+        "required": true,
+        "readonly": false,
+        "placeholder": "",
+        "options": [
+          "高一(1)班",
+          "高一(2)班",
+          "高一(3)班"
+        ]
+      }
+    },
+    {
+      "id": "example_student_info_edit_3",
+      "type": "number",
+      "x": 788,
+      "y": 276,
+      "width": 200,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "语文",
+      "props": {
+        "name": "语文",
+        "label": "语文",
+        "required": true,
+        "readonly": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_student_info_edit_4",
+      "type": "number",
+      "x": 568,
+      "y": 356,
+      "width": 200,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "数学",
+      "props": {
+        "name": "数学",
+        "label": "数学",
+        "required": true,
+        "readonly": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_student_info_edit_5",
+      "type": "number",
+      "x": 788,
+      "y": 356,
+      "width": 200,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "英语",
+      "props": {
+        "name": "英语",
+        "label": "英语",
+        "required": true,
+        "readonly": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_student_info_edit_6",
+      "type": "number",
+      "x": 568,
+      "y": 436,
+      "width": 200,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "出勤率",
+      "props": {
+        "name": "出勤率",
+        "label": "出勤率",
+        "required": true,
+        "readonly": false,
+        "placeholder": "百分比"
+      }
+    },
+    {
+      "id": "example_student_info_edit_7",
+      "type": "select",
+      "x": 788,
+      "y": 436,
+      "width": 200,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "风险等级",
+      "props": {
+        "name": "风险等级",
+        "label": "风险等级",
+        "required": false,
+        "readonly": false,
+        "placeholder": "",
+        "options": [
+          "低",
+          "中",
+          "高"
+        ]
+      }
+    },
+    {
+      "id": "example_student_info_update_btn",
+      "type": "button",
+      "x": 568,
+      "y": 564,
+      "width": 220,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "example_student_info_update_btn",
+        "label": "保存修改",
+        "variant": "primary",
+        "events": {
+          "onClick": "const id = ctx.getValue('学号');\nif (!id && id !== 0) return ctx.showMessage('请先从左侧表格选择记录', 'error');\nconst total = Number(ctx.getValue('语文') || 0) + Number(ctx.getValue('数学') || 0) + Number(ctx.getValue('英语') || 0);\nconst attendance = Number(ctx.getValue('出勤率') || 0);\nconst risk = total < 240 || attendance < 90 ? '高' : total < 285 || attendance < 95 ? '中' : '低';\nawait ctx.setValue('风险等级', risk);\nawait ctx.runConfiguredWorkflow();\nawait ctx.setValue('处理提示', `学生信息已更新：${id}`);\nawait ctx.showMessage(`学生信息已更新：${id}`, 'success');"
+        },
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "example_student_info_wf_update",
+            "parameterMap": {
+              "submit.formData": {
+                "学号": "$form.学号",
+                "姓名": "$form.姓名",
+                "班级": "$form.班级",
+                "语文": "$form.语文",
+                "数学": "$form.数学",
+                "英语": "$form.英语",
+                "出勤率": "$form.出勤率",
+                "风险等级": "$form.风险等级"
+              },
+              "submit.originalData": {
+                "学号": "$form.原始学号",
+                "姓名": "$form.原始姓名",
+                "班级": "$form.原始班级",
+                "语文": "$form.原始语文",
+                "数学": "$form.原始数学",
+                "英语": "$form.原始英语",
+                "出勤率": "$form.原始出勤率",
+                "风险等级": "$form.原始风险等级"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

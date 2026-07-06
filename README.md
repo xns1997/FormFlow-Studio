@@ -1,6 +1,6 @@
-# FormFlow Studio v0.4.0
+# FormFlow Studio v0.5.0
 
-**Excel 表单编排框架** —— 可视化流程编排 + 表单设计器 + 数据预览 + 测试运行 + 行为定义
+**Excel 表单编排框架** —— 可视化流程编排 + 表单设计器 + 数据预览 + 使用模式 + 行为定义
 
 > 将 Excel 数据表转化为可交互的表单应用，通过拖拽式节点编排数据处理流程，无需编写后端代码。
 
@@ -61,18 +61,12 @@
 - **行为导入导出**：JSON 格式导入/导出/下载
 - 行为文档中心（全局 `/docs`，支持从项目工作区和项目设置回跳）+ 行为页右侧快速 Reference
 
-### 测试运行
-- **智能行切换器**：可搜索下拉行选择器，显示关键字段摘要，支持关键词模糊搜索，↑↓ 快捷键导航
-- 完整表单预览 + 运行时状态面板
-- **自动聚焦与键盘流**：行切换后自动聚焦首个字段，Enter 跳下一字段，Ctrl+Enter 提交
-- **即时校验**：必填项进度条，字段 blur 后内联校验，校验通过绿色对勾动画
-- **分步向导模式**：字段 > 6 个时自动启用，步骤条导航，slide 过渡动画
-- **卡片式布局**：layout="card" 模式，每 4 个字段自动分组为圆角卡片
-- **情感化反馈**：提交成功 toast 通知，dirty 字段橙色竖条标记
-- 变更记录追踪 + 提交 / 导出（JSON / Excel / CSV）
-- 表单控件事件执行（onChange / onBlur / onClick / onKeyDown / onPaste）
-- 流程触发器（控件事件 → 调用编排流程）
-- **表单可填**：字段自动填充、行为规则自动计算
+### 使用模式
+- 独立页面（`/projects/:id/usage`），只能操作数据和填写表单，不能编辑表单结构/流程/行为
+- **数据预览**：AG Grid 表格，支持新增/删除/编辑行，保存到后端 `.formflow` 包
+- **表单预览**：侧边栏表单列表，点击打开大弹窗，内嵌设计器 PreviewCanvas（空间布局、控件可交互）
+- **表单→工作表同步**：表单字段变更时自动写回对应工作表（通过 `tableBinding` 定位，500ms 防抖）
+- 项目列表每个卡片下方有「使用模式」快捷入口
 
 ### Monaco 编辑器
 - 自定义浅色主题 `formflow-light`（语法高亮 + Suggest Widget 完整配色）
@@ -119,22 +113,22 @@ bash python-service/setup.sh
 
 ## 示例项目
 
-`projects/example/project.json` 包含 4 个完整流程 + 1 个表单设计：
+| 项目 | 说明 | 数据表 | 表单 | 流程 |
+|------|------|--------|------|------|
+| `example_support_ops` | 服务工单闭环 | 服务工单 + 问题字典 | 新建工单 + 查询处理 | 查询/创建/更新 |
+| `example_employee_mgmt` | 员工在职信息 | 员工信息 | 数据录入 + 数据修改 + 统计分析 | 新增/更新/统计/批量/预测 |
+| `example_student_info` | 学生信息 | 学生信息 | 数据录入 + 数据修改 + 统计分析 | 新增/更新/统计/批量/预测 |
+| `example_check_valve_selection` | 止回阀选型 | 止回阀选型 | 数据录入 + 数据修改 + 统计分析 | 新增/更新/统计/批量/预测 |
+| `example_renewable_generation` | 新能源发电量 | 新能源发电量 | 数据录入 + 数据修改 + 统计分析 | 新增/更新/统计/批量/预测 |
 
-| 流程 | 节点 | 说明 |
-|------|------|------|
-| 数据清洗与聚合 | 8 | 筛选 → 排序 → 类型转换 → 缺失值处理 → 分组聚合 → 展示 |
-| 回归分析 | 6 | 描述性统计 → 相关性分析 → 线性回归 |
-| 图表绘制 | 7 | 按产品分组 → 柱状图 / 饼图 / 折线图 |
-| 信息录入与修改 | 9 | 表单校验 → 条件判断 → 奖金计算 → 提交 |
-
-导入方式：打开应用 → 项目列表 → 导入项目 → 选择 `projects/example/project.json`
+所有示例项目均位于 `projects/data/<id>.formflow/`，可直接在项目列表中打开。运行 `pnpm generate:support-example` 或 `npx tsx scripts/generate_industry_examples.ts` 可重新生成。
 
 ---
 
 ## 行为文档
 
 - 仓库手册：`docs/behavior-event-reference.md`
+- 项目流程规范：`docs/project-creation-spec.md`
 - 全局文档页：访问 `/docs`
 - 项目工作区：访问 `/projects/:id/workspace/:tab`
 - 项目设置页：访问 `/projects/:id/settings/:section`
@@ -183,7 +177,7 @@ bash python-service/setup.sh
 │   ├── src/
 │   │   ├── components/        # 通用 UI 与业务组件
 │   │   ├── designer/          # 表单设计器、控件和画布
-│   │   ├── pages/             # 路由页面
+│   │   ├── pages/             # 路由页面（含 UsagePage 使用模式）
 │   │   ├── project/           # 项目状态、类型和持久化客户端
 │   │   ├── services/          # 流程、行为、预览和数据服务
 │   │   └── style/             # 模块化样式
@@ -212,8 +206,8 @@ bash python-service/setup.sh
 │   ├── requirements.txt
 │   └── setup.sh
 ├── projects/                  # 项目资产
-│   ├── example/               # 可导入示例项目
-│   └── data/                  # 后端项目持久化数据
+│   ├── example_sales_approval.zip # 可导入示例包
+│   └── data/                  # 后端目录式项目包
 ├── docs/                      # 使用与事件参考文档
 ├── scripts/                   # 项目数据生成脚本
 └── package.json               # 仓库统一命令入口
@@ -222,6 +216,26 @@ bash python-service/setup.sh
 ### 节点包约定
 
 Vite 8 通过 `import.meta.glob('./*/schema.json')` 自动识别 `ui/nodes` 下的节点包。新增节点只需创建目录和 `schema.json`，无需再维护手写目录清单；存在 `index.ts` 时执行器按需加载，生产构建输出为独立的 `assets/nodes/<节点包>-<hash>.js` chunk。
+
+### FormFlow v2 项目包约定
+
+后端不再识别旧的单文件 `<id>.json` 项目。每个项目保存为 `projects/data/<id>.formflow/`：
+
+```text
+<id>.formflow/
+├── project.json
+├── forms/
+│   ├── _index.json
+│   └── <form-id>.json
+├── data/
+│   ├── _index.json
+│   └── <source-id>.meta.json
+├── workflows/workflows.json
+├── behaviors/behaviors.json
+└── outputs/outputs.json
+```
+
+`project.json` 必须声明 `kind: "formflow-project"` 和 `formatVersion: 2`。浏览器导入导出的 `.zip` 与服务端磁盘目录 `.formflow` 使用相同内容结构，前端会通过 ZIP 内部的 `project.json` 识别项目包。
 
 ---
 

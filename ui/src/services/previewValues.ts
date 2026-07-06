@@ -1,5 +1,6 @@
 import type { DesignComponent, SrcTableEntry } from '../project/types';
 import { resolveSingleKeyField } from './tableKeys';
+import { getDefaultComponentValue } from './controlTypes';
 
 export function getPreviewInitialValue(component: DesignComponent, tables: SrcTableEntry[] = []): unknown {
   const binding = component.props.tableBinding as { tableId?: string; sheetName?: string; keyField?: string; keyValue?: unknown; column?: string } | undefined;
@@ -11,9 +12,5 @@ export function getPreviewInitialValue(component: DesignComponent, tables: SrcTa
     const row = sheet?.preview.find((item) => item[resolvedKeyField] === binding.keyValue);
     if (row && Object.prototype.hasOwnProperty.call(row, binding.column)) return row[binding.column];
   }
-  if (component.props.value !== undefined) return component.props.value;
-  if (component.props.defaultValue !== undefined) return component.props.defaultValue;
-  if (component.type === 'checkbox') return [];
-  if (component.type === 'switch') return component.props.defaultValue !== false;
-  return '';
+  return getDefaultComponentValue(component);
 }

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { ComponentNode } from '../models';
-import type { WorkflowFile } from '../project/types';
+import type { SrcTableEntry, WorkflowFile } from '../project/types';
 import { executeFormControlEvent } from './formEventExecutor';
 
 const component: ComponentNode = {
@@ -33,6 +33,26 @@ const workflow: WorkflowFile = {
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
 };
+
+const tables: SrcTableEntry[] = [{
+  id: 'issue_catalog',
+  fileName: 'issue_catalog.json',
+  fileSize: 0,
+  fileType: 'json',
+  uploadedAt: '2026-01-01T00:00:00.000Z',
+  dataHash: 'issue-catalog',
+  sheets: [{
+    name: '问题字典',
+    rowCount: 2,
+    colCount: 3,
+    headers: ['问题类型', '默认处理人', 'SLA小时'],
+    columns: [],
+    preview: [
+      { 问题类型: '账号开通', 默认处理人: '李青', SLA小时: 4 },
+      { 问题类型: '发票申请', 默认处理人: '王敏', SLA小时: 8 },
+    ],
+  }],
+}];
 
 const context = {
   eventName: 'onChange',
@@ -101,6 +121,93 @@ test('callbacks can directly control preview visibility, disabled and required s
   assert.deepEqual(requiredCalls, [['customerName', true]]);
 });
 
+test('controls are exposed on ctx and allow direct value assignment', async () => {
+  const writes: Array<[string, unknown]> = [];
+  const tableComponent: ComponentNode = {
+    id: 'table-1',
+    type: 'table',
+    name: 'approvalResults',
+    label: '审批结果',
+    props: { columns: ['单号', '金额'] },
+    layout: { row: 1, col: 0, colSpan: 1, rowSpan: 1 },
+    ports: [],
+    events: [],
+  };
+  const result = await executeFormControlEvent(context, {
+    workflows: [],
+    components: [component, tableComponent],
+    setValue: (field, value) => { writes.push([field, value]); },
+    code: `async (ctx) => {
+      ctx.controls.approvalResults.value = [{ 单号: 'AP-1002', 金额: 1800 }];
+      return ctx.controls.approvalResults.value;
+    }`,
+  });
+  assert.equal(result.error, undefined);
+  assert.deepEqual(writes, [['approvalResults', [{ 单号: 'AP-1002', 金额: 1800 }]]]);
+  assert.deepEqual(result.callbackResult, [{ 单号: 'AP-1002', 金额: 1800 }]);
+});
+
+test('control handles keep direct visible disabled and required writes readable in the same callback', async () => {
+  const visibleCalls: Array<[string, boolean]> = [];
+  const disabledCalls: Array<[string, boolean]> = [];
+  const requiredCalls: Array<[string, boolean]> = [];
+  const result = await executeFormControlEvent(context, {
+    workflows: [],
+    components: [component],
+    setValue: () => {},
+    setVisible: (componentId, visible) => { visibleCalls.push([componentId, visible]); },
+    setDisabled: (componentId, disabled) => { disabledCalls.push([componentId, disabled]); },
+    setRequired: (field, required) => { requiredCalls.push([field, required]); },
+    code: `async (ctx) => {
+      ctx.controls.customerName.visible = false;
+      ctx.controls.customerName.disabled = true;
+      ctx.controls.customerName.required = true;
+      return {
+        visible: ctx.controls.customerName.visible,
+        disabled: ctx.controls.customerName.disabled,
+        required: ctx.controls.customerName.required,
+      };
+    }`,
+  });
+  assert.equal(result.error, undefined);
+  assert.deepEqual(visibleCalls, [['field-1', false]]);
+  assert.deepEqual(disabledCalls, [['field-1', true]]);
+  assert.deepEqual(requiredCalls, [['customerName', true]]);
+  assert.deepEqual(result.callbackResult, { visible: false, disabled: true, required: true });
+});
+
+test('row click events preserve row detail for table-driven edit flows', async () => {
+  const tableComponent: ComponentNode = {
+    id: 'table-1',
+    type: 'table',
+    name: 'employeeList',
+    label: '员工列表',
+    props: { columns: ['ID', '姓名', '部门', '在职'] },
+    layout: { row: 1, col: 0, colSpan: 1, rowSpan: 1 },
+    ports: [],
+    events: [],
+  };
+  const result = await executeFormControlEvent({
+    eventName: 'onRowClick',
+    field: 'employeeList',
+    value: 2,
+    values: { employeeList: [{ ID: 3, 姓名: '王五', 部门: '技术部', 在职: false }] },
+    originalValues: {},
+    detail: { rowIndex: 2, row: { ID: 3, 姓名: '王五', 部门: '技术部', 在职: false } },
+    component: tableComponent,
+  }, {
+    workflows: [],
+    components: [tableComponent],
+    setValue: () => {},
+    code: `return { rowIndex: ctx.detail.rowIndex, row: ctx.detail.row };`,
+  });
+  assert.equal(result.error, undefined);
+  assert.deepEqual(result.callbackResult, {
+    rowIndex: 2,
+    row: { ID: 3, 姓名: '王五', 部门: '技术部', 在职: false },
+  });
+});
+
 test('configured linkage rules run before the advanced script and can show traceable effects', async () => {
   const writes: Array<[string, unknown]> = [];
   const messages: string[] = [];
@@ -159,4 +266,38 @@ test('a callback can run its configured workflow with direct parameters without 
   assert.equal(result.callbackResult, '回调参数');
   assert.equal(result.flowExecuted, true);
   assert.equal(result.flowResults.length, 1);
+});
+
+test('event callbacks can query project sheets directly from ctx.querySheet', async () => {
+  const typeComponent: ComponentNode = {
+    id: 'issue-type',
+    type: 'select',
+    name: '问题类型',
+    label: '问题类型',
+    props: {},
+    layout: { row: 0, col: 0, colSpan: 1, rowSpan: 1 },
+    ports: [],
+    events: [],
+  };
+  const writes: Record<string, unknown> = {};
+  const result = await executeFormControlEvent({
+    eventName: 'onChange',
+    field: '问题类型',
+    value: '账号开通',
+    values: { 问题类型: '账号开通' },
+    originalValues: {},
+    component: typeComponent,
+  }, {
+    workflows: [],
+    tables,
+    setValue: (field, value) => { writes[field] = value; },
+    code: `async (ctx) => {
+      const row = ctx.querySheet('issue_catalog').find((item) => item?.问题类型 === ctx.value);
+      await ctx.setValue('处理人', row?.默认处理人 || '');
+      return row?.默认处理人 || '';
+    }`,
+  });
+  assert.equal(result.error, undefined);
+  assert.equal(result.callbackResult, '李青');
+  assert.equal(writes['处理人'], '李青');
 });

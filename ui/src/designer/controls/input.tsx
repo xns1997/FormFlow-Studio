@@ -3,6 +3,21 @@ import { registerControl } from '../registry';
 import type { DesignComponent } from '../../project/types';
 import { controlText, ios, requiredMark } from './styles';
 import type { PreviewControlRuntime } from '../types';
+import {
+  AntdActionButton,
+  AntdDateInput,
+  AntdDateRangeInput,
+  AntdNumberInput,
+  AntdRateInput,
+  AntdSwitchInput,
+  AntdTagInput,
+  AntdTextAreaInput,
+  AntdTextInput,
+  AntdTimeInput,
+  AntdUploadInput,
+  FormAntdProvider,
+} from '../../components/AntdFormControls';
+import { normalizeDateTimeValue } from '../../services/controlTypes';
 
 const renderLabel = (label: string, required?: boolean) => (
   <>
@@ -10,6 +25,75 @@ const renderLabel = (label: string, required?: boolean) => (
     {required && <span style={requiredMark}>*</span>}
   </>
 );
+
+const withAntdField = (content: React.ReactNode) => <FormAntdProvider>{content}</FormAntdProvider>;
+
+function normalizeFileList(value: unknown) {
+  return Array.isArray(value) ? value.filter((item) => item && typeof item === 'object').map((item) => {
+    const record = item as Record<string, unknown>;
+    return {
+      name: String(record.name ?? '未命名文件'),
+      size: Number(record.size ?? 0),
+      type: String(record.type ?? ''),
+      url: typeof record.url === 'string' ? record.url : '',
+    };
+  }) : [];
+}
+
+function TagInputPreview({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) {
+  const tags = Array.isArray(runtime?.value) ? runtime.value.map(String) : [];
+  return withAntdField(
+    <div style={ios.field}>
+      <label style={ios.label}>{renderLabel(component.props.label || '标签', component.props.required)}</label>
+      <AntdTagInput
+        value={tags}
+        placeholder={component.props.placeholder || '输入后回车'}
+        disabled={mode !== 'preview' || !!component.props.disabled}
+        onChange={(next) => runtime?.emit('onChange', next)}
+        onBlur={() => runtime?.emit('onBlur')}
+        onFocus={() => runtime?.emit('onFocus')}
+      />
+    </div>
+  );
+}
+
+function UploadPreview({ component, mode, runtime, imageOnly = false }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime; imageOnly?: boolean }) {
+  const files = normalizeFileList(runtime?.value);
+  return withAntdField(
+    <div style={ios.field}>
+      <label style={ios.label}>{renderLabel(component.props.label || (imageOnly ? '图片上传' : '文件上传'), component.props.required)}</label>
+      <AntdUploadInput
+        files={files}
+        imageOnly={imageOnly}
+        disabled={mode !== 'preview' || !!component.props.disabled}
+        onChange={(next) => runtime?.emit('onChange', next)}
+      />
+    </div>
+  );
+}
+
+function DatePickerPreview({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) {
+  const isDateTime = !!component.props.showTime;
+  const value = normalizeDateTimeValue(runtime?.value, isDateTime ? 'datetime' : 'date');
+  return withAntdField(
+    <div style={ios.field}>
+      <label style={ios.label}>{renderLabel(component.props.label || '日期', component.props.required)}</label>
+      <AntdDateInput
+        value={value}
+        placeholder={component.props.placeholder || (isDateTime ? '选择日期时间' : '选择日期')}
+        showTime={isDateTime}
+        format={String(component.props.format || (isDateTime ? 'YYYY-MM-DD HH:mm' : 'YYYY-MM-DD'))}
+        readOnly={!!component.props.readonly}
+        disabled={mode !== 'preview' || !!component.props.disabled}
+        min={normalizeDateTimeValue(component.props.minDate, isDateTime ? 'datetime' : 'date') || undefined}
+        max={normalizeDateTimeValue(component.props.maxDate, isDateTime ? 'datetime' : 'date') || undefined}
+        onChange={(next) => runtime?.emit('onChange', next)}
+        onBlur={() => runtime?.emit('onBlur')}
+        onFocus={() => runtime?.emit('onFocus')}
+      />
+    </div>
+  );
+}
 
 registerControl({
   type: 'input', label: '文本输入', category: 'basic', icon: '✏️',
@@ -49,10 +133,19 @@ registerControl({
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 240, h: 72 },
-  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => (
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => withAntdField(
     <div style={ios.field}>
       <label style={ios.label}>{renderLabel(component.props.label || 'Label', component.props.required)}</label>
-      <input style={{ ...ios.control, fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', textAlign: component.props.textAlign || 'left' }} value={String(runtime?.value ?? '')} placeholder={component.props.placeholder || ''} readOnly={!!component.props.readonly} disabled={mode !== 'preview' || !!component.props.disabled} onChange={(event) => runtime?.emit('onChange', event.target.value)} onBlur={() => runtime?.emit('onBlur')} onFocus={() => runtime?.emit('onFocus')} />
+      <AntdTextInput
+        value={String(runtime?.value ?? '')}
+        placeholder={component.props.placeholder || ''}
+        readOnly={!!component.props.readonly}
+        disabled={mode !== 'preview' || !!component.props.disabled}
+        style={{ fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', textAlign: component.props.textAlign || 'left' }}
+        onChange={(next) => runtime?.emit('onChange', next)}
+        onBlur={() => runtime?.emit('onBlur')}
+        onFocus={() => runtime?.emit('onFocus')}
+      />
     </div>
   ),
 });
@@ -89,10 +182,21 @@ registerControl({
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 280, h: 132 },
-  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => (
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => withAntdField(
     <div style={ios.field}>
       <label style={ios.label}>{renderLabel(component.props.label || 'Label', component.props.required)}</label>
-      <textarea style={{ ...ios.fillControl, resize: 'none', fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', lineHeight: component.props.lineHeight || 1.5 }} value={String(runtime?.value ?? '')} placeholder={component.props.placeholder || ''} readOnly={!!component.props.readonly} disabled={mode !== 'preview' || !!component.props.disabled} onChange={(event) => runtime?.emit('onChange', event.target.value)} onBlur={() => runtime?.emit('onBlur')} onFocus={() => runtime?.emit('onFocus')} />
+      <AntdTextAreaInput
+        value={String(runtime?.value ?? '')}
+        placeholder={component.props.placeholder || ''}
+        readOnly={!!component.props.readonly}
+        disabled={mode !== 'preview' || !!component.props.disabled}
+        rows={Number(component.props.rows) || 3}
+        autoSize={component.props.autoResize ? { minRows: Number(component.props.rows) || 3, maxRows: 8 } : false}
+        style={{ fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', lineHeight: component.props.lineHeight || 1.5 }}
+        onChange={(next) => runtime?.emit('onChange', next)}
+        onBlur={() => runtime?.emit('onBlur')}
+        onFocus={() => runtime?.emit('onFocus')}
+      />
     </div>
   ),
 });
@@ -134,10 +238,22 @@ registerControl({
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 220, h: 72 },
-  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => (
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => withAntdField(
     <div style={ios.field}>
       <label style={ios.label}>{renderLabel(component.props.label || 'Label', component.props.required)}</label>
-      <input style={{ ...ios.control, fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', textAlign: component.props.textAlign || 'left' }} type="number" value={String(runtime?.value ?? '')} min={component.props.min} max={component.props.max} step={component.props.step} placeholder={component.props.placeholder || ''} readOnly={!!component.props.readonly} disabled={mode !== 'preview' || !!component.props.disabled} onChange={(event) => runtime?.emit('onChange', event.target.value === '' ? '' : Number(event.target.value))} onBlur={() => runtime?.emit('onBlur')} onFocus={() => runtime?.emit('onFocus')} />
+      <AntdNumberInput
+        value={runtime?.value === '' ? '' : Number(runtime?.value ?? '')}
+        placeholder={component.props.placeholder || ''}
+        readOnly={!!component.props.readonly}
+        disabled={mode !== 'preview' || !!component.props.disabled}
+        min={component.props.min}
+        max={component.props.max}
+        step={component.props.step}
+        style={{ fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', textAlign: component.props.textAlign || 'left', width: '100%' }}
+        onChange={(next) => runtime?.emit('onChange', next === '' ? '' : Number(next))}
+        onBlur={() => runtime?.emit('onBlur')}
+        onFocus={() => runtime?.emit('onFocus')}
+      />
     </div>
   ),
 });
@@ -158,13 +274,15 @@ registerControl({
     { key: 'required', label: '必填', type: 'boolean', group: '校验' },
     { key: 'readonly', label: '只读', type: 'boolean', group: '校验' },
     { key: 'disabled', label: '禁用', type: 'boolean', group: '校验' },
-    { key: 'minDate', label: '最早日期', type: 'string', group: '校验', placeholder: '2020-01-01' },
-    { key: 'maxDate', label: '最晚日期', type: 'string', group: '校验', placeholder: '2030-12-31' },
+    { key: 'minDate', label: '最早日期', type: 'date', group: '校验', placeholder: '2020-01-01' },
+    { key: 'maxDate', label: '最晚日期', type: 'date', group: '校验', placeholder: '2030-12-31' },
     { key: 'customMessage', label: '自定义错误提示', type: 'string', group: '校验' },
     { key: 'format', label: '日期格式', type: 'select', group: '样式', options: [
       { label: 'YYYY-MM-DD', value: 'YYYY-MM-DD' }, { label: 'YYYY/MM/DD', value: 'YYYY/MM/DD' },
       { label: 'DD/MM/YYYY', value: 'DD/MM/YYYY' }, { label: 'MM/DD/YYYY', value: 'MM/DD/YYYY' },
       { label: 'YYYY年MM月DD日', value: 'YYYY年MM月DD日' },
+      { label: 'YYYY-MM-DD HH:mm', value: 'YYYY-MM-DD HH:mm' },
+      { label: 'YYYY-MM-DD HH:mm:ss', value: 'YYYY-MM-DD HH:mm:ss' },
     ]},
     { key: 'showTime', label: '显示时间', type: 'boolean', group: '样式' },
     { key: 'fontSize', label: '字号', type: 'number', group: '样式', min: 10, max: 48 },
@@ -176,12 +294,91 @@ registerControl({
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 220, h: 72 },
-  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => (
+  render: DatePickerPreview,
+});
+
+registerControl({
+  type: 'timePicker', label: '时间选择', category: 'basic', icon: '⏰',
+  defaultProps: {
+    label: '时间', name: '', placeholder: '选择时间', required: false, readonly: false, disabled: false,
+    showSeconds: false, format: 'HH:mm', rangeRef: null,
+  },
+  propSchema: [
+    { key: 'label', label: '标签', type: 'string', group: '基础' },
+    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'placeholder', label: '占位符', type: 'string', group: '基础' },
+    { key: 'required', label: '必填', type: 'boolean', group: '校验' },
+    { key: 'readonly', label: '只读', type: 'boolean', group: '校验' },
+    { key: 'disabled', label: '禁用', type: 'boolean', group: '校验' },
+    { key: 'showSeconds', label: '显示秒', type: 'boolean', group: '样式' },
+    { key: 'format', label: '时间格式', type: 'select', group: '样式', options: [
+      { label: 'HH:mm', value: 'HH:mm' },
+      { label: 'HH:mm:ss', value: 'HH:mm:ss' },
+    ]},
+    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+  ],
+  eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
+  defaultSize: { w: 220, h: 72 },
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => withAntdField(
     <div style={ios.field}>
-      <label style={ios.label}>{renderLabel(component.props.label || '日期', component.props.required)}</label>
-      {mode === 'preview' ? <input type={component.props.showTime ? 'datetime-local' : 'date'} style={{ ...ios.control, fontSize: component.props.fontSize || 14 }} value={String(runtime?.value ?? '')} min={component.props.minDate || undefined} max={component.props.maxDate || undefined} readOnly={!!component.props.readonly} disabled={!!component.props.disabled} onChange={(event) => runtime?.emit('onChange', event.target.value)} onBlur={() => runtime?.emit('onBlur')} onFocus={() => runtime?.emit('onFocus')} /> : <div style={{ ...ios.control, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}><span style={{ ...ios.muted, fontSize: component.props.fontSize || 14 }}>{component.props.placeholder || '选择日期'}</span><span style={{ fontSize: 14, flexShrink: 0 }}>📅</span></div>}
+      <label style={ios.label}>{renderLabel(component.props.label || '时间', component.props.required)}</label>
+      <AntdTimeInput
+        value={normalizeDateTimeValue(runtime?.value, 'time')}
+        readOnly={!!component.props.readonly}
+        placeholder={component.props.placeholder || '选择时间'}
+        disabled={mode !== 'preview' || !!component.props.disabled}
+        format={component.props.format || (component.props.showSeconds ? 'HH:mm:ss' : 'HH:mm')}
+        showSeconds={!!component.props.showSeconds}
+        onChange={(next) => runtime?.emit('onChange', next)}
+        onBlur={() => runtime?.emit('onBlur')}
+        onFocus={() => runtime?.emit('onFocus')}
+      />
     </div>
   ),
+});
+
+registerControl({
+  type: 'dateRange', label: '日期范围', category: 'basic', icon: '🗓️',
+  defaultProps: {
+    label: '日期范围', name: '', required: false, readonly: false, disabled: false,
+    format: 'YYYY-MM-DD', startPlaceholder: '开始日期', endPlaceholder: '结束日期',
+    rangeRef: null,
+  },
+  propSchema: [
+    { key: 'label', label: '标签', type: 'string', group: '基础' },
+    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'required', label: '必填', type: 'boolean', group: '校验' },
+    { key: 'readonly', label: '只读', type: 'boolean', group: '校验' },
+    { key: 'disabled', label: '禁用', type: 'boolean', group: '校验' },
+    { key: 'startPlaceholder', label: '开始占位符', type: 'string', group: '基础' },
+    { key: 'endPlaceholder', label: '结束占位符', type: 'string', group: '基础' },
+    { key: 'format', label: '日期格式', type: 'select', group: '样式', options: [
+      { label: 'YYYY-MM-DD', value: 'YYYY-MM-DD' },
+      { label: 'YYYY/MM/DD', value: 'YYYY/MM/DD' },
+      { label: 'YYYY年MM月DD日', value: 'YYYY年MM月DD日' },
+    ]},
+    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+  ],
+  eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
+  defaultSize: { w: 280, h: 72 },
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
+    const rangeValue = runtime?.value && typeof runtime.value === 'object' ? runtime.value as Record<string, unknown> : {};
+    return withAntdField(
+      <div style={ios.field}>
+        <label style={ios.label}>{renderLabel(component.props.label || '日期范围', component.props.required)}</label>
+        <AntdDateRangeInput
+          value={{ start: normalizeDateTimeValue(rangeValue.start, 'date'), end: normalizeDateTimeValue(rangeValue.end, 'date') }}
+          readOnly={!!component.props.readonly}
+          disabled={mode !== 'preview' || !!component.props.disabled}
+          placeholder={[String(component.props.startPlaceholder || '开始日期'), String(component.props.endPlaceholder || '结束日期')]}
+          format={String(component.props.format || 'YYYY-MM-DD')}
+          onChange={(next) => runtime?.emit('onChange', next)}
+          onBlur={() => runtime?.emit('onBlur')}
+          onFocus={() => runtime?.emit('onFocus')}
+        />
+      </div>
+    );
+  },
 });
 
 registerControl({
@@ -207,15 +404,14 @@ registerControl({
   defaultSize: { w: 180, h: 52 },
   render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
     const checked = runtime ? !!runtime.value : component.props.defaultValue !== false;
-    const activeColor = component.props.activeColor || '#34c759';
-    const inactiveColor = component.props.inactiveColor || 'rgba(118,118,128,0.18)';
-    return (
-      <div style={{ ...ios.naturalPanel, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', gap: 10, cursor: mode === 'preview' ? 'pointer' : 'default' }}
-        onClick={() => mode === 'preview' && !component.props.disabled && runtime?.emit('onChange', !checked)}>
+    return withAntdField(
+      <div style={{ ...ios.naturalPanel, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', gap: 10 }}>
         <span style={ios.label}>{component.props.label || '启用'}</span>
-        <div style={{ width: 46, height: 28, borderRadius: 999, background: checked ? activeColor : inactiveColor, position: 'relative', flexShrink: 0, transition: 'background 0.2s', boxShadow: 'inset 0 0 0 0.5px rgba(0,0,0,0.05)' }}>
-          <div style={{ width: 24, height: 24, borderRadius: 999, background: '#fff', position: 'absolute', top: 2, left: checked ? 20 : 2, boxShadow: '0 2px 6px rgba(0,0,0,0.18)', transition: 'left 0.2s' }} />
-        </div>
+        <AntdSwitchInput
+          checked={checked}
+          disabled={mode !== 'preview' || !!component.props.disabled}
+          onChange={(next) => runtime?.emit('onChange', next)}
+        />
       </div>
     );
   },
@@ -251,21 +447,75 @@ registerControl({
   render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
     const max = component.props.max || 5;
     const val = Number(runtime?.value ?? component.props.defaultValue ?? 0);
-    const activeColor = component.props.activeColor || '#ff9500';
-    const inactiveColor = component.props.inactiveColor || '#e5e5ea';
-    return (
+    return withAntdField(
       <div style={{ ...ios.naturalPanel, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', gap: 8 }}>
         <span style={ios.label}>{renderLabel(component.props.label || '评分', component.props.required)}</span>
         <div style={{ display: 'flex', gap: 2, flexShrink: 0, alignItems: 'center' }}>
-          {Array.from({ length: max }, (_, i) => (
-            <span key={i} style={{ fontSize: 20, color: i < val ? activeColor : inactiveColor, cursor: mode === 'preview' ? 'pointer' : 'default' }}
-              onClick={() => mode === 'preview' && !component.props.disabled && runtime?.emit('onChange', i + 1)}>★</span>
-          ))}
+          <AntdRateInput
+            count={max}
+            value={val}
+            disabled={mode !== 'preview' || !!component.props.disabled}
+            onChange={(next) => runtime?.emit('onChange', next)}
+          />
           {component.props.showText && <span style={{ fontSize: 12, color: '#8e8e93', marginLeft: 4 }}>{val}/{max}</span>}
         </div>
       </div>
     );
   },
+});
+
+registerControl({
+  type: 'tagInput', label: '标签输入', category: 'basic', icon: '🏷️',
+  defaultProps: {
+    label: '标签', name: '', placeholder: '输入后回车', required: false, disabled: false, rangeRef: null,
+  },
+  propSchema: [
+    { key: 'label', label: '标签', type: 'string', group: '基础' },
+    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'placeholder', label: '占位符', type: 'string', group: '基础' },
+    { key: 'required', label: '必填', type: 'boolean', group: '校验' },
+    { key: 'disabled', label: '禁用', type: 'boolean', group: '校验' },
+    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+  ],
+  eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
+  defaultSize: { w: 280, h: 84 },
+  render: TagInputPreview,
+});
+
+registerControl({
+  type: 'upload', label: '文件上传', category: 'basic', icon: '📎',
+  defaultProps: {
+    label: '文件上传', name: '', placeholder: '点击选择文件', required: false, disabled: false, rangeRef: null,
+  },
+  propSchema: [
+    { key: 'label', label: '标签', type: 'string', group: '基础' },
+    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'placeholder', label: '占位符', type: 'string', group: '基础' },
+    { key: 'required', label: '必填', type: 'boolean', group: '校验' },
+    { key: 'disabled', label: '禁用', type: 'boolean', group: '校验' },
+    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+  ],
+  eventSchema: [{ key: 'onChange', label: '值变化', description: '文件改变时触发' }],
+  defaultSize: { w: 280, h: 112 },
+  render: ({ component, mode, runtime }) => <UploadPreview component={component} mode={mode} runtime={runtime} />,
+});
+
+registerControl({
+  type: 'imageUpload', label: '图片上传', category: 'basic', icon: '🖼️',
+  defaultProps: {
+    label: '图片上传', name: '', placeholder: '点击选择图片', required: false, disabled: false, rangeRef: null,
+  },
+  propSchema: [
+    { key: 'label', label: '标签', type: 'string', group: '基础' },
+    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'placeholder', label: '占位符', type: 'string', group: '基础' },
+    { key: 'required', label: '必填', type: 'boolean', group: '校验' },
+    { key: 'disabled', label: '禁用', type: 'boolean', group: '校验' },
+    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+  ],
+  eventSchema: [{ key: 'onChange', label: '值变化', description: '图片改变时触发' }],
+  defaultSize: { w: 280, h: 144 },
+  render: ({ component, mode, runtime }) => <UploadPreview component={component} mode={mode} runtime={runtime} imageOnly />,
 });
 
 registerControl({
@@ -305,22 +555,16 @@ registerControl({
     const isGhost = p.variant === 'ghost';
     const bg = p.backgroundColor || (isPrimary ? 'linear-gradient(180deg, #0a84ff 0%, #007aff 100%)' : isDanger ? 'linear-gradient(180deg, #ff453a 0%, #ff3b30 100%)' : isGhost ? 'transparent' : 'rgba(118,118,128,0.10)');
     const textColor = p.color || (isPrimary || isDanger ? '#fff' : isGhost ? '#007aff' : '#007aff');
-    return (
+    return withAntdField(
       <div style={{ width: '100%', height: '100%', minWidth: 0, display: 'flex', alignItems: 'flex-start', boxSizing: 'border-box', padding: 4 }}>
-        <button type="button" disabled={!!p.disabled || !!p.loading} onClick={() => runtime?.emit('onClick')} style={{
-          width: p.fullWidth ? '100%' : '100%', minWidth: 0, minHeight: 40, padding: '10px 14px',
-          fontSize: p.fontSize || 16, fontWeight: p.fontWeight || 650,
-          border: isGhost ? '1px solid rgba(0,122,255,0.3)' : 'none',
-          borderRadius: p.borderRadius ?? 10, background: bg, color: textColor,
-          cursor: mode === 'preview' ? 'pointer' : 'default',
-          ...controlText(),
-          boxShadow: isPrimary || isDanger ? '0 4px 12px rgba(0,122,255,0.18)' : 'inset 0 1px 0 rgba(255,255,255,0.55)',
-          backdropFilter: 'blur(20px)',
-          opacity: p.disabled ? 0.5 : 1,
-        }}>
-          {p.icon && <span style={{ marginRight: 6 }}>{p.icon}</span>}
-          {p.loading ? '加载中...' : (p.label || '按钮')}
-        </button>
+        <div style={{ width: p.fullWidth ? '100%' : '100%' }}>
+          <AntdActionButton
+            label={`${p.icon ? `${p.icon} ` : ''}${p.loading ? '加载中...' : (p.label || '按钮')}`}
+            disabled={!!p.disabled || !!p.loading}
+            variant={p.variant === 'ghost' ? 'ghost' : p.variant === 'default' ? 'outline' : 'solid'}
+            onClick={() => runtime?.emit('onClick')}
+          />
+        </div>
       </div>
     );
   },

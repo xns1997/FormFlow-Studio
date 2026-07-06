@@ -25,13 +25,13 @@ const edge = (id: string, source: string, target: string, sourcePort: string, ta
   targetHandle: `in:${targetPort}`,
 });
 
-test('auto-discovered registry has 133 executable nodes with unique IDs and ports', async () => {
+test('auto-discovered registry has 134 executable nodes with unique IDs and ports', async () => {
   const root = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
   const packageDirs = readdirSync(join(root, 'nodes'), { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && /^(func-|behavior-|generic-|ml-)/.test(entry.name))
     .filter((entry) => existsSync(join(root, 'nodes', entry.name, 'schema.json')))
     .map((entry) => entry.name);
-  assert.equal(packageDirs.length, 102);
+  assert.equal(packageDirs.length, 103);
   assert.equal(new Set(packageDirs).size, packageDirs.length);
   assert.equal(CURATED_XLSX_METHODS.size, 14);
 
@@ -262,6 +262,34 @@ test('connected inputs take precedence over direct external port injection', asy
   });
   assert.equal(result.success, true, result.errors.join('\n'));
   assert.equal(result.nodeResults.get('target')?.outputs.value, '来自连线');
+});
+
+test('behavior js script honors dynamic input and output definitions', async () => {
+  await loadNodeRegistry();
+  const result = await executeFlow([
+    node('amount', 'generic:variable-input', { varName: 'amount', varType: 'number', varValue: 12 }),
+    node('script', 'behavior-js-script', {
+      inputPorts: { amount: 'number' },
+      outputPorts: { doubled: 'number' },
+      script: 'return { doubled: inputs.amount * 2 };',
+    }),
+  ], [
+    edge('amount-script', 'amount', 'script', 'value', 'amount'),
+  ]);
+  assert.equal(result.success, true, result.errors.join('\n'));
+  assert.equal(result.nodeResults.get('script')?.outputs.doubled, 24);
+});
+
+test('behavior js script maps primitive returns to the first dynamic output', async () => {
+  await loadNodeRegistry();
+  const result = await executeFlow([
+    node('script', 'behavior-js-script', {
+      outputPorts: { total: 'number' },
+      script: 'return 7;',
+    }),
+  ], []);
+  assert.equal(result.success, true, result.errors.join('\n'));
+  assert.equal(result.nodeResults.get('script')?.outputs.total, 7);
 });
 
 test('XLSX methods publish results under their declared output port name', async () => {

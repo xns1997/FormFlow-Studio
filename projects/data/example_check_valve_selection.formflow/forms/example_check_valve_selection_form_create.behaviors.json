@@ -1,0 +1,14 @@
+{
+  "behaviors": [
+    {
+      "id": "example_check_valve_selection_create_load",
+      "name": "打开录入表单时初始化默认值",
+      "event": "onFormLoad",
+      "code": "const nextId = (() => { const rows = ctx.querySheet('valve_requests');\nconst maxId = rows.reduce((max, row) => Math.max(max, Number(row?.申请单号) || 0), 0);\nreturn maxId + 1; })();\nawait ctx.setValue('申请单号', nextId);\nawait ctx.setValue('选型状态', \"待选型\");\nawait ctx.setValue('状态提示', `已初始化 申请单号：${nextId}`);",
+      "priority": 10,
+      "enabled": true,
+      "createdAt": "2026-07-06T18:00:00.000Z",
+      "updatedAt": "2026-07-06T18:00:00.000Z"
+    }
+  ]
+}

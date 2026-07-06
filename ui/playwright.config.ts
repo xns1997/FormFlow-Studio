@@ -17,10 +17,18 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'pnpm dev --port 5175',
-    url: 'http://localhost:5175',
-    reuseExistingServer: true,
-    timeout: 30000,
-  },
+  webServer: [
+    {
+      command: 'PORT=3103 pnpm server',
+      url: 'http://localhost:3103/api/health',
+      reuseExistingServer: true,
+      timeout: 30000,
+    },
+    {
+      command: 'VITE_API_BASE=http://localhost:3103/api pnpm dev --port 5175',
+      url: 'http://localhost:5175',
+      reuseExistingServer: true,
+      timeout: 30000,
+    },
+  ],
 });

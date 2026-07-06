@@ -1,0 +1,25 @@
+{
+  "outputs": [
+    {
+      "id": "example_check_valve_selection_output_stats",
+      "name": "统计分析结果",
+      "format": "json",
+      "size": 0,
+      "createdAt": "2026-07-06T18:00:00.000Z"
+    },
+    {
+      "id": "example_check_valve_selection_output_batch",
+      "name": "批量处理结果",
+      "format": "json",
+      "size": 0,
+      "createdAt": "2026-07-06T18:00:00.000Z"
+    },
+    {
+      "id": "example_check_valve_selection_output_predict",
+      "name": "预测结果",
+      "format": "json",
+      "size": 0,
+      "createdAt": "2026-07-06T18:00:00.000Z"
+    }
+  ]
+}

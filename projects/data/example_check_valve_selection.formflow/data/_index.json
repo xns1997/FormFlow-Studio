@@ -1,0 +1,12 @@
+{
+  "sources": [
+    {
+      "id": "valve_requests",
+      "fileName": "止回阀选型.json",
+      "fileType": "json",
+      "metaFile": "valve_requests.meta.json",
+      "behaviorsFile": "valve_requests.behaviors.json",
+      "uploadedAt": "2026-07-06T18:00:00.000Z"
+    }
+  ]
+}

@@ -1,12 +1,19 @@
 import { create } from 'zustand';
 import {
-  loadProjectStructure, saveProjectStructure, createNewProject,
+  loadProjectStructure, saveProjectStructure, createProjectStructure, createNewProject,
   addSrcTable, removeSrcTable, updateTableSheetConfig,
   addWorkflow, updateWorkflow, removeWorkflow,
   addBehavior, updateBehavior, removeBehavior,
   addDesign, updateDesign, removeDesign,
+  addForm, updateForm, removeForm,
+  addFormBehavior, updateFormBehavior, removeFormBehavior,
+  addGlobalBehavior, updateGlobalBehavior, removeGlobalBehavior,
 } from './manager';
-import type { ProjectStructure, SrcTableEntry, TableConfig, WorkflowFile, BehaviorFile, DesignFile } from './types';
+import {
+  downloadPackageZip, openFilePicker,
+} from './packageManager';
+import { createProjectFromZip } from './creation';
+import type { ProjectStructure, SrcTableEntry, TableConfig, WorkflowFile, BehaviorFile, DesignFile, FormEntry } from './types';
 
 async function trySave(p: ProjectStructure): Promise<void> {
   try { await saveProjectStructure(p); } catch { /* server offline */ }
@@ -37,6 +44,21 @@ interface ProjectStore {
   addDesign: (design: DesignFile) => Promise<void>;
   updateDesign: (id: string, patch: Partial<DesignFile>) => Promise<void>;
   removeDesign: (id: string) => Promise<void>;
+
+  addForm: (form: FormEntry) => Promise<void>;
+  updateForm: (id: string, patch: Partial<FormEntry>) => Promise<void>;
+  removeForm: (id: string) => Promise<void>;
+
+  addFormBehavior: (formId: string, bh: BehaviorFile) => Promise<void>;
+  updateFormBehavior: (formId: string, bhId: string, patch: Partial<BehaviorFile>) => Promise<void>;
+  removeFormBehavior: (formId: string, bhId: string) => Promise<void>;
+
+  addGlobalBehavior: (bh: BehaviorFile) => Promise<void>;
+  updateGlobalBehavior: (id: string, patch: Partial<BehaviorFile>) => Promise<void>;
+  removeGlobalBehavior: (id: string) => Promise<void>;
+
+  exportAsPackage: () => Promise<void>;
+  importFromPackage: () => Promise<void>;
 }
 
 export const useProjectStore = create<ProjectStore>((set, get) => ({
@@ -164,6 +186,97 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     const { project } = get();
     if (!project) return;
     const next = removeDesign(project, id);
+    set({ project: next });
+    await trySave(next);
+  },
+
+  exportAsPackage: async () => {
+    const { project } = get();
+    if (!project) return;
+    await downloadPackageZip(project);
+  },
+
+  importFromPackage: async () => {
+    const file = await openFilePicker();
+    if (!file) return;
+    const imported = await createProjectFromZip(file, {
+      name: file.name.replace(/\.zip$/i, ''),
+      description: '',
+      author: '',
+      tags: [],
+    });
+    set({ project: imported, projectId: imported.config.id });
+    await createProjectStructure(imported);
+  },
+
+  addForm: async (form: FormEntry) => {
+    const { project } = get();
+    if (!project) return;
+    const next = addForm(project, form);
+    set({ project: next });
+    await trySave(next);
+  },
+
+  updateForm: async (id: string, patch: Partial<FormEntry>) => {
+    const { project } = get();
+    if (!project) return;
+    const next = updateForm(project, id, patch);
+    set({ project: next });
+    await trySave(next);
+  },
+
+  removeForm: async (id: string) => {
+    const { project } = get();
+    if (!project) return;
+    const next = removeForm(project, id);
+    set({ project: next });
+    await trySave(next);
+  },
+
+  addFormBehavior: async (formId: string, bh: BehaviorFile) => {
+    const { project } = get();
+    if (!project) return;
+    const next = addFormBehavior(project, formId, bh);
+    set({ project: next });
+    await trySave(next);
+  },
+
+  updateFormBehavior: async (formId: string, bhId: string, patch: Partial<BehaviorFile>) => {
+    const { project } = get();
+    if (!project) return;
+    const next = updateFormBehavior(project, formId, bhId, patch);
+    set({ project: next });
+    await trySave(next);
+  },
+
+  removeFormBehavior: async (formId: string, bhId: string) => {
+    const { project } = get();
+    if (!project) return;
+    const next = removeFormBehavior(project, formId, bhId);
+    set({ project: next });
+    await trySave(next);
+  },
+
+  addGlobalBehavior: async (bh: BehaviorFile) => {
+    const { project } = get();
+    if (!project) return;
+    const next = addGlobalBehavior(project, bh);
+    set({ project: next });
+    await trySave(next);
+  },
+
+  updateGlobalBehavior: async (id: string, patch: Partial<BehaviorFile>) => {
+    const { project } = get();
+    if (!project) return;
+    const next = updateGlobalBehavior(project, id, patch);
+    set({ project: next });
+    await trySave(next);
+  },
+
+  removeGlobalBehavior: async (id: string) => {
+    const { project } = get();
+    if (!project) return;
+    const next = removeGlobalBehavior(project, id);
     set({ project: next });
     await trySave(next);
   },

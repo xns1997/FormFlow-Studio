@@ -1,12 +1,70 @@
 # Changelog
 
+## [0.5.0] - 2026-07-06
+
+### 使用模式页面
+- 新增独立「使用模式」页面（`/projects/:id/usage`），数据预览 + 表单预览弹窗
+- 数据预览：AG Grid 只读表格 + 列详情 + 新增/删除/编辑行 + 保存到后端
+- 表单预览：侧边栏表单列表，点击打开大弹窗，内嵌设计器 PreviewCanvas（空间布局、控件可交互）
+- 项目列表每个卡片增加「使用模式」入口按钮
+
+### 后端数据 API 改造
+- 新增项目作用域数据 API：`POST /api/projects/data/query|add|update|delete`
+- 后端直接读写 `.formflow` 包中的 `srcTable[].sheets[].preview` 数据
+- `project-package-store.ts` 新增 `getTableSheetData` / `updateTableSheetData` 函数
+- 前端 `UsagePage` 和 `DataPreviewPage` 全部切换到新 API
+
+### 表单→工作表同步
+- PreviewCanvas 新增防抖同步钩子：表单字段变更时自动写回对应工作表
+- 通过 `tableBinding`（tableId/sheetName/keyField/keyValue/column）定位目标单元格
+- 500ms 防抖批量提交，调用 `persistProject` 持久化到 `.formflow` 包
+
+### 表单设计器优化
+- 工具栏新增表单切换下拉菜单，可直接切换当前编辑的表单
+- 切换表单时先清空画布再加载新设计（`clearDesign` 方法）
+- 控件配置面板性能优化：`SchemaField` 使用 `React.memo`，`updateProp` / `currentProps` / `tables` 等全部 `useMemo` / `useCallback` 稳定化，避免单字段修改触发整体重渲染
+
+### 自定义 JS 流程节点
+- 新增 `generic-custom-js` 节点包：自定义输入/输出端口 + Monaco 代码编辑器
+- 端口定义使用表格化 UI（PortTableEditor），支持添加/删除行、名称/标签/类型配置
+- 代码编辑器使用 Monaco，支持全屏、语法高亮、行号
+- CanvasPage 新增 `port-definition` 和 `code` 属性类型渲染
+
+### 日期选择器修复
+- DatePicker 隐藏原生 input 移除 `pointerEvents: 'none'`，`showPicker()` 可正常工作
+- `onInput` 全部改为 `onChange`（React 标准事件）
+- DatePicker / DateRange / TimePicker 统一修复
+
+### 项目列表视觉优化
+- 卡片封面改为 Mesh Gradient（多层 radial-gradient + 椭圆形色块 + rgba 半透明融合）
+- 移除 emoji 图标，卡片封面为纯渐变色带
+- 8 组低饱和度清爽配色
+
+### 示例项目修复
+- `generate_industry_examples.ts` 的 `writeBackFieldMap` 从 `$form.字段名` 修正为 `字段名`
+- 重新生成 `example_employee_mgmt` / `example_student_info` / `example_check_valve_selection` / `example_renewable_generation`
+
+### 移除
+- 删除 `TestPage.tsx`（762 行），功能已整合到使用模式页面
+- 移除 `/workspace/test` 路由
+
+---
+
 ## [0.4.0] - 2026-07-03
+
+### FormFlow v2 项目架构
+- 项目持久化从单文件 `<id>.json` 改为 `projects/data/<id>.formflow/` 目录包
+- `project.json` 使用 `kind: formflow-project` 与 `formatVersion: 2` 进行严格识别，不再接受旧项目 JSON
+- 表单、数据源、流程、行为和输出分别存入独立目录/文件，后端读取时统一组装为运行时项目模型
+- 项目创建、更新、复制、删除及流程/行为 API 全部接入目录包存储层
+- 前端移除旧 JSON 导入导出；磁盘目录使用 `.formflow`，分发包使用 `.zip`，并通过包内 `project.json` 严格识别
+- 删除原有项目数据，新增“销售订单审批”完整 v2 示例及可导入 ZIP
 
 ### 仓库目录重构
 - 前端统一迁入 `ui/`，包含应用源码、节点包、Vite 配置、TypeScript 配置和 Playwright 测试
 - Express 后端整理为 `server/src/`，运行数据集中到 `server/data/`
 - Python 数据分析与 ML 能力整理为 `python-service/`，源码与环境安装文件分离
-- 示例项目和服务端项目持久化数据集中到 `projects/example/` 与 `projects/data/`
+- 示例项目和服务端项目持久化数据集中到 `projects/` 与 `projects/data/`
 - 新增 `server/src/config/paths.ts`，统一管理仓库、服务数据、项目和 Python 服务路径
 - 更新开发、构建、测试、E2E 和服务启动命令以适配新结构
 

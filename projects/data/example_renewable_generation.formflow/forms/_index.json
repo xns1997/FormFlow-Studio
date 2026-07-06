@@ -1,0 +1,23 @@
+{
+  "forms": [
+    {
+      "id": "example_renewable_generation_form_create",
+      "name": "数据录入",
+      "fileName": "example_renewable_generation_form_create.json",
+      "behaviorsFileName": "example_renewable_generation_form_create.behaviors.json"
+    },
+    {
+      "id": "example_renewable_generation_form_edit",
+      "name": "数据修改",
+      "fileName": "example_renewable_generation_form_edit.json",
+      "behaviorsFileName": "example_renewable_generation_form_edit.behaviors.json"
+    },
+    {
+      "id": "example_renewable_generation_form_analysis",
+      "name": "统计分析",
+      "fileName": "example_renewable_generation_form_analysis.json",
+      "behaviorsFileName": "example_renewable_generation_form_analysis.behaviors.json"
+    }
+  ],
+  "defaultFormId": "example_renewable_generation_form_create"
+}

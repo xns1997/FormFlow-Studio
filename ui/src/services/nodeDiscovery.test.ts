@@ -3,6 +3,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { EXPECTED_NODE_COUNT } from '../../nodes/registry';
 import type { FlowNodeSpec } from '../flowRegistry';
 import { loadNodeRegistry } from '../flowRegistry';
 import {
@@ -88,7 +89,7 @@ test('compatible port selection prefers same name, then exact type, required and
   });
 });
 
-test('all 133 registered nodes build searchable documents and map to eight discovery groups', async () => {
+test('all registered nodes build searchable documents and map to eight discovery groups', async () => {
   const root = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
   const packageDirs = readdirSync(join(root, 'nodes'), { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && /^(func-|behavior-|generic-|ml-)/.test(entry.name))
@@ -103,8 +104,8 @@ test('all 133 registered nodes build searchable documents and map to eight disco
   const specs = [...base.specs, ...packageSpecs]
     .filter((item, index, all) => all.findIndex((candidate) => candidate.id === item.id) === index);
   const index = buildNodeSearchIndex(specs);
-  assert.equal(index.length, 133);
-  assert.equal(new Set(index.map((document) => document.spec.id)).size, 133);
+  assert.equal(index.length, EXPECTED_NODE_COUNT);
+  assert.equal(new Set(index.map((document) => document.spec.id)).size, EXPECTED_NODE_COUNT);
   for (const document of index) {
     assert.ok(document.normalizedLabel.length > 0);
     assert.ok(searchNodeDocuments(index, document.spec.id).some((result) => result.document.spec.id === document.spec.id), `not searchable: ${document.spec.id}`);

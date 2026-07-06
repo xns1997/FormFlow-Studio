@@ -1,0 +1,11 @@
+{
+  "outputs": [
+    {
+      "id": "output_open_ticket_list",
+      "name": "待处理工单列表",
+      "format": "json",
+      "size": 0,
+      "createdAt": "2026-07-06T09:00:00.000Z"
+    }
+  ]
+}

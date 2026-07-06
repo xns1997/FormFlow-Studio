@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { getAllControls, getControlsByCategory, getCategories, CATEGORY_LABELS } from './registry';
 import { DesignerIcon } from './icons';
+import { AntdTextInput, FormAntdProvider } from '../components/AntdFormControls';
 
 const CATEGORY_META: Record<string, { hint: string; accent: string }> = {
   basic: { hint: '录入与表单字段', accent: 'rgba(37,99,235,0.12)' },
@@ -40,18 +41,18 @@ export function Toolbox() {
   );
 
   return (
+    <FormAntdProvider>
     <div className="designer-toolbox">
       <div className="toolbox-header">
         <div className="toolbox-header-row">
           <div className="toolbox-search-shell">
             <span className="toolbox-search-icon">⌕</span>
-            <input
-              type="text"
+            <AntdTextInput
               placeholder="搜索控件、类型…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            className="toolbox-search"
-          />
+              onChange={(next) => setSearch(next)}
+              style={{ width: '100%' }}
+            />
           {search && <button type="button" className="toolbox-search-clear" onClick={() => setSearch('')}>×</button>}
         </div>
         </div>
@@ -94,5 +95,6 @@ export function Toolbox() {
         )}
       </div>
     </div>
+    </FormAntdProvider>
   );
 }

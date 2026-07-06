@@ -1,0 +1,246 @@
+{
+  "id": "example_renewable_generation_form_create",
+  "name": "数据录入",
+  "formMode": "create",
+  "viewport": {
+    "zoom": 1,
+    "panX": 0,
+    "panY": 0
+  },
+  "gridSize": 10,
+  "createdAt": "2026-07-06T18:00:00.000Z",
+  "updatedAt": "2026-07-06T18:00:00.000Z",
+  "bindings": [],
+  "components": [
+    {
+      "id": "example_renewable_generation_create_title",
+      "type": "text",
+      "x": 24,
+      "y": 24,
+      "width": 760,
+      "height": 40,
+      "zIndex": 1,
+      "props": {
+        "name": "example_renewable_generation_create_title",
+        "content": "新能源发电量 · 数据录入",
+        "fontSize": 22,
+        "color": "#0f172a",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "example_renewable_generation_create_hint",
+      "type": "text",
+      "x": 24,
+      "y": 70,
+      "width": 760,
+      "height": 28,
+      "zIndex": 1,
+      "fieldBinding": "状态提示",
+      "props": {
+        "name": "example_renewable_generation_create_hint",
+        "content": "状态提示",
+        "fontSize": 13,
+        "color": "#475569"
+      }
+    },
+    {
+      "id": "example_renewable_generation_create_0",
+      "type": "number",
+      "x": 24,
+      "y": 116,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "记录ID",
+      "props": {
+        "name": "记录ID",
+        "label": "记录ID",
+        "required": false,
+        "readonly": true,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_renewable_generation_create_1",
+      "type": "datePicker",
+      "x": 276,
+      "y": 116,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "日期",
+      "props": {
+        "name": "日期",
+        "label": "日期",
+        "required": true,
+        "readonly": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_renewable_generation_create_2",
+      "type": "select",
+      "x": 528,
+      "y": 116,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "场站",
+      "props": {
+        "name": "场站",
+        "label": "场站",
+        "required": true,
+        "readonly": false,
+        "placeholder": "",
+        "options": [
+          "青海光伏一站",
+          "甘肃风电二场",
+          "宁夏储能联营"
+        ]
+      }
+    },
+    {
+      "id": "example_renewable_generation_create_3",
+      "type": "select",
+      "x": 24,
+      "y": 196,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "发电类型",
+      "props": {
+        "name": "发电类型",
+        "label": "发电类型",
+        "required": true,
+        "readonly": false,
+        "placeholder": "",
+        "options": [
+          "光伏",
+          "风电",
+          "储能"
+        ]
+      }
+    },
+    {
+      "id": "example_renewable_generation_create_4",
+      "type": "number",
+      "x": 276,
+      "y": 196,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "发电量MWh",
+      "props": {
+        "name": "发电量MWh",
+        "label": "发电量MWh",
+        "required": true,
+        "readonly": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_renewable_generation_create_5",
+      "type": "number",
+      "x": 528,
+      "y": 196,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "资源指标",
+      "props": {
+        "name": "资源指标",
+        "label": "资源指标",
+        "required": true,
+        "readonly": false,
+        "placeholder": "光伏填辐照/风电填风速"
+      }
+    },
+    {
+      "id": "example_renewable_generation_create_6",
+      "type": "number",
+      "x": 24,
+      "y": 276,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "限电损失MWh",
+      "props": {
+        "name": "限电损失MWh",
+        "label": "限电损失MWh",
+        "required": true,
+        "readonly": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_renewable_generation_create_7",
+      "type": "number",
+      "x": 276,
+      "y": 276,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "设备可用率",
+      "props": {
+        "name": "设备可用率",
+        "label": "设备可用率",
+        "required": true,
+        "readonly": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_renewable_generation_create_submit",
+      "type": "button",
+      "x": 24,
+      "y": 368,
+      "width": 220,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "example_renewable_generation_create_submit",
+        "label": "保存录入",
+        "variant": "primary",
+        "events": {
+          "onClick": "if (!ctx.getValue('日期') && ctx.getValue('日期') !== 0) return ctx.showMessage('请填写日期', 'error');\nif (!ctx.getValue('场站') && ctx.getValue('场站') !== 0) return ctx.showMessage('请填写场站', 'error');\nif (!ctx.getValue('发电类型') && ctx.getValue('发电类型') !== 0) return ctx.showMessage('请填写发电类型', 'error');\nif (!ctx.getValue('发电量MWh') && ctx.getValue('发电量MWh') !== 0) return ctx.showMessage('请填写发电量MWh', 'error');\nif (!ctx.getValue('资源指标') && ctx.getValue('资源指标') !== 0) return ctx.showMessage('请填写资源指标', 'error');\nif (!ctx.getValue('限电损失MWh') && ctx.getValue('限电损失MWh') !== 0) return ctx.showMessage('请填写限电损失MWh', 'error');\nif (!ctx.getValue('设备可用率') && ctx.getValue('设备可用率') !== 0) return ctx.showMessage('请填写设备可用率', 'error');\nlet currentId = Number(ctx.getValue('记录ID') || 0);\nif (!currentId) {\n  currentId = (() => { const rows = ctx.querySheet('renewable_generation');\nconst maxId = rows.reduce((max, row) => Math.max(max, Number(row?.记录ID) || 0), 0);\nreturn maxId + 1; })();\n  await ctx.setValue('记录ID', currentId);\n}\n\nawait ctx.runConfiguredWorkflow();\nconst nextId = (() => { const rows = ctx.querySheet('renewable_generation');\nconst maxId = rows.reduce((max, row) => Math.max(max, Number(row?.记录ID) || 0), 0);\nreturn maxId + 1; })();\nawait ctx.setValue('记录ID', nextId);\nawait ctx.setValue('日期', \"2026-07-06\");\nawait ctx.setValue('发电类型', \"光伏\");\nawait ctx.setValue('场站', \"青海光伏一站\");\nawait ctx.setValue('发电量MWh', '');\nawait ctx.setValue('资源指标', '');\nawait ctx.setValue('限电损失MWh', '');\nawait ctx.setValue('设备可用率', '');\nawait ctx.setValue('状态提示', '表单已重置，可继续录入。');\nawait ctx.showMessage(`新能源发电量已新增：${currentId}`, 'success');"
+        },
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "example_renewable_generation_wf_create",
+            "parameterMap": {
+              "submit.formData": {
+                "记录ID": "$form.记录ID",
+                "日期": "$form.日期",
+                "场站": "$form.场站",
+                "发电类型": "$form.发电类型",
+                "发电量MWh": "$form.发电量MWh",
+                "资源指标": "$form.资源指标",
+                "限电损失MWh": "$form.限电损失MWh",
+                "设备可用率": "$form.设备可用率"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "example_renewable_generation_create_reset",
+      "type": "button",
+      "x": 264,
+      "y": 368,
+      "width": 180,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "example_renewable_generation_create_reset",
+        "label": "重置表单",
+        "variant": "outline",
+        "events": {
+          "onClick": "const nextId = (() => { const rows = ctx.querySheet('renewable_generation');\nconst maxId = rows.reduce((max, row) => Math.max(max, Number(row?.记录ID) || 0), 0);\nreturn maxId + 1; })();\nawait ctx.setValue('记录ID', nextId);\nawait ctx.setValue('日期', \"2026-07-06\");\nawait ctx.setValue('发电类型', \"光伏\");\nawait ctx.setValue('场站', \"青海光伏一站\");\nawait ctx.setValue('发电量MWh', '');\nawait ctx.setValue('资源指标', '');\nawait ctx.setValue('限电损失MWh', '');\nawait ctx.setValue('设备可用率', '');\nawait ctx.setValue('状态提示', '表单已重置，可继续录入。');"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "sources": [
+    {
+      "id": "service_tickets",
+      "fileName": "服务工单.json",
+      "fileType": "json",
+      "metaFile": "service_tickets.meta.json",
+      "behaviorsFile": "service_tickets.behaviors.json",
+      "uploadedAt": "2026-07-06T09:00:00.000Z"
+    },
+    {
+      "id": "issue_catalog",
+      "fileName": "问题类型字典.json",
+      "fileType": "json",
+      "metaFile": "issue_catalog.meta.json",
+      "behaviorsFile": "issue_catalog.behaviors.json",
+      "uploadedAt": "2026-07-06T09:00:00.000Z"
+    }
+  ]
+}

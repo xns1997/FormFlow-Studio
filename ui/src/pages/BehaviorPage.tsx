@@ -20,6 +20,7 @@ import {
   getScriptApis,
   getSharedContextFields,
 } from '../services/behaviorDocs';
+import { getControlSnippetExamples } from '../services/controlSnippets';
 import { buildDocsPath } from '../services/routes';
 
 export default function BehaviorPage() {
@@ -53,7 +54,7 @@ export default function BehaviorPage() {
       name: column.name,
       type: column.dataType,
     }))));
-    const fromComponents = project.designs.flatMap((design) => design.components.map((component) => {
+    const fromComponents = (project.designs || []).flatMap((design) => (design.components || []).map((component) => {
       const name = String(component.fieldBinding || component.props.name || '').trim();
       if (!name) return null;
       if (component.type === 'number' || component.type === 'rating') return { name, type: 'number' };
@@ -64,6 +65,7 @@ export default function BehaviorPage() {
     }).filter(Boolean) as EventFieldDescriptor[]);
     return [...new Map([...fromTables, ...fromComponents].map((field) => [field.name, field])).values()];
   }, [project]);
+  const designComponents = useMemo(() => (project?.designs || []).flatMap((design) => design.components || []) || [], [project]);
 
   const events = [
     // 基础事件
@@ -180,6 +182,7 @@ export default function BehaviorPage() {
             <div className="behavior-doc-link-group">
               <Link to={buildDocsPath(undefined, topicQuery)} className="behavior-doc-link">打开文档首页</Link>
               <Link to={buildDocsPath('context-reference', topicQuery)} className="behavior-doc-link">查看上下文总览</Link>
+              <Link to={buildDocsPath('control-handles-reference', topicQuery)} className="behavior-doc-link">查看控件句柄 reference</Link>
               <Link to={buildDocsPath('flow-parameter-reference', topicQuery)} className="behavior-doc-link">查看流程参数 reference</Link>
             </div>
           </div>
@@ -201,6 +204,12 @@ export default function BehaviorPage() {
       );
     }
 
+    const controlSnippets = getControlSnippetExamples({
+      components: designComponents,
+      currentField: fieldDescriptors[0]?.name,
+      eventName: editingScript.event,
+    });
+
     return (
       <div className="behavior-doc-panel">
         <div className="behavior-doc-hero">
@@ -216,6 +225,7 @@ export default function BehaviorPage() {
               查看完整文档
             </Link>
             <Link to={buildDocsPath('context-reference', topicQuery)} className="behavior-doc-link">上下文总览</Link>
+            <Link to={buildDocsPath('control-handles-reference', topicQuery)} className="behavior-doc-link">控件句柄 reference</Link>
             <Link to={buildDocsPath('flow-parameter-reference', topicQuery)} className="behavior-doc-link">流程参数 reference</Link>
           </div>
         </div>
@@ -283,6 +293,21 @@ export default function BehaviorPage() {
             ))}
           </div>
         </div>
+
+        <div className="behavior-doc-section">
+          <div className="behavior-doc-section-header">
+            <strong>ctx.controls 快速示例</strong>
+          </div>
+          <div className="behavior-doc-list">
+            {controlSnippets.map((snippet) => (
+              <div key={snippet.id} className="behavior-doc-list-item">
+                <strong>{snippet.title}</strong>
+                <span>{snippet.summary}</span>
+                <code>{snippet.code}</code>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   };
@@ -314,7 +339,7 @@ export default function BehaviorPage() {
                   <span className={`behavior-status-dot ${s.enabled ? 'enabled' : 'disabled'}`}>{s.enabled ? '●' : '○'}</span>
                   <div className="sidebar-item-info">
                     <span className="sidebar-item-name">{s.name}</span>
-                    <span className="sidebar-item-meta">{s.code.length} 字符</span>
+                    <span className="sidebar-item-meta">{(s.code || '').length} 字符</span>
                   </div>
                   <button className="sidebar-item-delete" onClick={(e) => { e.stopPropagation(); deleteScript(s.id); }}>×</button>
                 </div>

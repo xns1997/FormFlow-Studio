@@ -1,6 +1,6 @@
 // 后端 API 客户端
 
-export const API_BASE = (import.meta.env.VITE_API_BASE || '/api').replace(/\/$/, '');
+export const API_BASE = (((import.meta as any).env?.VITE_API_BASE) || '/api').replace(/\/$/, '');
 
 export async function request(path: string, options?: RequestInit) {
   const res = await fetch(`${API_BASE}${path}`, {

@@ -1,0 +1,12 @@
+{
+  "sources": [
+    {
+      "id": "employees",
+      "fileName": "员工信息.json",
+      "fileType": "json",
+      "metaFile": "employees.meta.json",
+      "behaviorsFile": "employees.behaviors.json",
+      "uploadedAt": "2026-07-06T18:00:00.000Z"
+    }
+  ]
+}

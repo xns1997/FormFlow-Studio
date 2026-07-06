@@ -1,4 +1,4 @@
-export * from './projectManager';
+export * from './projectVersionHistory';
 export * from './runtime';
 export * from './validator';
 export * from './dataBinder';

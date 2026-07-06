@@ -87,6 +87,13 @@ export default function DataPreviewPage() {
   );
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // CRUD 变更追踪
+  const [pendingChanges, setPendingChanges] = useState<Map<string, Record<string, { oldValue: unknown; newValue: unknown }>>>(new Map());
+  const [pendingAdds, setPendingAdds] = useState<Record<string, unknown>[]>([]);
+  const [pendingDeletes, setPendingDeletes] = useState<Set<number>>(new Set());
+  const [saving, setSaving] = useState(false);
+
+  const projectId = project?.config?.id;
   const selectedTable = project?.srcTable.find((t) => t.id === selectedTableId);
   const activeSheet = selectedTable?.sheets[activeSheetIdx];
   const currentConfig = useMemo(() => {
@@ -100,7 +107,7 @@ export default function DataPreviewPage() {
   const currentKeyFields = currentConfig?.keyFields || [];
   const keyFieldSet = useMemo(() => new Set(currentKeyFields), [currentKeyFields]);
 
-  // AG Grid 列定义
+  // AG Grid 列定义（支持编辑）
   const colDefs = useMemo(() => {
     if (!activeSheet) return [];
     return activeSheet.headers.map((h) => {
@@ -117,6 +124,7 @@ export default function DataPreviewPage() {
         hide: currentConfig?.hiddenColumns?.includes(h) || false,
         headerClass: isKeyField ? "ag-col-key" : undefined,
         cellClass: isKeyField ? "ag-cell-key" : undefined,
+        editable: true,
       };
     });
   }, [
@@ -193,6 +201,107 @@ export default function DataPreviewPage() {
     [activeSheet, updateConfig],
   );
 
+  // ── CRUD 操作 ──────────────────────────────────
+
+  // 单元格编辑 → 记录变更
+  const onCellValueChanged = useCallback((event: any) => {
+    if (!selectedTableId || !activeSheet) return;
+    const rowIndex = event.rowIndex;
+    const field = event.colDef.field;
+    const oldValue = event.oldValue;
+    const newValue = event.newValue;
+    if (oldValue === newValue) return;
+
+    const rowId = `${selectedTableId}:${activeSheet.name}:${rowIndex}`;
+    setPendingChanges((prev) => {
+      const next = new Map(prev);
+      const rowChanges = next.get(rowId) || {};
+      rowChanges[field] = { oldValue, newValue };
+      next.set(rowId, rowChanges);
+      return next;
+    });
+  }, [selectedTableId, activeSheet]);
+
+  // 新增行
+  const handleAddRow = useCallback(() => {
+    if (!activeSheet) return;
+    const newRow: Record<string, unknown> = { __rowId: `new_${Date.now()}` };
+    activeSheet.headers.forEach((h) => { newRow[h] = ''; });
+    setPendingAdds((prev) => [...prev, newRow]);
+    setRows((prev) => [...prev, newRow]);
+    setTotalRows((prev) => prev + 1);
+  }, [activeSheet]);
+
+  // 删除行
+  const handleDeleteRow = useCallback(() => {
+    if (selectedRowIdx === null || selectedRowIdx >= rows.length) return;
+    const row = rows[selectedRowIdx];
+    if (!row) return;
+
+    // 如果是新增的行，直接移除
+    if (String(row.__rowId || '').startsWith('new_')) {
+      setPendingAdds((prev) => prev.filter((r) => r.__rowId !== row.__rowId));
+      setRows((prev) => prev.filter((_, i) => i !== selectedRowIdx));
+      setTotalRows((prev) => prev - 1);
+      setSelectedRowIdx(null);
+      return;
+    }
+
+    // 否则标记删除
+    setPendingDeletes((prev) => new Set(prev).add(selectedRowIdx));
+    setSelectedRowIdx(null);
+  }, [selectedRowIdx, rows]);
+
+  // 保存变更到后端
+  const handleSave = useCallback(async () => {
+    if (!projectId || !selectedTableId || !activeSheet) return;
+    setSaving(true);
+    const body = (extra: Record<string, unknown>) =>
+      JSON.stringify({ projectId, tableId: selectedTableId, sheetName: activeSheet.name, ...extra });
+
+    try {
+      // 1. 新增行
+      for (const addRow of pendingAdds) {
+        const row = { ...addRow }; delete row.__rowId;
+        await fetch('/api/projects/data/add', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body({ row }) });
+      }
+
+      // 2. 更新行
+      for (const [rowId, changes] of pendingChanges.entries()) {
+        const rowIndex = parseInt(rowId.split(':')[2]);
+        if (isNaN(rowIndex)) continue;
+        const patch: Record<string, unknown> = {};
+        for (const [field, change] of Object.entries(changes)) { patch[field] = change.newValue; }
+        await fetch('/api/projects/data/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body({ rowIndex, patch }) });
+      }
+
+      // 3. 删除行（从大到小删除，避免索引偏移）
+      const sortedDeletes = Array.from(pendingDeletes).sort((a, b) => b - a);
+      for (const rowIndex of sortedDeletes) {
+        await fetch('/api/projects/data/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body({ rowIndex }) });
+      }
+
+      // 清空待处理状态
+      setPendingChanges(new Map());
+      setPendingAdds([]);
+      setPendingDeletes(new Set());
+
+      // 重新加载数据
+      const res = await fetch('/api/projects/data/query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body({ page: 1, pageSize: 5000 }) });
+      if (res.ok) {
+        const data = await res.json();
+        setRows(withRowIds(data.rows || []));
+        setTotalRows(data.total || 0);
+      }
+    } catch (e) {
+      console.error('保存失败', e);
+    }
+    setSaving(false);
+  }, [projectId, selectedTableId, activeSheet, pendingChanges, pendingAdds, pendingDeletes]);
+
+  // 变更数量
+  const changeCount = pendingChanges.size + pendingAdds.length + pendingDeletes.size;
+
   useEffect(() => {
     if (!selectedTableId && project?.srcTable.length) {
       setSelectedTableId(project.srcTable[0].id);
@@ -200,7 +309,7 @@ export default function DataPreviewPage() {
   }, [project?.srcTable, selectedTableId]);
 
   useEffect(() => {
-    if (!selectedTable || !activeSheet || !selectedTableId) {
+    if (!projectId || !selectedTable || !activeSheet || !selectedTableId) {
       setRows([]);
       setTotalRows(0);
       return;
@@ -210,11 +319,11 @@ export default function DataPreviewPage() {
     const loadRows = async () => {
       setLoading(true);
       const fallbackRows = activeSheet.preview || [];
-      const serverPageSize = Math.min(activeSheet.rowCount || fallbackRows.length, 5000);
       try {
-        const res = await fetch(
-          `http://localhost:3001/api/data/${encodeURIComponent(selectedTable.id)}/${encodeURIComponent(activeSheet.name)}/rows?page=1&pageSize=${serverPageSize}`,
-        );
+        const res = await fetch('/api/projects/data/query', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ projectId, tableId: selectedTable.id, sheetName: activeSheet.name, page: 1, pageSize: 5000 }),
+        });
         if (!res.ok) throw new Error(`rows api failed: ${res.status}`);
         const data = await res.json();
         if (cancelled) return;
@@ -222,7 +331,6 @@ export default function DataPreviewPage() {
         setTotalRows(data.total ?? data.rows?.length ?? fallbackRows.length);
       } catch {
         if (cancelled) return;
-        // Limit fallback to prevent OOM on large files
         const limited = fallbackRows.length > 5000 ? fallbackRows.slice(0, 5000) : fallbackRows;
         setRows(withRowIds(limited));
         setTotalRows(activeSheet.rowCount || fallbackRows.length);
@@ -238,7 +346,7 @@ export default function DataPreviewPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedTableId, activeSheetIdx, activeSheet?.name]);
+  }, [projectId, selectedTableId, activeSheetIdx, activeSheet?.name]);
 
   useEffect(() => {
     if (!selectedTable || !activeSheet || activeTab !== "describe") return;
@@ -384,7 +492,7 @@ export default function DataPreviewPage() {
   }, [selectedTable, activeSheet]);
 
   return (
-    <div className="page-layout">
+    <div className="page-layout data-preview-layout">
       {/* 左侧：数据表列表 */}
       <div className="page-sidebar">
         <div className="page-section-header">
@@ -463,7 +571,7 @@ export default function DataPreviewPage() {
       </div>
 
       {/* 中间：数据预览 */}
-      <div className="page-main">
+      <div className="page-main data-preview-main">
         <div className="page-section-header">
           <div style={{ display: "flex", gap: 4 }}>
             <button
@@ -496,6 +604,53 @@ export default function DataPreviewPage() {
               <span>
                 {totalRows} 行 × {activeSheetData?.colCount || 0} 列
               </span>
+              <div style={{ display: "flex", gap: 4 }}>
+                <button
+                  onClick={handleAddRow}
+                  style={{
+                    padding: "3px 8px",
+                    fontSize: 11,
+                    border: "1px solid var(--line)",
+                    borderRadius: 4,
+                    background: "var(--panel)",
+                    cursor: "pointer",
+                  }}
+                >
+                  + 新增行
+                </button>
+                <button
+                  onClick={handleDeleteRow}
+                  disabled={selectedRowIdx === null}
+                  style={{
+                    padding: "3px 8px",
+                    fontSize: 11,
+                    border: "1px solid var(--line)",
+                    borderRadius: 4,
+                    background: "var(--panel)",
+                    cursor: selectedRowIdx !== null ? "pointer" : "not-allowed",
+                    opacity: selectedRowIdx !== null ? 1 : 0.5,
+                  }}
+                >
+                  删除行
+                </button>
+                {changeCount > 0 && (
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    style={{
+                      padding: "3px 10px",
+                      fontSize: 11,
+                      border: "none",
+                      borderRadius: 4,
+                      background: saving ? "var(--line)" : "var(--accent)",
+                      color: "#fff",
+                      cursor: saving ? "wait" : "pointer",
+                    }}
+                  >
+                    {saving ? "保存中..." : `保存 (${changeCount})`}
+                  </button>
+                )}
+              </div>
               {selectedRowIdx !== null && selectedRowIdx < rows.length && (
                 <button
                   onClick={() => {
@@ -521,7 +676,7 @@ export default function DataPreviewPage() {
             </div>
           )}
         </div>
-        <div className="page-section-body" style={{ padding: 0 }}>
+        <div className="page-section-body data-preview-main-body" style={{ padding: 0 }}>
           {!activeSheet ? (
             <div
               style={{
@@ -538,16 +693,9 @@ export default function DataPreviewPage() {
               </p>
             </div>
           ) : activeTab === "table" ? (
-            <>
+            <div className="data-preview-table-pane">
               {selectedTable && selectedTable.sheets.length > 1 && (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 4,
-                    padding: "6px 12px",
-                    borderBottom: "1px solid var(--line)",
-                  }}
-                >
+                <div className="data-preview-sheet-tabs">
                   {selectedTable.sheets.map((s, i) => (
                     <button
                       key={s.name}
@@ -566,13 +714,7 @@ export default function DataPreviewPage() {
                 </div>
               )}
               {loading ? (
-                <div
-                  style={{
-                    textAlign: "center",
-                    padding: 40,
-                    color: "var(--muted)",
-                  }}
-                >
+                <div className="data-preview-loading">
                   加载中…
                 </div>
               ) : (
@@ -626,11 +768,12 @@ export default function DataPreviewPage() {
                         setSelectedRowIdx(e.rowIndex);
                       }
                     }}
+                    onCellValueChanged={onCellValueChanged}
                     getRowId={(p) => String(p.data.__rowId)}
                   />
                 </div>
               )}
-            </>
+            </div>
           ) : activeTab === "describe" ? (
             <div
               className="describe-report"
@@ -1206,7 +1349,7 @@ export default function DataPreviewPage() {
       </div>
 
       {/* 右侧：字段信息 */}
-      <div className="page-inspector">
+      <div className="page-inspector data-preview-inspector">
         <div className="page-section-header">
           <span>{selectedCol ? selectedCol.name : "字段信息"}</span>
           {selectedCol && (

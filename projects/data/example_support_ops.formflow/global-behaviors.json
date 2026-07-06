@@ -1,0 +1,14 @@
+{
+  "behaviors": [
+    {
+      "id": "bh_global_submit_success",
+      "name": "统一提交成功提示",
+      "event": "onSubmitSuccess",
+      "code": "ctx.showMessage('项目级提示：工单数据已完成同步。', 'success');",
+      "priority": 10,
+      "enabled": true,
+      "createdAt": "2026-07-06T09:00:00.000Z",
+      "updatedAt": "2026-07-06T09:00:00.000Z"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "name": "formflow-studio",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.4.0",
   "type": "module",
   "scripts": {
     "dev": "vite ui",
@@ -12,7 +12,9 @@
     "typecheck": "tsc --noEmit -p ui/tsconfig.json",
     "build": "vite build ui",
     "preview": "vite preview ui",
-    "test:e2e": "playwright test --config ui/playwright.config.ts"
+    "test:e2e": "playwright test --config ui/playwright.config.ts",
+    "generate:example": "npx tsx scripts/generate_example_project.ts",
+    "generate:support-example": "npx tsx scripts/generate_support_ops_example.ts"
   },
   "dependencies": {
     "@antv/x6": "^3.1.7",
@@ -26,8 +28,10 @@
     "ag-grid-community": "^35.3.1",
     "ag-grid-enterprise": "^35.3.1",
     "ag-grid-react": "^35.3.1",
+    "antd": "^6.5.0",
     "chart.js": "^4.5.1",
     "cors": "^2.8.6",
+    "dayjs": "^1.11.13",
     "express": "^5.2.1",
     "jszip": "^3.10.1",
     "monaco-editor": "^0.55.1",

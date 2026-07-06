@@ -1,0 +1,9 @@
+{
+  "mode": "use",
+  "allowDesigner": false,
+  "allowBehaviorEditor": false,
+  "allowWorkflowEditor": false,
+  "defaultFormId": "example_employee_mgmt_form_create",
+  "defaultSheet": "员工信息",
+  "lastVerifiedAt": "2026-07-06T18:00:00.000Z"
+}

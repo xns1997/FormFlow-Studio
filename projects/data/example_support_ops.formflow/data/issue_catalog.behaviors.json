@@ -1,0 +1,21 @@
+{
+  "sheets": [
+    {
+      "tableId": "issue_catalog",
+      "sheetName": "问题字典",
+      "updatedAt": "2026-07-06T09:00:00.000Z",
+      "behaviors": [
+        {
+          "id": "bh_sheet_catalog_lookup",
+          "name": "字典表加载提示",
+          "event": "onRowLoad",
+          "code": "ctx.log?.('问题字典已装载');",
+          "priority": 10,
+          "enabled": true,
+          "createdAt": "2026-07-06T09:00:00.000Z",
+          "updatedAt": "2026-07-06T09:00:00.000Z"
+        }
+      ]
+    }
+  ]
+}

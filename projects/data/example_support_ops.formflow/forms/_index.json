@@ -1,0 +1,17 @@
+{
+  "forms": [
+    {
+      "id": "form_ticket_create",
+      "name": "新建工单",
+      "fileName": "form_ticket_create.json",
+      "behaviorsFileName": "form_ticket_create.behaviors.json"
+    },
+    {
+      "id": "form_ticket_dispatch",
+      "name": "查询与处理",
+      "fileName": "form_ticket_dispatch.json",
+      "behaviorsFileName": "form_ticket_dispatch.behaviors.json"
+    }
+  ],
+  "defaultFormId": "form_ticket_create"
+}

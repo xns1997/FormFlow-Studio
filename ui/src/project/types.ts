@@ -2,30 +2,58 @@
 
 // ── 项目根目录结构 ──────────────────────────────────────
 //
-// my-project/
-// ├── project.json          # 项目配置文件
-// ├── srcTable/             # 上传的数据表缓存
-// │   ├── employees.json    # 员工表信息
-// │   └── salary.json       # 工资表信息
-// ├── workflows/            # 流程文件（编排画布）
-// │   ├── flow-1.json       # 单个流程配置
-// │   └── flow-2.json
-// ├── behaviors/            # 行为文件
-// │   ├── init.js           # 行为脚本
-// │   └── validate.js
-// ├── output/               # 输出目录
-// │   ├── export.json
-// │   └── export.xlsx
-// └── settings.json         # 项目设置
+// my-project.formflow/
+// ├── project.json              # 项目配置
+// ├── release.json              # 运行/使用模式配置
+// ├── forms/                    # 表单实例（含行为）
+// │   ├── _index.json
+// │   ├── form-001.json         # 表单设计
+// │   └── form-001.behaviors.json  # 该表单的行为
+// ├── data/                     # 数据表
+// │   ├── _index.json
+// │   └── xxx.meta.json
+// │   └── xxx.behaviors.json    # 工作表行为
+// ├── global-behaviors.json     # 全局行为（所有表单共享）
+// ├── workflows/                # 流程（全局共享）
+// │   └── workflows.json
+// └── outputs/                  # 输出
+//     └── outputs.json
+
+// 表单实例（表单设计 + 行为绑定）
+export interface FormEntry {
+  id: string;
+  name: string;
+  design: DesignFile;
+  behaviors: BehaviorFile[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function createFormEntry(name: string): FormEntry {
+  const now = new Date().toISOString();
+  return {
+    id: `form_${Date.now()}`,
+    name,
+    design: createDesignFile(name),
+    behaviors: [],
+    createdAt: now,
+    updatedAt: now,
+  };
+}
 
 export interface ProjectStructure {
   config: ProjectConfig;
   settings?: ProjectSettings;
+  release?: ProjectRelease;
   srcTable: SrcTableEntry[];
   workflows: WorkflowFile[];
-  behaviors: BehaviorFile[];
+  globalBehaviors: BehaviorFile[];    // 全局行为（所有表单共享）
+  sheetBehaviors?: SheetBehaviorEntry[]; // 工作表行为（按表/Sheet 分层）
+  forms: FormEntry[];                 // 表单实例（含行为）
   outputs: OutputFile[];
-  designs: DesignFile[];
+  // 兼容旧格式（读取时自动迁移）
+  designs?: DesignFile[];
+  behaviors?: BehaviorFile[];
 }
 
 export interface ProjectConfig {
@@ -60,6 +88,23 @@ export interface ProjectPublishSettings {
   outputFileName: string;
 }
 
+export interface ProjectRelease {
+  mode: 'design' | 'test' | 'use';
+  defaultFormId?: string;
+  defaultSheet?: string;
+  allowDesigner: boolean;
+  allowBehaviorEditor: boolean;
+  allowWorkflowEditor: boolean;
+  lastVerifiedAt?: string;
+}
+
+export interface SheetBehaviorEntry {
+  tableId: string;
+  sheetName: string;
+  behaviors: BehaviorFile[];
+  updatedAt: string;
+}
+
 export function createDefaultProjectSettings(): ProjectSettings {
   return {
     behavior: {
@@ -76,6 +121,25 @@ export function createDefaultProjectSettings(): ProjectSettings {
       outputFileName: 'formflow-export',
     },
     updatedAt: new Date().toISOString(),
+  };
+}
+
+export function createDefaultProjectRelease(): ProjectRelease {
+  return {
+    mode: 'design',
+    allowDesigner: true,
+    allowBehaviorEditor: true,
+    allowWorkflowEditor: true,
+  };
+}
+
+export function normalizeProjectRelease(release: ProjectRelease | undefined, forms: FormEntry[] = [], tables: SrcTableEntry[] = []): ProjectRelease {
+  const defaults = createDefaultProjectRelease();
+  return {
+    ...defaults,
+    ...(release || {}),
+    defaultFormId: release?.defaultFormId || forms[0]?.id,
+    defaultSheet: release?.defaultSheet || tables[0]?.sheets[0]?.name,
   };
 }
 
@@ -580,3 +644,94 @@ export function createDesignFile(name: string, options: Partial<Pick<DesignFile,
     updatedAt: new Date().toISOString(),
   };
 }
+
+// ── 项目包结构 ──────────────────────────────────────
+//
+// my-project.formflow/
+// ├── project.json                  # 项目配置（轻量元数据）
+// ├── forms/                        # 表单目录
+// │   ├── _index.json               # 表单全局信息
+// │   ├── form-001.json             # 单个表单定义
+// │   └── form-002.json
+// ├── data/                         # 数据目录
+// │   ├── _index.json               # 数据全局信息
+// │   ├── employees.xlsx            # 原始数据文件
+// │   ├── employees.meta.json       # 数据文件配置
+// │   └── salary.csv
+// │   └── salary.meta.json
+// ├── behaviors/                    # 行为定义目录
+// │   └── behaviors.json            # 所有行为规则
+// └── workflows/                    # 流程目录
+//     └── workflows.json            # 所有流程定义
+
+export interface ProjectPackage {
+  kind: 'formflow-project';
+  formatVersion: 2;
+  config: ProjectConfig;
+  settings?: ProjectSettings;
+  release?: ProjectRelease;
+}
+
+export interface FormIndex {
+  forms: Array<{ id: string; name: string; formMode?: string; fileName: string; behaviorsFileName?: string }>;
+  defaultFormId?: string;
+}
+
+export interface DataIndex {
+  sources: Array<{
+    id: string;
+    fileName: string;
+    fileType: string;
+    metaFile: string;
+    behaviorsFile?: string;
+    uploadedAt: string;
+  }>;
+}
+
+export interface DataMetaFile {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+  uploadedAt: string;
+  dataHash: string;
+  sheets: SrcSheetInfo[];
+  columnRecords?: ColumnRecord[];
+  rowRecords?: RowRecord[];
+}
+
+export interface BehaviorsFile {
+  behaviors: BehaviorFile[];
+  exportedAt: string;
+}
+
+export interface WorkflowsFile {
+  workflows: WorkflowFile[];
+  exportedAt: string;
+}
+
+export interface OutputsFile {
+  outputs: OutputFile[];
+  exportedAt: string;
+}
+
+export interface SheetBehaviorsFile {
+  tableId: string;
+  sheetName: string;
+  behaviors: BehaviorFile[];
+  exportedAt: string;
+}
+
+export const PROJECT_PACKAGE_EXTENSION = '.formflow';
+export const FORMS_DIR = 'forms';
+export const DATA_DIR = 'data';
+export const BEHAVIORS_DIR = 'behaviors';
+export const WORKFLOWS_DIR = 'workflows';
+export const OUTPUTS_DIR = 'outputs';
+export const FORM_INDEX_FILE = '_index.json';
+export const DATA_INDEX_FILE = '_index.json';
+export const BEHAVIORS_FILE = 'behaviors.json';
+export const WORKFLOWS_FILE = 'workflows.json';
+export const OUTPUTS_FILE = 'outputs.json';
+export const PROJECT_CONFIG_FILE = 'project.json';
+export const PROJECT_RELEASE_FILE = 'release.json';

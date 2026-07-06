@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { DesignFile } from '../project/types';
 import { createDesignFile } from '../project/types';
 import { DESIGN_TEMPLATES, createDesignFromTemplate } from './designTemplates';
+import { AntdTextInput, FormAntdProvider } from '../components/AntdFormControls';
 
 interface Props {
   designs: DesignFile[];
@@ -48,6 +49,7 @@ export function TabBar({ designs, activeId, onSelect, onClose, onCreate, onRenam
   };
 
   return (
+    <FormAntdProvider>
     <div
       ref={barRef}
       className="designer-tabbar"
@@ -60,14 +62,14 @@ export function TabBar({ designs, activeId, onSelect, onClose, onCreate, onRenam
             onClick={() => onSelect(d.id)}
           >
             {editingId === d.id ? (
-              <input
-                className="tab-rename-input"
+              <AntdTextInput
                 value={editName}
-                onChange={(e) => setEditName(e.target.value)}
+                onChange={(next) => setEditName(next)}
                 onBlur={finishRename}
                 onKeyDown={(e) => e.key === 'Enter' && finishRename()}
                 autoFocus
                 onClick={(e) => e.stopPropagation()}
+                style={{ width: 140 }}
               />
             ) : (
               <span onDoubleClick={() => startRename(d.id, d.name)}>{d.name}</span>
@@ -100,5 +102,6 @@ export function TabBar({ designs, activeId, onSelect, onClose, onCreate, onRenam
         )}
       </div>
     </div>
+    </FormAntdProvider>
   );
 }

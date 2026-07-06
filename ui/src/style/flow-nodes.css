@@ -275,3 +275,92 @@
 }
 
 .empty-state p { margin-top: 4px; font-size: 11px; }
+
+/* ── Port Table Editor ────────────────────────────────── */
+
+.port-table-editor {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.port-table-editor table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.port-table-editor th,
+.port-table-editor td {
+  padding: 3px 4px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.port-table-editor th {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.port-table-editor td input,
+.port-table-editor td select {
+  width: 100%;
+  padding: 3px 6px;
+  font-size: 11px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--panel);
+}
+
+.port-table-editor td input:focus,
+.port-table-editor td select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.port-table-remove {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.port-table-remove:hover {
+  background: var(--danger-soft);
+}
+
+.port-table-add {
+  width: 100%;
+  margin-top: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  border: 1px dashed var(--line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.port-table-add:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+/* ── Code Editor Field ────────────────────────────────── */
+
+.schema-field.code-editor {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.schema-field.code-editor > span {
+  margin-bottom: 4px;
+}

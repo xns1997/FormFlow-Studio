@@ -1,3 +1,4 @@
+import type { ComponentNode } from '../models';
 import type { SrcTableEntry, WorkflowFile } from '../project/types';
 import type { FormEventExecutionStage, FormEventExecutionTrace, FormLinkageRule } from '../project/types';
 import {
@@ -14,12 +15,23 @@ export interface FormEventRuntimeContext extends FormControlEventContext {
   event: string;
   formData: Record<string, unknown>;
   detail?: unknown;
+  controls: Record<string, {
+    id: string;
+    name: string;
+    type: string;
+    component: ComponentNode;
+    value: unknown;
+    visible: boolean;
+    disabled: boolean;
+    required: boolean;
+  }>;
   getValue: (field: string) => unknown;
   setValue: (field: string, value: unknown) => void | Promise<void>;
   setVisible: (componentId: string, visible: boolean) => void | Promise<void>;
   setDisabled: (componentId: string, disabled: boolean) => void | Promise<void>;
   setRequired: (field: string, required: boolean) => void | Promise<void>;
   showMessage: (message: string, level?: 'info' | 'success' | 'warning' | 'error') => void | Promise<void>;
+  querySheet: (sheetId: string, filter?: Record<string, unknown>) => Record<string, unknown>[];
   runWorkflow: (
     workflow?: string | WorkflowFile,
     parameters?: Record<string, unknown>,
@@ -64,6 +76,7 @@ export interface ExecuteFormEventOptions {
   linkageRules?: FormLinkageRule[];
   callbacks?: Record<string, FormEventCallback>;
   autoRunConfiguredFlow?: boolean;
+  components?: ComponentNode[];
 }
 
 export interface FormEventExecutionResult {
@@ -77,6 +90,83 @@ export interface FormEventExecutionResult {
 }
 
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor as new (...args: string[]) => (...args: unknown[]) => Promise<unknown>;
+
+function querySheetRows(
+  tables: SrcTableEntry[],
+  sheetId: string,
+  filter?: Record<string, unknown>,
+): Record<string, unknown>[] {
+  for (const table of tables) {
+    for (const sheet of table.sheets) {
+      const fullId = `${table.id}:${sheet.name}`;
+      if (fullId === sheetId || sheet.name === sheetId || table.id === sheetId) {
+        const rows = sheet.preview as Record<string, unknown>[];
+        if (!filter || typeof filter !== 'object') return rows;
+        return rows.filter((row) => Object.entries(filter).every(([key, value]) => row[key] === value));
+      }
+    }
+  }
+  return [];
+}
+
+function createControlAccessors(
+  components: ComponentNode[],
+  runtimeValues: Record<string, unknown>,
+  helpers: {
+    setValue: (field: string, value: unknown) => void | Promise<void>;
+    setVisible?: (componentId: string, visible: boolean) => void | Promise<void>;
+    setDisabled?: (componentId: string, disabled: boolean) => void | Promise<void>;
+    setRequired?: (field: string, required: boolean) => void | Promise<void>;
+  },
+) {
+  const controls: FormEventRuntimeContext['controls'] = {};
+  for (const component of components) {
+    const fieldName = String(component.name || component.props.name || component.id);
+    let visibleState = (component as ComponentNode & { visible?: boolean }).visible ?? true;
+    let disabledState = !!component.props.disabled;
+    let requiredState = !!component.props.required;
+    const control: Record<string, unknown> = {
+      id: component.id,
+      name: fieldName,
+      type: component.type,
+      component,
+    };
+    Object.defineProperties(control, {
+      value: {
+        enumerable: true,
+        get: () => runtimeValues[fieldName],
+        set: (next) => { void helpers.setValue(fieldName, next); },
+      },
+      visible: {
+        enumerable: true,
+        get: () => visibleState,
+        set: (next) => {
+          visibleState = !!next;
+          void helpers.setVisible?.(component.id, visibleState);
+        },
+      },
+      disabled: {
+        enumerable: true,
+        get: () => disabledState,
+        set: (next) => {
+          disabledState = !!next;
+          void helpers.setDisabled?.(component.id, disabledState);
+        },
+      },
+      required: {
+        enumerable: true,
+        get: () => requiredState,
+        set: (next) => {
+          requiredState = !!next;
+          void helpers.setRequired?.(fieldName, requiredState);
+        },
+      },
+    });
+    controls[fieldName] = control as FormEventRuntimeContext['controls'][string];
+    controls[component.id] = controls[fieldName];
+  }
+  return controls;
+}
 
 function isFunctionExpression(code: string): boolean {
   const source = code.trim();
@@ -114,6 +204,7 @@ export async function executeFormControlEvent(
   const trigger = options.trigger ?? (eventContext.component.props?.flowTriggers as Record<string, FormFlowTriggerConfig> | undefined)?.[eventContext.eventName];
   const linkageRules = options.linkageRules ?? (eventContext.component.props?.linkageRules as Record<string, FormLinkageRule[]> | undefined)?.[eventContext.eventName] ?? [];
   const callbacks = options.callbacks || {};
+  const components = options.components || [eventContext.component];
   const runtimeValues = { ...eventContext.values };
   const originalValues = eventContext.originalValues || {};
   const previousValue = eventContext.previousValue ?? originalValues[eventContext.field];
@@ -163,6 +254,16 @@ export async function executeFormControlEvent(
     detail,
     values: runtimeValues,
     formData: runtimeValues,
+    controls: createControlAccessors(components, runtimeValues, {
+      setValue: async (field, value) => {
+        runtimeValues[field] = value;
+        updatedFields.add(field);
+        await options.setValue(field, value);
+      },
+      setVisible: options.setVisible,
+      setDisabled: options.setDisabled,
+      setRequired: options.setRequired,
+    }),
     originalValues,
     previousValue,
     timestamp: eventContext.timestamp ?? Date.now(),
@@ -192,6 +293,7 @@ export async function executeFormControlEvent(
       messages.push({ message, level });
       await options.showMessage?.(message, level);
     },
+    querySheet: (sheetId, filter) => querySheetRows(options.tables || [], sheetId, filter),
     runWorkflow,
     runConfiguredWorkflow: (parameters) => runWorkflow(undefined, parameters),
     call: async (name, ...args) => {

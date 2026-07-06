@@ -117,8 +117,28 @@ registerControl({
   eventSchema: [{ key: 'onRowClick', label: '行点击', description: '点击表格行时触发' }],
   defaultSize: { w: 360, h: 180 },
   render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
-    const cols = component.props.columns || ['列A', '列B'];
-    const rows = component.props.rows || 3;
+    const configuredColumns = Array.isArray(component.props.columns) ? component.props.columns.map(String) : ['列A', '列B'];
+    const rawRows = Array.isArray(runtime?.value)
+      ? runtime.value
+      : Array.isArray(component.props.data)
+        ? component.props.data
+        : [];
+    const normalizedRows = rawRows
+      .map((row) => {
+        if (row && typeof row === 'object' && !Array.isArray(row)) return row as Record<string, unknown>;
+        if (Array.isArray(row)) {
+          return Object.fromEntries(row.map((cell, index) => [configuredColumns[index] || `列${index + 1}`, cell]));
+        }
+        return { value: row };
+      });
+    const derivedColumns = normalizedRows.length > 0
+      ? [...new Set(normalizedRows.flatMap((row) => Object.keys(row)))]
+      : [];
+    const cols = configuredColumns.length > 0 ? configuredColumns : derivedColumns;
+    const placeholderRows = Math.max(1, Number(component.props.rows) || 3);
+    const displayRows = normalizedRows.length > 0
+      ? normalizedRows
+      : Array.from({ length: placeholderRows }, () => Object.fromEntries(cols.map((column) => [column, '—'])));
     return (
       <div style={ios.glass}>
         <table style={{ width: '100%', minWidth: 0, borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed' }}>
@@ -130,10 +150,14 @@ registerControl({
             </tr>
           </thead>
           <tbody>
-            {Array.from({ length: rows }, (_, r) => (
-              <tr key={r} onClick={() => mode === 'preview' && runtime?.emit('onRowClick', r, { rowIndex: r })} style={{ cursor: mode === 'preview' ? 'pointer' : 'default' }}>
-                {cols.map((_: string, c: number) => (
-                  <td key={c} style={{ padding: '9px 10px', borderBottom: component.props.showGrid !== false && r < rows - 1 ? '0.5px solid rgba(60,60,67,0.06)' : 'none', color: component.props.cellColor || '#3a3a3c', background: component.props.striped && r % 2 === 1 ? 'rgba(118,118,128,0.03)' : 'transparent', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>—</td>
+            {displayRows.map((row, r) => (
+              <tr
+                key={r}
+                onClick={() => mode === 'preview' && runtime?.emit('onRowClick', r, { rowIndex: r, row })}
+                style={{ cursor: mode === 'preview' ? 'pointer' : 'default' }}
+              >
+                {cols.map((column: string, c: number) => (
+                  <td key={c} style={{ padding: '9px 10px', borderBottom: component.props.showGrid !== false && r < displayRows.length - 1 ? '0.5px solid rgba(60,60,67,0.06)' : 'none', color: component.props.cellColor || '#3a3a3c', background: component.props.striped && r % 2 === 1 ? 'rgba(118,118,128,0.03)' : 'transparent', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{String(row[column] ?? '—')}</td>
                 ))}
               </tr>
             ))}

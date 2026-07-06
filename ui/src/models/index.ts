@@ -86,8 +86,9 @@ export interface LayoutConfig {
 
 export type ComponentType =
   | 'input' | 'textarea' | 'select' | 'radio' | 'checkbox'
-  | 'datePicker' | 'numberInput' | 'switch' | 'rating'
-  | 'upload' | 'imageUpload' | 'table' | 'container'
+  | 'datePicker' | 'timePicker' | 'dateRange' | 'numberInput' | 'switch' | 'rating'
+  | 'segmented' | 'tagInput'
+  | 'upload' | 'imageUpload' | 'image' | 'table' | 'container'
   | 'tabs' | 'steps' | 'button' | 'text' | 'custom';
 
 export interface ComponentNode {

@@ -1,6 +1,7 @@
 import { registerExecutor, type NodeExecContext, type NodeExecResult } from '../executor-registry';
 import type { FlowSideEffect } from '../../src/services/flowSideEffects';
 import { normalizeFlowSideEffect } from '../../src/services/flowSideEffects';
+import { parseCustomJsPortDefinitions } from '../../src/services/customJsNode';
 import { resolveSingleKeyField } from '../../src/services/tableKeys';
 
 registerExecutor('behavior-on-form-load', (ctx) => {
@@ -292,15 +293,25 @@ registerExecutor('behavior-api-request', (ctx) => {
 });
 
 registerExecutor('behavior-js-script', (ctx) => {
-  const code = ctx.assertType('string', ctx.properties.code || ctx.properties.scriptCode || '', 'code') as string;
-  let result: unknown;
+  const code = ctx.assertType('string', ctx.properties.script || ctx.properties.code || ctx.properties.scriptCode || '', 'script') as string;
+  const inputDefs = parseCustomJsPortDefinitions(ctx.properties.inputPorts);
+  const outputDefs = parseCustomJsPortDefinitions(ctx.properties.outputPorts);
+  const scopedInputs = inputDefs.length > 0
+    ? Object.fromEntries(inputDefs.map((entry) => [entry.name, ctx.inputs[entry.name]]))
+    : ctx.inputs;
   try {
-    const fn = new Function('ctx', code);
-    result = fn({ inputs: ctx.inputs, properties: ctx.properties });
+    const fn = new Function('inputs', 'properties', 'ctx', code);
+    const result = fn(scopedInputs, ctx.properties, { inputs: scopedInputs, properties: ctx.properties });
+    if (result && typeof result === 'object' && !Array.isArray(result)) {
+      return result as NodeExecResult;
+    }
+    if (outputDefs.length > 0) {
+      return { [outputDefs[0].name]: result };
+    }
+    return { result };
   } catch (e) {
     return { trigger: ctx.inputs.trigger, error: e instanceof Error ? e.message : String(e) };
   }
-  return { trigger: ctx.inputs.trigger, result };
 });
 
 registerExecutor('behavior-loop', (ctx) => {

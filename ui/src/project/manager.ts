@@ -3,9 +3,14 @@
 import type {
   ProjectStructure, SrcTableEntry, TableConfig,
   WorkflowFile, BehaviorFile, OutputFile, DesignFile,
-  ProjectSettings,
+  ProjectSettings, FormEntry, SheetBehaviorEntry, ProjectRelease,
 } from './types';
-import { createDefaultProjectSettings, normalizeProjectSettings } from './types';
+import {
+  createDefaultProjectSettings,
+  createDefaultProjectRelease,
+  normalizeProjectRelease,
+  normalizeProjectSettings,
+} from './types';
 import { projectApi } from '../services/api';
 
 // ── 项目 CRUD ──────────────────────────────────────
@@ -45,25 +50,49 @@ export function createNewProject(name: string = '我的项目'): ProjectStructur
       id: `proj_${Date.now()}`,
       name,
       description: '',
-      version: '1.0.0',
+      version: '2.0.0',
       createdAt: now,
       updatedAt: now,
       author: '',
       tags: [],
     },
     settings: { ...createDefaultProjectSettings(), updatedAt: now },
+    release: {
+      ...createDefaultProjectRelease(),
+      defaultFormId: undefined,
+      defaultSheet: undefined,
+    },
     srcTable: [],
     workflows: [],
-    behaviors: [],
+    globalBehaviors: [],
+    sheetBehaviors: [],
+    forms: [],
     outputs: [],
-    designs: [],
   };
 }
 
 export function normalizeProjectStructure(project: ProjectStructure): ProjectStructure {
+  // 兼容旧格式：迁移 designs + behaviors → forms
+  let forms = project.forms || [];
+  if (!forms.length && project.designs?.length) {
+    const now = new Date().toISOString();
+    forms = project.designs.map((design) => ({
+      id: `form_${design.id}`,
+      name: design.name,
+      design,
+      behaviors: project.behaviors || [],
+      createdAt: design.createdAt || now,
+      updatedAt: design.updatedAt || now,
+    }));
+  }
+
   return {
     ...project,
     settings: normalizeProjectSettings(project.settings as ProjectSettings | undefined),
+    globalBehaviors: project.globalBehaviors || [],
+    sheetBehaviors: project.sheetBehaviors || [],
+    forms,
+    release: normalizeProjectRelease(project.release as ProjectRelease | undefined, forms, project.srcTable || []),
   };
 }
 
@@ -146,12 +175,13 @@ export function removeWorkflow(project: ProjectStructure, workflowId: string): P
 export function addDesign(project: ProjectStructure, design: DesignFile): ProjectStructure {
   const now = new Date().toISOString();
   const nextDesign = { ...design, updatedAt: now };
-  const exists = project.designs.some((item) => item.id === design.id);
+  const designs = project.designs || [];
+  const exists = designs.some((item) => item.id === design.id);
   return {
     ...project,
     designs: exists
-      ? project.designs.map((item) => item.id === design.id ? nextDesign : item)
-      : [...project.designs, nextDesign],
+      ? designs.map((item) => item.id === design.id ? nextDesign : item)
+      : [...designs, nextDesign],
     config: { ...project.config, updatedAt: now },
   };
 }
@@ -160,7 +190,7 @@ export function updateDesign(project: ProjectStructure, designId: string, patch:
   const now = new Date().toISOString();
   return {
     ...project,
-    designs: project.designs.map((design) => design.id === designId ? { ...design, ...patch, updatedAt: now } : design),
+    designs: (project.designs || []).map((design) => design.id === designId ? { ...design, ...patch, updatedAt: now } : design),
     config: { ...project.config, updatedAt: now },
   };
 }
@@ -169,7 +199,7 @@ export function removeDesign(project: ProjectStructure, designId: string): Proje
   const now = new Date().toISOString();
   return {
     ...project,
-    designs: project.designs.filter((design) => design.id !== designId),
+    designs: (project.designs || []).filter((design) => design.id !== designId),
     config: { ...project.config, updatedAt: now },
   };
 }
@@ -179,7 +209,7 @@ export function removeDesign(project: ProjectStructure, designId: string): Proje
 export function addBehavior(project: ProjectStructure, behavior: BehaviorFile): ProjectStructure {
   return {
     ...project,
-    behaviors: [...project.behaviors, behavior],
+    behaviors: [...(project.behaviors || []), behavior],
     config: { ...project.config, updatedAt: new Date().toISOString() },
   };
 }
@@ -187,7 +217,7 @@ export function addBehavior(project: ProjectStructure, behavior: BehaviorFile): 
 export function updateBehavior(project: ProjectStructure, behaviorId: string, patch: Partial<BehaviorFile>): ProjectStructure {
   return {
     ...project,
-    behaviors: project.behaviors.map((b) => b.id === behaviorId ? { ...b, ...patch, updatedAt: new Date().toISOString() } : b),
+    behaviors: (project.behaviors || []).map((b) => b.id === behaviorId ? { ...b, ...patch, updatedAt: new Date().toISOString() } : b),
     config: { ...project.config, updatedAt: new Date().toISOString() },
   };
 }
@@ -195,7 +225,7 @@ export function updateBehavior(project: ProjectStructure, behaviorId: string, pa
 export function removeBehavior(project: ProjectStructure, behaviorId: string): ProjectStructure {
   return {
     ...project,
-    behaviors: project.behaviors.filter((b) => b.id !== behaviorId),
+    behaviors: (project.behaviors || []).filter((b) => b.id !== behaviorId),
     config: { ...project.config, updatedAt: new Date().toISOString() },
   };
 }
@@ -218,31 +248,105 @@ export function removeOutput(project: ProjectStructure, outputId: string): Proje
   };
 }
 
-// ── 导出 ──────────────────────────────────────
+// ── 表单实例 ──────────────────────────────────────
 
-export function downloadProjectFile(project: ProjectStructure): void {
-  const data = JSON.stringify(project, null, 2);
-  const blob = new Blob([data], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${project.config.name || 'formflow'}.formflow.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+export function addForm(project: ProjectStructure, form: FormEntry): ProjectStructure {
+  return {
+    ...project,
+    forms: [...project.forms, form],
+    config: { ...project.config, updatedAt: new Date().toISOString() },
+  };
 }
 
-export function importProjectFile(file: File): Promise<ProjectStructure> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const project = normalizeProjectStructure(JSON.parse(reader.result as string) as ProjectStructure);
-        project.config.id = `proj_${Date.now()}`;
-        project.config.updatedAt = new Date().toISOString();
-        resolve(project);
-      } catch (e) { reject(e); }
-    };
-    reader.onerror = reject;
-    reader.readAsText(file);
-  });
+export function updateForm(project: ProjectStructure, formId: string, patch: Partial<FormEntry>): ProjectStructure {
+  return {
+    ...project,
+    forms: project.forms.map((f) => f.id === formId ? { ...f, ...patch, updatedAt: new Date().toISOString() } : f),
+    config: { ...project.config, updatedAt: new Date().toISOString() },
+  };
+}
+
+export function removeForm(project: ProjectStructure, formId: string): ProjectStructure {
+  return {
+    ...project,
+    forms: project.forms.filter((f) => f.id !== formId),
+    config: { ...project.config, updatedAt: new Date().toISOString() },
+  };
+}
+
+export function addFormBehavior(project: ProjectStructure, formId: string, behavior: BehaviorFile): ProjectStructure {
+  return {
+    ...project,
+    forms: project.forms.map((f) => f.id === formId
+      ? { ...f, behaviors: [...f.behaviors, behavior], updatedAt: new Date().toISOString() }
+      : f),
+    config: { ...project.config, updatedAt: new Date().toISOString() },
+  };
+}
+
+export function updateFormBehavior(project: ProjectStructure, formId: string, behaviorId: string, patch: Partial<BehaviorFile>): ProjectStructure {
+  return {
+    ...project,
+    forms: project.forms.map((f) => f.id === formId
+      ? { ...f, behaviors: f.behaviors.map((b) => b.id === behaviorId ? { ...b, ...patch, updatedAt: new Date().toISOString() } : b), updatedAt: new Date().toISOString() }
+      : f),
+    config: { ...project.config, updatedAt: new Date().toISOString() },
+  };
+}
+
+export function removeFormBehavior(project: ProjectStructure, formId: string, behaviorId: string): ProjectStructure {
+  return {
+    ...project,
+    forms: project.forms.map((f) => f.id === formId
+      ? { ...f, behaviors: f.behaviors.filter((b) => b.id !== behaviorId), updatedAt: new Date().toISOString() }
+      : f),
+    config: { ...project.config, updatedAt: new Date().toISOString() },
+  };
+}
+
+// ── 全局行为 ──────────────────────────────────────
+
+export function addGlobalBehavior(project: ProjectStructure, behavior: BehaviorFile): ProjectStructure {
+  return {
+    ...project,
+    globalBehaviors: [...project.globalBehaviors, behavior],
+    config: { ...project.config, updatedAt: new Date().toISOString() },
+  };
+}
+
+// ── 工作表行为 ──────────────────────────────────────
+
+export function setSheetBehaviors(
+  project: ProjectStructure,
+  tableId: string,
+  sheetName: string,
+  behaviors: BehaviorFile[],
+): ProjectStructure {
+  const now = new Date().toISOString();
+  const nextEntry: SheetBehaviorEntry = { tableId, sheetName, behaviors, updatedAt: now };
+  const existing = project.sheetBehaviors || [];
+  const matched = existing.some((entry) => entry.tableId === tableId && entry.sheetName === sheetName);
+  return {
+    ...project,
+    sheetBehaviors: matched
+      ? existing.map((entry) => (entry.tableId === tableId && entry.sheetName === sheetName ? nextEntry : entry))
+      : [...existing, nextEntry],
+    config: { ...project.config, updatedAt: now },
+  };
+}
+
+export function updateGlobalBehavior(project: ProjectStructure, behaviorId: string, patch: Partial<BehaviorFile>): ProjectStructure {
+  return {
+    ...project,
+    globalBehaviors: project.globalBehaviors.map((b) => b.id === behaviorId ? { ...b, ...patch, updatedAt: new Date().toISOString() } : b),
+    config: { ...project.config, updatedAt: new Date().toISOString() },
+  };
+}
+
+export function removeGlobalBehavior(project: ProjectStructure, behaviorId: string): ProjectStructure {
+  return {
+    ...project,
+    globalBehaviors: project.globalBehaviors.filter((b) => b.id !== behaviorId),
+    config: { ...project.config, updatedAt: new Date().toISOString() },
+  };
 }

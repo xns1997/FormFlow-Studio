@@ -1,0 +1,265 @@
+{
+  "id": "example_check_valve_selection_form_create",
+  "name": "数据录入",
+  "formMode": "create",
+  "viewport": {
+    "zoom": 1,
+    "panX": 0,
+    "panY": 0
+  },
+  "gridSize": 10,
+  "createdAt": "2026-07-06T18:00:00.000Z",
+  "updatedAt": "2026-07-06T18:00:00.000Z",
+  "bindings": [],
+  "components": [
+    {
+      "id": "example_check_valve_selection_create_title",
+      "type": "text",
+      "x": 24,
+      "y": 24,
+      "width": 760,
+      "height": 40,
+      "zIndex": 1,
+      "props": {
+        "name": "example_check_valve_selection_create_title",
+        "content": "止回阀选型 · 数据录入",
+        "fontSize": 22,
+        "color": "#0f172a",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "example_check_valve_selection_create_hint",
+      "type": "text",
+      "x": 24,
+      "y": 70,
+      "width": 760,
+      "height": 28,
+      "zIndex": 1,
+      "fieldBinding": "状态提示",
+      "props": {
+        "name": "example_check_valve_selection_create_hint",
+        "content": "状态提示",
+        "fontSize": 13,
+        "color": "#475569"
+      }
+    },
+    {
+      "id": "example_check_valve_selection_create_0",
+      "type": "number",
+      "x": 24,
+      "y": 116,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "申请单号",
+      "props": {
+        "name": "申请单号",
+        "label": "申请单号",
+        "required": false,
+        "readonly": true,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_check_valve_selection_create_1",
+      "type": "input",
+      "x": 276,
+      "y": 116,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "项目名称",
+      "props": {
+        "name": "项目名称",
+        "label": "项目名称",
+        "required": true,
+        "readonly": false,
+        "placeholder": "请输入项目名称"
+      }
+    },
+    {
+      "id": "example_check_valve_selection_create_2",
+      "type": "select",
+      "x": 528,
+      "y": 116,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "介质",
+      "props": {
+        "name": "介质",
+        "label": "介质",
+        "required": true,
+        "readonly": false,
+        "placeholder": "",
+        "options": [
+          "清水",
+          "蒸汽",
+          "油品",
+          "腐蚀液"
+        ]
+      }
+    },
+    {
+      "id": "example_check_valve_selection_create_3",
+      "type": "number",
+      "x": 24,
+      "y": 196,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "公称通径DN",
+      "props": {
+        "name": "公称通径DN",
+        "label": "公称通径DN",
+        "required": true,
+        "readonly": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_check_valve_selection_create_4",
+      "type": "number",
+      "x": 276,
+      "y": 196,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "压力等级PN",
+      "props": {
+        "name": "压力等级PN",
+        "label": "压力等级PN",
+        "required": true,
+        "readonly": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_check_valve_selection_create_5",
+      "type": "number",
+      "x": 528,
+      "y": 196,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "设计温度",
+      "props": {
+        "name": "设计温度",
+        "label": "设计温度",
+        "required": true,
+        "readonly": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_check_valve_selection_create_6",
+      "type": "number",
+      "x": 24,
+      "y": 276,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "设计流量",
+      "props": {
+        "name": "设计流量",
+        "label": "设计流量",
+        "required": true,
+        "readonly": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_check_valve_selection_create_7",
+      "type": "input",
+      "x": 276,
+      "y": 276,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "推荐型号",
+      "props": {
+        "name": "推荐型号",
+        "label": "推荐型号",
+        "required": false,
+        "readonly": true,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_check_valve_selection_create_8",
+      "type": "select",
+      "x": 528,
+      "y": 276,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "选型状态",
+      "props": {
+        "name": "选型状态",
+        "label": "选型状态",
+        "required": false,
+        "readonly": true,
+        "placeholder": "",
+        "options": [
+          "待选型",
+          "待复核",
+          "已通过"
+        ]
+      }
+    },
+    {
+      "id": "example_check_valve_selection_create_submit",
+      "type": "button",
+      "x": 24,
+      "y": 368,
+      "width": 220,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "example_check_valve_selection_create_submit",
+        "label": "保存录入",
+        "variant": "primary",
+        "events": {
+          "onClick": "if (!ctx.getValue('项目名称') && ctx.getValue('项目名称') !== 0) return ctx.showMessage('请填写项目名称', 'error');\nif (!ctx.getValue('介质') && ctx.getValue('介质') !== 0) return ctx.showMessage('请填写介质', 'error');\nif (!ctx.getValue('公称通径DN') && ctx.getValue('公称通径DN') !== 0) return ctx.showMessage('请填写公称通径DN', 'error');\nif (!ctx.getValue('压力等级PN') && ctx.getValue('压力等级PN') !== 0) return ctx.showMessage('请填写压力等级PN', 'error');\nif (!ctx.getValue('设计温度') && ctx.getValue('设计温度') !== 0) return ctx.showMessage('请填写设计温度', 'error');\nif (!ctx.getValue('设计流量') && ctx.getValue('设计流量') !== 0) return ctx.showMessage('请填写设计流量', 'error');\nlet currentId = Number(ctx.getValue('申请单号') || 0);\nif (!currentId) {\n  currentId = (() => { const rows = ctx.querySheet('valve_requests');\nconst maxId = rows.reduce((max, row) => Math.max(max, Number(row?.申请单号) || 0), 0);\nreturn maxId + 1; })();\n  await ctx.setValue('申请单号', currentId);\n}\nconst medium = String(ctx.getValue('介质') || '');\nconst dn = Number(ctx.getValue('公称通径DN') || 0);\nconst pn = Number(ctx.getValue('压力等级PN') || 0);\nconst temp = Number(ctx.getValue('设计温度') || 0);\nlet model = 'H44H-16C';\nif (medium === '蒸汽') model = 'H41H-25P';\nelse if (medium === '腐蚀液') model = 'HC41F-16P';\nelse if (medium === '油品') model = 'H41H-25C';\nawait ctx.setValue('推荐型号', `${model}-DN${dn}`);\nawait ctx.setValue('选型状态', temp > 180 || pn >= 25 ? '待复核' : '已通过');\nawait ctx.runConfiguredWorkflow();\nconst nextId = (() => { const rows = ctx.querySheet('valve_requests');\nconst maxId = rows.reduce((max, row) => Math.max(max, Number(row?.申请单号) || 0), 0);\nreturn maxId + 1; })();\nawait ctx.setValue('申请单号', nextId);\nawait ctx.setValue('选型状态', \"待选型\");\nawait ctx.setValue('项目名称', '');\nawait ctx.setValue('介质', '');\nawait ctx.setValue('公称通径DN', '');\nawait ctx.setValue('压力等级PN', '');\nawait ctx.setValue('设计温度', '');\nawait ctx.setValue('设计流量', '');\nawait ctx.setValue('推荐型号', '');\nawait ctx.setValue('状态提示', '表单已重置，可继续录入。');\nawait ctx.showMessage(`止回阀选型已新增：${currentId}`, 'success');"
+        },
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "example_check_valve_selection_wf_create",
+            "parameterMap": {
+              "submit.formData": {
+                "申请单号": "$form.申请单号",
+                "项目名称": "$form.项目名称",
+                "介质": "$form.介质",
+                "公称通径DN": "$form.公称通径DN",
+                "压力等级PN": "$form.压力等级PN",
+                "设计温度": "$form.设计温度",
+                "设计流量": "$form.设计流量",
+                "推荐型号": "$form.推荐型号",
+                "选型状态": "$form.选型状态"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "example_check_valve_selection_create_reset",
+      "type": "button",
+      "x": 264,
+      "y": 368,
+      "width": 180,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "example_check_valve_selection_create_reset",
+        "label": "重置表单",
+        "variant": "outline",
+        "events": {
+          "onClick": "const nextId = (() => { const rows = ctx.querySheet('valve_requests');\nconst maxId = rows.reduce((max, row) => Math.max(max, Number(row?.申请单号) || 0), 0);\nreturn maxId + 1; })();\nawait ctx.setValue('申请单号', nextId);\nawait ctx.setValue('选型状态', \"待选型\");\nawait ctx.setValue('项目名称', '');\nawait ctx.setValue('介质', '');\nawait ctx.setValue('公称通径DN', '');\nawait ctx.setValue('压力等级PN', '');\nawait ctx.setValue('设计温度', '');\nawait ctx.setValue('设计流量', '');\nawait ctx.setValue('推荐型号', '');\nawait ctx.setValue('状态提示', '表单已重置，可继续录入。');"
+        }
+      }
+    }
+  ]
+}

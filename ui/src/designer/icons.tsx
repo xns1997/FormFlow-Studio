@@ -69,10 +69,14 @@ const ICONS: Record<string, IconComponent> = {
   input: Edit,
   textarea: Textarea,
   number: Application,
+  timePicker: Calendar,
+  dateRange: Calendar,
   datePicker: Calendar,
   select: Form,
+  segmented: Form,
   radio: Radio,
   checkbox: Checkbox,
+  tagInput: Text,
   switch: Switch,
   rating: Star,
   button: Application,
@@ -82,6 +86,7 @@ const ICONS: Record<string, IconComponent> = {
   chart: ChartHistogram,
   card: CardTwo,
   tabs: DocDetail,
+  steps: List,
   docs: DocDetail,
   divider: Minus,
   form: Form,
@@ -93,6 +98,7 @@ const ICONS: Record<string, IconComponent> = {
   test: Experiment,
   settings: Config,
   upload: Upload,
+  imageUpload: Upload,
 };
 
 export function DesignerIcon({

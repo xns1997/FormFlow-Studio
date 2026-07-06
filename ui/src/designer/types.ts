@@ -3,7 +3,7 @@ import type { DesignComponent } from '../project/types';
 export interface PropDef {
   key: string;
   label: string;
-  type: 'string' | 'number' | 'boolean' | 'select' | 'color' | 'json' | 'json-string' | 'object' | 'array' | 'range' | 'dimMetric' | 'string[]' | 'object[]' | 'unknown[][]';
+  type: 'string' | 'number' | 'boolean' | 'select' | 'color' | 'date' | 'datetime' | 'time' | 'json' | 'json-string' | 'object' | 'array' | 'range' | 'dimMetric' | 'string[]' | 'object[]' | 'unknown[][]';
   default?: any;
   options?: Array<{ label: string; value: any }>;
   group?: string;
