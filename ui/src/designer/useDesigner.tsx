@@ -4,6 +4,18 @@ import { register } from '@antv/x6-react-shape';
 import React from 'react';
 import type { DesignComponent, DesignFile } from '../project/types';
 import { getControl } from './registry';
+import { useDesignerState, type SelectionOverlay, type ResizeHandle } from './hooks/useDesignerState';
+import { useDesignerActions } from './hooks/useDesignerActions';
+import { useDesignerClipboard } from './hooks/useDesignerClipboard';
+import { useDesignerHistory } from './hooks/useDesignerHistory';
+import { useDesignerIO } from './hooks/useDesignerIO';
+import {
+  findContainerParent,
+  normalizeContainerChildren,
+  isContainerComponent,
+  getDescendantIds,
+  autoResizeContainers,
+} from './utils';
 
 const DesignNodeView = ({ node }: { node: any }) => {
   const data = node.getData();
@@ -51,221 +63,43 @@ function ensureRegistered() {
   }
 }
 
-const MIN_SIZES: Record<string, { w: number; h: number }> = {
-  input: { w: 160, h: 64 },
-  textarea: { w: 180, h: 92 },
-  number: { w: 150, h: 64 },
-  datePicker: { w: 160, h: 64 },
-  timePicker: { w: 160, h: 64 },
-  dateRange: { w: 240, h: 64 },
-  select: { w: 170, h: 64 },
-  segmented: { w: 220, h: 64 },
-  radio: { w: 180, h: 112 },
-  checkbox: { w: 180, h: 112 },
-  tagInput: { w: 220, h: 84 },
-  switch: { w: 150, h: 44 },
-  rating: { w: 170, h: 44 },
-  upload: { w: 240, h: 104 },
-  imageUpload: { w: 240, h: 132 },
-  button: { w: 120, h: 40 },
-  text: { w: 80, h: 28 },
-  image: { w: 120, h: 90 },
-  table: { w: 220, h: 120 },
-  chart: { w: 220, h: 140 },
-  card: { w: 220, h: 140 },
-  tabs: { w: 240, h: 140 },
-  steps: { w: 320, h: 88 },
-  divider: { w: 32, h: 8 },
-  form: { w: 360, h: 420 },
-};
-
-const CONTAINER_TYPES = new Set(['card', 'tabs', 'form']);
-
-export type ResizeHandle = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
-
-export interface SelectionOverlay {
-  id: string;
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-}
-
-function findContainerAtPoint(x: number, y: number, components: DesignComponent[], excludeId?: string): string | undefined {
-  let best: { id: string; area: number } | null = null;
-  for (const container of components) {
-    if (!CONTAINER_TYPES.has(container.type) || container.id === excludeId) continue;
-    const inside = x >= container.x && x <= container.x + container.width && y >= container.y && y <= container.y + container.height;
-    if (!inside) continue;
-    const area = container.width * container.height;
-    if (!best || area < best.area) best = { id: container.id, area };
-  }
-  return best?.id;
-}
-
-function findContainerParent(component: DesignComponent, components: DesignComponent[]): string | undefined {
-  const descendants = getDescendantIds(components, component.id);
-  const centerX = component.x + component.width / 2;
-  const centerY = component.y + component.height / 2;
-  let best: { id: string; area: number; containsCenter: boolean; ratio: number } | null = null;
-  for (const container of components) {
-    if (!CONTAINER_TYPES.has(container.type) || container.id === component.id || descendants.has(container.id)) continue;
-    const overlapX = Math.max(0, Math.min(component.x + component.width, container.x + container.width) - Math.max(component.x, container.x));
-    const overlapY = Math.max(0, Math.min(component.y + component.height, container.y + container.height) - Math.max(component.y, container.y));
-    const overlapArea = overlapX * overlapY;
-    const ratio = overlapArea / Math.max(1, component.width * component.height);
-    const containsCenter = centerX >= container.x && centerX <= container.x + container.width && centerY >= container.y && centerY <= container.y + container.height;
-    if (!containsCenter && ratio < 0.35) continue;
-    const area = container.width * container.height;
-    if (!best || (containsCenter && !best.containsCenter) || (containsCenter === best.containsCenter && area < best.area)) {
-      best = { id: container.id, area, containsCenter, ratio };
-    }
-  }
-  return best?.id;
-}
-
-function getDescendantIds(components: DesignComponent[], id: string): Set<string> {
-  const result = new Set<string>();
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const component of components) {
-      if (component.parentId && (component.parentId === id || result.has(component.parentId)) && !result.has(component.id)) {
-        result.add(component.id);
-        changed = true;
-      }
-    }
-  }
-  return result;
-}
-
-function normalizeContainerChildren(components: DesignComponent[]): DesignComponent[] {
-  const childrenByParent = new Map<string, string[]>();
-  for (const component of components) {
-    if (component.parentId) {
-      childrenByParent.set(component.parentId, [...(childrenByParent.get(component.parentId) || []), component.id]);
-    }
-  }
-  return components.map((component) => {
-    if (!CONTAINER_TYPES.has(component.type)) {
-      return component.children?.length ? { ...component, children: undefined } : component;
-    }
-    const children = childrenByParent.get(component.id) || [];
-    return { ...component, children };
-  });
-}
-
-function isContainerComponent(component?: DesignComponent | null) {
-  return !!component && CONTAINER_TYPES.has(component.type);
-}
-
-function getContainerAutoInsets(component: DesignComponent) {
-  if (component.type === 'form') return { top: 110, right: 28, bottom: 28, left: 28 };
-  if (component.type === 'card') return { top: component.props.subtitle ? 56 : 40, right: 20, bottom: 20, left: 20 };
-  if (component.type === 'tabs') return { top: 48, right: 16, bottom: 16, left: 16 };
-  return { top: 24, right: 16, bottom: 16, left: 16 };
-}
-
-function autoResizeContainers(components: DesignComponent[]) {
-  const next = components.map((component) => ({ ...component }));
-  const byParent = new Map<string, DesignComponent[]>();
-  const byId = new Map(next.map((component) => [component.id, component] as const));
-  for (const component of next) {
-    if (!component.parentId) continue;
-    byParent.set(component.parentId, [...(byParent.get(component.parentId) || []), component]);
-  }
-
-  const getDepth = (component: DesignComponent) => {
-    let depth = 0;
-    let current = component;
-    while (current.parentId) {
-      const parent = byId.get(current.parentId);
-      if (!parent) break;
-      depth += 1;
-      current = parent;
-    }
-    return depth;
-  };
-
-  const containers = next
-    .filter((component) => CONTAINER_TYPES.has(component.type))
-    .sort((a, b) => getDepth(b) - getDepth(a));
-
-  for (const container of containers) {
-    const children = byParent.get(container.id) || [];
-    if (children.length === 0) continue;
-    const insets = getContainerAutoInsets(container);
-    const minLeft = Math.min(...children.map((child) => child.x));
-    const minTop = Math.min(...children.map((child) => child.y));
-    const maxRight = Math.max(...children.map((child) => child.x + child.width));
-    const maxBottom = Math.max(...children.map((child) => child.y + child.height));
-
-    const shiftedX = minLeft < container.x + insets.left ? minLeft - insets.left : container.x;
-    const shiftedY = minTop < container.y + insets.top ? minTop - insets.top : container.y;
-    const nextWidth = Math.max(container.width + (container.x - shiftedX), maxRight - shiftedX + insets.right);
-    const nextHeight = Math.max(container.height + (container.y - shiftedY), maxBottom - shiftedY + insets.bottom);
-
-    const target = byId.get(container.id);
-    if (!target) continue;
-    target.x = Math.round(shiftedX);
-    target.y = Math.round(shiftedY);
-    target.width = Math.round(nextWidth);
-    target.height = Math.round(nextHeight);
-  }
-
-  return next;
-}
+export { type SelectionOverlay, type ResizeHandle };
 
 export function useDesigner() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const graphRef = useRef<Graph | null>(null);
-  const selectedIdRef = useRef<string | null>(null);
-  const pendingDesignRef = useRef<DesignFile | null>(null);
-  const componentsRef = useRef<DesignComponent[]>([]);
-  const suppressMoveSyncRef = useRef(false);
-  const viewportRef = useRef<DesignFile['viewport']>({ zoom: 1, panX: 0, panY: 0 });
-  const modeRef = useRef<'design' | 'preview'>('design');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [selectionOverlay, setSelectionOverlay] = useState<SelectionOverlay | null>(null);
-  const [components, setComponents] = useState<DesignComponent[]>([]);
-  const [zoom, setZoom] = useState(1);
-  const [mode, setMode] = useState<'design' | 'preview'>('design');
-
-  const commitComponents = useCallback((updater: React.SetStateAction<DesignComponent[]>) => {
-    setComponents((prev) => {
-      const next = typeof updater === 'function'
-        ? (updater as (value: DesignComponent[]) => DesignComponent[])(prev)
-        : updater;
-      componentsRef.current = next;
-      return next;
-    });
-  }, []);
-
-  const setNodeComponentData = useCallback((node: Node, component: DesignComponent, selected = selectedIdRef.current === node.id) => {
-    node.setData({
-      componentType: component.type,
-      designComponent: component,
-      selected,
-      mode: modeRef.current,
-    });
-  }, []);
+  const state = useDesignerState();
+  const {
+    containerRef,
+    graphRef,
+    resizeObserverRef,
+    selectedIdRef,
+    pendingDesignRef,
+    componentsRef,
+    suppressMoveSyncRef,
+    viewportRef,
+    modeRef,
+    selectedId,
+    setSelectedId,
+    selectionOverlay,
+    setSelectionOverlay,
+    components,
+    setComponents,
+    zoom,
+    setZoom,
+    mode,
+    setMode,
+    commitComponents,
+    setNodeComponentData,
+    clampSize,
+  } = state;
 
   const syncGraphSelectionState = useCallback((id: string | null) => {
     const graph = graphRef.current;
     if (!graph) return;
-    graph.getNodes().forEach((node) => {
+    graph.getNodes().forEach((node: Node) => {
       const data = node.getData();
       node.setData({ ...data, selected: node.id === id }, { overwrite: false });
     });
-  }, []);
-
-  const clampSize = useCallback((type: string, width: number, height: number) => {
-    const min = MIN_SIZES[type] ?? { w: 96, h: 28 };
-    return {
-      width: Math.max(min.w, width),
-      height: Math.max(min.h, height),
-    };
-  }, []);
+  }, [graphRef]);
 
   const ensureHierarchyZ = useCallback((items: DesignComponent[]) => {
     const graph = graphRef.current;
@@ -289,7 +123,7 @@ export function useDesigner() {
       });
     }
     return next;
-  }, [setNodeComponentData]);
+  }, [graphRef, setNodeComponentData]);
 
   const syncGraphEmbedding = useCallback((graph: Graph, source: DesignComponent[]) => {
     const byId = new Map(source.map((component) => [component.id, component] as const));
@@ -333,7 +167,7 @@ export function useDesigner() {
       });
     }
     return normalized;
-  }, [ensureHierarchyZ, setNodeComponentData, syncGraphEmbedding]);
+  }, [graphRef, selectedIdRef, ensureHierarchyZ, setNodeComponentData, syncGraphEmbedding]);
 
   const syncSelectionOverlay = useCallback((id: string | null = selectedIdRef.current) => {
     const graph = graphRef.current;
@@ -362,7 +196,7 @@ export function useDesigner() {
       height: clientRect.height,
     };
     setSelectionOverlay(nextOverlay);
-  }, []);
+  }, [containerRef, graphRef, setSelectionOverlay, selectedIdRef]);
 
   const syncSelectionOverlayWhenRendered = useCallback((id: string, attempt = 0) => {
     requestAnimationFrame(() => {
@@ -374,7 +208,7 @@ export function useDesigner() {
       }
       syncSelectionOverlay(id);
     });
-  }, [syncSelectionOverlay]);
+  }, [containerRef, graphRef, syncSelectionOverlay]);
 
   const selectComponent = useCallback((id: string | null) => {
     const graph = graphRef.current;
@@ -395,13 +229,13 @@ export function useDesigner() {
     } else {
       setSelectionOverlay(null);
     }
-  }, [syncGraphSelectionState, syncSelectionOverlayWhenRendered]);
+  }, [graphRef, selectedIdRef, setSelectedId, setSelectionOverlay, syncGraphSelectionState, syncSelectionOverlayWhenRendered]);
 
   const syncComponentsFromGraph = useCallback(() => {
     const graph = graphRef.current;
     if (!graph) return;
     const next: DesignComponent[] = [];
-    graph.getNodes().forEach((node) => {
+    graph.getNodes().forEach((node: Node) => {
       const data = node.getData();
       const source = data.designComponent as DesignComponent | undefined;
       if (!source) return;
@@ -437,7 +271,7 @@ export function useDesigner() {
       syncGraphSelectionState(selectedIdRef.current);
       syncSelectionOverlay(selectedIdRef.current);
     }
-  }, [clampSize, commitComponents, finalizeComponents, selectComponent, setNodeComponentData, syncGraphSelectionState, syncSelectionOverlay]);
+  }, [graphRef, selectedIdRef, clampSize, commitComponents, finalizeComponents, selectComponent, setNodeComponentData, syncGraphSelectionState, syncSelectionOverlay]);
 
   const drawComponentsOnGraph = useCallback((graph: Graph, source: DesignComponent[]) => {
     graph.clearCells();
@@ -467,7 +301,32 @@ export function useDesigner() {
     setZoom(design.viewport.zoom);
     commitComponents(normalized);
     selectComponent(null);
-  }, [commitComponents, drawComponentsOnGraph, selectComponent]);
+  }, [viewportRef, drawComponentsOnGraph, setZoom, commitComponents, selectComponent]);
+
+  const syncGraphSize = useCallback(() => {
+    const graph = graphRef.current;
+    const container = containerRef.current;
+    if (!graph || !container) return;
+    const width = Math.round(container.clientWidth);
+    const height = Math.round(container.clientHeight);
+    if (width <= 0 || height <= 0) return;
+    graph.resize(width, height);
+    requestAnimationFrame(() => syncSelectionOverlay());
+  }, [containerRef, graphRef, syncSelectionOverlay]);
+
+  const graphCtx = {
+    ...state,
+    finalizeComponents,
+    selectComponent,
+    syncComponentsFromGraph,
+    syncSelectionOverlay,
+    renderDesignOnGraph,
+  };
+
+  const actions = useDesignerActions(graphCtx);
+  const clipboard = useDesignerClipboard(graphCtx);
+  const history = useDesignerHistory(graphCtx);
+  const io = useDesignerIO(graphCtx);
 
   const initGraph = useCallback(() => {
     if (!containerRef.current || graphRef.current) return;
@@ -651,6 +510,15 @@ export function useDesigner() {
     graph.bindKey('shift+left', () => nudge(-10, 0));
     graph.bindKey('shift+right', () => nudge(10, 0));
     graphRef.current = graph;
+    syncGraphSize();
+    resizeObserverRef.current?.disconnect();
+    if (typeof ResizeObserver !== 'undefined' && containerRef.current) {
+      const observer = new ResizeObserver(() => {
+        requestAnimationFrame(syncGraphSize);
+      });
+      observer.observe(containerRef.current);
+      resizeObserverRef.current = observer;
+    }
     if (pendingDesignRef.current) {
       const pending = pendingDesignRef.current;
       pendingDesignRef.current = null;
@@ -665,7 +533,19 @@ export function useDesigner() {
         commitComponents(normalized);
       });
     }
-  }, [clampSize, commitComponents, drawComponentsOnGraph, finalizeComponents, renderDesignOnGraph, selectComponent, setNodeComponentData, syncComponentsFromGraph, syncSelectionOverlay]);
+  }, [containerRef, graphRef, resizeObserverRef, pendingDesignRef, componentsRef, suppressMoveSyncRef, viewportRef, modeRef, selectComponent, syncComponentsFromGraph, syncSelectionOverlay, setZoom, setNodeComponentData, clampSize, commitComponents, finalizeComponents, renderDesignOnGraph, drawComponentsOnGraph, syncGraphSize]);
+
+  useEffect(() => {
+    const handleWindowResize = () => {
+      requestAnimationFrame(syncGraphSize);
+    };
+    window.addEventListener('resize', handleWindowResize);
+    return () => {
+      window.removeEventListener('resize', handleWindowResize);
+      resizeObserverRef.current?.disconnect();
+      resizeObserverRef.current = null;
+    };
+  }, [syncGraphSize, resizeObserverRef]);
 
   useEffect(() => {
     componentsRef.current = components;
@@ -679,7 +559,7 @@ export function useDesigner() {
     if (normalized.some((item, index) => item.width !== components[index]?.width || item.height !== components[index]?.height)) {
       commitComponents(normalized);
     }
-  }, [commitComponents, components, drawComponentsOnGraph]);
+  }, [components, componentsRef, graphRef, viewportRef, drawComponentsOnGraph, setZoom, commitComponents]);
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
@@ -693,245 +573,7 @@ export function useDesigner() {
       graph.cleanSelection();
     }
     syncSelectionOverlay(selectedId);
-  }, [selectedId, syncGraphSelectionState, syncSelectionOverlay]);
-
-  const addComponent = useCallback((type: string, x: number, y: number, dropPoint?: { x: number; y: number }) => {
-    const control = getControl(type);
-    if (!control) return;
-    const graph = graphRef.current;
-    if (!graph) return;
-
-    selectComponent(null);
-
-    const id = `comp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    const size = clampSize(type, control.defaultSize.w, control.defaultSize.h);
-    const autoName = control.defaultProps.name === '' ? `${type}_${Date.now().toString(36).slice(-4)}` : control.defaultProps.name;
-    const comp: DesignComponent = {
-      id, type, x, y,
-      width: size.width,
-      height: size.height,
-      zIndex: graph.getNodes().length + 1,
-      props: { ...control.defaultProps, name: autoName },
-    };
-
-    comp.parentId = (dropPoint ? findContainerAtPoint(dropPoint.x, dropPoint.y, componentsRef.current) : undefined)
-      || findContainerParent(comp, componentsRef.current);
-
-    let node: Node;
-    try {
-      node = graph.addNode({
-        id, x, y,
-        width: size.width,
-        height: size.height,
-        zIndex: comp.zIndex,
-        shape: 'design-node',
-        data: { componentType: type, designComponent: comp, selected: false },
-      });
-    } catch (error) {
-      console.warn('[designer] add node failed:', error);
-      return;
-    }
-    const created = graph.getCellById(id);
-    if (!created || !created.isNode()) {
-      console.warn('[designer] add node returned without a graph node:', { type, id, x, y });
-      return;
-    }
-
-    setNodeComponentData(node, comp);
-    if (comp.parentId) {
-      const parentNode = graph.getCellById(comp.parentId) as Node | null;
-      parentNode?.embed(node, { ui: true });
-    }
-    commitComponents((prev) => finalizeComponents([...prev, comp]));
-    selectComponent(id);
-    return id;
-  }, [clampSize, commitComponents, finalizeComponents, selectComponent, setNodeComponentData]);
-
-  const removeComponent = useCallback((id: string) => {
-    const removeIds = new Set<string>([id]);
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const component of componentsRef.current) {
-        if (component.parentId && removeIds.has(component.parentId) && !removeIds.has(component.id)) {
-          removeIds.add(component.id);
-          changed = true;
-        }
-      }
-    }
-    const graph = graphRef.current;
-    graph?.removeCells([...removeIds].map((removeId) => graph.getCellById(removeId)).filter(Boolean) as any);
-    commitComponents((prev) => finalizeComponents(prev
-      .filter((c) => !removeIds.has(c.id))
-      .map((c) => c.children ? { ...c, children: c.children.filter((childId) => !removeIds.has(childId)) } : c)));
-    if (selectedIdRef.current && removeIds.has(selectedIdRef.current)) selectComponent(null);
-  }, [commitComponents, selectComponent]);
-
-  const deleteSelected = useCallback(() => {
-    if (!selectedId) return;
-    removeComponent(selectedId);
-  }, [removeComponent, selectedId]);
-
-  const updateComponentProps = useCallback((id: string, patch: Record<string, any>) => {
-    commitComponents((prev) => finalizeComponents(prev.map((c) => {
-      if (c.id !== id) return c;
-      const next = { ...c, props: { ...c.props, ...patch } };
-      const node = graphRef.current?.getCellById(id) as Node | null;
-      if (node) {
-        setNodeComponentData(node, next);
-      }
-      return next;
-    })));
-    syncSelectionOverlay(id);
-  }, [commitComponents, finalizeComponents, setNodeComponentData, syncSelectionOverlay]);
-
-  const clearDesign = useCallback(() => {
-    const graph = graphRef.current;
-    if (graph) graph.clearCells();
-    commitComponents([]);
-    selectComponent(null);
-    pendingDesignRef.current = null;
-  }, [commitComponents, selectComponent]);
-
-  const loadDesign = useCallback((design: DesignFile) => {
-    const graph = graphRef.current;
-    if (!graph) {
-      viewportRef.current = design.viewport;
-      pendingDesignRef.current = design;
-      const normalized = autoResizeContainers(design.components.map((comp) => {
-        const size = clampSize(comp.type, comp.width, comp.height);
-        return { ...comp, width: size.width, height: size.height };
-      }));
-      commitComponents(normalized);
-      selectComponent(null);
-      return;
-    }
-    renderDesignOnGraph(graph, design);
-  }, [clampSize, commitComponents, renderDesignOnGraph, selectComponent]);
-
-  const resizeSelected = useCallback((handle: ResizeHandle, clientX: number, clientY: number, start: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    pointerX: number;
-    pointerY: number;
-    type: string;
-  }) => {
-    const graph = graphRef.current;
-    const id = selectedIdRef.current;
-    if (!graph || !id) return;
-    const node = graph.getCellById(id) as Node | null;
-    if (!node || !node.isNode()) return;
-
-    const startPoint = graph.clientToLocal(start.pointerX, start.pointerY);
-    const currentPoint = graph.clientToLocal(clientX, clientY);
-    const dx = currentPoint.x - startPoint.x;
-    const dy = currentPoint.y - startPoint.y;
-    const min = MIN_SIZES[start.type] ?? { w: 96, h: 28 };
-
-    let x = start.x;
-    let y = start.y;
-    let width = start.width;
-    let height = start.height;
-
-    if (handle.includes('e')) width = start.width + dx;
-    if (handle.includes('s')) height = start.height + dy;
-    if (handle.includes('w')) {
-      width = start.width - dx;
-      x = start.x + dx;
-    }
-    if (handle.includes('n')) {
-      height = start.height - dy;
-      y = start.y + dy;
-    }
-
-    if (width < min.w) {
-      if (handle.includes('w')) x -= min.w - width;
-      width = min.w;
-    }
-    if (height < min.h) {
-      if (handle.includes('n')) y -= min.h - height;
-      height = min.h;
-    }
-
-    const next = {
-      x: Math.round(x),
-      y: Math.round(y),
-      width: Math.round(width),
-      height: Math.round(height),
-    };
-    node.setPosition(next.x, next.y);
-    node.setSize(next.width, next.height);
-    const data = node.getData();
-    const changed = { ...data.designComponent, ...next, zIndex: node.getZIndex() ?? data.designComponent.zIndex };
-    const current = componentsRef.current.map((item) => item.id === id ? changed : item);
-    const component = {
-      ...changed,
-      parentId: findContainerParent(changed, current),
-    };
-    setNodeComponentData(node, component, true);
-    commitComponents((prev) => finalizeComponents(prev.map((item) => item.id === id ? component : item)));
-    syncSelectionOverlay(id);
-  }, [commitComponents, setNodeComponentData, syncSelectionOverlay]);
-
-  const reparentComponent = useCallback((id: string, parentId?: string) => {
-    const target = parentId ? componentsRef.current.find((component) => component.id === parentId) : undefined;
-    if (parentId && (!target || !CONTAINER_TYPES.has(target.type))) return;
-    if (parentId && getDescendantIds(componentsRef.current, id).has(parentId)) return;
-    commitComponents((prev) => {
-      const next = prev.map((component) => component.id === id ? { ...component, parentId } : component);
-      const normalized = finalizeComponents(next);
-      const changed = normalized.find((component) => component.id === id);
-      const node = graphRef.current?.getCellById(id) as Node | null;
-      const currentParent = node?.getParent() as Node | null;
-      if (node && currentParent && (!parentId || currentParent.id !== parentId)) {
-        currentParent.unembed(node, { ui: true });
-      }
-      if (node && parentId) {
-        const parentNode = graphRef.current?.getCellById(parentId) as Node | null;
-        parentNode?.embed(node, { ui: true });
-      }
-      if (node?.isNode() && changed) setNodeComponentData(node, changed, selectedIdRef.current === id);
-      return normalized;
-    });
-  }, [commitComponents, finalizeComponents, setNodeComponentData]);
-
-  const startResize = useCallback((handle: ResizeHandle, event: React.PointerEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const graph = graphRef.current;
-    const id = selectedIdRef.current;
-    if (!graph || !id) return;
-    const node = graph.getCellById(id) as Node | null;
-    if (!node || !node.isNode()) return;
-    const pos = node.getPosition();
-    const size = node.getSize();
-    const data = node.getData();
-    const start = {
-      x: pos.x,
-      y: pos.y,
-      width: size.width,
-      height: size.height,
-      pointerX: event.clientX,
-      pointerY: event.clientY,
-      type: data.componentType as string,
-    };
-    const move = (moveEvent: PointerEvent) => {
-      moveEvent.preventDefault();
-      resizeSelected(handle, moveEvent.clientX, moveEvent.clientY, start);
-    };
-    const up = () => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-    };
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
-  }, [resizeSelected]);
-
-  const exportDesign = useCallback((): DesignComponent[] => {
-    return components;
-  }, [components]);
+  }, [selectedId, selectedIdRef, graphRef, syncGraphSelectionState, syncSelectionOverlay]);
 
   const zoomToNearestStep = useCallback((direction: 1 | -1) => {
     const graph = graphRef.current;
@@ -943,142 +585,44 @@ export function useDesigner() {
       : [...steps].reverse().find((step) => step < current - 0.001) ?? current / 1.2;
     graph.zoomTo(next);
     setZoom(next);
-  }, []);
+  }, [graphRef, setZoom]);
+
   const zoomIn = useCallback(() => zoomToNearestStep(1), [zoomToNearestStep]);
   const zoomOut = useCallback(() => zoomToNearestStep(-1), [zoomToNearestStep]);
+
   const resetView = useCallback(() => {
     const graph = graphRef.current;
     if (!graph) return;
     graph.zoomTo(1);
     graph.centerContent();
     setZoom(1);
-  }, []);
+  }, [graphRef, setZoom]);
+
   const fitContent = useCallback(() => {
     graphRef.current?.zoomToFit({ padding: 48 });
     requestAnimationFrame(() => syncSelectionOverlay());
-  }, [syncSelectionOverlay]);
-  const undo = useCallback(() => {
-    graphRef.current?.undo();
-    requestAnimationFrame(syncComponentsFromGraph);
-  }, [syncComponentsFromGraph]);
-  const redo = useCallback(() => {
-    graphRef.current?.redo();
-    requestAnimationFrame(syncComponentsFromGraph);
-  }, [syncComponentsFromGraph]);
-  const copy = useCallback(() => {
-    const graph = graphRef.current;
-    if (graph) graph.copy(graph.getSelectedCells());
-  }, []);
-  const paste = useCallback(() => {
-    const graph = graphRef.current;
-    if (!graph) return;
-    const pasted = graph.paste({ offset: 24 });
-    const nextComponents: DesignComponent[] = [];
-    pasted.forEach((cell) => {
-      if (!cell.isNode()) return;
-      const node = cell as Node;
-      const data = node.getData();
-      const pos = node.getPosition();
-      const size = node.getSize();
-      const bounded = clampSize(data.componentType, size.width, size.height);
-        const comp: DesignComponent = {
-          ...data.designComponent,
-          id: node.id,
-          x: pos.x,
-          y: pos.y,
-          width: bounded.width,
-          height: bounded.height,
-          zIndex: node.getZIndex() ?? data.designComponent?.zIndex,
-        };
-      node.setSize(bounded.width, bounded.height);
-      setNodeComponentData(node, comp, true);
-      nextComponents.push(comp);
-    });
-    if (nextComponents.length) {
-        commitComponents((prev) => {
-          const combined = [...prev, ...nextComponents];
-          return finalizeComponents(combined.map((component) => ({
-            ...component,
-            parentId: findContainerParent(component, combined),
-          })));
-        });
-        selectComponent(nextComponents[nextComponents.length - 1].id);
-      }
-  }, [clampSize, commitComponents, finalizeComponents, selectComponent, setNodeComponentData]);
-
-  const duplicate = useCallback(() => {
-    const graph = graphRef.current;
-    if (!graph) return;
-    graph.copy(graph.getSelectedCells());
-    const pasted = graph.paste({ offset: 24 });
-    const nextComponents: DesignComponent[] = [];
-    pasted.forEach((cell) => {
-      if (!cell.isNode()) return;
-      const node = cell as Node;
-      const data = node.getData();
-      const pos = node.getPosition();
-      const size = node.getSize();
-      const bounded = clampSize(data.componentType, size.width, size.height);
-        const comp: DesignComponent = {
-          ...data.designComponent,
-          id: node.id,
-          x: pos.x,
-          y: pos.y,
-          width: bounded.width,
-          height: bounded.height,
-          zIndex: node.getZIndex() ?? data.designComponent?.zIndex,
-        };
-      node.setSize(bounded.width, bounded.height);
-      setNodeComponentData(node, comp, true);
-      nextComponents.push(comp);
-    });
-    if (nextComponents.length) {
-        commitComponents((prev) => {
-          const combined = [...prev, ...nextComponents];
-          return finalizeComponents(combined.map((component) => ({
-            ...component,
-            parentId: findContainerParent(component, combined),
-          })));
-        });
-        selectComponent(nextComponents[nextComponents.length - 1].id);
-      }
-  }, [clampSize, commitComponents, finalizeComponents, selectComponent, setNodeComponentData]);
-
-  const bringToFront = useCallback(() => {
-    const graph = graphRef.current;
-    if (!graph) return;
-    const maxZ = Math.max(0, ...graph.getCells().map((cell) => cell.getZIndex() ?? 0));
-    graph.getSelectedCells().forEach((cell, index) => cell.setZIndex(maxZ + index + 1));
-    syncComponentsFromGraph();
-  }, [syncComponentsFromGraph]);
-
-  const sendToBack = useCallback(() => {
-    const graph = graphRef.current;
-    if (!graph) return;
-    const minZ = Math.min(0, ...graph.getCells().map((cell) => cell.getZIndex() ?? 0));
-    graph.getSelectedCells().forEach((cell, index) => cell.setZIndex(minZ - index - 1));
-    syncComponentsFromGraph();
-  }, [syncComponentsFromGraph]);
-
-  const toggleMode = useCallback(() => {
-    const graph = graphRef.current;
-    if (!graph) return;
-    setMode(prev => {
-      const next = prev === 'design' ? 'preview' : 'design';
-      modeRef.current = next;
-      if (next === 'preview') {
-        selectComponent(null);
-      }
-      return next;
-    });
-  }, [selectComponent]);
+  }, [graphRef, syncSelectionOverlay]);
 
   return {
     containerRef, graphRef, initGraph,
     selectedId, setSelectedId: selectComponent, selectionOverlay, components, zoom, mode,
-    addComponent, removeComponent, updateComponentProps, reparentComponent,
-    clearDesign, loadDesign, exportDesign,
-    deleteSelected, zoomIn, zoomOut, resetView, fitContent, undo, redo, copy, paste,
-    duplicate, bringToFront, sendToBack, startResize, toggleMode,
+    addComponent: actions.addComponent,
+    removeComponent: actions.removeComponent,
+    updateComponentProps: actions.updateComponentProps,
+    reparentComponent: actions.reparentComponent,
+    clearDesign: io.clearDesign,
+    loadDesign: io.loadDesign,
+    exportDesign: io.exportDesign,
+    deleteSelected: actions.deleteSelected,
+    zoomIn, zoomOut, resetView, fitContent,
+    undo: history.undo,
+    redo: history.redo,
+    copy: clipboard.copy,
+    paste: clipboard.paste,
+    duplicate: clipboard.duplicate,
+    bringToFront: actions.bringToFront,
+    sendToBack: actions.sendToBack,
+    startResize: actions.startResize,
+    toggleMode: io.toggleMode,
   };
 }

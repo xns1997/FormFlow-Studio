@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { DesignComponent, SrcTableEntry } from '../project/types';
-import { getPreviewInitialValue } from '../services/previewValues';
+import { getPreviewInitialValue } from '../services/display/previewValues';
 
 const component: DesignComponent = {
   id: 'name', type: 'input', x: 0, y: 0, width: 100, height: 40,

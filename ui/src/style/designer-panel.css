@@ -1,0 +1,83 @@
+/* designer-panel.css — 左右面板框架 */
+
+/* ── Left Panel ───────────────────────────────────────── */
+
+.designer-left-panel {
+  width: 200px;
+  border-right: 1px solid rgba(60,60,67,0.10);
+  display: flex;
+  flex-direction: column;
+  background: rgba(255,255,255,0.80);
+  backdrop-filter: blur(28px) saturate(180%);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.left-panel-tabs {
+  display: flex;
+  border-bottom: 0.5px solid rgba(60,60,67,0.10);
+  flex-shrink: 0;
+}
+
+.left-panel-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #8e8e93;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.left-panel-tab:hover {
+  color: #1c1c1e;
+  background: rgba(0,122,255,0.04);
+}
+
+.left-panel-tab.active {
+  color: #007aff;
+  font-weight: 600;
+  border-bottom-color: #007aff;
+}
+
+.tab-count {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background: rgba(0,122,255,0.12);
+  color: #007aff;
+}
+
+.left-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.left-panel-body > .ff-antd-form-scope {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.left-panel-body .designer-toolbox {
+  width: 100%;
+  min-height: 0;
+  height: 100%;
+  flex: 1;
+  border: none;
+  background: transparent;
+  backdrop-filter: none;
+  flex-shrink: 0;
+}

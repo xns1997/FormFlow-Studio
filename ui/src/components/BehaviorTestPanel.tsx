@@ -47,15 +47,39 @@ export default function BehaviorTestPanel({ code, eventName, fields }: BehaviorT
     }
 
     // Create mock ctx
+    const visibleState: Record<string, boolean> = {};
+    const disabledState: Record<string, boolean> = {};
+    const requiredState: Record<string, boolean> = {};
     const mockCtx = {
       getValue: (fieldId: string) => {
         const val = formValues[fieldId];
         addLog({ type: 'call', method: 'getValue', args: [fieldId], result: val, message: `ctx.getValue("${fieldId}") → ${JSON.stringify(val)}` });
         return val;
       },
+      getValues: (fieldIds: string[]) => {
+        const result = Object.fromEntries(fieldIds.map((fieldId) => [fieldId, formValues[fieldId]]));
+        addLog({ type: 'call', method: 'getValues', args: [fieldIds], result, message: `ctx.getValues(${JSON.stringify(fieldIds)}) → ${JSON.stringify(result)}` });
+        return result;
+      },
       setValue: (fieldId: string, value: unknown) => {
         formValues[fieldId] = value;
         addLog({ type: 'call', method: 'setValue', args: [fieldId, value], message: `ctx.setValue("${fieldId}", ${JSON.stringify(value)})` });
+      },
+      setValues: async (patch: Record<string, unknown>) => {
+        for (const [fieldId, value] of Object.entries(patch)) {
+          formValues[fieldId] = value;
+          addLog({ type: 'call', method: 'setValues', args: [fieldId, value], message: `ctx.setValues → ${fieldId}=${JSON.stringify(value)}` });
+        }
+      },
+      clearValue: async (fieldId: string) => {
+        formValues[fieldId] = '';
+        addLog({ type: 'call', method: 'clearValue', args: [fieldId], message: `ctx.clearValue("${fieldId}")` });
+      },
+      clearValues: async (fieldIds: string[]) => {
+        for (const fieldId of fieldIds) {
+          formValues[fieldId] = '';
+          addLog({ type: 'call', method: 'clearValues', args: [fieldId], message: `ctx.clearValues → ${fieldId}` });
+        }
       },
       setField: (fieldId: string, value: unknown) => {
         formValues[fieldId] = value;
@@ -64,13 +88,59 @@ export default function BehaviorTestPanel({ code, eventName, fields }: BehaviorT
       get formData() { return formValues; },
       get originalData() { return formValues; },
       setVisible: (componentId: string, visible: boolean) => {
+        visibleState[componentId] = visible;
         addLog({ type: 'call', method: 'setVisible', args: [componentId, visible], message: `ctx.setVisible("${componentId}", ${visible})` });
       },
+      toggleVisible: async (componentId: string) => {
+        const next = !(visibleState[componentId] ?? true);
+        visibleState[componentId] = next;
+        addLog({ type: 'call', method: 'toggleVisible', args: [componentId], result: next, message: `ctx.toggleVisible("${componentId}") → ${next}` });
+        return next;
+      },
       setDisabled: (componentId: string, disabled: boolean) => {
+        disabledState[componentId] = disabled;
         addLog({ type: 'call', method: 'setDisabled', args: [componentId, disabled], message: `ctx.setDisabled("${componentId}", ${disabled})` });
       },
+      toggleDisabled: async (componentId: string) => {
+        const next = !(disabledState[componentId] ?? false);
+        disabledState[componentId] = next;
+        addLog({ type: 'call', method: 'toggleDisabled', args: [componentId], result: next, message: `ctx.toggleDisabled("${componentId}") → ${next}` });
+        return next;
+      },
       setRequired: (fieldId: string, required: boolean) => {
+        requiredState[fieldId] = required;
         addLog({ type: 'call', method: 'setRequired', args: [fieldId, required], message: `ctx.setRequired("${fieldId}", ${required})` });
+      },
+      toggleRequired: async (fieldId: string) => {
+        const next = !(requiredState[fieldId] ?? false);
+        requiredState[fieldId] = next;
+        addLog({ type: 'call', method: 'toggleRequired', args: [fieldId], result: next, message: `ctx.toggleRequired("${fieldId}") → ${next}` });
+        return next;
+      },
+      setFieldState: async (fieldOrComponentId: string, patch: { value?: unknown; visible?: boolean; disabled?: boolean; required?: boolean }) => {
+        if ('value' in patch) formValues[fieldOrComponentId] = patch.value;
+        if ('visible' in patch) visibleState[fieldOrComponentId] = !!patch.visible;
+        if ('disabled' in patch) disabledState[fieldOrComponentId] = !!patch.disabled;
+        if ('required' in patch) requiredState[fieldOrComponentId] = !!patch.required;
+        addLog({ type: 'call', method: 'setFieldState', args: [fieldOrComponentId, patch], message: `ctx.setFieldState("${fieldOrComponentId}", ${JSON.stringify(patch)})` });
+      },
+      focusField: async (fieldId: string) => {
+        addLog({ type: 'call', method: 'focusField', args: [fieldId], message: `ctx.focusField("${fieldId}") [模拟定位]` });
+      },
+      focusControl: async (componentId: string) => {
+        addLog({ type: 'call', method: 'focusControl', args: [componentId], message: `ctx.focusControl("${componentId}") [模拟定位]` });
+      },
+      scrollToField: async (fieldId: string) => {
+        addLog({ type: 'call', method: 'scrollToField', args: [fieldId], message: `ctx.scrollToField("${fieldId}") [模拟滚动]` });
+      },
+      scrollToControl: async (componentId: string) => {
+        addLog({ type: 'call', method: 'scrollToControl', args: [componentId], message: `ctx.scrollToControl("${componentId}") [模拟滚动]` });
+      },
+      switchTab: async (tabIdOrIndex: string | number) => {
+        addLog({ type: 'call', method: 'switchTab', args: [tabIdOrIndex], message: `ctx.switchTab(${JSON.stringify(tabIdOrIndex)}) [模拟切换页签]` });
+      },
+      openTab: async (tabIdOrIndex: string | number) => {
+        addLog({ type: 'call', method: 'openTab', args: [tabIdOrIndex], message: `ctx.openTab(${JSON.stringify(tabIdOrIndex)}) [模拟切换页签]` });
       },
       showMessage: (message: string, type: string = 'info') => {
         addLog({ type: 'call', method: 'showMessage', args: [message, type], message: `ctx.showMessage("${message}", "${type}")` });

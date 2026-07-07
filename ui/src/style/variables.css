@@ -24,8 +24,8 @@
   --radius-lg: 10px;
   --radius-xl: 12px;
   --radius-full: 999px;
-  --right-panel-width: clamp(340px, 28vw, 420px);
-  --right-panel-width-wide: clamp(420px, 36vw, 560px);
+  --right-panel-width: clamp(280px, 22vw, 340px);
+  --right-panel-width-wide: clamp(340px, 28vw, 420px);
   --z-dropdown: 100;
   --z-modal: 1000;
   --z-toast: 2000;

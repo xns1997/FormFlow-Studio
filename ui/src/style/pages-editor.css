@@ -1,0 +1,133 @@
+/* pages-editor.css — 编辑器页面：行为布局、工具栏 */
+
+/* ── Behavior Page ────────────────────────────────────── */
+
+.behavior-layout {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.behavior-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+}
+
+.behavior-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.behavior-inspector {
+  width: var(--right-panel-width);
+  flex-shrink: 0;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  overflow-y: auto;
+  min-width: 0;
+}
+
+/* ── Behavior Page Helpers ────────────────────────────── */
+
+.behavior-toolbar-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.behavior-toolbar-btn {
+  padding: 2px 6px;
+  font-size: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  cursor: pointer;
+}
+
+.behavior-toolbar-btn:hover {
+  background: var(--panel-soft);
+}
+
+.behavior-toolbar-btn.primary {
+  font-size: 11px;
+  padding: 2px 8px;
+}
+
+.behavior-empty-state {
+  text-align: center;
+  padding: 20px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.behavior-event-group {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+
+.behavior-status-dot {
+  font-size: 12px;
+}
+
+.behavior-status-dot.enabled {
+  color: var(--success);
+}
+
+.behavior-status-dot.disabled {
+  color: var(--danger);
+}
+
+.behavior-mode-toggle {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.behavior-mode-btn {
+  padding: 3px 8px;
+  font-size: 10px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.behavior-mode-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.behavior-editor-toolbar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.behavior-tab-btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 400;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.behavior-tab-btn.active {
+  color: var(--accent);
+  font-weight: 600;
+  border-bottom-color: var(--accent);
+}

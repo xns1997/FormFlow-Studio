@@ -1,0 +1,98 @@
+/* ── 向导模式 ───────────────────────────────────────────── */
+
+.lg-form-wizard {
+  max-width: 100%;
+}
+
+.lg-wizard-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 0 12px;
+  overflow-x: auto;
+}
+
+.lg-wizard-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.lg-wizard-step:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.lg-wizard-step.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.lg-wizard-step.done {
+  border-color: #16a34a;
+  background: var(--success-soft);
+  color: #16a34a;
+}
+
+.lg-wizard-step-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--line);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.lg-wizard-step.active .lg-wizard-step-num {
+  background: var(--accent);
+  color: #fff;
+}
+
+.lg-wizard-step.done .lg-wizard-step-num {
+  background: #16a34a;
+  color: #fff;
+}
+
+.lg-wizard-step-label {
+  font-size: 12px;
+}
+
+.lg-wizard-body {
+  animation: wizard-slide 0.25s ease;
+}
+
+@keyframes wizard-slide {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.lg-wizard-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+}
+
+.lg-wizard-nav-info {
+  font-size: 12px;
+  color: var(--muted);
+}

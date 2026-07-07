@@ -1,0 +1,79 @@
+/* ── 状态指示器（脏标记 / 必填进度 / 验证 / 提示）───────── */
+
+.lg-field.dirty-indicator {
+  position: relative;
+}
+
+.lg-field.dirty-indicator::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  border-radius: 2px;
+  background: #f59e0b;
+}
+
+/* ── Required Field Progress ───────────────────────────── */
+
+.lg-required-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0 2px;
+  margin-bottom: 4px;
+}
+
+.lg-required-progress-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.lg-required-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.lg-required-progress-text {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Valid Check Mark ──────────────────────────────────── */
+
+.lg-valid-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #16a34a;
+  font-size: 10px;
+  font-weight: 700;
+  animation: check-pop 0.25s ease;
+}
+
+@keyframes check-pop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ── Field Hints ───────────────────────────────────────── */
+
+.lg-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}

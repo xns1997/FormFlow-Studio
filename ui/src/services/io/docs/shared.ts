@@ -1,0 +1,126 @@
+import type {
+  BehaviorApiReference,
+  BehaviorDocScope,
+  BehaviorEventDocEntry,
+  BehaviorReferenceField,
+  BehaviorReferenceShortcut,
+} from './types';
+
+export const sharedContextFields: BehaviorReferenceField[] = [
+  { name: 'ctx.field', type: 'string', description: '当前触发事件的字段名或绑定键。' },
+  { name: 'ctx.value', type: 'unknown', description: '当前事件对应的值。不同事件下会映射成当前控件值、提交结果或触发值。' },
+  { name: 'ctx.values', type: 'Record<string, unknown>', description: '当前完整表单值快照。' },
+  { name: 'ctx.formData', type: 'Record<string, unknown>', description: '与 ctx.values 等价，便于脚本或流程复用。' },
+  { name: 'ctx.originalValues', type: 'Record<string, unknown>', description: '表单初始值快照，适合做差异比较。' },
+  { name: 'ctx.detail', type: 'unknown', description: '事件专属附加数据。具体结构取决于事件类型。' },
+];
+
+export const controlOnlyContextFields: BehaviorReferenceField[] = [
+  { name: 'ctx.eventName', type: 'string', description: '当前控件事件名，例如 onChange、onDrop。' },
+  { name: 'ctx.component', type: 'FormEventComponent', description: '当前控件定义，可读取 id、type、props 等信息。' },
+  { name: 'ctx.componentId', type: 'string', description: '当前控件 ID，便于控制显隐和跳转文档。' },
+  { name: 'ctx.componentType', type: 'string', description: '当前控件类型，例如 input、tabs、table。' },
+  { name: 'ctx.controls', type: 'Record<string, FormEventControlHandle>', description: '按控件 name 或 componentId 暴露的运行时控件句柄，可直接访问 value / visible / disabled / required。' },
+  { name: 'ctx.previousValue', type: 'unknown', description: '事件发生前的字段值。表单级事件通常是旧快照。' },
+  { name: 'ctx.timestamp', type: 'number', description: '事件上下文创建时的毫秒时间戳。' },
+  { name: 'ctx.dirty', type: 'boolean', description: '当前字段值是否相对原始值发生变化。' },
+  { name: 'ctx.changedFields', type: 'string[]', description: '相对原始值发生变化的字段列表。' },
+];
+
+export const scriptOnlyContextFields: BehaviorReferenceField[] = [
+  { name: 'ctx.getValue(fieldId)', type: 'unknown', description: '读取行为脚本当前看到的字段值。' },
+  { name: 'ctx.getValues(fieldIds)', type: 'Record<string, unknown>', description: '批量读取多个字段值，减少重复 getValue。' },
+  { name: 'ctx.setValue(fieldId, value)', type: 'void', description: '修改字段值，并立即更新运行时数据。' },
+  { name: 'ctx.setValues(patch)', type: 'Promise<void>', description: '批量写入多个字段值。' },
+  { name: 'ctx.setFieldState(fieldOrComponentId, patch)', type: 'Promise<void>', description: '按字段/控件一次性切换 value / visible / disabled / required。' },
+  { name: 'ctx.originalData', type: 'Record<string, unknown>', description: '测试面板和行为脚本中可读取的原始数据快照。' },
+];
+
+export const flowParameterShortcuts: BehaviorReferenceShortcut[] = [
+  { path: '$value', description: '当前事件值。' },
+  { path: '$field', description: '当前字段名。' },
+  { path: '$event', description: '当前事件名。' },
+  { path: '$values', description: '当前表单值快照。' },
+  { path: '$formData', description: '当前表单值快照的别名。' },
+  { path: '$originalValues', description: '原始表单值快照。' },
+  { path: '$component', description: '当前控件定义对象。' },
+  { path: '$componentId', description: '当前控件 ID。' },
+  { path: '$detail', description: '当前事件 detail 对象。' },
+  { path: '$previousValue', description: '当前字段旧值。' },
+  { path: '$timestamp', description: '事件时间戳。' },
+  { path: '$dirty', description: '当前字段是否脏数据。' },
+  { path: '$changedFields', description: '已变化字段列表。' },
+  { path: '$context', description: '完整事件上下文对象。' },
+];
+
+export const scriptApis: BehaviorApiReference[] = [
+  { name: 'ctx.getValue', signature: 'ctx.getValue(fieldId)', description: '获取字段当前值。' },
+  { name: 'ctx.getValues', signature: 'ctx.getValues(fieldIds)', description: '批量读取字段值。' },
+  { name: 'ctx.setValue', signature: 'ctx.setValue(fieldId, value)', description: '设置字段值。' },
+  { name: 'ctx.setValues', signature: 'await ctx.setValues({ fieldA: valueA, fieldB: valueB })', description: '批量设置字段值。' },
+  { name: 'ctx.clearValue', signature: 'await ctx.clearValue(fieldId)', description: '清空单个字段。' },
+  { name: 'ctx.clearValues', signature: 'await ctx.clearValues(fieldIds)', description: '批量清空字段。' },
+  { name: 'ctx.setVisible', signature: 'ctx.setVisible(componentId, visible)', description: '控制组件显示或隐藏。' },
+  { name: 'ctx.toggleVisible', signature: 'await ctx.toggleVisible(componentId)', description: '反转组件显示状态。' },
+  { name: 'ctx.setDisabled', signature: 'ctx.setDisabled(componentId, disabled)', description: '控制组件禁用状态。' },
+  { name: 'ctx.toggleDisabled', signature: 'await ctx.toggleDisabled(componentId)', description: '反转组件禁用状态。' },
+  { name: 'ctx.setRequired', signature: 'ctx.setRequired(fieldId, required)', description: '控制字段是否必填。' },
+  { name: 'ctx.toggleRequired', signature: 'await ctx.toggleRequired(fieldId)', description: '反转字段必填状态。' },
+  { name: 'ctx.setFieldState', signature: 'await ctx.setFieldState(fieldOrComponentId, patch)', description: '按固定顺序批量修改值与状态。' },
+  { name: 'ctx.focusField', signature: 'await ctx.focusField(fieldId)', description: '定位并聚焦字段。' },
+  { name: 'ctx.focusControl', signature: 'await ctx.focusControl(componentId)', description: '按组件 ID 聚焦控件。' },
+  { name: 'ctx.scrollToField', signature: 'await ctx.scrollToField(fieldId)', description: '滚动到指定字段。' },
+  { name: 'ctx.scrollToControl', signature: 'await ctx.scrollToControl(componentId)', description: '滚动到指定控件。' },
+  { name: 'ctx.switchTab', signature: 'await ctx.switchTab(tabIdOrIndex)', description: '切换到指定页签。' },
+  { name: 'ctx.openTab', signature: 'await ctx.openTab(tabIdOrIndex)', description: 'switchTab 的业务别名。' },
+  { name: 'ctx.showMessage', signature: "ctx.showMessage(message, type = 'info')", description: '弹出消息提示。' },
+  { name: 'ctx.validateField', signature: 'ctx.validateField(fieldId)', description: '触发字段校验并返回结果。' },
+  { name: 'ctx.querySheet', signature: 'ctx.querySheet(sheetId, filter?)', description: '查询表数据。' },
+  { name: 'ctx.updateRow', signature: 'ctx.updateRow(rowId, patch)', description: '更新数据行。' },
+  { name: 'ctx.submit', signature: 'ctx.submit()', description: '触发表单提交。' },
+];
+
+export const controlApis: BehaviorApiReference[] = [
+  { name: 'ctx.controls', signature: 'ctx.controls.controlName.value = nextValue', description: '通过控件句柄直接读写其它控件。支持 value / visible / disabled / required。' },
+  { name: 'ctx.getValue', signature: 'ctx.getValue(fieldId)', description: '读取任意字段的当前值。' },
+  { name: 'ctx.getValues', signature: 'ctx.getValues(fieldIds)', description: '批量读取多个字段值。' },
+  { name: 'ctx.setValue', signature: 'await ctx.setValue(fieldId, value)', description: '异步修改字段值。' },
+  { name: 'ctx.setValues', signature: 'await ctx.setValues({ fieldA: valueA, fieldB: valueB })', description: '异步批量修改字段值。' },
+  { name: 'ctx.clearValue', signature: 'await ctx.clearValue(fieldId)', description: '清空单个字段。' },
+  { name: 'ctx.clearValues', signature: 'await ctx.clearValues(fieldIds)', description: '批量清空字段。' },
+  { name: 'ctx.setVisible', signature: 'await ctx.setVisible(componentId, visible)', description: '异步修改控件显隐。' },
+  { name: 'ctx.toggleVisible', signature: 'await ctx.toggleVisible(componentId)', description: '异步切换控件显隐。' },
+  { name: 'ctx.setDisabled', signature: 'await ctx.setDisabled(componentId, disabled)', description: '异步修改控件禁用状态。' },
+  { name: 'ctx.toggleDisabled', signature: 'await ctx.toggleDisabled(componentId)', description: '异步切换控件禁用状态。' },
+  { name: 'ctx.setRequired', signature: 'await ctx.setRequired(fieldId, required)', description: '异步修改字段必填状态。' },
+  { name: 'ctx.toggleRequired', signature: 'await ctx.toggleRequired(fieldId)', description: '异步切换字段必填状态。' },
+  { name: 'ctx.setFieldState', signature: 'await ctx.setFieldState(fieldOrComponentId, patch)', description: '按 value → visible → disabled → required 的顺序统一修改。' },
+  { name: 'ctx.focusField', signature: 'await ctx.focusField(fieldId)', description: '定位并聚焦字段。' },
+  { name: 'ctx.focusControl', signature: 'await ctx.focusControl(componentId)', description: '按组件 ID 聚焦控件。' },
+  { name: 'ctx.scrollToField', signature: 'await ctx.scrollToField(fieldId)', description: '滚动到指定字段。' },
+  { name: 'ctx.scrollToControl', signature: 'await ctx.scrollToControl(componentId)', description: '滚动到指定控件。' },
+  { name: 'ctx.switchTab', signature: 'await ctx.switchTab(tabIdOrIndex)', description: '切换到指定页签。' },
+  { name: 'ctx.openTab', signature: 'await ctx.openTab(tabIdOrIndex)', description: 'switchTab 的业务别名。' },
+  { name: 'ctx.showMessage', signature: "await ctx.showMessage(message, type = 'info')", description: '显示即时提示消息。' },
+  { name: 'ctx.runConfiguredWorkflow', signature: 'await ctx.runConfiguredWorkflow(parameters?)', description: '执行当前事件已绑定的流程。' },
+  { name: 'ctx.runWorkflow', signature: 'await ctx.runWorkflow(workflowIdOrName, parameters?, options?)', description: '按 ID 或名称执行任意流程。' },
+  { name: 'ctx.call', signature: 'await ctx.call(name, ...args)', description: '调用宿主注册的回调函数。' },
+  { name: 'ctx.console.log', signature: 'ctx.console.log(...args)', description: '输出调试日志。' },
+];
+
+export function mergeContextFields(scope: BehaviorDocScope) {
+  return scope === 'control'
+    ? [...sharedContextFields, ...controlOnlyContextFields]
+    : [...sharedContextFields, ...scriptOnlyContextFields];
+}
+
+export function createEventDoc(entry: Omit<BehaviorEventDocEntry, 'contextFields' | 'apis'> & {
+  contextFields?: BehaviorReferenceField[];
+  apis?: BehaviorApiReference[];
+}): BehaviorEventDocEntry {
+  return {
+    ...entry,
+    contextFields: entry.contextFields || mergeContextFields(entry.scope),
+    apis: entry.apis || (entry.scope === 'control' ? controlApis : scriptApis),
+  };
+}

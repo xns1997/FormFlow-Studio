@@ -1,0 +1,415 @@
+/* designer-canvas.css — 画布、选中框、预览模式 */
+
+/* ── Designer Canvas ──────────────────────────────────── */
+
+.designer-canvas-shell {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(0,122,255,0.10), transparent 28%),
+    linear-gradient(180deg, #f8f8fb 0%, #f2f4f8 100%);
+}
+
+.designer-canvas {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.designer-canvas-shell:not(.mode-preview) .ios-design-node,
+.designer-canvas-shell:not(.mode-preview) .ios-design-node * {
+  pointer-events: none;
+}
+
+.canvas-floating-toolbar,
+.canvas-status-pill {
+  position: absolute;
+  z-index: 10;
+  background: rgba(255,255,255,0.82);
+  border: 1px solid rgba(148,163,184,0.18);
+  border-radius: 14px;
+  box-shadow: 0 14px 34px rgba(15,23,42,0.10), 0 2px 6px rgba(15,23,42,0.06);
+  backdrop-filter: blur(24px) saturate(180%);
+}
+
+.canvas-floating-toolbar {
+  left: 16px;
+  top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+}
+
+.canvas-floating-toolbar .toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.canvas-floating-toolbar .toolbar-group-zoom {
+  gap: 2px;
+}
+
+.canvas-floating-toolbar .toolbar-divider {
+  width: 1px;
+  height: 22px;
+  background: rgba(148,163,184,0.24);
+}
+
+.canvas-floating-toolbar button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.canvas-floating-toolbar button:hover {
+  background: rgba(37,99,235,0.10);
+  color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.canvas-floating-toolbar .mode-toggle {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-lg);
+  min-width: auto;
+  width: auto;
+  border: 1px solid rgba(148,163,184,0.16);
+  background: rgba(248,250,252,0.88);
+}
+
+.canvas-floating-toolbar .mode-toggle.active {
+  background: rgba(37,99,235,0.12);
+  color: #1d4ed8;
+  border-color: rgba(37,99,235,0.18);
+}
+
+.canvas-floating-toolbar .mode-toggle.active:hover {
+  background: rgba(37,99,235,0.18);
+  color: #1d4ed8;
+}
+
+.canvas-floating-toolbar .zoom-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 9px;
+  background: rgba(248,250,252,0.9);
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.canvas-floating-toolbar .designer-icon {
+  width: auto;
+  height: auto;
+  margin: 0;
+  background: transparent;
+}
+
+.canvas-status-pill {
+  right: 16px;
+  bottom: 16px;
+  padding: 8px 12px;
+  color: #64748b;
+  font-size: 11px;
+  pointer-events: none;
+}
+
+/* ── Preview Mode ─────────────────────────────────────── */
+
+.mode-preview {
+  cursor: default !important;
+}
+
+.mode-preview .designer-canvas {
+  cursor: default !important;
+}
+
+.designer-canvas-hidden {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.designer-body.preview-active {
+  display: flex;
+}
+
+.designer-toolbar.preview-active .toolbar-sep {
+  display: none;
+}
+
+.designer-preview-viewport {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(52,199,89,0.08), transparent 30%),
+    linear-gradient(180deg, #f8f9fb 0%, #f1f3f6 100%);
+  touch-action: pan-x pan-y;
+}
+
+.designer-preview-stage-wrap {
+  position: relative;
+  min-width: 100%;
+  min-height: 100%;
+}
+
+.designer-preview-stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+
+.designer-preview-control {
+  position: absolute;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  pointer-events: auto;
+  border-radius: 14px;
+  transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.designer-preview-control > * {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.designer-preview-control.is-required {
+  box-shadow: 0 0 0 1px rgba(255, 149, 0, 0.12);
+}
+
+.designer-preview-control.is-hidden {
+  opacity: 0.38;
+  filter: saturate(0.82);
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.10);
+}
+
+.designer-preview-control.is-hidden > * {
+  pointer-events: none;
+}
+
+.designer-preview-control.is-disabled {
+  box-shadow: 0 0 0 1px rgba(60, 60, 67, 0.06);
+}
+
+.designer-preview-control-indicators {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.designer-preview-control-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.72);
+  opacity: 0.92;
+}
+
+.designer-preview-control-indicator.hidden {
+  background: rgba(79, 70, 229, 0.88);
+}
+
+.designer-preview-control-indicator.disabled {
+  background: rgba(107, 114, 128, 0.9);
+}
+
+.designer-preview-control-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.16) 100%),
+    rgba(244,244,245,0.10);
+  pointer-events: auto;
+  cursor: not-allowed;
+}
+
+.designer-preview-event-status {
+  position: fixed;
+  right: 24px;
+  bottom: 56px;
+  z-index: 30;
+  max-width: min(460px, calc(100vw - 48px));
+  padding: 8px 12px;
+  border: 1px solid rgba(60,60,67,0.12);
+  border-radius: 9px;
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 8px 24px rgba(31,41,55,0.12);
+  color: #636366;
+  font-size: 12px;
+  backdrop-filter: blur(20px);
+  pointer-events: none;
+}
+
+.designer-preview-event-status-title {
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.designer-preview-event-status-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.designer-preview-event-status-details span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-full);
+  background: rgba(60,60,67,0.08);
+  color: inherit;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.designer-preview-event-status.success { color: #248a3d; }
+.designer-preview-event-status.error { color: #c9342f; }
+
+.mode-preview .canvas-floating-toolbar button:not(.mode-toggle) {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.mode-preview .canvas-status-pill {
+  background: rgba(52,199,89,0.12);
+  color: #248a3d;
+}
+
+/* ── X6 Overrides ─────────────────────────────────────── */
+
+.x6-widget-selection-box,
+.x6-widget-selection-inner,
+.x6-widget-transform {
+  display: none !important;
+}
+
+.x6-widget-transform-resize {
+  display: none !important;
+}
+
+.x6-node foreignObject body {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  background: transparent !important;
+}
+
+.x6-node foreignObject body > div {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* ── Selection Overlay ────────────────────────────────── */
+
+.designer-selection-overlay {
+  position: absolute;
+  z-index: 20;
+  border: 1.5px solid #0a84ff;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 0 0 3px rgba(10,132,255,0.12), 0 10px 26px rgba(10,132,255,0.16);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.designer-resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: var(--radius-full);
+  background: #0a84ff;
+  box-shadow: 0 2px 8px rgba(10,132,255,0.35);
+  pointer-events: auto;
+}
+
+.designer-resize-handle.handle-nw { left: -6px; top: -6px; cursor: nwse-resize; }
+.designer-resize-handle.handle-n { left: 50%; top: -6px; transform: translateX(-50%); cursor: ns-resize; }
+.designer-resize-handle.handle-ne { right: -6px; top: -6px; cursor: nesw-resize; }
+.designer-resize-handle.handle-e { right: -6px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+.designer-resize-handle.handle-se { right: -6px; bottom: -6px; cursor: nwse-resize; }
+.designer-resize-handle.handle-s { left: 50%; bottom: -6px; transform: translateX(-50%); cursor: ns-resize; }
+.designer-resize-handle.handle-sw { left: -6px; bottom: -6px; cursor: nesw-resize; }
+.designer-resize-handle.handle-w { left: -6px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+
+.designer-resize-handle:hover {
+  background: #0066d6;
+  transform: scale(1.15);
+}
+
+.designer-resize-handle.handle-n:hover,
+.designer-resize-handle.handle-s:hover {
+  transform: translateX(-50%) scale(1.15);
+}
+
+.designer-resize-handle.handle-e:hover,
+.designer-resize-handle.handle-w:hover {
+  transform: translateY(-50%) scale(1.15);
+}
+
+/* ── iOS Design Node ──────────────────────────────────── */
+
+.ios-design-node {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 0;
+  max-height: 100%;
+  border-radius: var(--radius-xl);
+  padding: 2px;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  transition: box-shadow 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+
+.ios-design-node > * {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}

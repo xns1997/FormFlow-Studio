@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import type { RangeRef } from '../models';
 import type { SrcTableEntry } from '../project/types';
-import { combineRangeAreas, formatRangeAddress, getEditableRangeSources, type RangeArea } from '../services/rangeGeometry';
+import { combineRangeAreas, formatRangeAddress, getEditableRangeSources, type RangeArea } from '../services/data/rangeGeometry';
 import Modal, { ModalHeader, ModalFooter } from './Modal';
 
 // ── Column name helper (supports AA, AB, ... ZZ+) ───────────

@@ -1,0 +1,54 @@
+/* ── 基础 / 状态 / 通用 ─────────────────────────────────── */
+
+.lg-form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 28px;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.lg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lg-field.disabled { opacity: 0.5; pointer-events: none; }
+.lg-field.has-error .lg-input,
+.lg-field.has-error .lg-textarea,
+.lg-field.has-error .lg-select { border-color: var(--danger); }
+
+.lg-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.02em;
+}
+
+.lg-required { color: var(--danger); font-weight: 700; }
+
+.lg-error {
+  font-size: 11px;
+  color: var(--danger);
+  margin-top: 2px;
+  line-height: 1.45;
+}
+
+/* ── Liquid Glass Field States ──────────────────────────── */
+
+.lg-field.disabled { opacity: 0.5; pointer-events: none; }
+.lg-field.has-error .lg-input,
+.lg-field.has-error .lg-textarea,
+.lg-field.has-error .lg-select { border-color: var(--danger); }
+
+@media (max-width: 720px) {
+  .lg-form {
+    padding: 20px 16px;
+    gap: 18px;
+  }
+}

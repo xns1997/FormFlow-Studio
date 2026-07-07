@@ -1,0 +1,433 @@
+/* ── 电子表格相关（Range Selector / Name Box / Formula Bar） */
+
+.rs-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rs-field { display: flex; align-items: center; gap: 6px; }
+.rs-field label { font-size: 11px; color: var(--muted); }
+
+.rs-sheets {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.rs-sheet-tab {
+  padding: 4px 10px;
+  font-size: 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  cursor: pointer;
+}
+
+.rs-sheet-tab.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.rs-sheet-count {
+  font-size: 9px;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+.rs-clear-btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--muted);
+}
+
+.rs-header-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+}
+
+.rs-header-select {
+  padding: 3px 8px;
+  font-size: 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.rs-header-check-hint {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.rs-grid-wrapper {
+  flex: 1;
+  overflow: auto;
+  padding: 12px 16px;
+}
+
+.rs-grid {
+  overflow: auto;
+  max-height: 400px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  position: relative;
+  user-select: none;
+}
+
+.rs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.rs-table th,
+.rs-table td {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.rs-corner {
+  background: var(--panel-soft);
+  width: 32px;
+}
+
+.rs-col-header {
+  background: var(--panel-soft);
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+
+.rs-col-header:hover { background: var(--accent-soft); }
+.rs-col-header.in-range { background: #dbeafe; }
+.rs-col-header.selected-direct { background: var(--accent); color: #fff; }
+
+.rs-row-num {
+  background: var(--panel-soft);
+  font-weight: 600;
+  text-align: center;
+  width: 32px;
+  cursor: pointer;
+}
+
+.rs-row-num:hover { background: var(--accent-soft); }
+.rs-row-num.in-range { background: #dbeafe; }
+.rs-row-num.selected-direct { background: var(--accent); color: #fff; }
+
+.rs-cell {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.rs-cell:hover { background: var(--panel-soft); }
+.rs-cell.selected { background: #dbeafe; }
+.rs-cell.start { background: var(--accent); color: #fff; }
+
+.rs-header-cell {
+  font-weight: 600;
+  background: var(--panel-soft);
+}
+
+.rs-data-header-row .rs-cell {
+  background: #fef3c7;
+  font-weight: 600;
+}
+
+.rs-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.rs-selection-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.rs-address {
+  font-family: 'SF Mono', 'Menlo', monospace;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.rs-size {
+  color: var(--muted);
+}
+
+.rs-mode-tag {
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.rs-hint {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.rs-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.rs-actions .lg-btn {
+  padding: 7px 16px;
+  font-size: 13px;
+}
+
+/* ── Name Box ─────────────────────────────────────────── */
+
+.rs-name-box-wrap {
+  flex-shrink: 0;
+}
+
+.rs-name-box {
+  width: 72px;
+  padding: 3px 6px;
+  font-size: 11px;
+  font-family: 'SF Mono', 'Menlo', monospace;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  text-align: center;
+}
+
+.rs-name-box:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: #fff;
+}
+
+/* ── Formula Bar ──────────────────────────────────────── */
+
+.rs-formula-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 4px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 11px;
+  min-height: 28px;
+}
+
+.rs-formula-label {
+  padding: 2px 8px;
+  font-style: italic;
+  color: var(--muted);
+  border-right: 1px solid var(--line);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.rs-formula-content {
+  flex: 1;
+  padding: 2px 8px;
+  font-family: 'SF Mono', 'Menlo', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+/* ── Selection Border ─────────────────────────────────── */
+
+.rs-grid {
+  position: relative;
+}
+
+.rs-selection-border {
+  position: absolute;
+  border: 2px solid #22c55e;
+  pointer-events: none;
+  z-index: 5;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.15);
+}
+
+.rs-sel-handle {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 7px;
+  height: 7px;
+  background: #22c55e;
+  border: 1px solid #fff;
+  border-radius: 1px;
+}
+
+/* ── Active Cell ──────────────────────────────────────── */
+
+.rs-cell.active-cell {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  z-index: 2;
+  position: relative;
+}
+
+/* ── Context Menu ─────────────────────────────────────── */
+
+.rs-context-menu {
+  position: fixed;
+  z-index: var(--z-toast);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  min-width: 160px;
+  padding: 4px 0;
+}
+
+.rs-context-item {
+  padding: 6px 14px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.rs-context-item:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.rs-context-sep {
+  height: 1px;
+  background: var(--line);
+  margin: 4px 0;
+}
+
+/* ── Column Resize ────────────────────────────────────── */
+
+.rs-col-header {
+  position: relative;
+}
+
+.rs-col-resize {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  z-index: 3;
+}
+
+.rs-col-resize:hover {
+  background: var(--accent);
+}
+
+/* ── Complex range / intersection controls ───────────── */
+
+.rs-combine-mode {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel-soft);
+  margin-left: auto;
+}
+
+.rs-combine-mode button {
+  border: 0;
+  border-radius: 5px;
+  padding: 4px 9px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.rs-combine-mode button.active {
+  background: var(--panel);
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+  font-weight: 600;
+}
+
+.rs-range-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--accent-soft) 46%, var(--panel));
+}
+
+.rs-range-strip-label {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.rs-range-chips {
+  display: flex;
+  gap: 5px;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.rs-range-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  padding: 3px 5px 3px 4px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
+  border-radius: var(--radius-full);
+  background: var(--panel);
+  color: var(--text);
+  font: 10px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.rs-range-chip b {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font: 600 9px/1 sans-serif;
+}
+
+.rs-range-chip button {
+  border: 0;
+  padding: 0 2px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.rs-range-chip button:hover { color: var(--danger); }
+
+.rs-range-result {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.rs-range-result.empty { color: var(--danger); }

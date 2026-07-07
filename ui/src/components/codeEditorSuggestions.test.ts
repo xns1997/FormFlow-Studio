@@ -29,6 +29,11 @@ test('event suggestions are generated from current fields, event and workflows',
   assert.ok(suggestions.some((item) => item.label === 'ctx.controls'));
   assert.ok(suggestions.some((item) => item.label === 'ctx.controls.customerName.value'));
   assert.ok(suggestions.some((item) => item.label === 'ctx.controls.active.disabled'));
+  assert.ok(suggestions.some((item) => item.label === 'ctx.setValues'));
+  assert.ok(suggestions.some((item) => item.label === 'ctx.setFieldState'));
+  assert.ok(suggestions.some((item) => item.label === 'ctx.focusField'));
+  assert.ok(suggestions.some((item) => item.label === 'ctx.switchTab'));
+  assert.ok(suggestions.some((item) => item.label === '批量赋值模板'));
 });
 
 test('flow parameter suggestions include declared variables and current form fields', () => {
@@ -53,6 +58,11 @@ test('event extra lib carries current field and value typing', () => {
   assert.match(lib.content, /value: CurrentEventValue;/);
   assert.match(lib.content, /"active"\?: boolean;/);
   assert.match(lib.content, /setValue<K extends EventFieldName>/);
+  assert.match(lib.content, /getValues<K extends EventFieldName>/);
+  assert.match(lib.content, /setValues\(patch:/);
+  assert.match(lib.content, /toggleVisible\(componentId: string\): Promise<boolean>;/);
+  assert.match(lib.content, /focusField<K extends EventFieldName>/);
+  assert.match(lib.content, /switchTab\(tabIdOrIndex: string \| number\): Promise<void>;/);
   assert.match(lib.content, /detail: \{ previousValue: CurrentEventValue;/);
   assert.match(lib.content, /changedFields: EventFieldName\[\]/);
   assert.match(lib.content, /interface FormEventControlHandle/);

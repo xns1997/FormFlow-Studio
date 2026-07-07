@@ -1,0 +1,282 @@
+/* Data visualization — describe report, distribution, correlation, oscillation */
+
+/* ── Describe Report (Kaggle-style) ──────────────────── */
+
+.describe-report {
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.describe-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.describe-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px;
+  background: var(--panel);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+}
+
+.describe-stat strong {
+  font-size: 18px;
+  font-weight: 700;
+}
+.describe-stat span {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.describe-section {
+  margin-bottom: 20px;
+}
+
+.describe-section h4 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.describe-col-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.describe-col-item {
+  padding: 10px 12px;
+  background: var(--panel);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+}
+
+.describe-col-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.describe-col-name {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.describe-col-type {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+.describe-col-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.describe-col-samples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.describe-sample {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 10px;
+  border-radius: 4px;
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+  font-family: monospace;
+}
+
+.describe-outlier-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 4px;
+  background: var(--danger-soft);
+  color: #991b1b;
+}
+
+/* ── Value Distribution (horizontal bars) ───────────────── */
+
+.dist-container {
+  margin-bottom: 12px;
+}
+
+.dist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.dist-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+.dist-range {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.dist-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dist-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dist-label {
+  width: 48px;
+  font-size: 10px;
+  color: var(--muted);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.dist-bar-track {
+  flex: 1;
+  height: 16px;
+  background: var(--panel-soft);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dist-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.dist-count {
+  width: 32px;
+  font-size: 10px;
+  color: var(--muted);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── Correlation Matrix (heatmap) ───────────────────────── */
+
+.corr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.corr-table th,
+.corr-table td {
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  text-align: center;
+}
+
+.corr-corner {
+  background: var(--panel-soft);
+}
+.corr-header {
+  background: var(--panel-soft);
+  font-weight: 600;
+}
+.corr-row-header {
+  background: var(--panel-soft);
+  font-weight: 600;
+  text-align: left;
+}
+.corr-cell {
+  font-weight: 600;
+}
+
+/* ── Oscillation Detection ──────────────────────────────── */
+
+.osc-item {
+  padding: 10px 12px;
+  background: var(--panel);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+
+.osc-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.osc-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.osc-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+.osc-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.osc-metric {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.osc-metric-label {
+  width: 48px;
+  font-size: 10px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.osc-bar-track {
+  flex: 1;
+  height: 8px;
+  background: var(--panel-soft);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.osc-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+.osc-metric-value {
+  width: 48px;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: right;
+  flex-shrink: 0;
+}

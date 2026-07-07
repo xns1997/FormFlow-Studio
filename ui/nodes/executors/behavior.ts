@@ -1,8 +1,8 @@
 import { registerExecutor, type NodeExecContext, type NodeExecResult } from '../executor-registry';
-import type { FlowSideEffect } from '../../src/services/flowSideEffects';
-import { normalizeFlowSideEffect } from '../../src/services/flowSideEffects';
-import { parseCustomJsPortDefinitions } from '../../src/services/customJsNode';
-import { resolveSingleKeyField } from '../../src/services/tableKeys';
+import type { FlowSideEffect } from '../../src/services/engine/flowSideEffects';
+import { normalizeFlowSideEffect } from '../../src/services/engine/flowSideEffects';
+import { parseCustomJsPortDefinitions } from '../../src/services/config/customJsNode';
+import { resolveSingleKeyField } from '../../src/services/data/tableKeys';
 
 registerExecutor('behavior-on-form-load', (ctx) => {
   const { inputs, properties } = ctx;

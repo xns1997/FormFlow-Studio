@@ -2,7 +2,7 @@ import React, { useMemo, useCallback } from 'react';
 import type { RangeRef } from '../models';
 import type { MetricConfig, AggFn, PostCalc, ColDataType } from '../components/ChartWidget';
 import { AGG_OPTIONS, POST_CALC_OPTIONS, detectColType } from '../components/ChartWidget';
-import { resolveRange } from '../services/rangeResolver';
+import { resolveRange } from '../services/data/rangeResolver';
 import { useProjectStore } from '../project/store';
 import { AntdNumberInput, AntdSelectInput } from '../components/AntdFormControls';
 

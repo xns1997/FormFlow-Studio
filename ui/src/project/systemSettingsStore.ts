@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { createDefaultSystemSettings, loadSystemSettings, saveSystemSettings, type SystemSettings } from '../services/systemSettings';
+import { createDefaultSystemSettings, loadSystemSettings, saveSystemSettings, type SystemSettings } from '../services/config/systemSettings';
 
 interface SystemSettingsStore {
   settings: SystemSettings;

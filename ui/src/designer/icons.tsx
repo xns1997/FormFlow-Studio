@@ -38,6 +38,7 @@ import {
   Upload,
   ZoomIn,
   ZoomOut,
+  Search,
 } from '@icon-park/react';
 
 type IconComponent = React.ComponentType<{
@@ -99,6 +100,7 @@ const ICONS: Record<string, IconComponent> = {
   settings: Config,
   upload: Upload,
   imageUpload: Upload,
+  search: Search,
 };
 
 export function DesignerIcon({

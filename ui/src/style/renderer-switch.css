@@ -1,0 +1,35 @@
+/* ── 开关 ───────────────────────────────────────────────── */
+
+.lg-switch {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.lg-switch input { display: none; }
+
+.lg-switch-track {
+  width: 50px;
+  height: 30px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  position: relative;
+  transition: background 0.2s;
+  box-shadow: inset 0 1px 3px rgba(15,23,42,0.18);
+}
+
+.lg-switch input:checked + .lg-switch-track { background: var(--accent); }
+
+.lg-switch-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  box-shadow: 0 6px 12px rgba(15,23,42,0.18);
+  transition: left 0.2s;
+}
+
+.lg-switch input:checked + .lg-switch-track .lg-switch-thumb { left: 23px; }

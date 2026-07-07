@@ -1,0 +1,150 @@
+/* pages-test.css — 测试页面：测试布局、运行时信息、日志 */
+
+/* ── Test Page ────────────────────────────────────────── */
+
+.test-layout {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.test-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+}
+
+.test-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.test-inspector {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  overflow-y: auto;
+}
+
+/* ── Test Page additions ─────────────────────────────── */
+
+.runtime-info {
+  padding: 12px;
+  background: var(--panel-soft);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+}
+
+.runtime-info .stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.runtime-info .stat-label { color: var(--muted); }
+.runtime-info .stat-value { font-weight: 600; }
+
+/* ── Test Page Helpers ────────────────────────────────── */
+
+.test-toolbar {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.test-submit-btn {
+  padding: 3px 10px;
+  font-size: 11px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.test-submit-btn:hover {
+  background: #1d4ed8;
+}
+
+.test-export-select {
+  padding: 3px 6px;
+  font-size: 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.test-runtime-section {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.test-runtime-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.test-change-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  background: var(--panel-soft);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+}
+
+.test-change-field {
+  font-weight: 600;
+}
+
+.test-change-old {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.test-change-arrow {
+  color: var(--muted);
+}
+
+.test-change-new {
+  color: var(--success);
+}
+
+.test-log-item {
+  display: flex;
+  gap: 4px;
+  font-size: 10px;
+  padding: 2px 0;
+}
+
+.test-log-time {
+  color: var(--muted);
+  font-family: monospace;
+  font-size: 9px;
+}
+
+.test-log-source {
+  font-weight: 600;
+}
+
+.test-log-source.info {
+  color: var(--accent);
+}
+
+.test-log-source.error {
+  color: var(--danger);
+}
+
+.test-log-source.debug {
+  color: var(--warning);
+}

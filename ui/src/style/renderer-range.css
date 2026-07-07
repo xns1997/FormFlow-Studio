@@ -1,0 +1,112 @@
+/* ── 范围选择器（日期范围 / 选择器 / 连接标签）───────────── */
+
+.lg-date-range {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.lg-date-range-sep {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.lg-picker-shell {
+  position: relative;
+  width: 100%;
+}
+
+.lg-picker-shell .lg-input {
+  padding-right: 42px;
+}
+
+.lg-picker-trigger {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 999px;
+  background: rgba(37,99,235,0.1);
+  color: var(--accent);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.lg-picker-native {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  width: 28px;
+  height: 28px;
+  transform: translateY(-50%);
+  opacity: 0.01;
+  pointer-events: none;
+}
+
+/* ── Range Tag (connection badge) ───────────────────────── */
+
+.lg-range-connect {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.lg-range-connect:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.lg-range-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.lg-range-address {
+  font-family: 'SF Mono', 'Menlo', monospace;
+  font-weight: 600;
+}
+
+.lg-range-disconnect {
+  padding: 0 4px;
+  font-size: 14px;
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.lg-range-disconnect:hover { color: var(--danger); }
+
+@media (max-width: 720px) {
+  .lg-date-range {
+    grid-template-columns: 1fr;
+  }
+
+  .lg-date-range-sep {
+    justify-self: center;
+  }
+}

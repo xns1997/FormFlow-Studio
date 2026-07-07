@@ -51,6 +51,7 @@ export interface CodeEditorProps {
   onFocus?: () => void;
   onBlur?: () => void;
   extraLibs?: CodeEditorExtraLib[];
+  autoSuggestPolicy?: 'explicit' | 'contextual' | 'json-contextual';
 }
 
 const baseOptions: editor.IStandaloneEditorConstructionOptions = {
@@ -324,6 +325,7 @@ export default function CodeEditor({
   onFocus,
   onBlur,
   extraLibs,
+  autoSuggestPolicy = 'explicit',
 }: CodeEditorProps) {
   const [fullOpen, setFullOpen] = useState(false);
   const suggestionsRef = useRef(suggestions);
@@ -510,9 +512,9 @@ export default function CodeEditor({
       disposables.push(provider);
     }
 
-    if (suggestionTriggerCharacters?.length || suggestionsRef.current?.length) {
-      disposables.push(instance.onDidChangeModelContent((event) => {
-        const typedText = event.changes[event.changes.length - 1]?.text;
+    if (autoSuggestPolicy !== 'explicit' && (suggestionTriggerCharacters?.length || suggestionsRef.current?.length)) {
+      disposables.push((instance as unknown as { onDidType: (listener: (typedText: string) => void) => { dispose: () => void } }).onDidType((typedText: string) => {
+        if (!typedText) return;
         const model = instance.getModel();
         const position = instance.getPosition();
         const fullPrefix = model && position
@@ -524,16 +526,15 @@ export default function CodeEditor({
         const word = model && position ? model.getWordUntilPosition(position) : { word: '', startColumn: position?.column || 1, endColumn: position?.column || 1 };
         const completionPrefix = linePrefix.slice(0, Math.max(0, linePrefix.length - ((word && 'word' in word ? word.word : '')?.length || 0)));
         const mode = resolveCompletionMode(language, fullPrefix, completionPrefix);
-        const isContextTyping = /[\w$\u4e00-\u9fa5-]/.test(typedText || '') && mode !== 'top-level';
-        if (typedText && (
-          suggestionTriggerCharacters?.includes(typedText)
-          || typedText === '.'
-          || typedText === '"'
-          || typedText === "'"
-          || typedText === '('
-          || typedText === '$'
-          || isContextTyping
-        )) {
+        const isWordLikeTyping = /[\w$\u4e00-\u9fa5-]/.test(typedText);
+        const allowContextual =
+          autoSuggestPolicy === 'contextual'
+            ? mode !== 'top-level'
+            : mode === 'json-object-key'
+              || mode === 'json-object-value'
+              || mode === 'json-array-value'
+              || mode === 'json-string-value';
+        if (isWordLikeTyping && allowContextual) {
           window.setTimeout(() => {
             if (editorRef.current === instance) {
               instance.trigger('code-editor', 'editor.action.triggerSuggest', {});
@@ -561,7 +562,6 @@ export default function CodeEditor({
       ? monaco.languages.typescript.typescriptDefaults
       : monaco.languages.typescript.javascriptDefaults;
     extraLibDisposablesRef.current = (extraLibs || []).map((lib) => target.addExtraLib(lib.content, lib.filePath));
-    editorRef.current?.trigger('code-editor', 'editor.action.triggerSuggest', {});
     return () => {
       extraLibDisposablesRef.current.forEach((disposable) => disposable.dispose());
       extraLibDisposablesRef.current = [];

@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.6.0] - 2026-07-07
+
+### UI 代码结构重构
+- **services/ 目录分组**: 55 个文件按功能域归入 5 个子目录：`engine/`(流程/行为引擎)、`io/`(数据读写/API)、`display/`(展示/编辑辅助)、`data/`(数据处理)、`config/`(配置/类型/模板)
+- **pages/ 目录归位**: 16 个页面组件移入 `home/`、`editor/`、`doc/` 子目录，消除平铺结构
+- **designer/ 大文件拆分**: `PropertyPanel.tsx`(1884行) 拆为 5 个子组件；`useDesigner.tsx`(1117行) 拆为 5 个 hooks + utils
+- **behaviorDocs.ts 拆分**: 931 行拆为 `types.ts`、`shared.ts`、`event-docs-script.ts`、`event-docs-control.ts`、`topic-docs.ts`
+- **CSS 文件拆分**: `designer.css`(3031行)→10 文件、`form-renderer.css`(1745行)→17 文件、`components.css`(1297行)→5 文件、`pages.css`(1342行)→7 文件
+- 清理空目录 `main/`、`preload/`、`renderer/` 和无引用的 `project/context.tsx`
+
+### 文档系统增强
+- **模糊搜索**: 多关键词空格分隔、加权匹配（eventName > title > tags > category > summary）
+- **标签过滤**: 为 31 个事件文档添加 `tags` 字段，支持 pill 形状多选过滤
+- **快捷导航**: 详情页增加 `DocSidebar` 目录组件（IntersectionObserver 自动高亮）、面包屑导航、上/下一篇导航
+- **全局文档弹窗**: 导航栏「文档」按钮改为打开 `DocModal` 模态框，保留 `/docs` 独立路由
+- **补充示例**: 为缺少示例的事件补充实用代码示例
+- **样式增强**: 事件卡片化、代码块头部、标签过滤栏、搜索图标、section 分隔线、Modal 内滚动适配
+
+### 全局文档系统
+- **文档首页**: 新增 `/docs` 全局文档首页，分区卡片 + 全局搜索 + 热门文档
+- **5 大文档分区**: 梗概(概述/快速入门/项目结构)、行为(31事件+3主题)、表单设计(26控件)、流程节点(8分组)、后端(9 API模块)
+- **分区页面**: 每个分区支持索引+详情双模式，复用 `SectionPage` 通用组件
+- **数据来源**: 表单设计文档从控件注册表提取，流程节点文档从节点注册表提取，后端 API 文档从路由模块提取
+- **路由升级**: `/docs`→首页、`/docs/behavior/:slug`→行为详情、`/docs/form-design/:slug`→控件详情、`/docs/flow-nodes/:slug`→节点详情、`/docs/backend/:slug`→API详情
+
+### 右侧面板样式优化
+- 全局右侧面板宽度变量缩小：`340-420px` → `280-340px`
+- 设计器属性面板统一使用 CSS 变量（移除硬编码 `400-460px`）
+- antd 控件最小高度降低：`34px` → `28px`
+- 控件圆角缩小：`12px` → `8px`，阴影简化
+- 字段间距、输入框内边距、textarea 高度全面收紧
+
+---
+
 ## [0.5.0] - 2026-07-06
 
 ### 使用模式页面

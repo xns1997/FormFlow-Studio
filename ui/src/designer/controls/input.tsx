@@ -17,7 +17,7 @@ import {
   AntdUploadInput,
   FormAntdProvider,
 } from '../../components/AntdFormControls';
-import { normalizeDateTimeValue } from '../../services/controlTypes';
+import { normalizeDateTimeValue } from '../../services/config/controlTypes';
 
 const renderLabel = (label: string, required?: boolean) => (
   <>

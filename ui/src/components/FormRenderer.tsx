@@ -26,10 +26,10 @@ import {
   type UploadFileValue,
 } from './AntdFormControls';
 import { jsonSuggestions } from './codeEditorSuggestions';
-import { formatStructuredProperty, isStructuredProperty, parseStructuredProperty } from '../services/structuredProperties';
-import { resolveRange } from '../services/rangeResolver';
-import type { FormControlEventContext } from '../services/formFlowTrigger';
-import { getRuntimeComponentType, isEditableComponentType, normalizeDateTimeValue, shouldShowFieldChrome } from '../services/controlTypes';
+import { formatStructuredProperty, isStructuredProperty, parseStructuredProperty } from '../services/data/structuredProperties';
+import { resolveRange } from '../services/data/rangeResolver';
+import type { FormControlEventContext } from '../services/engine/formFlowTrigger';
+import { getRuntimeComponentType, isEditableComponentType, normalizeDateTimeValue, shouldShowFieldChrome } from '../services/config/controlTypes';
 
 interface FormRendererProps {
   components: ComponentNode[];
@@ -146,7 +146,13 @@ export default function FormRenderer({
     const rangeRef = rangeConnections[comp.name] || null;
     const showChrome = shouldShowFieldChrome(comp.type);
     return (
-      <div key={comp.id} className={`lg-field ${state.disabled ? 'disabled' : ''} ${hasError && isTouched ? 'has-error' : ''} ${isDirty ? 'dirty-indicator' : ''}`}>
+      <div
+        key={comp.id}
+        className={`lg-field ${state.disabled ? 'disabled' : ''} ${hasError && isTouched ? 'has-error' : ''} ${isDirty ? 'dirty-indicator' : ''}`}
+        data-component-id={comp.id}
+        data-component-type={comp.type}
+        data-field-name={comp.name}
+      >
         {showChrome && (
           <label className="lg-label">
             {comp.label}
@@ -752,6 +758,7 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
             minHeight={80}
             lineNumbers
             suggestions={jsonSuggestions}
+            autoSuggestPolicy="json-contextual"
             suggestionTriggerCharacters={['"', ':', ',', '{', '[']}
             options={{ folding: true, lineNumbersMinChars: 2, scrollbar: { vertical: 'hidden', horizontal: 'auto' } }}
             compact

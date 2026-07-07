@@ -11,7 +11,7 @@ import {
   normalizeProjectRelease,
   normalizeProjectSettings,
 } from './types';
-import { projectApi } from '../services/api';
+import { projectApi } from '../services/io/api';
 
 // ── 项目 CRUD ──────────────────────────────────────
 

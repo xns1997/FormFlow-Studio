@@ -1,0 +1,496 @@
+/* designer-unified.css — 统一编辑器 */
+
+/* ── Unified Editor (类 VBA 编辑器) ────────────────────── */
+
+.unified-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.unified-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  flex-shrink: 0;
+}
+
+.unified-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 左侧面板 */
+.unified-left {
+  width: 240px;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.unified-left-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.unified-left-tab {
+  flex: 1;
+  padding: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.unified-left-tab.active {
+  color: var(--accent);
+  font-weight: 600;
+  border-bottom-color: var(--accent);
+}
+
+.unified-left-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* 中间画布 */
+.unified-center {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+}
+
+/* 流程模式下 CanvasWithProvider 需要占满整个空间 */
+.unified-center > .canvas-layout {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* 数据预览和设置页面需要占满整个空间 */
+.unified-center > .page-container,
+.unified-center > .settings-layout,
+.unified-center > .page-layout,
+.unified-center > div {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* 右侧面板 */
+.unified-right {
+  width: var(--right-panel-width);
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.unified-right-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.unified-right-tab {
+  flex: 1;
+  padding: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.unified-right-tab.active {
+  color: var(--accent);
+  font-weight: 600;
+  border-bottom-color: var(--accent);
+}
+
+.unified-right-body {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+/* 面板内容 */
+.unified-panel-content {
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+}
+
+.unified-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.unified-add-btn {
+  padding: 2px 8px;
+  font-size: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  cursor: pointer;
+}
+
+.unified-add-btn:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.unified-list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s;
+}
+
+.unified-list-item:hover {
+  background: var(--panel-soft);
+}
+
+.unified-list-item.active {
+  background: var(--accent-soft);
+}
+
+.unified-list-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.unified-list-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.unified-list-name {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unified-list-meta {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.unified-list-delete {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0;
+  flex-shrink: 0;
+}
+
+.unified-list-item:hover .unified-list-delete {
+  opacity: 1;
+}
+
+.unified-list-delete:hover {
+  color: var(--danger);
+}
+
+.unified-panel-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 8px 0;
+}
+
+.unified-template-btn {
+  width: 100%;
+  padding: 6px;
+  font-size: 11px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.unified-template-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.unified-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* 行为编辑器 */
+.unified-behavior-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.unified-behavior-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.unified-behavior-header select {
+  padding: 3px 6px;
+  font-size: 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+/* 流程引用 */
+.unified-flow-ref {
+  padding: 8px;
+}
+
+.unified-flow-item {
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+}
+
+.unified-flow-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.unified-flow-meta {
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.unified-flow-code {
+  font-size: 10px;
+  padding: 6px;
+  background: var(--panel-soft);
+  border-radius: var(--radius-sm);
+  font-family: 'SF Mono', monospace;
+  margin: 0;
+}
+
+/* ── 模式切换 ──────────────────────────────────────────── */
+
+.unified-mode-switch {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.unified-mode-btn {
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.unified-mode-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.unified-mode-btn:hover:not(.active) {
+  background: var(--panel-soft);
+}
+
+/* ── 行为模式中间区域 ──────────────────────────────────── */
+
+.unified-center-behavior {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--panel-soft);
+  padding: 24px;
+}
+
+.behavior-overview {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.behavior-overview-header {
+  margin-bottom: 24px;
+}
+
+.behavior-overview-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.behavior-overview-header p {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.behavior-overview-list h4 {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.behavior-overview-empty {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 12px;
+  text-align: center;
+  background: var(--panel);
+  border-radius: var(--radius);
+  border: 1px dashed var(--line);
+}
+
+.behavior-overview-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.behavior-overview-item:hover {
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.behavior-overview-item.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.behavior-overview-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.behavior-overview-dot.global {
+  background: var(--warning);
+}
+
+.behavior-overview-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.behavior-overview-event {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: monospace;
+  padding: 1px 6px;
+  background: var(--panel-soft);
+  border-radius: var(--radius-sm);
+}
+
+/* ── 右侧面板扩展模式 ──────────────────────────────────── */
+
+.unified-right-expanded {
+  flex: 1;
+  width: auto;
+  min-width: var(--right-panel-width-wide);
+}
+
+/* ── 行为编辑器增强 ─────────────────────────────────────── */
+
+.unified-behavior-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.unified-behavior-scope {
+  font-size: 16px;
+}
+
+.unified-behavior-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+}
+
+.unified-behavior-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.unified-behavior-toggle input {
+  accent-color: var(--accent);
+}
+
+.unified-behavior-editor-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  min-width: 0;
+}

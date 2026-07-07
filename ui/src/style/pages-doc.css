@@ -1,0 +1,988 @@
+/* pages-doc.css — 文档页面：文档面板、索引、代码块 */
+
+/* ── Behavior Doc Panel ───────────────────────────────── */
+
+.behavior-doc-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.behavior-doc-hero,
+.behavior-doc-section,
+.docs-topic-card,
+.docs-index-panel,
+.docs-meta-card,
+.docs-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.behavior-doc-hero,
+.behavior-doc-section {
+  padding: 10px;
+}
+
+.behavior-doc-hero p,
+.behavior-doc-lead,
+.docs-lead,
+.docs-card p,
+.docs-topic-card p,
+.docs-footer-note p {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.behavior-doc-link-group,
+.behavior-doc-tag-list,
+.docs-link-grid,
+.docs-card-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.behavior-doc-link,
+.docs-link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: var(--panel-soft);
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.behavior-doc-section-header,
+.docs-index-toolbar,
+.docs-card-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.behavior-doc-list,
+.docs-index-column,
+.docs-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.behavior-doc-list-item,
+.docs-table-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--panel-soft);
+}
+
+.behavior-doc-list-item code,
+.docs-card-title code,
+.docs-table-key code,
+.docs-code-block code {
+  font-family: "SF Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+.behavior-doc-list-item span,
+.docs-table-value,
+.docs-index-item small,
+.docs-index-item-meta,
+.docs-empty-inline {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.behavior-doc-list-item strong {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.behavior-doc-list-item code {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 11px;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.05);
+}
+
+.behavior-doc-tag {
+  padding: 6px 10px;
+  border-radius: var(--radius-full);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.behavior-doc-index {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.behavior-doc-index-item,
+.docs-index-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--panel-soft);
+  text-decoration: none;
+  color: var(--text);
+}
+
+.behavior-doc-index-item span,
+.docs-index-item-title {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ── Docs Page ────────────────────────────────────────── */
+
+.docs-page {
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.03), transparent 180px);
+}
+
+.docs-hero-grid,
+.docs-index-columns,
+.docs-meta-row {
+  display: grid;
+  gap: 12px;
+}
+
+.docs-hero-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-bottom: 20px;
+}
+
+.docs-topic-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.docs-index-panel,
+.docs-section,
+.docs-footer-note {
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.docs-index-toolbar input {
+  min-width: 240px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: var(--panel);
+  font-size: 12px;
+}
+
+.docs-index-columns {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  margin-top: 12px;
+}
+
+.docs-index-column h3,
+.docs-section h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.docs-index-item.active {
+  box-shadow: inset 0 0 0 1px var(--accent);
+  background: var(--accent-soft);
+}
+
+.docs-meta-row {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  margin-bottom: 16px;
+}
+
+.docs-meta-card {
+  padding: 12px;
+}
+
+.docs-meta-card span,
+.docs-table-key span {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.docs-meta-card strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 14px;
+}
+
+.docs-table-key {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.docs-card {
+  flex: 1 1 240px;
+  padding: 12px;
+}
+
+.docs-card-compact {
+  flex-basis: 200px;
+}
+
+.docs-code-block {
+  margin: 8px 0 0;
+  padding: 10px;
+  overflow: auto;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* ── Tag Filter Bar ────────────────────────────────────── */
+
+.docs-tag-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 0;
+}
+
+.docs-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: var(--panel-soft);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  user-select: none;
+}
+
+.docs-tag-pill:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.docs-tag-pill--active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ── Fuzzy Search ──────────────────────────────────────── */
+
+.docs-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.docs-search-wrapper input {
+  width: 100%;
+  padding: 7px 10px 7px 30px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: var(--panel);
+  font-size: 12px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.docs-search-wrapper input:focus {
+  border-color: var(--accent);
+}
+
+.docs-search-icon {
+  position: absolute;
+  left: 10px;
+  width: 14px;
+  height: 14px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+/* ── Breadcrumb ────────────────────────────────────────── */
+
+.docs-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 4px 0 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.docs-breadcrumb a,
+.docs-breadcrumb-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+  line-height: 1;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+button.docs-breadcrumb-link {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.docs-breadcrumb a:hover,
+.docs-breadcrumb-link:hover {
+  text-decoration: none;
+  background: var(--accent-soft);
+  border-color: rgba(37, 99, 235, 0.14);
+}
+
+.docs-breadcrumb span,
+.docs-breadcrumb-sep {
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+.docs-breadcrumb-sep {
+  font-size: 10px;
+  transform: translateY(-0.5px);
+}
+
+/* ── Sidebar TOC ───────────────────────────────────────── */
+
+.docs-page--with-sidebar {
+  display: grid;
+  grid-template-columns: 1fr 180px;
+  gap: 16px;
+  align-items: start;
+}
+
+.docs-sidebar {
+  position: sticky;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+}
+
+.docs-sidebar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.docs-sidebar-item {
+  display: block;
+  width: 100%;
+  padding: 4px 8px;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: left;
+  line-height: 1.5;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.docs-sidebar-item:hover {
+  background: var(--panel-soft);
+  color: var(--text);
+}
+
+.docs-sidebar-item--active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.docs-sidebar-back-top {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 4px 8px;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: color 0.12s;
+}
+
+.docs-sidebar-back-top:hover {
+  color: var(--accent);
+}
+
+/* ── Event Card (Index Page) ───────────────────────────── */
+
+.doc-event-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.doc-event-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.08);
+}
+
+.doc-event-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.doc-event-card-meta {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: "SF Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+.doc-event-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.doc-event-card-summary {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: 2px;
+}
+
+/* ── Prev / Next Navigation ────────────────────────────── */
+
+.docs-prev-next {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.docs-prev-next a {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-soft);
+  text-decoration: none;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  transition: border-color 0.15s;
+  max-width: 48%;
+}
+
+.docs-prev-next a:hover {
+  border-color: var(--accent);
+}
+
+.docs-prev-next a:last-child {
+  text-align: right;
+  margin-left: auto;
+}
+
+.docs-prev-next-label {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* ── Code Block Enhancements ───────────────────────────── */
+
+.doc-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px;
+  margin: 8px 0 0;
+  border-radius: 8px 8px 0 0;
+  background: #1e293b;
+}
+
+.doc-code-header + .docs-code-block,
+.doc-code-header + pre {
+  border-radius: 0 0 8px 8px;
+  margin-top: 0;
+}
+
+.doc-code-lang {
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.doc-code-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid #334155;
+  border-radius: var(--radius);
+  background: transparent;
+  color: #94a3b8;
+  font-size: 10px;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+
+.doc-code-copy:hover {
+  color: #e2e8f0;
+  border-color: #64748b;
+}
+
+/* ── Section Divider & Heading Hierarchy ───────────────── */
+
+.docs-page > section,
+.docs-section {
+  margin-bottom: 20px;
+}
+
+.docs-page > section + section {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.docs-section h2 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+
+.docs-section h3 {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.docs-section h4 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* ── Modal Document Adaptation ─────────────────────────── */
+
+.modal-container .docs-page {
+  padding: 0;
+  background: none;
+}
+
+.modal-container .docs-page .docs-hero-grid {
+  margin-bottom: 12px;
+}
+
+.modal-container .docs-page .docs-code-block {
+  font-size: 11px;
+}
+
+.modal-container .docs-page .docs-sidebar {
+  max-height: calc(100vh - 120px);
+}
+
+/* 确保 Modal 内容可滚动 */
+.modal-container .doc-modal-content {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.modal-container.doc-center-modal {
+  height: 88vh;
+  max-height: 88vh;
+}
+
+/* ── Modal Header & Content ────────────────────────────── */
+
+/* 弹窗头部 */
+.doc-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.doc-modal-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.doc-modal-back-btn:hover {
+  background: var(--panel-soft);
+  color: var(--text);
+}
+
+.doc-modal-title {
+  flex: 1;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* 弹窗内容区 - 关键：必须有 overflow-y: auto */
+.doc-modal-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.doc-modal-body {
+  padding: 0;
+}
+
+.doc-modal-with-sidebar {
+  display: grid;
+  grid-template-columns: 1fr 180px;
+  gap: 20px;
+  align-items: start;
+}
+
+.doc-modal-back {
+  padding: 12px 0;
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.doc-modal-clickable {
+  cursor: pointer;
+  border: none;
+  background: none;
+  text-align: left;
+  width: 100%;
+}
+
+/* ── Sidebar & Breadcrumb Extras ───────────────────────── */
+
+/* 侧边栏 */
+.docs-page-sidebar {
+  position: sticky;
+  top: 16px;
+}
+
+.docs-page-main {
+  min-width: 0;
+}
+
+/* 面包屑补充 */
+.docs-breadcrumb-current {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* 搜索输入补充 */
+.docs-search-input {
+  width: 100%;
+  padding: 7px 10px 7px 30px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: var(--panel);
+  font-size: 12px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.docs-search-input:focus {
+  border-color: var(--accent);
+}
+
+/* 上下篇补充 */
+.docs-prev-next-item {
+  flex: 1;
+  min-width: 0;
+}
+
+.docs-prev-next-prev {
+  text-align: left;
+}
+
+.docs-prev-next-next {
+  text-align: right;
+}
+
+.docs-prev-next-title {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ── Docs Homepage ─────────────────────────────────────── */
+
+.docs-home-header {
+  text-align: center;
+  padding: 32px 16px 24px;
+  margin-bottom: 24px;
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.06), transparent);
+  border-radius: var(--radius-lg);
+}
+
+.docs-home-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--text);
+}
+
+.docs-home-header p {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 20px;
+}
+
+.docs-home-search {
+  position: relative;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.docs-home-search input {
+  width: 100%;
+  padding: 10px 14px 10px 36px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: var(--panel);
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.docs-home-search input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.docs-home-search .docs-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.docs-home-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.docs-home-section-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  cursor: pointer;
+}
+
+.docs-home-section-card:hover {
+  border-color: var(--section-color, var(--accent));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.docs-home-section-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius);
+  background: var(--section-color, var(--accent));
+  color: #fff;
+  flex-shrink: 0;
+  font-size: 18px;
+}
+
+.docs-home-section-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.docs-home-section-info h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.docs-home-section-info p {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+
+.docs-home-section-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.docs-home-tag {
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  background: var(--panel-soft);
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.docs-home-count {
+  font-size: 10px;
+  color: var(--accent);
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.docs-home-hot {
+  margin-top: 24px;
+}
+
+.docs-home-hot h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.docs-home-hot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.docs-home-hot-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.15s;
+}
+
+.docs-home-hot-item:hover {
+  border-color: var(--accent);
+}
+
+.docs-home-hot-section {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.docs-home-hot-title {
+  font-size: 12px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Doc Modal Section Nav ─────────────────────────────── */
+
+.doc-modal-sections {
+  margin-bottom: 16px;
+  padding: 0 16px;
+}
+
+.doc-modal-sections .docs-home-section-card {
+  padding: 10px 12px;
+}
+
+.doc-modal-sections .docs-home-section-icon {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+}
+
+.doc-modal-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 0 0 8px;
+  padding: 0 4px;
+}

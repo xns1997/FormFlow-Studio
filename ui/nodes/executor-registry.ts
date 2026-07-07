@@ -1,5 +1,5 @@
 import type { SrcTableEntry } from '../src/project/types';
-import type { FlowSideEffect } from '../src/services/flowSideEffects';
+import type { FlowSideEffect } from '../src/services/engine/flowSideEffects';
 import { checkPortType, assertPortType, checkPortValues, type TypeCheckResult } from './port-types';
 
 export interface NodeExecContext {

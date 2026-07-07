@@ -1,0 +1,84 @@
+/* pages-settings.css — 设置页面：项目设置、表单布局 */
+
+/* ── Project Settings ─────────────────────────────────── */
+
+.project-settings-layout {
+  width: 100%;
+  min-width: 0;
+  background: var(--panel);
+}
+
+.project-settings-main {
+  width: 100%;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.project-settings-body {
+  width: 100%;
+}
+
+.project-settings-section-tabs {
+  width: 100%;
+  display: flex;
+  gap: 2px;
+  padding: 6px 0 2px;
+  border-bottom: 1px solid var(--line);
+}
+
+.project-settings-inspector {
+  width: var(--right-panel-width);
+  min-width: 340px;
+  max-width: 420px;
+  flex: 0 0 var(--right-panel-width);
+  border-left: 1px solid var(--line);
+}
+
+/* ── Settings Page ────────────────────────────────────── */
+
+.settings-layout {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.settings-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+}
+
+.settings-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 480px;
+}
+
+.settings-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-form label span {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.settings-form input,
+.settings-form select,
+.settings-form textarea {
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}

@@ -5,11 +5,11 @@ import {
   executeDesignPreviewEvent,
   getDesignComponentField,
   type DesignPreviewEventResult,
-} from '../services/designPreviewRuntime';
-import { applyProjectWriteBacks } from '../services/projectWriteBack';
-import { collectFlowSideEffects } from '../services/flowSideEffects';
+} from '../services/engine/designPreviewRuntime';
+import { applyProjectWriteBacks } from '../services/io/projectWriteBack';
+import { collectFlowSideEffects } from '../services/engine/flowSideEffects';
 import { useProjectStore } from '../project/store';
-import { getPreviewInitialValue } from '../services/previewValues';
+import { getPreviewInitialValue } from '../services/display/previewValues';
 
 interface PreviewCanvasProps {
   components: DesignComponent[];

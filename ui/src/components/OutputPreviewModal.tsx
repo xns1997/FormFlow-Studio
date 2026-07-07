@@ -9,7 +9,7 @@ import {
   getOutputPreviewMode,
   isBinaryPreviewValue,
   outputToPreviewTable,
-} from '../services/outputPreview';
+} from '../services/display/outputPreview';
 
 export interface OutputPreviewTarget {
   key: string;

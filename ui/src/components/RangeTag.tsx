@@ -1,6 +1,6 @@
 import React from 'react';
 import type { RangeRef } from '../models';
-import { rangeToAddress } from '../services/rangeResolver';
+import { rangeToAddress } from '../services/data/rangeResolver';
 
 interface RangeTagProps {
   range: RangeRef | null;

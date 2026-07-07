@@ -4,7 +4,7 @@ import type { DesignComponent } from '../../project/types';
 import { controlText, ios } from './styles';
 import ChartWidget from '../../components/ChartWidget';
 import type { MetricConfig } from '../../components/ChartWidget';
-import { resolveRange } from '../../services/rangeResolver';
+import { resolveRange } from '../../services/data/rangeResolver';
 import { useProjectStore } from '../../project/store';
 import { DesignerIcon } from '../icons';
 import type { PreviewControlRuntime } from '../types';

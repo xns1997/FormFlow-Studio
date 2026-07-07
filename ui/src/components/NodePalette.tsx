@@ -14,7 +14,7 @@ import {
   type NodeDiscoveryGroup,
   type NodeDiscoveryPreferences,
   type NodeSearchResult,
-} from '../services/nodeDiscovery';
+} from '../services/config/nodeDiscovery';
 
 type CompatibilityDirection = 'downstream' | 'upstream';
 

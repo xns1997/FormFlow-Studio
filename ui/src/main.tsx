@@ -17,10 +17,17 @@ import {
   FormDesignerPage,
   LegacyProjectRedirectPage,
   UsagePage,
+  UnifiedEditorPage,
 } from './pages/editor';
-import { BehaviorDocsPage } from './pages/doc';
+import {
+  BehaviorDocsPage,
+  DocsHomePage,
+  OverviewPage,
+  FormDesignSectionPage,
+  FlowNodeSectionPage,
+  BackendSectionPage,
+} from './pages/doc';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import UnifiedEditorPage from './pages/UnifiedEditorPage';
 
 function App() {
   return (
@@ -31,8 +38,17 @@ function App() {
             <Route index element={<Navigate to="/projects" replace />} />
             <Route path="/projects" element={<ProjectsListPage />} />
             <Route path="/docs">
-              <Route index element={<BehaviorDocsPage />} />
-              <Route path=":slug" element={<BehaviorDocsPage />} />
+              <Route index element={<DocsHomePage />} />
+              <Route path="overview" element={<OverviewPage />} />
+              <Route path="overview/:slug" element={<OverviewPage />} />
+              <Route path="behavior" element={<BehaviorDocsPage />} />
+              <Route path="behavior/:slug" element={<BehaviorDocsPage />} />
+              <Route path="form-design" element={<FormDesignSectionPage />} />
+              <Route path="form-design/:slug" element={<FormDesignSectionPage />} />
+              <Route path="flow-nodes" element={<FlowNodeSectionPage />} />
+              <Route path="flow-nodes/:slug" element={<FlowNodeSectionPage />} />
+              <Route path="backend" element={<BackendSectionPage />} />
+              <Route path="backend/:slug" element={<BackendSectionPage />} />
             </Route>
             <Route path="/settings" element={<SystemSettingsLayout />}>
               <Route index element={<Navigate to="general" replace />} />

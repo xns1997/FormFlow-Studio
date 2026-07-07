@@ -1,10 +1,17 @@
-export * from './projectVersionHistory';
-export * from './runtime';
-export * from './validator';
-export * from './dataBinder';
-export * from './scriptSandbox';
-export * from './submitter';
-export * from './behaviorEngine';
-export * from './errorChecker';
-export * from './syntaxHighlight';
-export * from './testRunner';
+// engine
+export * from './engine/runtime';
+export * from './engine/validator';
+export * from './engine/dataBinder';
+export * from './engine/submitter';
+export * from './engine/behaviorEngine';
+
+// display
+export * from './display/errorChecker';
+export * from './display/syntaxHighlight';
+export * from './display/testRunner';
+
+// config
+export * from './config/scriptSandbox';
+
+// io
+export * from './io/projectVersionHistory';

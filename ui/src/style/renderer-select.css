@@ -1,0 +1,29 @@
+/* ── 下拉选择 ───────────────────────────────────────────── */
+
+.lg-select {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  font-size: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 16px;
+  background-color: rgba(255,255,255,0.96);
+  color: var(--text);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.lg-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(37,99,235,0.12), 0 14px 28px rgba(37,99,235,0.1);
+}
+
+.lg-select.dirty {
+  border-color: #f59e0b;
+  background-color: var(--warning-soft);
+}

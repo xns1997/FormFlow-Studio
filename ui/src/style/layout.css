@@ -122,6 +122,13 @@
 .nav-link:hover { background: var(--panel-soft); color: var(--text); }
 .nav-link.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 
+button.nav-link {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
 .nav-icon { font-size: 14px; }
 .nav-label { white-space: nowrap; }
 .nav-divider { color: var(--line); font-size: 14px; }
@@ -212,6 +219,41 @@
   font-size: 12px;
   line-height: 1.6;
   color: var(--muted);
+}
+
+.system-settings-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+}
+
+.system-settings-tab {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: var(--panel);
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.system-settings-tab:hover {
+  background: var(--panel-soft);
+  color: var(--text);
+}
+
+.system-settings-tab.active {
+  background: var(--accent-soft);
+  border-color: rgba(37, 99, 235, 0.16);
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .settings-version-list {

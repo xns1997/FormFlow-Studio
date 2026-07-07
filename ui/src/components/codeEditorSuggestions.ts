@@ -5,19 +5,41 @@ import {
   getBehaviorEventDoc,
   getEventDetailType,
   getEventReferenceShortcuts,
-} from '../services/behaviorDocs';
+} from '../services/io/behaviorDocs';
 
 export interface EventFieldDescriptor {
   name: string;
   type?: string;
 }
 
+const ctxBatchMethodSuggestions: CodeEditorSuggestion[] = [
+  { label: 'ctx.getValues', insertText: 'ctx.getValues([fieldId])', kind: 'Function', detail: '批量读取字段值', documentation: 'ctx.getValues(["fieldA", "fieldB"])', scope: 'ctx-member' },
+  { label: 'ctx.setValues', insertText: 'ctx.setValues({ fieldId: value })', kind: 'Function', detail: '批量设置字段值', documentation: 'await ctx.setValues({ customerName: "张三" })', scope: 'ctx-member' },
+  { label: 'ctx.clearValue', insertText: 'ctx.clearValue(fieldId)', kind: 'Function', detail: '清空单个字段', documentation: 'await ctx.clearValue("remark")', scope: 'ctx-member' },
+  { label: 'ctx.clearValues', insertText: 'ctx.clearValues([fieldId])', kind: 'Function', detail: '批量清空字段', documentation: 'await ctx.clearValues(["comment", "remark"])', scope: 'ctx-member' },
+  { label: 'ctx.toggleVisible', insertText: 'ctx.toggleVisible(componentId)', kind: 'Function', detail: '切换控件显隐', documentation: 'await ctx.toggleVisible("customer_name")', scope: 'ctx-member' },
+  { label: 'ctx.toggleDisabled', insertText: 'ctx.toggleDisabled(componentId)', kind: 'Function', detail: '切换控件禁用', documentation: 'await ctx.toggleDisabled("submit_button")', scope: 'ctx-member' },
+  { label: 'ctx.toggleRequired', insertText: 'ctx.toggleRequired(fieldId)', kind: 'Function', detail: '切换字段必填', documentation: 'await ctx.toggleRequired("customerName")', scope: 'ctx-member' },
+  { label: 'ctx.setFieldState', insertText: 'ctx.setFieldState(fieldOrComponentId, patch)', kind: 'Function', detail: '批量更新字段/控件状态', documentation: 'await ctx.setFieldState("customerName", { required: true, visible: true })', scope: 'ctx-member' },
+];
+
+const ctxNavigationSuggestions: CodeEditorSuggestion[] = [
+  { label: 'ctx.focusField', insertText: 'ctx.focusField(fieldId)', kind: 'Function', detail: '聚焦字段', documentation: 'await ctx.focusField("customerName")', scope: 'ctx-member' },
+  { label: 'ctx.focusControl', insertText: 'ctx.focusControl(componentId)', kind: 'Function', detail: '聚焦控件', documentation: 'await ctx.focusControl("submit_button")', scope: 'ctx-member' },
+  { label: 'ctx.scrollToField', insertText: 'ctx.scrollToField(fieldId)', kind: 'Function', detail: '滚动到字段', documentation: 'await ctx.scrollToField("approvalComment")', scope: 'ctx-member' },
+  { label: 'ctx.scrollToControl', insertText: 'ctx.scrollToControl(componentId)', kind: 'Function', detail: '滚动到控件', documentation: 'await ctx.scrollToControl("section_header")', scope: 'ctx-member' },
+  { label: 'ctx.switchTab', insertText: 'ctx.switchTab(tabIdOrIndex)', kind: 'Function', detail: '切换页签', documentation: 'await ctx.switchTab(1)', scope: 'ctx-member' },
+  { label: 'ctx.openTab', insertText: 'ctx.openTab(tabIdOrIndex)', kind: 'Function', detail: '切换页签（业务别名）', documentation: 'await ctx.openTab("审批信息")', scope: 'ctx-member' },
+];
+
 export const ctxSuggestions: CodeEditorSuggestion[] = [
   { label: 'ctx.getValue', insertText: 'ctx.getValue(fieldId)', kind: 'Function', detail: '获取字段值', documentation: 'ctx.getValue(fieldId)', scope: 'ctx-member' },
+  ...ctxBatchMethodSuggestions,
   { label: 'ctx.setValue', insertText: 'ctx.setValue(fieldId, value)', kind: 'Function', detail: '设置字段值', documentation: 'ctx.setValue(fieldId, val)', scope: 'ctx-member' },
   { label: 'ctx.setVisible', insertText: 'ctx.setVisible(id, true)', kind: 'Function', detail: '显示或隐藏控件', documentation: 'ctx.setVisible(id, bool)', scope: 'ctx-member' },
   { label: 'ctx.setDisabled', insertText: 'ctx.setDisabled(id, true)', kind: 'Function', detail: '启用或禁用控件', documentation: 'ctx.setDisabled(id, bool)', scope: 'ctx-member' },
   { label: 'ctx.setRequired', insertText: 'ctx.setRequired(id, true)', kind: 'Function', detail: '设置字段必填', documentation: 'ctx.setRequired(id, bool)', scope: 'ctx-member' },
+  ...ctxNavigationSuggestions,
   { label: 'ctx.showMessage', insertText: "ctx.showMessage('提示内容', 'info')", kind: 'Function', detail: '弹出提示', documentation: 'ctx.showMessage(msg, type)', scope: 'ctx-member' },
   { label: 'ctx.validateField', insertText: 'ctx.validateField(id)', kind: 'Function', detail: '校验字段', documentation: 'ctx.validateField(id)', scope: 'ctx-member' },
   { label: 'ctx.querySheet', insertText: 'ctx.querySheet(sheetId, filter)', kind: 'Function', detail: '查询数据表', documentation: 'ctx.querySheet(sheetId, f)', scope: 'ctx-member' },
@@ -172,14 +194,32 @@ export function createEventContextSuggestions(options: {
       scope: 'top-level',
     }))),
     { label: 'ctx.getValue', insertText: "ctx.getValue('字段名')", kind: 'Function', detail: '读取字段值', sortText: '020', scope: 'ctx-member' },
-    { label: 'ctx.setValue', insertText: "await ctx.setValue('字段名', ctx.value)", kind: 'Function', detail: '设置字段值', sortText: '021', scope: 'ctx-member' },
-    { label: 'ctx.setVisible', insertText: "await ctx.setVisible('组件ID', true)", kind: 'Function', detail: '切换控件显隐', sortText: '022', scope: 'ctx-member' },
-    { label: 'ctx.setDisabled', insertText: "await ctx.setDisabled('组件ID', true)", kind: 'Function', detail: '切换控件禁用', sortText: '023', scope: 'ctx-member' },
-    { label: 'ctx.setRequired', insertText: "await ctx.setRequired('字段名', true)", kind: 'Function', detail: '切换字段必填', sortText: '024', scope: 'ctx-member' },
-    { label: 'ctx.showMessage', insertText: "await ctx.showMessage('处理完成', 'success')", kind: 'Function', detail: '显示即时提示', sortText: '025', scope: 'ctx-member' },
-    { label: 'ctx.runConfiguredWorkflow', insertText: 'await ctx.runConfiguredWorkflow({ value: ctx.value })', kind: 'Function', detail: '执行本事件已绑定流程；不会再自动重复执行', sortText: '026', scope: 'ctx-member' },
-    { label: 'ctx.runWorkflow', insertText: "await ctx.runWorkflow('流程 ID 或名称', { value: ctx.value })", kind: 'Function', detail: '按 ID 或名称执行任意流程', sortText: '027', scope: 'ctx-member' },
-    { label: 'ctx.call', insertText: "await ctx.call('回调名称', ctx.value)", kind: 'Function', detail: '调用宿主注册的自定义回调函数', sortText: '028', scope: 'ctx-member' },
+    { label: 'ctx.getValues', insertText: "ctx.getValues(['字段A', '字段B'])", kind: 'Function', detail: '批量读取字段值', sortText: '021', scope: 'ctx-member' },
+    { label: 'ctx.setValue', insertText: "await ctx.setValue('字段名', ctx.value)", kind: 'Function', detail: '设置字段值', sortText: '022', scope: 'ctx-member' },
+    { label: 'ctx.setValues', insertText: "await ctx.setValues({ customerName: '张三', status: '草稿' })", kind: 'Snippet', detail: '批量设置字段值', sortText: '023', scope: 'ctx-member' },
+    { label: 'ctx.clearValue', insertText: "await ctx.clearValue('备注')", kind: 'Function', detail: '清空单个字段', sortText: '024', scope: 'ctx-member' },
+    { label: 'ctx.clearValues', insertText: "await ctx.clearValues(['comment', 'remark'])", kind: 'Snippet', detail: '批量清空字段', sortText: '025', scope: 'ctx-member' },
+    { label: 'ctx.setVisible', insertText: "await ctx.setVisible('组件ID', true)", kind: 'Function', detail: '切换控件显隐', sortText: '026', scope: 'ctx-member' },
+    { label: 'ctx.toggleVisible', insertText: "await ctx.toggleVisible('组件ID')", kind: 'Function', detail: '切换控件显隐', sortText: '027', scope: 'ctx-member' },
+    { label: 'ctx.setDisabled', insertText: "await ctx.setDisabled('组件ID', true)", kind: 'Function', detail: '切换控件禁用', sortText: '028', scope: 'ctx-member' },
+    { label: 'ctx.toggleDisabled', insertText: "await ctx.toggleDisabled('组件ID')", kind: 'Function', detail: '切换控件禁用', sortText: '029', scope: 'ctx-member' },
+    { label: 'ctx.setRequired', insertText: "await ctx.setRequired('字段名', true)", kind: 'Function', detail: '切换字段必填', sortText: '030', scope: 'ctx-member' },
+    { label: 'ctx.toggleRequired', insertText: "await ctx.toggleRequired('字段名')", kind: 'Function', detail: '切换字段必填', sortText: '031', scope: 'ctx-member' },
+    { label: 'ctx.setFieldState', insertText: "await ctx.setFieldState('customerName', { required: true, visible: true })", kind: 'Snippet', detail: '批量更新字段/控件状态', sortText: '032', scope: 'ctx-member' },
+    { label: 'ctx.focusField', insertText: "await ctx.focusField('customerName')", kind: 'Function', detail: '聚焦字段', sortText: '033', scope: 'ctx-member' },
+    { label: 'ctx.focusControl', insertText: "await ctx.focusControl('component_id')", kind: 'Function', detail: '聚焦控件', sortText: '034', scope: 'ctx-member' },
+    { label: 'ctx.scrollToField', insertText: "await ctx.scrollToField('customerName')", kind: 'Function', detail: '滚动到字段', sortText: '035', scope: 'ctx-member' },
+    { label: 'ctx.scrollToControl', insertText: "await ctx.scrollToControl('component_id')", kind: 'Function', detail: '滚动到控件', sortText: '036', scope: 'ctx-member' },
+    { label: 'ctx.switchTab', insertText: 'await ctx.switchTab(1)', kind: 'Function', detail: '切换到指定页签', sortText: '037', scope: 'ctx-member' },
+    { label: 'ctx.openTab', insertText: "await ctx.openTab('审批信息')", kind: 'Function', detail: '切换页签（业务别名）', sortText: '038', scope: 'ctx-member' },
+    { label: 'ctx.showMessage', insertText: "await ctx.showMessage('处理完成', 'success')", kind: 'Function', detail: '显示即时提示', sortText: '039', scope: 'ctx-member' },
+    { label: 'ctx.runConfiguredWorkflow', insertText: 'await ctx.runConfiguredWorkflow({ value: ctx.value })', kind: 'Function', detail: '执行本事件已绑定流程；不会再自动重复执行', sortText: '040', scope: 'ctx-member' },
+    { label: 'ctx.runWorkflow', insertText: "await ctx.runWorkflow('流程 ID 或名称', { value: ctx.value })", kind: 'Function', detail: '按 ID 或名称执行任意流程', sortText: '041', scope: 'ctx-member' },
+    { label: 'ctx.call', insertText: "await ctx.call('回调名称', ctx.value)", kind: 'Function', detail: '调用宿主注册的自定义回调函数', sortText: '042', scope: 'ctx-member' },
+    { label: '批量赋值模板', insertText: "await ctx.setValues({\n  customerName: '张三',\n  status: '草稿',\n});", kind: 'Snippet', detail: '高频写法糖：批量赋值', sortText: '050', scope: 'top-level' },
+    { label: '清空字段模板', insertText: "await ctx.clearValues(['comment', 'remark']);", kind: 'Snippet', detail: '高频写法糖：一键清空字段', sortText: '051', scope: 'top-level' },
+    { label: '字段状态模板', insertText: "await ctx.setFieldState('customerName', {\n  visible: true,\n  required: true,\n});", kind: 'Snippet', detail: '高频写法糖：批量切状态', sortText: '052', scope: 'top-level' },
+    { label: '切换页签模板', insertText: "await ctx.switchTab(1);\nawait ctx.showMessage('请继续填写下一页签', 'info');", kind: 'Snippet', detail: '高频写法糖：切页签并提示', sortText: '053', scope: 'top-level' },
     { label: 'typed async callback', insertText: `/** @param {FormEventContext} ctx */\nasync (ctx) => {\n  ctx.console.log('${options.eventName || 'event'}', ctx.value);\n  return ctx.value;\n}`, kind: 'Snippet', detail: '完整异步事件回调模板', sortText: '001', scope: 'top-level' },
     ...fields.flatMap<CodeEditorSuggestion>((field, index) => [
       { label: `ctx.values.${field.name}`, kind: 'Field', detail: `字段：${field.name}${field.type ? ` · ${toTsType(field.type)}` : ''}`, sortText: `1${index.toString().padStart(3, '0')}`, scope: 'ctx-values-member' },
@@ -220,7 +260,7 @@ export function createEventContextExtraLib(options: {
 
   return {
     filePath: options.filePath,
-    content: `type EventFieldMap = {\n${fieldEntries || '  [key: string]: unknown;'}\n};\ntype EventFieldName = keyof EventFieldMap & string;\ntype CurrentEventField = ${currentFieldName};\ntype CurrentEventValue = ${currentFieldType};\ntype EventFlowResult = { success: boolean; errors: string[]; finalOutputs: Record<string, unknown> };\ntype EventCallback = (ctx: FormEventContext, ...args: unknown[]) => unknown | Promise<unknown>;\ninterface FormEventComponent {\n  id: string;\n  type: string;\n  fieldBinding?: string;\n  props: Record<string, unknown>;\n  visible?: boolean;\n}\ninterface FormEventControlHandle {\n  id: string;\n  name: string;\n  type: string;\n  component: FormEventComponent;\n  value: unknown;\n  visible: boolean;\n  disabled: boolean;\n  required: boolean;\n}\ninterface FormEventContext {\n  event: ${eventName};\n  eventName: ${eventName};\n  field: CurrentEventField;\n  value: CurrentEventValue;\n  values: EventFieldMap & Record<string, unknown>;\n  formData: EventFieldMap & Record<string, unknown>;\n  originalValues: Partial<EventFieldMap> & Record<string, unknown>;\n  detail: ${detailType};\n  previousValue: CurrentEventValue;\n  timestamp: number;\n  dirty: boolean;\n  changedFields: EventFieldName[];\n  componentId: string;\n  componentType: string;\n  component: FormEventComponent;\n  controls: Record<string, FormEventControlHandle>;\n  getValue<K extends EventFieldName>(field: K): EventFieldMap[K];\n  getValue(field: string): unknown;\n  setValue<K extends EventFieldName>(field: K, value: EventFieldMap[K]): Promise<void>;\n  setValue(field: string, value: unknown): Promise<void>;\n  setVisible(componentId: string, visible: boolean): Promise<void>;\n  setDisabled(componentId: string, disabled: boolean): Promise<void>;\n  setRequired<K extends EventFieldName>(field: K, required: boolean): Promise<void>;\n  setRequired(field: string, required: boolean): Promise<void>;\n  showMessage(message: string, level?: 'info' | 'success' | 'warning' | 'error'): Promise<void>;\n  runWorkflow(workflow?: string, parameters?: Record<string, unknown>, options?: { targetNodeId?: string }): Promise<EventFlowResult>;\n  runConfiguredWorkflow(parameters?: Record<string, unknown>): Promise<EventFlowResult>;\n  call(name: string, ...args: unknown[]): Promise<unknown>;\n  callbacks: Record<string, EventCallback>;\n  console: Pick<Console, 'log' | 'warn' | 'error'>;\n}\ntype FormEventHandler = (ctx: FormEventContext) => unknown | Promise<unknown>;\ndeclare const ctx: FormEventContext;\n`,
+    content: `type EventFieldMap = {\n${fieldEntries || '  [key: string]: unknown;'}\n};\ntype EventFieldName = keyof EventFieldMap & string;\ntype CurrentEventField = ${currentFieldName};\ntype CurrentEventValue = ${currentFieldType};\ntype EventFlowResult = { success: boolean; errors: string[]; finalOutputs: Record<string, unknown> };\ntype EventCallback = (ctx: FormEventContext, ...args: unknown[]) => unknown | Promise<unknown>;\ninterface FormEventComponent {\n  id: string;\n  type: string;\n  fieldBinding?: string;\n  props: Record<string, unknown>;\n  visible?: boolean;\n}\ninterface FormEventControlHandle {\n  id: string;\n  name: string;\n  type: string;\n  component: FormEventComponent;\n  value: unknown;\n  visible: boolean;\n  disabled: boolean;\n  required: boolean;\n}\ninterface FormEventContext {\n  event: ${eventName};\n  eventName: ${eventName};\n  field: CurrentEventField;\n  value: CurrentEventValue;\n  values: EventFieldMap & Record<string, unknown>;\n  formData: EventFieldMap & Record<string, unknown>;\n  originalValues: Partial<EventFieldMap> & Record<string, unknown>;\n  detail: ${detailType};\n  previousValue: CurrentEventValue;\n  timestamp: number;\n  dirty: boolean;\n  changedFields: EventFieldName[];\n  componentId: string;\n  componentType: string;\n  component: FormEventComponent;\n  controls: Record<string, FormEventControlHandle>;\n  getValue<K extends EventFieldName>(field: K): EventFieldMap[K];\n  getValue(field: string): unknown;\n  getValues<K extends EventFieldName>(fields: readonly K[]): Partial<Pick<EventFieldMap, K>> & Record<string, unknown>;\n  getValues(fields: readonly string[]): Record<string, unknown>;\n  setValue<K extends EventFieldName>(field: K, value: EventFieldMap[K]): Promise<void>;\n  setValue(field: string, value: unknown): Promise<void>;\n  setValues(patch: Partial<EventFieldMap> & Record<string, unknown>): Promise<void>;\n  clearValue<K extends EventFieldName>(field: K): Promise<void>;\n  clearValue(field: string): Promise<void>;\n  clearValues<K extends EventFieldName>(fields: readonly K[]): Promise<void>;\n  clearValues(fields: readonly string[]): Promise<void>;\n  setVisible(componentId: string, visible: boolean): Promise<void>;\n  toggleVisible(componentId: string): Promise<boolean>;\n  setDisabled(componentId: string, disabled: boolean): Promise<void>;\n  toggleDisabled(componentId: string): Promise<boolean>;\n  setRequired<K extends EventFieldName>(field: K, required: boolean): Promise<void>;\n  setRequired(field: string, required: boolean): Promise<void>;\n  toggleRequired<K extends EventFieldName>(field: K): Promise<boolean>;\n  toggleRequired(field: string): Promise<boolean>;\n  setFieldState<K extends EventFieldName>(fieldOrComponentId: K | string, patch: { value?: EventFieldMap[K] | unknown; visible?: boolean; disabled?: boolean; required?: boolean }): Promise<void>;\n  focusField<K extends EventFieldName>(field: K): Promise<void>;\n  focusField(field: string): Promise<void>;\n  focusControl(componentId: string): Promise<void>;\n  scrollToField<K extends EventFieldName>(field: K): Promise<void>;\n  scrollToField(field: string): Promise<void>;\n  scrollToControl(componentId: string): Promise<void>;\n  switchTab(tabIdOrIndex: string | number): Promise<void>;\n  openTab(tabIdOrIndex: string | number): Promise<void>;\n  showMessage(message: string, level?: 'info' | 'success' | 'warning' | 'error'): Promise<void>;\n  runWorkflow(workflow?: string, parameters?: Record<string, unknown>, options?: { targetNodeId?: string }): Promise<EventFlowResult>;\n  runConfiguredWorkflow(parameters?: Record<string, unknown>): Promise<EventFlowResult>;\n  call(name: string, ...args: unknown[]): Promise<unknown>;\n  callbacks: Record<string, EventCallback>;\n  console: Pick<Console, 'log' | 'warn' | 'error'>;\n}\ntype FormEventHandler = (ctx: FormEventContext) => unknown | Promise<unknown>;\ndeclare const ctx: FormEventContext;\n`,
   };
 }
 

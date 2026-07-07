@@ -1,4 +1,4 @@
-# FormFlow Studio v0.5.0
+# FormFlow Studio v0.6.0
 
 **Excel 表单编排框架** —— 可视化流程编排 + 表单设计器 + 数据预览 + 使用模式 + 行为定义
 
@@ -125,11 +125,25 @@ bash python-service/setup.sh
 
 ---
 
-## 行为文档
+## 文档系统
 
+### 全局文档中心
+- 首页：`/docs` — 分区导航（梗概/行为/表单设计/流程节点/后端）
+- 导航栏「文档」按钮打开全局文档弹窗
+- 支持跨分区搜索和标签过滤
+
+### 文档分区
+| 分区 | 路径 | 内容 |
+|------|------|------|
+| 梗概 | `/docs/overview` | 产品介绍、快速入门、项目结构 |
+| 行为 | `/docs/behavior` | 31 个事件文档 + 3 个主题文档 |
+| 表单设计 | `/docs/form-design` | 26 种控件的属性和用法 |
+| 流程节点 | `/docs/flow-nodes` | 8 个分组的节点说明 |
+| 后端 | `/docs/backend` | 9 个 API 模块文档 |
+
+### 行为文档详情
 - 仓库手册：`docs/behavior-event-reference.md`
 - 项目流程规范：`docs/project-creation-spec.md`
-- 全局文档页：访问 `/docs`
 - 项目工作区：访问 `/projects/:id/workspace/:tab`
 - 项目设置页：访问 `/projects/:id/settings/:section`
 - 行为页右侧的 `Reference` 面板提供当前事件的快速摘要，并支持跳转到完整文档页
@@ -175,12 +189,85 @@ bash python-service/setup.sh
 ```
 ├── ui/                         # React + TypeScript + Vite 8 前端
 │   ├── src/
-│   │   ├── components/        # 通用 UI 与业务组件
-│   │   ├── designer/          # 表单设计器、控件和画布
-│   │   ├── pages/             # 路由页面（含 UsagePage 使用模式）
-│   │   ├── project/           # 项目状态、类型和持久化客户端
-│   │   ├── services/          # 流程、行为、预览和数据服务
+│   │   ├── components/        # 通用 UI 组件
+│   │   │   ├── DocModal.tsx   # 全局文档弹窗
+│   │   │   ├── DocSidebar.tsx # 文档目录导航
+│   │   │   ├── FormRenderer.tsx
+│   │   │   ├── CodeEditor.tsx
+│   │   │   └── ...
+│   │   ├── designer/          # 表单设计器
+│   │   │   ├── PropertyPanel.tsx    # 属性面板主壳
+│   │   │   ├── properties/         # 属性子组件
+│   │   │   │   ├── EventScriptEditor.tsx
+│   │   │   │   ├── FlowTriggerEditor.tsx
+│   │   │   │   ├── LinkageRulesEditor.tsx
+│   │   │   │   └── utils.ts
+│   │   │   ├── useDesigner.tsx      # 设计器主 hook
+│   │   │   ├── hooks/              # 子 hooks
+│   │   │   │   ├── useDesignerState.ts
+│   │   │   │   ├── useDesignerActions.ts
+│   │   │   │   ├── useDesignerClipboard.ts
+│   │   │   │   ├── useDesignerHistory.ts
+│   │   │   │   └── useDesignerIO.ts
+│   │   │   ├── controls/           # 控件定义
+│   │   │   │   ├── input.tsx       # 输入类控件
+│   │   │   │   ├── select.tsx      # 选择类控件
+│   │   │   │   ├── container.tsx   # 容器类控件
+│   │   │   │   └── display.tsx     # 展示类控件
+│   │   │   └── ...
+│   │   ├── pages/             # 路由页面
+│   │   │   ├── home/          # 首页相关
+│   │   │   │   ├── Layout.tsx
+│   │   │   │   ├── ProjectsListPage.tsx
+│   │   │   │   └── SystemSettingsPage.tsx
+│   │   │   ├── editor/        # 编辑器相关
+│   │   │   │   ├── UnifiedEditorPage.tsx
+│   │   │   │   ├── CanvasPage.tsx
+│   │   │   │   ├── DataPreviewPage.tsx
+│   │   │   │   ├── BehaviorPage.tsx
+│   │   │   │   └── ...
+│   │   │   └── doc/           # 文档系统
+│   │   │       ├── DocsHomePage.tsx        # 全局文档首页
+│   │   │       ├── BehaviorDocsPage.tsx    # 行为文档
+│   │   │       ├── SectionPage.tsx         # 通用分区页面
+│   │   │       ├── OverviewPage.tsx        # 梗概文档
+│   │   │       ├── FormDesignSectionPage.tsx # 表单设计文档
+│   │   │       ├── FlowNodeSectionPage.tsx   # 流程节点文档
+│   │   │       └── BackendSectionPage.tsx    # 后端 API 文档
+│   │   ├── project/           # 项目状态、类型和持久化
+│   │   ├── services/          # 业务服务层
+│   │   │   ├── engine/        # 流程/行为引擎
+│   │   │   │   ├── flowEngine.ts
+│   │   │   │   ├── behaviorEngine.ts
+│   │   │   │   ├── formEventExecutor.ts
+│   │   │   │   └── ...
+│   │   │   ├── io/            # 数据读写/API
+│   │   │   │   ├── behaviorDocs.ts   # 文档数据 facade
+│   │   │   │   ├── docs/             # 文档数据子模块
+│   │   │   │   │   ├── types.ts      # 核心类型定义
+│   │   │   │   │   ├── shared.ts     # 共享数据与工厂函数
+│   │   │   │   │   ├── sections.ts   # 全局文档分区定义
+│   │   │   │   │   ├── event-docs-script.ts  # 脚本事件文档(22个)
+│   │   │   │   │   ├── event-docs-control.ts # 控件事件文档(9个)
+│   │   │   │   │   ├── topic-docs.ts         # 主题文档(3个)
+│   │   │   │   │   ├── overview-docs.ts      # 梗概文档
+│   │   │   │   │   ├── form-design-docs.ts   # 表单设计文档(26控件)
+│   │   │   │   │   ├── flow-node-docs.ts     # 流程节点文档(8分组)
+│   │   │   │   │   └── backend-docs.ts       # 后端 API 文档(9模块)
+│   │   │   │   ├── routes.ts
+│   │   │   │   └── ...
+│   │   │   ├── display/      # 展示/编辑辅助
+│   │   │   ├── data/         # 数据处理
+│   │   │   └── config/       # 配置/类型/模板
+│   │   ├── models/            # 核心数据模型
 │   │   └── style/             # 模块化样式
+│   │       ├── variables.css          # CSS 变量
+│   │       ├── layout.css             # 全局布局
+│   │       ├── pages-doc.css          # 文档页面样式
+│   │       ├── designer-*.css         # 设计器样式(10个文件)
+│   │       ├── renderer-*.css         # 表单渲染样式(17个文件)
+│   │       ├── components-*.css       # 组件样式(5个文件)
+│   │       └── pages-*.css            # 页面样式(7个文件)
 │   ├── nodes/                 # 约定式节点包
 │   │   ├── <node>/
 │   │   │   ├── schema.json    # 节点元数据（必需）
@@ -196,7 +283,7 @@ bash python-service/setup.sh
 ├── server/                    # Express 后端
 │   ├── src/
 │   │   ├── config/paths.ts    # 服务、项目和 Python 路径中心
-│   │   ├── routes/            # API 路由
+│   │   ├── routes/            # API 路由（projects/files/data/workflows/behaviors/describe/configs/ml/history）
 │   │   └── index.ts           # 服务入口
 │   └── data/                  # 上传、缓存、报告和配置
 ├── python-service/            # Python 数据分析与 ML 服务

@@ -1,6 +1,6 @@
 import type { DesignComponent } from '../project/types';
 import type { ComponentNode, ComponentEvent } from '../models';
-import { getDesignValuePortType, getRuntimeComponentType, isInteractiveComponentType } from '../services/controlTypes';
+import { getDesignValuePortType, getRuntimeComponentType, isInteractiveComponentType } from '../services/config/controlTypes';
 
 export function exportToComponentNodes(components: DesignComponent[]): ComponentNode[] {
   return components.map((dc, index) => {
