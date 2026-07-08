@@ -189,7 +189,7 @@
             "enabled": true,
             "workflowId": "example_employee_mgmt_wf_create",
             "parameterMap": {
-              "submit.formData": {
+              "workflow:import.formData": {
                 "员工ID": "$form.员工ID",
                 "姓名": "$form.姓名",
                 "部门": "$form.部门",

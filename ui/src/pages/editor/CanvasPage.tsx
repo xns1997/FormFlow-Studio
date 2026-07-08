@@ -33,6 +33,7 @@ import { formatStructuredProperty, isStructuredProperty, parseStructuredProperty
 import { jsonSuggestions } from '../../components/codeEditorSuggestions';
 import NodePalette, { QuickNodePicker } from '../../components/NodePalette';
 import { createQuickNodeConnection, portTypesCompatible, type NodeConnectionContext } from '../../services/config/nodeDiscovery';
+import { createWorkflowIoScaffold, ensureWorkflowIo } from '../../services/engine/workflowIo';
 
 type FlowNodeData = {
   specId: string;
@@ -49,9 +50,95 @@ type FlowNodeData = {
 };
 
 type FlowNode = Node<FlowNodeData>;
+const INPUT_OVERRIDE_KEY = '__inputOverrides';
 
 function nodeDataFromSpec(spec: FlowNodeSpec): FlowNodeData {
   return { specId: spec.id, label: spec.label, kind: spec.kind, category: spec.category, description: spec.description, propertiesJson: '{}', connectedPortsJson: '[]' };
+}
+
+function getInputOverrides(properties: Record<string, unknown>) {
+  const raw = properties[INPUT_OVERRIDE_KEY];
+  return raw && typeof raw === 'object' && !Array.isArray(raw)
+    ? raw as Record<string, unknown>
+    : {};
+}
+
+function getInputSelections(properties: Record<string, unknown>) {
+  const raw = properties.__inputSelections;
+  return raw && typeof raw === 'object' && !Array.isArray(raw)
+    ? raw as Record<string, string>
+    : {};
+}
+
+function setInputOverride(properties: Record<string, unknown>, portName: string, value: unknown) {
+  const current = getInputOverrides(properties);
+  const next = { ...current };
+  if (value === undefined) delete next[portName];
+  else next[portName] = value;
+  if (Object.keys(next).length === 0) {
+    return Object.fromEntries(Object.entries(properties).filter(([key]) => key !== INPUT_OVERRIDE_KEY));
+  }
+  return { ...properties, [INPUT_OVERRIDE_KEY]: next };
+}
+
+function setInputSelection(properties: Record<string, unknown>, portName: string, edgeId: string | undefined) {
+  const current = getInputSelections(properties);
+  const next = { ...current };
+  if (!edgeId) delete next[portName];
+  else next[portName] = edgeId;
+  const withoutSelections = Object.fromEntries(Object.entries(properties).filter(([key]) => key !== '__inputSelections'));
+  if (Object.keys(next).length === 0) return withoutSelections;
+  return { ...withoutSelections, __inputSelections: next };
+}
+
+function normalizeSheetKey(tableId: string, sheetName: string) {
+  return `${tableId}::${sheetName}`;
+}
+
+function getLogicalEdgeKey(edge: Pick<Edge, 'source' | 'target' | 'sourceHandle' | 'targetHandle'>) {
+  return `${edge.source}::${edge.sourceHandle || ''}=>${edge.target}::${edge.targetHandle || ''}`;
+}
+
+function dedupeEdges<T extends Pick<Edge, 'source' | 'target' | 'sourceHandle' | 'targetHandle'>>(edgeList: T[]) {
+  const seen = new Set<string>();
+  return edgeList.filter((edge) => {
+    const key = getLogicalEdgeKey(edge);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function isStructuredInputType(type: string) {
+  return ['any', 'json', 'object', 'array', 'json-rows', 'filter', 'sort-config', 'validation-rule', 'style'].includes(type);
+}
+
+function supportsProjectSheetInput(port: SchemaPort) {
+  if (port.type === 'worksheet' || port.type === 'workbook' || port.type === 'json-rows') return true;
+  if (port.type === 'array') {
+    return /data|rows|records|items|list/i.test(port.name);
+  }
+  if (port.type === 'any') {
+    return /data|rows|records|items|list|source|table|sheet/i.test(port.name);
+  }
+  return false;
+}
+
+function buildProjectSheetValue(port: SchemaPort, table: SrcTableEntry, sheet: SrcTableEntry['sheets'][number]) {
+  const worksheet = {
+    __fromProject: true,
+    tableId: table.id,
+    sheetName: sheet.name,
+    headers: sheet.headers,
+    preview: sheet.preview,
+    rowCount: sheet.rowCount,
+    colCount: sheet.colCount,
+  };
+  if (port.type === 'worksheet' || port.type === 'workbook') return worksheet;
+  if (port.type === 'json-rows') return worksheet;
+  if (port.type === 'array') return sheet.preview;
+  if (port.type === 'any') return sheet.preview;
+  return undefined;
 }
 
 function createNode(spec: FlowNodeSpec, index: number, position?: { x: number; y: number }): FlowNode {
@@ -85,14 +172,37 @@ function downloadFileData(value: unknown, fileName: string, mimeType: string) {
 const PORT_TYPE_OPTIONS = ['string', 'number', 'boolean', 'object', 'array', 'json', 'any', 'trigger'];
 
 function PortTableEditor({ value, onChange, disabled }: { value: unknown; onChange: (val: string) => void; disabled?: boolean }) {
-  const rows: Array<{ name: string; label: string; type: string }> = useMemo(() => {
-    if (typeof value === 'string' && value.trim()) {
-      try { const arr = JSON.parse(value); if (Array.isArray(arr)) return arr.filter((r: any) => r && typeof r.name === 'string'); } catch {}
+  const parseRows = useCallback((source: unknown) => {
+    if (typeof source === 'string' && source.trim()) {
+      try {
+        const arr = JSON.parse(source);
+        if (Array.isArray(arr)) {
+          return arr
+            .filter((row: any) => row && typeof row.name === 'string')
+            .map((row: any) => ({
+              name: String(row.name || ''),
+              label: String(row.label || row.name || ''),
+              type: String(row.type || 'any'),
+              description: String(row.description || ''),
+            }));
+        }
+      } catch {}
     }
-    return [];
-  }, [value]);
+    return [] as Array<{ name: string; label: string; type: string; description: string }>;
+  }, []);
 
-  const commit = useCallback((next: Array<{ name: string; label: string; type: string }>) => {
+  const rows = useMemo(() => parseRows(value), [value, parseRows]);
+  const externalText = typeof value === 'string' && value.trim() ? value : JSON.stringify(rows, null, 2);
+  const [mode, setMode] = useState<'table' | 'json'>('table');
+  const [rawText, setRawText] = useState(externalText);
+  const [rawError, setRawError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setRawText(externalText);
+    setRawError(null);
+  }, [externalText]);
+
+  const commit = useCallback((next: Array<{ name: string; label: string; type: string; description: string }>) => {
     onChange(JSON.stringify(next));
   }, [onChange]);
 
@@ -103,7 +213,7 @@ function PortTableEditor({ value, onChange, disabled }: { value: unknown; onChan
 
   const addRow = useCallback(() => {
     const n = rows.length + 1;
-    commit([...rows, { name: `port_${n}`, label: `端口${n}`, type: 'any' }]);
+    commit([...rows, { name: `port_${n}`, label: `端口${n}`, type: 'any', description: '' }]);
   }, [rows, commit]);
 
   const removeRow = useCallback((idx: number) => {
@@ -112,25 +222,68 @@ function PortTableEditor({ value, onChange, disabled }: { value: unknown; onChan
 
   return (
     <div className="port-table-editor">
-      <table>
-        <thead><tr><th>名称</th><th>标签</th><th>类型</th><th /></tr></thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr key={i}>
-              <td><input type="text" value={row.name} disabled={disabled} onChange={(e) => updateRow(i, 'name', e.target.value)} placeholder="name" /></td>
-              <td><input type="text" value={row.label} disabled={disabled} onChange={(e) => updateRow(i, 'label', e.target.value)} placeholder="标签" /></td>
-              <td>
-                <select value={row.type || 'any'} disabled={disabled} onChange={(e) => updateRow(i, 'type', e.target.value)}>
-                  {PORT_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </td>
-              <td>{!disabled && <button type="button" onClick={() => removeRow(i)} className="port-table-remove">×</button>}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
       {!disabled && (
-        <button type="button" onClick={addRow} className="port-table-add">+ 添加端口</button>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+          <button type="button" className={mode === 'table' ? 'active' : ''} onClick={() => setMode('table')}>表格</button>
+          <button type="button" className={mode === 'json' ? 'active' : ''} onClick={() => setMode('json')}>JSON</button>
+        </div>
+      )}
+      {mode === 'json' ? (
+        <div className={`structured-property-editor ${rawError ? 'invalid' : ''}`}>
+          <CodeEditor
+            value={rawText}
+            onChange={(next) => {
+              setRawText(next);
+              try {
+                const parsed = JSON.parse(next);
+                if (!Array.isArray(parsed)) {
+                  setRawError('字段定义必须是数组');
+                  return;
+                }
+                setRawError(null);
+              } catch {
+                setRawError('JSON 无效');
+              }
+            }}
+            onBlur={() => {
+              if (disabled || rawError) return;
+              onChange(rawText.trim() ? rawText : '[]');
+            }}
+            language="json"
+            theme="light"
+            height={220}
+            minHeight={140}
+            disabled={disabled}
+            lineNumbers
+            compact
+            fullscreen={!disabled}
+          />
+          {rawError && <div className="structured-property-error">{rawError}</div>}
+        </div>
+      ) : (
+        <>
+          <table>
+            <thead><tr><th>名称</th><th>标签</th><th>类型</th><th>说明</th><th /></tr></thead>
+            <tbody>
+              {rows.map((row, i) => (
+                <tr key={i}>
+                  <td><input type="text" value={row.name} disabled={disabled} onChange={(e) => updateRow(i, 'name', e.target.value)} placeholder="name" /></td>
+                  <td><input type="text" value={row.label} disabled={disabled} onChange={(e) => updateRow(i, 'label', e.target.value)} placeholder="标签" /></td>
+                  <td>
+                    <select value={row.type || 'any'} disabled={disabled} onChange={(e) => updateRow(i, 'type', e.target.value)}>
+                      {PORT_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </td>
+                  <td><input type="text" value={row.description || ''} disabled={disabled} onChange={(e) => updateRow(i, 'description', e.target.value)} placeholder="说明" /></td>
+                  <td>{!disabled && <button type="button" onClick={() => removeRow(i)} className="port-table-remove">×</button>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!disabled && (
+            <button type="button" onClick={addRow} className="port-table-add">+ 添加端口</button>
+          )}
+        </>
       )}
     </div>
   );
@@ -403,14 +556,30 @@ const SchemaField = React.memo(function SchemaField({ prop, value, onChange, con
 
   // 通用 string 属性 → 如果关联数据源，显示可用字段
   if (prop.name === 'sheetName' && allSheets.length > 0) {
+    const currentSheet = allSheets.find((s) => s.sheetName === String(current) && (!currentProps?.tableId || currentProps.tableId === s.tableId));
     return (
       <div className={`schema-field ${disabled ? 'port-connected' : ''}`}>
         <span>{prop.label}{prop.required && <em className="required">*</em>}{portBadge}</span>
         {disabled ? connectedValueDisplay : (
-          <select value={String(current)} onChange={(e) => onChange(prop.name, e.target.value)}>
-            <option value="">-- 选择 --</option>
-            {allSheets.map(s => <option key={`${s.tableId}:${s.sheetName}`} value={s.sheetName}>{s.label}</option>)}
-          </select>
+          <>
+            <select
+              value={currentSheet ? normalizeSheetKey(currentSheet.tableId, currentSheet.sheetName) : ''}
+              onChange={(e) => {
+                const selected = allSheets.find((s) => normalizeSheetKey(s.tableId, s.sheetName) === e.target.value);
+                if (!selected) {
+                  onChange(prop.name, '');
+                  if (currentProps && 'tableId' in currentProps) onChange('tableId', '');
+                  return;
+                }
+                onChange(prop.name, selected.sheetName);
+                onChange('tableId', selected.tableId);
+              }}
+            >
+              <option value="">-- 选择 --</option>
+              {allSheets.map(s => <option key={`${s.tableId}:${s.sheetName}`} value={normalizeSheetKey(s.tableId, s.sheetName)}>{s.label}</option>)}
+            </select>
+            {currentSheet && <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>来源文件: {currentSheet.fileName}</div>}
+          </>
         )}
       </div>
     );
@@ -486,6 +655,157 @@ function StructuredSchemaEditor({ prop, value, disabled, editorPath, onCommit }:
   );
 }
 
+function InputPortEditor({
+  port,
+  value,
+  fallbackValue,
+  connected,
+  sourceInfos,
+  selectedEdgeId,
+  hasPropertyEditor,
+  tables,
+  onChange,
+  onJumpToSource,
+  onSelectSource,
+}: {
+  port: SchemaPort;
+  value: unknown;
+  fallbackValue: unknown;
+  connected: boolean;
+  sourceInfos?: Array<{
+    edgeId: string;
+    nodeId: string;
+    nodeLabel: string;
+    portLabel: string;
+    value?: unknown;
+    summary?: string;
+  }>;
+  selectedEdgeId?: string;
+  hasPropertyEditor: boolean;
+  tables: SrcTableEntry[];
+  onChange: (value: unknown) => void;
+  onJumpToSource: (nodeId: string) => void;
+  onSelectSource: (edgeId: string | undefined) => void;
+}) {
+  const effectiveValue = value !== undefined ? value : fallbackValue;
+  const sheetOptions = useMemo(
+    () => tables.flatMap((table) => table.sheets.map((sheet) => ({ table, sheet }))),
+    [tables],
+  );
+  const selectedSourceKey = useMemo(() => {
+    if (!effectiveValue || typeof effectiveValue !== 'object') return '';
+    const source = effectiveValue as any;
+    if (source.__fromProject && source.tableId && source.sheetName) {
+      return normalizeSheetKey(String(source.tableId), String(source.sheetName));
+    }
+    if (port.type === 'json-rows' && Array.isArray(effectiveValue)) {
+      const matched = sheetOptions.find(({ sheet }) => JSON.stringify(sheet.preview) === JSON.stringify(effectiveValue));
+      if (matched) return normalizeSheetKey(matched.table.id, matched.sheet.name);
+    }
+    return '';
+  }, [effectiveValue, port.type, sheetOptions]);
+  const activeSource = useMemo(() => {
+    if (!sourceInfos?.length) return undefined;
+    return sourceInfos.find((item) => item.edgeId === selectedEdgeId) || sourceInfos[sourceInfos.length - 1];
+  }, [sourceInfos, selectedEdgeId]);
+
+  const renderEditor = () => {
+    if (port.type === 'boolean') {
+      return <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}><input type="checkbox" checked={!!effectiveValue} onChange={(e) => onChange(e.target.checked)} /><span>启用</span></label>;
+    }
+
+    if (port.type === 'number') {
+      return <input type="number" value={effectiveValue == null ? '' : String(effectiveValue)} onChange={(e) => onChange(e.target.value === '' ? undefined : Number(e.target.value))} />;
+    }
+
+    if (supportsProjectSheetInput(port) && sheetOptions.length > 0) {
+      return (
+        <>
+          <select
+            value={selectedSourceKey}
+            onChange={(event) => {
+              const selected = sheetOptions.find(({ table, sheet }) => normalizeSheetKey(table.id, sheet.name) === event.target.value);
+              onChange(selected ? buildProjectSheetValue(port, selected.table, selected.sheet) : undefined);
+            }}
+          >
+            <option value="">-- 选表 --</option>
+            {sheetOptions.map(({ table, sheet }) => (
+              <option key={normalizeSheetKey(table.id, sheet.name)} value={normalizeSheetKey(table.id, sheet.name)}>
+                {table.fileName} / {sheet.name}
+              </option>
+            ))}
+          </select>
+          <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4 }}>
+            未连线时可在这里直接选表；一旦接入上游连线，运行时优先使用连线数据。
+          </div>
+        </>
+      );
+    }
+
+    if (isStructuredInputType(port.type)) {
+      return (
+        <StructuredSchemaEditor
+          prop={{ ...port, default: port.type === 'array' || port.type === 'json-rows' ? [] : {} }}
+          value={effectiveValue}
+          disabled={false}
+          editorPath={`input-override:${port.name}`}
+          onCommit={onChange}
+        />
+      );
+    }
+
+    return <input type="text" value={effectiveValue == null ? '' : String(effectiveValue)} onChange={(e) => onChange(e.target.value === '' ? undefined : e.target.value)} />;
+  };
+
+  return (
+    <div className={`schema-field ${connected ? 'port-connected' : ''}`}>
+      <span>{port.label}{port.required && <em className="required">*</em>}<small style={{ marginLeft: 6, color: 'var(--muted)' }}>{port.type}</small></span>
+      {connected ? (
+        <div className="connected-port-value">
+          {sourceInfos && sourceInfos.length > 1 ? (
+            <>
+              <select
+                value={activeSource?.edgeId || ''}
+                onChange={(event) => onSelectSource(event.target.value || undefined)}
+              >
+                {sourceInfos.map((item) => (
+                  <option key={item.edgeId} value={item.edgeId}>
+                    {item.nodeLabel} · {item.portLabel}
+                  </option>
+                ))}
+              </select>
+              <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4 }}>
+                已连接 {sourceInfos.length} 路来源，当前执行使用下拉所选这一条。
+              </div>
+            </>
+          ) : (
+            <div><strong>{activeSource?.nodeLabel || '上游节点'}</strong> · {activeSource?.portLabel || port.name}</div>
+          )}
+          {activeSource?.summary && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{activeSource.summary}</div>}
+          <button type="button" onClick={() => activeSource && onJumpToSource(activeSource.nodeId)} style={{ marginTop: 6, fontSize: 11 }}>
+            跳到上游节点
+          </button>
+        </div>
+      ) : (
+        <>
+          {renderEditor()}
+          {hasPropertyEditor && (
+            <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4 }}>
+              当前输入口与上方“配置”同名。未单独覆盖时沿用配置值；在这里填写后，仅覆盖这个输入口。
+            </div>
+          )}
+        </>
+      )}
+      {!connected && value !== undefined && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
+          <TypeDisplayer type={port.type} value={value} compact />
+          <button type="button" onClick={() => onChange(undefined)} style={{ fontSize: 11 }}>清空</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function InspectorPortSection({ ports, connectedPorts }: { ports: SchemaPort[]; connectedPorts: Set<string> }) {
   const [open, setOpen] = useState(ports.length <= 6);
   const connectedCount = ports.filter((port) => port.direction === 'input'
@@ -556,53 +876,27 @@ export default function CanvasPage() {
     loadNodeRegistry().then((reg) => {
       (globalThis as any).__formflowRegistry = reg;
       setRegistry(reg);
-      const fileSpec = reg.byId.get('generic:file-picker');
-      const wsSpec = reg.byId.get('generic:worksheet-select');
-      const readSpec = reg.byId.get('method:XLSX.read');
-      const jsonSpec = reg.byId.get('method:XLSX.utils.sheet_to_json');
-      const initNodes: FlowNode[] = [];
-
-      const srcTable = project?.srcTable || [];
-      const firstFile = srcTable[0];
-      const firstSheet = firstFile?.sheets[0];
-
-      if (fileSpec) {
-        const node = createNode(fileSpec, 0);
-        node.id = 'generic:file-picker';
-        node.position = { x: 40, y: 80 };
-        if (firstFile) {
-          node.data.propertiesJson = JSON.stringify({ accept: '.xlsx,.xls,.csv,.json', multiple: false, selectedFile: firstFile.fileName });
-        }
-        initNodes.push(node);
-      }
-      if (readSpec) {
-        const node = createNode(readSpec, 1);
-        node.id = 'method:XLSX.read';
-        node.position = { x: 340, y: 80 };
-        initNodes.push(node);
-      }
-      if (jsonSpec) {
-        const node = createNode(jsonSpec, 2);
-        node.id = 'method:XLSX.utils.sheet_to_json';
-        node.position = { x: 620, y: 80 };
-        initNodes.push(node);
-      }
-      if (wsSpec) {
-        const node = createNode(wsSpec, 3);
-        node.id = 'generic:worksheet-select';
-        node.position = { x: 340, y: 260 };
-        if (firstSheet) {
-          node.data.propertiesJson = JSON.stringify({ selectMode: 'byName', sheetName: firstSheet.name, sheetIndex: 0 });
-        }
-        initNodes.push(node);
-      }
+      const scaffold = createWorkflowIoScaffold();
+      const initNodes: FlowNode[] = scaffold.nodes.map((node) => {
+        const spec = reg.byId.get(node.specId);
+        return spec ? {
+          id: node.id,
+          type: 'formflow',
+          position: node.position,
+          data: {
+            specId: node.specId,
+            label: spec.label,
+            kind: spec.kind,
+            category: spec.category,
+            description: spec.description,
+            propertiesJson: typeof node.data?.propertiesJson === 'string' ? node.data.propertiesJson : '{}',
+            connectedPortsJson: '[]',
+          },
+        } : null;
+      }).filter(Boolean) as FlowNode[];
       setNodes(initNodes);
       if (initNodes.length > 0) setSelectedNodeId(initNodes[0].id);
-      const initEdges: Edge[] = [];
-      if (fileSpec && readSpec) initEdges.push({ id: 'e-file-read', source: 'generic:file-picker', target: 'method:XLSX.read', sourceHandle: 'out:data', targetHandle: 'in:data', animated: true });
-      if (readSpec && wsSpec) initEdges.push({ id: 'e-read-sheet', source: 'method:XLSX.read', target: 'generic:worksheet-select', sourceHandle: 'out:workbook', targetHandle: 'in:workbook', animated: true });
-      if (wsSpec && jsonSpec) initEdges.push({ id: 'e-sheet-json', source: 'generic:worksheet-select', target: 'method:XLSX.utils.sheet_to_json', sourceHandle: 'out:worksheet', targetHandle: 'in:worksheet', animated: true });
-      setEdges(initEdges);
+      setEdges([]);
       window.requestAnimationFrame(() => reactFlow.fitView({ padding: 0.2, duration: 250 }));
     });
   }, [project?.srcTable]);
@@ -626,11 +920,10 @@ export default function CanvasPage() {
   }, []);
 
   const onNodesChange = useCallback((changes: NodeChange<FlowNode>[]) => setNodes((c) => applyNodeChanges(changes, c)), []);
-  const onEdgesChange = useCallback((changes: EdgeChange<Edge>[]) => { setEdges((c) => { const next = applyEdgeChanges(changes, c); setNodes((prev) => syncConnectedPorts(prev, next)); return next; }); }, [syncConnectedPorts]);
+  const onEdgesChange = useCallback((changes: EdgeChange<Edge>[]) => { setEdges((c) => { const next = dedupeEdges(applyEdgeChanges(changes, c)); setNodes((prev) => syncConnectedPorts(prev, next)); return next; }); }, [syncConnectedPorts]);
   const isValidConnection = useCallback((connection: Connection | Edge) => {
     if (!connection.source || !connection.target || !connection.sourceHandle || !connection.targetHandle) return false;
     if (connection.source === connection.target) return false;
-    if (edges.some((edge) => edge.target === connection.target && edge.targetHandle === connection.targetHandle)) return false;
     const sourceNode = nodes.find((node) => node.id === connection.source);
     const targetNode = nodes.find((node) => node.id === connection.target);
     const sourceSpec = sourceNode && registry?.byId.get(sourceNode.data.specId);
@@ -643,7 +936,14 @@ export default function CanvasPage() {
     const targetPort = targetPorts.find((port) => port.name === targetName && (port.direction === 'input' || port.direction === 'both'));
     return !!sourcePort && !!targetPort && portTypesCompatible(sourcePort.type, targetPort.type);
   }, [edges, nodes, registry]);
-  const onConnect = useCallback((connection: Connection) => { if (!isValidConnection(connection)) return; setEdges((c) => { const next = addEdge({ ...connection, animated: true }, c); setNodes((prev) => syncConnectedPorts(prev, next)); return next; }); }, [isValidConnection, syncConnectedPorts]);
+  const onConnect = useCallback((connection: Connection) => {
+    if (!isValidConnection(connection)) return;
+    setEdges((c) => {
+      const next = dedupeEdges(addEdge({ ...connection, animated: true }, c));
+      setNodes((prev) => syncConnectedPorts(prev, next));
+      return next;
+    });
+  }, [isValidConnection, syncConnectedPorts]);
 
   const addSpecNode = useCallback((spec: FlowNodeSpec, requestedPosition?: { x: number; y: number }) => {
     const sequence = nodeSequenceRef.current++;
@@ -658,7 +958,6 @@ export default function CanvasPage() {
 
   const onConnectStart = useCallback((_event: MouseEvent | TouchEvent, params: { nodeId: string | null; handleId: string | null; handleType: 'source' | 'target' | null }) => {
     if (!params.nodeId || !params.handleId || !params.handleType || !registry) return;
-    if (params.handleType === 'target' && edges.some((edge) => edge.target === params.nodeId && edge.targetHandle === params.handleId)) return;
     const node = nodes.find((item) => item.id === params.nodeId);
     const spec = node && registry.byId.get(node.data.specId);
     const ports = getNodeEffectivePorts(spec, resolveNodeProperties(spec, node?.data.propertiesJson));
@@ -690,7 +989,7 @@ export default function CanvasPage() {
     const node = addSpecNode(spec, quickPicker.flowPosition);
     const connection: Connection = createQuickNodeConnection(quickPicker.context, quickPicker.nodeId, quickPicker.handleId, node.id, port);
     setEdges((current) => {
-      const next = addEdge({ ...connection, animated: true }, current);
+      const next = dedupeEdges(addEdge({ ...connection, animated: true }, current));
       setNodes((nodeList) => syncConnectedPorts(nodeList, next));
       return next;
     });
@@ -754,13 +1053,20 @@ export default function CanvasPage() {
     }
     return c;
   }, [edges, selectedNodeId]);
+  const srcTables = useMemo(() => project?.srcTable || [], [project?.srcTable]);
 
   const connectedSourceMap = useMemo(() => {
-    const map = new Map<string, { nodeLabel: string; portLabel: string; value?: unknown }>();
+    const map = new Map<string, Array<{ edgeId: string; nodeId: string; nodeLabel: string; portLabel: string; value?: unknown; summary?: string }>>();
+    const seenByPort = new Map<string, Set<string>>();
     if (!selectedNodeId || !registry) return map;
     for (const e of edges) {
       if (e.target !== selectedNodeId || typeof e.targetHandle !== 'string') continue;
       const portName = e.targetHandle.replace(/^in:/, '');
+      const seenKeys = seenByPort.get(portName) || new Set<string>();
+      const logicalKey = getLogicalEdgeKey(e);
+      if (seenKeys.has(logicalKey)) continue;
+      seenKeys.add(logicalKey);
+      seenByPort.set(portName, seenKeys);
       const sourceNode = nodes.find(n => n.id === e.source);
       if (!sourceNode) continue;
       const sourceSpec = registry.byId.get(sourceNode.data.specId);
@@ -768,27 +1074,47 @@ export default function CanvasPage() {
       const sourcePortName = (e.sourceHandle || '').replace(/^out:/, '');
       const sourcePort = sourcePorts.find((p) => p.name === sourcePortName);
       const outputVal = sourceNode.data.outputs?.[sourcePortName];
-      map.set(portName, {
+      const sourceProps = resolveNodeProperties(sourceSpec, sourceNode.data.propertiesJson);
+      const sourceTable = srcTables.find((table) => table.id === sourceProps.tableId);
+      const sourceSheetName = String(sourceProps.sheetName || '');
+      const list = map.get(portName) || [];
+      list.push({
+        edgeId: e.id,
+        nodeId: sourceNode.id,
         nodeLabel: sourceNode.data.label,
         portLabel: sourcePort?.label || sourcePortName,
         value: outputVal,
+        summary: sourceTable && sourceSheetName
+          ? `${sourceTable.fileName} / ${sourceSheetName}`
+          : sourceSheetName
+            ? `Sheet: ${sourceSheetName}`
+            : undefined,
       });
+      map.set(portName, list);
     }
     return map;
-  }, [edges, selectedNodeId, nodes, registry]);
+  }, [edges, selectedNodeId, nodes, registry, srcTables]);
 
   const saveWorkflow = useCallback(() => {
-    const wfData = { nodes: nodes.map((n) => ({ id: n.id, type: n.type || 'formflow', specId: n.data.specId, position: n.position, data: n.data })), edges: edges.map((e) => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle || '', targetHandle: e.targetHandle || '' })) };
+    const wfData = ensureWorkflowIo({
+      id: currentWorkflowId || `wf_${Date.now()}`,
+      name: '',
+      description: '',
+      nodes: nodes.map((n) => ({ id: n.id, type: n.type || 'formflow', specId: n.data.specId, position: n.position, data: n.data })),
+      edges: edges.map((e) => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle || '', targetHandle: e.targetHandle || '' })),
+      createdAt: '',
+      updatedAt: '',
+    }).workflow;
     if (currentWorkflowId) {
       // Save version history
       const current = project?.workflows.find((w) => w.id === currentWorkflowId);
       const existingVersions = current?.versions || [];
       const newVersion = { timestamp: new Date().toISOString(), label: `v${existingVersions.length + 1}`, nodes: current?.nodes || [], edges: current?.edges || [] };
       const versions = [...existingVersions, newVersion].slice(-20); // Keep last 20
-      updateWorkflow(currentWorkflowId, { ...wfData, versions });
+      updateWorkflow(currentWorkflowId, { nodes: wfData.nodes, edges: wfData.edges, versions });
     } else {
       const now = new Date().toISOString();
-      const wf = { id: `wf_${Date.now()}`, name: `流程 ${project?.workflows.length || 0 + 1}`, description: '', ...wfData, versions: [], createdAt: now, updatedAt: now };
+      const wf = { id: `wf_${Date.now()}`, name: `流程 ${project?.workflows.length || 0 + 1}`, description: '', nodes: wfData.nodes, edges: wfData.edges, versions: [], createdAt: now, updatedAt: now };
       addWorkflow(wf);
       setCurrentWorkflowId(wf.id);
     }
@@ -824,31 +1150,33 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
   const loadWorkflow = useCallback((wfId: string) => {
     const wf = project?.workflows.find((w) => w.id === wfId);
     if (!wf || !registry) return;
-    const loadedNodes: FlowNode[] = (wf.nodes || []).map((n: any) => {
+    const migrated = ensureWorkflowIo(wf);
+    if (migrated.changed) {
+      updateWorkflow(wf.id, { nodes: migrated.workflow.nodes, edges: migrated.workflow.edges });
+    }
+    const activeWorkflow = migrated.workflow;
+    const loadedNodes: FlowNode[] = (activeWorkflow.nodes || []).map((n: any) => {
       const spec = registry.byId.get(n.specId);
       if (!spec) return null;
       const savedOutputs = n.data?.outputs;
       const savedError = n.data?.error;
       return { id: n.id, type: 'formflow', position: n.position, data: { specId: n.specId, label: spec.label, kind: spec.kind, category: spec.category, description: spec.description, propertiesJson: JSON.stringify(n.data?.propertiesJson ? JSON.parse(n.data.propertiesJson) : {}), connectedPortsJson: '[]', ...(savedOutputs ? { outputs: savedOutputs } : {}), ...(savedError ? { error: savedError } : {}) } };
     }).filter(Boolean) as FlowNode[];
-    const loadedEdges: Edge[] = (wf.edges || []).map((e: any) => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle, animated: true }));
+    const loadedEdges: Edge[] = dedupeEdges((activeWorkflow.edges || []).map((e: any) => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle, animated: true })));
     setNodes(loadedNodes);
     setEdges(loadedEdges);
-    setCurrentWorkflowId(wf.id);
+    setCurrentWorkflowId(activeWorkflow.id);
     if (loadedNodes.length > 0) setSelectedNodeId(loadedNodes[0].id);
-  }, [project, registry]);
+  }, [project, registry, updateWorkflow]);
 
   // Ensure the canvas always has an active workflow context.
   useEffect(() => {
     if (!project || !registry) return;
     const workflows = project.workflows || [];
     if (workflows.length === 0) {
-      setNodes([]);
-      setEdges([]);
-      setSelectedNodeId(null);
-      setCurrentWorkflowId(null);
       const now = new Date().toISOString();
-      const wf = { id: `wf_${Date.now()}`, name: '流程 1', description: '', nodes: [], edges: [], versions: [], createdAt: now, updatedAt: now };
+      const scaffold = createWorkflowIoScaffold();
+      const wf = { id: `wf_${Date.now()}`, name: '流程 1', description: '', nodes: scaffold.nodes, edges: scaffold.edges, versions: [], createdAt: now, updatedAt: now };
       addWorkflow(wf);
       return;
     }
@@ -975,11 +1303,43 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
   const inspectorProps = inspectorSpec?.properties || [];
   const currentProps = useMemo(() => resolveNodeProperties(inspectorSpec, selectedNode?.data.propertiesJson), [inspectorSpec, selectedNode?.data.propertiesJson]);
   const inspectorPorts = useMemo(() => getNodeEffectivePorts(inspectorSpec, currentProps), [inspectorSpec, currentProps]);
-  const srcTables = useMemo(() => project?.srcTable || [], [project?.srcTable]);
+  const inputOverrides = useMemo(() => getInputOverrides(currentProps), [currentProps]);
+  const inputSelections = useMemo(() => getInputSelections(currentProps), [currentProps]);
+  const inspectorInputPorts = useMemo(() => inspectorPorts.filter((port) => port.direction === 'input' || port.direction === 'both'), [inspectorPorts]);
+  const inspectorPropNames = useMemo(() => new Set(inspectorProps.map((prop) => prop.name)), [inspectorProps]);
 
   const updateProp = useCallback((name: string, val: unknown) => {
     if (!selectedNode) return;
-    updateNodeData(selectedNode.id, { propertiesJson: JSON.stringify({ ...currentProps, [name]: val }) });
+    const nextProps = { ...currentProps, [name]: val };
+    updateNodeData(selectedNode.id, { propertiesJson: JSON.stringify(nextProps) });
+    if ((name === 'inputPorts' || name === 'outputPorts') && inspectorSpec) {
+      const nextPorts = getNodeEffectivePorts(inspectorSpec, nextProps);
+      const validIn = new Set(nextPorts.filter((port) => port.direction === 'input' || port.direction === 'both').map((port) => `in:${port.name}`));
+      const validOut = new Set(nextPorts.filter((port) => port.direction === 'output' || port.direction === 'both').map((port) => `out:${port.name}`));
+      setEdges((current) => {
+        const next = current.filter((edge) => {
+          if (edge.source === selectedNode.id && edge.sourceHandle && !validOut.has(edge.sourceHandle)) return false;
+          if (edge.target === selectedNode.id && edge.targetHandle && !validIn.has(edge.targetHandle)) return false;
+          return true;
+        });
+        setNodes((prev) => syncConnectedPorts(prev, next));
+        return next;
+      });
+    }
+  }, [selectedNode?.id, currentProps, updateNodeData, inspectorSpec, syncConnectedPorts]);
+
+  const updateInputOverride = useCallback((portName: string, value: unknown) => {
+    if (!selectedNode) return;
+    updateNodeData(selectedNode.id, {
+      propertiesJson: JSON.stringify(setInputOverride(currentProps, portName, value)),
+    });
+  }, [selectedNode?.id, currentProps, updateNodeData]);
+
+  const updateInputSelection = useCallback((portName: string, edgeId: string | undefined) => {
+    if (!selectedNode) return;
+    updateNodeData(selectedNode.id, {
+      propertiesJson: JSON.stringify(setInputSelection(currentProps, portName, edgeId)),
+    });
   }, [selectedNode?.id, currentProps, updateNodeData]);
 
   const openRangeSelector = useCallback(() => setRangeSelectorOpen(true), []);
@@ -1073,7 +1433,30 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
               {inspectorProps.length > 0 && (
                 <section className="inspector-section schema-config">
                   <div className="inspector-section-title"><h4>配置</h4><span>{inspectorProps.length} 项</span></div>
-                  <div className="schema-fields">{inspectorProps.map((p: any) => <SchemaField key={p.name} prop={p} value={currentProps[p.name]} onChange={updateProp} connected={connectedPorts.has(`in:${p.name}`)} specId={selectedNode.data.specId} tables={srcTables} currentProps={currentProps} onOpenRangeSelector={openRangeSelector} sourceInfo={connectedSourceMap.get(p.name)} />)}</div>
+                  <div className="schema-fields">{inspectorProps.map((p: any) => <SchemaField key={p.name} prop={p} value={currentProps[p.name]} onChange={updateProp} connected={connectedPorts.has(`in:${p.name}`)} specId={selectedNode.data.specId} tables={srcTables} currentProps={currentProps} onOpenRangeSelector={openRangeSelector} sourceInfo={connectedSourceMap.get(p.name)?.[0]} />)}</div>
+                </section>
+              )}
+              {inspectorInputPorts.length > 0 && (
+                <section className="inspector-section schema-config">
+                  <div className="inspector-section-title"><h4>输入</h4><span>{inspectorInputPorts.length} 个端口</span></div>
+                  <div className="schema-fields">
+                    {inspectorInputPorts.map((port) => (
+                      <InputPortEditor
+                        key={port.name}
+                        port={port}
+                        value={inputOverrides[port.name]}
+                        fallbackValue={currentProps[port.name]}
+                        connected={connectedPorts.has(`in:${port.name}`)}
+                        sourceInfos={connectedSourceMap.get(port.name)}
+                        selectedEdgeId={inputSelections[port.name]}
+                        hasPropertyEditor={inspectorPropNames.has(port.name)}
+                        tables={srcTables}
+                        onChange={(value) => updateInputOverride(port.name, value)}
+                        onJumpToSource={(nodeId) => setSelectedNodeId(nodeId)}
+                        onSelectSource={(edgeId) => updateInputSelection(port.name, edgeId)}
+                      />
+                    ))}
+                  </div>
                 </section>
               )}
               <div className="inspector-run-bar"><button className="primary" onClick={() => runNode(selectedNode)}>从最上游运行到此节点</button></div>

@@ -8,6 +8,18 @@
       "updatedAt": "2026-07-06T18:00:00.000Z",
       "nodes": [
         {
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
+          "position": {
+            "x": 40,
+            "y": 160
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"formData\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"表单数据\\\",\\\"description\\\":\\\"提交时写回的数据对象\\\"},{\\\"name\\\":\\\"originalData\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"原始数据\\\",\\\"description\\\":\\\"编辑前的原始数据对象\\\"}]\"}"
+          }
+        },
+        {
           "id": "submit",
           "type": "formflow",
           "specId": "behavior:submit",
@@ -18,9 +30,64 @@
           "data": {
             "propertiesJson": "{\"validateFirst\":true,\"target\":\"changeLog\",\"fileName\":\"example_check_valve_selection-example_check_valve_selection_wf_create\",\"writeBackMode\":\"upsert\",\"writeBackTableId\":\"valve_requests\",\"writeBackSheetName\":\"止回阀选型\",\"writeBackKeyField\":\"申请单号\",\"writeBackKeyFormField\":\"申请单号\",\"writeBackFieldMap\":{\"申请单号\":\"申请单号\",\"项目名称\":\"项目名称\",\"介质\":\"介质\",\"公称通径DN\":\"公称通径DN\",\"压力等级PN\":\"压力等级PN\",\"设计温度\":\"设计温度\",\"设计流量\":\"设计流量\",\"推荐型号\":\"推荐型号\",\"选型状态\":\"选型状态\"}}"
           }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 640,
+            "y": 160
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"success\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"成功事件\\\",\\\"description\\\":\\\"提交成功事件\\\"},{\\\"name\\\":\\\"changeLog\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"变更记录\\\",\\\"description\\\":\\\"本次提交的字段差异\\\"},{\\\"name\\\":\\\"writeBack\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"写回动作\\\",\\\"description\\\":\\\"提交后的写回指令\\\"},{\\\"name\\\":\\\"fileData\\\",\\\"type\\\":\\\"any\\\",\\\"label\\\":\\\"文件数据\\\",\\\"description\\\":\\\"导出的文件数据\\\"}]\"}"
+          }
         }
       ],
-      "edges": []
+      "edges": [
+        {
+          "id": "edge_import_formData",
+          "source": "workflow:import",
+          "target": "submit",
+          "sourceHandle": "out:formData",
+          "targetHandle": "in:formData"
+        },
+        {
+          "id": "edge_import_originalData",
+          "source": "workflow:import",
+          "target": "submit",
+          "sourceHandle": "out:originalData",
+          "targetHandle": "in:originalData"
+        },
+        {
+          "id": "edge_submit_success",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:success",
+          "targetHandle": "in:success"
+        },
+        {
+          "id": "edge_submit_changeLog",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:changeLog",
+          "targetHandle": "in:changeLog"
+        },
+        {
+          "id": "edge_submit_writeBack",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:writeBack",
+          "targetHandle": "in:writeBack"
+        },
+        {
+          "id": "edge_submit_fileData",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:fileData",
+          "targetHandle": "in:fileData"
+        }
+      ]
     },
     {
       "id": "example_check_valve_selection_wf_update",
@@ -29,6 +96,18 @@
       "createdAt": "2026-07-06T18:00:00.000Z",
       "updatedAt": "2026-07-06T18:00:00.000Z",
       "nodes": [
+        {
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
+          "position": {
+            "x": 40,
+            "y": 160
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"formData\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"表单数据\\\",\\\"description\\\":\\\"提交时写回的数据对象\\\"},{\\\"name\\\":\\\"originalData\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"原始数据\\\",\\\"description\\\":\\\"编辑前的原始数据对象\\\"}]\"}"
+          }
+        },
         {
           "id": "submit",
           "type": "formflow",
@@ -40,9 +119,64 @@
           "data": {
             "propertiesJson": "{\"validateFirst\":true,\"target\":\"changeLog\",\"fileName\":\"example_check_valve_selection-example_check_valve_selection_wf_update\",\"writeBackMode\":\"upsert\",\"writeBackTableId\":\"valve_requests\",\"writeBackSheetName\":\"止回阀选型\",\"writeBackKeyField\":\"申请单号\",\"writeBackKeyFormField\":\"申请单号\",\"writeBackFieldMap\":{\"申请单号\":\"申请单号\",\"项目名称\":\"项目名称\",\"介质\":\"介质\",\"公称通径DN\":\"公称通径DN\",\"压力等级PN\":\"压力等级PN\",\"设计温度\":\"设计温度\",\"设计流量\":\"设计流量\",\"推荐型号\":\"推荐型号\",\"选型状态\":\"选型状态\"}}"
           }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 640,
+            "y": 160
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"success\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"成功事件\\\",\\\"description\\\":\\\"提交成功事件\\\"},{\\\"name\\\":\\\"changeLog\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"变更记录\\\",\\\"description\\\":\\\"本次提交的字段差异\\\"},{\\\"name\\\":\\\"writeBack\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"写回动作\\\",\\\"description\\\":\\\"提交后的写回指令\\\"},{\\\"name\\\":\\\"fileData\\\",\\\"type\\\":\\\"any\\\",\\\"label\\\":\\\"文件数据\\\",\\\"description\\\":\\\"导出的文件数据\\\"}]\"}"
+          }
         }
       ],
-      "edges": []
+      "edges": [
+        {
+          "id": "edge_import_formData",
+          "source": "workflow:import",
+          "target": "submit",
+          "sourceHandle": "out:formData",
+          "targetHandle": "in:formData"
+        },
+        {
+          "id": "edge_import_originalData",
+          "source": "workflow:import",
+          "target": "submit",
+          "sourceHandle": "out:originalData",
+          "targetHandle": "in:originalData"
+        },
+        {
+          "id": "edge_submit_success",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:success",
+          "targetHandle": "in:success"
+        },
+        {
+          "id": "edge_submit_changeLog",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:changeLog",
+          "targetHandle": "in:changeLog"
+        },
+        {
+          "id": "edge_submit_writeBack",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:writeBack",
+          "targetHandle": "in:writeBack"
+        },
+        {
+          "id": "edge_submit_fileData",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:fileData",
+          "targetHandle": "in:fileData"
+        }
+      ]
     },
     {
       "id": "example_check_valve_selection_wf_stats",
@@ -52,27 +186,15 @@
       "updatedAt": "2026-07-06T18:00:00.000Z",
       "nodes": [
         {
-          "id": "var_rows",
-          "type": "generic",
-          "specId": "generic:variable-input",
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
           "position": {
             "x": 60,
-            "y": 80
+            "y": 180
           },
           "data": {
-            "propertiesJson": "{\"varName\":\"rows\",\"varType\":\"array\",\"varValue\":[{\"申请单号\":5001,\"项目名称\":\"一号线改造\",\"介质\":\"清水\",\"公称通径DN\":80,\"压力等级PN\":16,\"设计温度\":35,\"设计流量\":120,\"推荐型号\":\"H44H-16C-DN80\",\"选型状态\":\"已通过\"},{\"申请单号\":5002,\"项目名称\":\"蒸汽管廊\",\"介质\":\"蒸汽\",\"公称通径DN\":100,\"压力等级PN\":25,\"设计温度\":220,\"设计流量\":160,\"推荐型号\":\"H41H-25P-DN100\",\"选型状态\":\"待复核\"},{\"申请单号\":5003,\"项目名称\":\"化工回路\",\"介质\":\"腐蚀液\",\"公称通径DN\":50,\"压力等级PN\":16,\"设计温度\":90,\"设计流量\":48,\"推荐型号\":\"HC41F-16P-DN50\",\"选型状态\":\"已通过\"},{\"申请单号\":5004,\"项目名称\":\"消防支线\",\"介质\":\"清水\",\"公称通径DN\":150,\"压力等级PN\":16,\"设计温度\":30,\"设计流量\":260,\"推荐型号\":\"H44H-16C-DN150\",\"选型状态\":\"待选型\"},{\"申请单号\":5005,\"项目名称\":\"油品输送\",\"介质\":\"油品\",\"公称通径DN\":65,\"压力等级PN\":25,\"设计温度\":80,\"设计流量\":92,\"推荐型号\":\"H41H-25C-DN65\",\"选型状态\":\"待复核\"}]}"
-          }
-        },
-        {
-          "id": "var_medium",
-          "type": "generic",
-          "specId": "generic:variable-input",
-          "position": {
-            "x": 60,
-            "y": 170
-          },
-          "data": {
-            "propertiesJson": "{\"varName\":\"medium\",\"varType\":\"string\",\"varValue\":\"全部\"}"
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"rows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"rows\\\",\\\"description\\\":\\\"rows 输入\\\"},{\\\"name\\\":\\\"medium\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"medium\\\",\\\"description\\\":\\\"medium 输入\\\"}]\"}"
           }
         },
         {
@@ -86,22 +208,48 @@
           "data": {
             "propertiesJson": "{\"inputPorts\":{\"rows\":\"array\",\"medium\":\"string\"},\"outputPorts\":{\"summary\":\"string\",\"rows\":\"array\"},\"script\":\"const rows = Array.isArray(inputs.rows) ? inputs.rows : [];\\nconst medium = String(inputs.medium || '全部');\\nconst filtered = medium === '全部' ? rows : rows.filter((row) => String(row?.介质 || '') === medium);\\nconst groups = new Map();\\nfor (const row of filtered) {\\n  const key = String(row?.介质 || '未分类');\\n  const bucket = groups.get(key) || { 介质: key, 申请数量: 0, 流量合计: 0, 待复核数量: 0 };\\n  bucket.申请数量 += 1;\\n  bucket.流量合计 += Number(row?.设计流量 || 0);\\n  if (String(row?.选型状态 || '') === '待复核') bucket.待复核数量 += 1;\\n  groups.set(key, bucket);\\n}\\nreturn {\\n  summary: `共统计 ${filtered.length} 条止回阀选型申请，可快速识别高风险介质和待复核任务。`,\\n  rows: Array.from(groups.values()).map((item) => ({\\n    介质: item.介质,\\n    申请数量: item.申请数量,\\n    平均流量: item.申请数量 ? Number((item.流量合计 / item.申请数量).toFixed(1)) : 0,\\n    待复核数量: item.待复核数量,\\n  })),\\n};\"}"
           }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 680,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"summary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"summary\\\",\\\"description\\\":\\\"summary 输出\\\"},{\\\"name\\\":\\\"rows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"rows\\\",\\\"description\\\":\\\"rows 输出\\\"}]\"}"
+          }
         }
       ],
       "edges": [
         {
-          "id": "edge_rows",
-          "source": "var_rows",
+          "id": "edge_import_rows",
+          "source": "workflow:import",
           "target": "script",
-          "sourceHandle": "out:value",
+          "sourceHandle": "out:rows",
           "targetHandle": "in:rows"
         },
         {
-          "id": "edge_medium",
-          "source": "var_medium",
+          "id": "edge_import_medium",
+          "source": "workflow:import",
           "target": "script",
-          "sourceHandle": "out:value",
+          "sourceHandle": "out:medium",
           "targetHandle": "in:medium"
+        },
+        {
+          "id": "edge_export_summary",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:summary",
+          "targetHandle": "in:summary"
+        },
+        {
+          "id": "edge_export_rows",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:rows",
+          "targetHandle": "in:rows"
         }
       ]
     },
@@ -113,39 +261,15 @@
       "updatedAt": "2026-07-06T18:00:00.000Z",
       "nodes": [
         {
-          "id": "var_rows",
-          "type": "generic",
-          "specId": "generic:variable-input",
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
           "position": {
             "x": 60,
-            "y": 80
+            "y": 180
           },
           "data": {
-            "propertiesJson": "{\"varName\":\"rows\",\"varType\":\"array\",\"varValue\":[{\"申请单号\":5001,\"项目名称\":\"一号线改造\",\"介质\":\"清水\",\"公称通径DN\":80,\"压力等级PN\":16,\"设计温度\":35,\"设计流量\":120,\"推荐型号\":\"H44H-16C-DN80\",\"选型状态\":\"已通过\"},{\"申请单号\":5002,\"项目名称\":\"蒸汽管廊\",\"介质\":\"蒸汽\",\"公称通径DN\":100,\"压力等级PN\":25,\"设计温度\":220,\"设计流量\":160,\"推荐型号\":\"H41H-25P-DN100\",\"选型状态\":\"待复核\"},{\"申请单号\":5003,\"项目名称\":\"化工回路\",\"介质\":\"腐蚀液\",\"公称通径DN\":50,\"压力等级PN\":16,\"设计温度\":90,\"设计流量\":48,\"推荐型号\":\"HC41F-16P-DN50\",\"选型状态\":\"已通过\"},{\"申请单号\":5004,\"项目名称\":\"消防支线\",\"介质\":\"清水\",\"公称通径DN\":150,\"压力等级PN\":16,\"设计温度\":30,\"设计流量\":260,\"推荐型号\":\"H44H-16C-DN150\",\"选型状态\":\"待选型\"},{\"申请单号\":5005,\"项目名称\":\"油品输送\",\"介质\":\"油品\",\"公称通径DN\":65,\"压力等级PN\":25,\"设计温度\":80,\"设计流量\":92,\"推荐型号\":\"H41H-25C-DN65\",\"选型状态\":\"待复核\"}]}"
-          }
-        },
-        {
-          "id": "var_medium",
-          "type": "generic",
-          "specId": "generic:variable-input",
-          "position": {
-            "x": 60,
-            "y": 170
-          },
-          "data": {
-            "propertiesJson": "{\"varName\":\"medium\",\"varType\":\"string\",\"varValue\":\"全部\"}"
-          }
-        },
-        {
-          "id": "var_safetyMargin",
-          "type": "generic",
-          "specId": "generic:variable-input",
-          "position": {
-            "x": 60,
-            "y": 260
-          },
-          "data": {
-            "propertiesJson": "{\"varName\":\"safetyMargin\",\"varType\":\"number\",\"varValue\":10}"
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"rows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"rows\\\",\\\"description\\\":\\\"rows 输入\\\"},{\\\"name\\\":\\\"medium\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"medium\\\",\\\"description\\\":\\\"medium 输入\\\"},{\\\"name\\\":\\\"safetyMargin\\\",\\\"type\\\":\\\"number\\\",\\\"label\\\":\\\"safetyMargin\\\",\\\"description\\\":\\\"safetyMargin 输入\\\"}]\"}"
           }
         },
         {
@@ -159,29 +283,55 @@
           "data": {
             "propertiesJson": "{\"inputPorts\":{\"rows\":\"array\",\"medium\":\"string\",\"safetyMargin\":\"number\"},\"outputPorts\":{\"summary\":\"string\",\"rows\":\"array\"},\"script\":\"const rows = Array.isArray(inputs.rows) ? inputs.rows : [];\\nconst medium = String(inputs.medium || '全部');\\nconst safetyMargin = Number(inputs.safetyMargin || 0);\\nconst filtered = rows.filter((row) => medium === '全部' || String(row?.介质 || '') === medium);\\nreturn {\\n  summary: `已对 ${filtered.length} 条选型申请生成批量复核建议，目标安全裕量 ${safetyMargin}% 。`,\\n  rows: filtered.map((row) => ({\\n    申请单号: row?.申请单号,\\n    项目名称: row?.项目名称,\\n    推荐动作: Number(row?.压力等级PN || 0) >= 25 || Number(row?.设计温度 || 0) > 180 ? '升级材质并人工复核' : `流量冗余提高至 ${safetyMargin}%`,\\n    建议状态: Number(row?.压力等级PN || 0) >= 25 || Number(row?.设计温度 || 0) > 180 ? '待复核' : '可直接通过',\\n  })),\\n};\"}"
           }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 680,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"summary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"summary\\\",\\\"description\\\":\\\"summary 输出\\\"},{\\\"name\\\":\\\"rows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"rows\\\",\\\"description\\\":\\\"rows 输出\\\"}]\"}"
+          }
         }
       ],
       "edges": [
         {
-          "id": "edge_rows",
-          "source": "var_rows",
+          "id": "edge_import_rows",
+          "source": "workflow:import",
           "target": "script",
-          "sourceHandle": "out:value",
+          "sourceHandle": "out:rows",
           "targetHandle": "in:rows"
         },
         {
-          "id": "edge_medium",
-          "source": "var_medium",
+          "id": "edge_import_medium",
+          "source": "workflow:import",
           "target": "script",
-          "sourceHandle": "out:value",
+          "sourceHandle": "out:medium",
           "targetHandle": "in:medium"
         },
         {
-          "id": "edge_safetyMargin",
-          "source": "var_safetyMargin",
+          "id": "edge_import_safetyMargin",
+          "source": "workflow:import",
           "target": "script",
-          "sourceHandle": "out:value",
+          "sourceHandle": "out:safetyMargin",
           "targetHandle": "in:safetyMargin"
+        },
+        {
+          "id": "edge_export_summary",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:summary",
+          "targetHandle": "in:summary"
+        },
+        {
+          "id": "edge_export_rows",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:rows",
+          "targetHandle": "in:rows"
         }
       ]
     },
@@ -193,39 +343,15 @@
       "updatedAt": "2026-07-06T18:00:00.000Z",
       "nodes": [
         {
-          "id": "var_rows",
-          "type": "generic",
-          "specId": "generic:variable-input",
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
           "position": {
             "x": 60,
-            "y": 80
+            "y": 180
           },
           "data": {
-            "propertiesJson": "{\"varName\":\"rows\",\"varType\":\"array\",\"varValue\":[{\"申请单号\":5001,\"项目名称\":\"一号线改造\",\"介质\":\"清水\",\"公称通径DN\":80,\"压力等级PN\":16,\"设计温度\":35,\"设计流量\":120,\"推荐型号\":\"H44H-16C-DN80\",\"选型状态\":\"已通过\"},{\"申请单号\":5002,\"项目名称\":\"蒸汽管廊\",\"介质\":\"蒸汽\",\"公称通径DN\":100,\"压力等级PN\":25,\"设计温度\":220,\"设计流量\":160,\"推荐型号\":\"H41H-25P-DN100\",\"选型状态\":\"待复核\"},{\"申请单号\":5003,\"项目名称\":\"化工回路\",\"介质\":\"腐蚀液\",\"公称通径DN\":50,\"压力等级PN\":16,\"设计温度\":90,\"设计流量\":48,\"推荐型号\":\"HC41F-16P-DN50\",\"选型状态\":\"已通过\"},{\"申请单号\":5004,\"项目名称\":\"消防支线\",\"介质\":\"清水\",\"公称通径DN\":150,\"压力等级PN\":16,\"设计温度\":30,\"设计流量\":260,\"推荐型号\":\"H44H-16C-DN150\",\"选型状态\":\"待选型\"},{\"申请单号\":5005,\"项目名称\":\"油品输送\",\"介质\":\"油品\",\"公称通径DN\":65,\"压力等级PN\":25,\"设计温度\":80,\"设计流量\":92,\"推荐型号\":\"H41H-25C-DN65\",\"选型状态\":\"待复核\"}]}"
-          }
-        },
-        {
-          "id": "var_medium",
-          "type": "generic",
-          "specId": "generic:variable-input",
-          "position": {
-            "x": 60,
-            "y": 170
-          },
-          "data": {
-            "propertiesJson": "{\"varName\":\"medium\",\"varType\":\"string\",\"varValue\":\"全部\"}"
-          }
-        },
-        {
-          "id": "var_months",
-          "type": "generic",
-          "specId": "generic:variable-input",
-          "position": {
-            "x": 60,
-            "y": 260
-          },
-          "data": {
-            "propertiesJson": "{\"varName\":\"months\",\"varType\":\"number\",\"varValue\":3}"
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"rows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"rows\\\",\\\"description\\\":\\\"rows 输入\\\"},{\\\"name\\\":\\\"medium\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"medium\\\",\\\"description\\\":\\\"medium 输入\\\"},{\\\"name\\\":\\\"months\\\",\\\"type\\\":\\\"number\\\",\\\"label\\\":\\\"months\\\",\\\"description\\\":\\\"months 输入\\\"}]\"}"
           }
         },
         {
@@ -239,29 +365,55 @@
           "data": {
             "propertiesJson": "{\"inputPorts\":{\"rows\":\"array\",\"medium\":\"string\",\"months\":\"number\"},\"outputPorts\":{\"summary\":\"string\",\"rows\":\"array\"},\"script\":\"const rows = Array.isArray(inputs.rows) ? inputs.rows : [];\\nconst medium = String(inputs.medium || '全部');\\nconst months = Math.max(1, Number(inputs.months || 1));\\nconst filtered = rows.filter((row) => medium === '全部' || String(row?.介质 || '') === medium);\\nconst counts = new Map();\\nfor (const row of filtered) {\\n  const key = String(row?.推荐型号 || '未定型');\\n  counts.set(key, (counts.get(key) || 0) + 1);\\n}\\nreturn {\\n  summary: `已基于历史选型记录预测未来 ${months} 个月各型号的备货需求。`,\\n  rows: Array.from(counts.entries()).map(([model, count]) => ({\\n    推荐型号: model,\\n    预计需求量: Math.max(1, Math.round(count * (1 + months * 0.2))),\\n    预测月份: `未来 ${months} 个月`,\\n  })),\\n};\"}"
           }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 680,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"summary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"summary\\\",\\\"description\\\":\\\"summary 输出\\\"},{\\\"name\\\":\\\"rows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"rows\\\",\\\"description\\\":\\\"rows 输出\\\"}]\"}"
+          }
         }
       ],
       "edges": [
         {
-          "id": "edge_rows",
-          "source": "var_rows",
+          "id": "edge_import_rows",
+          "source": "workflow:import",
           "target": "script",
-          "sourceHandle": "out:value",
+          "sourceHandle": "out:rows",
           "targetHandle": "in:rows"
         },
         {
-          "id": "edge_medium",
-          "source": "var_medium",
+          "id": "edge_import_medium",
+          "source": "workflow:import",
           "target": "script",
-          "sourceHandle": "out:value",
+          "sourceHandle": "out:medium",
           "targetHandle": "in:medium"
         },
         {
-          "id": "edge_months",
-          "source": "var_months",
+          "id": "edge_import_months",
+          "source": "workflow:import",
           "target": "script",
-          "sourceHandle": "out:value",
+          "sourceHandle": "out:months",
           "targetHandle": "in:months"
+        },
+        {
+          "id": "edge_export_summary",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:summary",
+          "targetHandle": "in:summary"
+        },
+        {
+          "id": "edge_export_rows",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:rows",
+          "targetHandle": "in:rows"
         }
       ]
     }

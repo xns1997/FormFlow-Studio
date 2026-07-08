@@ -179,14 +179,14 @@
         "label": "创建工单",
         "variant": "primary",
         "events": {
-          "onClick": "const customer = String(ctx.getValue('客户名称') || '').trim();\nconst issueType = String(ctx.getValue('问题类型') || '').trim();\nif (!customer) return ctx.showMessage('请填写客户名称', 'error');\nif (!issueType) return ctx.showMessage('请选择问题类型', 'error');\nlet currentId = Number(ctx.getValue('工单ID') || 0);\nif (!currentId) {\n  const rows = ctx.querySheet('service_tickets');\n  currentId = rows.reduce((max, row) => Math.max(max, Number(row?.工单ID) || 0), 0) + 1;\n  await ctx.setValue('工单ID', currentId);\n}\nif (!ctx.getValue('状态')) await ctx.setValue('状态', '待分派');\nif (!ctx.getValue('创建日期')) await ctx.setValue('创建日期', '2026-07-06');\nawait ctx.runConfiguredWorkflow();\nawait ctx.setValue('工单ID', currentId + 1);\nawait ctx.setValue('客户名称', '');\nawait ctx.setValue('问题类型', '');\nawait ctx.setValue('优先级', '中');\nawait ctx.setValue('状态', '待分派');\nawait ctx.setValue('处理人', '');\nawait ctx.setValue('处理说明', '');\nawait ctx.setValue('创建日期', '2026-07-06');\nctx.setValue('状态提示', `工单 ${currentId} 已创建，可继续录入下一条。`);\nawait ctx.showMessage(`工单 ${currentId} 已创建`, 'success');"
+          "onClick": "const check = await ctx.requireFields(['客户名称', '问题类型']);\nif (!check.valid) return;\nlet currentId = Number(ctx.getValue('工单ID') || 0);\nif (!currentId) {\n  currentId = ctx.nextSequence('service_tickets', '工单ID', { start: 1 });\n  await ctx.setValue('工单ID', currentId);\n}\nif (!ctx.getValue('状态')) await ctx.setValue('状态', '待分派');\nif (!ctx.getValue('创建日期')) await ctx.setValue('创建日期', '2026-07-06');\nawait ctx.runConfiguredWorkflow();\nconst nextId = currentId + 1;\nawait ctx.resetForm({\n  clearFields: ['客户名称', '问题类型', '处理人', '处理说明'],\n  defaults: {\n    工单ID: nextId,\n    优先级: '中',\n    状态: '待分派',\n    创建日期: '2026-07-06',\n    状态提示: `工单 ${currentId} 已创建，可继续录入下一条。`\n  }\n});\nawait ctx.showMessage(`工单 ${currentId} 已创建`, 'success');"
         },
         "flowTriggers": {
           "onClick": {
             "enabled": true,
             "workflowId": "wf_create_ticket",
             "parameterMap": {
-              "submit.formData": {
+              "workflow:import.formData": {
                 "工单ID": "$form.工单ID",
                 "客户名称": "$form.客户名称",
                 "问题类型": "$form.问题类型",
@@ -214,7 +214,7 @@
         "label": "重置",
         "variant": "default",
         "events": {
-          "onClick": "const rows = ctx.querySheet('service_tickets');\nconst maxId = rows.reduce((max, row) => Math.max(max, Number(row?.工单ID) || 0), 0);\nawait ctx.setValue('工单ID', maxId + 1);\nawait ctx.setValue('客户名称', '');\nawait ctx.setValue('问题类型', '');\nawait ctx.setValue('优先级', '中');\nawait ctx.setValue('状态', '待分派');\nawait ctx.setValue('处理人', '');\nawait ctx.setValue('处理说明', '');\nctx.setValue('状态提示', '表单已重置，可录入新的服务工单。');"
+          "onClick": "const nextId = ctx.nextSequence('service_tickets', '工单ID', { start: 1 });\nawait ctx.resetForm({\n  clearFields: ['客户名称', '问题类型', '处理人', '处理说明'],\n  defaults: {\n    工单ID: nextId,\n    优先级: '中',\n    状态: '待分派',\n    状态提示: '表单已重置，可录入新的服务工单。'\n  }\n});"
         }
       }
     }

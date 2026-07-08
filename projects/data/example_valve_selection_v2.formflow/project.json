@@ -1,0 +1,45 @@
+{
+  "kind": "formflow-project",
+  "formatVersion": 2,
+  "config": {
+    "id": "example_valve_selection_v2",
+    "name": "阀门二代选型",
+    "description": "二代零代码阀门选型示例，覆盖客户需求表、多零件主数据表、兼容规则表与自动候选输出。",
+    "version": "2.4.0",
+    "createdAt": "2026-07-06T18:00:00.000Z",
+    "updatedAt": "2026-07-06T18:00:00.000Z",
+    "author": "FormFlow Studio",
+    "tags": [
+      "示例",
+      "阀门",
+      "选型",
+      "二代",
+      "零代码"
+    ]
+  },
+  "settings": {
+    "behavior": {
+      "enableJsScripts": true,
+      "enableNodeBehavior": true,
+      "scriptTimeout": 5000,
+      "errorStrategy": "show-error",
+      "loopProtection": 100
+    },
+    "publish": {
+      "format": "json",
+      "allowWriteBack": true,
+      "generateChangeLog": true,
+      "outputFileName": "example_valve_selection_v2-export"
+    },
+    "updatedAt": "2026-07-06T18:00:00.000Z"
+  },
+  "release": {
+    "mode": "use",
+    "allowDesigner": false,
+    "allowBehaviorEditor": false,
+    "allowWorkflowEditor": false,
+    "defaultFormId": "example_valve_selection_v2_form_create",
+    "defaultSheet": "客户需求",
+    "lastVerifiedAt": "2026-07-06T18:00:00.000Z"
+  }
+}

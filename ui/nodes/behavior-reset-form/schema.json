@@ -1,0 +1,20 @@
+{
+  "id": "behavior-reset-form",
+  "label": "重置表单",
+  "description": "按清空字段、默认值和保留字段规则统一重置表单",
+  "category": "行为 · 动作",
+  "kind": "generic",
+  "properties": [
+    { "name": "clearFields", "label": "清空字段", "type": "array", "default": [], "description": "需要清空的字段列表" },
+    { "name": "defaults", "label": "默认值", "type": "json", "default": {}, "description": "重置后写入的默认字段值" },
+    { "name": "preserveFields", "label": "保留字段", "type": "array", "default": [], "description": "保持原值不变的字段列表" },
+    { "name": "message", "label": "提示文案", "type": "string", "default": "", "description": "重置完成后提示文案" },
+    { "name": "focusField", "label": "聚焦字段", "type": "string", "default": "", "description": "保留配置位，供后续宿主聚焦使用" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "trigger", "direction": "input", "description": "触发信号" },
+    { "name": "formData", "label": "表单数据", "type": "object", "direction": "input", "description": "当前表单值" },
+    { "name": "patch", "label": "补丁", "type": "json", "direction": "output", "description": "本次重置生成的字段补丁" }
+  ],
+  "keywords": ["重置表单", "reset form", "clear fields", "crud", "defaults"]
+}

@@ -10,6 +10,7 @@ import {
   splitFlowParameterTargets,
   type FormControlEventContext,
 } from './formFlowTrigger';
+import { ensureWorkflowIo } from './workflowIo';
 
 const component: ComponentNode = {
   id: 'customer-control',
@@ -93,10 +94,10 @@ test('nodeId.port parameters are separated from workflow variables', () => {
 });
 
 test('a form event injects a mapped value and runs the workflow end to end', async () => {
-  const targetWorkflow = workflow([
+  const targetWorkflow = ensureWorkflowIo(workflow([
     flowNode('input', 'generic:variable-input', { varName: 'customerName', varType: 'string', varValue: '默认值' }),
     flowNode('display', 'generic:output-display'),
-  ], [{ id: 'edge', source: 'input', target: 'display', sourceHandle: 'out:value', targetHandle: 'in:value' }]);
+  ], [{ id: 'edge', source: 'input', target: 'display', sourceHandle: 'out:value', targetHandle: 'in:value' }])).workflow;
   const result = await executeFormFlowTrigger(targetWorkflow, {
     enabled: true,
     workflowId: targetWorkflow.id,
@@ -104,28 +105,47 @@ test('a form event injects a mapped value and runs the workflow end to end', asy
   }, context);
   assert.equal(result.success, true, result.errors.join('\n'));
   assert.equal(result.nodeResults.get('display')?.outputs.value, '新客户');
+  assert.deepEqual(result.nodeResults.get('workflow:export')?.outputs.result, { result: '新客户' });
 });
 
-test('default mappings match declared variable names', () => {
+test('default mappings target workflow import ports when import node exists', () => {
   const targetWorkflow = workflow([
+    flowNode('workflow:import', 'workflow:import', {
+      outputPorts: JSON.stringify([
+        { name: 'value', type: 'any' },
+        { name: 'customerName', type: 'string' },
+        { name: 'dirty', type: 'boolean' },
+      ]),
+    }),
+    flowNode('workflow:export', 'workflow:export', {
+      inputPorts: JSON.stringify([{ name: 'result', type: 'any' }]),
+    }),
+  ]);
+  assert.deepEqual(createDefaultParameterMap(targetWorkflow, 'customerName'), {
+    'workflow:import.value': '$value',
+    'workflow:import.dirty': '$dirty',
+    'workflow:import.customerName': '$form.customerName',
+  });
+});
+
+test('workflow io migration wires known legacy variables and export automatically', () => {
+  const migrated = ensureWorkflowIo(workflow([
     flowNode('value', 'generic:variable-input', { varName: 'value' }),
-    flowNode('form', 'generic:variable-input', { varName: 'formData' }),
-    flowNode('city', 'generic:variable-input', { varName: 'city' }),
-  ]);
-  assert.deepEqual(createDefaultParameterMap(targetWorkflow, 'customerName'), {
-    value: '$value',
-    formData: '$values',
-    city: '$form.city',
-  });
-});
-
-test('default mappings expose enriched event variables by their conventional names', () => {
-  const targetWorkflow = workflow([
-    flowNode('old', 'generic:variable-input', { varName: 'previousValue' }),
-    flowNode('changed', 'generic:variable-input', { varName: 'changedFields' }),
     flowNode('detail', 'generic:variable-input', { varName: 'detail' }),
-  ]);
-  assert.deepEqual(createDefaultParameterMap(targetWorkflow, 'customerName'), {
-    previousValue: '$previousValue', changedFields: '$changedFields', detail: '$detail',
-  });
+    flowNode('display', 'generic:output-display'),
+  ], [
+    { id: 'edge-value', source: 'value', target: 'display', sourceHandle: 'out:value', targetHandle: 'in:value' },
+  ]));
+  assert.equal(migrated.errors.length, 0);
+  assert.equal(migrated.workflow.nodes.some((node) => node.specId === 'workflow:import'), true);
+  assert.equal(migrated.workflow.nodes.some((node) => node.specId === 'workflow:export'), true);
+  const importNode = migrated.workflow.nodes.find((node) => node.specId === 'workflow:import');
+  const exportNode = migrated.workflow.nodes.find((node) => node.specId === 'workflow:export');
+  const importProps = JSON.parse(String(importNode?.data?.propertiesJson || '{}'));
+  const exportProps = JSON.parse(String(exportNode?.data?.propertiesJson || '{}'));
+  assert.equal(String(importProps.outputPorts || '').includes('"value"'), true);
+  assert.equal(String(exportProps.inputPorts || '').includes('"result"'), true);
+  assert.equal(migrated.workflow.edges.some((edge) => edge.target === 'value' && edge.targetHandle === 'in:override' && edge.sourceHandle === 'out:value'), true);
+  assert.equal(migrated.workflow.edges.some((edge) => edge.target === 'detail' && edge.targetHandle === 'in:override' && edge.sourceHandle === 'out:detail'), true);
+  assert.equal(migrated.workflow.edges.some((edge) => edge.target === 'workflow:export' && edge.targetHandle === 'in:result'), true);
 });

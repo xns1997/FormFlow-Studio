@@ -119,27 +119,43 @@ function collectInputs(
   nodeId: string,
   edges: FlowEdgeDef[],
   nodeOutputs: Map<string, Record<string, unknown>>,
+  selectedEdgeIdsByPort: Record<string, string> = {},
 ): Record<string, unknown> {
   const inputs: Record<string, unknown> = {};
-  for (const edge of edges) {
-    if (edge.target === nodeId) {
-      const srcOutput = nodeOutputs.get(edge.source);
-      if (!srcOutput) throw new Error(`上游节点 ${edge.source} 尚未执行`);
-      const portName = extractPortName(edge.targetHandle, 'in');
-      const srcPortName = extractPortName(edge.sourceHandle, 'out');
-      if (edge.sourceHandle) {
-        if (!Object.prototype.hasOwnProperty.call(srcOutput, srcPortName)) {
-          throw new Error(`上游节点 ${edge.source} 没有输出端口 "${srcPortName}"`);
-        }
-        inputs[portName] = srcOutput[srcPortName];
-      } else {
-        const keys = Object.keys(srcOutput).filter((key) => !key.startsWith('__'));
-        const fallbackKey = keys.length === 1 ? keys[0] : (Object.prototype.hasOwnProperty.call(srcOutput, 'result') ? 'result' : 'value');
-        inputs[portName] = srcOutput[fallbackKey];
+  const targetEdges = edges.filter((edge) => edge.target === nodeId);
+  const grouped = new Map<string, FlowEdgeDef[]>();
+  for (const edge of targetEdges) {
+    const portName = extractPortName(edge.targetHandle, 'in');
+    const list = grouped.get(portName) || [];
+    list.push(edge);
+    grouped.set(portName, list);
+  }
+
+  for (const [portName, portEdges] of grouped) {
+    const selected = selectedEdgeIdsByPort[portName];
+    const edge = portEdges.find((item) => item.id === selected) || portEdges[portEdges.length - 1];
+    if (!edge) continue;
+    const srcOutput = nodeOutputs.get(edge.source);
+    if (!srcOutput) throw new Error(`上游节点 ${edge.source} 尚未执行`);
+    const srcPortName = extractPortName(edge.sourceHandle, 'out');
+    if (edge.sourceHandle) {
+      if (!Object.prototype.hasOwnProperty.call(srcOutput, srcPortName)) {
+        throw new Error(`上游节点 ${edge.source} 没有输出端口 "${srcPortName}"`);
       }
+      inputs[portName] = srcOutput[srcPortName];
+    } else {
+      const keys = Object.keys(srcOutput).filter((key) => !key.startsWith('__'));
+      const fallbackKey = keys.length === 1 ? keys[0] : (Object.prototype.hasOwnProperty.call(srcOutput, 'result') ? 'result' : 'value');
+      inputs[portName] = srcOutput[fallbackKey];
     }
   }
   return inputs;
+}
+
+function resolveInputSelections(properties: Record<string, unknown>) {
+  const raw = properties.__inputSelections;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  return raw as Record<string, string>;
 }
 
 async function executeXlsxMethod(
@@ -371,6 +387,23 @@ export interface ExecuteFlowOptions {
   nodeInputs?: Record<string, Record<string, unknown>>;
 }
 
+function resolvePropertyInputOverrides(
+  ports: Array<{ name: string; direction: string }>,
+  properties: Record<string, unknown>,
+) {
+  const raw = properties.__inputOverrides;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const overrides = raw as Record<string, unknown>;
+  const allowed = new Set(
+    ports
+      .filter((port) => port.direction === 'input' || port.direction === 'both')
+      .map((port) => port.name),
+  );
+  return Object.fromEntries(
+    Object.entries(overrides).filter(([name]) => allowed.has(name)),
+  );
+}
+
 function validateConnectedInputs(spec: FlowNodeSpec | undefined, inputs: Record<string, unknown>) {
   if (!spec) return inputs;
   const normalized = { ...inputs };
@@ -433,7 +466,9 @@ export async function executeFlow(
           injectedInputs.override = options.variables![variableName];
         }
       }
-      inputs = { ...injectedInputs, ...collectInputs(node.id, edges, nodeOutputs) };
+      const propertyInputOverrides = resolvePropertyInputOverrides(effectivePorts, properties);
+      const inputSelections = resolveInputSelections(properties);
+      inputs = { ...propertyInputOverrides, ...injectedInputs, ...collectInputs(node.id, edges, nodeOutputs, inputSelections) };
       inputs = validateConnectedInputs({ ...spec, ports: effectivePorts } as FlowNodeSpec, inputs);
       let outputs: Record<string, unknown>;
 

@@ -210,7 +210,7 @@
             "enabled": true,
             "workflowId": "example_renewable_generation_wf_create",
             "parameterMap": {
-              "submit.formData": {
+              "workflow:import.formData": {
                 "记录ID": "$form.记录ID",
                 "日期": "$form.日期",
                 "场站": "$form.场站",

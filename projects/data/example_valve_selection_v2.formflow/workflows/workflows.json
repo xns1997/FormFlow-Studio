@@ -1,0 +1,954 @@
+{
+  "workflows": [
+    {
+      "id": "example_valve_selection_v2_wf_create_request",
+      "name": "保存客户需求",
+      "description": "保存客户需求写回客户需求表",
+      "createdAt": "2026-07-06T18:00:00.000Z",
+      "updatedAt": "2026-07-06T18:00:00.000Z",
+      "nodes": [
+        {
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
+          "position": {
+            "x": 40,
+            "y": 160
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"formData\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"表单数据\\\",\\\"description\\\":\\\"提交时写回的数据对象\\\"},{\\\"name\\\":\\\"originalData\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"原始数据\\\",\\\"description\\\":\\\"编辑前的原始数据对象\\\"}]\"}"
+          }
+        },
+        {
+          "id": "submit",
+          "type": "formflow",
+          "specId": "behavior:submit",
+          "position": {
+            "x": 320,
+            "y": 160
+          },
+          "data": {
+            "propertiesJson": "{\"validateFirst\":true,\"target\":\"changeLog\",\"fileName\":\"example_valve_selection_v2_wf_create_request\",\"writeBackMode\":\"upsert\",\"writeBackTableId\":\"selection_requests\",\"writeBackSheetName\":\"客户需求\",\"writeBackKeyField\":\"需求单号\",\"writeBackKeyFormField\":\"需求单号\",\"writeBackFieldMap\":{\"需求单号\":\"需求单号\",\"项目名称\":\"项目名称\",\"介质\":\"介质\",\"DN\":\"DN\",\"PN\":\"PN\",\"设计温度\":\"设计温度\",\"目标流量\":\"目标流量\",\"连接方式\":\"连接方式\",\"阀体材质偏好\":\"阀体材质偏好\",\"预算等级\":\"预算等级\",\"交期要求\":\"交期要求\",\"防腐要求\":\"防腐要求\"}}"
+          }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 640,
+            "y": 160
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"success\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"成功事件\\\",\\\"description\\\":\\\"提交成功事件\\\"},{\\\"name\\\":\\\"changeLog\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"变更记录\\\",\\\"description\\\":\\\"本次提交的字段差异\\\"},{\\\"name\\\":\\\"writeBack\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"写回动作\\\",\\\"description\\\":\\\"提交后的写回指令\\\"}]\"}"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge_import_formData",
+          "source": "workflow:import",
+          "target": "submit",
+          "sourceHandle": "out:formData",
+          "targetHandle": "in:formData"
+        },
+        {
+          "id": "edge_import_originalData",
+          "source": "workflow:import",
+          "target": "submit",
+          "sourceHandle": "out:originalData",
+          "targetHandle": "in:originalData"
+        },
+        {
+          "id": "edge_submit_success",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:success",
+          "targetHandle": "in:success"
+        },
+        {
+          "id": "edge_submit_changeLog",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:changeLog",
+          "targetHandle": "in:changeLog"
+        },
+        {
+          "id": "edge_submit_writeBack",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:writeBack",
+          "targetHandle": "in:writeBack"
+        }
+      ]
+    },
+    {
+      "id": "example_valve_selection_v2_wf_update_request",
+      "name": "更新客户需求",
+      "description": "更新客户需求写回客户需求表",
+      "createdAt": "2026-07-06T18:00:00.000Z",
+      "updatedAt": "2026-07-06T18:00:00.000Z",
+      "nodes": [
+        {
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
+          "position": {
+            "x": 40,
+            "y": 160
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"formData\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"表单数据\\\",\\\"description\\\":\\\"提交时写回的数据对象\\\"},{\\\"name\\\":\\\"originalData\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"原始数据\\\",\\\"description\\\":\\\"编辑前的原始数据对象\\\"}]\"}"
+          }
+        },
+        {
+          "id": "submit",
+          "type": "formflow",
+          "specId": "behavior:submit",
+          "position": {
+            "x": 320,
+            "y": 160
+          },
+          "data": {
+            "propertiesJson": "{\"validateFirst\":true,\"target\":\"changeLog\",\"fileName\":\"example_valve_selection_v2_wf_update_request\",\"writeBackMode\":\"upsert\",\"writeBackTableId\":\"selection_requests\",\"writeBackSheetName\":\"客户需求\",\"writeBackKeyField\":\"需求单号\",\"writeBackKeyFormField\":\"需求单号\",\"writeBackFieldMap\":{\"需求单号\":\"需求单号\",\"项目名称\":\"项目名称\",\"介质\":\"介质\",\"DN\":\"DN\",\"PN\":\"PN\",\"设计温度\":\"设计温度\",\"目标流量\":\"目标流量\",\"连接方式\":\"连接方式\",\"阀体材质偏好\":\"阀体材质偏好\",\"预算等级\":\"预算等级\",\"交期要求\":\"交期要求\",\"防腐要求\":\"防腐要求\"}}"
+          }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 640,
+            "y": 160
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"success\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"成功事件\\\",\\\"description\\\":\\\"提交成功事件\\\"},{\\\"name\\\":\\\"changeLog\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"变更记录\\\",\\\"description\\\":\\\"本次提交的字段差异\\\"},{\\\"name\\\":\\\"writeBack\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"写回动作\\\",\\\"description\\\":\\\"提交后的写回指令\\\"}]\"}"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge_import_formData",
+          "source": "workflow:import",
+          "target": "submit",
+          "sourceHandle": "out:formData",
+          "targetHandle": "in:formData"
+        },
+        {
+          "id": "edge_import_originalData",
+          "source": "workflow:import",
+          "target": "submit",
+          "sourceHandle": "out:originalData",
+          "targetHandle": "in:originalData"
+        },
+        {
+          "id": "edge_submit_success",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:success",
+          "targetHandle": "in:success"
+        },
+        {
+          "id": "edge_submit_changeLog",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:changeLog",
+          "targetHandle": "in:changeLog"
+        },
+        {
+          "id": "edge_submit_writeBack",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:writeBack",
+          "targetHandle": "in:writeBack"
+        }
+      ]
+    },
+    {
+      "id": "example_valve_selection_v2_wf_analyze",
+      "name": "二代阀门选型推荐",
+      "description": "按客户需求筛选阀门候选、合并兼容规则和附件，并回填推荐结果。",
+      "createdAt": "2026-07-06T18:00:00.000Z",
+      "updatedAt": "2026-07-06T18:00:00.000Z",
+      "nodes": [
+        {
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
+          "position": {
+            "x": 20,
+            "y": 40
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"criteria\\\",\\\"type\\\":\\\"json\\\",\\\"label\\\":\\\"筛选条件\\\",\\\"description\\\":\\\"多条件筛选规则数组\\\"}]\"}"
+          }
+        },
+        {
+          "id": "query_catalog",
+          "type": "behavior",
+          "specId": "behavior-data-query",
+          "position": {
+            "x": 40,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"sheetName\":\"阀门主数据\"}"
+          }
+        },
+        {
+          "id": "criteria",
+          "type": "generic",
+          "specId": "generic:criteria-filter",
+          "position": {
+            "x": 260,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{}"
+          }
+        },
+        {
+          "id": "query_rules",
+          "type": "behavior",
+          "specId": "behavior-data-query",
+          "position": {
+            "x": 520,
+            "y": 80
+          },
+          "data": {
+            "propertiesJson": "{\"sheetName\":\"兼容规则\"}"
+          }
+        },
+        {
+          "id": "merge_rules",
+          "type": "generic",
+          "specId": "generic:merge",
+          "position": {
+            "x": 700,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"leftKey\":\"规则编码\",\"rightKey\":\"规则编码\",\"joinType\":\"left\"}"
+          }
+        },
+        {
+          "id": "query_accessories",
+          "type": "behavior",
+          "specId": "behavior-data-query",
+          "position": {
+            "x": 920,
+            "y": 80
+          },
+          "data": {
+            "propertiesJson": "{\"sheetName\":\"附件主数据\"}"
+          }
+        },
+        {
+          "id": "merge_accessory",
+          "type": "generic",
+          "specId": "generic:merge",
+          "position": {
+            "x": 1100,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"leftKey\":\"附件推荐键\",\"rightKey\":\"附件推荐键\",\"joinType\":\"left\"}"
+          }
+        },
+        {
+          "id": "pick",
+          "type": "generic",
+          "specId": "generic:pick-record",
+          "position": {
+            "x": 1320,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"pickMode\":\"topN\",\"topN\":5,\"sorts\":[{\"field\":\"推荐优先级\",\"order\":\"asc\"},{\"field\":\"成本档位\",\"order\":\"asc\"},{\"field\":\"交期档位\",\"order\":\"asc\"}]}"
+          }
+        },
+        {
+          "id": "set_values",
+          "type": "behavior",
+          "specId": "behavior-set-values",
+          "position": {
+            "x": 1540,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"staticPatch\":{\"无结果提示\":\"\"},\"fieldMap\":{\"候选清单\":\"$records\",\"匹配数量\":\"$count\",\"推荐主型号\":[\"$record.推荐主型号\",\"$record.型号\"],\"推荐附件型号\":[\"$record.推荐附件型号\",\"$record.附件型号\"],\"推荐说明\":\"$record.推荐说明\"},\"emptyPatch\":{\"候选清单\":[],\"匹配数量\":0,\"推荐主型号\":\"\",\"推荐附件型号\":\"\",\"推荐说明\":\"\",\"无结果提示\":\"当前 PN/温度/材质组合无可用型号\"}}"
+          }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 1780,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"patch\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"回填结果\\\",\\\"description\\\":\\\"推荐结果补丁对象\\\"},{\\\"name\\\":\\\"appliedFields\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"回填字段\\\",\\\"description\\\":\\\"已回填字段名列表\\\"}]\"}"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge-import-criteria",
+          "source": "workflow:import",
+          "target": "criteria",
+          "sourceHandle": "out:criteria",
+          "targetHandle": "in:criteria"
+        },
+        {
+          "id": "edge-query-criteria",
+          "source": "query_catalog",
+          "target": "criteria",
+          "sourceHandle": "out:data",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "edge-criteria-merge-rules",
+          "source": "criteria",
+          "target": "merge_rules",
+          "sourceHandle": "out:rows",
+          "targetHandle": "in:leftData"
+        },
+        {
+          "id": "edge-query-rules-merge",
+          "source": "query_rules",
+          "target": "merge_rules",
+          "sourceHandle": "out:data",
+          "targetHandle": "in:rightData"
+        },
+        {
+          "id": "edge-merge-rules-accessory",
+          "source": "merge_rules",
+          "target": "merge_accessory",
+          "sourceHandle": "out:data",
+          "targetHandle": "in:leftData"
+        },
+        {
+          "id": "edge-query-accessory-merge",
+          "source": "query_accessories",
+          "target": "merge_accessory",
+          "sourceHandle": "out:data",
+          "targetHandle": "in:rightData"
+        },
+        {
+          "id": "edge-merge-pick",
+          "source": "merge_accessory",
+          "target": "pick",
+          "sourceHandle": "out:data",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "edge-pick-record",
+          "source": "pick",
+          "target": "set_values",
+          "sourceHandle": "out:first",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge-pick-records",
+          "source": "pick",
+          "target": "set_values",
+          "sourceHandle": "out:rows",
+          "targetHandle": "in:records"
+        },
+        {
+          "id": "edge-pick-count",
+          "source": "pick",
+          "target": "set_values",
+          "sourceHandle": "out:count",
+          "targetHandle": "in:count"
+        },
+        {
+          "id": "edge-set-values-patch",
+          "source": "set_values",
+          "target": "workflow:export",
+          "sourceHandle": "out:patch",
+          "targetHandle": "in:patch"
+        },
+        {
+          "id": "edge-set-values-fields",
+          "source": "set_values",
+          "target": "workflow:export",
+          "sourceHandle": "out:appliedFields",
+          "targetHandle": "in:appliedFields"
+        }
+      ]
+    },
+    {
+      "id": "example_valve_selection_v2_wf_query_requests",
+      "name": "加载需求列表",
+      "description": "读取客户需求表并回填维护列表。",
+      "createdAt": "2026-07-06T18:00:00.000Z",
+      "updatedAt": "2026-07-06T18:00:00.000Z",
+      "nodes": [
+        {
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
+          "position": {
+            "x": -120,
+            "y": 160
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"event\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"事件名\\\",\\\"description\\\":\\\"触发查询的事件名\\\"}]\"}"
+          }
+        },
+        {
+          "id": "query",
+          "type": "behavior",
+          "specId": "behavior-data-query",
+          "position": {
+            "x": 80,
+            "y": 160
+          },
+          "data": {
+            "propertiesJson": "{\"sheetName\":\"客户需求\"}"
+          }
+        },
+        {
+          "id": "set_list",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 320,
+            "y": 160
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"需求列表\",\"valueType\":\"fromInput\"}"
+          }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 560,
+            "y": 160
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"rows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"需求列表\\\",\\\"description\\\":\\\"已加载的需求列表\\\"}]\"}"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge-query-list",
+          "source": "query",
+          "target": "set_list",
+          "sourceHandle": "out:data",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-query-export",
+          "source": "query",
+          "target": "workflow:export",
+          "sourceHandle": "out:data",
+          "targetHandle": "in:rows"
+        }
+      ]
+    },
+    {
+      "id": "example_valve_selection_v2_wf_load_request",
+      "name": "载入需求记录",
+      "description": "点击需求列表后把记录回填到维护表单。",
+      "createdAt": "2026-07-06T18:00:00.000Z",
+      "updatedAt": "2026-07-06T18:00:00.000Z",
+      "nodes": [
+        {
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
+          "position": {
+            "x": -140,
+            "y": 140
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"record\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"需求记录\\\",\\\"description\\\":\\\"从列表选中的整行记录\\\"}]\"}"
+          }
+        },
+        {
+          "id": "set_id",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 80,
+            "y": 60
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"需求单号\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.需求单号\"}"
+          }
+        },
+        {
+          "id": "set_project",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 260,
+            "y": 60
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"项目名称\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.项目名称\"}"
+          }
+        },
+        {
+          "id": "set_medium",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 440,
+            "y": 60
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"介质\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.介质\"}"
+          }
+        },
+        {
+          "id": "set_dn",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 620,
+            "y": 60
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"DN\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.DN\"}"
+          }
+        },
+        {
+          "id": "set_pn",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 800,
+            "y": 60
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"PN\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.PN\"}"
+          }
+        },
+        {
+          "id": "set_temp",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 980,
+            "y": 60
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"设计温度\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.设计温度\"}"
+          }
+        },
+        {
+          "id": "set_flow",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 1160,
+            "y": 60
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"目标流量\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.目标流量\"}"
+          }
+        },
+        {
+          "id": "set_connection",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 1340,
+            "y": 60
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"连接方式\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.连接方式\"}"
+          }
+        },
+        {
+          "id": "set_material",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 1520,
+            "y": 60
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"阀体材质偏好\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.阀体材质偏好\"}"
+          }
+        },
+        {
+          "id": "set_budget",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 1700,
+            "y": 60
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"预算等级\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.预算等级\"}"
+          }
+        },
+        {
+          "id": "set_delivery",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 1880,
+            "y": 60
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"交期要求\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.交期要求\"}"
+          }
+        },
+        {
+          "id": "set_corrosion",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 2060,
+            "y": 60
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"防腐要求\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.防腐要求\"}"
+          }
+        },
+        {
+          "id": "set_origin_id",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 80,
+            "y": 220
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"原始需求单号\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.需求单号\"}"
+          }
+        },
+        {
+          "id": "set_origin_project",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 260,
+            "y": 220
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"原始项目名称\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.项目名称\"}"
+          }
+        },
+        {
+          "id": "set_origin_medium",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 440,
+            "y": 220
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"原始介质\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.介质\"}"
+          }
+        },
+        {
+          "id": "set_origin_dn",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 620,
+            "y": 220
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"原始DN\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.DN\"}"
+          }
+        },
+        {
+          "id": "set_origin_pn",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 800,
+            "y": 220
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"原始PN\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.PN\"}"
+          }
+        },
+        {
+          "id": "set_origin_temp",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 980,
+            "y": 220
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"原始设计温度\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.设计温度\"}"
+          }
+        },
+        {
+          "id": "set_origin_flow",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 1160,
+            "y": 220
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"原始目标流量\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.目标流量\"}"
+          }
+        },
+        {
+          "id": "set_origin_connection",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 1340,
+            "y": 220
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"原始连接方式\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.连接方式\"}"
+          }
+        },
+        {
+          "id": "set_origin_material",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 1520,
+            "y": 220
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"原始阀体材质偏好\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.阀体材质偏好\"}"
+          }
+        },
+        {
+          "id": "set_origin_budget",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 1700,
+            "y": 220
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"原始预算等级\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.预算等级\"}"
+          }
+        },
+        {
+          "id": "set_origin_delivery",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 1880,
+            "y": 220
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"原始交期要求\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.交期要求\"}"
+          }
+        },
+        {
+          "id": "set_origin_corrosion",
+          "type": "behavior",
+          "specId": "behavior-set-value",
+          "position": {
+            "x": 2060,
+            "y": 220
+          },
+          "data": {
+            "propertiesJson": "{\"fieldName\":\"原始防腐要求\",\"valueType\":\"expression\",\"expression\":\"inputs.value?.防腐要求\"}"
+          }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 2300,
+            "y": 140
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"record\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"已载入记录\\\",\\\"description\\\":\\\"回填到表单的需求记录\\\"}]\"}"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge-import-id",
+          "source": "workflow:import",
+          "target": "set_id",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-project",
+          "source": "workflow:import",
+          "target": "set_project",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-medium",
+          "source": "workflow:import",
+          "target": "set_medium",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-dn",
+          "source": "workflow:import",
+          "target": "set_dn",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-pn",
+          "source": "workflow:import",
+          "target": "set_pn",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-temp",
+          "source": "workflow:import",
+          "target": "set_temp",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-flow",
+          "source": "workflow:import",
+          "target": "set_flow",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-connection",
+          "source": "workflow:import",
+          "target": "set_connection",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-material",
+          "source": "workflow:import",
+          "target": "set_material",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-budget",
+          "source": "workflow:import",
+          "target": "set_budget",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-delivery",
+          "source": "workflow:import",
+          "target": "set_delivery",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-corrosion",
+          "source": "workflow:import",
+          "target": "set_corrosion",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-origin-id",
+          "source": "workflow:import",
+          "target": "set_origin_id",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-origin-project",
+          "source": "workflow:import",
+          "target": "set_origin_project",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-origin-medium",
+          "source": "workflow:import",
+          "target": "set_origin_medium",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-origin-dn",
+          "source": "workflow:import",
+          "target": "set_origin_dn",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-origin-pn",
+          "source": "workflow:import",
+          "target": "set_origin_pn",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-origin-temp",
+          "source": "workflow:import",
+          "target": "set_origin_temp",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-origin-flow",
+          "source": "workflow:import",
+          "target": "set_origin_flow",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-origin-connection",
+          "source": "workflow:import",
+          "target": "set_origin_connection",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-origin-material",
+          "source": "workflow:import",
+          "target": "set_origin_material",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-origin-budget",
+          "source": "workflow:import",
+          "target": "set_origin_budget",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-origin-delivery",
+          "source": "workflow:import",
+          "target": "set_origin_delivery",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-import-origin-corrosion",
+          "source": "workflow:import",
+          "target": "set_origin_corrosion",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "edge-export-record",
+          "source": "workflow:import",
+          "target": "workflow:export",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        }
+      ]
+    }
+  ]
+}

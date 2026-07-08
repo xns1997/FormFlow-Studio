@@ -228,7 +228,7 @@
             "enabled": true,
             "workflowId": "example_check_valve_selection_wf_create",
             "parameterMap": {
-              "submit.formData": {
+              "workflow:import.formData": {
                 "申请单号": "$form.申请单号",
                 "项目名称": "$form.项目名称",
                 "介质": "$form.介质",

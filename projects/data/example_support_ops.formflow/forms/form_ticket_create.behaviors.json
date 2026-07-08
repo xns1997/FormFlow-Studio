@@ -4,7 +4,7 @@
       "id": "bh_create_init",
       "name": "打开新建工单表单时初始化",
       "event": "onFormLoad",
-      "code": "const rows = ctx.querySheet('service_tickets');\nconst maxId = rows.reduce((max, row) => Math.max(max, Number(row?.工单ID) || 0), 0);\nctx.setValue('工单ID', maxId + 1);\nctx.setValue('优先级', '中');\nctx.setValue('状态', '待分派');\nctx.setValue('创建日期', '2026-07-06');\nctx.setValue('处理说明', '');\nctx.setValue('状态提示', `已为新工单分配编号：${maxId + 1}`);",
+      "code": "const nextId = ctx.nextSequence('service_tickets', '工单ID', { start: 1 });\nawait ctx.resetForm({\n  defaults: {\n    工单ID: nextId,\n    优先级: '中',\n    状态: '待分派',\n    创建日期: '2026-07-06',\n    处理说明: '',\n    状态提示: `已为新工单分配编号：${nextId}`\n  },\n  preserveFields: ['状态提示']\n});",
       "priority": 10,
       "enabled": true,
       "createdAt": "2026-07-06T09:00:00.000Z",

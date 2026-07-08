@@ -1,0 +1,35 @@
+{
+  "forms": [
+    {
+      "id": "example_valve_selection_v3_form_intake",
+      "name": "需求受理台",
+      "fileName": "example_valve_selection_v3_form_intake.json",
+      "behaviorsFileName": "example_valve_selection_v3_form_intake.behaviors.json"
+    },
+    {
+      "id": "example_valve_selection_v3_form_quick_recommend",
+      "name": "快速推荐台",
+      "fileName": "example_valve_selection_v3_form_quick_recommend.json",
+      "behaviorsFileName": "example_valve_selection_v3_form_quick_recommend.behaviors.json"
+    },
+    {
+      "id": "example_valve_selection_v3_form_tech",
+      "name": "技术澄清台",
+      "fileName": "example_valve_selection_v3_form_tech.json",
+      "behaviorsFileName": "example_valve_selection_v3_form_tech.behaviors.json"
+    },
+    {
+      "id": "example_valve_selection_v3_form_decision",
+      "name": "方案决策台",
+      "fileName": "example_valve_selection_v3_form_decision.json",
+      "behaviorsFileName": "example_valve_selection_v3_form_decision.behaviors.json"
+    },
+    {
+      "id": "example_valve_selection_v3_form_review",
+      "name": "案例复盘台",
+      "fileName": "example_valve_selection_v3_form_review.json",
+      "behaviorsFileName": "example_valve_selection_v3_form_review.behaviors.json"
+    }
+  ],
+  "defaultFormId": "example_valve_selection_v3_form_intake"
+}

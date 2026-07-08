@@ -1,0 +1,725 @@
+{
+  "id": "example_valve_selection_v3_form_decision",
+  "name": "方案决策台",
+  "formMode": "edit",
+  "viewport": {
+    "zoom": 1,
+    "panX": 0,
+    "panY": 0
+  },
+  "gridSize": 10,
+  "createdAt": "2026-07-06T18:00:00.000Z",
+  "updatedAt": "2026-07-06T18:00:00.000Z",
+  "bindings": [],
+  "components": [
+    {
+      "id": "example_valve_selection_v3_decision_title",
+      "type": "text",
+      "x": 24,
+      "y": 24,
+      "width": 1080,
+      "height": 40,
+      "zIndex": 1,
+      "props": {
+        "name": "example_valve_selection_v3_decision_title",
+        "content": "第三代阀门选型 · 方案决策台",
+        "fontSize": 22,
+        "color": "#0f172a",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_decision_hint",
+      "type": "text",
+      "x": 24,
+      "y": 70,
+      "width": 1080,
+      "height": 28,
+      "zIndex": 1,
+      "props": {
+        "name": "example_valve_selection_v3_decision_hint",
+        "content": "候选、评分、提案、确认和归档分阶段推进，每一步都是独立流程。",
+        "fontSize": 13,
+        "color": "#475569"
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_decision_0",
+      "type": "number",
+      "x": 24,
+      "y": 116,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "技术画像ID",
+      "props": {
+        "name": "技术画像ID",
+        "label": "技术画像ID",
+        "required": true,
+        "readonly": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_decision_1",
+      "type": "number",
+      "x": 276,
+      "y": 116,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "需求编号",
+      "props": {
+        "name": "需求编号",
+        "label": "需求编号",
+        "required": true,
+        "readonly": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_decision_2",
+      "type": "select",
+      "x": 528,
+      "y": 116,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "阀门品类",
+      "props": {
+        "name": "阀门品类",
+        "label": "阀门品类",
+        "required": true,
+        "readonly": false,
+        "placeholder": "",
+        "options": [
+          "止回阀",
+          "球阀",
+          "蝶阀",
+          "闸阀"
+        ]
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_decision_3",
+      "type": "input",
+      "x": 24,
+      "y": 196,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "标准介质组",
+      "props": {
+        "name": "标准介质组",
+        "label": "标准介质组",
+        "required": true,
+        "readonly": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_decision_4",
+      "type": "number",
+      "x": 276,
+      "y": 196,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "公称通径DN",
+      "props": {
+        "name": "公称通径DN",
+        "label": "公称通径DN",
+        "required": true,
+        "readonly": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_decision_5",
+      "type": "number",
+      "x": 528,
+      "y": 196,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "压力等级PN",
+      "props": {
+        "name": "压力等级PN",
+        "label": "压力等级PN",
+        "required": true,
+        "readonly": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_decision_6",
+      "type": "number",
+      "x": 24,
+      "y": 276,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "设计温度",
+      "props": {
+        "name": "设计温度",
+        "label": "设计温度",
+        "required": true,
+        "readonly": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_decision_7",
+      "type": "select",
+      "x": 276,
+      "y": 276,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "连接方式",
+      "props": {
+        "name": "连接方式",
+        "label": "连接方式",
+        "required": true,
+        "readonly": false,
+        "placeholder": "",
+        "options": [
+          "法兰",
+          "对夹",
+          "焊接"
+        ]
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_decision_8",
+      "type": "select",
+      "x": 528,
+      "y": 276,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "驱动方式",
+      "props": {
+        "name": "驱动方式",
+        "label": "驱动方式",
+        "required": true,
+        "readonly": false,
+        "placeholder": "",
+        "options": [
+          "手动",
+          "电动",
+          "气动"
+        ]
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_decision_9",
+      "type": "select",
+      "x": 24,
+      "y": 356,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "泄漏等级",
+      "props": {
+        "name": "泄漏等级",
+        "label": "泄漏等级",
+        "required": true,
+        "readonly": false,
+        "placeholder": "",
+        "options": [
+          "标准",
+          "VI级"
+        ]
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_decision_10",
+      "type": "select",
+      "x": 276,
+      "y": 356,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "预算等级",
+      "props": {
+        "name": "预算等级",
+        "label": "预算等级",
+        "required": true,
+        "readonly": false,
+        "placeholder": "",
+        "options": [
+          "经济型",
+          "标准型",
+          "高配型"
+        ]
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_decision_11",
+      "type": "select",
+      "x": 528,
+      "y": 356,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "交期要求",
+      "props": {
+        "name": "交期要求",
+        "label": "交期要求",
+        "required": true,
+        "readonly": false,
+        "placeholder": "",
+        "options": [
+          "常规",
+          "加急"
+        ]
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_decision_12",
+      "type": "input",
+      "x": 24,
+      "y": 436,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "风险标签",
+      "props": {
+        "name": "风险标签",
+        "label": "风险标签",
+        "required": false,
+        "readonly": true,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_decision_13",
+      "type": "input",
+      "x": 276,
+      "y": 436,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "受理状态",
+      "props": {
+        "name": "受理状态",
+        "label": "受理状态",
+        "required": false,
+        "readonly": true,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_decision_14",
+      "type": "input",
+      "x": 528,
+      "y": 436,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "最终确认人",
+      "props": {
+        "name": "最终确认人",
+        "label": "最终确认人",
+        "required": true,
+        "readonly": false,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_generate_btn",
+      "type": "button",
+      "x": 24,
+      "y": 556,
+      "width": 160,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "example_valve_selection_v3_generate_btn",
+        "label": "生成候选",
+        "variant": "primary",
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "example_valve_selection_v3_wf_generate_candidates",
+            "parameterMap": {
+              "workflow:import.profile": {
+                "技术画像ID": "$form.技术画像ID",
+                "需求编号": "$form.需求编号",
+                "阀门品类": "$form.阀门品类",
+                "标准介质组": "$form.标准介质组",
+                "公称通径DN": "$form.公称通径DN",
+                "压力等级PN": "$form.压力等级PN",
+                "设计温度": "$form.设计温度",
+                "连接方式": "$form.连接方式",
+                "驱动方式": "$form.驱动方式",
+                "泄漏等级": "$form.泄漏等级",
+                "预算等级": "$form.预算等级",
+                "交期要求": "$form.交期要求",
+                "风险标签": "$form.风险标签"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_score_btn",
+      "type": "button",
+      "x": 204,
+      "y": 556,
+      "width": 160,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "example_valve_selection_v3_score_btn",
+        "label": "评分排序",
+        "variant": "primary",
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "example_valve_selection_v3_wf_score_candidates",
+            "parameterMap": {
+              "workflow:import.profile": {
+                "技术画像ID": "$form.技术画像ID",
+                "需求编号": "$form.需求编号",
+                "阀门品类": "$form.阀门品类",
+                "标准介质组": "$form.标准介质组",
+                "公称通径DN": "$form.公称通径DN",
+                "压力等级PN": "$form.压力等级PN",
+                "设计温度": "$form.设计温度",
+                "连接方式": "$form.连接方式",
+                "驱动方式": "$form.驱动方式",
+                "泄漏等级": "$form.泄漏等级",
+                "预算等级": "$form.预算等级",
+                "交期要求": "$form.交期要求",
+                "风险标签": "$form.风险标签"
+              },
+              "workflow:import.candidateRows": "$form.候选方案清单"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_proposal_btn",
+      "type": "button",
+      "x": 384,
+      "y": 556,
+      "width": 160,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "example_valve_selection_v3_proposal_btn",
+        "label": "生成提案",
+        "variant": "primary",
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "example_valve_selection_v3_wf_build_proposal",
+            "parameterMap": {
+              "workflow:import.profile": {
+                "技术画像ID": "$form.技术画像ID",
+                "需求编号": "$form.需求编号",
+                "阀门品类": "$form.阀门品类",
+                "标准介质组": "$form.标准介质组",
+                "公称通径DN": "$form.公称通径DN",
+                "压力等级PN": "$form.压力等级PN",
+                "设计温度": "$form.设计温度",
+                "连接方式": "$form.连接方式",
+                "驱动方式": "$form.驱动方式",
+                "泄漏等级": "$form.泄漏等级",
+                "预算等级": "$form.预算等级",
+                "交期要求": "$form.交期要求",
+                "风险标签": "$form.风险标签"
+              },
+              "workflow:import.rankedCandidates": "$form.评分结果"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_confirm_btn",
+      "type": "button",
+      "x": 564,
+      "y": 556,
+      "width": 160,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "example_valve_selection_v3_confirm_btn",
+        "label": "确认方案",
+        "variant": "primary",
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "example_valve_selection_v3_wf_confirm_selection",
+            "parameterMap": {
+              "workflow:import.confirmation": {
+                "技术画像ID": "$form.技术画像ID",
+                "需求编号": "$form.需求编号",
+                "风险标签": "$form.风险标签",
+                "最终确认人": "$form.最终确认人",
+                "推荐方案号": "$form.推荐方案号",
+                "推荐型号": "$form.推荐型号",
+                "推荐附件": "$form.推荐附件",
+                "推荐报价": "$form.推荐报价",
+                "预计交期天数": "$form.预计交期天数"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_archive_btn",
+      "type": "button",
+      "x": 744,
+      "y": 556,
+      "width": 160,
+      "height": 50,
+      "zIndex": 3,
+      "props": {
+        "name": "example_valve_selection_v3_archive_btn",
+        "label": "归档案例",
+        "variant": "primary",
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "example_valve_selection_v3_wf_archive_case",
+            "parameterMap": {
+              "workflow:import.archiveRecord": {
+                "需求编号": "$form.需求编号",
+                "风险标签": "$form.风险标签",
+                "最终确认人": "$form.最终确认人",
+                "推荐方案号": "$form.推荐方案号",
+                "推荐型号": "$form.推荐型号",
+                "推荐附件": "$form.推荐附件",
+                "推荐报价": "$form.推荐报价",
+                "预计交期天数": "$form.预计交期天数",
+                "候选数量": "$form.候选数量",
+                "评分结果": "$form.评分结果"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_candidate_count",
+      "type": "number",
+      "x": 924,
+      "y": 556,
+      "width": 140,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "候选数量",
+      "props": {
+        "name": "候选数量",
+        "label": "候选数量",
+        "required": false,
+        "readonly": true,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_filter_summary",
+      "type": "textarea",
+      "x": 24,
+      "y": 636,
+      "width": 340,
+      "height": 96,
+      "zIndex": 2,
+      "fieldBinding": "候选过滤摘要",
+      "props": {
+        "name": "候选过滤摘要",
+        "label": "候选过滤摘要",
+        "readonly": true,
+        "rows": 3
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_score_summary",
+      "type": "textarea",
+      "x": 384,
+      "y": 636,
+      "width": 320,
+      "height": 96,
+      "zIndex": 2,
+      "fieldBinding": "评分摘要",
+      "props": {
+        "name": "评分摘要",
+        "label": "评分摘要",
+        "readonly": true,
+        "rows": 3
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_reason",
+      "type": "textarea",
+      "x": 724,
+      "y": 636,
+      "width": 340,
+      "height": 96,
+      "zIndex": 2,
+      "fieldBinding": "推荐理由",
+      "props": {
+        "name": "推荐理由",
+        "label": "推荐理由",
+        "readonly": true,
+        "rows": 3
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_case_id",
+      "type": "input",
+      "x": 24,
+      "y": 748,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "推荐方案号",
+      "props": {
+        "name": "推荐方案号",
+        "label": "推荐方案号",
+        "required": false,
+        "readonly": true,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_model",
+      "type": "input",
+      "x": 276,
+      "y": 748,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "推荐型号",
+      "props": {
+        "name": "推荐型号",
+        "label": "推荐型号",
+        "required": false,
+        "readonly": true,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_accessory",
+      "type": "input",
+      "x": 528,
+      "y": 748,
+      "width": 220,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "推荐附件",
+      "props": {
+        "name": "推荐附件",
+        "label": "推荐附件",
+        "required": false,
+        "readonly": true,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_price",
+      "type": "number",
+      "x": 780,
+      "y": 748,
+      "width": 140,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "推荐报价",
+      "props": {
+        "name": "推荐报价",
+        "label": "推荐报价",
+        "required": false,
+        "readonly": true,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_lead",
+      "type": "number",
+      "x": 944,
+      "y": 748,
+      "width": 120,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "预计交期天数",
+      "props": {
+        "name": "预计交期天数",
+        "label": "预计交期天数",
+        "required": false,
+        "readonly": true,
+        "placeholder": ""
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_candidates",
+      "type": "table",
+      "x": 24,
+      "y": 828,
+      "width": 500,
+      "height": 190,
+      "zIndex": 2,
+      "fieldBinding": "候选方案清单",
+      "props": {
+        "name": "候选方案清单",
+        "columns": [
+          "方案编码",
+          "型号",
+          "组合报价",
+          "预计交期天数",
+          "附件包",
+          "风险系数"
+        ],
+        "rows": 4
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_scores",
+      "type": "table",
+      "x": 544,
+      "y": 828,
+      "width": 520,
+      "height": 190,
+      "zIndex": 2,
+      "fieldBinding": "评分结果",
+      "props": {
+        "name": "评分结果",
+        "columns": [
+          "方案编码",
+          "型号",
+          "总评分",
+          "技术评分",
+          "交期评分",
+          "成本评分"
+        ],
+        "rows": 4
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_alternatives",
+      "type": "table",
+      "x": 24,
+      "y": 1038,
+      "width": 1040,
+      "height": 150,
+      "zIndex": 2,
+      "fieldBinding": "备选方案",
+      "props": {
+        "name": "备选方案",
+        "columns": [
+          "方案编码",
+          "型号",
+          "组合报价",
+          "预计交期天数"
+        ],
+        "rows": 3
+      }
+    }
+  ]
+}

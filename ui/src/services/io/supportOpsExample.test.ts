@@ -3,14 +3,14 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { readProjectPackage } from '../../../server/src/services/project-package-store';
+import { readProjectPackage } from '../../../../server/src/services/project-package-store';
 import { exportToComponentNodes } from '../../designer/export';
 import { importFromZip } from '../../project/packageManager';
 import type { ProjectStructure } from '../../project/types';
-import { executeFormFlowTrigger, type FormFlowTriggerConfig } from './formFlowTrigger';
-import { executeFormControlEvent } from './formEventExecutor';
+import { executeFormFlowTrigger, type FormFlowTriggerConfig } from '../engine/formFlowTrigger';
+import { executeFormControlEvent } from '../engine/formEventExecutor';
 
-const repositoryRoot = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
+const repositoryRoot = dirname(dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url))))));
 
 function loadSupportOps(): ProjectStructure {
   const project = readProjectPackage('example_support_ops');

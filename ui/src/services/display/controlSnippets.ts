@@ -89,5 +89,40 @@ export function getControlSnippetExamples(options: {
     });
   }
 
-  return examples.slice(0, 5);
+  if (/click|submit|load/i.test(String(options.eventName || ''))) {
+    examples.push(
+      {
+        id: 'crud-next-sequence',
+        title: '生成下一个编号',
+        summary: '常见 CRUD 起手式：扫描项目数据表，生成下一条记录编号。',
+        code: `const nextId = ctx.nextSequence('employees', '员工ID', { start: 1000 });\nawait ctx.setValue('员工ID', nextId);`,
+      },
+      {
+        id: 'crud-find-row-fill-form',
+        title: '按主键查询并回填',
+        summary: 'lookup-edit 场景优先用 findRow + fillForm，避免手写逐字段 setValue。',
+        code: `const row = ctx.findRow('employees', { 员工ID: ctx.getValue('员工ID') });\nif (!row) return ctx.showMessage('未找到记录', 'warning');\nawait ctx.fillForm(row);`,
+      },
+      {
+        id: 'crud-require-fields',
+        title: '提交前必填校验',
+        summary: '把多字段必填检查收敛成一个 requireFields 调用。',
+        code: `const check = await ctx.requireFields(['姓名', '手机号']);\nif (!check.valid) return;`,
+      },
+      {
+        id: 'crud-reset-form',
+        title: '提交后重置为下一条',
+        summary: '提交成功后批量清空字段、写默认值并聚焦首字段。',
+        code: `const nextId = ctx.nextSequence('employees', '员工ID', { start: 1000 });\nawait ctx.resetForm({\n  clearFields: ['姓名', '手机号', '备注'],\n  defaults: { 员工ID: nextId, 状态: '草稿' },\n  focusField: '姓名',\n  message: '表单已重置，可继续录入。',\n});`,
+      },
+      {
+        id: 'crud-load-filtered-list',
+        title: '加载筛选列表',
+        summary: '查询并写回列表字段与提示文案。',
+        code: `const rows = ctx.findRows('employees', { 部门: ctx.getValue('筛选部门') || '技术部' });\nawait ctx.setValue('员工列表', rows);\nawait ctx.setValue('处理提示', \`已加载 \${rows.length} 条记录\`);`,
+      },
+    );
+  }
+
+  return examples.slice(0, 10);
 }

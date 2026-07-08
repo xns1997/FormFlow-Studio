@@ -1,0 +1,87 @@
+{
+  "id": "generic-pick-record",
+  "label": "候选选取",
+  "description": "按多字段排序并选取首条或前 N 条记录",
+  "category": "功能 · 数据操作",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "sorts",
+      "label": "排序规则",
+      "type": "json",
+      "default": [],
+      "description": "排序数组：field/order"
+    },
+    {
+      "name": "pickMode",
+      "label": "选取模式",
+      "type": "enum",
+      "enum": [
+        "first",
+        "topN",
+        "single"
+      ],
+      "default": "first",
+      "description": "返回首条、前 N 条或单条"
+    },
+    {
+      "name": "topN",
+      "label": "前 N 条",
+      "type": "number",
+      "default": 5,
+      "description": "topN 模式下的条数"
+    }
+  ],
+  "ports": [
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "待排序候选数据"
+    },
+    {
+      "name": "sorts",
+      "label": "排序规则",
+      "type": "json",
+      "direction": "input",
+      "description": "运行时覆盖排序"
+    },
+    {
+      "name": "first",
+      "label": "首条",
+      "type": "object",
+      "direction": "output",
+      "description": "最佳候选"
+    },
+    {
+      "name": "rows",
+      "label": "结果行",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "选取结果"
+    },
+    {
+      "name": "result",
+      "label": "结果",
+      "type": "any",
+      "direction": "output",
+      "description": "选取结果"
+    },
+    {
+      "name": "count",
+      "label": "总数量",
+      "type": "number",
+      "direction": "output",
+      "description": "排序后总候选数"
+    }
+  ],
+  "keywords": [
+    "TopN",
+    "最佳候选",
+    "首选项",
+    "pick",
+    "sort"
+  ]
+}

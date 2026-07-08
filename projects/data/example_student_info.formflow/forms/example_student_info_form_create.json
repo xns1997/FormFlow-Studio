@@ -210,7 +210,7 @@
             "enabled": true,
             "workflowId": "example_student_info_wf_create",
             "parameterMap": {
-              "submit.formData": {
+              "workflow:import.formData": {
                 "学号": "$form.学号",
                 "姓名": "$form.姓名",
                 "班级": "$form.班级",

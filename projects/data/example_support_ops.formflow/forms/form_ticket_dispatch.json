@@ -82,7 +82,7 @@
             "enabled": true,
             "workflowId": "wf_filter_open_tickets",
             "parameterMap": {
-              "filter.value": "$form.筛选状态"
+              "workflow:import.status": "$form.筛选状态"
             }
           }
         }
@@ -245,7 +245,7 @@
             "enabled": true,
             "workflowId": "wf_update_ticket",
             "parameterMap": {
-              "submit.formData": {
+              "workflow:import.formData": {
                 "工单ID": "$form.工单ID",
                 "客户名称": "$form.客户名称",
                 "问题类型": "$form.问题类型",
@@ -255,7 +255,7 @@
                 "创建日期": "$form.创建日期",
                 "处理说明": "$form.处理说明"
               },
-              "submit.originalData": {
+              "workflow:import.originalData": {
                 "工单ID": "$form.原始工单ID",
                 "客户名称": "$form.原始客户名称",
                 "问题类型": "$form.原始问题类型",

@@ -1,0 +1,882 @@
+{
+  "workflows": [
+    {
+      "id": "example_valve_selection_v3_wf_accept_request",
+      "name": "受理申请",
+      "description": "受理原始需求并写入受理台。",
+      "createdAt": "2026-07-06T18:00:00.000Z",
+      "updatedAt": "2026-07-06T18:00:00.000Z",
+      "nodes": [
+        {
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
+          "position": {
+            "x": 60,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"request\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"request\\\",\\\"description\\\":\\\"request 输入\\\"}]\"}"
+          }
+        },
+        {
+          "id": "script",
+          "type": "generic",
+          "specId": "behavior-js-script",
+          "position": {
+            "x": 360,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":{\"request\":\"object\"},\"outputPorts\":{\"requestId\":\"number\",\"statusPatch\":\"object\"},\"script\":\"const request = inputs.request || {};\\nconst required = ['需求编号', '项目名称', '介质', '阀门品类', '公称通径DN', '压力等级PN', '设计温度', '连接方式'];\\nconst missing = required.filter((field) => request[field] === '' || request[field] === undefined || request[field] === null);\\nconst status = missing.length > 0 ? '待澄清' : '待澄清';\\nconst row = {\\n  ...request,\\n  受理状态: status,\\n  技术完整度: missing.length > 2 ? '低' : missing.length > 0 ? '中' : '待评估',\\n  风险标签: '',\\n  推荐方案号: '',\\n  最终确认人: '',\\n  状态说明: missing.length > 0 ? '已受理，等待工况澄清' : '已受理，进入标准化流程',\\n};\\nreturn {\\n  requestId: Number(request.需求编号 || 0),\\n  statusPatch: { 受理状态: status, 状态说明: row.状态说明 },\\n  sideEffects: [\\n    { kind: 'upsert-table-row', tableId: 'request_intake', sheetName: '需求受理台账', keyField: '需求编号', keyValue: request.需求编号, row },\\n    { kind: 'set-form-value', field: '受理状态', value: status },\\n    { kind: 'set-form-value', field: '状态说明', value: row.状态说明 },\\n    { kind: 'show-message', message: `需求 ${request.需求编号 || ''} 已受理`, level: 'success' },\\n  ],\\n};\"}"
+          }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 680,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"requestId\\\",\\\"type\\\":\\\"number\\\",\\\"label\\\":\\\"requestId\\\",\\\"description\\\":\\\"requestId 输出\\\"},{\\\"name\\\":\\\"statusPatch\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"statusPatch\\\",\\\"description\\\":\\\"statusPatch 输出\\\"}]\"}"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge_import_request",
+          "source": "workflow:import",
+          "target": "script",
+          "sourceHandle": "out:request",
+          "targetHandle": "in:request"
+        },
+        {
+          "id": "edge_export_requestId",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:requestId",
+          "targetHandle": "in:requestId"
+        },
+        {
+          "id": "edge_export_statusPatch",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:statusPatch",
+          "targetHandle": "in:statusPatch"
+        }
+      ]
+    },
+    {
+      "id": "example_valve_selection_v3_wf_normalize_profile",
+      "name": "标准化工况",
+      "description": "把原始业务字段转成标准技术画像并回填风险标签。",
+      "createdAt": "2026-07-06T18:00:00.000Z",
+      "updatedAt": "2026-07-06T18:00:00.000Z",
+      "nodes": [
+        {
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
+          "position": {
+            "x": 40,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"request\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"原始需求\\\",\\\"description\\\":\\\"当前表单原始需求对象\\\"}]\"}"
+          }
+        },
+        {
+          "id": "next_profile_id",
+          "type": "behavior",
+          "specId": "behavior-next-sequence",
+          "position": {
+            "x": 240,
+            "y": 60
+          },
+          "data": {
+            "propertiesJson": "{\"tableId\":\"technical_profile\",\"sheetName\":\"技术画像\",\"column\":\"技术画像ID\",\"start\":3001,\"step\":1}"
+          }
+        },
+        {
+          "id": "normalize_script",
+          "type": "generic",
+          "specId": "behavior-js-script",
+          "position": {
+            "x": 420,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":{\"request\":\"object\",\"profileId\":\"number\"},\"outputPorts\":{\"normalizedProfile\":\"object\",\"missingFields\":\"array\",\"riskFlags\":\"array\",\"statusPatch\":\"object\",\"profileId\":\"number\"},\"script\":\"const request = inputs.request || {};\\nconst profileId = Number(inputs.profileId || 0);\\nconst mediumGroupMap = { 清水: '水系统', 蒸汽: '蒸汽系统', 油品: '油品系统', 腐蚀液: '腐蚀系统', 天然气: '气体系统' };\\nconst temp = Number(request.设计温度 || 0);\\nconst pn = Number(request.压力等级PN || 0);\\nconst medium = String(request.介质 || '');\\nconst missingFields = ['驱动方式', '泄漏等级', '预算等级', '交期要求', '安装位号'].filter((field) => request[field] === '' || request[field] === undefined || request[field] === null);\\nconst riskFlags = [\\n  temp >= 260 ? '高温' : '',\\n  pn >= 25 ? '高压' : '',\\n  medium === '腐蚀液' ? '腐蚀' : '',\\n  String(request.交期要求 || '') === '加急' ? '交付紧急' : '',\\n  String(request.泄漏等级 || '') === 'VI级' ? '严密封' : '',\\n].filter(Boolean);\\nconst profile = {\\n  技术画像ID: profileId,\\n  需求编号: request.需求编号,\\n  标准介质组: mediumGroupMap[medium] || '通用系统',\\n  温度分段: temp >= 260 ? '高温' : temp >= 120 ? '中高温' : '常温',\\n  压力分段: pn >= 40 ? '超高压' : pn >= 25 ? '中高压' : '常压',\\n  技术完整度: missingFields.length === 0 ? '高' : missingFields.length <= 2 ? '中' : '低',\\n  风险标签: riskFlags.join('、') || '常规',\\n  缺失项: missingFields.join('、'),\\n  受理状态: missingFields.length === 0 ? '待筛选' : '待澄清',\\n  阀门品类: request.阀门品类,\\n  公称通径DN: request.公称通径DN,\\n  压力等级PN: request.压力等级PN,\\n  设计温度: request.设计温度,\\n  目标流量: request.目标流量,\\n  连接方式: request.连接方式,\\n  驱动方式: request.驱动方式,\\n  泄漏等级: request.泄漏等级,\\n  预算等级: request.预算等级,\\n  交期要求: request.交期要求,\\n  安装位号: request.安装位号,\\n  技术备注: request.技术备注 || '',\\n};\\nreturn {\\n  normalizedProfile: profile,\\n  missingFields,\\n  riskFlags,\\n  statusPatch: { 受理状态: profile.受理状态, 技术完整度: profile.技术完整度, 风险标签: profile.风险标签 },\\n  profileId,\\n  sideEffects: [\\n    { kind: 'upsert-table-row', tableId: 'technical_profile', sheetName: '技术画像', keyField: '技术画像ID', keyValue: profileId, row: profile },\\n    { kind: 'upsert-table-row', tableId: 'request_intake', sheetName: '需求受理台账', keyField: '需求编号', keyValue: request.需求编号, row: { 需求编号: request.需求编号, 受理状态: profile.受理状态, 技术完整度: profile.技术完整度, 风险标签: profile.风险标签, 状态说明: missingFields.length === 0 ? '已生成技术画像，可进入候选筛选' : '存在待补充字段，仍需澄清' } },\\n    { kind: 'set-form-value', field: '技术画像ID', value: profileId },\\n    { kind: 'set-form-value', field: '标准介质组', value: profile.标准介质组 },\\n    { kind: 'set-form-value', field: '温度分段', value: profile.温度分段 },\\n    { kind: 'set-form-value', field: '压力分段', value: profile.压力分段 },\\n    { kind: 'set-form-value', field: '技术完整度', value: profile.技术完整度 },\\n    { kind: 'set-form-value', field: '风险标签', value: profile.风险标签 },\\n    { kind: 'set-form-value', field: '缺失项', value: profile.缺失项 },\\n    { kind: 'set-form-value', field: '受理状态', value: profile.受理状态 },\\n    { kind: 'show-message', message: missingFields.length === 0 ? '技术画像已固化，可进入筛选' : '技术画像已生成，但仍有待补充项', level: missingFields.length === 0 ? 'success' : 'warning' },\\n  ],\\n};\"}"
+          }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 760,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"normalizedProfile\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"normalizedProfile\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"missingFields\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"missingFields\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"riskFlags\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"riskFlags\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"statusPatch\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"statusPatch\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"profileId\\\",\\\"type\\\":\\\"number\\\",\\\"label\\\":\\\"profileId\\\",\\\"description\\\":\\\"\\\"}]\"}"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge_request_script",
+          "source": "workflow:import",
+          "target": "normalize_script",
+          "sourceHandle": "out:request",
+          "targetHandle": "in:request"
+        },
+        {
+          "id": "edge_profile_id_script",
+          "source": "next_profile_id",
+          "target": "normalize_script",
+          "sourceHandle": "out:value",
+          "targetHandle": "in:profileId"
+        },
+        {
+          "id": "edge_profile_export",
+          "source": "normalize_script",
+          "target": "workflow:export",
+          "sourceHandle": "out:normalizedProfile",
+          "targetHandle": "in:normalizedProfile"
+        },
+        {
+          "id": "edge_missing_export",
+          "source": "normalize_script",
+          "target": "workflow:export",
+          "sourceHandle": "out:missingFields",
+          "targetHandle": "in:missingFields"
+        },
+        {
+          "id": "edge_risk_export",
+          "source": "normalize_script",
+          "target": "workflow:export",
+          "sourceHandle": "out:riskFlags",
+          "targetHandle": "in:riskFlags"
+        },
+        {
+          "id": "edge_status_export",
+          "source": "normalize_script",
+          "target": "workflow:export",
+          "sourceHandle": "out:statusPatch",
+          "targetHandle": "in:statusPatch"
+        },
+        {
+          "id": "edge_profile_id_export",
+          "source": "normalize_script",
+          "target": "workflow:export",
+          "sourceHandle": "out:profileId",
+          "targetHandle": "in:profileId"
+        }
+      ]
+    },
+    {
+      "id": "example_valve_selection_v3_wf_complete_profile",
+      "name": "补全并固化画像",
+      "description": "在技术澄清后再次固化画像状态。",
+      "createdAt": "2026-07-06T18:00:00.000Z",
+      "updatedAt": "2026-07-06T18:00:00.000Z",
+      "nodes": [
+        {
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
+          "position": {
+            "x": 60,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"profile\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"profile\\\",\\\"description\\\":\\\"profile 输入\\\"}]\"}"
+          }
+        },
+        {
+          "id": "script",
+          "type": "generic",
+          "specId": "behavior-js-script",
+          "position": {
+            "x": 360,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":{\"profile\":\"object\"},\"outputPorts\":{\"normalizedProfile\":\"object\",\"statusPatch\":\"object\"},\"script\":\"const profile = { ...(inputs.profile || {}) };\\nconst missingFields = ['驱动方式', '泄漏等级', '预算等级', '交期要求', '安装位号'].filter((field) => profile[field] === '' || profile[field] === undefined || profile[field] === null);\\nprofile.技术完整度 = missingFields.length === 0 ? '完整' : missingFields.length <= 2 ? '中' : '低';\\nprofile.缺失项 = missingFields.join('、');\\nprofile.受理状态 = missingFields.length === 0 ? '待筛选' : '待澄清';\\nreturn {\\n  normalizedProfile: profile,\\n  statusPatch: { 受理状态: profile.受理状态, 技术完整度: profile.技术完整度, 缺失项: profile.缺失项 },\\n  sideEffects: [\\n    { kind: 'upsert-table-row', tableId: 'technical_profile', sheetName: '技术画像', keyField: '技术画像ID', keyValue: profile.技术画像ID, row: profile },\\n    { kind: 'upsert-table-row', tableId: 'request_intake', sheetName: '需求受理台账', keyField: '需求编号', keyValue: profile.需求编号, row: { 需求编号: profile.需求编号, 受理状态: profile.受理状态, 技术完整度: profile.技术完整度, 状态说明: missingFields.length === 0 ? '画像已固化，等待候选筛选' : '澄清未完成，需继续补充' } },\\n    { kind: 'set-form-value', field: '技术完整度', value: profile.技术完整度 },\\n    { kind: 'set-form-value', field: '缺失项', value: profile.缺失项 },\\n    { kind: 'set-form-value', field: '受理状态', value: profile.受理状态 },\\n    { kind: 'show-message', message: missingFields.length === 0 ? '技术画像已固化' : '仍有缺失字段', level: missingFields.length === 0 ? 'success' : 'warning' },\\n  ],\\n};\"}"
+          }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 680,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"normalizedProfile\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"normalizedProfile\\\",\\\"description\\\":\\\"normalizedProfile 输出\\\"},{\\\"name\\\":\\\"statusPatch\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"statusPatch\\\",\\\"description\\\":\\\"statusPatch 输出\\\"}]\"}"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge_import_profile",
+          "source": "workflow:import",
+          "target": "script",
+          "sourceHandle": "out:profile",
+          "targetHandle": "in:profile"
+        },
+        {
+          "id": "edge_export_normalizedProfile",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:normalizedProfile",
+          "targetHandle": "in:normalizedProfile"
+        },
+        {
+          "id": "edge_export_statusPatch",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:statusPatch",
+          "targetHandle": "in:statusPatch"
+        }
+      ]
+    },
+    {
+      "id": "example_valve_selection_v3_wf_generate_candidates",
+      "name": "生成候选方案",
+      "description": "根据技术画像筛出候选阀门并匹配附件组合。",
+      "createdAt": "2026-07-06T18:00:00.000Z",
+      "updatedAt": "2026-07-06T18:00:00.000Z",
+      "nodes": [
+        {
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
+          "position": {
+            "x": 40,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"profile\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"技术画像\\\",\\\"description\\\":\\\"当前技术画像对象\\\"}]\"}"
+          }
+        },
+        {
+          "id": "query_valves",
+          "type": "behavior",
+          "specId": "behavior-data-query",
+          "position": {
+            "x": 240,
+            "y": 80
+          },
+          "data": {
+            "propertiesJson": "{\"tableId\":\"valve_catalog\",\"sheetName\":\"阀门主数据\"}"
+          }
+        },
+        {
+          "id": "query_options",
+          "type": "behavior",
+          "specId": "behavior-data-query",
+          "position": {
+            "x": 240,
+            "y": 260
+          },
+          "data": {
+            "propertiesJson": "{\"tableId\":\"option_catalog\",\"sheetName\":\"选项附件库\"}"
+          }
+        },
+        {
+          "id": "candidate_script",
+          "type": "generic",
+          "specId": "behavior-js-script",
+          "position": {
+            "x": 520,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":{\"profile\":\"object\",\"valves\":\"array\",\"options\":\"array\"},\"outputPorts\":{\"candidateRows\":\"array\",\"candidateCount\":\"number\",\"filterSummary\":\"string\"},\"script\":\"const profile = inputs.profile || {};\\nconst valves = Array.isArray(inputs.valves) ? inputs.valves : [];\\nconst options = Array.isArray(inputs.options) ? inputs.options : [];\\nconst optionMap = new Map(options.map((item) => [item.选项键, item]));\\nconst matches = valves.filter((row) =>\\n  String(row.阀门品类 || '') === String(profile.阀门品类 || '')\\n  && String(row.介质组 || '') === String(profile.标准介质组 || '')\\n  && Number(row.适用DN || 0) === Number(profile.公称通径DN || 0)\\n  && Number(row.最高PN || 0) >= Number(profile.压力等级PN || 0)\\n  && Number(row.最高温度 || 0) >= Number(profile.设计温度 || 0)\\n  && String(row.连接方式 || '') === String(profile.连接方式 || '')\\n  && (String(row.驱动方式 || '') === String(profile.驱动方式 || '') || String(row.驱动方式 || '') === '通用')\\n  && (String(profile.泄漏等级 || '') !== 'VI级' || String(row.泄漏等级 || '') === 'VI级')\\n);\\nconst candidateRows = matches.map((row, index) => {\\n  const option = optionMap.get(row.选项键) || {};\\n  return {\\n    方案编码: `CAN-${profile.需求编号 || ''}-${index + 1}`,\\n    型号: row.型号,\\n    阀门品类: row.阀门品类,\\n    材质: row.材质,\\n    基础报价: Number(row.基础报价 || 0),\\n    报价附加: Number(option.报价附加 || 0),\\n    组合报价: Number(row.基础报价 || 0) + Number(option.报价附加 || 0),\\n    预计交期天数: Number(row.交期天数 || 0),\\n    附件包: option.附件包 || '',\\n    执行器型号: option.执行器型号 || '',\\n    密封方案: option.密封方案 || '',\\n    风险系数: Number(row.风险系数 || 1),\\n    推荐优先级: Number(row.推荐优先级 || 99),\\n    维护系数: Number(row.维护系数 || 1),\\n    适配说明: option.适配说明 || '',\\n  };\\n});\\nconst filterSummary = candidateRows.length === 0\\n  ? `未找到满足 ${profile.阀门品类 || ''}/${profile.标准介质组 || ''}/DN${profile.公称通径DN || ''}/PN${profile.压力等级PN || ''} 的候选`\\n  : `已根据阀门品类、介质组、DN、PN、温度、连接方式和驱动方式筛出 ${candidateRows.length} 条候选`;\\nreturn {\\n  candidateRows,\\n  candidateCount: candidateRows.length,\\n  filterSummary,\\n  sideEffects: [\\n    { kind: 'set-form-value', field: '候选方案清单', value: candidateRows },\\n    { kind: 'set-form-value', field: '候选数量', value: candidateRows.length },\\n    { kind: 'set-form-value', field: '候选过滤摘要', value: filterSummary },\\n    { kind: 'show-message', message: candidateRows.length === 0 ? '未命中候选方案' : `已生成 ${candidateRows.length} 条候选方案`, level: candidateRows.length === 0 ? 'warning' : 'success' },\\n  ],\\n};\"}"
+          }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 820,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"candidateRows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"candidateRows\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"candidateCount\\\",\\\"type\\\":\\\"number\\\",\\\"label\\\":\\\"candidateCount\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"filterSummary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"filterSummary\\\",\\\"description\\\":\\\"\\\"}]\"}"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge_profile_to_script",
+          "source": "workflow:import",
+          "target": "candidate_script",
+          "sourceHandle": "out:profile",
+          "targetHandle": "in:profile"
+        },
+        {
+          "id": "edge_valves_to_script",
+          "source": "query_valves",
+          "target": "candidate_script",
+          "sourceHandle": "out:data",
+          "targetHandle": "in:valves"
+        },
+        {
+          "id": "edge_options_to_script",
+          "source": "query_options",
+          "target": "candidate_script",
+          "sourceHandle": "out:data",
+          "targetHandle": "in:options"
+        },
+        {
+          "id": "edge_rows_export",
+          "source": "candidate_script",
+          "target": "workflow:export",
+          "sourceHandle": "out:candidateRows",
+          "targetHandle": "in:candidateRows"
+        },
+        {
+          "id": "edge_count_export",
+          "source": "candidate_script",
+          "target": "workflow:export",
+          "sourceHandle": "out:candidateCount",
+          "targetHandle": "in:candidateCount"
+        },
+        {
+          "id": "edge_summary_export",
+          "source": "candidate_script",
+          "target": "workflow:export",
+          "sourceHandle": "out:filterSummary",
+          "targetHandle": "in:filterSummary"
+        }
+      ]
+    },
+    {
+      "id": "example_valve_selection_v3_wf_score_candidates",
+      "name": "评分排序",
+      "description": "对候选方案进行技术、交期、成本与维护性评分。",
+      "createdAt": "2026-07-06T18:00:00.000Z",
+      "updatedAt": "2026-07-06T18:00:00.000Z",
+      "nodes": [
+        {
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
+          "position": {
+            "x": 60,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"profile\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"profile\\\",\\\"description\\\":\\\"profile 输入\\\"},{\\\"name\\\":\\\"candidateRows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"candidateRows\\\",\\\"description\\\":\\\"candidateRows 输入\\\"}]\"}"
+          }
+        },
+        {
+          "id": "script",
+          "type": "generic",
+          "specId": "behavior-js-script",
+          "position": {
+            "x": 360,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":{\"profile\":\"object\",\"candidateRows\":\"array\"},\"outputPorts\":{\"rankedCandidates\":\"array\",\"scoreSummary\":\"string\"},\"script\":\"const profile = inputs.profile || {};\\nconst rows = Array.isArray(inputs.candidateRows) ? inputs.candidateRows : [];\\nconst rankedCandidates = rows.map((row) => {\\n  const deliveryScore = String(profile.交期要求 || '') === '加急'\\n    ? Math.max(0, 40 - Number(row.预计交期天数 || 0) * 2)\\n    : Math.max(0, 30 - Number(row.预计交期天数 || 0));\\n  const costScore = String(profile.预算等级 || '') === '经济型'\\n    ? Math.max(0, 40 - Math.round(Number(row.组合报价 || 0) / 500))\\n    : String(profile.预算等级 || '') === '标准型'\\n      ? Math.max(0, 30 - Math.round(Number(row.组合报价 || 0) / 800))\\n      : Math.max(0, 25 - Math.round(Number(row.组合报价 || 0) / 1200));\\n  const techScore = 60 - Math.round(Number(row.风险系数 || 1) * 10) + Math.max(0, 6 - Number(row.推荐优先级 || 5));\\n  const maintenanceScore = Math.max(0, 20 - Math.round(Number(row.维护系数 || 1) * 8));\\n  const totalScore = techScore + deliveryScore + costScore + maintenanceScore;\\n  return { ...row, 技术评分: techScore, 交期评分: deliveryScore, 成本评分: costScore, 维护评分: maintenanceScore, 总评分: totalScore };\\n}).sort((a, b) => Number(b.总评分 || 0) - Number(a.总评分 || 0));\\nconst scoreSummary = rankedCandidates.length === 0 ? '无候选可评分' : `已完成 ${rankedCandidates.length} 条候选评分，最高分 ${rankedCandidates[0].总评分}`;\\nreturn {\\n  rankedCandidates,\\n  scoreSummary,\\n  sideEffects: [\\n    { kind: 'set-form-value', field: '评分结果', value: rankedCandidates },\\n    { kind: 'set-form-value', field: '评分摘要', value: scoreSummary },\\n    { kind: 'show-message', message: scoreSummary, level: rankedCandidates.length === 0 ? 'warning' : 'success' },\\n  ],\\n};\"}"
+          }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 680,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"rankedCandidates\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"rankedCandidates\\\",\\\"description\\\":\\\"rankedCandidates 输出\\\"},{\\\"name\\\":\\\"scoreSummary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"scoreSummary\\\",\\\"description\\\":\\\"scoreSummary 输出\\\"}]\"}"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge_import_profile",
+          "source": "workflow:import",
+          "target": "script",
+          "sourceHandle": "out:profile",
+          "targetHandle": "in:profile"
+        },
+        {
+          "id": "edge_import_candidateRows",
+          "source": "workflow:import",
+          "target": "script",
+          "sourceHandle": "out:candidateRows",
+          "targetHandle": "in:candidateRows"
+        },
+        {
+          "id": "edge_export_rankedCandidates",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:rankedCandidates",
+          "targetHandle": "in:rankedCandidates"
+        },
+        {
+          "id": "edge_export_scoreSummary",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:scoreSummary",
+          "targetHandle": "in:scoreSummary"
+        }
+      ]
+    },
+    {
+      "id": "example_valve_selection_v3_wf_build_proposal",
+      "name": "生成提案",
+      "description": "从评分结果生成推荐方案与备选方案。",
+      "createdAt": "2026-07-06T18:00:00.000Z",
+      "updatedAt": "2026-07-06T18:00:00.000Z",
+      "nodes": [
+        {
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
+          "position": {
+            "x": 60,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"profile\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"profile\\\",\\\"description\\\":\\\"profile 输入\\\"},{\\\"name\\\":\\\"rankedCandidates\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"rankedCandidates\\\",\\\"description\\\":\\\"rankedCandidates 输入\\\"}]\"}"
+          }
+        },
+        {
+          "id": "script",
+          "type": "generic",
+          "specId": "behavior-js-script",
+          "position": {
+            "x": 360,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":{\"profile\":\"object\",\"rankedCandidates\":\"array\"},\"outputPorts\":{\"patch\":\"object\",\"recommendedOption\":\"object\",\"alternativeOptions\":\"array\",\"pricingSummary\":\"string\",\"reasonSummary\":\"string\"},\"script\":\"const profile = inputs.profile || {};\\nconst rows = Array.isArray(inputs.rankedCandidates) ? inputs.rankedCandidates : [];\\nconst recommended = rows[0] || null;\\nconst alternatives = rows.slice(1, 4);\\nconst pricingSummary = recommended ? '推荐组合报价 ' + recommended.组合报价 + ' 元，预计交期 ' + recommended.预计交期天数 + ' 天' : '暂无可生成提案的候选';\\nconst reasonSummary = recommended\\n  ? '优先推荐 ' + recommended.型号 + '，因其总评分最高，兼顾 ' + (profile.预算等级 || '预算') + '、' + (profile.交期要求 || '交期') + ' 与 ' + (profile.风险标签 || '风险') + '。'\\n  : '未找到满足条件的候选，建议回到技术澄清阶段调整边界。';\\nconst patch = recommended ? {\\n  推荐方案号: 'CASE-' + profile.需求编号,\\n  推荐型号: recommended.型号,\\n  推荐附件: recommended.附件包,\\n  推荐报价: recommended.组合报价,\\n  预计交期天数: recommended.预计交期天数,\\n  推荐理由: reasonSummary,\\n  备选方案: alternatives,\\n  受理状态: '待确认',\\n} : {\\n  推荐方案号: '',\\n  推荐型号: '',\\n  推荐附件: '',\\n  推荐报价: '',\\n  预计交期天数: '',\\n  推荐理由: reasonSummary,\\n  备选方案: [],\\n  受理状态: '待澄清',\\n};\\nreturn {\\n  patch,\\n  recommendedOption: recommended || {},\\n  alternativeOptions: alternatives,\\n  pricingSummary,\\n  reasonSummary,\\n  sideEffects: [\\n    { kind: 'set-form-value', field: '推荐方案号', value: patch.推荐方案号 },\\n    { kind: 'set-form-value', field: '推荐型号', value: patch.推荐型号 },\\n    { kind: 'set-form-value', field: '推荐附件', value: patch.推荐附件 },\\n    { kind: 'set-form-value', field: '推荐报价', value: patch.推荐报价 },\\n    { kind: 'set-form-value', field: '预计交期天数', value: patch.预计交期天数 },\\n    { kind: 'set-form-value', field: '推荐理由', value: patch.推荐理由 },\\n    { kind: 'set-form-value', field: '备选方案', value: patch.备选方案 },\\n    { kind: 'set-form-value', field: '受理状态', value: patch.受理状态 },\\n    { kind: 'show-message', message: recommended ? '推荐提案已生成' : '未生成提案，请先调整条件', level: recommended ? 'success' : 'warning' },\\n  ],\\n};\"}"
+          }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 680,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"patch\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"patch\\\",\\\"description\\\":\\\"patch 输出\\\"},{\\\"name\\\":\\\"recommendedOption\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"recommendedOption\\\",\\\"description\\\":\\\"recommendedOption 输出\\\"},{\\\"name\\\":\\\"alternativeOptions\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"alternativeOptions\\\",\\\"description\\\":\\\"alternativeOptions 输出\\\"},{\\\"name\\\":\\\"pricingSummary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"pricingSummary\\\",\\\"description\\\":\\\"pricingSummary 输出\\\"},{\\\"name\\\":\\\"reasonSummary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"reasonSummary\\\",\\\"description\\\":\\\"reasonSummary 输出\\\"}]\"}"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge_import_profile",
+          "source": "workflow:import",
+          "target": "script",
+          "sourceHandle": "out:profile",
+          "targetHandle": "in:profile"
+        },
+        {
+          "id": "edge_import_rankedCandidates",
+          "source": "workflow:import",
+          "target": "script",
+          "sourceHandle": "out:rankedCandidates",
+          "targetHandle": "in:rankedCandidates"
+        },
+        {
+          "id": "edge_export_patch",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:patch",
+          "targetHandle": "in:patch"
+        },
+        {
+          "id": "edge_export_recommendedOption",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:recommendedOption",
+          "targetHandle": "in:recommendedOption"
+        },
+        {
+          "id": "edge_export_alternativeOptions",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:alternativeOptions",
+          "targetHandle": "in:alternativeOptions"
+        },
+        {
+          "id": "edge_export_pricingSummary",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:pricingSummary",
+          "targetHandle": "in:pricingSummary"
+        },
+        {
+          "id": "edge_export_reasonSummary",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:reasonSummary",
+          "targetHandle": "in:reasonSummary"
+        }
+      ]
+    },
+    {
+      "id": "example_valve_selection_v3_wf_confirm_selection",
+      "name": "确认方案",
+      "description": "把最终确认结果写回主记录。",
+      "createdAt": "2026-07-06T18:00:00.000Z",
+      "updatedAt": "2026-07-06T18:00:00.000Z",
+      "nodes": [
+        {
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
+          "position": {
+            "x": 60,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"confirmation\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"confirmation\\\",\\\"description\\\":\\\"confirmation 输入\\\"}]\"}"
+          }
+        },
+        {
+          "id": "script",
+          "type": "generic",
+          "specId": "behavior-js-script",
+          "position": {
+            "x": 360,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":{\"confirmation\":\"object\"},\"outputPorts\":{\"finalCaseId\":\"string\",\"statusPatch\":\"object\"},\"script\":\"const confirmation = inputs.confirmation || {};\\nconst finalCaseId = String(confirmation.推荐方案号 || ('CASE-' + (confirmation.需求编号 || '')));\\nconst rowPatch = {\\n  需求编号: confirmation.需求编号,\\n  受理状态: '已确认',\\n  推荐方案号: finalCaseId,\\n  最终确认人: confirmation.最终确认人 || '待指派',\\n  状态说明: '已完成方案确认，等待归档',\\n};\\nreturn {\\n  finalCaseId,\\n  statusPatch: rowPatch,\\n  sideEffects: [\\n    { kind: 'upsert-table-row', tableId: 'request_intake', sheetName: '需求受理台账', keyField: '需求编号', keyValue: confirmation.需求编号, row: rowPatch },\\n    { kind: 'upsert-table-row', tableId: 'technical_profile', sheetName: '技术画像', keyField: '技术画像ID', keyValue: confirmation.技术画像ID, row: { 技术画像ID: confirmation.技术画像ID, 需求编号: confirmation.需求编号, 受理状态: '已确认' } },\\n    { kind: 'set-form-value', field: '推荐方案号', value: finalCaseId },\\n    { kind: 'set-form-value', field: '受理状态', value: '已确认' },\\n    { kind: 'show-message', message: '方案 ' + finalCaseId + ' 已确认', level: 'success' },\\n  ],\\n};\"}"
+          }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 680,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"finalCaseId\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"finalCaseId\\\",\\\"description\\\":\\\"finalCaseId 输出\\\"},{\\\"name\\\":\\\"statusPatch\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"statusPatch\\\",\\\"description\\\":\\\"statusPatch 输出\\\"}]\"}"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge_import_confirmation",
+          "source": "workflow:import",
+          "target": "script",
+          "sourceHandle": "out:confirmation",
+          "targetHandle": "in:confirmation"
+        },
+        {
+          "id": "edge_export_finalCaseId",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:finalCaseId",
+          "targetHandle": "in:finalCaseId"
+        },
+        {
+          "id": "edge_export_statusPatch",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:statusPatch",
+          "targetHandle": "in:statusPatch"
+        }
+      ]
+    },
+    {
+      "id": "example_valve_selection_v3_wf_archive_case",
+      "name": "归档案例",
+      "description": "将最终方案沉淀到案例库和审计日志。",
+      "createdAt": "2026-07-06T18:00:00.000Z",
+      "updatedAt": "2026-07-06T18:00:00.000Z",
+      "nodes": [
+        {
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
+          "position": {
+            "x": 60,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"archiveRecord\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"archiveRecord\\\",\\\"description\\\":\\\"archiveRecord 输入\\\"}]\"}"
+          }
+        },
+        {
+          "id": "script",
+          "type": "generic",
+          "specId": "behavior-js-script",
+          "position": {
+            "x": 360,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":{\"archiveRecord\":\"object\"},\"outputPorts\":{\"caseId\":\"string\",\"auditId\":\"string\"},\"script\":\"const record = inputs.archiveRecord || {};\\nconst caseId = String(record.推荐方案号 || ('CASE-' + (record.需求编号 || '')));\\nconst auditId = 'AUD-' + (record.需求编号 || '') + '-FINAL';\\nconst caseRow = {\\n  案例ID: caseId,\\n  需求编号: record.需求编号,\\n  推荐方案号: caseId,\\n  推荐型号: record.推荐型号,\\n  推荐附件: record.推荐附件,\\n  推荐报价: record.推荐报价,\\n  预计交期天数: record.预计交期天数,\\n  风险标签: record.风险标签,\\n  最终确认人: record.最终确认人,\\n  候选数量: Array.isArray(record.评分结果) ? record.评分结果.length : Number(record.候选数量 || 0),\\n  归档时间: '2026-07-06T18:00:00.000Z',\\n};\\nconst auditRow = {\\n  审计ID: auditId,\\n  需求编号: record.需求编号,\\n  节点名称: '归档案例',\\n  节点结论: '已归档',\\n  状态流转: '已确认->已归档',\\n  操作人: record.最终确认人 || '系统',\\n  时间戳: '2026-07-06T18:00:00.000Z',\\n  备注: '由第三代流程样板自动归档',\\n};\\nreturn {\\n  caseId,\\n  auditId,\\n  sideEffects: [\\n    { kind: 'upsert-table-row', tableId: 'selection_cases', sheetName: '选型案例库', keyField: '案例ID', keyValue: caseId, row: caseRow },\\n    { kind: 'upsert-table-row', tableId: 'selection_audit_log', sheetName: '选型审计日志', keyField: '审计ID', keyValue: auditId, row: auditRow },\\n    { kind: 'set-form-value', field: '案例摘要', value: '已归档案例 ' + caseId + '，确认人 ' + (record.最终确认人 || '系统') },\\n    { kind: 'show-message', message: '案例 ' + caseId + ' 已归档', level: 'success' },\\n  ],\\n};\"}"
+          }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 680,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"caseId\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"caseId\\\",\\\"description\\\":\\\"caseId 输出\\\"},{\\\"name\\\":\\\"auditId\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"auditId\\\",\\\"description\\\":\\\"auditId 输出\\\"}]\"}"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge_import_archiveRecord",
+          "source": "workflow:import",
+          "target": "script",
+          "sourceHandle": "out:archiveRecord",
+          "targetHandle": "in:archiveRecord"
+        },
+        {
+          "id": "edge_export_caseId",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:caseId",
+          "targetHandle": "in:caseId"
+        },
+        {
+          "id": "edge_export_auditId",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:auditId",
+          "targetHandle": "in:auditId"
+        }
+      ]
+    },
+    {
+      "id": "example_valve_selection_v3_wf_quick_fill_request",
+      "name": "快速推荐台按编号回填",
+      "description": "输入需求编号后自动从受理台账回填历史工况。",
+      "createdAt": "2026-07-06T18:00:00.000Z",
+      "updatedAt": "2026-07-06T18:00:00.000Z",
+      "nodes": [
+        {
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
+          "position": {
+            "x": 40,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"requestId\\\",\\\"type\\\":\\\"number\\\",\\\"label\\\":\\\"需求编号\\\",\\\"description\\\":\\\"输入的需求编号\\\"}]\"}"
+          }
+        },
+        {
+          "id": "query_requests",
+          "type": "behavior",
+          "specId": "behavior-data-query",
+          "position": {
+            "x": 240,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"tableId\":\"request_intake\",\"sheetName\":\"需求受理台账\"}"
+          }
+        },
+        {
+          "id": "fill_script",
+          "type": "generic",
+          "specId": "behavior-js-script",
+          "position": {
+            "x": 500,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":{\"requestId\":\"number\",\"rows\":\"array\"},\"outputPorts\":{\"record\":\"object\",\"matched\":\"boolean\"},\"script\":\"const requestId = Number(inputs.requestId || 0);\\nconst rows = Array.isArray(inputs.rows) ? inputs.rows : [];\\nconst record = rows.find((row) => Number(row?.需求编号 || 0) === requestId) || null;\\nconst fillFields = ['介质', '阀门品类', '公称通径DN', '压力等级PN', '设计温度', '目标流量', '连接方式', '驱动方式', '泄漏等级', '预算等级', '交期要求'];\\nconst sideEffects = [];\\nif (record) {\\n  for (const field of fillFields) sideEffects.push({ kind: 'set-form-value', field, value: record[field] ?? '' });\\n  sideEffects.push({ kind: 'show-message', message: '已按需求编号自动带出历史工况', level: 'success' });\\n} else if (requestId) {\\n  sideEffects.push({ kind: 'show-message', message: '未找到对应需求编号，保留手工输入', level: 'warning' });\\n}\\nreturn { record: record || {}, matched: !!record, sideEffects };\"}"
+          }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 760,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"record\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"record\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"matched\\\",\\\"type\\\":\\\"boolean\\\",\\\"label\\\":\\\"matched\\\",\\\"description\\\":\\\"\\\"}]\"}"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge_fill_request_id",
+          "source": "workflow:import",
+          "target": "fill_script",
+          "sourceHandle": "out:requestId",
+          "targetHandle": "in:requestId"
+        },
+        {
+          "id": "edge_fill_rows",
+          "source": "query_requests",
+          "target": "fill_script",
+          "sourceHandle": "out:data",
+          "targetHandle": "in:rows"
+        },
+        {
+          "id": "edge_fill_record",
+          "source": "fill_script",
+          "target": "workflow:export",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_fill_matched",
+          "source": "fill_script",
+          "target": "workflow:export",
+          "sourceHandle": "out:matched",
+          "targetHandle": "in:matched"
+        }
+      ]
+    },
+    {
+      "id": "example_valve_selection_v3_wf_quick_recommend",
+      "name": "一页式快速推荐",
+      "description": "面向二代同款交互表单的一页式推荐流程，不复用旧二代流程拆法。",
+      "createdAt": "2026-07-06T18:00:00.000Z",
+      "updatedAt": "2026-07-06T18:00:00.000Z",
+      "nodes": [
+        {
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
+          "position": {
+            "x": 40,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"request\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"选型输入\\\",\\\"description\\\":\\\"快速推荐表单输入对象\\\"}]\"}"
+          }
+        },
+        {
+          "id": "query_valves",
+          "type": "behavior",
+          "specId": "behavior-data-query",
+          "position": {
+            "x": 240,
+            "y": 80
+          },
+          "data": {
+            "propertiesJson": "{\"tableId\":\"valve_catalog\",\"sheetName\":\"阀门主数据\"}"
+          }
+        },
+        {
+          "id": "query_options",
+          "type": "behavior",
+          "specId": "behavior-data-query",
+          "position": {
+            "x": 240,
+            "y": 260
+          },
+          "data": {
+            "propertiesJson": "{\"tableId\":\"option_catalog\",\"sheetName\":\"选项附件库\"}"
+          }
+        },
+        {
+          "id": "recommend_script",
+          "type": "generic",
+          "specId": "behavior-js-script",
+          "position": {
+            "x": 520,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":{\"request\":\"object\",\"valves\":\"array\",\"options\":\"array\"},\"outputPorts\":{\"patch\":\"object\",\"candidateRows\":\"array\",\"recommendedOption\":\"object\",\"filterSummary\":\"string\",\"reasonSummary\":\"string\"},\"script\":\"const request = inputs.request || {};\\nconst valves = Array.isArray(inputs.valves) ? inputs.valves : [];\\nconst options = Array.isArray(inputs.options) ? inputs.options : [];\\nconst mediumGroupMap = { 清水: '水系统', 蒸汽: '蒸汽系统', 油品: '油品系统', 腐蚀液: '腐蚀系统', 天然气: '气体系统' };\\nconst mediumGroup = mediumGroupMap[String(request.介质 || '')] || '通用系统';\\nconst optionMap = new Map(options.map((item) => [item.选项键, item]));\\nconst candidates = valves\\n  .filter((row) =>\\n    String(row.阀门品类 || '') === String(request.阀门品类 || '')\\n    && String(row.介质组 || '') === mediumGroup\\n    && Number(row.适用DN || 0) === Number(request.公称通径DN || 0)\\n    && Number(row.最高PN || 0) >= Number(request.压力等级PN || 0)\\n    && Number(row.最高温度 || 0) >= Number(request.设计温度 || 0)\\n    && String(row.连接方式 || '') === String(request.连接方式 || '')\\n    && String(row.驱动方式 || '') === String(request.驱动方式 || '')\\n    && (String(request.泄漏等级 || '') !== 'VI级' || String(row.泄漏等级 || '') === 'VI级')\\n  )\\n  .map((row, index) => {\\n    const option = optionMap.get(row.选项键) || {};\\n    const deliveryScore = String(request.交期要求 || '') === '加急'\\n      ? Math.max(0, 40 - Number(row.交期天数 || 0) * 2)\\n      : Math.max(0, 30 - Number(row.交期天数 || 0));\\n    const costBase = Number(row.基础报价 || 0) + Number(option.报价附加 || 0);\\n    const costScore = String(request.预算等级 || '') === '经济型'\\n      ? Math.max(0, 40 - Math.round(costBase / 500))\\n      : String(request.预算等级 || '') === '标准型'\\n        ? Math.max(0, 30 - Math.round(costBase / 800))\\n        : Math.max(0, 25 - Math.round(costBase / 1200));\\n    const techScore = 60 - Math.round(Number(row.风险系数 || 1) * 10) + Math.max(0, 6 - Number(row.推荐优先级 || 5));\\n    const maintenanceScore = Math.max(0, 20 - Math.round(Number(row.维护系数 || 1) * 8));\\n    return {\\n      方案编码: 'FAST-' + (request.需求编号 || 'REQ') + '-' + (index + 1),\\n      型号: row.型号,\\n      阀门品类: row.阀门品类,\\n      材质: row.材质,\\n      附件包: option.附件包 || '',\\n      执行器型号: option.执行器型号 || '',\\n      密封方案: option.密封方案 || '',\\n      组合报价: costBase,\\n      预计交期天数: Number(row.交期天数 || 0),\\n      风险系数: Number(row.风险系数 || 1),\\n      推荐优先级: Number(row.推荐优先级 || 99),\\n      总评分: techScore + deliveryScore + costScore + maintenanceScore,\\n      适配说明: option.适配说明 || '',\\n    };\\n  })\\n  .sort((a, b) => Number(b.总评分 || 0) - Number(a.总评分 || 0))\\n  .slice(0, 5);\\nconst recommended = candidates[0] || null;\\nconst filterSummary = candidates.length === 0\\n  ? '未找到满足当前工况边界的候选，请调整温度、压力或驱动方式。'\\n  : '已按介质组、品类、DN、PN、温度、连接与驱动综合筛出 ' + candidates.length + ' 条候选';\\nconst reasonSummary = recommended\\n  ? '推荐 ' + recommended.型号 + '，其综合评分最高，兼顾预算、交期与风险要求。'\\n  : '暂无可推荐型号，建议回到三代技术澄清流程补充条件。';\\nconst patch = recommended ? {\\n  标准介质组: mediumGroup,\\n  候选方案清单: candidates,\\n  候选数量: candidates.length,\\n  推荐方案号: 'FAST-' + (request.需求编号 || 'REQ'),\\n  推荐型号: recommended.型号,\\n  推荐附件: recommended.附件包,\\n  推荐报价: recommended.组合报价,\\n  预计交期天数: recommended.预计交期天数,\\n  推荐理由: reasonSummary,\\n  候选过滤摘要: filterSummary,\\n} : {\\n  标准介质组: mediumGroup,\\n  候选方案清单: [],\\n  候选数量: 0,\\n  推荐方案号: '',\\n  推荐型号: '',\\n  推荐附件: '',\\n  推荐报价: '',\\n  预计交期天数: '',\\n  推荐理由: reasonSummary,\\n  候选过滤摘要: filterSummary,\\n};\\nreturn {\\n  patch,\\n  candidateRows: candidates,\\n  recommendedOption: recommended || {},\\n  filterSummary,\\n  reasonSummary,\\n  sideEffects: [\\n    { kind: 'set-form-value', field: '标准介质组', value: patch.标准介质组 },\\n    { kind: 'set-form-value', field: '候选方案清单', value: patch.候选方案清单 },\\n    { kind: 'set-form-value', field: '候选数量', value: patch.候选数量 },\\n    { kind: 'set-form-value', field: '推荐方案号', value: patch.推荐方案号 },\\n    { kind: 'set-form-value', field: '推荐型号', value: patch.推荐型号 },\\n    { kind: 'set-form-value', field: '推荐附件', value: patch.推荐附件 },\\n    { kind: 'set-form-value', field: '推荐报价', value: patch.推荐报价 },\\n    { kind: 'set-form-value', field: '预计交期天数', value: patch.预计交期天数 },\\n    { kind: 'set-form-value', field: '推荐理由', value: patch.推荐理由 },\\n    { kind: 'set-form-value', field: '候选过滤摘要', value: patch.候选过滤摘要 },\\n    { kind: 'show-message', message: candidates.length === 0 ? '快速推荐未命中候选' : '快速推荐已生成', level: candidates.length === 0 ? 'warning' : 'success' },\\n  ],\\n};\"}"
+          }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 860,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"patch\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"patch\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"candidateRows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"candidateRows\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"recommendedOption\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"recommendedOption\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"filterSummary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"filterSummary\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"reasonSummary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"reasonSummary\\\",\\\"description\\\":\\\"\\\"}]\"}"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge_quick_request",
+          "source": "workflow:import",
+          "target": "recommend_script",
+          "sourceHandle": "out:request",
+          "targetHandle": "in:request"
+        },
+        {
+          "id": "edge_quick_valves",
+          "source": "query_valves",
+          "target": "recommend_script",
+          "sourceHandle": "out:data",
+          "targetHandle": "in:valves"
+        },
+        {
+          "id": "edge_quick_options",
+          "source": "query_options",
+          "target": "recommend_script",
+          "sourceHandle": "out:data",
+          "targetHandle": "in:options"
+        },
+        {
+          "id": "edge_quick_patch",
+          "source": "recommend_script",
+          "target": "workflow:export",
+          "sourceHandle": "out:patch",
+          "targetHandle": "in:patch"
+        },
+        {
+          "id": "edge_quick_rows",
+          "source": "recommend_script",
+          "target": "workflow:export",
+          "sourceHandle": "out:candidateRows",
+          "targetHandle": "in:candidateRows"
+        },
+        {
+          "id": "edge_quick_recommended",
+          "source": "recommend_script",
+          "target": "workflow:export",
+          "sourceHandle": "out:recommendedOption",
+          "targetHandle": "in:recommendedOption"
+        },
+        {
+          "id": "edge_quick_filter",
+          "source": "recommend_script",
+          "target": "workflow:export",
+          "sourceHandle": "out:filterSummary",
+          "targetHandle": "in:filterSummary"
+        },
+        {
+          "id": "edge_quick_reason",
+          "source": "recommend_script",
+          "target": "workflow:export",
+          "sourceHandle": "out:reasonSummary",
+          "targetHandle": "in:reasonSummary"
+        }
+      ]
+    }
+  ]
+}

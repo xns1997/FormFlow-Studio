@@ -365,11 +365,17 @@ function buildApprovalTemplate(): ProjectStructure {
     description: '根据输入金额筛选待审批记录，并把结果回写到右侧表格。',
     nodes: [
       {
-        id: 'approval_rows',
+        id: 'workflow:import',
         type: 'formflow',
-        specId: 'generic:variable-input',
+        specId: 'workflow:import',
         position: { x: 80, y: 140 },
-        data: { propertiesJson: JSON.stringify({ varName: 'rows', varType: 'array', varValue: approvalRows }) },
+        data: {
+          propertiesJson: JSON.stringify({
+            outputPorts: JSON.stringify([
+              { name: 'rows', type: 'array', label: '审批数据', description: '待审批记录列表' },
+            ]),
+          }),
+        },
       },
       {
         id: 'approval_filter',
@@ -379,27 +385,33 @@ function buildApprovalTemplate(): ProjectStructure {
         data: { propertiesJson: JSON.stringify({ field: '金额', operator: '>=', value: 1000 }) },
       },
       {
-        id: 'approval_display',
+        id: 'workflow:export',
         type: 'formflow',
-        specId: 'generic:display-table',
+        specId: 'workflow:export',
         position: { x: 660, y: 140 },
-        data: { propertiesJson: '{}' },
+        data: {
+          propertiesJson: JSON.stringify({
+            inputPorts: JSON.stringify([
+              { name: 'rows', type: 'array', label: '筛选结果', description: '审批筛选结果' },
+            ]),
+          }),
+        },
       },
     ],
     edges: [
       {
         id: 'edge_approval_filter',
-        source: 'approval_rows',
+        source: 'workflow:import',
         target: 'approval_filter',
-        sourceHandle: 'out:value',
+        sourceHandle: 'out:rows',
         targetHandle: 'in:data',
       },
       {
-        id: 'edge_approval_display',
+        id: 'edge_approval_export',
         source: 'approval_filter',
-        target: 'approval_display',
+        target: 'workflow:export',
         sourceHandle: 'out:result',
-        targetHandle: 'in:data',
+        targetHandle: 'in:rows',
       },
     ],
     createdAt: now,

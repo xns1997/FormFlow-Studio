@@ -3,6 +3,14 @@ import type { FlowSideEffect } from '../../src/services/engine/flowSideEffects';
 import { normalizeFlowSideEffect } from '../../src/services/engine/flowSideEffects';
 import { parseCustomJsPortDefinitions } from '../../src/services/config/customJsNode';
 import { resolveSingleKeyField } from '../../src/services/data/tableKeys';
+import {
+  buildFillFormPatch,
+  buildResetFormPatch,
+  findRowInTables,
+  findRowsInTables,
+  nextSequenceInTables,
+  validateRequiredFields,
+} from '../../src/services/engine/crudHelpers';
 
 registerExecutor('behavior-on-form-load', (ctx) => {
   const { inputs, properties } = ctx;
@@ -151,6 +159,74 @@ registerExecutor('behavior-set-value', (ctx) => {
     fieldName,
     value,
     sideEffects: fieldName ? [{ kind: 'set-form-value', field: fieldName, value }] : [],
+  };
+});
+
+function parsePatchConfig(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+
+function resolveSetValuesToken(token: unknown, sources: {
+  record: Record<string, unknown> | null;
+  records: unknown[];
+  count: unknown;
+  message: unknown;
+}): unknown {
+  if (Array.isArray(token)) {
+    for (const item of token) {
+      const resolved = resolveSetValuesToken(item, sources);
+      if (resolved !== undefined && resolved !== null && resolved !== '') return resolved;
+    }
+    return '';
+  }
+  if (typeof token !== 'string') return token;
+  if (token === '$records') return sources.records;
+  if (token === '$count') return sources.count;
+  if (token === '$message') return sources.message;
+  if (token.startsWith('$record.')) return sources.record?.[token.slice('$record.'.length)];
+  return token;
+}
+
+registerExecutor('behavior-set-values', (ctx) => {
+  const record = (ctx.inputs.record && typeof ctx.inputs.record === 'object' && !Array.isArray(ctx.inputs.record))
+    ? ctx.inputs.record as Record<string, unknown>
+    : null;
+  const records = Array.isArray(ctx.inputs.records) ? ctx.inputs.records : [];
+  const count = ctx.inputs.count ?? records.length;
+  const message = ctx.inputs.message ?? '';
+  const fieldMap = parsePatchConfig(ctx.inputs.fieldMap ?? ctx.properties.fieldMap);
+  const staticPatch = parsePatchConfig(ctx.inputs.staticPatch ?? ctx.properties.staticPatch);
+  const emptyPatch = parsePatchConfig(ctx.inputs.emptyPatch ?? ctx.properties.emptyPatch);
+  const shouldUseEmptyPatch = !record && records.length === 0;
+  const patch: Record<string, unknown> = { ...staticPatch };
+
+  if (shouldUseEmptyPatch) {
+    Object.assign(patch, emptyPatch);
+  } else {
+    for (const [field, source] of Object.entries(fieldMap)) {
+      patch[field] = resolveSetValuesToken(source, { record, records, count, message });
+    }
+  }
+
+  const sideEffects = Object.entries(patch).map(([field, value]) => ({
+    kind: 'set-form-value' as const,
+    field,
+    value,
+  }));
+  return {
+    trigger: ctx.inputs.trigger,
+    appliedFields: Object.keys(patch),
+    patch,
+    sideEffects,
   };
 });
 
@@ -323,20 +399,26 @@ registerExecutor('behavior-loop', (ctx) => {
 registerExecutor('behavior-data-query', (ctx) => {
   const { properties, inputs, tables, checkType } = ctx;
   const sheetName = ctx.assertType('string', properties.sheetName || inputs.sheetName || '', 'sheetName') as string;
+  const tableId = String(properties.tableId || inputs.tableId || '');
   const filter = inputs.filter as Record<string, unknown> || {};
 
-  for (const table of tables) {
-    const sheet = table.sheets.find(s => s.name === sheetName) || table.sheets[0];
-    if (sheet) {
-      let rows = sheet.preview;
-      if (Object.keys(filter).length > 0) {
-        rows = rows.filter(row => Object.entries(filter).every(([k, v]) => row[k] === v));
-      }
-      const rowsCheck = checkType('json-rows', rows);
-      return { data: rowsCheck.valid ? rowsCheck.normalized : rows, count: rows.length, headers: sheet.headers };
+  const sourceTables = tableId
+    ? tables.filter((table) => table.id === tableId)
+    : tables;
+
+  for (const table of sourceTables) {
+    const sheet = sheetName
+      ? table.sheets.find((item) => item.name === sheetName)
+      : table.sheets[0];
+    if (!sheet) continue;
+    let rows = sheet.preview;
+    if (Object.keys(filter).length > 0) {
+      rows = rows.filter(row => Object.entries(filter).every(([k, v]) => row[k] === v));
     }
+    const rowsCheck = checkType('json-rows', rows);
+    return { data: rowsCheck.valid ? rowsCheck.normalized : rows, count: rows.length, headers: sheet.headers, tableId: table.id, sheetName: sheet.name };
   }
-  return { data: [], count: 0, headers: [] };
+  return { data: [], count: 0, headers: [], tableId, sheetName };
 });
 
 registerExecutor('behavior-row-lookup', (ctx) => {
@@ -398,6 +480,119 @@ registerExecutor('behavior-row-lookup', (ctx) => {
   }
 
   return { matched, row, message, sideEffects };
+});
+
+registerExecutor('behavior-query-list', (ctx) => {
+  const tableId = String(ctx.properties.tableId || '');
+  const sheetName = String(ctx.properties.sheetName || '');
+  const resultField = String(ctx.properties.resultField || '');
+  const messageField = String(ctx.properties.messageField || '');
+  const emptyMessage = String(ctx.properties.emptyMessage || '未找到匹配记录');
+  const successMessage = String(ctx.properties.successMessage || '已加载记录');
+  const criteria = (ctx.inputs.criteria && typeof ctx.inputs.criteria === 'object' && !Array.isArray(ctx.inputs.criteria))
+    ? ctx.inputs.criteria as Record<string, unknown>
+    : {};
+  const rows = findRowsInTables(ctx.tables, `${tableId}:${sheetName}`, criteria, {}, { tableId, sheetName });
+  const count = rows.length;
+  const message = count === 0 ? emptyMessage : successMessage.replace('{count}', String(count));
+  const sideEffects: FlowSideEffect[] = [];
+  if (resultField) sideEffects.push(normalizeFlowSideEffect({ kind: 'set-form-value', field: resultField, value: rows })!);
+  if (messageField) sideEffects.push(normalizeFlowSideEffect({ kind: 'set-form-value', field: messageField, value: message })!);
+  if (message) sideEffects.push(normalizeFlowSideEffect({ kind: 'show-message', message, level: count === 0 ? 'warning' : 'success' })!);
+  return { rows, count, message, sideEffects };
+});
+
+registerExecutor('behavior-next-sequence', (ctx) => {
+  const tableId = String(ctx.properties.tableId || '');
+  const sheetName = String(ctx.properties.sheetName || '');
+  const column = String(ctx.properties.column || '');
+  const targetField = String(ctx.properties.targetField || '');
+  const start = Number(ctx.properties.start ?? 1);
+  const step = Number(ctx.properties.step ?? 1);
+  const value = nextSequenceInTables(ctx.tables, `${tableId}:${sheetName}`, column, { start, step }, { tableId, sheetName });
+  const sideEffects = targetField
+    ? [normalizeFlowSideEffect({ kind: 'set-form-value', field: targetField, value })!]
+    : [];
+  return { value, sideEffects };
+});
+
+registerExecutor('behavior-fill-form', (ctx) => {
+  const record = (ctx.inputs.record && typeof ctx.inputs.record === 'object' && !Array.isArray(ctx.inputs.record))
+    ? ctx.inputs.record as Record<string, unknown>
+    : null;
+  const fieldMap = parsePatchConfig(ctx.inputs.fieldMap ?? ctx.properties.fieldMap);
+  const originalFieldMap = parsePatchConfig(ctx.inputs.originalFieldMap ?? ctx.properties.originalFieldMap);
+  const rawEnableComponentIds = ctx.inputs.enableComponentIds ?? ctx.properties.enableComponentIds;
+  const enableComponentIds = Array.isArray(rawEnableComponentIds)
+    ? rawEnableComponentIds as string[]
+    : String(rawEnableComponentIds || '').split(',').map((item) => item.trim()).filter(Boolean);
+  const messageField = String(ctx.properties.messageField || '');
+  const result = buildFillFormPatch(record, fieldMap as Record<string, string>, {
+    originalFieldMap: originalFieldMap as Record<string, string>,
+    enableComponentIds,
+  });
+  const sideEffects: FlowSideEffect[] = [];
+  for (const [field, value] of Object.entries(result.patch)) {
+    sideEffects.push(normalizeFlowSideEffect({ kind: 'set-form-value', field, value })!);
+  }
+  for (const [field, value] of Object.entries(result.originalPatch)) {
+    sideEffects.push(normalizeFlowSideEffect({ kind: 'set-form-value', field, value })!);
+  }
+  for (const componentId of result.enableComponentIds) {
+    sideEffects.push(normalizeFlowSideEffect({ kind: 'set-component-disabled', componentId, disabled: false })!);
+  }
+  if (messageField) {
+    sideEffects.push(normalizeFlowSideEffect({ kind: 'set-form-value', field: messageField, value: record ? '已回填记录' : '未找到记录' })!);
+  }
+  return { matched: !!record, appliedFields: result.appliedFields, patch: { ...result.patch, ...result.originalPatch }, sideEffects };
+});
+
+registerExecutor('behavior-require-fields', (ctx) => {
+  const rawFields = ctx.inputs.fields ?? ctx.properties.fields;
+  const fields = Array.isArray(rawFields)
+    ? rawFields as string[]
+    : String(rawFields || '').split(',').map((item) => item.trim()).filter(Boolean);
+  const values = (ctx.inputs.formData && typeof ctx.inputs.formData === 'object' && !Array.isArray(ctx.inputs.formData))
+    ? ctx.inputs.formData as Record<string, unknown>
+    : ((ctx.inputs.values && typeof ctx.inputs.values === 'object' && !Array.isArray(ctx.inputs.values))
+      ? ctx.inputs.values as Record<string, unknown>
+      : {});
+  const messageTemplate = String(ctx.properties.messageTemplate || '请填写以下字段：{fields}');
+  const result = validateRequiredFields(values, fields, { messageTemplate });
+  const sideEffects = !result.valid && result.message
+    ? [normalizeFlowSideEffect({ kind: 'show-message', message: result.message, level: 'error' })!]
+    : [];
+  return { valid: result.valid, missingFields: result.missingFields, firstMissingField: result.firstMissingField, sideEffects };
+});
+
+registerExecutor('behavior-reset-form', (ctx) => {
+  const rawClearFields = ctx.inputs.clearFields ?? ctx.properties.clearFields;
+  const clearFields = Array.isArray(rawClearFields)
+    ? rawClearFields as string[]
+    : String(rawClearFields || '').split(',').map((item) => item.trim()).filter(Boolean);
+  const rawPreserveFields = ctx.inputs.preserveFields ?? ctx.properties.preserveFields;
+  const preserveFields = Array.isArray(rawPreserveFields)
+    ? rawPreserveFields as string[]
+    : String(rawPreserveFields || '').split(',').map((item) => item.trim()).filter(Boolean);
+  const defaults = parsePatchConfig(ctx.inputs.defaults ?? ctx.properties.defaults);
+  const currentValues = (ctx.inputs.formData && typeof ctx.inputs.formData === 'object' && !Array.isArray(ctx.inputs.formData))
+    ? ctx.inputs.formData as Record<string, unknown>
+    : ((ctx.inputs.values && typeof ctx.inputs.values === 'object' && !Array.isArray(ctx.inputs.values))
+      ? ctx.inputs.values as Record<string, unknown>
+      : {});
+  const result = buildResetFormPatch(currentValues, {
+    clearFields,
+    preserveFields,
+    defaults,
+    message: String(ctx.properties.message || ''),
+    focusField: String(ctx.properties.focusField || ''),
+  });
+  const sideEffects: FlowSideEffect[] = Object.entries(result.patch).map(([field, value]) =>
+    normalizeFlowSideEffect({ kind: 'set-form-value', field, value })!).filter(Boolean) as FlowSideEffect[];
+  if (result.message) {
+    sideEffects.push(normalizeFlowSideEffect({ kind: 'show-message', message: result.message, level: 'info' })!);
+  }
+  return { patch: result.patch, sideEffects };
 });
 
 registerExecutor('behavior-switch-tab', (ctx) => {

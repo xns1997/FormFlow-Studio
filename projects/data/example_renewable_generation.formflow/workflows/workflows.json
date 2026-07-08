@@ -8,6 +8,18 @@
       "updatedAt": "2026-07-06T18:00:00.000Z",
       "nodes": [
         {
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
+          "position": {
+            "x": 40,
+            "y": 160
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"formData\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"表单数据\\\",\\\"description\\\":\\\"提交时写回的数据对象\\\"},{\\\"name\\\":\\\"originalData\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"原始数据\\\",\\\"description\\\":\\\"编辑前的原始数据对象\\\"}]\"}"
+          }
+        },
+        {
           "id": "submit",
           "type": "formflow",
           "specId": "behavior:submit",
@@ -18,9 +30,64 @@
           "data": {
             "propertiesJson": "{\"validateFirst\":true,\"target\":\"changeLog\",\"fileName\":\"example_renewable_generation-example_renewable_generation_wf_create\",\"writeBackMode\":\"upsert\",\"writeBackTableId\":\"renewable_generation\",\"writeBackSheetName\":\"新能源发电量\",\"writeBackKeyField\":\"记录ID\",\"writeBackKeyFormField\":\"记录ID\",\"writeBackFieldMap\":{\"记录ID\":\"记录ID\",\"日期\":\"日期\",\"场站\":\"场站\",\"发电类型\":\"发电类型\",\"发电量MWh\":\"发电量MWh\",\"资源指标\":\"资源指标\",\"限电损失MWh\":\"限电损失MWh\",\"设备可用率\":\"设备可用率\"}}"
           }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 640,
+            "y": 160
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"success\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"成功事件\\\",\\\"description\\\":\\\"提交成功事件\\\"},{\\\"name\\\":\\\"changeLog\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"变更记录\\\",\\\"description\\\":\\\"本次提交的字段差异\\\"},{\\\"name\\\":\\\"writeBack\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"写回动作\\\",\\\"description\\\":\\\"提交后的写回指令\\\"},{\\\"name\\\":\\\"fileData\\\",\\\"type\\\":\\\"any\\\",\\\"label\\\":\\\"文件数据\\\",\\\"description\\\":\\\"导出的文件数据\\\"}]\"}"
+          }
         }
       ],
-      "edges": []
+      "edges": [
+        {
+          "id": "edge_import_formData",
+          "source": "workflow:import",
+          "target": "submit",
+          "sourceHandle": "out:formData",
+          "targetHandle": "in:formData"
+        },
+        {
+          "id": "edge_import_originalData",
+          "source": "workflow:import",
+          "target": "submit",
+          "sourceHandle": "out:originalData",
+          "targetHandle": "in:originalData"
+        },
+        {
+          "id": "edge_submit_success",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:success",
+          "targetHandle": "in:success"
+        },
+        {
+          "id": "edge_submit_changeLog",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:changeLog",
+          "targetHandle": "in:changeLog"
+        },
+        {
+          "id": "edge_submit_writeBack",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:writeBack",
+          "targetHandle": "in:writeBack"
+        },
+        {
+          "id": "edge_submit_fileData",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:fileData",
+          "targetHandle": "in:fileData"
+        }
+      ]
     },
     {
       "id": "example_renewable_generation_wf_update",
@@ -29,6 +96,18 @@
       "createdAt": "2026-07-06T18:00:00.000Z",
       "updatedAt": "2026-07-06T18:00:00.000Z",
       "nodes": [
+        {
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
+          "position": {
+            "x": 40,
+            "y": 160
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"formData\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"表单数据\\\",\\\"description\\\":\\\"提交时写回的数据对象\\\"},{\\\"name\\\":\\\"originalData\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"原始数据\\\",\\\"description\\\":\\\"编辑前的原始数据对象\\\"}]\"}"
+          }
+        },
         {
           "id": "submit",
           "type": "formflow",
@@ -40,9 +119,64 @@
           "data": {
             "propertiesJson": "{\"validateFirst\":true,\"target\":\"changeLog\",\"fileName\":\"example_renewable_generation-example_renewable_generation_wf_update\",\"writeBackMode\":\"upsert\",\"writeBackTableId\":\"renewable_generation\",\"writeBackSheetName\":\"新能源发电量\",\"writeBackKeyField\":\"记录ID\",\"writeBackKeyFormField\":\"记录ID\",\"writeBackFieldMap\":{\"记录ID\":\"记录ID\",\"日期\":\"日期\",\"场站\":\"场站\",\"发电类型\":\"发电类型\",\"发电量MWh\":\"发电量MWh\",\"资源指标\":\"资源指标\",\"限电损失MWh\":\"限电损失MWh\",\"设备可用率\":\"设备可用率\"}}"
           }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 640,
+            "y": 160
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"success\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"成功事件\\\",\\\"description\\\":\\\"提交成功事件\\\"},{\\\"name\\\":\\\"changeLog\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"变更记录\\\",\\\"description\\\":\\\"本次提交的字段差异\\\"},{\\\"name\\\":\\\"writeBack\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"写回动作\\\",\\\"description\\\":\\\"提交后的写回指令\\\"},{\\\"name\\\":\\\"fileData\\\",\\\"type\\\":\\\"any\\\",\\\"label\\\":\\\"文件数据\\\",\\\"description\\\":\\\"导出的文件数据\\\"}]\"}"
+          }
         }
       ],
-      "edges": []
+      "edges": [
+        {
+          "id": "edge_import_formData",
+          "source": "workflow:import",
+          "target": "submit",
+          "sourceHandle": "out:formData",
+          "targetHandle": "in:formData"
+        },
+        {
+          "id": "edge_import_originalData",
+          "source": "workflow:import",
+          "target": "submit",
+          "sourceHandle": "out:originalData",
+          "targetHandle": "in:originalData"
+        },
+        {
+          "id": "edge_submit_success",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:success",
+          "targetHandle": "in:success"
+        },
+        {
+          "id": "edge_submit_changeLog",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:changeLog",
+          "targetHandle": "in:changeLog"
+        },
+        {
+          "id": "edge_submit_writeBack",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:writeBack",
+          "targetHandle": "in:writeBack"
+        },
+        {
+          "id": "edge_submit_fileData",
+          "source": "submit",
+          "target": "workflow:export",
+          "sourceHandle": "out:fileData",
+          "targetHandle": "in:fileData"
+        }
+      ]
     },
     {
       "id": "example_renewable_generation_wf_stats",
@@ -52,27 +186,15 @@
       "updatedAt": "2026-07-06T18:00:00.000Z",
       "nodes": [
         {
-          "id": "var_rows",
-          "type": "generic",
-          "specId": "generic:variable-input",
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
           "position": {
             "x": 60,
-            "y": 80
+            "y": 180
           },
           "data": {
-            "propertiesJson": "{\"varName\":\"rows\",\"varType\":\"array\",\"varValue\":[{\"记录ID\":8001,\"日期\":\"2026-07-01\",\"场站\":\"青海光伏一站\",\"发电类型\":\"光伏\",\"发电量MWh\":126.5,\"资源指标\":7.2,\"限电损失MWh\":4.5,\"设备可用率\":98.6},{\"记录ID\":8002,\"日期\":\"2026-07-02\",\"场站\":\"青海光伏一站\",\"发电类型\":\"光伏\",\"发电量MWh\":130.1,\"资源指标\":7.5,\"限电损失MWh\":3.2,\"设备可用率\":99.1},{\"记录ID\":8003,\"日期\":\"2026-07-03\",\"场站\":\"甘肃风电二场\",\"发电类型\":\"风电\",\"发电量MWh\":188.4,\"资源指标\":8.9,\"限电损失MWh\":6.8,\"设备可用率\":96.8},{\"记录ID\":8004,\"日期\":\"2026-07-04\",\"场站\":\"甘肃风电二场\",\"发电类型\":\"风电\",\"发电量MWh\":176.2,\"资源指标\":7.8,\"限电损失MWh\":8.1,\"设备可用率\":95.9},{\"记录ID\":8005,\"日期\":\"2026-07-05\",\"场站\":\"宁夏储能联营\",\"发电类型\":\"储能\",\"发电量MWh\":92.7,\"资源指标\":5.4,\"限电损失MWh\":1.2,\"设备可用率\":99.4}]}"
-          }
-        },
-        {
-          "id": "var_siteName",
-          "type": "generic",
-          "specId": "generic:variable-input",
-          "position": {
-            "x": 60,
-            "y": 170
-          },
-          "data": {
-            "propertiesJson": "{\"varName\":\"siteName\",\"varType\":\"string\",\"varValue\":\"全部\"}"
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"rows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"rows\\\",\\\"description\\\":\\\"rows 输入\\\"},{\\\"name\\\":\\\"siteName\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"siteName\\\",\\\"description\\\":\\\"siteName 输入\\\"}]\"}"
           }
         },
         {
@@ -86,22 +208,48 @@
           "data": {
             "propertiesJson": "{\"inputPorts\":{\"rows\":\"array\",\"siteName\":\"string\"},\"outputPorts\":{\"summary\":\"string\",\"rows\":\"array\"},\"script\":\"const rows = Array.isArray(inputs.rows) ? inputs.rows : [];\\nconst siteName = String(inputs.siteName || '全部');\\nconst filtered = siteName === '全部' ? rows : rows.filter((row) => String(row?.场站 || '') === siteName);\\nconst groups = new Map();\\nfor (const row of filtered) {\\n  const key = String(row?.场站 || '未分配');\\n  const bucket = groups.get(key) || { 场站: key, 记录数: 0, 总发电量: 0, 可用率合计: 0 };\\n  bucket.记录数 += 1;\\n  bucket.总发电量 += Number(row?.发电量MWh || 0);\\n  bucket.可用率合计 += Number(row?.设备可用率 || 0);\\n  groups.set(key, bucket);\\n}\\nreturn {\\n  summary: `共统计 ${filtered.length} 条发电记录，可用于快速比对各场站发电表现。`,\\n  rows: Array.from(groups.values()).map((item) => ({\\n    场站: item.场站,\\n    记录数: item.记录数,\\n    总发电量: Number(item.总发电量.toFixed(1)),\\n    平均可用率: item.记录数 ? Number((item.可用率合计 / item.记录数).toFixed(2)) : 0,\\n  })),\\n};\"}"
           }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 680,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"summary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"summary\\\",\\\"description\\\":\\\"summary 输出\\\"},{\\\"name\\\":\\\"rows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"rows\\\",\\\"description\\\":\\\"rows 输出\\\"}]\"}"
+          }
         }
       ],
       "edges": [
         {
-          "id": "edge_rows",
-          "source": "var_rows",
+          "id": "edge_import_rows",
+          "source": "workflow:import",
           "target": "script",
-          "sourceHandle": "out:value",
+          "sourceHandle": "out:rows",
           "targetHandle": "in:rows"
         },
         {
-          "id": "edge_siteName",
-          "source": "var_siteName",
+          "id": "edge_import_siteName",
+          "source": "workflow:import",
           "target": "script",
-          "sourceHandle": "out:value",
+          "sourceHandle": "out:siteName",
           "targetHandle": "in:siteName"
+        },
+        {
+          "id": "edge_export_summary",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:summary",
+          "targetHandle": "in:summary"
+        },
+        {
+          "id": "edge_export_rows",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:rows",
+          "targetHandle": "in:rows"
         }
       ]
     },
@@ -113,39 +261,15 @@
       "updatedAt": "2026-07-06T18:00:00.000Z",
       "nodes": [
         {
-          "id": "var_rows",
-          "type": "generic",
-          "specId": "generic:variable-input",
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
           "position": {
             "x": 60,
-            "y": 80
+            "y": 180
           },
           "data": {
-            "propertiesJson": "{\"varName\":\"rows\",\"varType\":\"array\",\"varValue\":[{\"记录ID\":8001,\"日期\":\"2026-07-01\",\"场站\":\"青海光伏一站\",\"发电类型\":\"光伏\",\"发电量MWh\":126.5,\"资源指标\":7.2,\"限电损失MWh\":4.5,\"设备可用率\":98.6},{\"记录ID\":8002,\"日期\":\"2026-07-02\",\"场站\":\"青海光伏一站\",\"发电类型\":\"光伏\",\"发电量MWh\":130.1,\"资源指标\":7.5,\"限电损失MWh\":3.2,\"设备可用率\":99.1},{\"记录ID\":8003,\"日期\":\"2026-07-03\",\"场站\":\"甘肃风电二场\",\"发电类型\":\"风电\",\"发电量MWh\":188.4,\"资源指标\":8.9,\"限电损失MWh\":6.8,\"设备可用率\":96.8},{\"记录ID\":8004,\"日期\":\"2026-07-04\",\"场站\":\"甘肃风电二场\",\"发电类型\":\"风电\",\"发电量MWh\":176.2,\"资源指标\":7.8,\"限电损失MWh\":8.1,\"设备可用率\":95.9},{\"记录ID\":8005,\"日期\":\"2026-07-05\",\"场站\":\"宁夏储能联营\",\"发电类型\":\"储能\",\"发电量MWh\":92.7,\"资源指标\":5.4,\"限电损失MWh\":1.2,\"设备可用率\":99.4}]}"
-          }
-        },
-        {
-          "id": "var_siteName",
-          "type": "generic",
-          "specId": "generic:variable-input",
-          "position": {
-            "x": 60,
-            "y": 170
-          },
-          "data": {
-            "propertiesJson": "{\"varName\":\"siteName\",\"varType\":\"string\",\"varValue\":\"全部\"}"
-          }
-        },
-        {
-          "id": "var_adjustRatio",
-          "type": "generic",
-          "specId": "generic:variable-input",
-          "position": {
-            "x": 60,
-            "y": 260
-          },
-          "data": {
-            "propertiesJson": "{\"varName\":\"adjustRatio\",\"varType\":\"number\",\"varValue\":3}"
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"rows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"rows\\\",\\\"description\\\":\\\"rows 输入\\\"},{\\\"name\\\":\\\"siteName\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"siteName\\\",\\\"description\\\":\\\"siteName 输入\\\"},{\\\"name\\\":\\\"adjustRatio\\\",\\\"type\\\":\\\"number\\\",\\\"label\\\":\\\"adjustRatio\\\",\\\"description\\\":\\\"adjustRatio 输入\\\"}]\"}"
           }
         },
         {
@@ -159,29 +283,55 @@
           "data": {
             "propertiesJson": "{\"inputPorts\":{\"rows\":\"array\",\"siteName\":\"string\",\"adjustRatio\":\"number\"},\"outputPorts\":{\"summary\":\"string\",\"rows\":\"array\"},\"script\":\"const rows = Array.isArray(inputs.rows) ? inputs.rows : [];\\nconst siteName = String(inputs.siteName || '全部');\\nconst adjustRatio = Number(inputs.adjustRatio || 0);\\nconst filtered = rows.filter((row) => siteName === '全部' || String(row?.场站 || '') === siteName);\\nreturn {\\n  summary: `已为 ${filtered.length} 条记录生成批量修正结果，修正系数 ${adjustRatio}% 。`,\\n  rows: filtered.map((row) => {\\n    const generation = Number(row?.发电量MWh || 0);\\n    const curtailment = Number(row?.限电损失MWh || 0);\\n    const net = Number(((generation - curtailment) * (1 + adjustRatio / 100)).toFixed(1));\\n    return {\\n      记录ID: row?.记录ID,\\n      场站: row?.场站,\\n      修正后净发电量: net,\\n      是否异常: Number(row?.设备可用率 || 0) < 96 || net < generation * 0.85 ? '是' : '否',\\n    };\\n  }),\\n};\"}"
           }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 680,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"summary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"summary\\\",\\\"description\\\":\\\"summary 输出\\\"},{\\\"name\\\":\\\"rows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"rows\\\",\\\"description\\\":\\\"rows 输出\\\"}]\"}"
+          }
         }
       ],
       "edges": [
         {
-          "id": "edge_rows",
-          "source": "var_rows",
+          "id": "edge_import_rows",
+          "source": "workflow:import",
           "target": "script",
-          "sourceHandle": "out:value",
+          "sourceHandle": "out:rows",
           "targetHandle": "in:rows"
         },
         {
-          "id": "edge_siteName",
-          "source": "var_siteName",
+          "id": "edge_import_siteName",
+          "source": "workflow:import",
           "target": "script",
-          "sourceHandle": "out:value",
+          "sourceHandle": "out:siteName",
           "targetHandle": "in:siteName"
         },
         {
-          "id": "edge_adjustRatio",
-          "source": "var_adjustRatio",
+          "id": "edge_import_adjustRatio",
+          "source": "workflow:import",
           "target": "script",
-          "sourceHandle": "out:value",
+          "sourceHandle": "out:adjustRatio",
           "targetHandle": "in:adjustRatio"
+        },
+        {
+          "id": "edge_export_summary",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:summary",
+          "targetHandle": "in:summary"
+        },
+        {
+          "id": "edge_export_rows",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:rows",
+          "targetHandle": "in:rows"
         }
       ]
     },
@@ -193,39 +343,15 @@
       "updatedAt": "2026-07-06T18:00:00.000Z",
       "nodes": [
         {
-          "id": "var_rows",
-          "type": "generic",
-          "specId": "generic:variable-input",
+          "id": "workflow:import",
+          "type": "formflow",
+          "specId": "workflow:import",
           "position": {
             "x": 60,
-            "y": 80
+            "y": 180
           },
           "data": {
-            "propertiesJson": "{\"varName\":\"rows\",\"varType\":\"array\",\"varValue\":[{\"记录ID\":8001,\"日期\":\"2026-07-01\",\"场站\":\"青海光伏一站\",\"发电类型\":\"光伏\",\"发电量MWh\":126.5,\"资源指标\":7.2,\"限电损失MWh\":4.5,\"设备可用率\":98.6},{\"记录ID\":8002,\"日期\":\"2026-07-02\",\"场站\":\"青海光伏一站\",\"发电类型\":\"光伏\",\"发电量MWh\":130.1,\"资源指标\":7.5,\"限电损失MWh\":3.2,\"设备可用率\":99.1},{\"记录ID\":8003,\"日期\":\"2026-07-03\",\"场站\":\"甘肃风电二场\",\"发电类型\":\"风电\",\"发电量MWh\":188.4,\"资源指标\":8.9,\"限电损失MWh\":6.8,\"设备可用率\":96.8},{\"记录ID\":8004,\"日期\":\"2026-07-04\",\"场站\":\"甘肃风电二场\",\"发电类型\":\"风电\",\"发电量MWh\":176.2,\"资源指标\":7.8,\"限电损失MWh\":8.1,\"设备可用率\":95.9},{\"记录ID\":8005,\"日期\":\"2026-07-05\",\"场站\":\"宁夏储能联营\",\"发电类型\":\"储能\",\"发电量MWh\":92.7,\"资源指标\":5.4,\"限电损失MWh\":1.2,\"设备可用率\":99.4}]}"
-          }
-        },
-        {
-          "id": "var_siteName",
-          "type": "generic",
-          "specId": "generic:variable-input",
-          "position": {
-            "x": 60,
-            "y": 170
-          },
-          "data": {
-            "propertiesJson": "{\"varName\":\"siteName\",\"varType\":\"string\",\"varValue\":\"全部\"}"
-          }
-        },
-        {
-          "id": "var_days",
-          "type": "generic",
-          "specId": "generic:variable-input",
-          "position": {
-            "x": 60,
-            "y": 260
-          },
-          "data": {
-            "propertiesJson": "{\"varName\":\"days\",\"varType\":\"number\",\"varValue\":3}"
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"rows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"rows\\\",\\\"description\\\":\\\"rows 输入\\\"},{\\\"name\\\":\\\"siteName\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"siteName\\\",\\\"description\\\":\\\"siteName 输入\\\"},{\\\"name\\\":\\\"days\\\",\\\"type\\\":\\\"number\\\",\\\"label\\\":\\\"days\\\",\\\"description\\\":\\\"days 输入\\\"}]\"}"
           }
         },
         {
@@ -239,29 +365,55 @@
           "data": {
             "propertiesJson": "{\"inputPorts\":{\"rows\":\"array\",\"siteName\":\"string\",\"days\":\"number\"},\"outputPorts\":{\"summary\":\"string\",\"rows\":\"array\"},\"script\":\"const rows = Array.isArray(inputs.rows) ? inputs.rows : [];\\nconst siteName = String(inputs.siteName || '全部');\\nconst days = Math.max(1, Number(inputs.days || 1));\\nconst filtered = rows.filter((row) => siteName === '全部' || String(row?.场站 || '') === siteName);\\nconst base = filtered.length ? filtered.reduce((sum, row) => sum + Number(row?.发电量MWh || 0), 0) / filtered.length : 0;\\nconst site = siteName === '全部' ? '综合预测' : siteName;\\nreturn {\\n  summary: `已基于历史日电量生成未来 ${days} 天的场站发电预测。`,\\n  rows: Array.from({ length: days }, (_, index) => ({\\n    日期: `D+${index + 1}`,\\n    预测场站: site,\\n    预测发电量MWh: Number((base * (1 + 0.01 * (index + 1))).toFixed(1)),\\n  })),\\n};\"}"
           }
+        },
+        {
+          "id": "workflow:export",
+          "type": "formflow",
+          "specId": "workflow:export",
+          "position": {
+            "x": 680,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"summary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"summary\\\",\\\"description\\\":\\\"summary 输出\\\"},{\\\"name\\\":\\\"rows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"rows\\\",\\\"description\\\":\\\"rows 输出\\\"}]\"}"
+          }
         }
       ],
       "edges": [
         {
-          "id": "edge_rows",
-          "source": "var_rows",
+          "id": "edge_import_rows",
+          "source": "workflow:import",
           "target": "script",
-          "sourceHandle": "out:value",
+          "sourceHandle": "out:rows",
           "targetHandle": "in:rows"
         },
         {
-          "id": "edge_siteName",
-          "source": "var_siteName",
+          "id": "edge_import_siteName",
+          "source": "workflow:import",
           "target": "script",
-          "sourceHandle": "out:value",
+          "sourceHandle": "out:siteName",
           "targetHandle": "in:siteName"
         },
         {
-          "id": "edge_days",
-          "source": "var_days",
+          "id": "edge_import_days",
+          "source": "workflow:import",
           "target": "script",
-          "sourceHandle": "out:value",
+          "sourceHandle": "out:days",
           "targetHandle": "in:days"
+        },
+        {
+          "id": "edge_export_summary",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:summary",
+          "targetHandle": "in:summary"
+        },
+        {
+          "id": "edge_export_rows",
+          "source": "script",
+          "target": "workflow:export",
+          "sourceHandle": "out:rows",
+          "targetHandle": "in:rows"
         }
       ]
     }

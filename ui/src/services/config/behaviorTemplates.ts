@@ -154,12 +154,10 @@ ctx.showMessage('校验通过', 'success');`,
 // 根据「工号」查询员工信息
 const empId = ctx.getValue('工号');
 if (empId) {
-  const rows = ctx.querySheet('员工信息', { '工号': empId });
-  if (rows.length > 0) {
-    const row = rows[0];
-    ctx.setValue('姓名', row['姓名'] || '');
-    ctx.setValue('部门', row['部门'] || '');
-    ctx.showMessage('已自动填充员工信息', 'info');
+  const row = ctx.findRow('员工信息', { '工号': empId }, { strictUnique: false });
+  if (row) {
+    await ctx.fillForm(row, { '姓名': '姓名', '部门': '部门' });
+    await ctx.showMessage('已自动填充员工信息', 'info');
   }
 }`,
     fields: ['工号', '姓名', '部门'],
@@ -188,13 +186,51 @@ ctx.showMessage('数据已格式化', 'info');`,
     event: 'onFormLoad',
     code: `// 表单加载默认值
 const today = new Date().toISOString().slice(0, 10);
-if (!ctx.getValue('创建日期')) {
-  ctx.setValue('创建日期', today);
-}
-if (!ctx.getValue('状态')) {
-  ctx.setValue('状态', '待处理');
-}`,
+await ctx.resetForm({
+  defaults: {
+    创建日期: ctx.getValue('创建日期') || today,
+    状态: ctx.getValue('状态') || '待处理',
+  },
+});`,
     fields: ['创建日期', '状态'],
+  },
+  {
+    id: 'tpl_crud_require_fields',
+    name: 'CRUD 必填校验',
+    description: '提交前用 requireFields 一次性检查多个字段',
+    category: '校验',
+    event: 'onSubmit',
+    code: `// CRUD 必填校验
+const check = await ctx.requireFields(['姓名', '手机号', '状态']);
+if (!check.valid) return;`,
+    fields: ['姓名', '手机号', '状态'],
+  },
+  {
+    id: 'tpl_crud_next_sequence',
+    name: 'CRUD 自动编号',
+    description: '生成当前数据表的下一个编号并写回表单',
+    category: '提交',
+    event: 'onFormLoad',
+    code: `// CRUD 自动编号
+const nextId = ctx.nextSequence('employees', '员工ID', { start: 1000 });
+await ctx.setValue('员工ID', nextId);`,
+    fields: ['员工ID'],
+  },
+  {
+    id: 'tpl_crud_reset_form',
+    name: 'CRUD 提交后重置',
+    description: '提交成功后清空字段、重写默认值并聚焦首字段',
+    category: '提交',
+    event: 'onSubmitSuccess',
+    code: `// CRUD 提交后重置
+const nextId = ctx.nextSequence('employees', '员工ID', { start: 1000 });
+await ctx.resetForm({
+  clearFields: ['姓名', '手机号', '备注'],
+  defaults: { 员工ID: nextId, 状态: '草稿' },
+  focusField: '姓名',
+  message: '表单已重置，可继续录入。',
+});`,
+    fields: ['员工ID', '姓名', '手机号', '备注', '状态'],
   },
 
   // ── UI ──────────────────────────────────────────

@@ -630,6 +630,32 @@ const genericNodeSpecs: FlowNodeSpec[] = [
     keywords: ['保存 Excel', '写出文件', '下载工作簿', '回写文件', 'save workbook', 'write file'],
   },
   {
+    id: 'workflow:import',
+    label: '流程导入',
+    description: '流程级统一入口，按自定义字段向下游输出表单触发数据',
+    category: '流程 · 接口',
+    kind: 'generic',
+    properties: [
+      { name: 'outputPorts', label: '导入字段', type: 'port-definition', default: '[]', description: '定义可传入流程的字段' },
+    ],
+    ports: [],
+    keywords: ['流程入口', '导入', 'workflow input', 'workflow import', 'schema'],
+  },
+  {
+    id: 'workflow:export',
+    label: '流程导出',
+    description: '流程级统一出口，按自定义字段收集流程结果',
+    category: '流程 · 接口',
+    kind: 'generic',
+    properties: [
+      { name: 'inputPorts', label: '导出字段', type: 'port-definition', default: '[]', description: '定义返回给表单的字段' },
+    ],
+    ports: [
+      { name: 'result', label: '结果对象', type: 'object', direction: 'output', description: '透传的对象结果' },
+    ],
+    keywords: ['流程出口', '导出', 'workflow output', 'workflow export', 'schema'],
+  },
+  {
     id: 'generic:variable-input',
     label: '变量输入',
     description: '定义一个可复用的变量',
@@ -859,7 +885,7 @@ export interface NodeRegistry {
 let registryInstance: NodeRegistry | null = null;
 let registryPromise: Promise<NodeRegistry> | null = null;
 
-export const EXPECTED_NODE_COUNT = 134;
+export const EXPECTED_NODE_COUNT = 144;
 
 export const CURATED_XLSX_METHODS = new Set([
   'XLSX.read',
@@ -880,13 +906,23 @@ export const CURATED_XLSX_METHODS = new Set([
 
 const DISCOVERY_KEYWORDS: Record<string, string[]> = {
   'generic:file-picker': ['文件上传', '导入 Excel', '打开文件', 'upload', 'browse'],
+  'workflow:import': ['流程入口', '导入节点', '上下文入口', 'workflow import'],
+  'workflow:export': ['流程出口', '导出节点', '结果出口', 'workflow export'],
   'generic:worksheet-select': ['选择工作表', 'Sheet 选择', '标签页', 'worksheet', 'tab'],
   'generic:range-select': ['区域选择', '范围选择', 'A1 地址', 'range', 'area'],
   'generic:range-intersection': ['区域交集', '重叠范围', '复杂区域', 'intersection', 'intersect', 'overlap'],
   'generic:variable-input': ['变量', '参数', '常量', 'variable', 'parameter', 'constant'],
+  'generic:criteria-filter': ['多条件筛选', '组合筛选', '推荐筛选', 'criteria', 'filter'],
+  'generic:pick-record': ['TopN', '最佳候选', '首选项', 'pick', 'sort'],
   'generic:text-input': ['文本', '字符串', '输入框', 'text', 'string', 'input'],
   'generic:number-input': ['数字', '数值', '输入框', 'number', 'numeric', 'input'],
   'generic:output-display': ['输出', '显示', '查看结果', '预览', '调试', 'output', 'preview'],
+  'behavior-set-values': ['批量赋值', '批量回填', '推荐结果回填', 'set values', 'patch'],
+  'behavior-query-list': ['查询列表', '加载列表', '查多条', 'crud', 'lookup list'],
+  'behavior-next-sequence': ['下一个编号', '自动编号', 'sequence', 'crud'],
+  'behavior-fill-form': ['回填表单', '编辑加载', 'fill form', 'lookup edit'],
+  'behavior-require-fields': ['必填校验', '提交校验', 'require fields', 'crud'],
+  'behavior-reset-form': ['重置表单', '下一条录入', 'reset form', 'crud'],
   'scenario:excel-to-json-schema': ['读取 Excel', '导入表格', '生成字段', 'schema', 'import'],
   'scenario:json-to-xlsx-export': ['导出 Excel', 'JSON 导出', 'xlsx', 'export'],
   'scenario:append-rows': ['追加行', '新增明细', 'append', 'rows'],

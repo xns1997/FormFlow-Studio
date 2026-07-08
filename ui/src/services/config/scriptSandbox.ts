@@ -2,6 +2,21 @@ import type { RuntimeState } from '../../models';
 import type { SrcTableEntry } from '../../project/types';
 import { setFormValue, setComponentState, addBehaviorLog, setValidationError, clearValidationError } from '../engine/runtime';
 import { validateField } from '../engine/validator';
+import {
+  buildFillFormPatch,
+  buildResetFormPatch,
+  findRowInTables,
+  findRowsInTables,
+  nextSequenceInTables,
+  querySheetRows,
+  validateRequiredFields,
+  type FillFormOptions,
+  type FindRowOptions,
+  type FindRowsOptions,
+  type NextSequenceOptions,
+  type RequireFieldsOptions,
+  type ResetFormOptions,
+} from '../engine/crudHelpers';
 
 export interface SandboxContext {
   getValue: (fieldId: string) => unknown;
@@ -29,6 +44,12 @@ export interface SandboxContext {
   showMessage: (message: string, type?: string) => void;
   validateField: (fieldId: string) => boolean;
   querySheet: (sheetId: string, filter?: Record<string, unknown>) => unknown[];
+  findRows: (sheetId: string, criteria?: Record<string, unknown>, options?: FindRowsOptions) => unknown[];
+  findRow: (sheetId: string, criteria: Record<string, unknown>, options?: FindRowOptions) => unknown;
+  nextSequence: (sheetId: string, column: string, options?: NextSequenceOptions) => number;
+  fillForm: (record: Record<string, unknown> | null | undefined, fieldMap?: Record<string, string>, options?: FillFormOptions) => Promise<unknown>;
+  requireFields: (fields: string[], options?: RequireFieldsOptions) => Promise<unknown>;
+  resetForm: (options?: ResetFormOptions) => Promise<unknown>;
   updateRow: (rowId: string, patch: Record<string, unknown>) => void;
   submit: () => void;
   getState: () => RuntimeState;
@@ -188,29 +209,66 @@ export function createSandboxContext(
       return true;
     },
     querySheet: (sheetId: string, filter?: Record<string, unknown>) => {
-      for (const table of tables) {
-        for (const sheet of table.sheets) {
-          const fullId = `${table.id}:${sheet.name}`;
-          if (fullId === sheetId || sheet.name === sheetId || table.id === sheetId) {
-            let rows = sheet.preview;
-            if (filter && typeof filter === 'object') {
-              rows = rows.filter((row) =>
-                Object.entries(filter).every(([k, v]) => row[k] === v)
-              );
-            }
-            setState((prev) => addBehaviorLog(prev, {
-              timestamp: Date.now(), level: 'info', source: 'js',
-              message: `querySheet("${sheetId}") → ${rows.length} 行`,
-            }));
-            return rows;
-          }
-        }
+      const rows = querySheetRows(tables, sheetId, filter) as unknown[];
+      if (rows.length > 0 || tables.some((table) => table.id === sheetId || table.sheets.some((sheet) => sheet.name === sheetId || `${table.id}:${sheet.name}` === sheetId))) {
+        setState((prev) => addBehaviorLog(prev, {
+          timestamp: Date.now(), level: 'info', source: 'js',
+          message: `querySheet("${sheetId}") → ${rows.length} 行`,
+        }));
+        return rows;
       }
       setState((prev) => addBehaviorLog(prev, {
         timestamp: Date.now(), level: 'warn', source: 'js',
         message: `querySheet("${sheetId}") → 未找到`,
       }));
       return [];
+    },
+    findRows: (sheetId: string, criteria: Record<string, unknown> = {}, options: FindRowsOptions = {}) => {
+      const rows = findRowsInTables(tables, sheetId, criteria, options);
+      appendLog('info', `findRows("${sheetId}") → ${rows.length} 行`);
+      return rows;
+    },
+    findRow: (sheetId: string, criteria: Record<string, unknown>, options: FindRowOptions = {}) => {
+      const row = findRowInTables(tables, sheetId, criteria, options);
+      appendLog('info', `findRow("${sheetId}") → ${row ? '命中' : '未命中'}`);
+      return row;
+    },
+    nextSequence: (sheetId: string, column: string, options: NextSequenceOptions = {}) => {
+      const value = nextSequenceInTables(tables, sheetId, column, options);
+      appendLog('info', `nextSequence("${sheetId}", "${column}") → ${value}`);
+      return value;
+    },
+    fillForm: async (record, fieldMap, options = {}) => {
+      const result = buildFillFormPatch(record, fieldMap, options);
+      for (const [fieldId, value] of Object.entries(result.patch)) {
+        writeFieldValue(fieldId, value, 'setValue');
+      }
+      for (const [fieldId, value] of Object.entries(result.originalPatch)) {
+        writeFieldValue(fieldId, value, 'setValue');
+      }
+      for (const componentId of result.enableComponentIds) {
+        localDisabled[componentId] = false;
+        setState((prev) => setComponentState(prev, componentId, { disabled: false }));
+      }
+      appendLog('info', `fillForm() → ${result.appliedFields.join(', ') || '0 fields'}`);
+      return result;
+    },
+    requireFields: async (fields, options = {}) => {
+      const result = validateRequiredFields(localValues, fields, options);
+      if (!result.valid && result.message) {
+        setState((prev) => addBehaviorLog(prev, { timestamp: Date.now(), level: (options.level || 'error') as any, source: 'js', message: result.message }));
+      }
+      appendLog('info', `requireFields(${JSON.stringify(fields)}) → ${result.valid}`);
+      return result;
+    },
+    resetForm: async (options = {}) => {
+      const result = buildResetFormPatch(localValues, options);
+      for (const [fieldId, value] of Object.entries(result.patch)) {
+        writeFieldValue(fieldId, value, 'setValue');
+      }
+      if (result.message) appendLog('info', result.message);
+      if (result.focusedField) appendLog('info', `focusField("${result.focusedField}") [沙箱模拟]`);
+      return result;
     },
     updateRow: (rowId: string, patch: Record<string, unknown>) => {
       setState((prev) => {

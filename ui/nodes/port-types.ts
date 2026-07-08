@@ -153,6 +153,10 @@ reg('cell-ref', (v) => {
 // 数据集合类型
 reg('json-rows', (v) => {
   if (v === null || v === undefined) return { valid: false, error: 'json-rows 为空' };
+  const ws = v as any;
+  if (ws?.__fromProject && Array.isArray(ws.preview)) {
+    return { valid: true, normalized: ws.preview };
+  }
   if (!Array.isArray(v)) return { valid: false, error: `期望 JSON 行数组，实际: ${typeof v}` };
   if (v.length === 0) return { valid: true, normalized: v };
   if (typeof v[0] === 'object' && !Array.isArray(v[0])) return { valid: true, normalized: v };

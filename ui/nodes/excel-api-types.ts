@@ -3,7 +3,7 @@ export type PropertyType = 'string' | 'number' | 'boolean' | 'enum' | 'array' | 
   | 'json-rows' | 'aoa' | 'headers' | 'options' | 'file-data'
   | 'csv-string' | 'html-string' | 'json-string'
   | 'filter' | 'sort-config' | 'style' | 'validation-rule'
-  | 'trigger';
+  | 'trigger' | 'port-definition' | 'code';
 
 export type PortDirection = 'input' | 'output' | 'both';
 

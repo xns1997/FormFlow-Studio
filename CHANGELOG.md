@@ -1,5 +1,60 @@
 # Changelog
 
+## [0.7.0] - 2026-07-08
+
+### 工作流 I/O 节点
+- **流程导入节点** (`workflow:import`): 流程级统一入口，按自定义字段向下游输出表单触发数据
+- **流程导出节点** (`workflow:export`): 流程级统一出口，按自定义字段收集流程结果
+- 支持 `port-definition` 属性类型，通过表格或 JSON 编辑端口定义
+
+### CRUD 节点包（6 个新节点）
+- `behavior-set-values`: 批量赋值节点，支持对象输入或多键值对配置，一次性设置多个表单字段
+- `behavior-query-list`: 列表查询节点，从数据表查询多条记录，支持筛选条件和字段映射
+- `behavior-next-sequence`: 自动编号节点，读取数据表最大编号并生成下一个序号
+- `behavior-fill-form`: 表单回填节点，根据查询条件加载记录并回填到表单字段
+- `behavior-require-fields`: 必填校验节点，检查指定字段是否已填写，未通过则阻止提交
+- `behavior-reset-form`: 表单重置节点，清空所有字段值并聚焦首个字段，用于连续录入场景
+
+### 数据处理节点（2 个新节点）
+- `generic-criteria-filter`: 多条件筛选节点，支持 `contains/equals/gt/lt/gte/lte/startsWith/endsWith/isEmpty/isNotEmpty` 等操作符，多个条件可选 AND/OR 组合
+- `generic-pick-record`: TopN 记录选取节点，支持升序/降序排序并取前 N 条记录
+
+### 输入端口增强
+- **多连接支持**: 输入端口可接收多条连接，通过 `__inputSelections` 选择使用哪条连接的数据
+- **输入覆盖** (`__inputOverrides`): 可直接在节点属性中配置输入值，无需连接上游节点
+- **项目数据表绑定**: 支持从项目数据表直接绑定到节点输入端口，自动提取表头和预览数据
+- 去重逻辑：连接边自动去重，防止重复连接
+- 输入收集逻辑重构：按端口分组处理，支持边选择和属性覆盖优先级
+
+### 新增示例项目
+- `example_valve_selection_v2`（阀门二代选型）: 使用高阶推荐节点实现"多条件筛选 + 候选选取 + 批量回填"的选型推荐流程
+- `example_valve_selection_v3`（阀门三代选型）: 按业务阶段重构为"受理 → 技术画像 → 候选生成 → 评分排序 → 提案确认 → 案例归档"的多流程样板
+
+### 工程改进
+- **统一初始化脚本**: 新增 `scripts/init-env.sh` (macOS/Linux) 和 `scripts/init-env.ps1` (Windows)，统一管理 Node、pnpm、Python venv 和依赖安装
+- **PortTableEditor 增强**: 支持表格/JSON 双模式编辑，新增端口描述字段
+- 节点总数从 134 增加到 **144** 个
+- 示例生成脚本重构：提取 `workflowNode`、`workflowEdge`、`portDefs` 等工具函数，支持更复杂的示例场景
+- 所有示例项目的工作流数据更新，集成新节点
+
+### 新增文件
+- `ui/nodes/behavior-set-values/schema.json` — 批量赋值节点
+- `ui/nodes/behavior-query-list/schema.json` — 列表查询节点
+- `ui/nodes/behavior-next-sequence/schema.json` — 自动编号节点
+- `ui/nodes/behavior-fill-form/schema.json` — 表单回填节点
+- `ui/nodes/behavior-require-fields/schema.json` — 必填校验节点
+- `ui/nodes/behavior-reset-form/schema.json` — 表单重置节点
+- `ui/nodes/generic-criteria-filter/schema.json` — 多条件筛选节点
+- `ui/nodes/generic-pick-record/schema.json` — TopN 记录选取节点
+- `ui/src/services/engine/crudHelpers.ts` — CRUD 节点公共辅助函数
+- `ui/src/services/engine/workflowIo.ts` — 工作流 I/O 脚手架生成
+- `scripts/init-env.sh` — macOS/Linux 初始化脚本
+- `scripts/init-env.ps1` — Windows 初始化脚本
+- `projects/data/example_valve_selection_v2.formflow/` — 阀门二代选型项目
+- `projects/data/example_valve_selection_v3.formflow/` — 阀门三代选型项目
+
+---
+
 ## [0.6.0] - 2026-07-07
 
 ### UI 代码结构重构

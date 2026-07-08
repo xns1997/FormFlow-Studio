@@ -3,7 +3,7 @@
 import type {
   ProjectStructure, ProjectPackage, FormIndex, DataIndex,
   DataMetaFile, WorkflowsFile, OutputsFile,
-  DesignFile, BehaviorFile, WorkflowFile, OutputFile, SrcTableEntry,
+  DesignFile, BehaviorFile, WorkflowFile, OutputFile, SrcTableEntry, FormEntry,
 } from './types';
 import {
   FORMS_DIR, DATA_DIR, WORKFLOWS_DIR, OUTPUTS_DIR,
@@ -45,6 +45,35 @@ async function ensureDir(dirHandle: FileSystemDirectoryHandle, ...path: string[]
     current = await current.getDirectoryHandle(segment, { create: true });
   }
   return current;
+}
+
+function buildImportedForms(
+  formIndex: FormIndex | null,
+  designs: DesignFile[],
+  behaviorsByFormId: Map<string, BehaviorFile[]>,
+): FormEntry[] {
+  if (!formIndex?.forms) return [];
+  return formIndex.forms.map((form) => {
+    const design = designs.find((item) => item.id === form.id) || designs.find((item) => item.name === form.name);
+    return {
+      id: form.id,
+      name: form.name,
+      design: design || {
+        id: form.id,
+        name: form.name,
+        formMode: 'create',
+        viewport: { zoom: 1, panX: 0, panY: 0 },
+        gridSize: 10,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        bindings: [],
+        components: [],
+      },
+      behaviors: behaviorsByFormId.get(form.id) || [],
+      createdAt: design?.createdAt || new Date().toISOString(),
+      updatedAt: design?.updatedAt || new Date().toISOString(),
+    };
+  });
 }
 
 // ── 从 ProjectStructure 导出为项目包 ──────────────────
@@ -146,10 +175,13 @@ export async function importFromPackage(
   // 2. 读取表单
   const formIndex = await readJsonFile<FormIndex>(dirHandle, `${FORMS_DIR}/${FORM_INDEX_FILE}`);
   const designs: DesignFile[] = [];
+  const behaviorsByFormId = new Map<string, BehaviorFile[]>();
   if (formIndex?.forms) {
     for (const form of formIndex.forms) {
       const design = await readJsonFile<DesignFile>(dirHandle, `${FORMS_DIR}/${form.fileName}`);
       if (design) designs.push(design);
+      const behaviors = await readJsonFile<{ behaviors?: BehaviorFile[] }>(dirHandle, `${FORMS_DIR}/${form.behaviorsFileName}`);
+      behaviorsByFormId.set(form.id, behaviors?.behaviors || []);
     }
   }
 
@@ -199,7 +231,7 @@ export async function importFromPackage(
     workflows,
     globalBehaviors: behaviors,
     sheetBehaviors,
-    forms: [],
+    forms: buildImportedForms(formIndex, designs, behaviorsByFormId),
     outputs,
     designs,
     behaviors,
@@ -310,10 +342,14 @@ export async function importFromZip(file: File): Promise<ProjectStructure | null
   const formIndexContent = await zip.file(`${FORMS_DIR}/${FORM_INDEX_FILE}`)?.async('text');
   const formIndex = formIndexContent ? JSON.parse(formIndexContent) as FormIndex : null;
   const designs: DesignFile[] = [];
+  const behaviorsByFormId = new Map<string, BehaviorFile[]>();
   if (formIndex?.forms) {
     for (const form of formIndex.forms) {
       const content = await zip.file(`${FORMS_DIR}/${form.fileName}`)?.async('text');
       if (content) designs.push(JSON.parse(content));
+      const behaviorsContent = await zip.file(`${FORMS_DIR}/${form.behaviorsFileName}`)?.async('text');
+      const parsed = behaviorsContent ? JSON.parse(behaviorsContent) as { behaviors?: BehaviorFile[] } : null;
+      behaviorsByFormId.set(form.id, parsed?.behaviors || []);
     }
   }
 
@@ -370,7 +406,7 @@ export async function importFromZip(file: File): Promise<ProjectStructure | null
     workflows,
     globalBehaviors: behaviors,
     sheetBehaviors,
-    forms: [],
+    forms: buildImportedForms(formIndex, designs, behaviorsByFormId),
     outputs,
     designs,
     behaviors,

@@ -1,0 +1,45 @@
+{
+  "kind": "formflow-project",
+  "formatVersion": 2,
+  "config": {
+    "id": "example_valve_selection_v3",
+    "name": "第三代阀门选型",
+    "description": "基于全新流程域拆分的通用阀门选型平台示例，覆盖受理、澄清、筛选、评分、提案、确认与归档。",
+    "version": "3.0.0",
+    "createdAt": "2026-07-06T18:00:00.000Z",
+    "updatedAt": "2026-07-06T18:00:00.000Z",
+    "author": "FormFlow Studio",
+    "tags": [
+      "示例",
+      "阀门",
+      "选型",
+      "第三代",
+      "流程架构"
+    ]
+  },
+  "settings": {
+    "behavior": {
+      "enableJsScripts": true,
+      "enableNodeBehavior": true,
+      "scriptTimeout": 5000,
+      "errorStrategy": "show-error",
+      "loopProtection": 100
+    },
+    "publish": {
+      "format": "json",
+      "allowWriteBack": true,
+      "generateChangeLog": true,
+      "outputFileName": "example_valve_selection_v3-export"
+    },
+    "updatedAt": "2026-07-06T18:00:00.000Z"
+  },
+  "release": {
+    "mode": "use",
+    "allowDesigner": false,
+    "allowBehaviorEditor": false,
+    "allowWorkflowEditor": false,
+    "defaultFormId": "example_valve_selection_v3_form_intake",
+    "defaultSheet": "需求受理台账",
+    "lastVerifiedAt": "2026-07-06T18:00:00.000Z"
+  }
+}

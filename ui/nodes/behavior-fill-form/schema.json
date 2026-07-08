@@ -1,0 +1,19 @@
+{
+  "id": "behavior-fill-form",
+  "label": "回填表单",
+  "description": "把单条记录按映射批量回填到表单字段和原始值字段",
+  "category": "行为 · 动作",
+  "kind": "generic",
+  "properties": [
+    { "name": "fieldMap", "label": "字段映射", "type": "json", "default": {}, "description": "数据列名到表单字段名的映射" },
+    { "name": "originalFieldMap", "label": "原始字段映射", "type": "json", "default": {}, "description": "数据列名到隐藏原始字段名的映射" },
+    { "name": "enableComponentIds", "label": "启用组件 ID", "type": "array", "default": [], "description": "回填成功后解禁的组件 ID 列表" },
+    { "name": "messageField", "label": "提示字段", "type": "string", "default": "", "description": "回填状态文案写回字段" }
+  ],
+  "ports": [
+    { "name": "record", "label": "记录", "type": "object", "direction": "input", "description": "待回填的单条记录" },
+    { "name": "matched", "label": "命中", "type": "boolean", "direction": "output", "description": "是否有记录可回填" },
+    { "name": "appliedFields", "label": "已应用字段", "type": "array", "direction": "output", "description": "实际写入的字段列表" }
+  ],
+  "keywords": ["回填表单", "fill form", "lookup edit", "crud", "patch"]
+}

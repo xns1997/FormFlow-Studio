@@ -1,0 +1,52 @@
+{
+  "sources": [
+    {
+      "id": "request_intake",
+      "fileName": "需求受理台账.json",
+      "fileType": "json",
+      "metaFile": "request_intake.meta.json",
+      "behaviorsFile": "request_intake.behaviors.json",
+      "uploadedAt": "2026-07-06T18:00:00.000Z"
+    },
+    {
+      "id": "technical_profile",
+      "fileName": "技术画像.json",
+      "fileType": "json",
+      "metaFile": "technical_profile.meta.json",
+      "behaviorsFile": "technical_profile.behaviors.json",
+      "uploadedAt": "2026-07-06T18:00:00.000Z"
+    },
+    {
+      "id": "valve_catalog",
+      "fileName": "阀门主数据.json",
+      "fileType": "json",
+      "metaFile": "valve_catalog.meta.json",
+      "behaviorsFile": "valve_catalog.behaviors.json",
+      "uploadedAt": "2026-07-06T18:00:00.000Z"
+    },
+    {
+      "id": "option_catalog",
+      "fileName": "选项附件库.json",
+      "fileType": "json",
+      "metaFile": "option_catalog.meta.json",
+      "behaviorsFile": "option_catalog.behaviors.json",
+      "uploadedAt": "2026-07-06T18:00:00.000Z"
+    },
+    {
+      "id": "selection_cases",
+      "fileName": "选型案例库.json",
+      "fileType": "json",
+      "metaFile": "selection_cases.meta.json",
+      "behaviorsFile": "selection_cases.behaviors.json",
+      "uploadedAt": "2026-07-06T18:00:00.000Z"
+    },
+    {
+      "id": "selection_audit_log",
+      "fileName": "选型审计日志.json",
+      "fileType": "json",
+      "metaFile": "selection_audit_log.meta.json",
+      "behaviorsFile": "selection_audit_log.behaviors.json",
+      "uploadedAt": "2026-07-06T18:00:00.000Z"
+    }
+  ]
+}

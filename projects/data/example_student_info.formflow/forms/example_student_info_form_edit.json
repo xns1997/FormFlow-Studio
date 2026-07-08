@@ -275,7 +275,7 @@
             "enabled": true,
             "workflowId": "example_student_info_wf_update",
             "parameterMap": {
-              "submit.formData": {
+              "workflow:import.formData": {
                 "学号": "$form.学号",
                 "姓名": "$form.姓名",
                 "班级": "$form.班级",
@@ -285,7 +285,7 @@
                 "出勤率": "$form.出勤率",
                 "风险等级": "$form.风险等级"
               },
-              "submit.originalData": {
+              "workflow:import.originalData": {
                 "学号": "$form.原始学号",
                 "姓名": "$form.原始姓名",
                 "班级": "$form.原始班级",

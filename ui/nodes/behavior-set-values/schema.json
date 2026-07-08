@@ -1,0 +1,81 @@
+{
+  "id": "behavior-set-values",
+  "label": "批量赋值",
+  "description": "将记录、列表和计数批量回填到多个表单字段",
+  "category": "行为 · 动作",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "fieldMap",
+      "label": "字段映射",
+      "type": "json",
+      "default": {},
+      "description": "字段到来源的映射，支持 $record/$records/$count/$message"
+    },
+    {
+      "name": "staticPatch",
+      "label": "固定补丁",
+      "type": "json",
+      "default": {},
+      "description": "总是先应用的字段补丁"
+    },
+    {
+      "name": "emptyPatch",
+      "label": "空结果补丁",
+      "type": "json",
+      "default": {},
+      "description": "当 record 和 records 都为空时应用"
+    }
+  ],
+  "ports": [
+    {
+      "name": "record",
+      "label": "记录",
+      "type": "object",
+      "direction": "input",
+      "description": "单条推荐记录"
+    },
+    {
+      "name": "records",
+      "label": "记录列表",
+      "type": "json-rows",
+      "direction": "input",
+      "description": "候选列表"
+    },
+    {
+      "name": "count",
+      "label": "数量",
+      "type": "number",
+      "direction": "input",
+      "description": "候选数量"
+    },
+    {
+      "name": "message",
+      "label": "消息",
+      "type": "string",
+      "direction": "input",
+      "description": "提示消息"
+    },
+    {
+      "name": "appliedFields",
+      "label": "已应用字段",
+      "type": "array",
+      "direction": "output",
+      "description": "已回填字段列表"
+    },
+    {
+      "name": "patch",
+      "label": "补丁",
+      "type": "json",
+      "direction": "output",
+      "description": "最终字段补丁"
+    }
+  ],
+  "keywords": [
+    "批量赋值",
+    "批量回填",
+    "推荐结果回填",
+    "set values",
+    "patch"
+  ]
+}

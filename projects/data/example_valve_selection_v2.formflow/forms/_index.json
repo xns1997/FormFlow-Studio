@@ -1,0 +1,23 @@
+{
+  "forms": [
+    {
+      "id": "example_valve_selection_v2_form_create",
+      "name": "客户需求录入",
+      "fileName": "example_valve_selection_v2_form_create.json",
+      "behaviorsFileName": "example_valve_selection_v2_form_create.behaviors.json"
+    },
+    {
+      "id": "example_valve_selection_v2_form_analysis",
+      "name": "候选方案分析",
+      "fileName": "example_valve_selection_v2_form_analysis.json",
+      "behaviorsFileName": "example_valve_selection_v2_form_analysis.behaviors.json"
+    },
+    {
+      "id": "example_valve_selection_v2_form_edit",
+      "name": "需求记录维护",
+      "fileName": "example_valve_selection_v2_form_edit.json",
+      "behaviorsFileName": "example_valve_selection_v2_form_edit.behaviors.json"
+    }
+  ],
+  "defaultFormId": "example_valve_selection_v2_form_create"
+}

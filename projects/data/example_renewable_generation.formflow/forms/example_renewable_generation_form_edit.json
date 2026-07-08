@@ -274,7 +274,7 @@
             "enabled": true,
             "workflowId": "example_renewable_generation_wf_update",
             "parameterMap": {
-              "submit.formData": {
+              "workflow:import.formData": {
                 "记录ID": "$form.记录ID",
                 "日期": "$form.日期",
                 "场站": "$form.场站",
@@ -284,7 +284,7 @@
                 "限电损失MWh": "$form.限电损失MWh",
                 "设备可用率": "$form.设备可用率"
               },
-              "submit.originalData": {
+              "workflow:import.originalData": {
                 "记录ID": "$form.原始记录ID",
                 "日期": "$form.原始日期",
                 "场站": "$form.原始场站",

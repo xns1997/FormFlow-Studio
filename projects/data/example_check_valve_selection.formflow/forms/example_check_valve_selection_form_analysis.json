@@ -111,12 +111,15 @@
         "label": "统计分析",
         "variant": "primary",
         "events": {
-          "onClick": "const result = await ctx.runConfiguredWorkflow({\n  rows: ctx.querySheet('valve_requests'),\n  \"medium\": String(ctx.getValue('统计介质') || '全部')\n});\nconst outputs = result.nodeResults.get('script')?.outputs || {};\nawait ctx.setValue('统计结果', outputs.rows || []);\nawait ctx.setValue('统计摘要', outputs.summary || '');\nreturn outputs.summary || '';"
+          "onClick": "const result = await ctx.runConfiguredWorkflow({\n  rows: ctx.querySheet('valve_requests'),\n  \"medium\": String(ctx.getValue('统计介质') || '全部')\n});\nconst outputs = result.nodeResults.get('workflow:export')?.outputs.result || {};\nawait ctx.setValue('统计结果', outputs.rows || []);\nawait ctx.setValue('统计摘要', outputs.summary || '');\nreturn outputs.summary || '';"
         },
         "flowTriggers": {
           "onClick": {
             "enabled": true,
-            "workflowId": "example_check_valve_selection_wf_stats"
+            "workflowId": "example_check_valve_selection_wf_stats",
+            "parameterMap": {
+              "workflow:import.medium": "$form.统计介质"
+            }
           }
         }
       }
@@ -134,12 +137,16 @@
         "label": "批量处理",
         "variant": "primary",
         "events": {
-          "onClick": "const result = await ctx.runConfiguredWorkflow({\n  rows: ctx.querySheet('valve_requests'),\n  \"medium\": String(ctx.getValue('统计介质') || '全部'),\n  \"safetyMargin\": Number(ctx.getValue('安全裕量') || 0)\n});\nconst outputs = result.nodeResults.get('script')?.outputs || {};\nawait ctx.setValue('批量结果', outputs.rows || []);\nawait ctx.setValue('批量摘要', outputs.summary || '');\nreturn outputs.summary || '';"
+          "onClick": "const result = await ctx.runConfiguredWorkflow({\n  rows: ctx.querySheet('valve_requests'),\n  \"medium\": String(ctx.getValue('统计介质') || '全部'),\n  \"safetyMargin\": Number(ctx.getValue('安全裕量') || 0)\n});\nconst outputs = result.nodeResults.get('workflow:export')?.outputs.result || {};\nawait ctx.setValue('批量结果', outputs.rows || []);\nawait ctx.setValue('批量摘要', outputs.summary || '');\nreturn outputs.summary || '';"
         },
         "flowTriggers": {
           "onClick": {
             "enabled": true,
-            "workflowId": "example_check_valve_selection_wf_batch"
+            "workflowId": "example_check_valve_selection_wf_batch",
+            "parameterMap": {
+              "workflow:import.medium": "$form.统计介质",
+              "workflow:import.safetyMargin": "$form.安全裕量"
+            }
           }
         }
       }
@@ -157,12 +164,16 @@
         "label": "预测",
         "variant": "primary",
         "events": {
-          "onClick": "const result = await ctx.runConfiguredWorkflow({\n  rows: ctx.querySheet('valve_requests'),\n  \"medium\": String(ctx.getValue('统计介质') || '全部'),\n  \"months\": Number(ctx.getValue('预测月份') || 1)\n});\nconst outputs = result.nodeResults.get('script')?.outputs || {};\nawait ctx.setValue('预测结果', outputs.rows || []);\nawait ctx.setValue('预测摘要', outputs.summary || '');\nreturn outputs.summary || '';"
+          "onClick": "const result = await ctx.runConfiguredWorkflow({\n  rows: ctx.querySheet('valve_requests'),\n  \"medium\": String(ctx.getValue('统计介质') || '全部'),\n  \"months\": Number(ctx.getValue('预测月份') || 1)\n});\nconst outputs = result.nodeResults.get('workflow:export')?.outputs.result || {};\nawait ctx.setValue('预测结果', outputs.rows || []);\nawait ctx.setValue('预测摘要', outputs.summary || '');\nreturn outputs.summary || '';"
         },
         "flowTriggers": {
           "onClick": {
             "enabled": true,
-            "workflowId": "example_check_valve_selection_wf_predict"
+            "workflowId": "example_check_valve_selection_wf_predict",
+            "parameterMap": {
+              "workflow:import.medium": "$form.统计介质",
+              "workflow:import.months": "$form.预测月份"
+            }
           }
         }
       }

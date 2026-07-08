@@ -8,6 +8,24 @@ import {
 } from './formFlowTrigger';
 import type { FlowExecutionResult } from './flowEngine';
 import { executeLinkageRules } from './formLinkage';
+import {
+  buildFillFormPatch,
+  buildResetFormPatch,
+  findRowInTables,
+  findRowsInTables,
+  nextSequenceInTables,
+  querySheetRows,
+  validateRequiredFields,
+  type FillFormOptions,
+  type FillFormResult,
+  type FindRowOptions,
+  type FindRowsOptions,
+  type NextSequenceOptions,
+  type RequireFieldsOptions,
+  type RequireFieldsResult,
+  type ResetFormOptions,
+  type ResetFormResult,
+} from './crudHelpers';
 
 export type FormEventCallback = (context: FormEventRuntimeContext, ...args: unknown[]) => unknown | Promise<unknown>;
 
@@ -49,6 +67,12 @@ export interface FormEventRuntimeContext extends FormControlEventContext {
   openTab: (tabIdOrIndex: string | number) => Promise<void>;
   showMessage: (message: string, level?: 'info' | 'success' | 'warning' | 'error') => void | Promise<void>;
   querySheet: (sheetId: string, filter?: Record<string, unknown>) => Record<string, unknown>[];
+  findRows: (sheetId: string, criteria?: Record<string, unknown>, options?: FindRowsOptions) => Record<string, unknown>[];
+  findRow: (sheetId: string, criteria: Record<string, unknown>, options?: FindRowOptions) => Record<string, unknown> | null;
+  nextSequence: (sheetId: string, column: string, options?: NextSequenceOptions) => number;
+  fillForm: (record: Record<string, unknown> | null | undefined, fieldMap?: Record<string, string>, options?: FillFormOptions) => Promise<FillFormResult>;
+  requireFields: (fields: string[], options?: RequireFieldsOptions) => Promise<RequireFieldsResult>;
+  resetForm: (options?: ResetFormOptions) => Promise<ResetFormResult>;
   runWorkflow: (
     workflow?: string | WorkflowFile,
     parameters?: Record<string, unknown>,
@@ -108,24 +132,6 @@ export interface FormEventExecutionResult {
 }
 
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor as new (...args: string[]) => (...args: unknown[]) => Promise<unknown>;
-
-function querySheetRows(
-  tables: SrcTableEntry[],
-  sheetId: string,
-  filter?: Record<string, unknown>,
-): Record<string, unknown>[] {
-  for (const table of tables) {
-    for (const sheet of table.sheets) {
-      const fullId = `${table.id}:${sheet.name}`;
-      if (fullId === sheetId || sheet.name === sheetId || table.id === sheetId) {
-        const rows = sheet.preview as Record<string, unknown>[];
-        if (!filter || typeof filter !== 'object') return rows;
-        return rows.filter((row) => Object.entries(filter).every(([key, value]) => row[key] === value));
-      }
-    }
-  }
-  return [];
-}
 
 function createControlAccessors(
   components: ComponentNode[],
@@ -552,6 +558,39 @@ export async function executeFormControlEvent(
       await options.showMessage?.(message, level);
     },
     querySheet: (sheetId, filter) => querySheetRows(options.tables || [], sheetId, filter),
+    findRows: (sheetId, criteria = {}, findOptions = {}) => findRowsInTables(options.tables || [], sheetId, criteria, findOptions),
+    findRow: (sheetId, criteria, findOptions = {}) => findRowInTables(options.tables || [], sheetId, criteria, findOptions),
+    nextSequence: (sheetId, column, sequenceOptions = {}) => nextSequenceInTables(options.tables || [], sheetId, column, sequenceOptions),
+    fillForm: async (record, fieldMap, fillOptions = {}) => {
+      const result = buildFillFormPatch(record, fieldMap, fillOptions);
+      for (const [field, value] of Object.entries(result.patch)) {
+        await runtimeContext.setValue(field, value);
+      }
+      for (const [field, value] of Object.entries(result.originalPatch)) {
+        await runtimeContext.setValue(field, value);
+      }
+      for (const componentId of result.enableComponentIds) {
+        await runtimeContext.setDisabled(componentId, false);
+      }
+      return result;
+    },
+    requireFields: async (fields, requireOptions = {}) => {
+      const result = validateRequiredFields(runtimeValues, fields, requireOptions);
+      if (!result.valid) {
+        if (result.message) await runtimeContext.showMessage(result.message, requireOptions.level || 'error');
+        if ((requireOptions.focus ?? true) && result.firstMissingField) {
+          await runtimeContext.focusField(result.firstMissingField);
+        }
+      }
+      return result;
+    },
+    resetForm: async (resetOptions = {}) => {
+      const result = buildResetFormPatch(runtimeValues, resetOptions);
+      await runtimeContext.setValues(result.patch);
+      if (result.message) await runtimeContext.showMessage(result.message, 'info');
+      if (result.focusedField) await runtimeContext.focusField(result.focusedField);
+      return result;
+    },
     runWorkflow,
     runConfiguredWorkflow: (parameters) => runWorkflow(undefined, parameters),
     call: async (name, ...args) => {

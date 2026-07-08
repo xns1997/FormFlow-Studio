@@ -33,7 +33,15 @@ test('event suggestions are generated from current fields, event and workflows',
   assert.ok(suggestions.some((item) => item.label === 'ctx.setFieldState'));
   assert.ok(suggestions.some((item) => item.label === 'ctx.focusField'));
   assert.ok(suggestions.some((item) => item.label === 'ctx.switchTab'));
+  assert.ok(suggestions.some((item) => item.label === 'ctx.findRows'));
+  assert.ok(suggestions.some((item) => item.label === 'ctx.findRow'));
+  assert.ok(suggestions.some((item) => item.label === 'ctx.nextSequence'));
+  assert.ok(suggestions.some((item) => item.label === 'ctx.fillForm'));
+  assert.ok(suggestions.some((item) => item.label === 'ctx.requireFields'));
+  assert.ok(suggestions.some((item) => item.label === 'ctx.resetForm'));
   assert.ok(suggestions.some((item) => item.label === '批量赋值模板'));
+  assert.ok(suggestions.some((item) => item.label === '生成下一个编号'));
+  assert.ok(suggestions.some((item) => item.label === '按主键查询并回填'));
 });
 
 test('flow parameter suggestions include declared variables and current form fields', () => {
@@ -63,6 +71,9 @@ test('event extra lib carries current field and value typing', () => {
   assert.match(lib.content, /toggleVisible\(componentId: string\): Promise<boolean>;/);
   assert.match(lib.content, /focusField<K extends EventFieldName>/);
   assert.match(lib.content, /switchTab\(tabIdOrIndex: string \| number\): Promise<void>;/);
+  assert.match(lib.content, /findRows\(sheetId: string, criteria\?: Record<string, unknown>, options\?: FormFindRowsOptions\): Record<string, unknown>\[\];/);
+  assert.match(lib.content, /nextSequence\(sheetId: string, column: string, options\?: FormNextSequenceOptions\): number;/);
+  assert.match(lib.content, /fillForm\(record: Record<string, unknown> \| null \| undefined, fieldMap\?: Record<string, string>, options\?: FormFillFormOptions\): Promise<FormFillFormResult>;/);
   assert.match(lib.content, /detail: \{ previousValue: CurrentEventValue;/);
   assert.match(lib.content, /changedFields: EventFieldName\[\]/);
   assert.match(lib.content, /interface FormEventControlHandle/);

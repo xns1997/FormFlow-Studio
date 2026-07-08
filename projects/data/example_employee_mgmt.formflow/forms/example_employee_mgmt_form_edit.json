@@ -253,7 +253,7 @@
             "enabled": true,
             "workflowId": "example_employee_mgmt_wf_update",
             "parameterMap": {
-              "submit.formData": {
+              "workflow:import.formData": {
                 "员工ID": "$form.员工ID",
                 "姓名": "$form.姓名",
                 "部门": "$form.部门",
@@ -262,7 +262,7 @@
                 "在职": "$form.在职",
                 "月薪": "$form.月薪"
               },
-              "submit.originalData": {
+              "workflow:import.originalData": {
                 "员工ID": "$form.原始员工ID",
                 "姓名": "$form.原始姓名",
                 "部门": "$form.原始部门",

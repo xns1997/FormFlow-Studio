@@ -4,9 +4,9 @@ import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import * as XLSX from 'xlsx';
-import { CURATED_XLSX_METHODS, EXPECTED_NODE_COUNT } from '../../nodes/registry';
-import { execute as modifyRange } from '../../nodes/func-modify-range/index';
-import { editWorksheetStructure } from '../../nodes/xlsx-worksheet-ops';
+import { CURATED_XLSX_METHODS, EXPECTED_NODE_COUNT } from '../../../nodes/registry';
+import { execute as modifyRange } from '../../../nodes/func-modify-range/index';
+import { editWorksheetStructure } from '../../../nodes/xlsx-worksheet-ops';
 import { loadNodeRegistry } from '../../flowRegistry';
 import { executeFlow, selectUpstreamFlow, type FlowEdgeDef, type FlowNodeDef } from './flowEngine';
 
@@ -26,12 +26,12 @@ const edge = (id: string, source: string, target: string, sourcePort: string, ta
 });
 
 test('auto-discovered registry has 134 executable nodes with unique IDs and ports', async () => {
-  const root = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
+  const root = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
   const packageDirs = readdirSync(join(root, 'nodes'), { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && /^(func-|behavior-|generic-|ml-)/.test(entry.name))
     .filter((entry) => existsSync(join(root, 'nodes', entry.name, 'schema.json')))
     .map((entry) => entry.name);
-  assert.equal(packageDirs.length, 103);
+  assert.equal(packageDirs.length, 111);
   assert.equal(new Set(packageDirs).size, packageDirs.length);
   assert.equal(CURATED_XLSX_METHODS.size, 14);
 
@@ -264,6 +264,38 @@ test('connected inputs take precedence over direct external port injection', asy
   assert.equal(result.nodeResults.get('target')?.outputs.value, '来自连线');
 });
 
+test('property input overrides feed unconnected ports but still yield to connected edges', async () => {
+  await loadNodeRegistry();
+  const direct = await executeFlow([
+    node('display', 'generic:output-display', { __inputOverrides: { value: '来自输入覆盖' } }),
+  ], []);
+  assert.equal(direct.success, true, direct.errors.join('\n'));
+  assert.equal(direct.nodeResults.get('display')?.outputs.value, '来自输入覆盖');
+
+  const connected = await executeFlow([
+    node('source', 'generic:text-input', { value: '来自连线' }),
+    node('display', 'generic:output-display', { __inputOverrides: { value: '来自输入覆盖' } }),
+  ], [
+    edge('display-value', 'source', 'display', 'value', 'value'),
+  ]);
+  assert.equal(connected.success, true, connected.errors.join('\n'));
+  assert.equal(connected.nodeResults.get('display')?.outputs.value, '来自连线');
+});
+
+test('multiple upstream edges on one input port honor the configured selected edge id', async () => {
+  await loadNodeRegistry();
+  const result = await executeFlow([
+    node('left', 'generic:text-input', { value: '来自左侧' }),
+    node('right', 'generic:text-input', { value: '来自右侧' }),
+    node('target', 'generic:output-display', { __inputSelections: { value: 'edge-left' } }),
+  ], [
+    edge('edge-left', 'left', 'target', 'value', 'value'),
+    edge('edge-right', 'right', 'target', 'value', 'value'),
+  ]);
+  assert.equal(result.success, true, result.errors.join('\n'));
+  assert.equal(result.nodeResults.get('target')?.outputs.value, '来自左侧');
+});
+
 test('behavior js script honors dynamic input and output definitions', async () => {
   await loadNodeRegistry();
   const result = await executeFlow([
@@ -318,6 +350,294 @@ test('merged filter and sort nodes expose stable result ports', async () => {
   assert.equal(result.success, true, result.errors.join('\n'));
   assert.deepEqual(result.nodeResults.get('sort')?.outputs.rows, [{ name: 'Ada', score: 98 }, { name: 'Jo', score: 92 }]);
   assert.equal(result.nodeResults.get('sort')?.outputs.count, 2);
+});
+
+test('criteria-filter supports multi-condition filtering and ignores disabled rules', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('rows', 'generic:variable-input', { varType: 'array', varValue: [
+      { 型号: 'A', 介质: '清水', PN: 16, 连接方式: '法兰' },
+      { 型号: 'B', 介质: '清水', PN: 25, 连接方式: '法兰' },
+      { 型号: 'C', 介质: '蒸汽', PN: 25, 连接方式: '对夹' },
+    ] }),
+    node('criteria', 'generic:criteria-filter', {
+      criteria: [
+        { field: '介质', operator: '==', value: '清水' },
+        { field: 'PN', operator: '>=', value: 16 },
+        { field: '连接方式', operator: '==', value: '法兰', enabled: false },
+      ],
+    }),
+  ];
+  const result = await executeFlow(nodes, [edge('criteria-input', 'rows', 'criteria', 'value', 'data')]);
+  assert.equal(result.success, true, result.errors.join('\n'));
+  assert.deepEqual(result.nodeResults.get('criteria')?.outputs.rows, [
+    { 型号: 'A', 介质: '清水', PN: 16, 连接方式: '法兰' },
+    { 型号: 'B', 介质: '清水', PN: 25, 连接方式: '法兰' },
+  ]);
+  assert.equal(result.nodeResults.get('criteria')?.outputs.count, 2);
+});
+
+test('pick-record sorts by multiple fields and returns first plus topN rows', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('rows', 'generic:variable-input', { varType: 'array', varValue: [
+      { 型号: 'A', 推荐优先级: 2, 成本档位: 2, 交期档位: 1 },
+      { 型号: 'B', 推荐优先级: 1, 成本档位: 3, 交期档位: 2 },
+      { 型号: 'C', 推荐优先级: 1, 成本档位: 1, 交期档位: 3 },
+    ] }),
+    node('pick', 'generic:pick-record', {
+      pickMode: 'topN',
+      topN: 2,
+      sorts: [
+        { field: '推荐优先级', order: 'asc' },
+        { field: '成本档位', order: 'asc' },
+        { field: '交期档位', order: 'asc' },
+      ],
+    }),
+  ];
+  const result = await executeFlow(nodes, [edge('pick-input', 'rows', 'pick', 'value', 'data')]);
+  assert.equal(result.success, true, result.errors.join('\n'));
+  assert.equal((result.nodeResults.get('pick')?.outputs.first as Record<string, unknown>).型号, 'C');
+  assert.deepEqual((result.nodeResults.get('pick')?.outputs.rows as Array<Record<string, unknown>>).map((row) => row.型号), ['C', 'B']);
+  assert.equal(result.nodeResults.get('pick')?.outputs.count, 3);
+});
+
+test('set-values produces multiple form patches and supports empty patch fallback', async () => {
+  await loadNodeRegistry();
+  const hit = await executeFlow([
+    node('record', 'generic:variable-input', { varType: 'object', varValue: { 型号: 'CV100', 推荐说明: '优先推荐' } }),
+    node('records', 'generic:variable-input', { varType: 'array', varValue: [{ 型号: 'CV100' }, { 型号: 'CV120' }] }),
+    node('count', 'generic:variable-input', { varType: 'number', varValue: 2 }),
+    node('patch', 'behavior-set-values', {
+      staticPatch: { 无结果提示: '' },
+      fieldMap: {
+        推荐主型号: ['$record.推荐主型号', '$record.型号'],
+        推荐说明: '$record.推荐说明',
+        候选清单: '$records',
+        匹配数量: '$count',
+      },
+      emptyPatch: { 无结果提示: '无匹配结果' },
+    }),
+  ], [
+    edge('record-input', 'record', 'patch', 'value', 'record'),
+    edge('records-input', 'records', 'patch', 'value', 'records'),
+    edge('count-input', 'count', 'patch', 'value', 'count'),
+  ]);
+  assert.equal(hit.success, true, hit.errors.join('\n'));
+  assert.equal(hit.sideEffects.filter((effect) => effect.kind === 'set-form-value').length, 5);
+
+  const miss = await executeFlow([
+    node('patch', 'behavior-set-values', {
+      staticPatch: { 推荐主型号: '' },
+      emptyPatch: { 无结果提示: '无匹配结果', 匹配数量: 0 },
+    }),
+  ], []);
+  assert.equal(miss.success, true, miss.errors.join('\n'));
+  assert.equal(miss.sideEffects.some((effect) => effect.kind === 'set-form-value' && effect.field === '无结果提示' && effect.value === '无匹配结果'), true);
+});
+
+test('crud helper behavior nodes cover query sequence fill validation and reset', async () => {
+  await loadNodeRegistry();
+  const table = {
+    id: 'employees',
+    fileName: 'employees.json',
+    fileSize: 1,
+    fileType: 'json' as const,
+    uploadedAt: '2026-07-02T00:00:00.000Z',
+    dataHash: 'crud-test',
+    sheets: [{
+      name: '员工信息',
+      rowCount: 3,
+      colCount: 3,
+      headers: ['员工ID', '姓名', '部门'],
+      columns: [],
+      preview: [
+        { 员工ID: 1001, 姓名: '张三', 部门: '技术部' },
+        { 员工ID: 1002, 姓名: '李四', 部门: '技术部' },
+        { 员工ID: 1003, 姓名: '王五', 部门: '销售部' }
+      ],
+    }],
+  };
+  const query = await executeFlow([
+    node('query', 'behavior-query-list', {
+      tableId: 'employees',
+      sheetName: '员工信息',
+      resultField: '员工列表',
+      messageField: '处理提示',
+      successMessage: '已加载 {count} 条记录',
+    }),
+  ], [], [table], {
+    nodeInputs: { query: { criteria: { 部门: '技术部' } } },
+  });
+  assert.equal(query.success, true, query.errors.join('\n'));
+  assert.equal(query.nodeResults.get('query')?.outputs.count, 2);
+  assert.equal(query.sideEffects.some((effect) => effect.kind === 'set-form-value' && effect.field === '员工列表'), true);
+
+  const next = await executeFlow([
+    node('seq', 'behavior-next-sequence', {
+      tableId: 'employees',
+      sheetName: '员工信息',
+      column: '员工ID',
+      targetField: '员工ID',
+      start: 1000,
+      step: 5,
+    }),
+  ], [], [table]);
+  assert.equal(next.success, true, next.errors.join('\n'));
+  assert.equal(next.nodeResults.get('seq')?.outputs.value, 1008);
+
+  const duplicateSheetTables = [
+    {
+      id: 'employees_a',
+      fileName: 'employees-a.json',
+      fileSize: 1,
+      fileType: 'json' as const,
+      uploadedAt: '2026-07-02T00:00:00.000Z',
+      dataHash: 'employees_a',
+      sheets: [{
+        name: '员工信息',
+        rowCount: 1,
+        colCount: 1,
+        headers: ['来源'],
+        columns: [],
+        preview: [{ 来源: 'A' }],
+      }],
+    },
+    {
+      id: 'employees_b',
+      fileName: 'employees-b.json',
+      fileSize: 1,
+      fileType: 'json' as const,
+      uploadedAt: '2026-07-02T00:00:00.000Z',
+      dataHash: 'employees_b',
+      sheets: [{
+        name: '员工信息',
+        rowCount: 1,
+        colCount: 1,
+        headers: ['来源'],
+        columns: [],
+        preview: [{ 来源: 'B' }],
+      }],
+    },
+  ];
+  const preciseQuery = await executeFlow([
+    node('query-sheet', 'behavior-data-query', {
+      tableId: 'employees_b',
+      sheetName: '员工信息',
+    }),
+  ], [], duplicateSheetTables);
+  assert.equal(preciseQuery.success, true, preciseQuery.errors.join('\n'));
+  assert.deepEqual(preciseQuery.nodeResults.get('query-sheet')?.outputs.data, [{ 来源: 'B' }]);
+  assert.equal(preciseQuery.nodeResults.get('query-sheet')?.outputs.tableId, 'employees_b');
+
+  const fill = await executeFlow([
+    node('record', 'generic:variable-input', { varType: 'object', varValue: { 姓名: '李四', 部门: '技术部' } }),
+    node('fill', 'behavior-fill-form', {
+      fieldMap: { 姓名: '姓名', 部门: '部门' },
+      originalFieldMap: { 姓名: '原始姓名' },
+      enableComponentIds: ['save_button'],
+      messageField: '处理提示',
+    }),
+  ], [
+    edge('fill-record', 'record', 'fill', 'value', 'record'),
+  ]);
+  assert.equal(fill.success, true, fill.errors.join('\n'));
+  assert.equal(fill.nodeResults.get('fill')?.outputs.matched, true);
+  assert.equal(fill.sideEffects.some((effect) => effect.kind === 'set-component-disabled' && effect.componentId === 'save_button' && effect.disabled === false), true);
+
+  const requireCheck = await executeFlow([
+    node('check', 'behavior-require-fields', {
+      fields: ['姓名', '手机号'],
+      messageTemplate: '缺少：{fields}',
+    }),
+  ], [], [], {
+    nodeInputs: { check: { formData: { 姓名: '张三', 手机号: '' } } },
+  });
+  assert.equal(requireCheck.success, true, requireCheck.errors.join('\n'));
+  assert.equal(requireCheck.nodeResults.get('check')?.outputs.valid, false);
+  assert.deepEqual(requireCheck.nodeResults.get('check')?.outputs.missingFields, ['手机号']);
+
+  const reset = await executeFlow([
+    node('reset', 'behavior-reset-form', {
+      clearFields: ['姓名', '手机号'],
+      defaults: { 状态: '草稿', 员工ID: 1008 },
+      preserveFields: ['部门'],
+      message: '表单已重置，可继续录入。',
+    }),
+  ], [], [], {
+    nodeInputs: { reset: { formData: { 姓名: '张三', 手机号: '13800000000', 部门: '技术部' } } },
+  });
+  assert.equal(reset.success, true, reset.errors.join('\n'));
+  assert.equal(reset.sideEffects.some((effect) => effect.kind === 'set-form-value' && effect.field === '状态' && effect.value === '草稿'), true);
+  assert.equal(reset.sideEffects.some((effect) => effect.kind === 'show-message' && effect.message === '表单已重置，可继续录入。'), true);
+});
+
+test('criteria-filter, pick-record and set-values compose into a recommendation flow', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('rows', 'generic:variable-input', { varType: 'array', varValue: [
+      { 型号: 'CV100', 介质: '清水', PN: 16, 推荐优先级: 2, 成本档位: 2 },
+      { 型号: 'CV120', 介质: '清水', PN: 25, 推荐优先级: 1, 成本档位: 1 },
+      { 型号: 'CV200', 介质: '蒸汽', PN: 25, 推荐优先级: 1, 成本档位: 3 },
+    ] }),
+    node('filter', 'generic:criteria-filter', {
+      criteria: [
+        { field: '介质', operator: '==', value: '清水' },
+        { field: 'PN', operator: '>=', value: 16 },
+      ],
+    }),
+    node('pick', 'generic:pick-record', {
+      pickMode: 'topN',
+      topN: 2,
+      sorts: [
+        { field: '推荐优先级', order: 'asc' },
+        { field: '成本档位', order: 'asc' },
+      ],
+    }),
+    node('set', 'behavior-set-values', {
+      staticPatch: { 无结果提示: '' },
+      fieldMap: {
+        推荐主型号: '$record.型号',
+        候选清单: '$records',
+        匹配数量: '$count',
+      },
+      emptyPatch: { 推荐主型号: '', 候选清单: [], 匹配数量: 0, 无结果提示: '无匹配结果' },
+    }),
+  ];
+  const result = await executeFlow(nodes, [
+    edge('filter-input', 'rows', 'filter', 'value', 'data'),
+    edge('pick-input', 'filter', 'pick', 'rows', 'data'),
+    edge('set-record', 'pick', 'set', 'first', 'record'),
+    edge('set-records', 'pick', 'set', 'rows', 'records'),
+    edge('set-count', 'pick', 'set', 'count', 'count'),
+  ]);
+  assert.equal(result.success, true, result.errors.join('\n'));
+  assert.equal(result.sideEffects.some((effect) => effect.kind === 'set-form-value' && effect.field === '推荐主型号' && effect.value === 'CV120'), true);
+});
+
+test('json-rows input accepts project sheet wrapper and normalizes to preview rows', async () => {
+  await loadNodeRegistry();
+  const result = await executeFlow([
+    node('filter', 'generic:criteria-filter', {
+      __inputOverrides: {
+        data: {
+          __fromProject: true,
+          tableId: 'table-1',
+          sheetName: 'Sheet1',
+          headers: ['name', 'score'],
+          preview: [
+            { name: 'Ada', score: 98 },
+            { name: 'Lin', score: 95 },
+          ],
+          rowCount: 2,
+          colCount: 2,
+        },
+      },
+      criteria: [{ field: 'score', operator: '>=', value: 96 }],
+    }),
+  ]);
+  assert.equal(result.success, true, result.errors.join('\n'));
+  assert.deepEqual(result.nodeResults.get('filter')?.outputs.rows, [{ name: 'Ada', score: 98 }]);
 });
 
 test('merged export node supports every configured format with stable outputs', async () => {

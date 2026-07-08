@@ -1,0 +1,20 @@
+{
+  "id": "behavior-require-fields",
+  "label": "必填校验",
+  "description": "批量检查表单字段是否已填写，并返回缺失字段列表",
+  "category": "行为 · 校验",
+  "kind": "generic",
+  "properties": [
+    { "name": "fields", "label": "字段列表", "type": "array", "default": [], "description": "需要检查的字段列表" },
+    { "name": "messageTemplate", "label": "提示模板", "type": "string", "default": "请填写以下字段：{fields}", "description": "缺失字段提示模板" },
+    { "name": "focusFirst", "label": "定位首字段", "type": "boolean", "default": true, "description": "保留配置位，供后续宿主聚焦使用" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "trigger", "direction": "input", "description": "触发信号" },
+    { "name": "formData", "label": "表单数据", "type": "object", "direction": "input", "description": "待校验的表单数据" },
+    { "name": "valid", "label": "通过", "type": "boolean", "direction": "output", "description": "是否全部通过" },
+    { "name": "missingFields", "label": "缺失字段", "type": "array", "direction": "output", "description": "缺失字段列表" },
+    { "name": "firstMissingField", "label": "首个缺失字段", "type": "string", "direction": "output", "description": "首个缺失字段名" }
+  ],
+  "keywords": ["必填校验", "require fields", "validate", "crud", "submit"]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "behavior-next-sequence",
+  "label": "生成下一个编号",
+  "description": "扫描项目数据表指定列并生成下一个顺序编号",
+  "category": "行为 · 数据",
+  "kind": "generic",
+  "properties": [
+    { "name": "tableId", "label": "数据表 ID", "type": "string", "default": "", "required": true, "description": "目标项目数据表 ID" },
+    { "name": "sheetName", "label": "工作表名", "type": "string", "default": "", "required": true, "description": "目标工作表名" },
+    { "name": "column", "label": "编号列", "type": "string", "default": "", "required": true, "description": "生成编号所依据的列名" },
+    { "name": "targetField", "label": "目标字段", "type": "string", "default": "", "description": "生成结果写回的表单字段" },
+    { "name": "start", "label": "起始值", "type": "number", "default": 1, "description": "空表时的起始编号" },
+    { "name": "step", "label": "步长", "type": "number", "default": 1, "description": "递增步长" }
+  ],
+  "ports": [
+    { "name": "trigger", "label": "触发", "type": "trigger", "direction": "input", "description": "触发信号" },
+    { "name": "value", "label": "编号", "type": "number", "direction": "output", "description": "生成的下一个编号" }
+  ],
+  "keywords": ["下一个编号", "sequence", "id", "crud", "auto increment"]
+}

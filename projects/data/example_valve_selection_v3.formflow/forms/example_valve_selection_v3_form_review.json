@@ -1,0 +1,107 @@
+{
+  "id": "example_valve_selection_v3_form_review",
+  "name": "案例复盘台",
+  "formMode": "detail",
+  "viewport": {
+    "zoom": 1,
+    "panX": 0,
+    "panY": 0
+  },
+  "gridSize": 10,
+  "createdAt": "2026-07-06T18:00:00.000Z",
+  "updatedAt": "2026-07-06T18:00:00.000Z",
+  "bindings": [],
+  "components": [
+    {
+      "id": "example_valve_selection_v3_review_title",
+      "type": "text",
+      "x": 24,
+      "y": 24,
+      "width": 960,
+      "height": 40,
+      "zIndex": 1,
+      "props": {
+        "name": "example_valve_selection_v3_review_title",
+        "content": "第三代阀门选型 · 案例复盘台",
+        "fontSize": 22,
+        "color": "#0f172a",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_review_hint",
+      "type": "text",
+      "x": 24,
+      "y": 70,
+      "width": 960,
+      "height": 28,
+      "zIndex": 1,
+      "props": {
+        "name": "example_valve_selection_v3_review_hint",
+        "content": "这一页用于查看归档结果和审计轨迹，验证流程闭环。",
+        "fontSize": 13,
+        "color": "#475569"
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_case_table",
+      "type": "table",
+      "x": 24,
+      "y": 116,
+      "width": 1040,
+      "height": 240,
+      "zIndex": 2,
+      "fieldBinding": "案例列表",
+      "props": {
+        "name": "案例列表",
+        "columns": [
+          "案例ID",
+          "需求编号",
+          "推荐型号",
+          "推荐报价",
+          "最终确认人",
+          "归档时间"
+        ],
+        "rows": 6
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_audit_table",
+      "type": "table",
+      "x": 24,
+      "y": 384,
+      "width": 1040,
+      "height": 260,
+      "zIndex": 2,
+      "fieldBinding": "审计轨迹",
+      "props": {
+        "name": "审计轨迹",
+        "columns": [
+          "审计ID",
+          "需求编号",
+          "节点名称",
+          "节点结论",
+          "状态流转",
+          "操作人"
+        ],
+        "rows": 7
+      }
+    },
+    {
+      "id": "example_valve_selection_v3_review_summary",
+      "type": "textarea",
+      "x": 24,
+      "y": 670,
+      "width": 1040,
+      "height": 120,
+      "zIndex": 2,
+      "fieldBinding": "案例摘要",
+      "props": {
+        "name": "案例摘要",
+        "label": "案例摘要",
+        "readonly": true,
+        "rows": 4
+      }
+    }
+  ]
+}

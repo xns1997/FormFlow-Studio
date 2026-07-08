@@ -1,0 +1,116 @@
+{
+  "id": "generic-criteria-filter",
+  "label": "多条件筛选",
+  "description": "一次性按多组条件筛选 JSON 行数据",
+  "category": "功能 · 数据操作",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "criteria",
+      "label": "筛选条件",
+      "type": "json",
+      "default": [],
+      "description": "条件数组：field/operator/value/inputKey/enabled"
+    }
+  ],
+  "inputs": [
+    {
+      "name": "data",
+      "type": "any",
+      "required": true,
+      "description": "待筛选数据"
+    },
+    {
+      "name": "criteria",
+      "type": "json",
+      "required": false,
+      "description": "运行时覆盖筛选条件"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "result",
+      "type": "any",
+      "description": "筛选结果"
+    },
+    {
+      "name": "rows",
+      "type": "json-rows",
+      "description": "筛选结果行"
+    },
+    {
+      "name": "count",
+      "type": "number",
+      "description": "结果数量"
+    },
+    {
+      "name": "appliedCriteria",
+      "type": "json",
+      "description": "实际生效的条件"
+    },
+    {
+      "name": "emptyReason",
+      "type": "string",
+      "description": "空结果提示"
+    }
+  ],
+  "ports": [
+    {
+      "name": "data",
+      "label": "数据",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "待筛选数据"
+    },
+    {
+      "name": "criteria",
+      "label": "条件",
+      "type": "json",
+      "direction": "input",
+      "description": "运行时筛选条件"
+    },
+    {
+      "name": "result",
+      "label": "结果",
+      "type": "any",
+      "direction": "output",
+      "description": "筛选结果"
+    },
+    {
+      "name": "rows",
+      "label": "数据行",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "筛选结果行"
+    },
+    {
+      "name": "count",
+      "label": "数量",
+      "type": "number",
+      "direction": "output",
+      "description": "结果数量"
+    },
+    {
+      "name": "appliedCriteria",
+      "label": "生效条件",
+      "type": "json",
+      "direction": "output",
+      "description": "实际生效条件"
+    },
+    {
+      "name": "emptyReason",
+      "label": "空结果原因",
+      "type": "string",
+      "direction": "output",
+      "description": "空结果提示"
+    }
+  ],
+  "keywords": [
+    "多条件筛选",
+    "组合筛选",
+    "推荐筛选",
+    "criteria",
+    "filter"
+  ]
+}

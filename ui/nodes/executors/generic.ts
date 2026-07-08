@@ -2,6 +2,7 @@ import { registerExecutor, type NodeExecContext, type NodeExecResult } from '../
 import type { SrcTableEntry } from '../../src/project/types';
 import { editWorksheetStructure, toEditableWorksheet } from '../xlsx-worksheet-ops';
 import { createComplexRange, getRangeAreas, intersectComplexRanges, parseRangeAddress, type RangeArea } from '../../src/services/data/rangeGeometry';
+import { parseCustomJsPortDefinitions } from '../../src/services/config/customJsNode';
 
 function findSheet(tables: SrcTableEntry[], sheetName: string) {
   for (const table of tables) {
@@ -237,6 +238,19 @@ registerExecutor('generic:boolean-input', (ctx) => {
   return { value: check.valid ? check.normalized : !!raw };
 });
 
+registerExecutor('workflow:import', (ctx) => {
+  const defs = parseCustomJsPortDefinitions(ctx.properties.outputPorts);
+  if (defs.length === 0) throw new Error('流程导入节点还没有定义字段');
+  return Object.fromEntries(defs.map((def) => [def.name, ctx.inputs[def.name]]));
+});
+
+registerExecutor('workflow:export', (ctx) => {
+  const defs = parseCustomJsPortDefinitions(ctx.properties.inputPorts);
+  if (defs.length === 0) throw new Error('流程导出节点还没有定义字段');
+  const result = Object.fromEntries(defs.map((def) => [def.name, ctx.inputs[def.name]]));
+  return { result };
+});
+
 registerExecutor('generic:output-display', (ctx) => {
   return { value: ctx.inputs.value };
 });
@@ -291,6 +305,7 @@ registerExecutor('generic:export', async ({ inputs, properties }) => {
 
 function compareValue(left: unknown, operator: string, right: unknown) {
   switch (operator) {
+    case 'equals': return left == right;
     case '!=': return left != right;
     case 'contains': return String(left ?? '').includes(String(right ?? ''));
     case '>': return Number(left) > Number(right);
@@ -308,6 +323,103 @@ registerExecutor('generic:filter', async ({ inputs, properties }) => {
   const compareTo = inputs.value ?? properties.value;
   const result = field ? rows.filter((row) => compareValue(row[field], operator, compareTo)) : rows;
   return { result, rows: result, count: result.length, trigger: inputs.trigger };
+});
+
+type CriteriaFilterRule = {
+  field?: string;
+  operator?: string;
+  value?: unknown;
+  inputKey?: string;
+  enabled?: boolean;
+};
+
+function parseCriteriaRules(value: unknown): CriteriaFilterRule[] {
+  if (Array.isArray(value)) return value as CriteriaFilterRule[];
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed as CriteriaFilterRule[] : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+registerExecutor('generic:criteria-filter', async ({ inputs, properties }) => {
+  const rows = await rowsFromData(inputs.data);
+  const rules = parseCriteriaRules(inputs.criteria ?? properties.criteria);
+  const appliedCriteria = rules
+    .filter((rule) => rule && rule.enabled !== false && String(rule.field || '').trim())
+    .map((rule) => {
+      const field = String(rule.field || '').trim();
+      const operator = String(rule.operator || '==');
+      const compareTo = rule.inputKey ? inputs[String(rule.inputKey)] : rule.value;
+      return { field, operator, value: compareTo };
+    });
+  const result = rows.filter((row) => appliedCriteria.every((rule) => compareValue(row[rule.field], rule.operator, rule.value)));
+  const emptyReason = result.length === 0 && appliedCriteria.length > 0
+    ? `没有满足条件的候选：${appliedCriteria.map((rule) => rule.field).join('、')}`
+    : '';
+  return {
+    result,
+    rows: result,
+    count: result.length,
+    appliedCriteria,
+    emptyReason,
+    failedReason: emptyReason,
+    trigger: inputs.trigger,
+  };
+});
+
+type PickSortRule = {
+  field?: string;
+  order?: 'asc' | 'desc';
+};
+
+function parsePickSortRules(value: unknown): PickSortRule[] {
+  if (Array.isArray(value)) return value as PickSortRule[];
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed as PickSortRule[] : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function compareSortValues(left: unknown, right: unknown) {
+  if (typeof left === 'number' && typeof right === 'number') return left - right;
+  return String(left ?? '').localeCompare(String(right ?? ''));
+}
+
+registerExecutor('generic:pick-record', async ({ inputs, properties }) => {
+  const rows = await rowsFromData(inputs.data);
+  const rules = parsePickSortRules(inputs.sorts ?? properties.sorts).filter((rule) => String(rule.field || '').trim());
+  const sorted = rules.length === 0
+    ? [...rows]
+    : [...rows].sort((left, right) => {
+        for (const rule of rules) {
+          const field = String(rule.field || '');
+          const direction = rule.order === 'desc' ? -1 : 1;
+          const compared = compareSortValues(left[field], right[field]);
+          if (compared !== 0) return compared * direction;
+        }
+        return 0;
+      });
+  const pickMode = String(inputs.pickMode ?? properties.pickMode ?? 'first');
+  const topN = Math.max(1, Number(inputs.topN ?? properties.topN ?? 5));
+  const first = sorted[0] ?? null;
+  const rowsOutput = pickMode === 'topN' ? sorted.slice(0, topN) : pickMode === 'single' ? (first ? [first] : []) : sorted;
+  return {
+    first,
+    result: rowsOutput,
+    rows: rowsOutput,
+    count: sorted.length,
+    trigger: inputs.trigger,
+  };
 });
 
 registerExecutor('generic:sort', async ({ inputs, properties }) => {

@@ -31,66 +31,70 @@ const node = (id: string, specId: string, properties: Record<string, unknown> = 
 test('parameter map can be parsed into draft rows and rebuilt', () => {
   const target = workflow(
     [
-      node('value', 'generic:variable-input', { varName: 'customerName' }),
-      node('display', 'generic:output-display'),
+      node('workflow:import', 'workflow:import', {
+        outputPorts: JSON.stringify([
+          { name: 'value', type: 'any' },
+          { name: 'customerName', type: 'string' },
+          { name: 'payload', type: 'object' },
+        ]),
+      }),
+      node('workflow:export', 'workflow:export', { inputPorts: JSON.stringify([{ name: 'result', type: 'any' }]) }),
     ],
-    [{ id: 'e1', source: 'value', target: 'display', sourceHandle: 'out:value', targetHandle: 'in:value' }],
   );
   const parsed = parseParameterMapToDraftRows({
-    customerName: '$value',
-    'display.value': '$form.address',
+    'workflow:import.value': '$value',
+    'workflow:import.customerName': '$form.address',
     meta: { source: 'manual' },
   }, target);
   assert.equal(parsed.rows.length, 3);
-  assert.equal(parsed.rows.find((row) => row.targetKey === 'customerName')?.valueMode, 'eventValue');
-  assert.equal(parsed.rows.find((row) => row.targetKey === 'display.value')?.targetType, 'nodePort');
-  assert.equal(parsed.rows.find((row) => row.targetKey === 'display.value')?.valueMode, 'fieldValue');
+  assert.equal(parsed.rows.find((row) => row.targetKey === 'workflow:import.value')?.valueMode, 'eventValue');
+  assert.equal(parsed.rows.find((row) => row.targetKey === 'workflow:import.customerName')?.targetType, 'nodePort');
+  assert.equal(parsed.rows.find((row) => row.targetKey === 'workflow:import.customerName')?.valueMode, 'fieldValue');
   assert.equal(parsed.rows.find((row) => row.targetKey === 'meta')?.valueMode, 'staticJson');
 
   const rebuilt = buildParameterMapFromDraftRows(parsed.rows);
   assert.deepEqual(rebuilt, {
-    customerName: '$value',
-    'display.value': '$form.address',
+    'workflow:import.value': '$value',
+    'workflow:import.customerName': '$form.address',
     meta: { source: 'manual' },
   });
 });
 
-test('workflow port targets can be inferred from workflow edges', () => {
-  const target = workflow(
-    [
-      node('input', 'generic:variable-input', { varName: 'customerName' }),
-      node('display', 'generic:output-display'),
-    ],
-    [{ id: 'edge', source: 'input', target: 'display', sourceHandle: 'out:value', targetHandle: 'in:value' }],
-  );
-  assert.deepEqual(getWorkflowPortTargets(target).map((item) => item.key), ['display.value']);
+test('workflow port targets are inferred from workflow import outputs', () => {
+  const target = workflow([
+    node('workflow:import', 'workflow:import', { outputPorts: JSON.stringify([{ name: 'customerId', type: 'number' }, { name: 'message', type: 'string' }]) }),
+    node('workflow:export', 'workflow:export', { inputPorts: JSON.stringify([{ name: 'result', type: 'any' }]) }),
+  ]);
+  const keys = getWorkflowPortTargets(target).map((item) => item.key);
+  assert.equal(keys.includes('workflow:import.customerId'), true);
+  assert.equal(keys.includes('workflow:import.message'), true);
 });
 
-test('workflow remap keeps same-name variables and removes stale rows', () => {
+test('workflow remap keeps matching import rows and removes stale legacy rows', () => {
   const first = workflow([
-    node('value', 'generic:variable-input', { varName: 'value' }),
-    node('city', 'generic:variable-input', { varName: 'city' }),
+    node('workflow:import', 'workflow:import', { outputPorts: JSON.stringify([{ name: 'value', type: 'any' }, { name: 'city', type: 'string' }]) }),
+    node('workflow:export', 'workflow:export', { inputPorts: JSON.stringify([{ name: 'result', type: 'any' }]) }),
   ]);
   const second = workflow([
-    node('value', 'generic:variable-input', { varName: 'value' }),
-    node('status', 'generic:variable-input', { varName: 'status' }),
+    node('workflow:import', 'workflow:import', { outputPorts: JSON.stringify([{ name: 'value', type: 'any' }, { name: 'status', type: 'string' }]) }),
+    node('workflow:export', 'workflow:export', { inputPorts: JSON.stringify([{ name: 'result', type: 'any' }]) }),
   ]);
   const rows: FlowParameterDraftRow[] = [
-    { id: '1', targetType: 'variable', targetKey: 'value', valueMode: 'expression', value: '$detail.current', enabled: true },
+    { id: '1', targetType: 'nodePort', targetKey: 'workflow:import.value', valueMode: 'expression', value: '$detail.current', enabled: true },
     { id: '2', targetType: 'variable', targetKey: 'city', valueMode: 'fieldValue', value: 'city', enabled: true },
   ];
   const remapped = remapDraftRowsForWorkflow(rows, second, 'customerName');
-  assert.equal(remapped.some((row) => row.targetKey === 'value' && row.value === '$detail.current'), true);
+  assert.equal(remapped.some((row) => row.targetKey === 'workflow:import.value' && row.value === '$detail.current'), true);
   assert.equal(remapped.some((row) => row.targetKey === 'city'), false);
-  assert.equal(remapped.some((row) => row.targetKey === 'status'), true);
+  assert.equal(remapped.some((row) => row.targetKey === 'workflow:import.status'), true);
 });
 
-test('default draft rows follow variable defaults from workflow', () => {
+test('default draft rows follow workflow import defaults', () => {
   const target = workflow([
-    node('value', 'generic:variable-input', { varName: 'value' }),
-    node('form', 'generic:variable-input', { varName: 'formData' }),
+    node('workflow:import', 'workflow:import', { outputPorts: JSON.stringify([{ name: 'value', type: 'any' }, { name: 'status', type: 'string' }]) }),
+    node('workflow:export', 'workflow:export', { inputPorts: JSON.stringify([{ name: 'result', type: 'any' }]) }),
   ]);
   const rows = createDefaultDraftRows(target, 'customerName');
-  assert.equal(rows.some((row) => row.targetKey === 'value' && row.valueMode === 'eventValue'), true);
-  assert.equal(rows.some((row) => row.targetKey === 'formData' && row.valueMode === 'formData'), true);
+  assert.equal(rows.some((row) => row.targetKey === 'workflow:import.value' && row.valueMode === 'eventValue'), true);
+  assert.equal(rows.some((row) => row.targetKey === 'workflow:import.status' && row.valueMode === 'fieldValue' && row.value === 'status'), true);
 });

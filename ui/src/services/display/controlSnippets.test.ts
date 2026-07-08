@@ -17,6 +17,10 @@ test('control snippet examples prefer peer fields, buttons and result tables whe
   assert.ok(examples.some((item) => item.code.includes('ctx.controls.statusHint.value')));
   assert.ok(examples.some((item) => item.code.includes('ctx.controls.saveLead.disabled')));
   assert.ok(examples.some((item) => item.code.includes('ctx.controls.approvalResults.value')));
+  assert.ok(examples.some((item) => item.code.includes('ctx.nextSequence(')));
+  assert.ok(examples.some((item) => item.code.includes('ctx.fillForm(')));
+  assert.ok(examples.some((item) => item.code.includes('ctx.requireFields(')));
+  assert.ok(examples.some((item) => item.code.includes('ctx.resetForm(')));
 });
 
 test('control snippet examples still provide a readable current-control example when peers are absent', () => {

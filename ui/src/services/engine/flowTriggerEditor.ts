@@ -1,6 +1,7 @@
 import type { WorkflowFile } from '../../project/types';
 import { getRegistrySync } from '../../flowRegistry';
 import { createDefaultParameterMap, getWorkflowVariableNames } from './formFlowTrigger';
+import { ensureWorkflowIo, getWorkflowImportFields, getWorkflowImportNode, WORKFLOW_IMPORT_SPEC_ID } from './workflowIo';
 
 export type FlowTriggerEditorMode = 'ui' | 'code';
 
@@ -123,6 +124,19 @@ function buildExpressionFromRow(row: Pick<FlowParameterDraftRow, 'valueMode' | '
 
 export function getWorkflowPortTargets(workflow: WorkflowFile | undefined): WorkflowPortTarget[] {
   if (!workflow) return [];
+  const migrated = ensureWorkflowIo(workflow);
+  const importNode = getWorkflowImportNode(migrated.workflow);
+  if (importNode) {
+    const registry = getRegistrySync();
+    const spec = registry?.byId.get(WORKFLOW_IMPORT_SPEC_ID);
+    return getWorkflowImportFields(importNode).map((port) => ({
+        nodeId: importNode.id,
+        nodeLabel: String((importNode.data?.label as string) || spec?.label || importNode.id),
+        portName: port.name,
+        portLabel: String(port.label || port.name),
+        key: `${importNode.id}.${port.name}`,
+      }));
+  }
   const registry = getRegistrySync();
   const fromSpecs = workflow.nodes.flatMap((node) => {
     const spec = registry?.byId.get(node.specId);
@@ -241,7 +255,7 @@ export function remapDraftRowsForWorkflow(
   const portTargets = new Set(getWorkflowPortTargets(workflow).map((item) => item.key));
   const currentRows = rows.filter((row) => {
     if (!row.enabled) return true;
-    if (row.targetType === 'variable') return variableNames.has(row.targetKey);
+    if (row.targetType === 'variable') return variableNames.has(row.targetKey) || !row.targetKey.includes('.');
     return portTargets.has(row.targetKey);
   });
 

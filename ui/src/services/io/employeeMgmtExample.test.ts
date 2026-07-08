@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readProjectPackage } from '../../../server/src/services/project-package-store';
+import { readProjectPackage } from '../../../../server/src/services/project-package-store';
 import { exportToComponentNodes } from '../../designer/export';
-import { executeFormControlEvent } from './formEventExecutor';
+import { executeFormControlEvent } from '../engine/formEventExecutor';
 import type { ProjectStructure } from '../../project/types';
 
 function loadEmployeeMgmt(): ProjectStructure {

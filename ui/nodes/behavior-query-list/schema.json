@@ -1,0 +1,22 @@
+{
+  "id": "behavior-query-list",
+  "label": "查询列表",
+  "description": "按条件查询项目数据表并可直接写回列表字段",
+  "category": "行为 · 数据",
+  "kind": "generic",
+  "properties": [
+    { "name": "tableId", "label": "数据表 ID", "type": "string", "default": "", "required": true, "description": "目标项目数据表 ID" },
+    { "name": "sheetName", "label": "工作表名", "type": "string", "default": "", "required": true, "description": "目标工作表名" },
+    { "name": "resultField", "label": "结果字段", "type": "string", "default": "", "description": "查询结果回填字段" },
+    { "name": "messageField", "label": "提示字段", "type": "string", "default": "", "description": "提示文案回填字段" },
+    { "name": "emptyMessage", "label": "空结果提示", "type": "string", "default": "未找到匹配记录", "description": "无结果时展示的提示" },
+    { "name": "successMessage", "label": "成功提示", "type": "string", "default": "已加载 {count} 条记录", "description": "查询成功时展示的提示" }
+  ],
+  "ports": [
+    { "name": "criteria", "label": "条件", "type": "object", "direction": "input", "description": "精确匹配条件对象" },
+    { "name": "rows", "label": "列表", "type": "json-rows", "direction": "output", "description": "命中的记录列表" },
+    { "name": "count", "label": "数量", "type": "number", "direction": "output", "description": "命中数量" },
+    { "name": "message", "label": "提示", "type": "string", "direction": "output", "description": "查询结果提示" }
+  ],
+  "keywords": ["查询列表", "加载列表", "crud", "lookup", "query list"]
+}

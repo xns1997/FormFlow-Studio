@@ -412,3 +412,89 @@ test('event callbacks can query project sheets directly from ctx.querySheet', as
   assert.equal(result.callbackResult, '李青');
   assert.equal(writes['处理人'], '李青');
 });
+
+test('advanced CRUD helpers cover list lookup unique lookup sequence fill validation and reset', async () => {
+  const writes: Array<[string, unknown]> = [];
+  const disabledCalls: Array<[string, boolean]> = [];
+  const result = await executeFormControlEvent({
+    eventName: 'onClick',
+    field: 'save',
+    value: undefined,
+    values: { 员工ID: '', 姓名: '', 手机号: '', 状态: '草稿', 原始姓名: '' },
+    originalValues: { 员工ID: '', 姓名: '', 手机号: '', 状态: '草稿', 原始姓名: '' },
+    component,
+  }, {
+    workflows: [],
+    tables: [{
+      id: 'employees',
+      fileName: 'employees.json',
+      fileSize: 0,
+      fileType: 'json',
+      uploadedAt: '2026-01-01T00:00:00.000Z',
+      dataHash: 'employees',
+      sheets: [{
+        name: '员工信息',
+        rowCount: 3,
+        colCount: 3,
+        headers: ['员工ID', '姓名', '部门'],
+        columns: [],
+        preview: [
+          { 员工ID: 1001, 姓名: '张三', 部门: '技术部' },
+          { 员工ID: 1002, 姓名: '李四', 部门: '技术部' },
+          { 员工ID: 1003, 姓名: '王五', 部门: '销售部' },
+        ],
+      }],
+    }],
+    components: [component],
+    setValue: (field, value) => { writes.push([field, value]); },
+    setDisabled: (componentId, disabled) => { disabledCalls.push([componentId, disabled]); },
+    code: `async (ctx) => {
+      const rows = ctx.findRows('employees', { 部门: '技术部' }, { sortBy: '员工ID', sortOrder: 'desc', limit: 1 });
+      const row = ctx.findRow('employees', { 员工ID: 1002 });
+      const nextId = ctx.nextSequence('employees', '员工ID', { start: 1000, step: 5 });
+      const filled = await ctx.fillForm(row, { 姓名: '姓名' }, { originalFieldMap: { 姓名: '原始姓名' }, enableComponentIds: ['field-1'] });
+      const invalid = await ctx.requireFields(['姓名', '手机号'], { focus: false, messageTemplate: '缺少：{fields}' });
+      const reset = await ctx.resetForm({
+        clearFields: ['姓名', '手机号'],
+        defaults: { 员工ID: nextId, 状态: '草稿' },
+        preserveFields: ['原始姓名'],
+      });
+      return { rows, row, nextId, filled, invalid, reset };
+    }`,
+  });
+  assert.equal(result.error, undefined);
+  assert.deepEqual(result.callbackResult, {
+    rows: [{ 员工ID: 1002, 姓名: '李四', 部门: '技术部' }],
+    row: { 员工ID: 1002, 姓名: '李四', 部门: '技术部' },
+    nextId: 1008,
+    filled: {
+      patch: { 姓名: '李四' },
+      originalPatch: { 原始姓名: '李四' },
+      appliedFields: ['姓名', '原始姓名'],
+      enableComponentIds: ['field-1'],
+    },
+    invalid: {
+      valid: false,
+      firstMissingField: '手机号',
+      missingFields: ['手机号'],
+      message: '缺少：手机号',
+    },
+    reset: {
+      patch: { 姓名: '', 手机号: '', 员工ID: 1008, 状态: '草稿', 原始姓名: '李四' },
+      clearedFields: ['姓名', '手机号'],
+      preservedFields: ['原始姓名'],
+      focusedField: undefined,
+      message: undefined,
+    },
+  });
+  assert.deepEqual(disabledCalls, [['field-1', false]]);
+  assert.deepEqual(writes, [
+    ['姓名', '李四'],
+    ['原始姓名', '李四'],
+    ['姓名', ''],
+    ['手机号', ''],
+    ['员工ID', 1008],
+    ['状态', '草稿'],
+    ['原始姓名', '李四'],
+  ]);
+});

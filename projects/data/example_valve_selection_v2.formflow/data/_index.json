@@ -1,0 +1,36 @@
+{
+  "sources": [
+    {
+      "id": "selection_requests",
+      "fileName": "客户需求.json",
+      "fileType": "json",
+      "metaFile": "selection_requests.meta.json",
+      "behaviorsFile": "selection_requests.behaviors.json",
+      "uploadedAt": "2026-07-06T18:00:00.000Z"
+    },
+    {
+      "id": "valve_catalog",
+      "fileName": "阀门主数据.json",
+      "fileType": "json",
+      "metaFile": "valve_catalog.meta.json",
+      "behaviorsFile": "valve_catalog.behaviors.json",
+      "uploadedAt": "2026-07-06T18:00:00.000Z"
+    },
+    {
+      "id": "accessory_catalog",
+      "fileName": "附件主数据.json",
+      "fileType": "json",
+      "metaFile": "accessory_catalog.meta.json",
+      "behaviorsFile": "accessory_catalog.behaviors.json",
+      "uploadedAt": "2026-07-06T18:00:00.000Z"
+    },
+    {
+      "id": "compatibility_rules",
+      "fileName": "兼容规则.json",
+      "fileType": "json",
+      "metaFile": "compatibility_rules.meta.json",
+      "behaviorsFile": "compatibility_rules.behaviors.json",
+      "uploadedAt": "2026-07-06T18:00:00.000Z"
+    }
+  ]
+}
