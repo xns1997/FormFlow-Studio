@@ -1,0 +1,11 @@
+{
+  "mode": "use",
+  "allowDesigner": false,
+  "allowBehaviorEditor": false,
+  "allowWorkflowEditor": false,
+  "defaultFormId": "shanghai_catering_form_input",
+  "defaultSheet": "餐饮月度数据",
+  "lastVerifiedAt": "2026-07-09T14:00:00.000Z",
+  "publishedAt": "2026-07-09T14:00:00.000Z",
+  "version": "1.0.0"
+}

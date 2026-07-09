@@ -16,6 +16,7 @@ import {
   getDescendantIds,
   autoResizeContainers,
 } from './utils';
+import { layoutForm } from '../services/layout';
 
 const DesignNodeView = ({ node }: { node: any }) => {
   const data = node.getData();
@@ -307,8 +308,9 @@ export function useDesigner() {
     const graph = graphRef.current;
     const container = containerRef.current;
     if (!graph || !container) return;
-    const width = Math.round(container.clientWidth);
-    const height = Math.round(container.clientHeight);
+    const host = container.parentElement;
+    const width = Math.round(host?.clientWidth || container.clientWidth || 0);
+    const height = Math.round(host?.clientHeight || container.clientHeight || 0);
     if (width <= 0 || height <= 0) return;
     graph.resize(width, height);
     requestAnimationFrame(() => syncSelectionOverlay());
@@ -519,6 +521,22 @@ export function useDesigner() {
       observer.observe(containerRef.current);
       resizeObserverRef.current = observer;
     }
+    // 容器初始尺寸可能为0，重试直到有值
+    if (containerRef.current && ((containerRef.current.parentElement?.clientWidth || containerRef.current.clientWidth) <= 0 || (containerRef.current.parentElement?.clientHeight || containerRef.current.clientHeight) <= 0)) {
+      let retries = 0;
+      const retryTimer = setInterval(() => {
+        retries++;
+        if (!graphRef.current || !containerRef.current) { clearInterval(retryTimer); return; }
+        const nextWidth = containerRef.current.parentElement?.clientWidth || containerRef.current.clientWidth;
+        const nextHeight = containerRef.current.parentElement?.clientHeight || containerRef.current.clientHeight;
+        if (nextWidth > 0 && nextHeight > 0) {
+          clearInterval(retryTimer);
+          syncGraphSize();
+        } else if (retries > 20) {
+          clearInterval(retryTimer);
+        }
+      }, 50);
+    }
     if (pendingDesignRef.current) {
       const pending = pendingDesignRef.current;
       pendingDesignRef.current = null;
@@ -603,6 +621,48 @@ export function useDesigner() {
     requestAnimationFrame(() => syncSelectionOverlay());
   }, [graphRef, syncSelectionOverlay]);
 
+  const refreshCanvasSize = useCallback(() => {
+    initGraph();
+    requestAnimationFrame(() => {
+      syncGraphSize();
+      requestAnimationFrame(() => {
+        syncGraphSize();
+        syncSelectionOverlay();
+      });
+    });
+  }, [initGraph, syncGraphSize, syncSelectionOverlay]);
+
+  const applyAutoLayout = useCallback(() => {
+    const graph = graphRef.current;
+    const result = layoutForm(componentsRef.current, { getControl });
+    if (!graph) {
+      commitComponents(result.components);
+      return result.diagnostics;
+    }
+
+    graph.startBatch('auto-layout');
+    for (const component of result.components) {
+      const node = graph.getCellById(component.id) as Node | null;
+      if (!node || !node.isNode()) continue;
+      const currentParent = node.getParent() as Node | null;
+      if (currentParent && currentParent.id !== component.parentId) {
+        currentParent.unembed(node, { ui: true });
+      }
+      if (component.parentId && currentParent?.id !== component.parentId) {
+        const parentNode = graph.getCellById(component.parentId) as Node | null;
+        parentNode?.embed(node, { ui: true });
+      }
+      node.setPosition(component.x, component.y);
+      node.setSize(component.width, component.height);
+      node.setZIndex(component.zIndex ?? node.getZIndex() ?? 1);
+      setNodeComponentData(node, component, selectedIdRef.current === component.id);
+    }
+    graph.stopBatch('auto-layout');
+    commitComponents(result.components);
+    syncComponentsFromGraph();
+    return result.diagnostics;
+  }, [graphRef, componentsRef, commitComponents, setNodeComponentData, selectedIdRef, syncComponentsFromGraph]);
+
   return {
     containerRef, graphRef, initGraph,
     selectedId, setSelectedId: selectComponent, selectionOverlay, components, zoom, mode,
@@ -615,6 +675,7 @@ export function useDesigner() {
     exportDesign: io.exportDesign,
     deleteSelected: actions.deleteSelected,
     zoomIn, zoomOut, resetView, fitContent,
+    refreshCanvasSize,
     undo: history.undo,
     redo: history.redo,
     copy: clipboard.copy,
@@ -624,5 +685,6 @@ export function useDesigner() {
     sendToBack: actions.sendToBack,
     startResize: actions.startResize,
     toggleMode: io.toggleMode,
+    applyAutoLayout,
   };
 }

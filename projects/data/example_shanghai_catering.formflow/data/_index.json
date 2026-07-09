@@ -1,0 +1,28 @@
+{
+  "sources": [
+    {
+      "id": "monthly_data",
+      "fileName": "餐饮月度数据.json",
+      "fileType": "json",
+      "metaFile": "monthly_data.meta.json",
+      "behaviorsFile": "monthly_data.behaviors.json",
+      "uploadedAt": "2026-07-09T14:00:00.000Z"
+    },
+    {
+      "id": "prediction_data",
+      "fileName": "餐饮预测数据.json",
+      "fileType": "json",
+      "metaFile": "prediction_data.meta.json",
+      "behaviorsFile": "prediction_data.behaviors.json",
+      "uploadedAt": "2026-07-09T14:00:00.000Z"
+    },
+    {
+      "id": "yearly_summary",
+      "fileName": "餐饮年度汇总.json",
+      "fileType": "json",
+      "metaFile": "yearly_summary.meta.json",
+      "behaviorsFile": "yearly_summary.behaviors.json",
+      "uploadedAt": "2026-07-09T14:00:00.000Z"
+    }
+  ]
+}

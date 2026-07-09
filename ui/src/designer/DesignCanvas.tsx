@@ -14,7 +14,10 @@ export function DesignCanvas({ designer }: Props) {
   const workflows = useProjectStore((state) => state.project?.workflows || []);
   const tables = useProjectStore((state) => state.project?.srcTable || []);
 
-  useEffect(() => { initGraph(); }, [initGraph]);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => initGraph());
+    return () => cancelAnimationFrame(raf);
+  }, [initGraph]);
 
   const placeControl = (type: string, clientX: number, clientY: number) => {
     if (mode === 'preview') return;
@@ -72,7 +75,7 @@ export function DesignCanvas({ designer }: Props) {
               <button type="button" onClick={designer.copy} title="复制"><DesignerIcon name="copy" /></button>
               <button type="button" onClick={designer.paste} title="粘贴"><DesignerIcon name="paste" /></button>
               <button type="button" onClick={designer.duplicate} title="复制一份"><DesignerIcon name="duplicate" /></button>
-              <button type="button" onClick={designer.deleteSelected} title="删除"><DesignerIcon name="delete" /></button>
+              <button type="button" className="is-danger" onClick={designer.deleteSelected} title="删除"><DesignerIcon name="delete" /></button>
             </div>
             <span className="toolbar-divider" />
             <div className="toolbar-group">

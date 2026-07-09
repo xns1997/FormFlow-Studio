@@ -1,0 +1,341 @@
+{
+  "id": "shanghai_catering_form_prediction",
+  "name": "预测分析",
+  "formMode": "analysis",
+  "viewport": {
+    "zoom": 1,
+    "panX": 0,
+    "panY": 0
+  },
+  "gridSize": 10,
+  "createdAt": "2026-07-09T14:00:00.000Z",
+  "updatedAt": "2026-07-09T14:00:00.000Z",
+  "bindings": [],
+  "components": [
+    {
+      "id": "shanghai_catering_pred_title",
+      "type": "text",
+      "x": 24,
+      "y": 24,
+      "width": 960,
+      "height": 40,
+      "zIndex": 1,
+      "props": {
+        "name": "title",
+        "content": "上海餐饮企业分析 · 预测分析",
+        "fontSize": 22,
+        "color": "#0f172a",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "shanghai_catering_pred_desc",
+      "type": "text",
+      "x": 24,
+      "y": 70,
+      "width": 960,
+      "height": 28,
+      "zIndex": 1,
+      "props": {
+        "name": "desc",
+        "content": "基于历史数据，使用多种预测模型对未来趋势进行预测分析",
+        "fontSize": 13,
+        "color": "#475569"
+      }
+    },
+    {
+      "id": "shanghai_catering_pred_district",
+      "type": "select",
+      "x": 24,
+      "y": 116,
+      "width": 200,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "预测区域",
+      "props": {
+        "name": "预测区域",
+        "label": "预测区域",
+        "required": true,
+        "readonly": false,
+        "placeholder": "选择区域",
+        "options": [
+          "全部",
+          "黄浦区",
+          "徐汇区",
+          "长宁区",
+          "静安区",
+          "普陀区",
+          "虹口区",
+          "杨浦区",
+          "浦东新区",
+          "闵行区",
+          "宝山区",
+          "嘉定区",
+          "松江区",
+          "金山区",
+          "青浦区",
+          "奉贤区",
+          "崇明区"
+        ]
+      }
+    },
+    {
+      "id": "shanghai_catering_pred_method",
+      "type": "select",
+      "x": 248,
+      "y": 116,
+      "width": 200,
+      "height": 60,
+      "zIndex": 2,
+      "fieldBinding": "预测方法",
+      "props": {
+        "name": "预测方法",
+        "label": "预测方法",
+        "required": false,
+        "readonly": false,
+        "placeholder": "全部方法",
+        "options": [
+          "全部",
+          "移动平均",
+          "线性回归",
+          "指数平滑",
+          "ARIMA"
+        ]
+      }
+    },
+    {
+      "id": "shanghai_catering_pred_query",
+      "type": "button",
+      "x": 472,
+      "y": 116,
+      "width": 150,
+      "height": 60,
+      "zIndex": 3,
+      "props": {
+        "name": "query",
+        "label": "查询预测",
+        "variant": "primary",
+        "events": {
+          "onClick": "const check = await ctx.requireFields(['预测区域']);\nif (!check.valid) return;\nconst result = await ctx.runConfiguredWorkflow({ rows: ctx.querySheet('prediction_data') });\nconst outputs = result.nodeResults.get('workflow:export')?.outputs?.result || {};\nconst metrics = outputs.metrics || {};\nawait ctx.setValues({\n  '预测_月均新增': metrics['预测_月均新增'] ?? '--',\n  '预测_月均注销': metrics['预测_月均注销'] ?? '--',\n  '预测_总净增长': metrics['预测_总净增长'] ?? '--',\n  '预测_月均营业额': metrics['预测_月均营业额'] ?? '--',\n  '预测_平均置信度': metrics['预测_平均置信度'] ?? '--',\n  '预测_数据条数': metrics['预测_数据条数'] ?? 0,\n  '状态提示': outputs.summary || '未找到预测数据'\n});\nif (outputs.found === false) return ctx.showMessage('未找到预测数据', 'warning');\nawait ctx.showMessage('预测数据查询完成', 'success');"
+        },
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "shanghai_catering_wf_prediction",
+            "parameterMap": {
+              "workflow:import.district": "$form.预测区域",
+              "workflow:import.method": "$form.预测方法"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "shanghai_catering_pred_status",
+      "type": "text",
+      "x": 24,
+      "y": 196,
+      "width": 960,
+      "height": 28,
+      "zIndex": 1,
+      "fieldBinding": "状态提示",
+      "props": {
+        "name": "status",
+        "content": "请选择区域后点击查询",
+        "fontSize": 13,
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "shanghai_catering_pred_card1_title",
+      "type": "text",
+      "x": 24,
+      "y": 244,
+      "width": 300,
+      "height": 28,
+      "zIndex": 1,
+      "props": {
+        "name": "pred_card1_title",
+        "content": "预测月均新增企业",
+        "fontSize": 12,
+        "color": "#64748b"
+      }
+    },
+    {
+      "id": "shanghai_catering_pred_card1_value",
+      "type": "text",
+      "x": 24,
+      "y": 272,
+      "width": 300,
+      "height": 40,
+      "zIndex": 1,
+      "fieldBinding": "预测_月均新增",
+      "props": {
+        "name": "pred_card1_value",
+        "content": "--",
+        "fontSize": 28,
+        "color": "#059669",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "shanghai_catering_pred_card2_title",
+      "type": "text",
+      "x": 348,
+      "y": 244,
+      "width": 300,
+      "height": 28,
+      "zIndex": 1,
+      "props": {
+        "name": "pred_card2_title",
+        "content": "预测月均注销企业",
+        "fontSize": 12,
+        "color": "#64748b"
+      }
+    },
+    {
+      "id": "shanghai_catering_pred_card2_value",
+      "type": "text",
+      "x": 348,
+      "y": 272,
+      "width": 300,
+      "height": 40,
+      "zIndex": 1,
+      "fieldBinding": "预测_月均注销",
+      "props": {
+        "name": "pred_card2_value",
+        "content": "--",
+        "fontSize": 28,
+        "color": "#dc2626",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "shanghai_catering_pred_card3_title",
+      "type": "text",
+      "x": 672,
+      "y": 244,
+      "width": 300,
+      "height": 28,
+      "zIndex": 1,
+      "props": {
+        "name": "pred_card3_title",
+        "content": "预测总净增长",
+        "fontSize": 12,
+        "color": "#64748b"
+      }
+    },
+    {
+      "id": "shanghai_catering_pred_card3_value",
+      "type": "text",
+      "x": 672,
+      "y": 272,
+      "width": 300,
+      "height": 40,
+      "zIndex": 1,
+      "fieldBinding": "预测_总净增长",
+      "props": {
+        "name": "pred_card3_value",
+        "content": "--",
+        "fontSize": 28,
+        "color": "#2563eb",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "shanghai_catering_pred_card4_title",
+      "type": "text",
+      "x": 24,
+      "y": 332,
+      "width": 300,
+      "height": 28,
+      "zIndex": 1,
+      "props": {
+        "name": "pred_card4_title",
+        "content": "预测月均营业额(万元)",
+        "fontSize": 12,
+        "color": "#64748b"
+      }
+    },
+    {
+      "id": "shanghai_catering_pred_card4_value",
+      "type": "text",
+      "x": 24,
+      "y": 360,
+      "width": 300,
+      "height": 40,
+      "zIndex": 1,
+      "fieldBinding": "预测_月均营业额",
+      "props": {
+        "name": "pred_card4_value",
+        "content": "--",
+        "fontSize": 28,
+        "color": "#ea580c",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "shanghai_catering_pred_card5_title",
+      "type": "text",
+      "x": 348,
+      "y": 332,
+      "width": 300,
+      "height": 28,
+      "zIndex": 1,
+      "props": {
+        "name": "pred_card5_title",
+        "content": "平均置信度(%)",
+        "fontSize": 12,
+        "color": "#64748b"
+      }
+    },
+    {
+      "id": "shanghai_catering_pred_card5_value",
+      "type": "text",
+      "x": 348,
+      "y": 360,
+      "width": 300,
+      "height": 40,
+      "zIndex": 1,
+      "fieldBinding": "预测_平均置信度",
+      "props": {
+        "name": "pred_card5_value",
+        "content": "--",
+        "fontSize": 28,
+        "color": "#7c3aed",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "shanghai_catering_pred_data_count",
+      "type": "text",
+      "x": 24,
+      "y": 420,
+      "width": 960,
+      "height": 28,
+      "zIndex": 1,
+      "fieldBinding": "预测_数据条数",
+      "props": {
+        "name": "pred_data_count",
+        "content": "预测数据条数: --",
+        "fontSize": 12,
+        "color": "#94a3b8"
+      }
+    },
+    {
+      "id": "shanghai_catering_pred_note",
+      "type": "text",
+      "x": 24,
+      "y": 468,
+      "width": 960,
+      "height": 80,
+      "zIndex": 1,
+      "props": {
+        "name": "pred_note",
+        "content": "预测说明：本系统使用四种预测模型（移动平均、线性回归、指数平滑、ARIMA）对未来6个月的餐饮企业数据进行预测。预测结果综合考虑了季节性因素、历史趋势和区域特征。置信度表示预测模型的可靠程度，数值越高表示预测越可靠。",
+        "fontSize": 12,
+        "color": "#64748b"
+      }
+    }
+  ]
+}

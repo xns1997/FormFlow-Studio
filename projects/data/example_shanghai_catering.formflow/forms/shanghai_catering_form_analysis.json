@@ -1,0 +1,455 @@
+{
+  "id": "shanghai_catering_form_analysis",
+  "name": "统计分析",
+  "formMode": "analysis",
+  "viewport": {
+    "zoom": 1,
+    "panX": 0,
+    "panY": 0
+  },
+  "gridSize": 10,
+  "createdAt": "2026-07-09T14:00:00.000Z",
+  "updatedAt": "2026-07-09T07:55:37.982Z",
+  "bindings": [],
+  "components": [
+    {
+      "id": "shanghai_catering_analysis_title",
+      "type": "text",
+      "x": 24,
+      "y": 24,
+      "width": 960,
+      "height": 40,
+      "zIndex": 1,
+      "props": {
+        "name": "title",
+        "content": "上海餐饮企业分析 · 统计分析",
+        "fontSize": 22,
+        "color": "#0f172a",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_desc",
+      "type": "text",
+      "x": 24,
+      "y": 70,
+      "width": 960,
+      "height": 28,
+      "zIndex": 1,
+      "props": {
+        "name": "desc",
+        "content": "选择时间范围和区域，查看详细的统计分析数据",
+        "fontSize": 13,
+        "color": "#475569"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_year",
+      "type": "select",
+      "x": 24,
+      "y": 116,
+      "width": 180,
+      "height": 64,
+      "zIndex": 2,
+      "fieldBinding": "分析年份",
+      "props": {
+        "name": "分析年份",
+        "label": "分析年份",
+        "required": true,
+        "readonly": false,
+        "placeholder": "选择年份",
+        "options": [
+          "2023",
+          "2024",
+          "2025",
+          "2026"
+        ],
+        "defaultValue": "2026"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_month",
+      "type": "select",
+      "x": 228,
+      "y": 116,
+      "width": 180,
+      "height": 64,
+      "zIndex": 2,
+      "fieldBinding": "分析月份",
+      "props": {
+        "name": "分析月份",
+        "label": "分析月份",
+        "required": false,
+        "readonly": false,
+        "placeholder": "全部月份",
+        "options": [
+          "全部",
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10",
+          "11",
+          "12"
+        ]
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_district",
+      "type": "select",
+      "x": 432,
+      "y": 116,
+      "width": 180,
+      "height": 64,
+      "zIndex": 2,
+      "fieldBinding": "分析区域",
+      "props": {
+        "name": "分析区域",
+        "label": "分析区域",
+        "required": false,
+        "readonly": false,
+        "placeholder": "全部区域",
+        "options": [
+          "全部",
+          "黄浦区",
+          "徐汇区",
+          "长宁区",
+          "静安区",
+          "普陀区",
+          "虹口区",
+          "杨浦区",
+          "浦东新区",
+          "闵行区",
+          "宝山区",
+          "嘉定区",
+          "松江区",
+          "金山区",
+          "青浦区",
+          "奉贤区",
+          "崇明区"
+        ]
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_query",
+      "type": "button",
+      "x": 636,
+      "y": 116,
+      "width": 150,
+      "height": 60,
+      "zIndex": 3,
+      "props": {
+        "name": "query",
+        "label": "查询分析",
+        "variant": "primary",
+        "events": {
+          "onClick": "const check = await ctx.requireFields(['分析年份']);\nif (!check.valid) return;\nconst result = await ctx.runConfiguredWorkflow({ rows: ctx.querySheet('monthly_data') });\nconst outputs = result.nodeResults.get('workflow:export')?.outputs?.result || {};\nconst metrics = outputs.metrics || {};\nPrint('调试信息',metrics)\nawait ctx.setValues({\n  '统计_新增总数': metrics['统计_新增总数'] ?? '--',\n  '统计_注销总数': metrics['统计_注销总数'] ?? '--',\n  '统计_净增长': metrics['统计_净增长'] ?? '--',\n  '统计_累计企业': metrics['统计_累计企业'] ?? '--',\n  '统计_总营业额': metrics['统计_总营业额'] ?? '--',\n  '统计_月均营业额': metrics['统计_月均营业额'] ?? '--',\n  '统计_人均消费': metrics['统计_人均消费'] ?? '--',\n  '统计_外卖占比': metrics['统计_外卖占比'] ?? '--',\n  '统计_数据条数': metrics['统计_数据条数'] ?? 0,\n  '状态提示': outputs.summary || '未找到匹配的数据'\n});\nif (outputs.found === false) return ctx.showMessage('未找到匹配的数据', 'warning');\nawait ctx.showMessage('统计分析完成', 'success');"
+        },
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "shanghai_catering_wf_analysis",
+            "parameterMap": {
+              "workflow:import.year": "$form.分析年份",
+              "workflow:import.month": "$form.分析月份",
+              "workflow:import.district": "$form.分析区域"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_status",
+      "type": "text",
+      "x": 24,
+      "y": 196,
+      "width": 960,
+      "height": 28,
+      "zIndex": 1,
+      "fieldBinding": "状态提示",
+      "props": {
+        "name": "status",
+        "content": "请选择条件后点击查询",
+        "fontSize": 13,
+        "color": "#2563eb"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_card1_title",
+      "type": "text",
+      "x": 24,
+      "y": 244,
+      "width": 220,
+      "height": 28,
+      "zIndex": 1,
+      "props": {
+        "name": "card1_title",
+        "content": "新增企业总数",
+        "fontSize": 12,
+        "color": "#64748b"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_card1_value",
+      "type": "text",
+      "x": 20,
+      "y": 270,
+      "width": 220,
+      "height": 40,
+      "zIndex": 1,
+      "fieldBinding": "统计_新增总数",
+      "props": {
+        "name": "card1_value",
+        "content": "--",
+        "fontSize": 28,
+        "color": "#059669",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_card2_title",
+      "type": "text",
+      "x": 268,
+      "y": 244,
+      "width": 220,
+      "height": 28,
+      "zIndex": 1,
+      "props": {
+        "name": "card2_title",
+        "content": "注销企业总数",
+        "fontSize": 12,
+        "color": "#64748b"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_card2_value",
+      "type": "text",
+      "x": 268,
+      "y": 272,
+      "width": 220,
+      "height": 40,
+      "zIndex": 1,
+      "fieldBinding": "统计_注销总数",
+      "props": {
+        "name": "card2_value",
+        "content": "--",
+        "fontSize": 28,
+        "color": "#dc2626",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_card3_title",
+      "type": "text",
+      "x": 512,
+      "y": 244,
+      "width": 220,
+      "height": 28,
+      "zIndex": 1,
+      "props": {
+        "name": "card3_title",
+        "content": "净增长",
+        "fontSize": 12,
+        "color": "#64748b"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_card3_value",
+      "type": "text",
+      "x": 512,
+      "y": 272,
+      "width": 220,
+      "height": 40,
+      "zIndex": 1,
+      "fieldBinding": "统计_净增长",
+      "props": {
+        "name": "card3_value",
+        "content": "--",
+        "fontSize": 28,
+        "color": "#2563eb",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_card4_title",
+      "type": "text",
+      "x": 756,
+      "y": 244,
+      "width": 220,
+      "height": 28,
+      "zIndex": 1,
+      "props": {
+        "name": "card4_title",
+        "content": "累计企业数",
+        "fontSize": 12,
+        "color": "#64748b"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_card4_value",
+      "type": "text",
+      "x": 756,
+      "y": 272,
+      "width": 220,
+      "height": 40,
+      "zIndex": 1,
+      "fieldBinding": "统计_累计企业",
+      "props": {
+        "name": "card4_value",
+        "content": "--",
+        "fontSize": 28,
+        "color": "#7c3aed",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_card5_title",
+      "type": "text",
+      "x": 24,
+      "y": 332,
+      "width": 220,
+      "height": 28,
+      "zIndex": 1,
+      "props": {
+        "name": "card5_title",
+        "content": "总营业额(万元)",
+        "fontSize": 12,
+        "color": "#64748b"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_card5_value",
+      "type": "text",
+      "x": 24,
+      "y": 360,
+      "width": 220,
+      "height": 40,
+      "zIndex": 1,
+      "fieldBinding": "统计_总营业额",
+      "props": {
+        "name": "card5_value",
+        "content": "--",
+        "fontSize": 28,
+        "color": "#ea580c",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_card6_title",
+      "type": "text",
+      "x": 268,
+      "y": 332,
+      "width": 220,
+      "height": 28,
+      "zIndex": 1,
+      "props": {
+        "name": "card6_title",
+        "content": "月均营业额(万元)",
+        "fontSize": 12,
+        "color": "#64748b"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_card6_value",
+      "type": "text",
+      "x": 268,
+      "y": 360,
+      "width": 220,
+      "height": 40,
+      "zIndex": 1,
+      "fieldBinding": "统计_月均营业额",
+      "props": {
+        "name": "card6_value",
+        "content": "--",
+        "fontSize": 28,
+        "color": "#0891b2",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_card7_title",
+      "type": "text",
+      "x": 512,
+      "y": 332,
+      "width": 220,
+      "height": 28,
+      "zIndex": 1,
+      "props": {
+        "name": "card7_title",
+        "content": "人均消费(元)",
+        "fontSize": 12,
+        "color": "#64748b"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_card7_value",
+      "type": "text",
+      "x": 512,
+      "y": 360,
+      "width": 220,
+      "height": 40,
+      "zIndex": 1,
+      "fieldBinding": "统计_人均消费",
+      "props": {
+        "name": "card7_value",
+        "content": "--",
+        "fontSize": 28,
+        "color": "#be185d",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_card8_title",
+      "type": "text",
+      "x": 756,
+      "y": 332,
+      "width": 220,
+      "height": 28,
+      "zIndex": 1,
+      "props": {
+        "name": "card8_title",
+        "content": "外卖占比(%)",
+        "fontSize": 12,
+        "color": "#64748b"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_card8_value",
+      "type": "text",
+      "x": 756,
+      "y": 360,
+      "width": 220,
+      "height": 40,
+      "zIndex": 1,
+      "fieldBinding": "统计_外卖占比",
+      "props": {
+        "name": "card8_value",
+        "content": "--",
+        "fontSize": 28,
+        "color": "#4f46e5",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "id": "shanghai_catering_analysis_data_count",
+      "type": "text",
+      "x": 24,
+      "y": 420,
+      "width": 960,
+      "height": 28,
+      "zIndex": 1,
+      "fieldBinding": "统计_数据条数",
+      "props": {
+        "name": "data_count",
+        "content": "数据条数: --",
+        "fontSize": 12,
+        "color": "#94a3b8"
+      }
+    }
+  ]
+}

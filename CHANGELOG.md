@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.7.1] - 2026-07-09
+
+### 设计器画布修复
+- 修复画布初始化尺寸为 0x0 的问题（`requestAnimationFrame` + 重试机制）
+- `syncGraphSize` 在容器尺寸为 0 时添加 50ms 重试，最多 20 次
+
+### 文档样式优化
+- `docs-card-list` 改为 CSS Grid 布局，最小列宽 360px
+- `docs-card-title` 改为垂直布局，strong 和 code 各占一行
+- `docs-table-row` 添加左边框 hover 指示器和背景色变化
+- `docs-table-key` 的 code 和 span 样式优化
+- Modal 中卡片列表适配更小空间（minmax 300px）
+
+### 新增示例项目
+- `example_shanghai_catering`（上海餐饮企业分析）: 覆盖 16 个区 × 42 个月月度数据 + 预测数据 + 年度汇总
+  - 5 个表单：数据录入、数据修改、统计分析、预测分析、年度汇总
+  - 4 个工作流：录入、修改、统计分析、预测分析
+  - 672 条月度数据 + 96 条预测数据 + 64 条年度汇总
+
+### 节点包更新
+- 新增 8 个节点包：behavior-compose-message、behavior-upsert-table-row、generic-array-enrich、generic-array-lookup、generic-choice-input、generic-field-classifier、generic-file-source、generic-record-transform、generic-score-records
+- 删除 6 个冗余节点：func-checkbox-input、func-radio-input、func-select-input、generic-boolean-switch、generic-file-picker、generic-number-input、generic-text-input、generic-variable-input、generic-worksheet-select
+
+### 工程改进
+- 新增 `ui/src/services/layout/` 自动布局模块
+- 新增 `ui/src/services/config/scriptRuntime.ts` 脚本运行时
+- 新增 `ui/src/services/data/tableEditor.ts` 表格编辑器
+- 新增 `ui/src/components/ComponentDocPlayground.tsx` 组件文档 Playground
+- 新增 `ui/src/components/DebugDrawer.tsx` 调试抽屉
+- 新增 `ui/src/style/button-system.css` 按钮系统样式
+- 服务器端新增 debug 路由和日志服务
+
+---
+
 ## [0.7.0] - 2026-07-08
 
 ### 工作流 I/O 节点
