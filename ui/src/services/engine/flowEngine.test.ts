@@ -25,7 +25,7 @@ const edge = (id: string, source: string, target: string, sourcePort: string, ta
   targetHandle: `in:${targetPort}`,
 });
 
-test('auto-discovered registry has 134 executable nodes with unique IDs and ports', async () => {
+test('auto-discovered registry has the expected executable nodes with unique IDs and ports', async () => {
   const root = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
   const packageDirs = readdirSync(join(root, 'nodes'), { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && /^(func-|behavior-|generic-|ml-)/.test(entry.name))
@@ -48,7 +48,6 @@ test('auto-discovered registry has 134 executable nodes with unique IDs and port
       if (port.name === 'workbook') assert.equal(port.type, 'workbook', `inaccurate workbook port: ${spec.id}`);
     }
   }
-
   const executorSource = ['generic.ts', 'behavior.ts', 'func.ts', 'ml.ts', 'scenario.ts']
     .map((file) => readFileSync(join(root, 'nodes/executors', file), 'utf8')).join('\n');
   const canonicalIds = new Set<string>();
@@ -65,6 +64,10 @@ test('auto-discovered registry has 134 executable nodes with unique IDs and port
       if (port.name === 'worksheet') assert.equal(port.type, 'worksheet', `inaccurate worksheet port: ${id}`);
       if (port.name === 'workbook') assert.equal(port.type, 'workbook', `inaccurate workbook port: ${id}`);
     }
+    if (id === 'behavior-data-query') {
+      assert.equal(schema.ports.find((port: any) => port.direction === 'output' && port.name === 'data')?.type, 'json-rows');
+      assert.equal(schema.ports.find((port: any) => port.direction === 'output' && port.name === 'result')?.type, 'json-rows');
+    }
     const hasExecutor = executorSource.includes(`registerExecutor('${id}'`) || existsSync(join(root, 'nodes', dir, 'index.ts'));
     assert.equal(hasExecutor, true, `missing executor: ${id}`);
   }
@@ -73,7 +76,7 @@ test('auto-discovered registry has 134 executable nodes with unique IDs and port
 });
 
 test('selectUpstreamFlow includes every transitive predecessor and excludes unrelated nodes', () => {
-  const nodes = [node('root', 'generic:text-input'), node('middle', 'generic:output-display'), node('target', 'generic:output-display'), node('other', 'generic:text-input')];
+  const nodes = [node('root', 'generic:value-input'), node('middle', 'generic:output-display'), node('target', 'generic:output-display'), node('other', 'generic:value-input')];
   const edges = [edge('a', 'root', 'middle', 'value', 'value'), edge('b', 'middle', 'target', 'value', 'value')];
   const selected = selectUpstreamFlow(nodes, edges, 'target');
   assert.deepEqual(selected.nodes.map((item) => item.id), ['root', 'middle', 'target']);
@@ -83,9 +86,9 @@ test('selectUpstreamFlow includes every transitive predecessor and excludes unre
 test('target execution starts at the first upstream node and transfers the exact named port', async () => {
   await loadNodeRegistry();
   const nodes = [
-    node('source', 'generic:variable-input', { varName: 'answer', varType: 'number', varValue: 42 }),
+    node('source', 'generic:value-input', { name: 'answer', valueType: 'number', value: 42 }),
     node('target', 'generic:output-display'),
-    node('unrelated', 'generic:text-input', { value: 'do not run' }),
+    node('unrelated', 'generic:value-input', { valueType: 'string', value: 'do not run' }),
   ];
   const result = await executeFlow(nodes, [edge('value', 'source', 'target', 'value', 'value')], [], { targetNodeId: 'target' });
   assert.equal(result.success, true);
@@ -94,10 +97,10 @@ test('target execution starts at the first upstream node and transfers the exact
   assert.equal(result.nodeResults.has('unrelated'), false);
 });
 
-test('external variables override matching variable-input nodes by varName', async () => {
+test('external variables override matching value-input nodes by name', async () => {
   await loadNodeRegistry();
   const nodes = [
-    node('source', 'generic:variable-input', { varName: 'customerName', varType: 'string', varValue: '默认值' }),
+    node('source', 'generic:value-input', { name: 'customerName', valueType: 'string', value: '默认值' }),
     node('target', 'generic:output-display'),
   ];
   const result = await executeFlow(nodes, [edge('value', 'source', 'target', 'value', 'value')], [], {
@@ -106,6 +109,36 @@ test('external variables override matching variable-input nodes by varName', asy
   assert.equal(result.success, true, result.errors.join('\n'));
   assert.equal(result.nodeResults.get('source')?.outputs.value, '表单传入值');
   assert.equal(result.nodeResults.get('target')?.outputs.value, '表单传入值');
+});
+
+test('choice-input normalizes static options and exposes both single and collection outputs', async () => {
+  await loadNodeRegistry();
+  const result = await executeFlow([
+    node('choice', 'generic:choice-input', {
+      selectionMode: 'single',
+      displayMode: 'select',
+      optionsSource: 'static',
+      options: [
+        { label: '通过', value: 'approved' },
+        { label: '驳回', value: 'rejected' },
+      ],
+      defaultValue: 'approved',
+    }),
+  ], []);
+  assert.equal(result.success, true, result.errors.join('\n'));
+  assert.equal(result.nodeResults.get('choice')?.outputs.value, 'approved');
+  assert.deepEqual(result.nodeResults.get('choice')?.outputs.values, ['approved']);
+  assert.deepEqual(result.nodeResults.get('choice')?.outputs.selectedOption, { label: '通过', value: 'approved' });
+  assert.deepEqual(result.nodeResults.get('choice')?.outputs.selectedOptions, [{ label: '通过', value: 'approved' }]);
+});
+
+test('removed workflow nodes fail explicitly instead of executing legacy logic', async () => {
+  await loadNodeRegistry();
+  const result = await executeFlow([
+    node('legacy', 'generic:variable-input', { varName: 'customerName', varType: 'string', varValue: '旧值' }),
+  ], []);
+  assert.equal(result.success, false);
+  assert.match(result.errors.join('\n'), /节点已移除，不可执行: generic:variable-input/);
 });
 
 test('behavior-row-lookup returns patches for unique hit and warnings for miss or multiple hits', async () => {
@@ -254,7 +287,7 @@ test('behavior submit falls back to sheet single-key config when writeBackKeyFie
 test('connected inputs take precedence over direct external port injection', async () => {
   await loadNodeRegistry();
   const nodes = [
-    node('source', 'generic:text-input', { value: '来自连线' }),
+    node('source', 'generic:value-input', { valueType: 'string', value: '来自连线' }),
     node('target', 'generic:output-display'),
   ];
   const result = await executeFlow(nodes, [edge('value', 'source', 'target', 'value', 'value')], [], {
@@ -273,7 +306,7 @@ test('property input overrides feed unconnected ports but still yield to connect
   assert.equal(direct.nodeResults.get('display')?.outputs.value, '来自输入覆盖');
 
   const connected = await executeFlow([
-    node('source', 'generic:text-input', { value: '来自连线' }),
+    node('source', 'generic:value-input', { valueType: 'string', value: '来自连线' }),
     node('display', 'generic:output-display', { __inputOverrides: { value: '来自输入覆盖' } }),
   ], [
     edge('display-value', 'source', 'display', 'value', 'value'),
@@ -285,8 +318,8 @@ test('property input overrides feed unconnected ports but still yield to connect
 test('multiple upstream edges on one input port honor the configured selected edge id', async () => {
   await loadNodeRegistry();
   const result = await executeFlow([
-    node('left', 'generic:text-input', { value: '来自左侧' }),
-    node('right', 'generic:text-input', { value: '来自右侧' }),
+    node('left', 'generic:value-input', { valueType: 'string', value: '来自左侧' }),
+    node('right', 'generic:value-input', { valueType: 'string', value: '来自右侧' }),
     node('target', 'generic:output-display', { __inputSelections: { value: 'edge-left' } }),
   ], [
     edge('edge-left', 'left', 'target', 'value', 'value'),
@@ -299,7 +332,7 @@ test('multiple upstream edges on one input port honor the configured selected ed
 test('behavior js script honors dynamic input and output definitions', async () => {
   await loadNodeRegistry();
   const result = await executeFlow([
-    node('amount', 'generic:variable-input', { varName: 'amount', varType: 'number', varValue: 12 }),
+    node('amount', 'generic:value-input', { name: 'amount', valueType: 'number', value: 12 }),
     node('script', 'behavior-js-script', {
       inputPorts: { amount: 'number' },
       outputPorts: { doubled: 'number' },
@@ -327,7 +360,7 @@ test('behavior js script maps primitive returns to the first dynamic output', as
 test('XLSX methods publish results under their declared output port name', async () => {
   await loadNodeRegistry();
   const nodes = [
-    node('rows', 'generic:variable-input', { varName: 'rows', varType: 'array', varValue: [{ name: 'Ada' }] }),
+    node('rows', 'generic:value-input', { name: 'rows', valueType: 'array', value: [{ name: 'Ada' }] }),
     node('sheet', 'method:XLSX.utils.json_to_sheet'),
   ];
   const result = await executeFlow(nodes, [edge('data', 'rows', 'sheet', 'value', 'data')]);
@@ -339,7 +372,7 @@ test('XLSX methods publish results under their declared output port name', async
 test('merged filter and sort nodes expose stable result ports', async () => {
   await loadNodeRegistry();
   const nodes = [
-    node('rows', 'generic:variable-input', { varType: 'array', varValue: [{ name: 'Ada', score: 98 }, { name: 'Lin', score: 80 }, { name: 'Jo', score: 92 }] }),
+    node('rows', 'generic:value-input', { valueType: 'array', value: [{ name: 'Ada', score: 98 }, { name: 'Lin', score: 80 }, { name: 'Jo', score: 92 }] }),
     node('filter', 'generic:filter', { field: 'score', operator: '>', value: 85 }),
     node('sort', 'generic:sort', { field: 'score', order: 'desc' }),
   ];
@@ -355,7 +388,7 @@ test('merged filter and sort nodes expose stable result ports', async () => {
 test('criteria-filter supports multi-condition filtering and ignores disabled rules', async () => {
   await loadNodeRegistry();
   const nodes = [
-    node('rows', 'generic:variable-input', { varType: 'array', varValue: [
+    node('rows', 'generic:value-input', { valueType: 'array', value: [
       { 型号: 'A', 介质: '清水', PN: 16, 连接方式: '法兰' },
       { 型号: 'B', 介质: '清水', PN: 25, 连接方式: '法兰' },
       { 型号: 'C', 介质: '蒸汽', PN: 25, 连接方式: '对夹' },
@@ -380,7 +413,7 @@ test('criteria-filter supports multi-condition filtering and ignores disabled ru
 test('pick-record sorts by multiple fields and returns first plus topN rows', async () => {
   await loadNodeRegistry();
   const nodes = [
-    node('rows', 'generic:variable-input', { varType: 'array', varValue: [
+    node('rows', 'generic:value-input', { valueType: 'array', value: [
       { 型号: 'A', 推荐优先级: 2, 成本档位: 2, 交期档位: 1 },
       { 型号: 'B', 推荐优先级: 1, 成本档位: 3, 交期档位: 2 },
       { 型号: 'C', 推荐优先级: 1, 成本档位: 1, 交期档位: 3 },
@@ -405,9 +438,9 @@ test('pick-record sorts by multiple fields and returns first plus topN rows', as
 test('set-values produces multiple form patches and supports empty patch fallback', async () => {
   await loadNodeRegistry();
   const hit = await executeFlow([
-    node('record', 'generic:variable-input', { varType: 'object', varValue: { 型号: 'CV100', 推荐说明: '优先推荐' } }),
-    node('records', 'generic:variable-input', { varType: 'array', varValue: [{ 型号: 'CV100' }, { 型号: 'CV120' }] }),
-    node('count', 'generic:variable-input', { varType: 'number', varValue: 2 }),
+    node('record', 'generic:value-input', { valueType: 'object', value: { 型号: 'CV100', 推荐说明: '优先推荐' } }),
+    node('records', 'generic:value-input', { valueType: 'array', value: [{ 型号: 'CV100' }, { 型号: 'CV120' }] }),
+    node('count', 'generic:value-input', { valueType: 'number', value: 2 }),
     node('patch', 'behavior-set-values', {
       staticPatch: { 无结果提示: '' },
       fieldMap: {
@@ -528,10 +561,11 @@ test('crud helper behavior nodes cover query sequence fill validation and reset'
   ], [], duplicateSheetTables);
   assert.equal(preciseQuery.success, true, preciseQuery.errors.join('\n'));
   assert.deepEqual(preciseQuery.nodeResults.get('query-sheet')?.outputs.data, [{ 来源: 'B' }]);
+  assert.deepEqual(preciseQuery.nodeResults.get('query-sheet')?.outputs.result, [{ 来源: 'B' }]);
   assert.equal(preciseQuery.nodeResults.get('query-sheet')?.outputs.tableId, 'employees_b');
 
   const fill = await executeFlow([
-    node('record', 'generic:variable-input', { varType: 'object', varValue: { 姓名: '李四', 部门: '技术部' } }),
+    node('record', 'generic:value-input', { valueType: 'object', value: { 姓名: '李四', 部门: '技术部' } }),
     node('fill', 'behavior-fill-form', {
       fieldMap: { 姓名: '姓名', 部门: '部门' },
       originalFieldMap: { 姓名: '原始姓名' },
@@ -575,7 +609,7 @@ test('crud helper behavior nodes cover query sequence fill validation and reset'
 test('criteria-filter, pick-record and set-values compose into a recommendation flow', async () => {
   await loadNodeRegistry();
   const nodes = [
-    node('rows', 'generic:variable-input', { varType: 'array', varValue: [
+    node('rows', 'generic:value-input', { valueType: 'array', value: [
       { 型号: 'CV100', 介质: '清水', PN: 16, 推荐优先级: 2, 成本档位: 2 },
       { 型号: 'CV120', 介质: '清水', PN: 25, 推荐优先级: 1, 成本档位: 1 },
       { 型号: 'CV200', 介质: '蒸汽', PN: 25, 推荐优先级: 1, 成本档位: 3 },
@@ -635,7 +669,7 @@ test('json-rows input accepts project sheet wrapper and normalizes to preview ro
       },
       criteria: [{ field: 'score', operator: '>=', value: 96 }],
     }),
-  ]);
+  ], []);
   assert.equal(result.success, true, result.errors.join('\n'));
   assert.deepEqual(result.nodeResults.get('filter')?.outputs.rows, [{ name: 'Ada', score: 98 }]);
 });
@@ -644,7 +678,7 @@ test('merged export node supports every configured format with stable outputs', 
   await loadNodeRegistry();
   for (const format of ['xlsx', 'csv', 'json', 'html']) {
     const nodes = [
-      node('rows', 'generic:variable-input', { varType: 'array', varValue: [{ name: 'Ada', score: 98 }] }),
+      node('rows', 'generic:value-input', { valueType: 'array', value: [{ name: 'Ada', score: 98 }] }),
       node('export', 'generic:export', { format, fileName: 'report' }),
     ];
     const result = await executeFlow(nodes, [edge('export-input', 'rows', 'export', 'value', 'data')]);
@@ -658,8 +692,8 @@ test('merged export node supports every configured format with stable outputs', 
 test('merged submit node produces success and a field-level change log', async () => {
   await loadNodeRegistry();
   const nodes = [
-    node('original', 'generic:variable-input', { varType: 'object', varValue: { name: 'Ada', score: 90 } }),
-    node('form', 'generic:variable-input', { varType: 'object', varValue: { name: 'Ada', score: 98 } }),
+    node('original', 'generic:value-input', { valueType: 'object', value: { name: 'Ada', score: 90 } }),
+    node('form', 'generic:value-input', { valueType: 'object', value: { name: 'Ada', score: 98 } }),
     node('submit', 'behavior:submit'),
   ];
   const result = await executeFlow(nodes, [
@@ -681,7 +715,7 @@ test('address toolkit covers retained cell, range, row and column operations', a
   ];
   for (const [operation, value, expected] of cases) {
     const nodes = [
-      node('value', 'generic:variable-input', { varType: typeof value === 'object' ? 'object' : typeof value, varValue: value }),
+      node('value', 'generic:value-input', { valueType: typeof value === 'object' ? 'object' : typeof value, value }),
       node('toolkit', 'scenario:cell-address-toolkit', { operation }),
     ];
     const result = await executeFlow(nodes, [edge('toolkit-input', 'value', 'toolkit', 'value', 'value')]);
@@ -703,8 +737,8 @@ test('range intersection node returns a complex range with disjoint areas', asyn
   };
   const right = { s: { r: 1, c: 0 }, e: { r: 1, c: 4 } };
   const result = await executeFlow([
-    node('left', 'generic:variable-input', { varType: 'object', varValue: left }),
-    node('right', 'generic:variable-input', { varType: 'object', varValue: right }),
+    node('left', 'generic:value-input', { valueType: 'object', value: left }),
+    node('right', 'generic:value-input', { valueType: 'object', value: right }),
     node('intersection', 'generic:range-intersection'),
   ], [
     edge('left-range', 'left', 'intersection', 'value', 'left'),
@@ -724,8 +758,8 @@ test('range selector node returns exact complex areas and grouped values', async
     ['A3', 'B3', 'C3', 'D3', 'E3'],
   ]);
   const result = await executeFlow([
-    node('worksheet', 'generic:variable-input', { varType: 'object', varValue: worksheet }),
-    node('range', 'generic:range-select', { rangeMode: 'address', address: 'A1:B2,D2:E3' }),
+    node('worksheet', 'generic:value-input', { valueType: 'object', value: worksheet }),
+    node('range', 'generic:sheet-source', { sourceMode: 'range', rangeMode: 'address', address: 'A1:B2,D2:E3' }),
   ], [edge('worksheet-range', 'worksheet', 'range', 'value', 'worksheet')]);
   assert.equal(result.success, true, result.errors.join('\n'));
   const outputs = result.nodeResults.get('range')?.outputs;
@@ -741,7 +775,7 @@ test('range selector node returns exact complex areas and grouped values', async
 
 test('a missing named source port fails explicitly instead of silently using another value', async () => {
   await loadNodeRegistry();
-  const nodes = [node('source', 'generic:text-input', { value: 'hello' }), node('target', 'generic:output-display')];
+  const nodes = [node('source', 'generic:value-input', { valueType: 'string', value: 'hello' }), node('target', 'generic:output-display')];
   const result = await executeFlow(nodes, [edge('bad', 'source', 'target', 'missing', 'value')]);
   assert.equal(result.success, false);
   assert.match(result.nodeResults.get('target')?.error || '', /没有输出端口 "missing"/);
@@ -758,9 +792,9 @@ test('cycles are rejected before any node executes', async () => {
 test('the default project-data chain executes end to end through every declared port', async () => {
   await loadNodeRegistry();
   const nodes = [
-    node('file', 'generic:file-picker', { selectedFile: 'sample.csv' }),
+    node('file', 'generic:file-source', { selectedFile: 'sample.csv' }),
     node('read', 'method:XLSX.read'),
-    node('sheet', 'generic:worksheet-select', { sheetName: 'Sheet1' }),
+    node('sheet', 'generic:sheet-source', { sourceMode: 'worksheet', worksheetMode: 'byName', sheetName: 'Sheet1' }),
     node('json', 'method:XLSX.utils.sheet_to_json'),
   ];
   const edges = [
@@ -816,8 +850,8 @@ test('modified worksheet is committed into the original workbook and saved with 
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([['Keep'], ['untouched']]), 'Other');
 
   const flowNodes = [
-    node('source', 'generic:variable-input', { varType: 'object', varValue: workbook }),
-    node('select', 'generic:worksheet-select', { selectMode: 'byName', sheetName: 'Data' }),
+    node('source', 'generic:value-input', { valueType: 'object', value: workbook }),
+    node('select', 'generic:sheet-source', { sourceMode: 'worksheet', worksheetMode: 'byName', sheetName: 'Data' }),
     node('insert', 'generic:insert-rows', { index: 2, count: 1 }),
     node('commit', 'generic:worksheet-commit'),
     node('save', 'generic:workbook-save', { fileName: 'changed', bookType: 'xlsx' }),
@@ -857,4 +891,20 @@ test('modify range node converts project-backed data into a real editable worksh
   assert.equal(worksheet.B2.v, 99);
   assert.equal(worksheet.__fromProject, undefined);
   assert.equal((worksheet as any).__sourceSheetName, 'Data');
+});
+
+test('onNodeFailure skip allows downstream nodes to execute', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('input', 'generic:value-input', { valueType: 'number', value: 10 }),
+    node('fail', 'generic:custom-js', { code: 'throw new Error("forced failure")' }),
+    node('output', 'generic:output-display'),
+  ];
+  const result = await executeFlow(nodes, [
+    edge('e1', 'input', 'fail', 'value', '_args'),
+    edge('e2', 'fail', 'output', 'value', 'value'),
+  ], [], { onNodeFailure: 'skip' });
+  assert.equal(result.success, false);
+  assert.equal(result.nodeResults.get('fail')?.success, false);
+  assert.equal(result.nodeResults.has('output'), true);
 });

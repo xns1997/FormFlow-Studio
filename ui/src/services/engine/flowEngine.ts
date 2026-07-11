@@ -4,6 +4,9 @@ import { checkPortType, assertPortType } from '../../../nodes/port-types';
 import type { SrcTableEntry } from '../../project/types';
 import { getNodeEffectivePorts, resolveNodeProperties } from '../config/customJsNode';
 import { extractNodeSideEffects, type FlowSideEffect } from './flowSideEffects';
+import { isRemovedWorkflowNode } from './removedWorkflowNodes';
+import type { DebugEntry } from '../../project/types';
+import { clearCheckpoint, loadCheckpoint, saveCheckpoint } from './checkpoint';
 
 let xlsxCache: any = null;
 async function getXlsxModule(): Promise<any> {
@@ -36,6 +39,8 @@ export interface NodeExecutionResult {
   sideEffects: FlowSideEffect[];
   error?: string;
   duration: number;
+  inputKeys?: string[];
+  outputKeys?: string[];
 }
 
 export interface FlowExecutionResult {
@@ -45,6 +50,15 @@ export interface FlowExecutionResult {
   sideEffects: FlowSideEffect[];
   errors: string[];
   totalDuration: number;
+  debug?: {
+    requestId?: string;
+    workflowId?: string;
+    executedNodeCount: number;
+    exportKeys: string[];
+    duration: number;
+    errors: string[];
+    events: DebugEntry[];
+  };
 }
 
 export function topologicalSort(nodes: FlowNodeDef[], edges: FlowEdgeDef[]): FlowNodeDef[] {
@@ -381,10 +395,16 @@ async function executeXlsxMethod(
 export interface ExecuteFlowOptions {
   /** Execute this node and all of its transitive upstream dependencies only. */
   targetNodeId?: string;
-  /** Values injected into generic:variable-input nodes by their configured varName. */
+  /** Values injected into generic:value-input nodes by their configured name. */
   variables?: Record<string, unknown>;
   /** Values injected into concrete node input ports. Connected edges take precedence. */
   nodeInputs?: Record<string, Record<string, unknown>>;
+  workflowId?: string;
+  checkpointId?: string;
+  resumeFromCheckpoint?: boolean;
+  keepCheckpointOnSuccess?: boolean;
+  /** Strategy when a node fails. 'abort' stops the flow (default), 'skip' continues with empty output, 'continue' behaves like 'skip'. */
+  onNodeFailure?: 'abort' | 'skip' | 'continue';
 }
 
 function resolvePropertyInputOverrides(
@@ -394,6 +414,7 @@ function resolvePropertyInputOverrides(
   const raw = properties.__inputOverrides;
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
   const overrides = raw as Record<string, unknown>;
+  if (ports.length === 0) return overrides;
   const allowed = new Set(
     ports
       .filter((port) => port.direction === 'input' || port.direction === 'both')
@@ -444,10 +465,16 @@ export async function executeFlow(
   const nodeResults = new Map<string, NodeExecutionResult>();
   const sideEffects: FlowSideEffect[] = [];
   const errors: string[] = [];
+  const debugEvents: DebugEntry[] = [];
+  let hasNodeFailures = false;
+  const requestId = `flow_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const checkpoint = options.checkpointId && options.resumeFromCheckpoint ? loadCheckpoint(options.checkpointId) : null;
+  if (checkpoint) Object.entries(checkpoint.outputs).forEach(([id, output]) => nodeOutputs.set(id, output));
 
   const getNodeOutput = (nodeId: string) => nodeOutputs.get(nodeId) || {};
 
   for (const node of sorted) {
+    if (checkpoint?.completedNodeIds.includes(node.id)) continue;
     const nodeStart = Date.now();
     const colonIdx = node.specId.indexOf(':');
     const kind = colonIdx > -1 ? node.specId.slice(0, colonIdx) : 'unknown';
@@ -456,12 +483,15 @@ export async function executeFlow(
     let properties: Record<string, unknown> = {};
 
     try {
+      if (isRemovedWorkflowNode(node.specId)) {
+        throw new Error(`节点已移除，不可执行: ${node.specId}`);
+      }
       const spec = getRegistrySync()?.byId.get(node.specId);
       properties = resolveNodeProperties(spec, (node.data as any)?.propertiesJson);
       const effectivePorts = getNodeEffectivePorts(spec, properties);
       const injectedInputs = { ...(options.nodeInputs?.[node.id] || {}) };
-      if (node.specId === 'generic:variable-input') {
-        const variableName = String(properties.varName || '');
+      if (node.specId === 'generic:value-input') {
+        const variableName = String(properties.name || '');
         if (variableName && Object.prototype.hasOwnProperty.call(options.variables || {}, variableName)) {
           injectedInputs.override = options.variables![variableName];
         }
@@ -470,21 +500,39 @@ export async function executeFlow(
       const inputSelections = resolveInputSelections(properties);
       inputs = { ...propertyInputOverrides, ...injectedInputs, ...collectInputs(node.id, edges, nodeOutputs, inputSelections) };
       inputs = validateConnectedInputs({ ...spec, ports: effectivePorts } as FlowNodeSpec, inputs);
+      debugEvents.push({
+        id: `${requestId}:${node.id}:start`,
+        timestamp: Date.now(),
+        level: 'debug',
+        source: 'flow',
+        title: `开始执行节点 ${name}`,
+        message: `${node.specId}`,
+        workflowId: options.targetNodeId,
+        nodeId: node.id,
+        context: {
+          specId: node.specId,
+          inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
+        },
+      });
       let outputs: Record<string, unknown>;
 
       // 优先使用注册的执行器
-      if (hasExecutor(node.specId)) {
-        const executor = getExecutor(node.specId)!;
-        const ctx: NodeExecContext = {
-          inputs, properties, tables, getNodeOutput,
-          checkType: (type: string, value: unknown) => checkPortType(type, value),
-          assertType: (type: string, value: unknown, portName?: string) => assertPortType(type, value, portName),
-        };
-        outputs = await executor(ctx);
-      } else if (kind === 'method') {
-        outputs = await executeXlsxMethod(node.specId.replace('method:', ''), inputs, properties);
-      } else {
-        throw new Error(`节点缺少执行器: ${node.specId}`);
+      const retryCount = Math.max(0, Number(properties.retryCount || 0)); const retryDelayMs = Math.max(0, Number(properties.retryDelayMs || 0)); const retryOn = String(properties.retryOn || 'any'); let attempt = 0;
+      while (true) {
+        try {
+          if (hasExecutor(node.specId)) {
+            const executor = getExecutor(node.specId)!;
+            const ctx: NodeExecContext = { inputs, properties, tables, getNodeOutput, checkType: (type: string, value: unknown) => checkPortType(type, value), assertType: (type: string, value: unknown, portName?: string) => assertPortType(type, value, portName) };
+            outputs = await executor(ctx);
+          } else if (kind === 'method') outputs = await executeXlsxMethod(node.specId.replace('method:', ''), inputs, properties);
+          else throw new Error(`节点缺少执行器: ${node.specId}`);
+          break;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error); const matches = retryOn === 'any' || message.includes(retryOn);
+          if (attempt >= retryCount || !matches) throw error;
+          attempt += 1; debugEvents.push({ id: `${requestId}:${node.id}:retry:${attempt}`, timestamp: Date.now(), level: 'warn', source: 'workflow-node', title: name, message: `第 ${attempt} 次重试`, nodeId: node.id, context: { error: message, delay: retryDelayMs } });
+          if (retryDelayMs) await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+        }
       }
 
       outputs = validateOutputs(effectivePorts, outputs);
@@ -492,6 +540,7 @@ export async function executeFlow(
       sideEffects.push(...nodeSideEffects);
 
       nodeOutputs.set(node.id, outputs);
+      if (options.checkpointId) saveCheckpoint(options.checkpointId, options.workflowId || options.targetNodeId || 'workflow', [...nodeOutputs.keys()], nodeOutputs);
       nodeResults.set(node.id, {
         nodeId: node.id,
         specId: node.specId,
@@ -500,8 +549,27 @@ export async function executeFlow(
         outputs,
         sideEffects: nodeSideEffects,
         duration: Date.now() - nodeStart,
+        inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
+        outputKeys: Object.keys(outputs).filter((key) => !key.startsWith('_')),
+      });
+      debugEvents.push({
+        id: `${requestId}:${node.id}:success`,
+        timestamp: Date.now(),
+        level: 'info',
+        source: 'workflow-node',
+        title: name,
+        message: `节点执行完成，用时 ${Date.now() - nodeStart}ms`,
+        workflowId: options.targetNodeId,
+        nodeId: node.id,
+        context: {
+          specId: node.specId,
+          inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
+          outputKeys: Object.keys(outputs).filter((key) => !key.startsWith('_')),
+          duration: Date.now() - nodeStart,
+        },
       });
     } catch (e) {
+      hasNodeFailures = true;
       const errMsg = e instanceof Error ? e.message : String(e);
       const inputKeys = Object.keys(inputs || {}).filter(k => !k.startsWith('_'));
       const propKeys = Object.keys(properties || {}).filter(k => properties[k] !== undefined && properties[k] !== '');
@@ -511,7 +579,9 @@ export async function executeFlow(
         inputKeys.length > 0 ? `输入端口: ${inputKeys.join(', ')}` : null,
         propKeys.length > 0 ? `配置: ${propKeys.slice(0, 5).join(', ')}` : null,
       ].filter(Boolean).join(' | ');
-      errors.push(context);
+      if (options.onNodeFailure !== 'skip' && options.onNodeFailure !== 'continue') {
+        errors.push(context);
+      }
       nodeOutputs.set(node.id, {});
       nodeResults.set(node.id, {
         nodeId: node.id,
@@ -522,6 +592,24 @@ export async function executeFlow(
         sideEffects: [],
         error: context,
         duration: Date.now() - nodeStart,
+        inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
+        outputKeys: [],
+      });
+      debugEvents.push({
+        id: `${requestId}:${node.id}:error`,
+        timestamp: Date.now(),
+        level: 'error',
+        source: 'workflow-node',
+        title: name,
+        message: context,
+        workflowId: options.targetNodeId,
+        nodeId: node.id,
+        context: {
+          specId: node.specId,
+          inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
+          duration: Date.now() - nodeStart,
+          errorMessage: errMsg,
+        },
       });
     }
   }
@@ -535,12 +623,22 @@ export async function executeFlow(
     }
   }
 
+  if (errors.length === 0 && options.checkpointId && !options.keepCheckpointOnSuccess) clearCheckpoint(options.checkpointId);
   return {
-    success: errors.length === 0,
+    success: errors.length === 0 && !hasNodeFailures,
     nodeResults,
     finalOutputs,
     sideEffects,
     errors,
     totalDuration: Date.now() - startTime,
+    debug: {
+      requestId,
+      workflowId: options.targetNodeId,
+      executedNodeCount: nodeResults.size,
+      exportKeys: Object.keys(finalOutputs),
+      duration: Date.now() - startTime,
+      errors,
+      events: debugEvents,
+    },
   };
 }
