@@ -733,17 +733,28 @@ export async function executeFlow(
           nodeId: node.id,
           context: errorContext,
         });
+        if (options.onNodeFailure !== 'skip' && options.onNodeFailure !== 'continue') {
+          return;
+        }
       }
     };
 
+    let aborted = false;
     if (options.parallel) {
       const levels = groupByTopologicalLevel(sorted, edges);
       for (const level of levels) {
+        if (aborted) break;
         await Promise.all(level.map(n => executeNode(n)));
+        if (hasNodeFailures && options.onNodeFailure !== 'skip' && options.onNodeFailure !== 'continue') {
+          aborted = true;
+        }
       }
     } else {
       for (const node of sorted) {
         await executeNode(node);
+        if (hasNodeFailures && options.onNodeFailure !== 'skip' && options.onNodeFailure !== 'continue') {
+          break;
+        }
       }
     }
   }

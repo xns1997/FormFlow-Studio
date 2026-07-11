@@ -931,6 +931,40 @@ test('onNodeFailure skip allows downstream nodes to execute', async () => {
   assert.equal(result.nodeResults.has('output'), true);
 });
 
+test('onNodeFailure abort (default) stops execution when middle node fails', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('input', 'generic:value-input', { valueType: 'number', value: 10 }),
+    node('fail', 'generic:custom-js', { code: 'throw new Error("forced failure")' }),
+    node('downstream', 'generic:output-display'),
+  ];
+  const result = await executeFlow(nodes, [
+    edge('e1', 'input', 'fail', 'value', '_args'),
+    edge('e2', 'fail', 'downstream', 'value', 'value'),
+  ]);
+  assert.equal(result.success, false);
+  assert.equal(result.nodeResults.get('input')?.success, true);
+  assert.equal(result.nodeResults.get('fail')?.success, false);
+  assert.equal(result.nodeResults.has('downstream'), false, 'downstream node should NOT execute when onNodeFailure is abort');
+});
+
+test('onNodeFailure abort stops parallel execution when middle node fails', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('input', 'generic:value-input', { valueType: 'number', value: 10 }),
+    node('fail', 'generic:custom-js', { code: 'throw new Error("forced failure")' }),
+    node('downstream', 'generic:output-display'),
+  ];
+  const result = await executeFlow(nodes, [
+    edge('e1', 'input', 'fail', 'value', '_args'),
+    edge('e2', 'fail', 'downstream', 'value', 'value'),
+  ], [], { parallel: true });
+  assert.equal(result.success, false);
+  assert.equal(result.nodeResults.get('input')?.success, true);
+  assert.equal(result.nodeResults.get('fail')?.success, false);
+  assert.equal(result.nodeResults.has('downstream'), false, 'downstream node should NOT execute when onNodeFailure is abort in parallel mode');
+});
+
 test('timeoutMs aborts flow after specified duration', async () => {
   await loadNodeRegistry();
   const nodes = [
