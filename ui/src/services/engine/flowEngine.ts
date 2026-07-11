@@ -409,6 +409,8 @@ export interface ExecuteFlowOptions {
   timeoutMs?: number;
   /** Per-node timeout in ms. If a single node doesn't complete within this duration, it is aborted. */
   nodeTimeoutMs?: number;
+  /** When true, independent nodes at the same topological level execute concurrently via Promise.all. */
+  parallel?: boolean;
 }
 
 function resolvePropertyInputOverrides(
@@ -452,6 +454,36 @@ function createTimeoutPromise(ms: number, label: string): Promise<never> {
   return new Promise((_, reject) => {
     setTimeout(() => reject(new Error(`${label}执行超时（${ms}ms）`)), ms);
   });
+}
+
+function groupByTopologicalLevel(sorted: FlowNodeDef[], edges: FlowEdgeDef[]): FlowNodeDef[][] {
+  const levels: FlowNodeDef[][] = [];
+  const inDegree = new Map<string, number>();
+  for (const n of sorted) inDegree.set(n.id, 0);
+  for (const e of edges) {
+    if (inDegree.has(e.target)) inDegree.set(e.target, (inDegree.get(e.target) || 0) + 1);
+  }
+  const visited = new Set<string>();
+  let remaining = sorted.length;
+  while (remaining > 0) {
+    const level: FlowNodeDef[] = [];
+    for (const n of sorted) {
+      if (visited.has(n.id)) continue;
+      const allPredecessorsVisited = edges
+        .filter(e => e.target === n.id)
+        .every(e => visited.has(e.source));
+      if (allPredecessorsVisited) {
+        level.push(n);
+      }
+    }
+    if (level.length === 0) break;
+    for (const n of level) {
+      visited.add(n.id);
+      remaining--;
+    }
+    levels.push(level);
+  }
+  return levels;
 }
 
 export async function executeFlow(
@@ -507,151 +539,161 @@ export async function executeFlow(
   return buildResult();
 
   async function runFlowLoop() {
-    for (const node of sorted) {
-    if (checkpoint?.completedNodeIds.includes(node.id)) continue;
-    const nodeStart = Date.now();
-    const colonIdx = node.specId.indexOf(':');
-    const kind = colonIdx > -1 ? node.specId.slice(0, colonIdx) : 'unknown';
-    const name = colonIdx > -1 ? node.specId.slice(colonIdx + 1) : node.specId;
-    let inputs: Record<string, unknown> = {};
-    let properties: Record<string, unknown> = {};
+    const executeNode = async (node: FlowNodeDef) => {
+      if (checkpoint?.completedNodeIds.includes(node.id)) return;
+      const nodeStart = Date.now();
+      const colonIdx = node.specId.indexOf(':');
+      const kind = colonIdx > -1 ? node.specId.slice(0, colonIdx) : 'unknown';
+      const name = colonIdx > -1 ? node.specId.slice(colonIdx + 1) : node.specId;
+      let inputs: Record<string, unknown> = {};
+      let properties: Record<string, unknown> = {};
 
-    try {
-      if (isRemovedWorkflowNode(node.specId)) {
-        throw new Error(`节点已移除，不可执行: ${node.specId}`);
-      }
-      const spec = getRegistrySync()?.byId.get(node.specId);
-      properties = resolveNodeProperties(spec, (node.data as any)?.propertiesJson);
-      const effectivePorts = getNodeEffectivePorts(spec, properties);
-      const injectedInputs = { ...(options.nodeInputs?.[node.id] || {}) };
-      if (node.specId === 'generic:value-input') {
-        const variableName = String(properties.name || '');
-        if (variableName && Object.prototype.hasOwnProperty.call(options.variables || {}, variableName)) {
-          injectedInputs.override = options.variables![variableName];
+      try {
+        if (isRemovedWorkflowNode(node.specId)) {
+          throw new Error(`节点已移除，不可执行: ${node.specId}`);
         }
-      }
-      const propertyInputOverrides = resolvePropertyInputOverrides(effectivePorts, properties);
-      const inputSelections = resolveInputSelections(properties);
-      inputs = { ...propertyInputOverrides, ...injectedInputs, ...collectInputs(node.id, edges, nodeOutputs, inputSelections) };
-      inputs = validateConnectedInputs({ ...spec, ports: effectivePorts } as FlowNodeSpec, inputs);
-      debugEvents.push({
-        id: `${requestId}:${node.id}:start`,
-        timestamp: Date.now(),
-        level: 'debug',
-        source: 'flow',
-        title: `开始执行节点 ${name}`,
-        message: `${node.specId}`,
-        workflowId: options.targetNodeId,
-        nodeId: node.id,
-        context: {
-          specId: node.specId,
-          inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
-        },
-      });
-      let outputs: Record<string, unknown>;
-
-      // 优先使用注册的执行器
-      const retryCount = Math.max(0, Number(properties.retryCount || 0)); const retryDelayMs = Math.max(0, Number(properties.retryDelayMs || 0)); const retryOn = String(properties.retryOn || 'any'); let attempt = 0;
-      while (true) {
-        try {
-          const runNode = async (): Promise<Record<string, unknown>> => {
-            if (hasExecutor(node.specId)) {
-              const executor = getExecutor(node.specId)!;
-              const ctx: NodeExecContext = { inputs, properties, tables, getNodeOutput, checkType: (type: string, value: unknown) => checkPortType(type, value), assertType: (type: string, value: unknown, portName?: string) => assertPortType(type, value, portName) };
-              return executor(ctx);
-            } else if (kind === 'method') return executeXlsxMethod(node.specId.replace('method:', ''), inputs, properties);
-            else throw new Error(`节点缺少执行器: ${node.specId}`);
-          };
-          outputs = options.nodeTimeoutMs && options.nodeTimeoutMs > 0
-            ? await Promise.race([runNode(), createTimeoutPromise(options.nodeTimeoutMs, name)])
-            : await runNode();
-          break;
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error); const matches = retryOn === 'any' || message.includes(retryOn);
-          if (attempt >= retryCount || !matches) throw error;
-          attempt += 1; debugEvents.push({ id: `${requestId}:${node.id}:retry:${attempt}`, timestamp: Date.now(), level: 'warn', source: 'workflow-node', title: name, message: `第 ${attempt} 次重试`, nodeId: node.id, context: { error: message, delay: retryDelayMs } });
-          if (retryDelayMs) await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+        const spec = getRegistrySync()?.byId.get(node.specId);
+        properties = resolveNodeProperties(spec, (node.data as any)?.propertiesJson);
+        const effectivePorts = getNodeEffectivePorts(spec, properties);
+        const injectedInputs = { ...(options.nodeInputs?.[node.id] || {}) };
+        if (node.specId === 'generic:value-input') {
+          const variableName = String(properties.name || '');
+          if (variableName && Object.prototype.hasOwnProperty.call(options.variables || {}, variableName)) {
+            injectedInputs.override = options.variables![variableName];
+          }
         }
-      }
+        const propertyInputOverrides = resolvePropertyInputOverrides(effectivePorts, properties);
+        const inputSelections = resolveInputSelections(properties);
+        inputs = { ...propertyInputOverrides, ...injectedInputs, ...collectInputs(node.id, edges, nodeOutputs, inputSelections) };
+        inputs = validateConnectedInputs({ ...spec, ports: effectivePorts } as FlowNodeSpec, inputs);
+        debugEvents.push({
+          id: `${requestId}:${node.id}:start`,
+          timestamp: Date.now(),
+          level: 'debug',
+          source: 'flow',
+          title: `开始执行节点 ${name}`,
+          message: `${node.specId}`,
+          workflowId: options.targetNodeId,
+          nodeId: node.id,
+          context: {
+            specId: node.specId,
+            inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
+          },
+        });
+        let outputs: Record<string, unknown>;
 
-      outputs = validateOutputs(effectivePorts, outputs);
-      const nodeSideEffects = extractNodeSideEffects(outputs);
-      sideEffects.push(...nodeSideEffects);
+        const retryCount = Math.max(0, Number(properties.retryCount || 0)); const retryDelayMs = Math.max(0, Number(properties.retryDelayMs || 0)); const retryOn = String(properties.retryOn || 'any'); let attempt = 0;
+        while (true) {
+          try {
+            const runNode = async (): Promise<Record<string, unknown>> => {
+              if (hasExecutor(node.specId)) {
+                const executor = getExecutor(node.specId)!;
+                const ctx: NodeExecContext = { inputs, properties, tables, getNodeOutput, checkType: (type: string, value: unknown) => checkPortType(type, value), assertType: (type: string, value: unknown, portName?: string) => assertPortType(type, value, portName) };
+                return executor(ctx);
+              } else if (kind === 'method') return executeXlsxMethod(node.specId.replace('method:', ''), inputs, properties);
+              else throw new Error(`节点缺少执行器: ${node.specId}`);
+            };
+            outputs = options.nodeTimeoutMs && options.nodeTimeoutMs > 0
+              ? await Promise.race([runNode(), createTimeoutPromise(options.nodeTimeoutMs, name)])
+              : await runNode();
+            break;
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error); const matches = retryOn === 'any' || message.includes(retryOn);
+            if (attempt >= retryCount || !matches) throw error;
+            attempt += 1; debugEvents.push({ id: `${requestId}:${node.id}:retry:${attempt}`, timestamp: Date.now(), level: 'warn', source: 'workflow-node', title: name, message: `第 ${attempt} 次重试`, nodeId: node.id, context: { error: message, delay: retryDelayMs } });
+            if (retryDelayMs) await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+          }
+        }
 
-      nodeOutputs.set(node.id, outputs);
-      if (options.checkpointId) saveCheckpoint(options.checkpointId, options.workflowId || options.targetNodeId || 'workflow', [...nodeOutputs.keys()], nodeOutputs);
-      nodeResults.set(node.id, {
-        nodeId: node.id,
-        specId: node.specId,
-        label: name,
-        success: true,
-        outputs,
-        sideEffects: nodeSideEffects,
-        duration: Date.now() - nodeStart,
-        inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
-        outputKeys: Object.keys(outputs).filter((key) => !key.startsWith('_')),
-      });
-      debugEvents.push({
-        id: `${requestId}:${node.id}:success`,
-        timestamp: Date.now(),
-        level: 'info',
-        source: 'workflow-node',
-        title: name,
-        message: `节点执行完成，用时 ${Date.now() - nodeStart}ms`,
-        workflowId: options.targetNodeId,
-        nodeId: node.id,
-        context: {
+        outputs = validateOutputs(effectivePorts, outputs);
+        const nodeSideEffects = extractNodeSideEffects(outputs);
+        sideEffects.push(...nodeSideEffects);
+
+        nodeOutputs.set(node.id, outputs);
+        if (options.checkpointId) saveCheckpoint(options.checkpointId, options.workflowId || options.targetNodeId || 'workflow', [...nodeOutputs.keys()], nodeOutputs);
+        nodeResults.set(node.id, {
+          nodeId: node.id,
           specId: node.specId,
+          label: name,
+          success: true,
+          outputs,
+          sideEffects: nodeSideEffects,
+          duration: Date.now() - nodeStart,
           inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
           outputKeys: Object.keys(outputs).filter((key) => !key.startsWith('_')),
-          duration: Date.now() - nodeStart,
-        },
-      });
-    } catch (e) {
-      hasNodeFailures = true;
-      const errMsg = e instanceof Error ? e.message : String(e);
-      const inputKeys = Object.keys(inputs || {}).filter(k => !k.startsWith('_'));
-      const propKeys = Object.keys(properties || {}).filter(k => properties[k] !== undefined && properties[k] !== '');
-      const context = [
-        `节点 ${name} (${node.specId})`,
-        `错误: ${errMsg}`,
-        inputKeys.length > 0 ? `输入端口: ${inputKeys.join(', ')}` : null,
-        propKeys.length > 0 ? `配置: ${propKeys.slice(0, 5).join(', ')}` : null,
-      ].filter(Boolean).join(' | ');
-      if (options.onNodeFailure !== 'skip' && options.onNodeFailure !== 'continue') {
-        errors.push(context);
-      }
-      nodeOutputs.set(node.id, {});
-      nodeResults.set(node.id, {
-        nodeId: node.id,
-        specId: node.specId,
-        label: name,
-        success: false,
-        outputs: {},
-        sideEffects: [],
-        error: context,
-        duration: Date.now() - nodeStart,
-        inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
-        outputKeys: [],
-      });
-      debugEvents.push({
-        id: `${requestId}:${node.id}:error`,
-        timestamp: Date.now(),
-        level: 'error',
-        source: 'workflow-node',
-        title: name,
-        message: context,
-        workflowId: options.targetNodeId,
-        nodeId: node.id,
-        context: {
+        });
+        debugEvents.push({
+          id: `${requestId}:${node.id}:success`,
+          timestamp: Date.now(),
+          level: 'info',
+          source: 'workflow-node',
+          title: name,
+          message: `节点执行完成，用时 ${Date.now() - nodeStart}ms`,
+          workflowId: options.targetNodeId,
+          nodeId: node.id,
+          context: {
+            specId: node.specId,
+            inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
+            outputKeys: Object.keys(outputs).filter((key) => !key.startsWith('_')),
+            duration: Date.now() - nodeStart,
+          },
+        });
+      } catch (e) {
+        hasNodeFailures = true;
+        const errMsg = e instanceof Error ? e.message : String(e);
+        const inputKeys = Object.keys(inputs || {}).filter(k => !k.startsWith('_'));
+        const propKeys = Object.keys(properties || {}).filter(k => properties[k] !== undefined && properties[k] !== '');
+        const context = [
+          `节点 ${name} (${node.specId})`,
+          `错误: ${errMsg}`,
+          inputKeys.length > 0 ? `输入端口: ${inputKeys.join(', ')}` : null,
+          propKeys.length > 0 ? `配置: ${propKeys.slice(0, 5).join(', ')}` : null,
+        ].filter(Boolean).join(' | ');
+        if (options.onNodeFailure !== 'skip' && options.onNodeFailure !== 'continue') {
+          errors.push(context);
+        }
+        nodeOutputs.set(node.id, {});
+        nodeResults.set(node.id, {
+          nodeId: node.id,
           specId: node.specId,
-          inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
+          label: name,
+          success: false,
+          outputs: {},
+          sideEffects: [],
+          error: context,
           duration: Date.now() - nodeStart,
-          errorMessage: errMsg,
-        },
-      });
+          inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
+          outputKeys: [],
+        });
+        debugEvents.push({
+          id: `${requestId}:${node.id}:error`,
+          timestamp: Date.now(),
+          level: 'error',
+          source: 'workflow-node',
+          title: name,
+          message: context,
+          workflowId: options.targetNodeId,
+          nodeId: node.id,
+          context: {
+            specId: node.specId,
+            inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
+            duration: Date.now() - nodeStart,
+            errorMessage: errMsg,
+          },
+        });
+      }
+    };
+
+    if (options.parallel) {
+      const levels = groupByTopologicalLevel(sorted, edges);
+      for (const level of levels) {
+        await Promise.all(level.map(n => executeNode(n)));
+      }
+    } else {
+      for (const node of sorted) {
+        await executeNode(node);
+      }
     }
-  }
   }
 
   function buildResult(): FlowExecutionResult {

@@ -1023,3 +1023,46 @@ test('condition-branch routes to true or false output', async () => {
   assert.equal(falseResult.nodeResults.get('true-out')?.outputs.value, undefined);
   assert.equal(falseResult.nodeResults.get('false-out')?.outputs.value, 5);
 });
+
+test('parallel execution runs independent nodes concurrently', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('a', 'generic:value-input', { valueType: 'number', value: 1 }),
+    node('b', 'generic:value-input', { valueType: 'number', value: 2 }),
+    node('merge', 'generic:output-display'),
+  ];
+  const result = await executeFlow(nodes, [
+    edge('e1', 'a', 'merge', 'value', 'value'),
+  ], [], { parallel: true });
+  assert.equal(result.success, true);
+  assert.equal(result.nodeResults.get('merge')?.outputs.value, 1);
+});
+
+test('parallel execution works with sequential fallback when parallel is false', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('a', 'generic:value-input', { valueType: 'number', value: 10 }),
+    node('b', 'generic:value-input', { valueType: 'number', value: 20 }),
+    node('merge', 'generic:output-display'),
+  ];
+  const result = await executeFlow(nodes, [
+    edge('e1', 'a', 'merge', 'value', 'value'),
+  ], [], { parallel: false });
+  assert.equal(result.success, true);
+  assert.equal(result.nodeResults.get('merge')?.outputs.value, 10);
+});
+
+test('parallel execution handles node failure gracefully', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('a', 'generic:value-input', { valueType: 'number', value: 1 }),
+    node('b', 'generic:custom-js', { code: 'throw new Error("forced failure")' }),
+    node('merge', 'generic:output-display'),
+  ];
+  const result = await executeFlow(nodes, [
+    edge('e1', 'a', 'merge', 'value', 'value'),
+  ], [], { parallel: true, onNodeFailure: 'skip' });
+  assert.equal(result.success, false);
+  assert.equal(result.nodeResults.get('b')?.success, false);
+  assert.equal(result.nodeResults.get('merge')?.success, true);
+});
