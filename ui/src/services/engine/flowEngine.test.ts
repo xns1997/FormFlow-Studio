@@ -1066,3 +1066,20 @@ test('parallel execution handles node failure gracefully', async () => {
   assert.equal(result.nodeResults.get('b')?.success, false);
   assert.equal(result.nodeResults.get('merge')?.success, true);
 });
+
+test('isolatedScopes prevents variable name collisions', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('a', 'generic:value-input', { valueType: 'number', value: 10 }),
+    node('b', 'generic:value-input', { valueType: 'number', value: 20 }),
+    node('use-a', 'behavior-js-script', { code: 'return { result: inputs.value }' }),
+    node('use-b', 'behavior-js-script', { code: 'return { result: inputs.value }' }),
+  ];
+  const result = await executeFlow(nodes, [
+    edge('e1', 'a', 'use-a', 'value', 'value'),
+    edge('e2', 'b', 'use-b', 'value', 'value'),
+  ], [], { isolatedScopes: true });
+  assert.equal(result.success, true);
+  assert.equal(result.nodeResults.get('use-a')?.outputs.result, 10);
+  assert.equal(result.nodeResults.get('use-b')?.outputs.result, 20);
+});

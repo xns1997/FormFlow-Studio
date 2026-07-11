@@ -129,11 +129,28 @@ function extractPortName(handle: string | undefined, direction: 'in' | 'out'): s
   return handle.replace(/^(in:|out:)/, '');
 }
 
+function buildScopeMap(
+  nodeId: string,
+  edges: FlowEdgeDef[],
+  nodeOutputs: Map<string, Record<string, unknown>>,
+): Map<string, Record<string, unknown>> {
+  const scope = new Map<string, Record<string, unknown>>();
+  const sourceIds = new Set(
+    edges.filter((edge) => edge.target === nodeId).map((edge) => edge.source),
+  );
+  for (const sourceId of sourceIds) {
+    const output = nodeOutputs.get(sourceId);
+    if (output) scope.set(sourceId, output);
+  }
+  return scope;
+}
+
 function collectInputs(
   nodeId: string,
   edges: FlowEdgeDef[],
   nodeOutputs: Map<string, Record<string, unknown>>,
   selectedEdgeIdsByPort: Record<string, string> = {},
+  scopeMap?: Map<string, Record<string, unknown>>,
 ): Record<string, unknown> {
   const inputs: Record<string, unknown> = {};
   const targetEdges = edges.filter((edge) => edge.target === nodeId);
@@ -149,7 +166,7 @@ function collectInputs(
     const selected = selectedEdgeIdsByPort[portName];
     const edge = portEdges.find((item) => item.id === selected) || portEdges[portEdges.length - 1];
     if (!edge) continue;
-    const srcOutput = nodeOutputs.get(edge.source);
+    const srcOutput = scopeMap ? scopeMap.get(edge.source) : nodeOutputs.get(edge.source);
     if (!srcOutput) throw new Error(`上游节点 ${edge.source} 尚未执行`);
     const srcPortName = extractPortName(edge.sourceHandle, 'out');
     if (edge.sourceHandle) {
@@ -411,6 +428,8 @@ export interface ExecuteFlowOptions {
   nodeTimeoutMs?: number;
   /** When true, independent nodes at the same topological level execute concurrently via Promise.all. */
   parallel?: boolean;
+  /** When true, each node gets its own scope map for variable lookups, preventing variable name collisions between nodes. */
+  isolatedScopes?: boolean;
 }
 
 function resolvePropertyInputOverrides(
@@ -564,7 +583,8 @@ export async function executeFlow(
         }
         const propertyInputOverrides = resolvePropertyInputOverrides(effectivePorts, properties);
         const inputSelections = resolveInputSelections(properties);
-        inputs = { ...propertyInputOverrides, ...injectedInputs, ...collectInputs(node.id, edges, nodeOutputs, inputSelections) };
+        const scopeMap = options.isolatedScopes ? buildScopeMap(node.id, edges, nodeOutputs) : undefined;
+        inputs = { ...propertyInputOverrides, ...injectedInputs, ...collectInputs(node.id, edges, nodeOutputs, inputSelections, scopeMap) };
         inputs = validateConnectedInputs({ ...spec, ports: effectivePorts } as FlowNodeSpec, inputs);
         debugEvents.push({
           id: `${requestId}:${node.id}:start`,
