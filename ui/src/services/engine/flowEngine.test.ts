@@ -960,18 +960,36 @@ test('nodeTimeoutMs allows fast node to complete', async () => {
 
 test('condition-branch routes to true or false output', async () => {
   await loadNodeRegistry();
-  const nodes = [
+
+  // True branch: value=15, expression='value > 10' → true
+  const trueResult = await executeFlow([
     node('input', 'generic:value-input', { valueType: 'number', value: 15 }),
     node('branch', 'generic:condition-branch', { expression: 'value > 10' }),
     node('true-out', 'generic:output-display'),
     node('false-out', 'generic:output-display'),
-  ];
-  const result = await executeFlow(nodes, [
+  ], [
     edge('e1', 'input', 'branch', 'value', 'value'),
     edge('e2-true', 'branch', 'true-out', 'trueBranch', 'value'),
     edge('e2-false', 'branch', 'false-out', 'falseBranch', 'value'),
   ]);
-  assert.equal(result.success, true);
-  assert.equal(result.nodeResults.get('branch')?.outputs.result, true);
-  assert.equal(result.nodeResults.get('true-out')?.outputs.value, 15);
+  assert.equal(trueResult.success, true, trueResult.errors.join('\n'));
+  assert.equal(trueResult.nodeResults.get('branch')?.outputs.result, true);
+  assert.equal(trueResult.nodeResults.get('true-out')?.outputs.value, 15);
+  assert.equal(trueResult.nodeResults.get('false-out')?.outputs.value, undefined);
+
+  // False branch: value=5, expression='value > 10' → false
+  const falseResult = await executeFlow([
+    node('input', 'generic:value-input', { valueType: 'number', value: 5 }),
+    node('branch', 'generic:condition-branch', { expression: 'value > 10' }),
+    node('true-out', 'generic:output-display'),
+    node('false-out', 'generic:output-display'),
+  ], [
+    edge('e1', 'input', 'branch', 'value', 'value'),
+    edge('e2-true', 'branch', 'true-out', 'trueBranch', 'value'),
+    edge('e2-false', 'branch', 'false-out', 'falseBranch', 'value'),
+  ]);
+  assert.equal(falseResult.success, true, falseResult.errors.join('\n'));
+  assert.equal(falseResult.nodeResults.get('branch')?.outputs.result, false);
+  assert.equal(falseResult.nodeResults.get('true-out')?.outputs.value, undefined);
+  assert.equal(falseResult.nodeResults.get('false-out')?.outputs.value, 5);
 });

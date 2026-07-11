@@ -549,11 +549,11 @@ function resolveScopedToken(token: unknown, scope: Record<string, unknown>): unk
   return token;
 }
 
-function evaluateConfiguredExpression(expression: string, scope: Record<string, unknown>): unknown {
+function evaluateConfiguredExpression(expression: string, scope: Record<string, unknown>, value?: unknown): unknown {
   const body = expression.startsWith('=') ? expression.slice(1) : expression;
   try {
-    const fn = new Function('record', 'inputs', 'context', 'get', `return (${body});`);
-    return fn(scope.record, scope.inputs, scope.context, (value: unknown, path: string) => getValueByPath(value, path));
+    const fn = new Function('record', 'inputs', 'context', 'get', 'value', `return (${body});`);
+    return fn(scope.record, scope.inputs, scope.context, (v: unknown, path: string) => getValueByPath(v, path), value);
   } catch {
     return undefined;
   }
@@ -1957,8 +1957,12 @@ registerExecutor('generic:email-send', (ctx) => {
 registerExecutor('generic:condition-branch', ({ inputs, properties }) => {
   const value = inputs.value;
   const expression = String(properties.expression || '');
-  const valueVar = value;
+  const scope = { record: null, inputs, context: {} };
   let result = false;
-  try { result = Boolean(new Function('value', `return ${expression}`)(valueVar)); } catch {}
+  try {
+    result = Boolean(evaluateConfiguredExpression(expression, scope, value));
+  } catch (err) {
+    console.error('condition-branch expression error:', err);
+  }
   return { result, trueBranch: result ? value : undefined, falseBranch: !result ? value : undefined };
 });
