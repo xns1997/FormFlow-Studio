@@ -8,7 +8,14 @@ import { CURATED_XLSX_METHODS, EXPECTED_NODE_COUNT } from '../../../nodes/regist
 import { execute as modifyRange } from '../../../nodes/func-modify-range/index';
 import { editWorksheetStructure } from '../../../nodes/xlsx-worksheet-ops';
 import { loadNodeRegistry } from '../../flowRegistry';
+import { registerExecutor } from '../../../nodes/executor-registry';
 import { executeFlow, selectUpstreamFlow, type FlowEdgeDef, type FlowNodeDef } from './flowEngine';
+
+// Register a slow executor for timeout testing
+registerExecutor('test:slow-node', async () => {
+  await new Promise((r) => setTimeout(r, 5000));
+  return { result: 'done' };
+});
 
 const node = (id: string, specId: string, properties: Record<string, unknown> = {}): FlowNodeDef => ({
   id,
@@ -907,4 +914,46 @@ test('onNodeFailure skip allows downstream nodes to execute', async () => {
   assert.equal(result.success, false);
   assert.equal(result.nodeResults.get('fail')?.success, false);
   assert.equal(result.nodeResults.has('output'), true);
+});
+
+test('timeoutMs aborts flow after specified duration', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('slow', 'test:slow-node'),
+  ];
+  const result = await executeFlow(nodes, [], [], { timeoutMs: 100 });
+  assert.equal(result.success, false);
+  assert.match(result.errors[0] || '', /执行超时/);
+});
+
+test('nodeTimeoutMs aborts a slow node after specified duration', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('slow', 'test:slow-node'),
+  ];
+  const result = await executeFlow(nodes, [], [], { nodeTimeoutMs: 100 });
+  assert.equal(result.success, false);
+  assert.match(result.nodeResults.get('slow')?.error || '', /执行超时/);
+});
+
+test('timeoutMs allows fast flow to complete', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('input', 'generic:value-input', { valueType: 'number', value: 42 }),
+    node('output', 'generic:output-display'),
+  ];
+  const result = await executeFlow(nodes, [edge('e1', 'input', 'output', 'value', 'value')], [], { timeoutMs: 5000 });
+  assert.equal(result.success, true);
+  assert.equal(result.nodeResults.get('output')?.outputs.value, 42);
+});
+
+test('nodeTimeoutMs allows fast node to complete', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('input', 'generic:value-input', { valueType: 'number', value: 42 }),
+    node('output', 'generic:output-display'),
+  ];
+  const result = await executeFlow(nodes, [edge('e1', 'input', 'output', 'value', 'value')], [], { nodeTimeoutMs: 5000 });
+  assert.equal(result.success, true);
+  assert.equal(result.nodeResults.get('output')?.outputs.value, 42);
 });

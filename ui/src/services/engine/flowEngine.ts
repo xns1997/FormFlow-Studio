@@ -405,6 +405,10 @@ export interface ExecuteFlowOptions {
   keepCheckpointOnSuccess?: boolean;
   /** Strategy when a node fails. 'abort' stops the flow (default), 'skip' continues with empty output, 'continue' behaves like 'skip'. */
   onNodeFailure?: 'abort' | 'skip' | 'continue';
+  /** Global timeout in ms. If the flow doesn't complete within this duration, it is aborted. */
+  timeoutMs?: number;
+  /** Per-node timeout in ms. If a single node doesn't complete within this duration, it is aborted. */
+  nodeTimeoutMs?: number;
 }
 
 function resolvePropertyInputOverrides(
@@ -444,6 +448,12 @@ function validateOutputs(ports: FlowNodeSpec['ports'], outputs: Record<string, u
   return normalized;
 }
 
+function createTimeoutPromise(ms: number, label: string): Promise<never> {
+  return new Promise((_, reject) => {
+    setTimeout(() => reject(new Error(`${label}执行超时（${ms}ms）`)), ms);
+  });
+}
+
 export async function executeFlow(
   nodes: FlowNodeDef[],
   edges: FlowEdgeDef[],
@@ -473,7 +483,31 @@ export async function executeFlow(
 
   const getNodeOutput = (nodeId: string) => nodeOutputs.get(nodeId) || {};
 
-  for (const node of sorted) {
+  let globalTimeoutHandle: ReturnType<typeof setTimeout> | undefined;
+  if (options.timeoutMs && options.timeoutMs > 0) {
+    const globalTimeoutPromise = new Promise<never>((_, reject) => {
+      globalTimeoutHandle = setTimeout(() => reject(new Error(`流程执行超时（${options.timeoutMs}ms）`)), options.timeoutMs);
+    });
+    // Race the flow loop against the global timeout
+    try {
+      await Promise.race([runFlowLoop(), globalTimeoutPromise]);
+    } catch (e) {
+      if (globalTimeoutHandle) clearTimeout(globalTimeoutHandle);
+      const errMsg = e instanceof Error ? e.message : String(e);
+      if (/执行超时/.test(errMsg)) {
+        return { success: false, nodeResults, finalOutputs: {}, sideEffects, errors: [errMsg], totalDuration: Date.now() - startTime };
+      }
+      throw e;
+    }
+    if (globalTimeoutHandle) clearTimeout(globalTimeoutHandle);
+    return buildResult();
+  }
+
+  await runFlowLoop();
+  return buildResult();
+
+  async function runFlowLoop() {
+    for (const node of sorted) {
     if (checkpoint?.completedNodeIds.includes(node.id)) continue;
     const nodeStart = Date.now();
     const colonIdx = node.specId.indexOf(':');
@@ -520,12 +554,17 @@ export async function executeFlow(
       const retryCount = Math.max(0, Number(properties.retryCount || 0)); const retryDelayMs = Math.max(0, Number(properties.retryDelayMs || 0)); const retryOn = String(properties.retryOn || 'any'); let attempt = 0;
       while (true) {
         try {
-          if (hasExecutor(node.specId)) {
-            const executor = getExecutor(node.specId)!;
-            const ctx: NodeExecContext = { inputs, properties, tables, getNodeOutput, checkType: (type: string, value: unknown) => checkPortType(type, value), assertType: (type: string, value: unknown, portName?: string) => assertPortType(type, value, portName) };
-            outputs = await executor(ctx);
-          } else if (kind === 'method') outputs = await executeXlsxMethod(node.specId.replace('method:', ''), inputs, properties);
-          else throw new Error(`节点缺少执行器: ${node.specId}`);
+          const runNode = async (): Promise<Record<string, unknown>> => {
+            if (hasExecutor(node.specId)) {
+              const executor = getExecutor(node.specId)!;
+              const ctx: NodeExecContext = { inputs, properties, tables, getNodeOutput, checkType: (type: string, value: unknown) => checkPortType(type, value), assertType: (type: string, value: unknown, portName?: string) => assertPortType(type, value, portName) };
+              return executor(ctx);
+            } else if (kind === 'method') return executeXlsxMethod(node.specId.replace('method:', ''), inputs, properties);
+            else throw new Error(`节点缺少执行器: ${node.specId}`);
+          };
+          outputs = options.nodeTimeoutMs && options.nodeTimeoutMs > 0
+            ? await Promise.race([runNode(), createTimeoutPromise(options.nodeTimeoutMs, name)])
+            : await runNode();
           break;
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error); const matches = retryOn === 'any' || message.includes(retryOn);
@@ -613,32 +652,34 @@ export async function executeFlow(
       });
     }
   }
-
-  const finalOutputs: Record<string, unknown> = {};
-  for (const node of sorted) {
-    const outEdges = edges.filter((e) => e.source === node.id);
-    if (outEdges.length === 0) {
-      const nodeOut = nodeOutputs.get(node.id);
-      if (nodeOut) Object.assign(finalOutputs, nodeOut);
-    }
   }
 
-  if (errors.length === 0 && options.checkpointId && !options.keepCheckpointOnSuccess) clearCheckpoint(options.checkpointId);
-  return {
-    success: errors.length === 0 && !hasNodeFailures,
-    nodeResults,
-    finalOutputs,
-    sideEffects,
-    errors,
-    totalDuration: Date.now() - startTime,
-    debug: {
-      requestId,
-      workflowId: options.targetNodeId,
-      executedNodeCount: nodeResults.size,
-      exportKeys: Object.keys(finalOutputs),
-      duration: Date.now() - startTime,
+  function buildResult(): FlowExecutionResult {
+    const finalOutputs: Record<string, unknown> = {};
+    for (const node of sorted) {
+      const outEdges = edges.filter((e) => e.source === node.id);
+      if (outEdges.length === 0) {
+        const nodeOut = nodeOutputs.get(node.id);
+        if (nodeOut) Object.assign(finalOutputs, nodeOut);
+      }
+    }
+    if (errors.length === 0 && options.checkpointId && !options.keepCheckpointOnSuccess) clearCheckpoint(options.checkpointId);
+    return {
+      success: errors.length === 0 && !hasNodeFailures,
+      nodeResults,
+      finalOutputs,
+      sideEffects,
       errors,
-      events: debugEvents,
-    },
-  };
+      totalDuration: Date.now() - startTime,
+      debug: {
+        requestId,
+        workflowId: options.targetNodeId,
+        executedNodeCount: nodeResults.size,
+        exportKeys: Object.keys(finalOutputs),
+        duration: Date.now() - startTime,
+        errors,
+        events: debugEvents,
+      },
+    };
+  }
 }
