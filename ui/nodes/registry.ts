@@ -491,69 +491,62 @@ function createStructureNodeSpec(
 
 const genericNodeSpecs: FlowNodeSpec[] = [
   {
-    id: 'generic:file-picker',
-    label: '文件选择器',
-    description: '通过文件对话框选择 Excel/CSV 文件',
+    id: 'generic:value-input',
+    label: '基础输入',
+    description: '统一输入字符串、数字、布尔、数组或对象等基础值',
     category: '功能 · 输入节点',
     kind: 'generic',
     properties: [
-      { name: 'accept', label: '允许类型', type: 'string', default: '.xlsx,.xls,.csv', description: '文件扩展名' },
-      { name: 'multiple', label: '允许多选', type: 'boolean', default: false, description: '是否多选' },
+      { name: 'name', label: '变量名', type: 'string', default: '', description: '可选的变量标识' },
+      { name: 'valueType', label: '值类型', type: 'enum', enum: ['string', 'number', 'boolean', 'array', 'object'], default: 'string', description: '输入值的类型' },
+      { name: 'value', label: '默认值', type: 'any', default: '', description: '默认输入值' },
+      { name: 'min', label: '最小值', type: 'number', default: -Infinity, description: '仅 number 生效' },
+      { name: 'max', label: '最大值', type: 'number', default: Infinity, description: '仅 number 生效' },
+      { name: 'step', label: '步长', type: 'number', default: 1, description: '仅 number 生效' },
+      { name: 'placeholder', label: '占位符', type: 'string', default: '输入内容…', description: '仅 string 生效' },
     ],
     ports: [
-      { name: 'trigger', label: '触发', type: 'any', direction: 'input', required: true, description: '触发选择' },
-      { name: 'accept', label: '类型', type: 'string', direction: 'input', defaultValue: '.xlsx,.xls,.csv', description: '文件类型' },
-      { name: 'multiple', label: '多选', type: 'boolean', direction: 'input', defaultValue: false, description: '多选' },
-      { name: 'file', label: '文件', type: 'object', direction: 'output', description: '文件对象' },
-      { name: 'data', label: '文件数据', type: 'file-data', direction: 'output', description: '可直接传给 XLSX.read 的原始文件数据' },
-      { name: 'name', label: '文件名', type: 'string', direction: 'output', description: '文件名' },
+      { name: 'override', label: '覆盖值', type: 'any', direction: 'input', description: '运行时覆盖默认值' },
+      { name: 'value', label: '值', type: 'any', direction: 'output', description: '当前值' },
+      { name: 'name', label: '变量名', type: 'string', direction: 'output', description: '变量名' },
+      { name: 'valueType', label: '值类型', type: 'string', direction: 'output', description: '当前值类型' },
     ],
   },
   {
-    id: 'generic:worksheet-select',
-    label: '工作表选择器',
-    description: '从工作簿中选择一个工作表',
-    category: '功能 · 选择节点',
+    id: 'generic:sheet-source',
+    label: '表与区域来源',
+    description: '统一选择工作表或工作表区域，输出 worksheet 与 range 信息',
+    category: '功能 · 输入节点',
     kind: 'generic',
     properties: [
-      { name: 'selectMode', label: '选择模式', type: 'enum', enum: ['byName', 'byIndex', 'active', 'first'], default: 'active', description: '选择方式' },
+      { name: 'sourceMode', label: '来源模式', type: 'enum', enum: ['worksheet', 'range'], default: 'worksheet', description: '选择工作表或区域' },
+      { name: 'worksheetMode', label: '工作表模式', type: 'enum', enum: ['byName', 'byIndex', 'active', 'first'], default: 'active', description: '工作表选择方式' },
+      { name: 'rangeMode', label: '区域模式', type: 'enum', enum: ['address', 'entireSheet', 'usedRange', 'row', 'column', 'custom'], default: 'usedRange', description: '区域选择方式' },
       { name: 'sheetName', label: '工作表名', type: 'string', default: '', description: '目标工作表名' },
-      { name: 'sheetIndex', label: '索引', type: 'number', default: 0, min: 0, description: '目标索引' },
-    ],
-    ports: [
-      { name: 'workbook', label: '工作簿', type: 'workbook', direction: 'input', required: true, description: '输入工作簿' },
-      { name: 'selectMode', label: '模式', type: 'enum', direction: 'input', defaultValue: 'active', enum: ['byName', 'byIndex', 'active', 'first'], description: '选择方式' },
-      { name: 'sheetName', label: '表名', type: 'string', direction: 'input', description: '工作表名' },
-      { name: 'sheetIndex', label: '索引', type: 'number', direction: 'input', defaultValue: 0, description: '索引' },
-      { name: 'workbook', label: '工作簿', type: 'workbook', direction: 'output', description: '透传输入工作簿' },
-      { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'output', description: '选中的工作表' },
-      { name: 'sheetName', label: '表名', type: 'string', direction: 'output', description: '实际选中的工作表名' },
-      { name: 'sheetNames', label: '所有名称', type: 'array', direction: 'output', description: '所有工作表名' },
-      { name: 'headers', label: '表头', type: 'headers', direction: 'output', description: '选中工作表的列名' },
-    ],
-  },
-  {
-    id: 'generic:range-select',
-    label: '区域选择器',
-    description: '选择工作表中的单元格区域',
-    category: '功能 · 选择节点',
-    kind: 'generic',
-    properties: [
-      { name: 'rangeMode', label: '选择模式', type: 'enum', enum: ['address', 'entireSheet', 'usedRange', 'row', 'column', 'custom'], default: 'usedRange', description: '选择方式' },
-      { name: 'address', label: '地址', type: 'string', default: '', description: 'A1 格式地址' },
+      { name: 'sheetIndex', label: '工作表索引', type: 'number', default: 0, min: 0, description: '目标工作表索引' },
+      { name: 'address', label: '区域地址', type: 'string', default: '', description: 'A1 地址，支持复杂地址' },
       { name: 'rowIndex', label: '起始行', type: 'number', default: 1, min: 1, description: '起始行号' },
       { name: 'colIndex', label: '起始列', type: 'number', default: 1, min: 1, description: '起始列号' },
       { name: 'rowCount', label: '行数', type: 'number', default: 1, min: 1, description: '行数' },
       { name: 'colCount', label: '列数', type: 'number', default: 1, min: 1, description: '列数' },
     ],
     ports: [
-      { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'input', required: true, description: '输入工作表' },
-      { name: 'rangeMode', label: '模式', type: 'enum', direction: 'input', defaultValue: 'usedRange', enum: ['address', 'entireSheet', 'usedRange', 'row', 'column', 'custom'], description: '选择方式' },
+      { name: 'workbook', label: '工作簿', type: 'workbook', direction: 'input', description: '输入工作簿' },
+      { name: 'sourceMode', label: '来源模式', type: 'enum', direction: 'input', defaultValue: 'worksheet', enum: ['worksheet', 'range'], description: '选择工作表或区域' },
+      { name: 'worksheetMode', label: '工作表模式', type: 'enum', direction: 'input', defaultValue: 'active', enum: ['byName', 'byIndex', 'active', 'first'], description: '工作表选择方式' },
+      { name: 'sheetName', label: '工作表名', type: 'string', direction: 'input', description: '目标工作表名' },
+      { name: 'sheetIndex', label: '索引', type: 'number', direction: 'input', defaultValue: 0, description: '目标索引' },
+      { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'input', description: '直接传入工作表时优先使用' },
       { name: 'address', label: '地址', type: 'address', direction: 'input', description: '支持逗号分隔的 A1 复杂地址' },
       { name: 'rowIndex', label: '起始行', type: 'number', direction: 'input', defaultValue: 1, description: '行号' },
       { name: 'colIndex', label: '起始列', type: 'number', direction: 'input', defaultValue: 1, description: '列号' },
       { name: 'rowCount', label: '行数', type: 'number', direction: 'input', defaultValue: 1, description: '行数' },
       { name: 'colCount', label: '列数', type: 'number', direction: 'input', defaultValue: 1, description: '列数' },
+      { name: 'workbook', label: '工作簿', type: 'workbook', direction: 'output', description: '透传输入工作簿' },
+      { name: 'worksheet', label: '工作表', type: 'worksheet', direction: 'output', description: '选中的工作表' },
+      { name: 'sheetName', label: '表名', type: 'string', direction: 'output', description: '实际工作表名' },
+      { name: 'sheetNames', label: '所有名称', type: 'array', direction: 'output', description: '所有工作表名' },
+      { name: 'headers', label: '表头', type: 'headers', direction: 'output', description: '工作表列名' },
       { name: 'range', label: '复杂区域', type: 'range', direction: 'output', description: '含一个或多个精确子区域的 Range' },
       { name: 'address', label: '地址', type: 'address', direction: 'output', description: '逗号分隔的 A1 复杂地址' },
       { name: 'areas', label: '子区域', type: 'array', direction: 'output', description: '规范化的非重叠子区域' },
@@ -654,70 +647,6 @@ const genericNodeSpecs: FlowNodeSpec[] = [
       { name: 'result', label: '结果对象', type: 'object', direction: 'output', description: '透传的对象结果' },
     ],
     keywords: ['流程出口', '导出', 'workflow output', 'workflow export', 'schema'],
-  },
-  {
-    id: 'generic:variable-input',
-    label: '变量输入',
-    description: '定义一个可复用的变量',
-    category: '功能 · 输入节点',
-    kind: 'generic',
-    properties: [
-      { name: 'varName', label: '变量名', type: 'string', default: 'myVar', required: true, description: '变量标识符' },
-      { name: 'varType', label: '变量类型', type: 'enum', enum: ['string', 'number', 'boolean', 'array', 'object'], default: 'string', description: '数据类型' },
-      { name: 'varValue', label: '变量值', type: 'any', default: '', description: '初始值' },
-    ],
-    ports: [
-      { name: 'override', label: '覆盖值', type: 'any', direction: 'input', description: '外部覆盖' },
-      { name: 'value', label: '值', type: 'any', direction: 'output', description: '变量当前值' },
-      { name: 'varName', label: '变量名', type: 'string', direction: 'output', description: '变量名' },
-    ],
-  },
-  {
-    id: 'generic:text-input',
-    label: '文本输入',
-    description: '输入一个文本值',
-    category: '功能 · 输入节点',
-    kind: 'generic',
-    properties: [
-      { name: 'value', label: '文本值', type: 'string', default: '', description: '输入的文本' },
-      { name: 'placeholder', label: '占位符', type: 'string', default: '输入文本…', description: '占位提示' },
-    ],
-    ports: [
-      { name: 'override', label: '覆盖', type: 'string', direction: 'input', description: '外部覆盖' },
-      { name: 'value', label: '值', type: 'string', direction: 'output', description: '当前文本值' },
-    ],
-  },
-  {
-    id: 'generic:number-input',
-    label: '数字输入',
-    description: '输入一个数字值',
-    category: '功能 · 输入节点',
-    kind: 'generic',
-    properties: [
-      { name: 'value', label: '数字值', type: 'number', default: 0, description: '输入的数字' },
-      { name: 'min', label: '最小值', type: 'number', default: -Infinity, description: '最小值' },
-      { name: 'max', label: '最大值', type: 'number', default: Infinity, description: '最大值' },
-      { name: 'step', label: '步长', type: 'number', default: 1, description: '步长' },
-    ],
-    ports: [
-      { name: 'override', label: '覆盖', type: 'number', direction: 'input', description: '外部覆盖' },
-      { name: 'value', label: '值', type: 'number', direction: 'output', description: '当前数字值' },
-    ],
-  },
-  {
-    id: 'generic:boolean-input',
-    label: '布尔输入',
-    description: '输入或接收一个布尔值，可作为开关控件的数据源',
-    category: '功能 · 输入节点',
-    kind: 'generic',
-    properties: [
-      { name: 'value', label: '布尔值', type: 'boolean', default: false, description: '开关状态' },
-    ],
-    ports: [
-      { name: 'override', label: '覆盖', type: 'boolean', direction: 'input', description: '外部覆盖' },
-      { name: 'value', label: '值', type: 'boolean', direction: 'output', description: '当前布尔值' },
-    ],
-    keywords: ['布尔开关', '开关', 'switch', 'boolean'],
   },
   {
     id: 'generic:export',
@@ -884,8 +813,9 @@ export interface NodeRegistry {
 
 let registryInstance: NodeRegistry | null = null;
 let registryPromise: Promise<NodeRegistry> | null = null;
+let pluginHotReloadInitialized = false;
 
-export const EXPECTED_NODE_COUNT = 144;
+export const EXPECTED_NODE_COUNT = 145;
 
 export const CURATED_XLSX_METHODS = new Set([
   'XLSX.read',
@@ -905,19 +835,24 @@ export const CURATED_XLSX_METHODS = new Set([
 ]);
 
 const DISCOVERY_KEYWORDS: Record<string, string[]> = {
-  'generic:file-picker': ['文件上传', '导入 Excel', '打开文件', 'upload', 'browse'],
+  'generic:file-source': ['文件上传', '导入 Excel', '打开文件', 'upload', 'browse', '文件来源'],
   'workflow:import': ['流程入口', '导入节点', '上下文入口', 'workflow import'],
   'workflow:export': ['流程出口', '导出节点', '结果出口', 'workflow export'],
-  'generic:worksheet-select': ['选择工作表', 'Sheet 选择', '标签页', 'worksheet', 'tab'],
-  'generic:range-select': ['区域选择', '范围选择', 'A1 地址', 'range', 'area'],
+  'generic:sheet-source': ['选择工作表', 'Sheet 选择', '标签页', 'worksheet', 'tab', '区域选择', '范围选择', 'A1 地址', 'range', 'area'],
   'generic:range-intersection': ['区域交集', '重叠范围', '复杂区域', 'intersection', 'intersect', 'overlap'],
-  'generic:variable-input': ['变量', '参数', '常量', 'variable', 'parameter', 'constant'],
+  'generic:value-input': ['变量', '参数', '常量', '文本', '数字', '布尔', '基础输入', 'variable', 'parameter', 'constant', 'value input'],
+  'generic:choice-input': ['选项选择', '下拉', '单选', '多选', 'select', 'radio', 'checkbox'],
   'generic:criteria-filter': ['多条件筛选', '组合筛选', '推荐筛选', 'criteria', 'filter'],
+  'generic:record-transform': ['记录变换', '对象映射', 'patch', 'transform', 'normalize'],
+  'generic:field-classifier': ['字段分类', '风险标签', '区间分类', 'classifier', 'labels'],
+  'generic:array-lookup': ['数组查找', '按编号查找', 'lookup', 'find', 'match'],
+  'generic:array-enrich': ['数组增强', '补充字段', 'join', 'enrich', 'merge'],
+  'generic:score-records': ['评分排序', '推荐评分', 'score', 'rank', 'sort'],
   'generic:pick-record': ['TopN', '最佳候选', '首选项', 'pick', 'sort'],
-  'generic:text-input': ['文本', '字符串', '输入框', 'text', 'string', 'input'],
-  'generic:number-input': ['数字', '数值', '输入框', 'number', 'numeric', 'input'],
   'generic:output-display': ['输出', '显示', '查看结果', '预览', '调试', 'output', 'preview'],
   'behavior-set-values': ['批量赋值', '批量回填', '推荐结果回填', 'set values', 'patch'],
+  'behavior-upsert-table-row': ['写回表记录', 'upsert', '保存记录', 'crud', 'write back'],
+  'behavior-compose-message': ['消息模板', '消息拼装', 'compose', 'message', '提示语'],
   'behavior-query-list': ['查询列表', '加载列表', '查多条', 'crud', 'lookup list'],
   'behavior-next-sequence': ['下一个编号', '自动编号', 'sequence', 'crud'],
   'behavior-fill-form': ['回填表单', '编辑加载', 'fill form', 'lookup edit'],
@@ -934,12 +869,13 @@ export async function loadNodeRegistry(): Promise<NodeRegistry> {
   if (registryPromise) return registryPromise;
 
   registryPromise = (async () => {
-    const [xlsxRoot, , executorRegistry, packageModules, nodePackageApi] = await Promise.all([
+    const [xlsxRoot, , executorRegistry, packageModules, nodePackageApi, pluginLoader] = await Promise.all([
       loadXlsxModule(),
       import('./executors'),
       import('./executor-registry'),
       import('./package-modules').catch(() => ({ schemaModules: {}, executorLoaders: {} })),
       import('./node-packages'),
+      import('../src/services/config/pluginLoader'),
     ]);
 
     const schemaModules: Record<string, any> = packageModules.schemaModules;
@@ -1004,7 +940,10 @@ export async function loadNodeRegistry(): Promise<NodeRegistry> {
       }
     }
 
-    const allSpecs = [...scenarioSpecs, ...genericNodeSpecs, ...packageNodeSpecs, ...xlsxSpecs].map((spec) => ({
+    const pluginManifests = await pluginLoader.discoverPlugins();
+    const pluginSpecs = pluginLoader.pluginNodeSpecs(pluginManifests);
+    for (const spec of pluginSpecs) if ((spec as any).executorUrl) executorRegistry.registerExecutor(spec.id, async (ctx) => { const module = await import(/* @vite-ignore */ (spec as any).executorUrl); return module.execute(ctx); });
+    const allSpecs = [...scenarioSpecs, ...genericNodeSpecs, ...packageNodeSpecs, ...xlsxSpecs, ...pluginSpecs].map((spec) => ({
       ...spec,
       keywords: [...new Set([...(spec.keywords || []), ...(DISCOVERY_KEYWORDS[spec.id] || [])])],
     }));
@@ -1023,6 +962,11 @@ export async function loadNodeRegistry(): Promise<NodeRegistry> {
     }
 
     registryInstance = { specs: deduped, byId, byCategory, loading: false };
+    if (!pluginHotReloadInitialized) {
+      pluginHotReloadInitialized = true;
+      pluginLoader.subscribePluginReload(() => { registryInstance = null; registryPromise = null; });
+      pluginLoader.startPluginHotReload();
+    }
     return registryInstance;
   })();
 

@@ -1,0 +1,24 @@
+{
+  "id": "generic-condition-branch",
+  "label": "条件分支",
+  "description": "根据条件表达式路由到 true 或 false 分支",
+  "category": "通用 · 流程控制",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "expression",
+      "label": "条件表达式",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "JS 表达式，如 value > 10"
+    }
+  ],
+  "ports": [
+    { "name": "value", "label": "输入值", "type": "any", "direction": "input", "description": "要判断的值" },
+    { "name": "result", "label": "结果", "type": "boolean", "direction": "output", "description": "条件结果" },
+    { "name": "trueBranch", "label": "True", "type": "any", "direction": "output", "description": "条件为真时输出" },
+    { "name": "falseBranch", "label": "False", "type": "any", "direction": "output", "description": "条件为假时输出" }
+  ],
+  "keywords": ["条件", "分支", "if", "branch", "condition"]
+}

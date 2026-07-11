@@ -38,7 +38,7 @@ test('auto-discovered registry has the expected executable nodes with unique IDs
     .filter((entry) => entry.isDirectory() && /^(func-|behavior-|generic-|ml-)/.test(entry.name))
     .filter((entry) => existsSync(join(root, 'nodes', entry.name, 'schema.json')))
     .map((entry) => entry.name);
-  assert.equal(packageDirs.length, 111);
+  assert.equal(packageDirs.length, 125);
   assert.equal(new Set(packageDirs).size, packageDirs.length);
   assert.equal(CURATED_XLSX_METHODS.size, 14);
 
@@ -956,4 +956,22 @@ test('nodeTimeoutMs allows fast node to complete', async () => {
   const result = await executeFlow(nodes, [edge('e1', 'input', 'output', 'value', 'value')], [], { nodeTimeoutMs: 5000 });
   assert.equal(result.success, true);
   assert.equal(result.nodeResults.get('output')?.outputs.value, 42);
+});
+
+test('condition-branch routes to true or false output', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('input', 'generic:value-input', { valueType: 'number', value: 15 }),
+    node('branch', 'generic:condition-branch', { expression: 'value > 10' }),
+    node('true-out', 'generic:output-display'),
+    node('false-out', 'generic:output-display'),
+  ];
+  const result = await executeFlow(nodes, [
+    edge('e1', 'input', 'branch', 'value', 'value'),
+    edge('e2-true', 'branch', 'true-out', 'trueBranch', 'value'),
+    edge('e2-false', 'branch', 'false-out', 'falseBranch', 'value'),
+  ]);
+  assert.equal(result.success, true);
+  assert.equal(result.nodeResults.get('branch')?.outputs.result, true);
+  assert.equal(result.nodeResults.get('true-out')?.outputs.value, 15);
 });

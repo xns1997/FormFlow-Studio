@@ -4,6 +4,125 @@ import { editWorksheetStructure, toEditableWorksheet } from '../xlsx-worksheet-o
 import { createComplexRange, getRangeAreas, intersectComplexRanges, parseRangeAddress, type RangeArea } from '../../src/services/data/rangeGeometry';
 import { parseCustomJsPortDefinitions } from '../../src/services/config/customJsNode';
 
+function jsonValue(value: unknown, fallback: unknown) {
+  if (typeof value !== 'string') return value ?? fallback;
+  try { return JSON.parse(value); } catch { return fallback; }
+}
+
+async function apiPost(path: string, body: unknown) {
+  const response = await fetch(`/api${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || `请求失败: ${response.status}`);
+  return result;
+}
+
+registerExecutor('generic:db-connect', async ({ properties }) => {
+  const connection = { driver: properties.driver, connectionString: properties.connectionString };
+  await apiPost('/database/test', connection);
+  return { connection, connected: true };
+});
+
+registerExecutor('generic:db-query', async ({ inputs, properties }) => {
+  const connection = (inputs.connection as Record<string, unknown>) || properties;
+  const params = inputs.params ?? jsonValue(properties.params, []);
+  const result = await apiPost('/database/query', { ...connection, query: properties.query, params });
+  return { data: result.rows, rowCount: result.rowCount, fields: result.fields };
+});
+
+registerExecutor('generic:database-query', async ({ inputs, properties }) => {
+  const params = inputs.params ?? jsonValue(properties.params, []);
+  const driver = String(properties.driver || (String(properties.connectionString).startsWith('mysql') ? 'mysql' : 'postgres'));
+  const result = await apiPost('/database/query', { driver, connectionString: properties.connectionString, query: properties.query, params });
+  return { data: result.rows, rowCount: result.rowCount };
+});
+
+registerExecutor('generic:db-write', async ({ inputs, properties }) => {
+  const connection = (inputs.connection as Record<string, unknown>) || properties;
+  const result = await apiPost('/database/write', { ...connection, table: properties.table, mode: properties.mode, keys: String(properties.keys || '').split(',').map((key) => key.trim()).filter(Boolean), rows: inputs.rows || [] });
+  return result;
+});
+
+registerExecutor('generic:rest-api', async ({ inputs, properties }) => {
+  const headers = { ...(jsonValue(properties.headers, {}) as Record<string, string>) };
+  if (properties.authType === 'apiKey') headers[String(properties.apiKeyHeader || 'X-API-Key')] = String(properties.apiKey || '');
+  if (properties.authType === 'bearer') headers.Authorization = `Bearer ${String(properties.apiKey || '')}`;
+  if (properties.authType === 'oauth2') {
+    const tokenResponse = await fetch(String(properties.tokenUrl), { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'client_credentials', client_id: String(properties.clientId || ''), client_secret: String(properties.clientSecret || ''), ...(properties.scope ? { scope: String(properties.scope) } : {}) }) });
+    const token = await tokenResponse.json();
+    if (!tokenResponse.ok || !token.access_token) throw new Error(token.error_description || token.error || 'OAuth2 获取令牌失败');
+    headers.Authorization = `${token.token_type || 'Bearer'} ${token.access_token}`;
+  }
+  let url = String(properties.url || '');
+  const pages: unknown[] = [];
+  let status = 0;
+  const maxPages = Math.max(1, Number(properties.maxPages || 20));
+  for (let page = 1; page <= maxPages; page += 1) {
+    const requestUrl = properties.pagination === 'page' ? `${url}${url.includes('?') ? '&' : '?'}page=${page}` : url;
+    const response = await fetch(requestUrl, { method: String(properties.method || 'GET'), headers: { 'Content-Type': 'application/json', ...headers }, body: ['GET', 'DELETE'].includes(String(properties.method)) ? undefined : JSON.stringify(inputs.body || {}) });
+    status = response.status;
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(`REST API 请求失败: ${response.status}`);
+    pages.push(...(Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [payload]));
+    if (properties.pagination === 'none') return { response: payload, data: pages, status };
+    if (properties.pagination === 'nextUrl') { url = payload?.next || payload?.nextUrl || ''; if (!url) break; }
+    if (properties.pagination === 'page' && !(payload?.hasMore ?? (Array.isArray(payload?.data) && payload.data.length > 0))) break;
+  }
+  return { response: pages, data: pages, status };
+});
+
+registerExecutor('generic:graphql-query', async ({ inputs, properties }) => {
+  const response = await fetch(String(properties.url), { method: 'POST', headers: { 'Content-Type': 'application/json', ...(jsonValue(properties.headers, {}) as Record<string, string>) }, body: JSON.stringify({ query: properties.query, variables: inputs.variables ?? jsonValue(properties.variables, {}) }) });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(`GraphQL 请求失败: ${response.status}`);
+  return { data: payload.data, errors: payload.errors || [] };
+});
+
+registerExecutor('generic:data-quality', ({ inputs, properties }) => {
+  const rows = Array.isArray(inputs.data) ? inputs.data as Record<string, unknown>[] : [];
+  const rules = jsonValue(properties.rules, []) as Array<{ field: string; type: 'required' | 'range' | 'format' | 'unique'; min?: number; max?: number; pattern?: string }>;
+  const issues: Array<{ row: number; field: string; rule: string; value: unknown; message: string }> = [];
+  const unique = new Map<string, Set<string>>();
+  rules.filter((rule) => rule.type === 'unique').forEach((rule) => unique.set(rule.field, new Set()));
+  rows.forEach((row, rowIndex) => rules.forEach((rule) => {
+    const value = row[rule.field]; let invalid = false; let message = '';
+    if (rule.type === 'required' && (value === null || value === undefined || value === '')) { invalid = true; message = '不能为空'; }
+    if (rule.type === 'range' && (Number.isNaN(Number(value)) || (rule.min != null && Number(value) < rule.min) || (rule.max != null && Number(value) > rule.max))) { invalid = true; message = `超出范围 ${rule.min ?? '-∞'} ~ ${rule.max ?? '∞'}`; }
+    if (rule.type === 'format') { try { invalid = !new RegExp(rule.pattern || '').test(String(value ?? '')); message = '格式不匹配'; } catch { invalid = true; message = '规则格式无效'; } }
+    if (rule.type === 'unique') { const key = String(value); const values = unique.get(rule.field)!; invalid = values.has(key); values.add(key); message = '值不唯一'; }
+    if (invalid) issues.push({ row: rowIndex, field: rule.field, rule: rule.type, value, message });
+  }));
+  const badRows = new Set(issues.map((issue) => issue.row));
+  const score = rows.length && rules.length ? Math.max(0, Math.round((1 - issues.length / (rows.length * rules.length)) * 10000) / 100) : 100;
+  if (properties.stopOnError && issues.length) throw new Error(`数据质量检查失败：${issues.length} 个问题`);
+  return { validRows: rows.filter((_row, index) => !badRows.has(index)), issues, score };
+});
+
+registerExecutor('generic:ai-query', async ({ inputs, properties }) => {
+  const result = await apiPost('/ai/query', { provider: properties.provider, model: properties.model, question: inputs.question || properties.question, schema: inputs.schema || jsonValue(properties.schema, []) });
+  return { sql: String(result.content || '').replace(/^```sql\s*|```$/gi, '').trim() };
+});
+registerExecutor('generic:ai-insight', async ({ inputs, properties }) => { const result = await apiPost('/ai/insight', { provider: properties.provider, model: properties.model, rows: inputs.data || [] }); return { insight: result.content || '' }; });
+registerExecutor('ml:auto-feature', ({ inputs, properties }) => {
+  const rows = Array.isArray(inputs.data) ? inputs.data as Record<string, unknown>[] : []; const numeric = Object.keys(rows[0] || {}).filter((field) => rows.some((row) => typeof row[field] === 'number')); const features: string[] = [];
+  const data = rows.map((row) => { const next = { ...row }; for (const [field, value] of Object.entries(row)) { if (typeof value === 'string') { const date = Date.parse(value); if (!Number.isNaN(date)) { next[`${field}_year`] = new Date(date).getFullYear(); next[`${field}_month`] = new Date(date).getMonth() + 1; features.push(`${field}_year`, `${field}_month`); } else { next[`${field}_length`] = value.length; features.push(`${field}_length`); } } } if (properties.includeCross !== false) for (let i = 0; i < numeric.length; i += 1) for (let j = i + 1; j < numeric.length && features.length < Number(properties.maxFeatures || 30); j += 1) { const a = Number(row[numeric[i]]), b = Number(row[numeric[j]]); next[`${numeric[i]}_x_${numeric[j]}`] = a * b; next[`${numeric[i]}_div_${numeric[j]}`] = b ? a / b : null; features.push(`${numeric[i]}_x_${numeric[j]}`, `${numeric[i]}_div_${numeric[j]}`); } return next; });
+  return { data, features: [...new Set(features)].slice(0, Number(properties.maxFeatures || 30)) };
+});
+registerExecutor('generic:incremental-sync', ({ inputs, properties }) => {
+  const rows = Array.isArray(inputs.data) ? inputs.data as Record<string, unknown>[] : []; const key = `formflow.incremental.${String(properties.stateKey || 'default')}`; let previous: unknown = null;
+  try { previous = JSON.parse(localStorage.getItem(key) || 'null'); } catch {}
+  const field = String(properties.field || 'updatedAt'); const compare = (value: unknown) => properties.mode === 'version' ? Number(value) : Date.parse(String(value)); const previousValue = previous == null ? -Infinity : compare(previous);
+  const changes = rows.filter((row) => compare(row[field]) > previousValue); const watermark = changes.reduce<unknown>((max, row) => compare(row[field]) > compare(max) ? row[field] : max, previous);
+  if (properties.commitState !== false && watermark != null) localStorage.setItem(key, JSON.stringify(watermark));
+  return { changes, watermark, previousWatermark: previous };
+});
+registerExecutor('generic:olap-crosstab', ({ inputs, properties }) => {
+  const source = Array.isArray(inputs.data) ? inputs.data as Record<string, unknown>[] : []; const filters = jsonValue(properties.filters, {}) as Record<string, unknown>; const data = source.filter((row) => Object.entries(filters).every(([field, value]) => Array.isArray(value) ? value.includes(row[field]) : row[field] === value));
+  const rowFields = String(properties.rows || '').split(',').map((value) => value.trim()).filter(Boolean); const colFields = String(properties.columns || '').split(',').map((value) => value.trim()).filter(Boolean); const measure = String(properties.measure); const cells: Record<string, Record<string, number[]>> = {};
+  data.forEach((record) => { const rowKey = rowFields.map((field) => record[field]).join(' / ') || '全部'; const colKey = colFields.map((field) => record[field]).join(' / ') || '值'; (cells[rowKey] ||= {})[colKey] ||= []; cells[rowKey][colKey].push(Number(record[measure]) || 0); });
+  const aggregate = (values: number[]) => properties.aggregation === 'count' ? values.length : properties.aggregation === 'avg' ? values.reduce((a,b)=>a+b,0)/Math.max(1,values.length) : properties.aggregation === 'min' ? Math.min(...values) : properties.aggregation === 'max' ? Math.max(...values) : values.reduce((a,b)=>a+b,0);
+  return { table: Object.fromEntries(Object.entries(cells).map(([row, cols]) => [row, Object.fromEntries(Object.entries(cols).map(([col, values]) => [col, aggregate(values)]))])), drilldown: data };
+});
+
 function findSheet(tables: SrcTableEntry[], sheetName: string) {
   for (const table of tables) {
     const sheet = table.sheets.find(s => s.name === sheetName) || table.sheets[0];
@@ -12,7 +131,7 @@ function findSheet(tables: SrcTableEntry[], sheetName: string) {
   return null;
 }
 
-registerExecutor('generic:file-picker', async (ctx) => {
+registerExecutor('generic:file-source', async (ctx) => {
   let fileData = ctx.inputs.data || ctx.inputs.file;
   let fileName = String(ctx.inputs.name || ctx.properties.selectedFile || '');
   if (!fileData && ctx.tables.length > 0) {
@@ -35,18 +154,24 @@ registerExecutor('generic:file-picker', async (ctx) => {
   }
   const check = ctx.checkType('file-data', fileData);
   const data = check.valid ? check.normalized : fileData;
-  return { data, file: data ? { name: fileName, data } : undefined, name: fileName };
+  const size = data instanceof ArrayBuffer
+    ? data.byteLength
+    : data instanceof Uint8Array
+      ? data.byteLength
+      : typeof data === 'string'
+        ? data.length
+        : 0;
+  return { data, file: data ? { name: fileName, data, size } : undefined, name: fileName, size };
 });
 
-registerExecutor('generic:worksheet-select', async (ctx) => {
+async function resolveWorksheetSource(ctx: NodeExecContext) {
   const { inputs, properties, tables, assertType } = ctx;
   const wb = inputs.workbook;
-
   const wbCheck = ctx.checkType('workbook', wb);
   if (wbCheck.valid) {
     const wbObj = wbCheck.normalized as any;
     const names: string[] = wbObj.SheetNames || [];
-    const mode = String(inputs.selectMode || properties.selectMode || 'active');
+    const mode = String(inputs.worksheetMode || properties.worksheetMode || 'active');
     const requestedName = String(inputs.sheetName || properties.sheetName || '');
     const requestedIndex = Math.max(0, Math.trunc(Number(inputs.sheetIndex ?? properties.sheetIndex ?? 0)));
     const activeIndex = Math.max(0, Math.trunc(Number(wbObj.Workbook?.Views?.[0]?.activeTab ?? 0)));
@@ -80,8 +205,13 @@ registerExecutor('generic:worksheet-select', async (ctx) => {
   }
 
   const wsCheck = ctx.checkType('worksheet', inputs.worksheet);
-  return { worksheet: wsCheck.valid ? wsCheck.normalized : inputs.worksheet, sheetNames: [] };
-});
+  return {
+    worksheet: wsCheck.valid ? wsCheck.normalized : inputs.worksheet,
+    sheetName: String(properties.sheetName || ''),
+    sheetNames: [],
+    headers: [] as string[],
+  };
+}
 
 for (const [id, axis, action] of [
   ['generic:insert-rows', 'row', 'insert'],
@@ -127,75 +257,91 @@ registerExecutor('generic:workbook-save', async ({ inputs, properties, assertTyp
   return { workbook, fileData, fileName, mimeType: workbookMimeType(bookType) };
 });
 
+function buildSheetSourceRangeResult(ws: unknown, inputs: Record<string, unknown>, properties: Record<string, unknown>) {
+  const wsAny = ws as any;
+  if (!wsAny || typeof wsAny !== 'object') throw new Error('缺少 worksheet 输入');
+  return import('xlsx').then((XLSX) => {
+    const mode = String(inputs.rangeMode || properties.rangeMode || 'usedRange');
+    const addressInput = String(inputs.address || properties.address || '');
+    const rowIndex = Math.max(0, Math.trunc(Number(inputs.rowIndex ?? properties.rowIndex ?? 1)) - 1);
+    const colIndex = Math.max(0, Math.trunc(Number(inputs.colIndex ?? properties.colIndex ?? 1)) - 1);
+    const rowCount = Math.max(1, Math.trunc(Number(inputs.rowCount ?? properties.rowCount ?? 1)));
+    const colCount = Math.max(1, Math.trunc(Number(inputs.colCount ?? properties.colCount ?? 1)));
+    const usedArea: RangeArea = wsAny.__fromProject
+      ? { startRow: 0, startCol: 0, endRow: Math.max(0, (wsAny.preview?.length || 0)), endCol: Math.max(0, (wsAny.headers?.length || 1) - 1) }
+      : (() => {
+          const decoded = XLSX.utils.decode_range(wsAny['!ref'] || 'A1');
+          return { startRow: decoded.s.r, startCol: decoded.s.c, endRow: decoded.e.r, endCol: decoded.e.c };
+        })();
+    let areas: RangeArea[];
+    let parsedSheetName: string | undefined;
+    if (mode === 'address' && addressInput) {
+      const parsed = parseRangeAddress(addressInput);
+      areas = parsed.areas;
+      parsedSheetName = parsed.sheetName;
+    } else if (mode === 'row') {
+      areas = [{ startRow: rowIndex, startCol: usedArea.startCol, endRow: rowIndex + rowCount - 1, endCol: usedArea.endCol }];
+    } else if (mode === 'column') {
+      areas = [{ startRow: usedArea.startRow, startCol: colIndex, endRow: usedArea.endRow, endCol: colIndex + colCount - 1 }];
+    } else if (mode === 'custom') {
+      areas = [{ startRow: rowIndex, startCol: colIndex, endRow: rowIndex + rowCount - 1, endCol: colIndex + colCount - 1 }];
+    } else {
+      areas = [usedArea];
+    }
+    if (!areas.length) throw new Error(`无效区域地址: ${addressInput}`);
+    const range = createComplexRange(areas, {
+      sheetName: parsedSheetName || wsAny.__sourceSheetName || wsAny.sheetName,
+      tableId: wsAny.tableId,
+      operation: 'selection',
+    });
+    const normalizedAreas = getRangeAreas(range);
+    const readCell = (row: number, column: number) => {
+      if (wsAny.__fromProject) {
+        const header = wsAny.headers?.[column];
+        return row === 0 ? header : wsAny.preview?.[row - 1]?.[header];
+      }
+      const cell = wsAny[XLSX.utils.encode_cell({ r: row, c: column })];
+      return cell?.v ?? cell?.w ?? '';
+    };
+    const areaValues = normalizedAreas.map((area) => {
+      const result: unknown[][] = [];
+      for (let row = area.startRow; row <= area.endRow; row += 1) {
+        const values: unknown[] = [];
+        for (let column = area.startCol; column <= area.endCol; column += 1) values.push(readCell(row, column));
+        result.push(values);
+      }
+      return result;
+    });
+    const bounds = range.bounds;
+    return {
+      range,
+      address: range.address,
+      areas: range.areas,
+      values: areaValues.length === 1 ? areaValues[0] : areaValues.flat(),
+      areaValues,
+      areaCount: range.areaCount,
+      cellCount: range.cellCount,
+      rowCount: bounds ? bounds.e.r - bounds.s.r + 1 : 0,
+      colCount: bounds ? bounds.e.c - bounds.s.c + 1 : 0,
+    };
+  });
+}
+
+registerExecutor('generic:sheet-source', async (ctx) => {
+  const { inputs, properties } = ctx;
+  const sourceMode = String(inputs.sourceMode || properties.sourceMode || 'worksheet');
+  const worksheetResult = await resolveWorksheetSource(ctx);
+  if (sourceMode !== 'range') return { ...worksheetResult };
+  const rangeResult = await buildSheetSourceRangeResult(worksheetResult.worksheet, inputs, properties);
+  return { ...worksheetResult, ...rangeResult };
+});
+
 registerExecutor('generic:range-select', async (ctx) => {
   const { inputs, properties } = ctx;
   const ws = inputs.worksheet;
   const wsAny = ws as any;
   if (!wsAny || typeof wsAny !== 'object') throw new Error('缺少 worksheet 输入');
-  const XLSX = await import('xlsx');
-  const mode = String(inputs.rangeMode || properties.rangeMode || 'usedRange');
-  const addressInput = String(inputs.address || properties.address || '');
-  const rowIndex = Math.max(0, Math.trunc(Number(inputs.rowIndex ?? properties.rowIndex ?? 1)) - 1);
-  const colIndex = Math.max(0, Math.trunc(Number(inputs.colIndex ?? properties.colIndex ?? 1)) - 1);
-  const rowCount = Math.max(1, Math.trunc(Number(inputs.rowCount ?? properties.rowCount ?? 1)));
-  const colCount = Math.max(1, Math.trunc(Number(inputs.colCount ?? properties.colCount ?? 1)));
-  const usedArea: RangeArea = wsAny.__fromProject
-    ? { startRow: 0, startCol: 0, endRow: Math.max(0, (wsAny.preview?.length || 0)), endCol: Math.max(0, (wsAny.headers?.length || 1) - 1) }
-    : (() => {
-        const decoded = XLSX.utils.decode_range(wsAny['!ref'] || 'A1');
-        return { startRow: decoded.s.r, startCol: decoded.s.c, endRow: decoded.e.r, endCol: decoded.e.c };
-      })();
-  let areas: RangeArea[];
-  let parsedSheetName: string | undefined;
-  if (mode === 'address' && addressInput) {
-    const parsed = parseRangeAddress(addressInput);
-    areas = parsed.areas;
-    parsedSheetName = parsed.sheetName;
-  } else if (mode === 'row') {
-    areas = [{ startRow: rowIndex, startCol: usedArea.startCol, endRow: rowIndex + rowCount - 1, endCol: usedArea.endCol }];
-  } else if (mode === 'column') {
-    areas = [{ startRow: usedArea.startRow, startCol: colIndex, endRow: usedArea.endRow, endCol: colIndex + colCount - 1 }];
-  } else if (mode === 'custom') {
-    areas = [{ startRow: rowIndex, startCol: colIndex, endRow: rowIndex + rowCount - 1, endCol: colIndex + colCount - 1 }];
-  } else {
-    areas = [usedArea];
-  }
-  if (!areas.length) throw new Error(`无效区域地址: ${addressInput}`);
-  const range = createComplexRange(areas, {
-    sheetName: parsedSheetName || wsAny.__sourceSheetName || wsAny.sheetName,
-    tableId: wsAny.tableId,
-    operation: 'selection',
-  });
-  const normalizedAreas = getRangeAreas(range);
-  const readCell = (row: number, column: number) => {
-    if (wsAny.__fromProject) {
-      const header = wsAny.headers?.[column];
-      return row === 0 ? header : wsAny.preview?.[row - 1]?.[header];
-    }
-    const cell = wsAny[XLSX.utils.encode_cell({ r: row, c: column })];
-    return cell?.v ?? cell?.w ?? '';
-  };
-  const areaValues = normalizedAreas.map((area) => {
-    const result: unknown[][] = [];
-    for (let row = area.startRow; row <= area.endRow; row += 1) {
-      const values: unknown[] = [];
-      for (let column = area.startCol; column <= area.endCol; column += 1) values.push(readCell(row, column));
-      result.push(values);
-    }
-    return result;
-  });
-  const bounds = range.bounds;
-  return {
-    range,
-    address: range.address,
-    areas: range.areas,
-    values: areaValues.length === 1 ? areaValues[0] : areaValues.flat(),
-    areaValues,
-    areaCount: range.areaCount,
-    cellCount: range.cellCount,
-    rowCount: bounds ? bounds.e.r - bounds.s.r + 1 : 0,
-    colCount: bounds ? bounds.e.c - bounds.s.c + 1 : 0,
-  };
+  return buildSheetSourceRangeResult(wsAny, inputs, properties);
 });
 
 registerExecutor('generic:range-intersection', ({ inputs, assertType }) => {
@@ -212,30 +358,15 @@ registerExecutor('generic:range-intersection', ({ inputs, assertType }) => {
   };
 });
 
-registerExecutor('generic:variable-input', (ctx) => {
-  const value = ctx.inputs.override ?? ctx.properties.varValue ?? '';
-  const varType = String(ctx.properties.varType || 'string');
-  const check = ctx.checkType(varType, value);
-  return { value: check.valid ? check.normalized : value, varName: ctx.properties.varName };
-});
-
-registerExecutor('generic:text-input', (ctx) => {
-  const raw = ctx.inputs.override ?? ctx.properties.value ?? '';
-  const check = ctx.checkType('string', raw);
-  return { value: check.valid ? check.normalized : raw };
-});
-
-registerExecutor('generic:number-input', (ctx) => {
-  const raw = ctx.inputs.override ?? ctx.properties.value ?? 0;
-  const check = ctx.checkType('number', raw);
-  if (!check.valid) return { value: 0, error: check.error };
-  return { value: check.normalized };
-});
-
-registerExecutor('generic:boolean-input', (ctx) => {
-  const raw = ctx.inputs.override ?? ctx.properties.value ?? false;
-  const check = ctx.checkType('boolean', raw);
-  return { value: check.valid ? check.normalized : !!raw };
+registerExecutor('generic:value-input', (ctx) => {
+  const value = ctx.inputs.override ?? ctx.properties.value ?? '';
+  const valueType = String(ctx.properties.valueType || 'string');
+  const check = ctx.checkType(valueType, value);
+  return {
+    value: check.valid ? check.normalized : value,
+    name: String(ctx.properties.name || ''),
+    valueType,
+  };
 });
 
 registerExecutor('workflow:import', (ctx) => {
@@ -316,6 +447,118 @@ function compareValue(left: unknown, operator: string, right: unknown) {
   }
 }
 
+function parseJsonArray<T>(value: unknown): T[] {
+  if (Array.isArray(value)) return value as T[];
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed as T[] : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function parseJsonObject(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+
+function normalizeChoiceOptions(value: unknown): Array<Record<string, unknown>> {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => {
+      if (typeof item === 'string') return [{ label: item, value: item }];
+      if (item && typeof item === 'object' && !Array.isArray(item)) {
+        const entry = item as Record<string, unknown>;
+        const nextValue = entry.value ?? entry.label ?? '';
+        return [{ ...entry, label: String(entry.label ?? nextValue), value: nextValue }];
+      }
+      return [];
+    });
+  }
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return normalizeChoiceOptions(parsed);
+    } catch {
+      return value.split(',').map((item) => item.trim()).filter(Boolean).map((item) => ({ label: item, value: item }));
+    }
+  }
+  return [];
+}
+
+registerExecutor('generic:choice-input', ({ inputs, properties }) => {
+  const selectionMode = String(properties.selectionMode || 'single');
+  const optionsSource = String(properties.optionsSource || 'static');
+  const rawOptions = optionsSource === 'input'
+    ? (inputs.options ?? properties.options)
+    : (properties.options ?? inputs.options);
+  const normalizedOptions = normalizeChoiceOptions(rawOptions);
+  const rawDefault = properties.defaultValue;
+  const rawValue = inputs.value ?? rawDefault ?? (selectionMode === 'multiple' ? [] : '');
+
+  const values = selectionMode === 'multiple'
+    ? (Array.isArray(rawValue) ? rawValue : rawValue == null || rawValue === '' ? [] : [rawValue])
+    : rawValue == null || rawValue === '' ? [] : [rawValue];
+  const value = selectionMode === 'multiple' ? values : (values[0] ?? '');
+  const selectedOptions = normalizedOptions.filter((option) => values.some((item) => item == option.value));
+
+  return {
+    value,
+    values,
+    selectedOption: selectedOptions[0] ?? null,
+    selectedOptions,
+  };
+});
+
+function getValueByPath(source: unknown, path: string): unknown {
+  if (!path) return source;
+  const segments = path.split('.').filter(Boolean);
+  let current: any = source;
+  for (const segment of segments) {
+    if (current == null) return undefined;
+    current = current[segment];
+  }
+  return current;
+}
+
+function resolveScopedToken(token: unknown, scope: Record<string, unknown>): unknown {
+  if (Array.isArray(token)) {
+    for (const item of token) {
+      const resolved = resolveScopedToken(item, scope);
+      if (resolved !== undefined && resolved !== null && resolved !== '') return resolved;
+    }
+    return '';
+  }
+  if (typeof token !== 'string') return token;
+  if (token.startsWith('$record.')) return getValueByPath(scope.record, token.slice('$record.'.length));
+  if (token === '$record') return scope.record;
+  if (token.startsWith('$inputs.')) return getValueByPath(scope.inputs, token.slice('$inputs.'.length));
+  if (token === '$inputs') return scope.inputs;
+  if (token.startsWith('$context.')) return getValueByPath(scope.context, token.slice('$context.'.length));
+  if (token === '$context') return scope.context;
+  return token;
+}
+
+function evaluateConfiguredExpression(expression: string, scope: Record<string, unknown>): unknown {
+  const body = expression.startsWith('=') ? expression.slice(1) : expression;
+  try {
+    const fn = new Function('record', 'inputs', 'context', 'get', `return (${body});`);
+    return fn(scope.record, scope.inputs, scope.context, (value: unknown, path: string) => getValueByPath(value, path));
+  } catch {
+    return undefined;
+  }
+}
+
 registerExecutor('generic:filter', async ({ inputs, properties }) => {
   const rows = await rowsFromData(inputs.data);
   const field = String(inputs.field ?? properties.field ?? '');
@@ -330,6 +573,7 @@ type CriteriaFilterRule = {
   operator?: string;
   value?: unknown;
   inputKey?: string;
+  valuePath?: string;
   enabled?: boolean;
 };
 
@@ -348,13 +592,20 @@ function parseCriteriaRules(value: unknown): CriteriaFilterRule[] {
 
 registerExecutor('generic:criteria-filter', async ({ inputs, properties }) => {
   const rows = await rowsFromData(inputs.data);
+  const context = (inputs.context && typeof inputs.context === 'object' && !Array.isArray(inputs.context))
+    ? inputs.context as Record<string, unknown>
+    : {};
   const rules = parseCriteriaRules(inputs.criteria ?? properties.criteria);
   const appliedCriteria = rules
     .filter((rule) => rule && rule.enabled !== false && String(rule.field || '').trim())
     .map((rule) => {
       const field = String(rule.field || '').trim();
       const operator = String(rule.operator || '==');
-      const compareTo = rule.inputKey ? inputs[String(rule.inputKey)] : rule.value;
+      const compareTo = rule.inputKey
+        ? inputs[String(rule.inputKey)]
+        : rule.valuePath
+          ? resolveScopedToken(rule.valuePath, { record: null, inputs, context })
+          : rule.value;
       return { field, operator, value: compareTo };
     });
   const result = rows.filter((row) => appliedCriteria.every((rule) => compareValue(row[rule.field], rule.operator, rule.value)));
@@ -369,6 +620,259 @@ registerExecutor('generic:criteria-filter', async ({ inputs, properties }) => {
     emptyReason,
     failedReason: emptyReason,
     trigger: inputs.trigger,
+  };
+});
+
+type RecordTransformRule = {
+  target?: string;
+  from?: unknown;
+  expr?: string;
+  value?: unknown;
+};
+
+registerExecutor('generic:record-transform', async ({ inputs, properties }) => {
+  const record = (inputs.record && typeof inputs.record === 'object' && !Array.isArray(inputs.record))
+    ? inputs.record as Record<string, unknown>
+    : {};
+  const context = (inputs.context && typeof inputs.context === 'object' && !Array.isArray(inputs.context))
+    ? inputs.context as Record<string, unknown>
+    : parseJsonObject(properties.context);
+  const includeSource = inputs.includeSource ?? properties.includeSource;
+  const fieldMap = parseJsonObject(inputs.fieldMap ?? properties.fieldMap);
+  const defaults = parseJsonObject(inputs.defaults ?? properties.defaults);
+  const valueRules = parseJsonArray<RecordTransformRule>(inputs.valueRules ?? properties.valueRules);
+  const scope = { record, inputs, context };
+  const output: Record<string, unknown> = includeSource === false ? {} : { ...record, ...defaults };
+
+  for (const [field, source] of Object.entries(fieldMap)) {
+    if (typeof source === 'string' && source.startsWith('=')) {
+      output[field] = evaluateConfiguredExpression(source, scope);
+    } else {
+      output[field] = resolveScopedToken(source, scope);
+    }
+  }
+
+  for (const rule of valueRules) {
+    const target = String(rule?.target || '').trim();
+    if (!target) continue;
+    if (typeof rule.expr === 'string' && rule.expr.trim()) {
+      output[target] = evaluateConfiguredExpression(rule.expr, scope);
+      continue;
+    }
+    if (rule.from !== undefined) {
+      output[target] = resolveScopedToken(rule.from, scope);
+      continue;
+    }
+    output[target] = resolveScopedToken(rule.value, scope);
+  }
+
+  return {
+    record: output,
+    result: output,
+    fields: Object.keys(output),
+  };
+});
+
+type FieldClassifierRule = {
+  target?: string;
+  source?: string;
+  mode?: 'enum' | 'range' | 'tags';
+  defaultValue?: unknown;
+  map?: Record<string, unknown>;
+  ranges?: Array<{ min?: number; max?: number; value?: unknown }>;
+  tags?: Array<{ label?: string; when?: string; enabled?: boolean }>;
+};
+
+registerExecutor('generic:field-classifier', async ({ inputs, properties }) => {
+  const record = (inputs.record && typeof inputs.record === 'object' && !Array.isArray(inputs.record))
+    ? inputs.record as Record<string, unknown>
+    : {};
+  const context = (inputs.context && typeof inputs.context === 'object' && !Array.isArray(inputs.context))
+    ? inputs.context as Record<string, unknown>
+    : {};
+  const rules = parseJsonArray<FieldClassifierRule>(inputs.rules ?? properties.rules);
+  const scope = { record, inputs, context };
+  const values: Record<string, unknown> = {};
+  const labels: string[] = [];
+
+  for (const rule of rules) {
+    const mode = String(rule?.mode || 'enum');
+    if (mode === 'tags') {
+      const tagRules = Array.isArray(rule.tags) ? rule.tags : [];
+      for (const tagRule of tagRules) {
+        if (tagRule?.enabled === false) continue;
+        const label = String(tagRule?.label || '').trim();
+        if (!label) continue;
+        const matched = typeof tagRule.when === 'string' && tagRule.when.trim()
+          ? !!evaluateConfiguredExpression(tagRule.when, scope)
+          : false;
+        if (matched) labels.push(label);
+      }
+      continue;
+    }
+
+    const target = String(rule?.target || '').trim();
+    if (!target) continue;
+    const sourceValue = typeof rule?.source === 'string' && rule.source.trim()
+      ? resolveScopedToken(rule.source, scope)
+      : undefined;
+    if (mode === 'range') {
+      const numericValue = Number(sourceValue ?? 0);
+      const matchedRange = (Array.isArray(rule.ranges) ? rule.ranges : []).find((range) => {
+        const min = range?.min;
+        const max = range?.max;
+        return (min == null || numericValue >= min) && (max == null || numericValue < max);
+      });
+      values[target] = matchedRange?.value ?? rule.defaultValue ?? '';
+      continue;
+    }
+    const enumMap = rule?.map && typeof rule.map === 'object' ? rule.map : {};
+    values[target] = enumMap[String(sourceValue ?? '')] ?? rule.defaultValue ?? '';
+  }
+
+  return {
+    values,
+    labels,
+    result: values,
+    count: Object.keys(values).length,
+  };
+});
+
+type ArrayLookupCriteria = {
+  field?: string;
+  value?: unknown;
+  valuePath?: string;
+  operator?: string;
+};
+
+registerExecutor('generic:array-lookup', async ({ inputs, properties }) => {
+  const rows = await rowsFromData(inputs.rows ?? inputs.data);
+  const context = (inputs.context && typeof inputs.context === 'object' && !Array.isArray(inputs.context))
+    ? inputs.context as Record<string, unknown>
+    : {};
+  const scope = { record: null, inputs, context };
+  const keyField = String(inputs.keyField ?? properties.keyField ?? '');
+  const keyValue = inputs.keyValue ?? properties.keyValue;
+  const criteria = parseJsonArray<ArrayLookupCriteria>(inputs.criteria ?? properties.criteria);
+  const matched = rows.filter((row) => {
+    if (keyField) return row[keyField] == keyValue;
+    return criteria.every((rule) => {
+      const field = String(rule?.field || '').trim();
+      if (!field) return true;
+      const operator = String(rule?.operator || 'equals');
+      const value = rule?.valuePath ? resolveScopedToken(rule.valuePath, scope) : rule?.value;
+      return compareValue(row[field], operator, value);
+    });
+  });
+  return {
+    first: matched[0] ?? null,
+    rows: matched,
+    matched,
+    count: matched.length,
+    result: matched,
+  };
+});
+
+type ArrayEnrichMapping = {
+  target?: string;
+  from?: string;
+  expr?: string;
+  defaultValue?: unknown;
+};
+
+registerExecutor('generic:array-enrich', async ({ inputs, properties }) => {
+  const rows = await rowsFromData(inputs.rows ?? inputs.data);
+  const referenceRows = await rowsFromData(inputs.referenceRows ?? inputs.referenceData);
+  const leftKey = String(inputs.leftKey ?? properties.leftKey ?? '');
+  const rightKey = String(inputs.rightKey ?? properties.rightKey ?? '');
+  const fieldMap = parseJsonObject(inputs.fieldMap ?? properties.fieldMap);
+  const enrichRules = parseJsonArray<ArrayEnrichMapping>(inputs.enrichRules ?? properties.enrichRules);
+  const context = (inputs.context && typeof inputs.context === 'object' && !Array.isArray(inputs.context))
+    ? inputs.context as Record<string, unknown>
+    : {};
+  const refMap = new Map(referenceRows.map((row) => [String(row[rightKey] ?? ''), row]));
+  const result = rows.map((row) => {
+    const reference = leftKey && rightKey ? refMap.get(String(row[leftKey] ?? '')) : undefined;
+    const scope = { record: row, inputs, context: { ...context, reference } };
+    const enriched: Record<string, unknown> = { ...row };
+    for (const [target, source] of Object.entries(fieldMap)) {
+      if (typeof source === 'string' && source.startsWith('$context.reference.')) {
+        enriched[target] = getValueByPath(reference, source.slice('$context.reference.'.length));
+      } else if (typeof source === 'string' && source.startsWith('=')) {
+        enriched[target] = evaluateConfiguredExpression(source, scope);
+      } else {
+        enriched[target] = resolveScopedToken(source, scope);
+      }
+    }
+    for (const rule of enrichRules) {
+      const target = String(rule?.target || '').trim();
+      if (!target) continue;
+      if (typeof rule.expr === 'string' && rule.expr.trim()) {
+        enriched[target] = evaluateConfiguredExpression(rule.expr, scope);
+      } else if (rule.from) {
+        enriched[target] = resolveScopedToken(rule.from, scope);
+      } else {
+        enriched[target] = rule.defaultValue ?? '';
+      }
+      if ((enriched[target] === undefined || enriched[target] === null || enriched[target] === '') && rule.defaultValue !== undefined) {
+        enriched[target] = rule.defaultValue;
+      }
+    }
+    return enriched;
+  });
+  return {
+    rows: result,
+    result,
+    count: result.length,
+  };
+});
+
+type ScoreRecordRule = {
+  target?: string;
+  expr?: string;
+  weight?: number;
+};
+
+registerExecutor('generic:score-records', async ({ inputs, properties }) => {
+  const rows = await rowsFromData(inputs.rows ?? inputs.data);
+  const context = (inputs.context && typeof inputs.context === 'object' && !Array.isArray(inputs.context))
+    ? inputs.context as Record<string, unknown>
+    : {};
+  const scoreRules = parseJsonArray<ScoreRecordRule>(inputs.scoreRules ?? properties.scoreRules);
+  const totalField = String(inputs.totalField ?? properties.totalField ?? '总评分');
+  const sorts = parsePickSortRules(inputs.sorts ?? properties.sorts);
+  const scored = rows.map((row) => {
+    const scope = { record: row, inputs, context };
+    const nextRow: Record<string, unknown> = { ...row };
+    let total = 0;
+    for (const rule of scoreRules) {
+      const target = String(rule?.target || '').trim();
+      if (!target) continue;
+      const rawScore = typeof rule.expr === 'string' && rule.expr.trim()
+        ? Number(evaluateConfiguredExpression(rule.expr, scope) ?? 0)
+        : 0;
+      const weightedScore = rawScore * Number(rule.weight ?? 1);
+      nextRow[target] = weightedScore;
+      total += weightedScore;
+    }
+    nextRow[totalField] = total;
+    return nextRow;
+  });
+  const effectiveSorts = sorts.length > 0 ? sorts : [{ field: totalField, order: 'desc' as const }];
+  const ranked = [...scored].sort((left, right) => {
+    for (const rule of effectiveSorts) {
+      const field = String(rule.field || '');
+      const direction = rule.order === 'desc' ? -1 : 1;
+      const compared = compareSortValues(left[field], right[field]);
+      if (compared !== 0) return compared * direction;
+    }
+    return 0;
+  });
+  return {
+    rows: ranked,
+    result: ranked,
+    first: ranked[0] ?? null,
+    count: ranked.length,
   };
 });
 
@@ -1448,4 +1952,13 @@ registerExecutor('generic:email-send', (ctx) => {
       : `已打开邮件客户端，收件人: ${to}`,
     note: !smtpHost ? '未配置 SMTP 服务器，已使用客户端 mailto: 方式' : undefined,
   };
+});
+
+registerExecutor('generic:condition-branch', ({ inputs, properties }) => {
+  const value = inputs.value;
+  const expression = String(properties.expression || '');
+  const valueVar = value;
+  let result = false;
+  try { result = Boolean(new Function('value', `return ${expression}`)(valueVar)); } catch {}
+  return { result, trueBranch: result ? value : undefined, falseBranch: !result ? value : undefined };
 });
