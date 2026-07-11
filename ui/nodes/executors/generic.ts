@@ -386,6 +386,16 @@ registerExecutor('generic:output-display', (ctx) => {
   return { value: ctx.inputs.value };
 });
 
+registerExecutor('generic:for-each', ({ inputs }) => {
+  const items = Array.isArray(inputs.items) ? inputs.items : [];
+  return {
+    items,
+    currentItem: items[0],
+    index: 0,
+    isLast: items.length <= 1,
+  };
+});
+
 async function rowsFromData(data: unknown): Promise<Record<string, unknown>[]> {
   if (Array.isArray(data)) return data as Record<string, unknown>[];
   const worksheet = data as any;

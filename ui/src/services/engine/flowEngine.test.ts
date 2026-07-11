@@ -38,7 +38,7 @@ test('auto-discovered registry has the expected executable nodes with unique IDs
     .filter((entry) => entry.isDirectory() && /^(func-|behavior-|generic-|ml-)/.test(entry.name))
     .filter((entry) => existsSync(join(root, 'nodes', entry.name, 'schema.json')))
     .map((entry) => entry.name);
-  assert.equal(packageDirs.length, 125);
+  assert.equal(packageDirs.length, 126);
   assert.equal(new Set(packageDirs).size, packageDirs.length);
   assert.equal(CURATED_XLSX_METHODS.size, 14);
 
@@ -956,6 +956,21 @@ test('nodeTimeoutMs allows fast node to complete', async () => {
   const result = await executeFlow(nodes, [edge('e1', 'input', 'output', 'value', 'value')], [], { nodeTimeoutMs: 5000 });
   assert.equal(result.success, true);
   assert.equal(result.nodeResults.get('output')?.outputs.value, 42);
+});
+
+test('for-each iterates over array items', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('input', 'generic:value-input', { valueType: 'array', value: [1, 2, 3] }),
+    node('loop', 'generic:for-each'),
+    node('output', 'generic:output-display'),
+  ];
+  const result = await executeFlow(nodes, [
+    edge('e1', 'input', 'loop', 'value', 'items'),
+    edge('e2', 'loop', 'output', 'currentItem', 'value'),
+  ]);
+  assert.equal(result.success, true);
+  assert.equal(result.nodeResults.get('loop')?.outputs.items?.length, 3);
 });
 
 test('condition-branch routes to true or false output', async () => {

@@ -1,0 +1,16 @@
+{
+  "id": "generic-for-each",
+  "label": "遍历",
+  "description": "遍历数组中的每个元素",
+  "category": "通用 · 流程控制",
+  "kind": "generic",
+  "properties": [],
+  "ports": [
+    { "name": "items", "label": "数组", "type": "json-rows", "direction": "input", "description": "要遍历的数组" },
+    { "name": "items", "label": "数组", "type": "json-rows", "direction": "output", "description": "原始数组" },
+    { "name": "currentItem", "label": "当前项", "type": "any", "direction": "output", "description": "当前遍历的元素" },
+    { "name": "index", "label": "索引", "type": "number", "direction": "output", "description": "当前索引" },
+    { "name": "isLast", "label": "是否最后一项", "type": "boolean", "direction": "output", "description": "是否为最后一个元素" }
+  ],
+  "keywords": ["遍历", "循环", "forEach", "loop", "iterate"]
+}
