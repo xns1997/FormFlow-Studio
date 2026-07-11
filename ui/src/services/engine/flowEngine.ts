@@ -430,6 +430,8 @@ export interface ExecuteFlowOptions {
   parallel?: boolean;
   /** When true, each node gets its own scope map for variable lookups, preventing variable name collisions between nodes. */
   isolatedScopes?: boolean;
+  /** When true, debug events include variable snapshots (actual input/output values) at each step. */
+  debug?: boolean;
 }
 
 function resolvePropertyInputOverrides(
@@ -586,6 +588,15 @@ export async function executeFlow(
         const scopeMap = options.isolatedScopes ? buildScopeMap(node.id, edges, nodeOutputs) : undefined;
         inputs = { ...propertyInputOverrides, ...injectedInputs, ...collectInputs(node.id, edges, nodeOutputs, inputSelections, scopeMap) };
         inputs = validateConnectedInputs({ ...spec, ports: effectivePorts } as FlowNodeSpec, inputs);
+        const startContext: Record<string, unknown> = {
+          specId: node.specId,
+          inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
+        };
+        if (options.debug) {
+          startContext.variableSnapshot = Object.fromEntries(
+            Object.entries(inputs).filter(([key]) => !key.startsWith('_')),
+          );
+        }
         debugEvents.push({
           id: `${requestId}:${node.id}:start`,
           timestamp: Date.now(),
@@ -595,10 +606,7 @@ export async function executeFlow(
           message: `${node.specId}`,
           workflowId: options.targetNodeId,
           nodeId: node.id,
-          context: {
-            specId: node.specId,
-            inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
-          },
+          context: startContext,
         });
         let outputs: Record<string, unknown>;
 
@@ -642,6 +650,22 @@ export async function executeFlow(
           inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
           outputKeys: Object.keys(outputs).filter((key) => !key.startsWith('_')),
         });
+        const successContext: Record<string, unknown> = {
+          specId: node.specId,
+          inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
+          outputKeys: Object.keys(outputs).filter((key) => !key.startsWith('_')),
+          duration: Date.now() - nodeStart,
+        };
+        if (options.debug) {
+          successContext.variableSnapshot = {
+            inputs: Object.fromEntries(
+              Object.entries(inputs).filter(([key]) => !key.startsWith('_')),
+            ),
+            outputs: Object.fromEntries(
+              Object.entries(outputs).filter(([key]) => !key.startsWith('_')),
+            ),
+          };
+        }
         debugEvents.push({
           id: `${requestId}:${node.id}:success`,
           timestamp: Date.now(),
@@ -651,12 +675,7 @@ export async function executeFlow(
           message: `节点执行完成，用时 ${Date.now() - nodeStart}ms`,
           workflowId: options.targetNodeId,
           nodeId: node.id,
-          context: {
-            specId: node.specId,
-            inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
-            outputKeys: Object.keys(outputs).filter((key) => !key.startsWith('_')),
-            duration: Date.now() - nodeStart,
-          },
+          context: successContext,
         });
       } catch (e) {
         hasNodeFailures = true;
@@ -685,6 +704,17 @@ export async function executeFlow(
           inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
           outputKeys: [],
         });
+        const errorContext: Record<string, unknown> = {
+          specId: node.specId,
+          inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
+          duration: Date.now() - nodeStart,
+          errorMessage: errMsg,
+        };
+        if (options.debug) {
+          errorContext.variableSnapshot = Object.fromEntries(
+            Object.entries(inputs).filter(([key]) => !key.startsWith('_')),
+          );
+        }
         debugEvents.push({
           id: `${requestId}:${node.id}:error`,
           timestamp: Date.now(),
@@ -694,12 +724,7 @@ export async function executeFlow(
           message: context,
           workflowId: options.targetNodeId,
           nodeId: node.id,
-          context: {
-            specId: node.specId,
-            inputKeys: Object.keys(inputs).filter((key) => !key.startsWith('_')),
-            duration: Date.now() - nodeStart,
-            errorMessage: errMsg,
-          },
+          context: errorContext,
         });
       }
     };

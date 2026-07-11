@@ -1083,3 +1083,33 @@ test('isolatedScopes prevents variable name collisions', async () => {
   assert.equal(result.nodeResults.get('use-a')?.outputs.result, 10);
   assert.equal(result.nodeResults.get('use-b')?.outputs.result, 20);
 });
+
+test('debug events include variable snapshots at each step', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('input', 'generic:value-input', { valueType: 'number', value: 42 }),
+  ];
+  const result = await executeFlow(nodes, [], [], { debug: true });
+  assert.equal(result.success, true);
+  const startEvent = result.debug?.events.find(e => e.title?.includes('开始执行'));
+  assert.ok(startEvent?.context?.inputKeys);
+  // When debug is true, variableSnapshot should be present on start events
+  assert.ok(startEvent?.context?.variableSnapshot, 'start event should include variableSnapshot when debug is true');
+  // Check that the success event also has variable snapshots
+  const successEvent = result.debug?.events.find(e => e.level === 'info' && e.source === 'workflow-node');
+  assert.ok(successEvent?.context?.variableSnapshot, 'success event should include variableSnapshot when debug is true');
+  const snapshot = successEvent?.context?.variableSnapshot as Record<string, unknown>;
+  assert.ok(snapshot.outputs, 'variableSnapshot should contain outputs');
+});
+
+test('debug option false does not include variable snapshots', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('input', 'generic:value-input', { valueType: 'number', value: 42 }),
+  ];
+  const result = await executeFlow(nodes, [], [], { debug: false });
+  assert.equal(result.success, true);
+  const startEvent = result.debug?.events.find(e => e.title?.includes('开始执行'));
+  assert.ok(startEvent?.context?.inputKeys);
+  assert.equal(startEvent?.context?.variableSnapshot, undefined, 'variableSnapshot should not be present when debug is false');
+});
