@@ -1113,3 +1113,50 @@ test('debug option false does not include variable snapshots', async () => {
   assert.ok(startEvent?.context?.inputKeys);
   assert.equal(startEvent?.context?.variableSnapshot, undefined, 'variableSnapshot should not be present when debug is false');
 });
+
+test('transactionalSideEffects rolls back on failure', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('write', 'behavior-js-script', {
+      script: 'return { sideEffects: [{ kind: "set-form-value", field: "test", value: 42 }] }'
+    }),
+    node('fail', 'behavior-js-script', { script: 'throw new Error("fail")' }),
+  ];
+  const result = await executeFlow(nodes, [
+    edge('e1', 'write', 'fail', 'trigger', 'trigger'),
+  ], [], { transactionalSideEffects: true, onNodeFailure: 'abort' });
+  assert.equal(result.success, false);
+  assert.equal(result.sideEffects.length, 0);
+});
+
+test('transactionalSideEffects commits when all nodes succeed', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('write1', 'behavior-js-script', {
+      script: 'return { trigger: { event: "done" }, sideEffects: [{ kind: "set-form-value", field: "a", value: 1 }] }'
+    }),
+    node('write2', 'behavior-js-script', {
+      script: 'return { trigger: { event: "done" }, sideEffects: [{ kind: "set-form-value", field: "b", value: 2 }] }'
+    }),
+  ];
+  const result = await executeFlow(nodes, [
+    edge('e1', 'write1', 'write2', 'trigger', 'trigger'),
+  ], [], { transactionalSideEffects: true });
+  assert.equal(result.success, true);
+  assert.equal(result.sideEffects.length, 2);
+});
+
+test('without transactionalSideEffects side effects are not rolled back', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('write', 'behavior-js-script', {
+      script: 'return { sideEffects: [{ kind: "set-form-value", field: "test", value: 42 }] }'
+    }),
+    node('fail', 'behavior-js-script', { script: 'throw new Error("fail")' }),
+  ];
+  const result = await executeFlow(nodes, [
+    edge('e1', 'write', 'fail', 'trigger', 'trigger'),
+  ], [], { onNodeFailure: 'abort' });
+  assert.equal(result.success, false);
+  assert.equal(result.sideEffects.length, 1);
+});

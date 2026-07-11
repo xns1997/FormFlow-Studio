@@ -432,6 +432,8 @@ export interface ExecuteFlowOptions {
   isolatedScopes?: boolean;
   /** When true, debug events include variable snapshots (actual input/output values) at each step. */
   debug?: boolean;
+  /** When true, side effects are buffered and only committed on success. On failure, pending side effects are discarded. */
+  transactionalSideEffects?: boolean;
 }
 
 function resolvePropertyInputOverrides(
@@ -527,6 +529,7 @@ export async function executeFlow(
   const nodeOutputs = new Map<string, Record<string, unknown>>();
   const nodeResults = new Map<string, NodeExecutionResult>();
   const sideEffects: FlowSideEffect[] = [];
+  const pendingSideEffects: FlowSideEffect[] = [];
   const errors: string[] = [];
   const debugEvents: DebugEntry[] = [];
   let hasNodeFailures = false;
@@ -635,7 +638,11 @@ export async function executeFlow(
 
         outputs = validateOutputs(effectivePorts, outputs);
         const nodeSideEffects = extractNodeSideEffects(outputs);
-        sideEffects.push(...nodeSideEffects);
+        if (options.transactionalSideEffects) {
+          pendingSideEffects.push(...nodeSideEffects);
+        } else {
+          sideEffects.push(...nodeSideEffects);
+        }
 
         nodeOutputs.set(node.id, outputs);
         if (options.checkpointId) saveCheckpoint(options.checkpointId, options.workflowId || options.targetNodeId || 'workflow', [...nodeOutputs.keys()], nodeOutputs);
@@ -751,8 +758,12 @@ export async function executeFlow(
       }
     }
     if (errors.length === 0 && options.checkpointId && !options.keepCheckpointOnSuccess) clearCheckpoint(options.checkpointId);
+    const success = errors.length === 0 && !hasNodeFailures;
+    if (options.transactionalSideEffects && success) {
+      sideEffects.push(...pendingSideEffects);
+    }
     return {
-      success: errors.length === 0 && !hasNodeFailures,
+      success,
       nodeResults,
       finalOutputs,
       sideEffects,
