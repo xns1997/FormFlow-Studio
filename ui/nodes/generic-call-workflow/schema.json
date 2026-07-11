@@ -1,0 +1,23 @@
+{
+  "id": "generic-call-workflow",
+  "label": "调用流程",
+  "description": "调用其他流程并获取结果",
+  "category": "通用 · 流程控制",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "workflowId",
+      "label": "流程 ID",
+      "type": "string",
+      "default": "",
+      "required": true,
+      "description": "要调用的流程 ID"
+    }
+  ],
+  "ports": [
+    { "name": "input", "label": "输入", "type": "any", "direction": "input", "description": "传入子流程的数据" },
+    { "name": "result", "label": "结果", "type": "any", "direction": "output", "description": "子流程返回结果" },
+    { "name": "success", "label": "是否成功", "type": "boolean", "direction": "output", "description": "子流程是否执行成功" }
+  ],
+  "keywords": ["调用", "子流程", "sub-workflow", "call", "invoke"]
+}

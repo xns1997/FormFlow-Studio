@@ -815,7 +815,7 @@ let registryInstance: NodeRegistry | null = null;
 let registryPromise: Promise<NodeRegistry> | null = null;
 let pluginHotReloadInitialized = false;
 
-export const EXPECTED_NODE_COUNT = 146;
+export const EXPECTED_NODE_COUNT = 147;
 
 export const CURATED_XLSX_METHODS = new Set([
   'XLSX.read',
@@ -862,6 +862,7 @@ const DISCOVERY_KEYWORDS: Record<string, string[]> = {
   'scenario:json-to-xlsx-export': ['导出 Excel', 'JSON 导出', 'xlsx', 'export'],
   'scenario:append-rows': ['追加行', '新增明细', 'append', 'rows'],
   'scenario:sheet-preview': ['工作表预览', '多格式', 'JSON CSV HTML', 'preview'],
+  'generic:call-workflow': ['调用流程', '子流程', 'sub-workflow', 'call', 'invoke'],
 };
 
 export async function loadNodeRegistry(): Promise<NodeRegistry> {

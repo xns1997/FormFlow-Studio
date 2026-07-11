@@ -38,7 +38,7 @@ test('auto-discovered registry has the expected executable nodes with unique IDs
     .filter((entry) => entry.isDirectory() && /^(func-|behavior-|generic-|ml-)/.test(entry.name))
     .filter((entry) => existsSync(join(root, 'nodes', entry.name, 'schema.json')))
     .map((entry) => entry.name);
-  assert.equal(packageDirs.length, 126);
+  assert.equal(packageDirs.length, 127);
   assert.equal(new Set(packageDirs).size, packageDirs.length);
   assert.equal(CURATED_XLSX_METHODS.size, 14);
 
@@ -146,6 +146,21 @@ test('removed workflow nodes fail explicitly instead of executing legacy logic',
   ], []);
   assert.equal(result.success, false);
   assert.match(result.errors.join('\n'), /节点已移除，不可执行: generic:variable-input/);
+});
+
+test('call-workflow can be configured and passes through input', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('input', 'generic:value-input', { valueType: 'number', value: 5 }),
+    node('call', 'generic:call-workflow', { workflowId: 'sub-workflow-1' }),
+  ];
+  const result = await executeFlow(nodes, [
+    edge('e1', 'input', 'call', 'value', 'input'),
+  ]);
+  assert.equal(result.success, true);
+  assert.equal(result.nodeResults.get('call')?.outputs.workflowId, 'sub-workflow-1');
+  assert.equal(result.nodeResults.get('call')?.outputs.success, true);
+  assert.equal(result.nodeResults.get('call')?.outputs.result, 5);
 });
 
 test('behavior-row-lookup returns patches for unique hit and warnings for miss or multiple hits', async () => {

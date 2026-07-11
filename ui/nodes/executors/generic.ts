@@ -382,6 +382,14 @@ registerExecutor('workflow:export', (ctx) => {
   return { result };
 });
 
+registerExecutor('generic:call-workflow', ({ inputs, properties }) => {
+  return {
+    result: inputs.input,
+    success: true,
+    workflowId: properties.workflowId,
+  };
+});
+
 registerExecutor('generic:output-display', (ctx) => {
   return { value: ctx.inputs.value };
 });
