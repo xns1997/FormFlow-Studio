@@ -1,5 +1,78 @@
 # Changelog
 
+## [0.8.0] - 2026-07-11
+
+### 流程引擎核心改进
+
+#### 新增执行选项
+- **`onNodeFailure`**: 节点失败策略 — `'abort'`(默认，停止流程)、`'skip'`(跳过继续)、`'continue'`(同 skip)
+- **`timeoutMs`**: 全局流程超时（毫秒），超时后立即终止流程
+- **`nodeTimeoutMs`**: 单节点超时（毫秒），超时后该节点失败
+- **`parallel`**: 并行执行选项，无依赖关系的节点同时执行（`Promise.all`）
+- **`isolatedScopes`**: 变量作用域隔离，防止同名节点输出互相覆盖
+- **`debug`**: 调试模式，debug 事件包含变量快照（输入/输出实际值）
+- **`transactionalSideEffects`**: 事务性侧效果，流程失败时自动回滚已收集的侧效果
+
+#### 新增流程控制节点
+- **`generic-condition-branch`**: 条件分支节点，根据 JS 表达式路由到 true/false 分支
+  - 支持 `value`、`inputs`、`record`、`context` 等表达式变量
+  - 输出端口：`result`(boolean)、`trueBranch`(any)、`falseBranch`(any)
+- **`generic-for-each`**: 遍历节点，遍历数组中的每个元素
+  - 输出端口：`items`(数组)、`currentItem`(当前项)、`index`(索引)、`isLast`(是否最后一项)
+- **`generic-call-workflow`**: 调用流程节点，配置子流程 ID 并传递输入数据
+  - 属性：`workflowId`(流程 ID)
+  - 输出端口：`result`(子流程结果)、`success`(是否成功)
+
+#### 服务端改进
+- **Checkpoint 持久化 API**: 新增 `/api/checkpoints` 端点（POST/GET/DELETE），支持服务端存储流程检查点
+- **路径安全**: checkpoint ID 参数增加 `sanitizeId` 校验，防止路径遍历攻击
+
+### 行为引擎增强
+
+#### callApi 能力增强
+- 支持 POST/PUT/PATCH/DELETE 请求体（`apiBody`）
+- 支持 Bearer/API Key 认证（`apiAuthType` + `apiAuthValue`）
+- 支持响应回写表单字段（`apiResponseMap`：`{ "responseField": "formField" }`）
+- 支持可配置超时（`apiTimeoutMs`）和重试（`apiRetryCount` + 指数退避）
+
+#### 条件求值增加流程上下文
+- `ConditionConfig` 新增 `dataSource` 字段（`'form'`/`'flow'`/`'behavior'`）
+- `dataSource='flow'` 时通过 `flowOutputField` 读取流程输出
+- `dataSource='behavior'` 时通过 `behaviorName` 读取其他行为结果
+
+#### 新增 runWorkflow 动作
+- `ActionType` 新增 `'runWorkflow'`
+- `ActionConfig` 新增 `workflowId` + `workflowParameters`
+- 执行时通过 `context.runWorkflow` 回调调用流程引擎
+- 流程输出自动回写表单字段
+
+### 表单-流程-行为联动改进
+
+#### 流程输出自动回写
+- 流程执行成功后，自动将 `workflow:export` 的输出字段匹配并回写到表单
+- `autoWriteFlowOutput` 选项（默认 `true`），值比对后只对变化的字段触发 `setValue`
+
+#### 可配置执行顺序
+- `ExecuteFlowOptions` 新增 `executionOrder` 选项，默认 `['linkage', 'script', 'flow']`
+- 用户可自定义执行顺序（如 `['flow', 'linkage', 'script']`）
+
+#### 联动规则 runWorkflow 输出回写
+- `formLinkage.ts` 的 `runWorkflow` 动作增加流程输出自动回写表单字段
+
+### 移动端适配
+- 新增 `responsive.css` 响应式样式（768px/1024px 断点 + 触摸优化 + 打印样式）
+
+### 安全修复
+- 修复 `onNodeFailure: 'abort'` 未实际停止执行的问题（现在会 break 循环）
+- 修复 checkpoint API 路径遍历漏洞（`sanitizeId` 校验）
+
+### 工程改进
+- 节点总数从 144 增加到 **147** 个
+- 所有新选项默认 `undefined`（禁用），完全向后兼容
+- TypeScript 类型检查通过，28/28 单元测试通过
+
+---
+
 ## [0.7.1] - 2026-07-09
 
 ### 设计器画布修复
