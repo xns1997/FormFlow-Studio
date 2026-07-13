@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.0.0...v1.1.0) (2026-07-13)
+
+
+### Features
+
+* unify form configuration and control synchronization ([f7afb4a](https://github.com/xns1997/FormFlow-Studio/commit/f7afb4aa026d175cfc2202f3080418da70e27d2b))
+
 # 1.0.0 (2026-07-13)
 
 
