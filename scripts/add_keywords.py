@@ -9,13 +9,10 @@ NODES_DIR = os.path.join(os.path.dirname(__file__), '..', 'nodes')
 # 关键词映射规则
 KEYWORD_MAP = {
     # 通用节点
-    'generic-file-picker': ['文件', '上传', '选择', 'file', 'upload', 'pick'],
-    'generic-worksheet-select': ['工作表', 'sheet', '选择', 'worksheet', 'select'],
-    'generic-range-select': ['区域', '范围', '选择', 'range', 'select', 'area'],
-    'generic-variable-input': ['变量', '输入', 'variable', 'input'],
-    'generic-text-input': ['文本', '输入', 'string', 'text', 'input'],
-    'generic-number-input': ['数字', '输入', 'number', 'input'],
-    'generic-boolean-switch': ['布尔', '开关', 'boolean', 'switch', 'toggle'],
+    'generic-file-source': ['文件', '上传', '选择', 'file', 'upload', 'source'],
+    'generic-sheet-source': ['工作表', '区域', '范围', 'sheet', 'worksheet', 'range', 'area', 'source'],
+    'generic-value-input': ['变量', '参数', '常量', '文本', '数字', '布尔', 'value', 'variable', 'input'],
+    'generic-choice-input': ['选项', '选择', '下拉', '单选', '多选', 'choice', 'select', 'radio', 'checkbox'],
     'generic-output-display': ['输出', '显示', 'output', 'display'],
     
     # 导出节点
@@ -123,9 +120,6 @@ FUNC_KEYWORDS = {
     'func-row-navigator': ['导航', '行', 'row', 'navigate', 'prev', 'next'],
     'func-form-validate': ['表单', '校验', 'form', 'validate'],
     'func-form-submit': ['表单', '提交', 'form', 'submit'],
-    'func-select-input': ['下拉', '选择', 'select', 'dropdown'],
-    'func-radio-input': ['单选', 'radio'],
-    'func-checkbox-input': ['多选', '复选', 'checkbox'],
     'func-date-input': ['日期', '选择', 'date', 'picker'],
     'func-switch-input': ['开关', '切换', 'switch', 'toggle'],
     'func-rating-input': ['评分', '星级', 'rating', 'star'],

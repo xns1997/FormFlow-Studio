@@ -1,0 +1,1242 @@
+{
+  "behavior-api-request": {
+    "inputs": [
+      "body",
+      "trigger",
+      "url"
+    ],
+    "outputs": [
+      "error",
+      "response",
+      "status",
+      "success"
+    ]
+  },
+  "behavior-calculate": {
+    "inputs": [
+      "a",
+      "b",
+      "c",
+      "trigger"
+    ],
+    "outputs": [
+      "result",
+      "trigger"
+    ]
+  },
+  "behavior-clear-field": {
+    "inputs": [
+      "fieldName",
+      "trigger"
+    ],
+    "outputs": [
+      "fieldName",
+      "trigger"
+    ]
+  },
+  "behavior-compose-message": {
+    "inputs": [
+      "record"
+    ],
+    "outputs": [
+      "message"
+    ]
+  },
+  "behavior-condition": {
+    "inputs": [
+      "compareValue",
+      "trigger",
+      "value"
+    ],
+    "outputs": [
+      "false",
+      "true"
+    ]
+  },
+  "behavior-data-query": {
+    "inputs": [
+      "sheetName",
+      "trigger",
+      "workbook"
+    ],
+    "outputs": [
+      "count",
+      "data",
+      "headers",
+      "result",
+      "sheetName",
+      "tableId",
+      "trigger"
+    ]
+  },
+  "behavior-delay": {
+    "inputs": [
+      "trigger"
+    ],
+    "outputs": [
+      "trigger"
+    ]
+  },
+  "behavior-fill-form": {
+    "inputs": [
+      "record"
+    ],
+    "outputs": [
+      "appliedFields",
+      "matched"
+    ]
+  },
+  "behavior-log": {
+    "inputs": [
+      "data",
+      "message",
+      "trigger"
+    ],
+    "outputs": [
+      "trigger"
+    ]
+  },
+  "behavior-loop": {
+    "inputs": [
+      "items",
+      "trigger"
+    ],
+    "outputs": [
+      "done",
+      "each",
+      "index",
+      "item"
+    ]
+  },
+  "behavior-next-sequence": {
+    "inputs": [
+      "trigger"
+    ],
+    "outputs": [
+      "value"
+    ]
+  },
+  "behavior-notify": {
+    "inputs": [
+      "data",
+      "status"
+    ],
+    "outputs": [
+      "sent"
+    ]
+  },
+  "behavior-on-button-click": {
+    "inputs": [],
+    "outputs": [
+      "buttonName",
+      "trigger"
+    ]
+  },
+  "behavior-on-field-change": {
+    "inputs": [],
+    "outputs": [
+      "fieldName",
+      "newValue",
+      "oldValue",
+      "trigger"
+    ]
+  },
+  "behavior-on-form-load": {
+    "inputs": [],
+    "outputs": [
+      "rowData",
+      "sheetName",
+      "trigger"
+    ]
+  },
+  "behavior-on-row-load": {
+    "inputs": [],
+    "outputs": [
+      "rowData",
+      "rowIndex",
+      "trigger"
+    ]
+  },
+  "behavior-on-submit": {
+    "inputs": [],
+    "outputs": [
+      "formData",
+      "trigger"
+    ]
+  },
+  "behavior-on-validate": {
+    "inputs": [
+      "value"
+    ],
+    "outputs": [
+      "isValid",
+      "trigger"
+    ]
+  },
+  "behavior-query-list": {
+    "inputs": [
+      "criteria"
+    ],
+    "outputs": [
+      "count",
+      "message",
+      "rows"
+    ]
+  },
+  "behavior-refresh-data": {
+    "inputs": [
+      "trigger"
+    ],
+    "outputs": [
+      "trigger"
+    ]
+  },
+  "behavior-require-fields": {
+    "inputs": [
+      "formData",
+      "trigger"
+    ],
+    "outputs": [
+      "firstMissingField",
+      "missingFields",
+      "valid"
+    ]
+  },
+  "behavior-reset-form": {
+    "inputs": [
+      "formData",
+      "trigger"
+    ],
+    "outputs": [
+      "patch"
+    ]
+  },
+  "behavior-row-lookup": {
+    "inputs": [
+      "filter"
+    ],
+    "outputs": [
+      "matched",
+      "message",
+      "row"
+    ]
+  },
+  "behavior-schedule-trigger": {
+    "inputs": [],
+    "outputs": [
+      "scheduledAt",
+      "trigger"
+    ]
+  },
+  "behavior-set-default": {
+    "inputs": [
+      "defaultValue",
+      "fieldName",
+      "trigger"
+    ],
+    "outputs": [
+      "fieldName",
+      "trigger",
+      "value"
+    ]
+  },
+  "behavior-set-disabled": {
+    "inputs": [
+      "componentId",
+      "disabled",
+      "trigger"
+    ],
+    "outputs": [
+      "componentId",
+      "disabled",
+      "trigger"
+    ]
+  },
+  "behavior-set-required": {
+    "inputs": [
+      "fieldName",
+      "required",
+      "trigger"
+    ],
+    "outputs": [
+      "fieldName",
+      "required",
+      "trigger"
+    ]
+  },
+  "behavior-set-value": {
+    "inputs": [
+      "fieldName",
+      "trigger",
+      "value"
+    ],
+    "outputs": [
+      "fieldName",
+      "trigger",
+      "value"
+    ]
+  },
+  "behavior-set-values": {
+    "inputs": [
+      "count",
+      "message",
+      "record",
+      "records"
+    ],
+    "outputs": [
+      "appliedFields",
+      "patch"
+    ]
+  },
+  "behavior-set-visible": {
+    "inputs": [
+      "componentId",
+      "trigger",
+      "visible"
+    ],
+    "outputs": [
+      "componentId",
+      "trigger",
+      "visible"
+    ]
+  },
+  "behavior-show-message": {
+    "inputs": [
+      "message",
+      "trigger"
+    ],
+    "outputs": [
+      "message",
+      "trigger"
+    ]
+  },
+  "behavior-stop": {
+    "inputs": [
+      "trigger"
+    ],
+    "outputs": []
+  },
+  "behavior-switch-tab": {
+    "inputs": [
+      "trigger"
+    ],
+    "outputs": [
+      "tabName",
+      "trigger"
+    ]
+  },
+  "behavior-upsert-table-row": {
+    "inputs": [
+      "row"
+    ],
+    "outputs": [
+      "keyValue",
+      "writeBack"
+    ]
+  },
+  "behavior-validate": {
+    "inputs": [
+      "fieldName",
+      "trigger",
+      "value"
+    ],
+    "outputs": [
+      "errorMessage",
+      "failed",
+      "passed"
+    ]
+  },
+  "behavior:submit": {
+    "inputs": [
+      "formData",
+      "originalData",
+      "trigger"
+    ],
+    "outputs": [
+      "changeLog",
+      "error",
+      "fileData",
+      "success",
+      "writeBack"
+    ]
+  },
+  "func-add-comment": {
+    "inputs": [
+      "cellAddress",
+      "content",
+      "worksheet"
+    ],
+    "outputs": [
+      "worksheet"
+    ]
+  },
+  "func-apply-style": {
+    "inputs": [
+      "rangeAddress",
+      "style",
+      "workbook",
+      "worksheet"
+    ],
+    "outputs": [
+      "workbook"
+    ]
+  },
+  "func-column-bind": {
+    "inputs": [
+      "dataValue",
+      "trigger",
+      "uiValue"
+    ],
+    "outputs": [
+      "dataValue",
+      "trigger",
+      "uiValue"
+    ]
+  },
+  "func-conditional-format": {
+    "inputs": [
+      "rangeAddress",
+      "ruleType",
+      "value1",
+      "worksheet"
+    ],
+    "outputs": [
+      "worksheet"
+    ]
+  },
+  "func-copy-range": {
+    "inputs": [
+      "sourceRange",
+      "targetCell",
+      "worksheet"
+    ],
+    "outputs": [
+      "worksheet"
+    ]
+  },
+  "func-create-chart": {
+    "inputs": [
+      "dataRange",
+      "title",
+      "worksheet"
+    ],
+    "outputs": [
+      "chartName",
+      "worksheet"
+    ]
+  },
+  "func-create-table": {
+    "inputs": [
+      "rangeAddress",
+      "tableName",
+      "worksheet"
+    ],
+    "outputs": [
+      "tableName",
+      "worksheet"
+    ]
+  },
+  "func-data-validation": {
+    "inputs": [
+      "listValues",
+      "rangeAddress",
+      "validationType",
+      "worksheet"
+    ],
+    "outputs": [
+      "worksheet"
+    ]
+  },
+  "func-date-input": {
+    "inputs": [
+      "trigger",
+      "value"
+    ],
+    "outputs": [
+      "fieldName",
+      "trigger",
+      "value"
+    ]
+  },
+  "func-find-replace": {
+    "inputs": [
+      "findText",
+      "replaceText",
+      "worksheet"
+    ],
+    "outputs": [
+      "replacedCount",
+      "worksheet"
+    ]
+  },
+  "func-form-validate": {
+    "inputs": [
+      "formData",
+      "trigger"
+    ],
+    "outputs": [
+      "errors",
+      "failed",
+      "isValid",
+      "passed"
+    ]
+  },
+  "func-merge-cells": {
+    "inputs": [
+      "merge",
+      "rangeAddress",
+      "worksheet"
+    ],
+    "outputs": [
+      "worksheet"
+    ]
+  },
+  "func-modify-range": {
+    "inputs": [
+      "address",
+      "values",
+      "worksheet"
+    ],
+    "outputs": [
+      "worksheet"
+    ]
+  },
+  "func-named-item": {
+    "inputs": [
+      "formula",
+      "name",
+      "workbook"
+    ],
+    "outputs": [
+      "name",
+      "workbook"
+    ]
+  },
+  "func-protect-sheet": {
+    "inputs": [
+      "password",
+      "protect",
+      "worksheet"
+    ],
+    "outputs": [
+      "worksheet"
+    ]
+  },
+  "func-protect-workbook": {
+    "inputs": [
+      "password",
+      "protectStructure",
+      "workbook"
+    ],
+    "outputs": [
+      "workbook"
+    ]
+  },
+  "func-remove-duplicates": {
+    "inputs": [
+      "columns",
+      "worksheet"
+    ],
+    "outputs": [
+      "removedCount",
+      "worksheet"
+    ]
+  },
+  "func-row-navigator": {
+    "inputs": [
+      "currentRow",
+      "totalRows",
+      "trigger"
+    ],
+    "outputs": [
+      "canNavigate",
+      "targetRow",
+      "trigger"
+    ]
+  },
+  "func-sheet-operation": {
+    "inputs": [
+      "newName",
+      "operation",
+      "sheetName",
+      "workbook"
+    ],
+    "outputs": [
+      "sheetNames",
+      "workbook"
+    ]
+  },
+  "func-style": {
+    "inputs": [
+      "override"
+    ],
+    "outputs": [
+      "style"
+    ]
+  },
+  "generic:ai-insight": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "insight"
+    ]
+  },
+  "generic:ai-query": {
+    "inputs": [
+      "question",
+      "schema"
+    ],
+    "outputs": [
+      "sql"
+    ]
+  },
+  "generic:append": {
+    "inputs": [
+      "data",
+      "extra"
+    ],
+    "outputs": [
+      "data",
+      "rowCount"
+    ]
+  },
+  "generic:array-enrich": {
+    "inputs": [
+      "context",
+      "referenceRows",
+      "rows"
+    ],
+    "outputs": [
+      "count",
+      "result",
+      "rows"
+    ]
+  },
+  "generic:array-lookup": {
+    "inputs": [
+      "context",
+      "rows"
+    ],
+    "outputs": [
+      "count",
+      "first",
+      "matched",
+      "rows"
+    ]
+  },
+  "generic:call-workflow": {
+    "inputs": [
+      "input"
+    ],
+    "outputs": [
+      "result",
+      "success"
+    ]
+  },
+  "generic:choice-input": {
+    "inputs": [
+      "options",
+      "value"
+    ],
+    "outputs": [
+      "selectedOption",
+      "selectedOptions",
+      "value",
+      "values"
+    ]
+  },
+  "generic:compare": {
+    "inputs": [
+      "dataA",
+      "dataB"
+    ],
+    "outputs": [
+      "different",
+      "onlyA",
+      "onlyB",
+      "same"
+    ]
+  },
+  "generic:condition-branch": {
+    "inputs": [
+      "value"
+    ],
+    "outputs": [
+      "falseBranch",
+      "result",
+      "trueBranch"
+    ]
+  },
+  "generic:criteria-filter": {
+    "inputs": [
+      "criteria",
+      "data"
+    ],
+    "outputs": [
+      "appliedCriteria",
+      "count",
+      "emptyReason",
+      "result",
+      "rows"
+    ]
+  },
+  "generic:data-quality": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "issues",
+      "score",
+      "validRows"
+    ]
+  },
+  "generic:database-query": {
+    "inputs": [
+      "params"
+    ],
+    "outputs": [
+      "data",
+      "rowCount"
+    ]
+  },
+  "generic:date-time": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "data"
+    ]
+  },
+  "generic:db-connect": {
+    "inputs": [
+      "trigger"
+    ],
+    "outputs": [
+      "connected",
+      "connection"
+    ]
+  },
+  "generic:db-query": {
+    "inputs": [
+      "connection",
+      "params"
+    ],
+    "outputs": [
+      "data",
+      "rowCount"
+    ]
+  },
+  "generic:db-write": {
+    "inputs": [
+      "connection",
+      "rows"
+    ],
+    "outputs": [
+      "rowCount"
+    ]
+  },
+  "generic:display-stats": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "colCount",
+      "headers",
+      "rowCount",
+      "stats"
+    ]
+  },
+  "generic:display-table": {
+    "inputs": [
+      "data",
+      "title"
+    ],
+    "outputs": [
+      "colCount",
+      "data",
+      "rowCount"
+    ]
+  },
+  "generic:email-send": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "error",
+      "sent"
+    ]
+  },
+  "generic:encode": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "data"
+    ]
+  },
+  "generic:field-classifier": {
+    "inputs": [
+      "context",
+      "record"
+    ],
+    "outputs": [
+      "labels",
+      "result",
+      "values"
+    ]
+  },
+  "generic:file-source": {
+    "inputs": [
+      "accept",
+      "multiple",
+      "trigger"
+    ],
+    "outputs": [
+      "data",
+      "file",
+      "name",
+      "size"
+    ]
+  },
+  "generic:flatten": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "data"
+    ]
+  },
+  "generic:for-each": {
+    "inputs": [
+      "items"
+    ],
+    "outputs": [
+      "currentItem",
+      "index",
+      "isLast",
+      "items"
+    ]
+  },
+  "generic:graphql-query": {
+    "inputs": [
+      "variables"
+    ],
+    "outputs": [
+      "data",
+      "errors"
+    ]
+  },
+  "generic:group-by": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "data"
+    ]
+  },
+  "generic:handle-missing": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "data",
+      "removedCount"
+    ]
+  },
+  "generic:hash": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "data"
+    ]
+  },
+  "generic:incremental-sync": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "changes",
+      "previousWatermark",
+      "watermark"
+    ]
+  },
+  "generic:merge": {
+    "inputs": [
+      "leftData",
+      "rightData"
+    ],
+    "outputs": [
+      "data",
+      "rowCount"
+    ]
+  },
+  "generic:olap-crosstab": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "drilldown",
+      "table"
+    ]
+  },
+  "generic:output-display": {
+    "inputs": [
+      "label",
+      "value"
+    ],
+    "outputs": [
+      "value"
+    ]
+  },
+  "generic:pdf-report": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "fileData",
+      "fileName"
+    ]
+  },
+  "generic:pick-record": {
+    "inputs": [
+      "data",
+      "sorts"
+    ],
+    "outputs": [
+      "count",
+      "first",
+      "result",
+      "rows"
+    ]
+  },
+  "generic:pivot": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "data"
+    ]
+  },
+  "generic:range-check": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "failed",
+      "passRate",
+      "passed"
+    ]
+  },
+  "generic:record-transform": {
+    "inputs": [
+      "context",
+      "record"
+    ],
+    "outputs": [
+      "fields",
+      "record",
+      "result"
+    ]
+  },
+  "generic:regex-extract": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "data"
+    ]
+  },
+  "generic:rename-columns": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "data"
+    ]
+  },
+  "generic:rest-api": {
+    "inputs": [
+      "body"
+    ],
+    "outputs": [
+      "data",
+      "response",
+      "status"
+    ]
+  },
+  "generic:sample": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "data",
+      "rowCount"
+    ]
+  },
+  "generic:score-records": {
+    "inputs": [
+      "context",
+      "rows"
+    ],
+    "outputs": [
+      "count",
+      "first",
+      "rows"
+    ]
+  },
+  "generic:string-manip": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "data"
+    ]
+  },
+  "generic:type-cast": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "data"
+    ]
+  },
+  "generic:unique-check": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "duplicateCount",
+      "duplicates",
+      "isUnique"
+    ]
+  },
+  "generic:unpivot": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "data"
+    ]
+  },
+  "generic:validate-csv": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "errors",
+      "valid"
+    ]
+  },
+  "generic:validate-json": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "errors",
+      "valid"
+    ]
+  },
+  "generic:validate-xml": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "errors",
+      "valid"
+    ]
+  },
+  "generic:value-input": {
+    "inputs": [],
+    "outputs": [
+      "value"
+    ]
+  },
+  "generic:websocket": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "received",
+      "status"
+    ]
+  },
+  "ml-anomaly-detect": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "anomaly_count",
+      "data",
+      "normal_count"
+    ]
+  },
+  "ml-auto-feature": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "data",
+      "features"
+    ]
+  },
+  "ml-correlation": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "columns",
+      "matrix"
+    ]
+  },
+  "ml-decision-tree": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "accuracy",
+      "predictions"
+    ]
+  },
+  "ml-descriptive-stats": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "shape",
+      "stats"
+    ]
+  },
+  "ml-feature-select": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "removed",
+      "selected"
+    ]
+  },
+  "ml-hypothesis-test": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "p_value",
+      "significant",
+      "statistic"
+    ]
+  },
+  "ml-kmeans": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "centers",
+      "data",
+      "labels"
+    ]
+  },
+  "ml-knn": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "accuracy",
+      "predictions"
+    ]
+  },
+  "ml-label-encode": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "data",
+      "mapping"
+    ]
+  },
+  "ml-linear-regression": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "intercept",
+      "predictions",
+      "r2",
+      "slope"
+    ]
+  },
+  "ml-naive-bayes": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "accuracy",
+      "predictions"
+    ]
+  },
+  "ml-normalize": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "data",
+      "params"
+    ]
+  },
+  "ml-onehot-encode": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "data"
+    ]
+  },
+  "ml-pca": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "data",
+      "explained_variance"
+    ]
+  },
+  "ml-random-forest": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "accuracy",
+      "importances",
+      "predictions"
+    ]
+  },
+  "ml-standardize": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "data",
+      "params"
+    ]
+  },
+  "ml-svm": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "accuracy",
+      "predictions",
+      "support_vectors"
+    ]
+  },
+  "ml-time-series": {
+    "inputs": [
+      "data"
+    ],
+    "outputs": [
+      "moving_average",
+      "trend_slope"
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "id":"behavior-schedule-trigger","label":"定时触发","description":"按 Cron 表达式在后台触发工作流","category":"行为 · 触发器","kind":"behavior",
+  "properties":[{"name":"name","label":"任务名称","type":"string","default":"定时任务"},{"name":"cron","label":"Cron 表达式","type":"string","default":"0 9 * * *","required":true},{"name":"timezone","label":"时区","type":"string","default":"Asia/Shanghai"},{"name":"enabled","label":"启用","type":"boolean","default":true}],
+  "ports":[{"name":"trigger","label":"触发","type":"any","direction":"output"},{"name":"scheduledAt","label":"计划时间","type":"string","direction":"output"}],
+  "keywords":["定时","Cron","调度","schedule"]
+}

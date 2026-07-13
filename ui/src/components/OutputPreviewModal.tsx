@@ -84,16 +84,16 @@ export default function OutputPreviewModal({ target, onClose, onDownload }: Prop
             <label className="output-preview-search">
               <span>⌕</span>
               <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(0); }} placeholder="查找单元格…" />
-              {query && <button title="清除查找" onClick={() => { setQuery(''); setPage(0); }}>×</button>}
+              {query && <button type="button" className="ui-btn ui-btn-ghost ui-btn-icon ui-btn-xs" title="清除查找" onClick={() => { setQuery(''); setPage(0); }}>×</button>}
             </label>
           )}
           <div className="output-preview-tabs">
-            <button className={view === 'preview' ? 'active' : ''} onClick={() => setView('preview')}>预览</button>
-            <button className={view === 'raw' ? 'active' : ''} onClick={() => setView('raw')}>原始数据</button>
+            <button type="button" className={view === 'preview' ? 'active' : ''} onClick={() => setView('preview')}>预览</button>
+            <button type="button" className={view === 'raw' ? 'active' : ''} onClick={() => setView('raw')}>原始数据</button>
           </div>
-          <button onClick={copyRaw}>{copied ? '已复制' : '复制'}</button>
+          <button type="button" className={`ui-btn ui-btn-xs ${copied ? 'ui-btn-success' : 'ui-btn-subtle'}`} onClick={copyRaw}>{copied ? '已复制' : '复制'}</button>
           {canDownload && onDownload && (
-            <button className="primary" onClick={() => onDownload(target.value, target.fileName || 'output.bin', target.mimeType || 'application/octet-stream')}>下载</button>
+            <button type="button" className="ui-btn ui-btn-primary ui-btn-xs" onClick={() => onDownload(target.value, target.fileName || 'output.bin', target.mimeType || 'application/octet-stream')}>下载</button>
           )}
         </div>
 
@@ -137,8 +137,8 @@ export default function OutputPreviewModal({ target, onClose, onDownload }: Prop
         {view === 'preview' && table && (filteredRows.length > PAGE_SIZE || query) && (
           <div className="output-preview-pagination">
             <span>{query ? `${filteredRows.length.toLocaleString()} 条命中 / ` : ''}{table.rows.length.toLocaleString()} 行 · 第 {page + 1}/{totalPages} 页</span>
-            <button disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>上一页</button>
-            <button disabled={page >= totalPages - 1} onClick={() => setPage((value) => Math.min(totalPages - 1, value + 1))}>下一页</button>
+            <button type="button" className="ui-btn ui-btn-xs" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>上一页</button>
+            <button type="button" className="ui-btn ui-btn-xs" disabled={page >= totalPages - 1} onClick={() => setPage((value) => Math.min(totalPages - 1, value + 1))}>下一页</button>
           </div>
         )}
       </div>

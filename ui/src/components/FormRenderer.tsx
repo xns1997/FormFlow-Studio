@@ -4,6 +4,7 @@ import type { SrcTableEntry } from '../project/types';
 import RangeTag from './RangeTag';
 import RangeSelector from './RangeSelector';
 import ChartWidget, { type MetricConfig } from './ChartWidget';
+import AnimatedNumber from './AnimatedNumber';
 import CodeEditor from './CodeEditor';
 import {
   AntdActionButton,
@@ -139,11 +140,12 @@ export default function FormRenderer({
     const state = componentStates[comp.id] || { visible: true, disabled: false, readonly: false };
     if (!state.visible) return null;
     const props = normalizeRenderProps(comp);
-    const hasError = !!errors[comp.name];
-    const isTouched = touched.has(comp.name);
-    const isDirty = JSON.stringify(values[comp.name]) !== JSON.stringify(originalValues[comp.name]);
+    const fieldName = resolveComponentFieldName(comp);
+    const hasError = !!errors[fieldName];
+    const isTouched = touched.has(fieldName);
+    const isDirty = JSON.stringify(values[fieldName]) !== JSON.stringify(originalValues[fieldName]);
     const showSuccess = isTouched && !hasError && isDirty && !!props.required;
-    const rangeRef = rangeConnections[comp.name] || null;
+    const rangeRef = rangeConnections[fieldName] || null;
     const showChrome = shouldShowFieldChrome(comp.type);
     return (
       <div
@@ -151,7 +153,7 @@ export default function FormRenderer({
         className={`lg-field ${state.disabled ? 'disabled' : ''} ${hasError && isTouched ? 'has-error' : ''} ${isDirty ? 'dirty-indicator' : ''}`}
         data-component-id={comp.id}
         data-component-type={comp.type}
-        data-field-name={comp.name}
+        data-field-name={fieldName}
       >
         {showChrome && (
           <label className="lg-label">
@@ -162,54 +164,54 @@ export default function FormRenderer({
         )}
         <FormFieldInput
           type={comp.type}
-          name={comp.name}
-          value={values[comp.name]}
-          originalValue={originalValues[comp.name]}
+          name={fieldName}
+          value={values[fieldName]}
+          originalValue={originalValues[fieldName]}
           disabled={state.disabled || state.readonly || !!props.disabled || !!props.readonly}
           props={props}
-          error={isTouched ? errors[comp.name] : undefined}
+          error={isTouched ? errors[fieldName] : undefined}
           onChange={(val) => {
-            const nextValues = { ...values, [comp.name]: val };
-            onChange(comp.name, val);
+            const nextValues = { ...values, [fieldName]: val };
+            onChange(fieldName, val);
             void onControlEvent?.({
-              eventName: 'onChange', field: comp.name, value: val,
-              values: nextValues, originalValues, component: comp, previousValue: values[comp.name], timestamp: Date.now(),
+              eventName: 'onChange', field: fieldName, value: val,
+              values: nextValues, originalValues, component: comp, previousValue: values[fieldName], timestamp: Date.now(),
             });
           }}
           onBlur={() => {
-            handleFieldBlur(comp.name);
-            onBlur?.(comp.name);
+            handleFieldBlur(fieldName);
+            onBlur?.(fieldName);
             void onControlEvent?.({
-              eventName: 'onBlur', field: comp.name, value: values[comp.name],
-              values, originalValues, component: comp, previousValue: values[comp.name], timestamp: Date.now(),
+              eventName: 'onBlur', field: fieldName, value: values[fieldName],
+              values, originalValues, component: comp, previousValue: values[fieldName], timestamp: Date.now(),
             });
           }}
           onFocus={() => {
-            onFocus?.(comp.name);
+            onFocus?.(fieldName);
             void onControlEvent?.({
-              eventName: 'onFocus', field: comp.name, value: values[comp.name],
-              values, originalValues, component: comp, previousValue: values[comp.name], timestamp: Date.now(),
+              eventName: 'onFocus', field: fieldName, value: values[fieldName],
+              values, originalValues, component: comp, previousValue: values[fieldName], timestamp: Date.now(),
             });
           }}
-          onKeyDown={onKeyDown ? (e) => onKeyDown(comp.name, e) : undefined}
-          onPaste={onPaste ? (e) => onPaste(comp.name, e) : undefined}
-          onClear={onClear ? () => onClear(comp.name) : undefined}
+          onKeyDown={onKeyDown ? (e) => onKeyDown(fieldName, e) : undefined}
+          onPaste={onPaste ? (e) => onPaste(fieldName, e) : undefined}
+          onClear={onClear ? () => onClear(fieldName) : undefined}
           onButtonClick={() => {
-            onButtonClick?.(comp.name);
+            onButtonClick?.(fieldName);
             void onControlEvent?.({
-              eventName: 'onClick', field: comp.name, value: values[comp.name],
-              values, originalValues, component: comp, previousValue: values[comp.name], timestamp: Date.now(),
+              eventName: 'onClick', field: fieldName, value: values[fieldName],
+              values, originalValues, component: comp, previousValue: values[fieldName], timestamp: Date.now(),
             });
           }}
           onTableRowClick={(rowIndex, row) => {
             void onControlEvent?.({
               eventName: 'onRowClick',
-              field: comp.name,
+              field: fieldName,
               value: rowIndex,
               values,
               originalValues,
               component: comp,
-              previousValue: values[comp.name],
+              previousValue: values[fieldName],
               timestamp: Date.now(),
               detail: { rowIndex, row },
             });
@@ -219,11 +221,11 @@ export default function FormRenderer({
         {tables.length > 0 && (
           <RangeTag
             range={rangeRef}
-            onConnect={() => setConnectingField(comp.name)}
-            onDisconnect={() => onRangeChange?.(comp.name, null)}
+            onConnect={() => setConnectingField(fieldName)}
+            onDisconnect={() => onRangeChange?.(fieldName, null)}
           />
         )}
-        {hasError && isTouched && <span className="lg-error">{errors[comp.name]}</span>}
+        {hasError && isTouched && <span className="lg-error">{errors[fieldName]}</span>}
       </div>
     );
   };
@@ -312,6 +314,10 @@ function normalizeRenderProps(comp: ComponentNode): Record<string, unknown> {
     label: comp.label || comp.props.label,
     name: comp.name || comp.props.name,
   };
+}
+
+function resolveComponentFieldName(comp: ComponentNode): string {
+  return String(comp.fieldBinding || comp.name || comp.props.name || comp.id);
 }
 
 function normalizeFileList(files: unknown): UploadFileValue[] {
@@ -595,6 +601,31 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
       );
     case 'text':
       return <div className="lg-text">{String(effectiveValue ?? props.content ?? '')}</div>;
+    case 'animatedNumber':
+      return (
+        <div className="lg-text">
+          <AnimatedNumber
+            value={effectiveValue == null || effectiveValue === '' ? (props.content ?? '0') : effectiveValue}
+            duration={Number(props.duration) || 1200}
+            decimals={Number(props.decimals) || 0}
+            prefix={String(props.prefix ?? '')}
+            suffix={String(props.suffix ?? '')}
+            useGrouping={props.useGrouping !== false}
+            style={{
+              fontSize: Number(props.fontSize) || 32,
+              fontWeight: String(props.fontWeight ?? 'bold') as React.CSSProperties['fontWeight'],
+              fontFamily: props.fontFamily ? String(props.fontFamily) : undefined,
+              color: String(props.color ?? '#2563eb'),
+              textAlign: String(props.textAlign ?? 'left') as React.CSSProperties['textAlign'],
+              letterSpacing: `${Number(props.letterSpacing) || 0}px`,
+              lineHeight: String(props.lineHeight ?? 1.2),
+              textDecoration: String(props.textDecoration ?? 'none') as React.CSSProperties['textDecoration'],
+              display: 'inline-block',
+              width: '100%',
+            }}
+          />
+        </div>
+      );
     case 'image':
       return props.src ? (
         <img

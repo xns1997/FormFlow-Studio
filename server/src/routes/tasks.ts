@@ -1,0 +1,12 @@
+import { Router } from 'express';
+import { cancelTask, enqueueTask, getTask, listTasks } from '../services/task-queue';
+import { deleteSchedule, listSchedules, saveSchedule } from '../services/scheduler';
+const router = Router();
+router.get('/', (req, res) => res.json(listTasks(Number(req.query.limit) || 100)));
+router.post('/', async (req, res) => res.status(202).json(await enqueueTask(req.body.name, req.body.payload || {})));
+router.get('/schedules', (_req, res) => res.json(listSchedules()));
+router.post('/schedules', (req, res) => { try { res.status(201).json(saveSchedule(req.body)); } catch (error) { res.status(400).json({ error: error instanceof Error ? error.message : String(error) }); } });
+router.delete('/schedules/:id', (req, res) => res.json({ success: deleteSchedule(req.params.id) }));
+router.get('/:id', (req, res) => { const task = getTask(req.params.id); return task ? res.json(task) : res.status(404).json({ error: '任务不存在' }); });
+router.post('/:id/cancel', (req, res) => { const task = cancelTask(req.params.id); return task ? res.json(task) : res.status(404).json({ error: '任务不存在' }); });
+export { router as taskRouter };

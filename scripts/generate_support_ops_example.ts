@@ -174,9 +174,9 @@ const project: ProjectStructure = {
         {
           id: 'source',
           type: 'generic',
-          specId: 'generic:variable-input',
+          specId: 'generic:value-input',
           position: { x: 80, y: 160 },
-          data: { propertiesJson: JSON.stringify({ varName: 'tickets', varType: 'array', varValue: ticketRows }) },
+          data: { propertiesJson: JSON.stringify({ name: 'tickets', valueType: 'array', value: ticketRows }) },
         },
         {
           id: 'filter',

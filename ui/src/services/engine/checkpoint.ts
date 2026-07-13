@@ -1,0 +1,6 @@
+export type FlowCheckpoint = { id: string; workflowId: string; completedNodeIds: string[]; outputs: Record<string, Record<string, unknown>>; createdAt: string; updatedAt: string };
+const prefix = 'formflow.checkpoint.';
+export function loadCheckpoint(id: string): FlowCheckpoint | null { try { return JSON.parse(localStorage.getItem(`${prefix}${id}`) || 'null'); } catch { return null; } }
+export function saveCheckpoint(id: string, workflowId: string, completedNodeIds: string[], outputs: Map<string, Record<string, unknown>>) { const previous = loadCheckpoint(id); const checkpoint: FlowCheckpoint = { id, workflowId, completedNodeIds, outputs: Object.fromEntries(outputs), createdAt: previous?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() }; localStorage.setItem(`${prefix}${id}`, JSON.stringify(checkpoint)); return checkpoint; }
+export function clearCheckpoint(id: string) { localStorage.removeItem(`${prefix}${id}`); }
+export function listCheckpoints() { const keys = Array.from({ length: localStorage.length }, (_value, index) => localStorage.key(index) || ''); return keys.filter((key) => key.startsWith(prefix)).map((key) => loadCheckpoint(key.slice(prefix.length))).filter(Boolean) as FlowCheckpoint[]; }

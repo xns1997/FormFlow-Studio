@@ -6,7 +6,6 @@ export const MAX_RECENT_NODES = 5;
 
 export type NodeDiscoveryGroup =
   | '场景模板'
-  | '输入与选择'
   | '数据处理'
   | 'Excel 编辑'
   | '流程行为'
@@ -15,7 +14,7 @@ export type NodeDiscoveryGroup =
   | '高级 XLSX';
 
 export const NODE_DISCOVERY_GROUPS: NodeDiscoveryGroup[] = [
-  '场景模板', '输入与选择', '数据处理', 'Excel 编辑',
+  '场景模板', '数据处理', 'Excel 编辑',
   '流程行为', '输出与集成', '机器学习', '高级 XLSX',
 ];
 
@@ -83,7 +82,7 @@ export function getNodeDiscoveryGroup(spec: FlowNodeSpec): NodeDiscoveryGroup {
   if (spec.id.startsWith('ml:') || spec.id.startsWith('ml-') || spec.category.startsWith('ML')) return '机器学习';
 
   const category = spec.category;
-  if (/输入|选择|表单组件/.test(category)) return '输入与选择';
+  if (/输入|选择|表单组件/.test(category)) return 'Excel 编辑';
   if (/输出|显示|可视化|导出|集成/.test(category)) return '输出与集成';
   if (/清洗|聚合|校验/.test(category) || spec.id === 'generic:filter' || spec.id === 'generic:sort') return '数据处理';
   if (/表单操作/.test(category)) return '流程行为';

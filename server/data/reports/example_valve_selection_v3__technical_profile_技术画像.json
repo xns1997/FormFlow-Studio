@@ -1,0 +1,894 @@
+{
+  "fileName": "技术画像.json",
+  "sheetName": "技术画像",
+  "overview": {
+    "rows": 15,
+    "columns": 21,
+    "memoryUsage": "16.0 KB",
+    "missingTotal": 10,
+    "missingPercent": "3.2%",
+    "duplicateRows": 0,
+    "duplicatePercent": "0.0%"
+  },
+  "columns": [
+    {
+      "name": "技术画像ID",
+      "dtype": "int64",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 15,
+      "sampleValues": [
+        "3001",
+        "3002",
+        "3003",
+        "3004",
+        "3005"
+      ],
+      "stats": {
+        "mean": 3008,
+        "std": 4.4721,
+        "min": 3001,
+        "q25": 3004.5,
+        "median": 3008,
+        "q75": 3011.5,
+        "max": 3015
+      },
+      "type": "number",
+      "hasOutliers": false,
+      "outlierCount": 0,
+      "cardinality": "medium"
+    },
+    {
+      "name": "需求编号",
+      "dtype": "int64",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 15,
+      "sampleValues": [
+        "9101",
+        "9102",
+        "9103",
+        "9104",
+        "9105"
+      ],
+      "stats": {
+        "mean": 9108,
+        "std": 4.4721,
+        "min": 9101,
+        "q25": 9104.5,
+        "median": 9108,
+        "q75": 9111.5,
+        "max": 9115
+      },
+      "type": "number",
+      "hasOutliers": false,
+      "outlierCount": 0,
+      "cardinality": "medium"
+    },
+    {
+      "name": "标准介质组",
+      "dtype": "str",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 5,
+      "sampleValues": [
+        "水系统",
+        "蒸汽系统",
+        "腐蚀系统",
+        "油品系统",
+        "气体系统"
+      ],
+      "type": "string",
+      "cardinality": "low"
+    },
+    {
+      "name": "温度分段",
+      "dtype": "str",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 3,
+      "sampleValues": [
+        "常温",
+        "高温",
+        "中高温"
+      ],
+      "type": "string",
+      "cardinality": "low"
+    },
+    {
+      "name": "压力分段",
+      "dtype": "str",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 3,
+      "sampleValues": [
+        "常压",
+        "中高压",
+        "超高压"
+      ],
+      "type": "string",
+      "cardinality": "low"
+    },
+    {
+      "name": "技术完整度",
+      "dtype": "str",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 3,
+      "sampleValues": [
+        "完整",
+        "高",
+        "中"
+      ],
+      "type": "string",
+      "cardinality": "low"
+    },
+    {
+      "name": "风险标签",
+      "dtype": "str",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 7,
+      "sampleValues": [
+        "常规",
+        "高温、高压、交付紧急",
+        "腐蚀、交付紧急",
+        "高压、交付紧急",
+        "高温、高压"
+      ],
+      "type": "string",
+      "cardinality": "medium"
+    },
+    {
+      "name": "缺失项",
+      "dtype": "str",
+      "nonNull": 5,
+      "nullCount": 10,
+      "nullPercent": "66.7%",
+      "uniqueCount": 1,
+      "sampleValues": [
+        "技术备注"
+      ],
+      "type": "string",
+      "cardinality": "low"
+    },
+    {
+      "name": "受理状态",
+      "dtype": "str",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 3,
+      "sampleValues": [
+        "待确认",
+        "待筛选",
+        "待澄清"
+      ],
+      "type": "string",
+      "cardinality": "low"
+    },
+    {
+      "name": "阀门品类",
+      "dtype": "str",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 4,
+      "sampleValues": [
+        "止回阀",
+        "球阀",
+        "蝶阀",
+        "闸阀"
+      ],
+      "type": "string",
+      "cardinality": "low"
+    },
+    {
+      "name": "公称通径DN",
+      "dtype": "int64",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 7,
+      "sampleValues": [
+        "80",
+        "100",
+        "50",
+        "150",
+        "125"
+      ],
+      "stats": {
+        "mean": 117,
+        "std": 45.779,
+        "min": 50,
+        "q25": 80,
+        "median": 100,
+        "q75": 150,
+        "max": 200
+      },
+      "type": "number",
+      "hasOutliers": false,
+      "outlierCount": 0,
+      "cardinality": "medium"
+    },
+    {
+      "name": "压力等级PN",
+      "dtype": "int64",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 3,
+      "sampleValues": [
+        "16",
+        "25",
+        "40"
+      ],
+      "stats": {
+        "mean": 22.8,
+        "std": 8.2132,
+        "min": 16,
+        "q25": 16,
+        "median": 25,
+        "q75": 25,
+        "max": 40
+      },
+      "type": "number",
+      "hasOutliers": true,
+      "outlierCount": 2,
+      "cardinality": "low"
+    },
+    {
+      "name": "设计温度",
+      "dtype": "int64",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 14,
+      "sampleValues": [
+        "45",
+        "320",
+        "90",
+        "80",
+        "60"
+      ],
+      "stats": {
+        "mean": 137.6667,
+        "std": 121.712,
+        "min": 35,
+        "q25": 47.5,
+        "median": 80,
+        "q75": 210,
+        "max": 420
+      },
+      "type": "number",
+      "hasOutliers": false,
+      "outlierCount": 0,
+      "cardinality": "medium"
+    },
+    {
+      "name": "目标流量",
+      "dtype": "int64",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 15,
+      "sampleValues": [
+        "110",
+        "145",
+        "52",
+        "260",
+        "180"
+      ],
+      "stats": {
+        "mean": 179.2,
+        "std": 86.1926,
+        "min": 52,
+        "q25": 106,
+        "median": 175,
+        "q75": 250,
+        "max": 320
+      },
+      "type": "number",
+      "hasOutliers": false,
+      "outlierCount": 0,
+      "cardinality": "medium"
+    },
+    {
+      "name": "连接方式",
+      "dtype": "str",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 3,
+      "sampleValues": [
+        "法兰",
+        "对夹",
+        "焊接"
+      ],
+      "type": "string",
+      "cardinality": "low"
+    },
+    {
+      "name": "驱动方式",
+      "dtype": "str",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 3,
+      "sampleValues": [
+        "手动",
+        "电动",
+        "气动"
+      ],
+      "type": "string",
+      "cardinality": "low"
+    },
+    {
+      "name": "泄漏等级",
+      "dtype": "str",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 2,
+      "sampleValues": [
+        "标准",
+        "VI级"
+      ],
+      "type": "string",
+      "cardinality": "low"
+    },
+    {
+      "name": "预算等级",
+      "dtype": "str",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 3,
+      "sampleValues": [
+        "经济型",
+        "高配型",
+        "标准型"
+      ],
+      "type": "string",
+      "cardinality": "low"
+    },
+    {
+      "name": "交期要求",
+      "dtype": "str",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 2,
+      "sampleValues": [
+        "常规",
+        "加急"
+      ],
+      "type": "string",
+      "cardinality": "low"
+    },
+    {
+      "name": "安装位号",
+      "dtype": "str",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 15,
+      "sampleValues": [
+        "CW-101",
+        "STM-220",
+        "ACD-050",
+        "OIL-310",
+        "GAS-118"
+      ],
+      "type": "string",
+      "cardinality": "medium"
+    },
+    {
+      "name": "技术备注",
+      "dtype": "str",
+      "nonNull": 15,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 2,
+      "sampleValues": [
+        "已完成一次澄清",
+        "需补充现场安装空间"
+      ],
+      "type": "string",
+      "cardinality": "low"
+    }
+  ],
+  "correlations": {
+    "numericColumns": [
+      "技术画像ID",
+      "需求编号",
+      "公称通径DN",
+      "压力等级PN",
+      "设计温度",
+      "目标流量"
+    ],
+    "matrix": [
+      [
+        1,
+        1,
+        0.4605,
+        0.3267,
+        0.2401,
+        0.3256
+      ],
+      [
+        1,
+        1,
+        0.4605,
+        0.3267,
+        0.2401,
+        0.3256
+      ],
+      [
+        0.4605,
+        0.4605,
+        1,
+        0.2291,
+        0.1717,
+        0.9556
+      ],
+      [
+        0.3267,
+        0.3267,
+        0.2291,
+        1,
+        0.5754,
+        0.1487
+      ],
+      [
+        0.2401,
+        0.2401,
+        0.1717,
+        0.5754,
+        1,
+        -0.0222
+      ],
+      [
+        0.3256,
+        0.3256,
+        0.9556,
+        0.1487,
+        -0.0222,
+        1
+      ]
+    ]
+  },
+  "distributions": [
+    {
+      "columnName": "技术画像ID",
+      "bins": [
+        {
+          "range": "3001.00-3002.40",
+          "count": 2,
+          "percent": 13.3
+        },
+        {
+          "range": "3002.40-3003.80",
+          "count": 1,
+          "percent": 6.7
+        },
+        {
+          "range": "3003.80-3005.20",
+          "count": 2,
+          "percent": 13.3
+        },
+        {
+          "range": "3005.20-3006.60",
+          "count": 1,
+          "percent": 6.7
+        },
+        {
+          "range": "3006.60-3008.00",
+          "count": 1,
+          "percent": 6.7
+        },
+        {
+          "range": "3008.00-3009.40",
+          "count": 2,
+          "percent": 13.3
+        },
+        {
+          "range": "3009.40-3010.80",
+          "count": 1,
+          "percent": 6.7
+        },
+        {
+          "range": "3010.80-3012.20",
+          "count": 2,
+          "percent": 13.3
+        },
+        {
+          "range": "3012.20-3013.60",
+          "count": 1,
+          "percent": 6.7
+        },
+        {
+          "range": "3013.60-3015.00",
+          "count": 2,
+          "percent": 13.3
+        }
+      ],
+      "histogram": [
+        2,
+        1,
+        2,
+        1,
+        1,
+        2,
+        1,
+        2,
+        1,
+        2
+      ]
+    },
+    {
+      "columnName": "需求编号",
+      "bins": [
+        {
+          "range": "9101.00-9102.40",
+          "count": 2,
+          "percent": 13.3
+        },
+        {
+          "range": "9102.40-9103.80",
+          "count": 1,
+          "percent": 6.7
+        },
+        {
+          "range": "9103.80-9105.20",
+          "count": 2,
+          "percent": 13.3
+        },
+        {
+          "range": "9105.20-9106.60",
+          "count": 1,
+          "percent": 6.7
+        },
+        {
+          "range": "9106.60-9108.00",
+          "count": 1,
+          "percent": 6.7
+        },
+        {
+          "range": "9108.00-9109.40",
+          "count": 2,
+          "percent": 13.3
+        },
+        {
+          "range": "9109.40-9110.80",
+          "count": 1,
+          "percent": 6.7
+        },
+        {
+          "range": "9110.80-9112.20",
+          "count": 2,
+          "percent": 13.3
+        },
+        {
+          "range": "9112.20-9113.60",
+          "count": 1,
+          "percent": 6.7
+        },
+        {
+          "range": "9113.60-9115.00",
+          "count": 2,
+          "percent": 13.3
+        }
+      ],
+      "histogram": [
+        2,
+        1,
+        2,
+        1,
+        1,
+        2,
+        1,
+        2,
+        1,
+        2
+      ]
+    },
+    {
+      "columnName": "公称通径DN",
+      "bins": [
+        {
+          "range": "50.00-65.00",
+          "count": 1,
+          "percent": 6.7
+        },
+        {
+          "range": "65.00-80.00",
+          "count": 1,
+          "percent": 6.7
+        },
+        {
+          "range": "80.00-95.00",
+          "count": 3,
+          "percent": 20
+        },
+        {
+          "range": "95.00-110.00",
+          "count": 3,
+          "percent": 20
+        },
+        {
+          "range": "110.00-125.00",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "125.00-140.00",
+          "count": 2,
+          "percent": 13.3
+        },
+        {
+          "range": "140.00-155.00",
+          "count": 3,
+          "percent": 20
+        },
+        {
+          "range": "155.00-170.00",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "170.00-185.00",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "185.00-200.00",
+          "count": 2,
+          "percent": 13.3
+        }
+      ],
+      "histogram": [
+        1,
+        1,
+        3,
+        3,
+        0,
+        2,
+        3,
+        0,
+        0,
+        2
+      ]
+    },
+    {
+      "columnName": "压力等级PN",
+      "bins": [
+        {
+          "range": "16.00-18.40",
+          "count": 7,
+          "percent": 46.7
+        },
+        {
+          "range": "18.40-20.80",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "20.80-23.20",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "23.20-25.60",
+          "count": 6,
+          "percent": 40
+        },
+        {
+          "range": "25.60-28.00",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "28.00-30.40",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "30.40-32.80",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "32.80-35.20",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "35.20-37.60",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "37.60-40.00",
+          "count": 2,
+          "percent": 13.3
+        }
+      ],
+      "histogram": [
+        7,
+        0,
+        0,
+        6,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2
+      ]
+    },
+    {
+      "columnName": "设计温度",
+      "bins": [
+        {
+          "range": "35.00-73.50",
+          "count": 7,
+          "percent": 46.7
+        },
+        {
+          "range": "73.50-112.00",
+          "count": 3,
+          "percent": 20
+        },
+        {
+          "range": "112.00-150.50",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "150.50-189.00",
+          "count": 1,
+          "percent": 6.7
+        },
+        {
+          "range": "189.00-227.50",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "227.50-266.00",
+          "count": 1,
+          "percent": 6.7
+        },
+        {
+          "range": "266.00-304.50",
+          "count": 1,
+          "percent": 6.7
+        },
+        {
+          "range": "304.50-343.00",
+          "count": 1,
+          "percent": 6.7
+        },
+        {
+          "range": "343.00-381.50",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "381.50-420.00",
+          "count": 1,
+          "percent": 6.7
+        }
+      ],
+      "histogram": [
+        7,
+        3,
+        0,
+        1,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1
+      ]
+    },
+    {
+      "columnName": "目标流量",
+      "bins": [
+        {
+          "range": "52.00-78.80",
+          "count": 2,
+          "percent": 13.3
+        },
+        {
+          "range": "78.80-105.60",
+          "count": 2,
+          "percent": 13.3
+        },
+        {
+          "range": "105.60-132.40",
+          "count": 1,
+          "percent": 6.7
+        },
+        {
+          "range": "132.40-159.20",
+          "count": 2,
+          "percent": 13.3
+        },
+        {
+          "range": "159.20-186.00",
+          "count": 2,
+          "percent": 13.3
+        },
+        {
+          "range": "186.00-212.80",
+          "count": 1,
+          "percent": 6.7
+        },
+        {
+          "range": "212.80-239.60",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "239.60-266.40",
+          "count": 2,
+          "percent": 13.3
+        },
+        {
+          "range": "266.40-293.20",
+          "count": 1,
+          "percent": 6.7
+        },
+        {
+          "range": "293.20-320.00",
+          "count": 2,
+          "percent": 13.3
+        }
+      ],
+      "histogram": [
+        2,
+        2,
+        1,
+        2,
+        2,
+        1,
+        0,
+        2,
+        1,
+        2
+      ]
+    }
+  ],
+  "qualityScore": 84,
+  "timeSeries": [],
+  "oscillations": [
+    {
+      "columnName": "公称通径DN",
+      "oscillationRatio": 0.769,
+      "volatility": 0.3913,
+      "isHighOscillation": true
+    },
+    {
+      "columnName": "压力等级PN",
+      "oscillationRatio": 1,
+      "volatility": 0.3602,
+      "isHighOscillation": true
+    },
+    {
+      "columnName": "目标流量",
+      "oscillationRatio": 0.769,
+      "volatility": 0.481,
+      "isHighOscillation": true
+    }
+  ]
+}

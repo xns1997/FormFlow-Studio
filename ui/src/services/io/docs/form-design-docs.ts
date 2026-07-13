@@ -34,6 +34,18 @@ export const formDesignDocs: BehaviorTopicDocEntry[] = [
         title: '使用示例',
         body: '适用于姓名、标题、短文本等单行输入场景。可通过 validator 属性快速实现邮箱、手机号、URL 等格式校验，也可通过 pattern 属性自定义正则校验规则。',
       },
+      {
+        title: '常见业务场景',
+        examples: [
+          { title: '手机号输入', code: '// 属性配置\nvalidator: phone\nmaxLength: 11\nplaceholder: 请输入11位手机号' },
+          { title: '邮箱输入', code: '// 属性配置\nvalidator: email\nplaceholder: example@company.com' },
+          { title: '自定义校验', code: '// 属性配置\nvalidator: pattern\npattern: ^[A-Z]{2}\\d{6}$\nplaceholder: 请输入工号（如 AB123456）' },
+        ],
+      },
+      {
+        title: '最佳实践',
+        body: '1. 为重要字段设置 required: true，配合 onValidate 事件做批量校验\n2. 使用 validator 而非 pattern 实现常见格式校验，减少出错\n3. 设置合理的 maxLength 防止输入过长\n4. 使用 placeholder 提供输入示例，提升用户体验',
+      },
     ],
   },
   {
@@ -125,6 +137,17 @@ export const formDesignDocs: BehaviorTopicDocEntry[] = [
       {
         title: '使用示例',
         body: '适用于生日、创建日期、截止日期等日期选择场景。启用 showTime 后可同时选择时间，通过 minDate 和 maxDate 限制可选日期范围。',
+      },
+      {
+        title: '常见业务场景',
+        examples: [
+          { title: '出生日期', code: '// 属性配置\nformat: YYYY-MM-DD\nmaxDate: today\nplaceholder: 请选择出生日期' },
+          { title: '截止日期', code: '// 属性配置\nformat: YYYY-MM-DD\nminDate: today\nplaceholder: 请选择截止日期\n\n// onFieldChange 事件\nconst start = getValue(\'开始日期\');\nif (start && value && value < start) {\n  showMessage(\'截止日期不能早于开始日期\', \'warning\');\n}' },
+        ],
+      },
+      {
+        title: '最佳实践',
+        body: '1. 使用 format 属性统一日期格式\n2. 通过 minDate/maxDate 限制可选范围\n3. 需要精确到时间时启用 showTime\n4. 配合 onFieldChange 事件做日期范围校验\n5. 存储时使用 ISO 格式便于比较',
       },
     ],
   },
@@ -330,6 +353,18 @@ export const formDesignDocs: BehaviorTopicDocEntry[] = [
         title: '使用示例',
         body: '适用于提交、取消、删除等操作场景。primary 为主要按钮，danger 为危险操作按钮，ghost 为幽灵按钮。支持 onClick 事件。',
       },
+      {
+        title: '常见业务场景',
+        examples: [
+          { title: '提交按钮', code: '// 属性配置\nvariant: primary\nlabel: 提交\nname: submitBtn\n\n// onClick 事件\nawait ctx.submit();' },
+          { title: '查询按钮', code: '// 属性配置\nvariant: default\nlabel: 查询\nicon: 🔍\n\n// onClick 事件\nawait runConfiguredWorkflow();' },
+          { title: '删除按钮', code: '// 属性配置\nvariant: danger\nlabel: 删除\nicon: 🗑️\n\n// onClick 事件\nif (confirm(\'确定删除吗？\')) {\n  await runConfiguredWorkflow();\n}' },
+        ],
+      },
+      {
+        title: '最佳实践',
+        body: '1. 主要操作使用 primary，次要操作使用 default\n2. 危险操作（删除、清空）使用 danger 并添加二次确认\n3. 异步操作时设置 loading: true 提供反馈\n4. 使用 icon 增强按钮的可识别性\n5. 配合 disabled 属性在条件不满足时禁用按钮',
+      },
     ],
   },
 
@@ -357,6 +392,17 @@ export const formDesignDocs: BehaviorTopicDocEntry[] = [
       {
         title: '使用示例',
         body: '适用于城市选择、分类选择、状态选择等场景。通过 options 配置选项列表，multiple 为 true 时支持多选。单选值为字符串，多选值为字符串数组。',
+      },
+      {
+        title: '常见业务场景',
+        examples: [
+          { title: '状态选择', code: '// options 配置\n[\n  { "label": "草稿", "value": "draft" },\n  { "label": "待审核", "value": "pending" },\n  { "label": "已通过", "value": "approved" },\n  { "label": "已拒绝", "value": "rejected" }\n]' },
+          { title: '多选标签', code: '// 属性配置\nmultiple: true\noptions: [\n  { "label": "React", "value": "react" },\n  { "label": "Vue", "value": "vue" },\n  { "label": "Angular", "value": "angular" }\n]' },
+        ],
+      },
+      {
+        title: '最佳实践',
+        body: '1. 选项较多时考虑使用搜索功能或分组展示\n2. 使用 value 而非 label 作为存储值，便于国际化\n3. 多选时设置合理的 maxCount 防止选择过多\n4. 配合 onFieldChange 事件实现级联选择',
       },
     ],
   },
@@ -485,6 +531,17 @@ export const formDesignDocs: BehaviorTopicDocEntry[] = [
         title: '使用示例',
         body: '用于将相关控件分组，提供视觉上的逻辑分区。可以嵌套使用以构建复杂的表单布局。',
       },
+      {
+        title: '常见业务场景',
+        examples: [
+          { title: '表单分区', code: '// 属性配置\ntitle: 基本信息\nsubtitle: 请填写必填项\nbackground: #f5f5f5\nborderRadius: 8\npadding: 16' },
+          { title: '条件显示容器', code: '// 配合行为脚本\n// onFieldChange 事件\nif (field === \'类型\') {\n  await setVisible(\'extraContainer\', value === \'高级\');\n}' },
+        ],
+      },
+      {
+        title: '最佳实践',
+        body: '1. 使用容器将表单逻辑分组，提升可读性\n2. 设置合适的 padding 和 borderRadius 提升视觉效果\n3. 使用 background 区分不同区域\n4. 配合 setVisible 实现条件显示\n5. 避免嵌套过深，一般不超过 3 层',
+      },
     ],
   },
   {
@@ -533,6 +590,17 @@ export const formDesignDocs: BehaviorTopicDocEntry[] = [
       {
         title: '使用示例',
         body: '适用于多步骤表单分区、不同类别内容切换等场景。支持 onTabChange 事件，回调包含索引和标签名。每个标签页可放置不同的控件。',
+      },
+      {
+        title: '常见业务场景',
+        examples: [
+          { title: '多步骤表单', code: '// 属性配置\ntabs: ["基本信息", "详细信息", "确认提交"]\nstyle: segmented\ndefaultTab: 0' },
+          { title: '切换时加载数据', code: '// onTabChange 事件\nif (detail.label === \'详细信息\') {\n  // 加载详细数据\n  await runConfiguredWorkflow();\n}\nif (detail.label === \'确认提交\') {\n  // 生成摘要\n  await setValue(\'摘要\', `${getValue(\'姓名\')} - ${getValue(\'部门\')}`);\n}' },
+        ],
+      },
+      {
+        title: '最佳实践',
+        body: '1. 使用 segmented 样式适合 2-4 个标签，underline 适合更多\n2. 每个标签页应有明确的主题\n3. 配合 onTabChange 事件实现按需加载\n4. 默认选中第一个标签，除非有特殊需求\n5. 标签名应简洁明了，避免过长',
       },
     ],
   },
@@ -657,6 +725,17 @@ export const formDesignDocs: BehaviorTopicDocEntry[] = [
       {
         title: '使用示例',
         body: '适用于数据列表、明细展示等场景。支持 onRowClick 事件，点击行时触发并返回行索引和行数据。可通过数据源绑定动态数据。',
+      },
+      {
+        title: '常见业务场景',
+        examples: [
+          { title: '查询结果表格', code: '// 属性配置\ncolumns: ["工号", "姓名", "部门", "职位"]\nstriped: true\nshowGrid: true\n\n// 数据绑定\nrangeRef: 查询结果!A1:D100' },
+          { title: '点击行查看详情', code: '// onRowClick 事件\nconst row = detail.row;\nif (row) {\n  await setValue(\'选中工号\', row[\'工号\']);\n  await setValue(\'选中姓名\', row[\'姓名\']);\n  await setVisible(\'detailPanel\', true);\n}' },
+        ],
+      },
+      {
+        title: '最佳实践',
+        body: '1. 使用 rangeRef 绑定数据源，实现动态数据展示\n2. 配合 onRowClick 事件实现行选择和详情展示\n3. 设置 striped: true 提升表格可读性\n4. 列名应简洁明了，避免过长\n5. 数据量大时考虑分页或虚拟滚动',
       },
     ],
   },

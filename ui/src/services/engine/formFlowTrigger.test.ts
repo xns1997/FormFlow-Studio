@@ -95,7 +95,7 @@ test('nodeId.port parameters are separated from workflow variables', () => {
 
 test('a form event injects a mapped value and runs the workflow end to end', async () => {
   const targetWorkflow = ensureWorkflowIo(workflow([
-    flowNode('input', 'generic:variable-input', { varName: 'customerName', varType: 'string', varValue: '默认值' }),
+    flowNode('input', 'generic:value-input', { name: 'customerName', valueType: 'string', value: '默认值' }),
     flowNode('display', 'generic:output-display'),
   ], [{ id: 'edge', source: 'input', target: 'display', sourceHandle: 'out:value', targetHandle: 'in:value' }])).workflow;
   const result = await executeFormFlowTrigger(targetWorkflow, {
@@ -130,8 +130,8 @@ test('default mappings target workflow import ports when import node exists', ()
 
 test('workflow io migration wires known legacy variables and export automatically', () => {
   const migrated = ensureWorkflowIo(workflow([
-    flowNode('value', 'generic:variable-input', { varName: 'value' }),
-    flowNode('detail', 'generic:variable-input', { varName: 'detail' }),
+    flowNode('value', 'generic:value-input', { name: 'value' }),
+    flowNode('detail', 'generic:value-input', { name: 'detail' }),
     flowNode('display', 'generic:output-display'),
   ], [
     { id: 'edge-value', source: 'value', target: 'display', sourceHandle: 'out:value', targetHandle: 'in:value' },

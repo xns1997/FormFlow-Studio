@@ -1,0 +1,108 @@
+project:
+  id: skill_demo_sales_approval
+  name: Skill 示例 · 销售订单审批
+  description: 使用 formflow-project-editor skill 从紧凑 YAML 生成的项目。
+  version: 2.0.0
+  author: FormFlow Agent
+  tags: [Skill 示例, 销售, 审批]
+now: 2026-07-13T00:00:00.000Z
+settings:
+  publish:
+    format: xlsx
+    allowWriteBack: true
+    outputFileName: 销售订单审批结果
+release:
+  mode: design
+  allowDesigner: true
+  allowBehaviorEditor: true
+  allowWorkflowEditor: true
+  defaultFormId: sales-order-review
+  defaultSheet: Sheet1
+data:
+  - id: sales_orders
+    path: ./orders.csv
+    fileName: 销售订单.csv
+    sheets:
+      Sheet1:
+        key: [订单号]
+        readOnly: false
+        frozenRows: 1
+        filterEnabled: true
+forms:
+  - id: sales-order-review
+    name: 销售订单审批
+    mode: edit
+    components:
+      - id: review-root
+        type: form
+        props: { title: 销售订单审批 }
+        children: [order-id, customer, amount, status, reviewer, run-review]
+      - id: order-id
+        type: text
+        parentId: review-root
+        field: 订单号
+        props: { name: orderId, label: 订单号, required: true, disabled: true }
+      - id: customer
+        type: text
+        parentId: review-root
+        field: 客户
+        props: { name: customer, label: 客户, required: true }
+      - id: amount
+        type: number
+        parentId: review-root
+        field: 金额
+        props: { name: amount, label: 订单金额, required: true, min: 0 }
+      - id: status
+        type: select
+        parentId: review-root
+        field: 状态
+        props:
+          name: status
+          label: 审批状态
+          options: [待审批, 已通过, 已驳回]
+      - id: reviewer
+        type: text
+        parentId: review-root
+        field: 负责人
+        props: { name: reviewer, label: 负责人 }
+      - id: run-review
+        type: button
+        parentId: review-root
+        props:
+          name: runReview
+          label: 查看审批结果
+          variant: primary
+          flowTriggers:
+            onClick:
+              enabled: true
+              workflowId: show-approval-result
+              parameterMap: { order: $form }
+    behaviors:
+      - id: validate-order-amount
+        name: 校验订单金额
+        event: fieldChange
+        code: "if (field === '金额' && Number(value) < 0) showMessage('订单金额不能小于 0', 'error')"
+        priority: 10
+        enabled: true
+workflows:
+  - id: show-approval-result
+    name: 展示审批结果
+    description: 接收当前订单并在结果表格中展示。
+    nodes:
+      - id: order-input
+        specId: generic:value-input
+        data:
+          properties: { name: order, valueType: object }
+      - id: result-table
+        specId: generic:display-table
+        data:
+          properties: { title: 审批结果 }
+    edges:
+      - source: order-input
+        target: result-table
+        sourceHandle: out:value
+        targetHandle: in:data
+outputs:
+  - id: approval-export
+    name: 销售订单审批结果
+    format: xlsx

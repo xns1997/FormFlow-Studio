@@ -1,0 +1,21 @@
+{
+  "id": "generic-array-lookup",
+  "label": "数组查找",
+  "description": "按主键或多条件在数组中查找记录，输出首条和命中列表",
+  "category": "功能 · 数据操作",
+  "kind": "generic",
+  "properties": [
+    { "name": "keyField", "label": "键字段", "type": "string", "default": "", "description": "按单字段精确匹配时使用" },
+    { "name": "keyValue", "label": "键值", "type": "string", "default": "", "description": "按主键查找时使用" },
+    { "name": "criteria", "label": "条件列表", "type": "json", "default": [], "description": "field/operator/value/valuePath 形式的多条件规则" }
+  ],
+  "ports": [
+    { "name": "rows", "label": "数组", "type": "json-rows", "direction": "input", "required": true, "description": "待查找的数组数据" },
+    { "name": "context", "label": "上下文", "type": "object", "direction": "input", "description": "供 valuePath 引用的上下文对象" },
+    { "name": "first", "label": "首条", "type": "object", "direction": "output", "description": "第一条命中记录" },
+    { "name": "rows", "label": "命中行", "type": "json-rows", "direction": "output", "description": "全部命中记录" },
+    { "name": "matched", "label": "命中列表", "type": "json-rows", "direction": "output", "description": "全部命中记录" },
+    { "name": "count", "label": "命中数", "type": "number", "direction": "output", "description": "命中数量" }
+  ],
+  "keywords": ["查找", "lookup", "find", "按编号回填", "array"]
+}

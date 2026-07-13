@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { DesignComponent, FormEventExecutionTrace, SrcTableEntry, WorkflowFile } from '../project/types';
+import type { DebugEntry, DesignComponent, FormEventExecutionTrace, SrcTableEntry, WorkflowFile } from '../project/types';
 import { getControl } from './registry';
 import {
   executeDesignPreviewEvent,
@@ -10,6 +10,7 @@ import { applyProjectWriteBacks } from '../services/io/projectWriteBack';
 import { collectFlowSideEffects } from '../services/engine/flowSideEffects';
 import { useProjectStore } from '../project/store';
 import { getPreviewInitialValue } from '../services/display/previewValues';
+import DebugDrawer from '../components/DebugDrawer';
 
 interface PreviewCanvasProps {
   components: DesignComponent[];
@@ -35,6 +36,12 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
   const [componentDisabled, setComponentDisabled] = useState<Record<string, boolean>>({});
   const [fieldRequired, setFieldRequired] = useState<Record<string, boolean>>({});
   const [status, setStatus] = useState<EventStatus | null>(null);
+  const [debugEntries, setDebugEntries] = useState<DebugEntry[]>([]);
+  const [debugOpen, setDebugOpen] = useState(false);
+  const behaviorSettings = project?.settings?.behavior;
+  const debugEnabled = behaviorSettings?.enableDebugDrawer !== false;
+  const autoOpenDebug = behaviorSettings?.autoOpenDebugDrawerOnWarnOrError !== false;
+  const enableServerDebugApi = behaviorSettings?.enableServerDebugApi !== false;
 
   // ── 表单 → 工作表同步（防抖） ──────────────────────
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -79,6 +86,8 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
     setComponentDisabled({});
     setFieldRequired({});
     setStatus(null);
+    setDebugEntries([]);
+    setDebugOpen(false);
   }, [components, tables]);
 
   const setFieldValue = useCallback((field: string, value: unknown) => {
@@ -127,6 +136,14 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
     return details;
   }, []);
 
+  const appendDebugEntries = useCallback((entries: DebugEntry[], forceOpen = false) => {
+    if (!entries.length) return;
+    setDebugEntries((current) => [...current, ...entries.map((entry) => ({ ...entry, channel: entry.channel || 'preview' }))]);
+    if (debugEnabled && (forceOpen || (autoOpenDebug && entries.some((entry) => entry.level === 'warn' || entry.level === 'error')))) {
+      setDebugOpen(true);
+    }
+  }, [autoOpenDebug, debugEnabled]);
+
   const emit = useCallback(async (component: DesignComponent, eventName: string, value?: unknown, detail?: unknown) => {
     const field = getDesignComponentField(component);
     const resetValues = eventName === 'onReset'
@@ -172,6 +189,7 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
         directEffects.messages.push({ message, level });
       },
     });
+    appendDebugEntries(result.trace.effects.debugLogs);
     let persisted = false;
     let successLabel = directEffects.messages[directEffects.messages.length - 1]?.message || `${field}.${eventName}`;
     let successDetails = formatStatusDetails({
@@ -236,6 +254,20 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
         result = { ...result, error: cause instanceof Error ? cause : new Error(String(cause)) };
       }
     }
+    if (result.error) {
+      appendDebugEntries([{
+        id: `preview:error:${key}`,
+        timestamp: Date.now(),
+        level: 'error',
+        source: 'ui',
+        channel: 'preview',
+        title: `${field}.${eventName}`,
+        message: result.error.message,
+        field,
+        componentId: component.id,
+        eventName,
+      }], true);
+    }
     setStatus((current) => current?.key === key ? {
       key,
       label: result.error ? `${field}.${eventName}: ${result.error.message}` : successLabel,
@@ -243,7 +275,7 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
       persisted,
       details: result.error ? [] : successDetails,
     } : current);
-  }, [components, originalValues, persistProject, project, tables, values, workflows, setFieldValue, setPreviewVisible, setPreviewDisabled, setPreviewRequired, formatStatusDetails, formatTraceDetails]);
+  }, [appendDebugEntries, components, originalValues, persistProject, project, tables, values, workflows, setFieldValue, setPreviewVisible, setPreviewDisabled, setPreviewRequired, formatStatusDetails, formatTraceDetails]);
 
   const bounds = useMemo(() => {
     const maxX = Math.max(960, ...components.map((component) => component.x + component.width + 80));
@@ -322,6 +354,15 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
             </div>
           )}
         </div>
+      )}
+      {debugEnabled && (
+        <DebugDrawer
+          entries={debugEntries}
+          open={debugOpen}
+          onToggle={setDebugOpen}
+          title="预览调试"
+          enableServerLogs={enableServerDebugApi}
+        />
       )}
     </div>
   );

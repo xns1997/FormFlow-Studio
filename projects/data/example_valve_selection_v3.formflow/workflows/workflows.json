@@ -12,23 +12,95 @@
           "type": "formflow",
           "specId": "workflow:import",
           "position": {
-            "x": 60,
+            "x": 40,
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"request\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"request\\\",\\\"description\\\":\\\"request 输入\\\"}]\"}"
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"request\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"原始需求\\\",\\\"description\\\":\\\"当前表单原始需求对象\\\"}]\"}"
           }
         },
         {
-          "id": "script",
-          "type": "generic",
-          "specId": "behavior-js-script",
+          "id": "require_fields",
+          "type": "behavior",
+          "specId": "behavior-require-fields",
           "position": {
-            "x": 360,
+            "x": 240,
+            "y": 100
+          },
+          "data": {
+            "propertiesJson": "{\"fields\":[\"需求编号\",\"项目名称\",\"介质\",\"阀门品类\",\"公称通径DN\",\"压力等级PN\",\"设计温度\",\"连接方式\"]}"
+          }
+        },
+        {
+          "id": "build_request_row",
+          "type": "generic",
+          "specId": "generic:record-transform",
+          "position": {
+            "x": 500,
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":{\"request\":\"object\"},\"outputPorts\":{\"requestId\":\"number\",\"statusPatch\":\"object\"},\"script\":\"const request = inputs.request || {};\\nconst required = ['需求编号', '项目名称', '介质', '阀门品类', '公称通径DN', '压力等级PN', '设计温度', '连接方式'];\\nconst missing = required.filter((field) => request[field] === '' || request[field] === undefined || request[field] === null);\\nconst status = missing.length > 0 ? '待澄清' : '待澄清';\\nconst row = {\\n  ...request,\\n  受理状态: status,\\n  技术完整度: missing.length > 2 ? '低' : missing.length > 0 ? '中' : '待评估',\\n  风险标签: '',\\n  推荐方案号: '',\\n  最终确认人: '',\\n  状态说明: missing.length > 0 ? '已受理，等待工况澄清' : '已受理，进入标准化流程',\\n};\\nreturn {\\n  requestId: Number(request.需求编号 || 0),\\n  statusPatch: { 受理状态: status, 状态说明: row.状态说明 },\\n  sideEffects: [\\n    { kind: 'upsert-table-row', tableId: 'request_intake', sheetName: '需求受理台账', keyField: '需求编号', keyValue: request.需求编号, row },\\n    { kind: 'set-form-value', field: '受理状态', value: status },\\n    { kind: 'set-form-value', field: '状态说明', value: row.状态说明 },\\n    { kind: 'show-message', message: `需求 ${request.需求编号 || ''} 已受理`, level: 'success' },\\n  ],\\n};\"}"
+            "propertiesJson": "{\"includeSource\":true,\"fieldMap\":{\"需求编号\":\"=Number(record.需求编号 || 0)\",\"受理状态\":\"=inputs.missingFields.length > 0 ? \\\"待澄清\\\" : \\\"待澄清\\\"\",\"技术完整度\":\"=inputs.missingFields.length > 2 ? \\\"低\\\" : inputs.missingFields.length > 0 ? \\\"中\\\" : \\\"待评估\\\"\",\"风险标签\":\"常规\",\"推荐方案号\":\"\",\"最终确认人\":\"\",\"状态说明\":\"=inputs.missingFields.length > 0 ? \\\"已受理，等待工况澄清\\\" : \\\"已受理，进入标准化流程\\\"\"}}"
+          }
+        },
+        {
+          "id": "build_status_patch",
+          "type": "generic",
+          "specId": "generic:record-transform",
+          "position": {
+            "x": 760,
+            "y": 80
+          },
+          "data": {
+            "propertiesJson": "{\"includeSource\":false,\"fieldMap\":{\"受理状态\":\"$record.受理状态\",\"状态说明\":\"$record.状态说明\"}}"
+          }
+        },
+        {
+          "id": "request_id",
+          "type": "behavior",
+          "specId": "behavior-calculate",
+          "position": {
+            "x": 760,
+            "y": 20
+          },
+          "data": {
+            "propertiesJson": "{\"expression\":\"Number(inputs.request?.需求编号 || 0)\",\"targetField\":\"\"}"
+          }
+        },
+        {
+          "id": "write_request",
+          "type": "behavior",
+          "specId": "behavior-upsert-table-row",
+          "position": {
+            "x": 760,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"tableId\":\"request_intake\",\"sheetName\":\"需求受理台账\",\"keyField\":\"需求编号\",\"keyValueExpr\":\"$row.需求编号\"}"
+          }
+        },
+        {
+          "id": "set_form_values",
+          "type": "behavior",
+          "specId": "behavior-set-values",
+          "position": {
+            "x": 980,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"fieldMap\":{\"受理状态\":\"$record.受理状态\",\"状态说明\":\"$record.状态说明\"}}"
+          }
+        },
+        {
+          "id": "show_message",
+          "type": "behavior",
+          "specId": "behavior-compose-message",
+          "position": {
+            "x": 980,
+            "y": 300
+          },
+          "data": {
+            "propertiesJson": "{\"template\":\"需求 {需求编号} 已受理\",\"messageType\":\"success\"}"
           }
         },
         {
@@ -36,35 +108,105 @@
           "type": "formflow",
           "specId": "workflow:export",
           "position": {
-            "x": 680,
+            "x": 1200,
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"requestId\\\",\\\"type\\\":\\\"number\\\",\\\"label\\\":\\\"requestId\\\",\\\"description\\\":\\\"requestId 输出\\\"},{\\\"name\\\":\\\"statusPatch\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"statusPatch\\\",\\\"description\\\":\\\"statusPatch 输出\\\"}]\"}"
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"requestId\\\",\\\"type\\\":\\\"number\\\",\\\"label\\\":\\\"requestId\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"statusPatch\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"statusPatch\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"writeBack\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"writeBack\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"message\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"message\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"appliedFields\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"appliedFields\\\",\\\"description\\\":\\\"\\\"}]\"}"
           }
         }
       ],
       "edges": [
         {
-          "id": "edge_import_request",
+          "id": "edge_import_require",
           "source": "workflow:import",
-          "target": "script",
+          "target": "require_fields",
+          "sourceHandle": "out:request",
+          "targetHandle": "in:formData"
+        },
+        {
+          "id": "edge_import_build",
+          "source": "workflow:import",
+          "target": "build_request_row",
+          "sourceHandle": "out:request",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_require_build",
+          "source": "require_fields",
+          "target": "build_request_row",
+          "sourceHandle": "out:missingFields",
+          "targetHandle": "in:missingFields"
+        },
+        {
+          "id": "edge_row_patch",
+          "source": "build_request_row",
+          "target": "build_status_patch",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_request_id",
+          "source": "workflow:import",
+          "target": "request_id",
           "sourceHandle": "out:request",
           "targetHandle": "in:request"
         },
         {
-          "id": "edge_export_requestId",
-          "source": "script",
+          "id": "edge_row_write",
+          "source": "build_request_row",
+          "target": "write_request",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:row"
+        },
+        {
+          "id": "edge_row_fill",
+          "source": "build_request_row",
+          "target": "set_form_values",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_row_message",
+          "source": "build_request_row",
+          "target": "show_message",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_export_request_id",
+          "source": "request_id",
           "target": "workflow:export",
-          "sourceHandle": "out:requestId",
+          "sourceHandle": "out:value",
           "targetHandle": "in:requestId"
         },
         {
-          "id": "edge_export_statusPatch",
-          "source": "script",
+          "id": "edge_export_status_patch",
+          "source": "build_status_patch",
           "target": "workflow:export",
-          "sourceHandle": "out:statusPatch",
+          "sourceHandle": "out:record",
           "targetHandle": "in:statusPatch"
+        },
+        {
+          "id": "edge_export_writeback",
+          "source": "write_request",
+          "target": "workflow:export",
+          "sourceHandle": "out:writeBack",
+          "targetHandle": "in:writeBack"
+        },
+        {
+          "id": "edge_export_message",
+          "source": "show_message",
+          "target": "workflow:export",
+          "sourceHandle": "out:message",
+          "targetHandle": "in:message"
+        },
+        {
+          "id": "edge_export_applied",
+          "source": "set_form_values",
+          "target": "workflow:export",
+          "sourceHandle": "out:appliedFields",
+          "targetHandle": "in:appliedFields"
         }
       ]
     },
@@ -84,7 +226,7 @@
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"request\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"原始需求\\\",\\\"description\\\":\\\"当前表单原始需求对象\\\"}]\"}"
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"request\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"原始需求\\\",\\\"description\\\":\\\"原始需求对象\\\"}]\"}"
           }
         },
         {
@@ -92,23 +234,119 @@
           "type": "behavior",
           "specId": "behavior-next-sequence",
           "position": {
-            "x": 240,
-            "y": 60
+            "x": 220,
+            "y": 40
           },
           "data": {
             "propertiesJson": "{\"tableId\":\"technical_profile\",\"sheetName\":\"技术画像\",\"column\":\"技术画像ID\",\"start\":3001,\"step\":1}"
           }
         },
         {
-          "id": "normalize_script",
+          "id": "classify_profile",
           "type": "generic",
-          "specId": "behavior-js-script",
+          "specId": "generic:field-classifier",
           "position": {
-            "x": 420,
-            "y": 180
+            "x": 240,
+            "y": 120
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":{\"request\":\"object\",\"profileId\":\"number\"},\"outputPorts\":{\"normalizedProfile\":\"object\",\"missingFields\":\"array\",\"riskFlags\":\"array\",\"statusPatch\":\"object\",\"profileId\":\"number\"},\"script\":\"const request = inputs.request || {};\\nconst profileId = Number(inputs.profileId || 0);\\nconst mediumGroupMap = { 清水: '水系统', 蒸汽: '蒸汽系统', 油品: '油品系统', 腐蚀液: '腐蚀系统', 天然气: '气体系统' };\\nconst temp = Number(request.设计温度 || 0);\\nconst pn = Number(request.压力等级PN || 0);\\nconst medium = String(request.介质 || '');\\nconst missingFields = ['驱动方式', '泄漏等级', '预算等级', '交期要求', '安装位号'].filter((field) => request[field] === '' || request[field] === undefined || request[field] === null);\\nconst riskFlags = [\\n  temp >= 260 ? '高温' : '',\\n  pn >= 25 ? '高压' : '',\\n  medium === '腐蚀液' ? '腐蚀' : '',\\n  String(request.交期要求 || '') === '加急' ? '交付紧急' : '',\\n  String(request.泄漏等级 || '') === 'VI级' ? '严密封' : '',\\n].filter(Boolean);\\nconst profile = {\\n  技术画像ID: profileId,\\n  需求编号: request.需求编号,\\n  标准介质组: mediumGroupMap[medium] || '通用系统',\\n  温度分段: temp >= 260 ? '高温' : temp >= 120 ? '中高温' : '常温',\\n  压力分段: pn >= 40 ? '超高压' : pn >= 25 ? '中高压' : '常压',\\n  技术完整度: missingFields.length === 0 ? '高' : missingFields.length <= 2 ? '中' : '低',\\n  风险标签: riskFlags.join('、') || '常规',\\n  缺失项: missingFields.join('、'),\\n  受理状态: missingFields.length === 0 ? '待筛选' : '待澄清',\\n  阀门品类: request.阀门品类,\\n  公称通径DN: request.公称通径DN,\\n  压力等级PN: request.压力等级PN,\\n  设计温度: request.设计温度,\\n  目标流量: request.目标流量,\\n  连接方式: request.连接方式,\\n  驱动方式: request.驱动方式,\\n  泄漏等级: request.泄漏等级,\\n  预算等级: request.预算等级,\\n  交期要求: request.交期要求,\\n  安装位号: request.安装位号,\\n  技术备注: request.技术备注 || '',\\n};\\nreturn {\\n  normalizedProfile: profile,\\n  missingFields,\\n  riskFlags,\\n  statusPatch: { 受理状态: profile.受理状态, 技术完整度: profile.技术完整度, 风险标签: profile.风险标签 },\\n  profileId,\\n  sideEffects: [\\n    { kind: 'upsert-table-row', tableId: 'technical_profile', sheetName: '技术画像', keyField: '技术画像ID', keyValue: profileId, row: profile },\\n    { kind: 'upsert-table-row', tableId: 'request_intake', sheetName: '需求受理台账', keyField: '需求编号', keyValue: request.需求编号, row: { 需求编号: request.需求编号, 受理状态: profile.受理状态, 技术完整度: profile.技术完整度, 风险标签: profile.风险标签, 状态说明: missingFields.length === 0 ? '已生成技术画像，可进入候选筛选' : '存在待补充字段，仍需澄清' } },\\n    { kind: 'set-form-value', field: '技术画像ID', value: profileId },\\n    { kind: 'set-form-value', field: '标准介质组', value: profile.标准介质组 },\\n    { kind: 'set-form-value', field: '温度分段', value: profile.温度分段 },\\n    { kind: 'set-form-value', field: '压力分段', value: profile.压力分段 },\\n    { kind: 'set-form-value', field: '技术完整度', value: profile.技术完整度 },\\n    { kind: 'set-form-value', field: '风险标签', value: profile.风险标签 },\\n    { kind: 'set-form-value', field: '缺失项', value: profile.缺失项 },\\n    { kind: 'set-form-value', field: '受理状态', value: profile.受理状态 },\\n    { kind: 'show-message', message: missingFields.length === 0 ? '技术画像已固化，可进入筛选' : '技术画像已生成，但仍有待补充项', level: missingFields.length === 0 ? 'success' : 'warning' },\\n  ],\\n};\"}"
+            "propertiesJson": "{\"rules\":[{\"target\":\"标准介质组\",\"source\":\"$record.介质\",\"mode\":\"enum\",\"defaultValue\":\"通用系统\",\"map\":{\"清水\":\"水系统\",\"蒸汽\":\"蒸汽系统\",\"油品\":\"油品系统\",\"腐蚀液\":\"腐蚀系统\",\"天然气\":\"气体系统\"}},{\"target\":\"温度分段\",\"source\":\"$record.设计温度\",\"mode\":\"range\",\"defaultValue\":\"常温\",\"ranges\":[{\"min\":260,\"value\":\"高温\"},{\"min\":120,\"max\":260,\"value\":\"中高温\"},{\"min\":-9999,\"max\":120,\"value\":\"常温\"}]},{\"target\":\"压力分段\",\"source\":\"$record.压力等级PN\",\"mode\":\"range\",\"defaultValue\":\"常压\",\"ranges\":[{\"min\":40,\"value\":\"超高压\"},{\"min\":25,\"max\":40,\"value\":\"中高压\"},{\"min\":-9999,\"max\":25,\"value\":\"常压\"}]}]}"
+          }
+        },
+        {
+          "id": "classify_missing",
+          "type": "generic",
+          "specId": "generic:field-classifier",
+          "position": {
+            "x": 240,
+            "y": 260
+          },
+          "data": {
+            "propertiesJson": "{\"rules\":[{\"mode\":\"tags\",\"tags\":[{\"label\":\"驱动方式\",\"when\":\"=record[\\\"驱动方式\\\"] === \\\"\\\" || record[\\\"驱动方式\\\"] === undefined || record[\\\"驱动方式\\\"] === null\"},{\"label\":\"泄漏等级\",\"when\":\"=record[\\\"泄漏等级\\\"] === \\\"\\\" || record[\\\"泄漏等级\\\"] === undefined || record[\\\"泄漏等级\\\"] === null\"},{\"label\":\"预算等级\",\"when\":\"=record[\\\"预算等级\\\"] === \\\"\\\" || record[\\\"预算等级\\\"] === undefined || record[\\\"预算等级\\\"] === null\"},{\"label\":\"交期要求\",\"when\":\"=record[\\\"交期要求\\\"] === \\\"\\\" || record[\\\"交期要求\\\"] === undefined || record[\\\"交期要求\\\"] === null\"},{\"label\":\"安装位号\",\"when\":\"=record[\\\"安装位号\\\"] === \\\"\\\" || record[\\\"安装位号\\\"] === undefined || record[\\\"安装位号\\\"] === null\"}]}]}"
+          }
+        },
+        {
+          "id": "classify_risk",
+          "type": "generic",
+          "specId": "generic:field-classifier",
+          "position": {
+            "x": 240,
+            "y": 400
+          },
+          "data": {
+            "propertiesJson": "{\"rules\":[{\"mode\":\"tags\",\"tags\":[{\"label\":\"高温\",\"when\":\"=Number(record.设计温度 || 0) >= 260\"},{\"label\":\"高压\",\"when\":\"=Number(record.压力等级PN || 0) >= 25\"},{\"label\":\"腐蚀\",\"when\":\"=String(record.介质 || \\\"\\\") === \\\"腐蚀液\\\"\"},{\"label\":\"交付紧急\",\"when\":\"=String(record.交期要求 || \\\"\\\") === \\\"加急\\\"\"},{\"label\":\"严密封\",\"when\":\"=String(record.泄漏等级 || \\\"\\\") === \\\"VI级\\\"\"}]}]}"
+          }
+        },
+        {
+          "id": "build_profile",
+          "type": "generic",
+          "specId": "generic:record-transform",
+          "position": {
+            "x": 520,
+            "y": 220
+          },
+          "data": {
+            "propertiesJson": "{\"includeSource\":false,\"fieldMap\":{\"技术画像ID\":\"$inputs.profileId\",\"需求编号\":\"=Number(record.需求编号 || 0)\",\"标准介质组\":\"=inputs.classifications[\\\"标准介质组\\\"]\",\"温度分段\":\"=inputs.classifications[\\\"温度分段\\\"]\",\"压力分段\":\"=inputs.classifications[\\\"压力分段\\\"]\",\"技术完整度\":\"=inputs.missingFields.length === 0 ? \\\"高\\\" : inputs.missingFields.length <= 2 ? \\\"中\\\" : \\\"低\\\"\",\"风险标签\":\"=inputs.riskFlags.length > 0 ? inputs.riskFlags.join(\\\"、\\\") : \\\"常规\\\"\",\"缺失项\":\"=inputs.missingFields.join(\\\"、\\\")\",\"受理状态\":\"=inputs.missingFields.length === 0 ? \\\"待筛选\\\" : \\\"待澄清\\\"\",\"阀门品类\":\"$record.阀门品类\",\"公称通径DN\":\"$record.公称通径DN\",\"压力等级PN\":\"$record.压力等级PN\",\"设计温度\":\"$record.设计温度\",\"目标流量\":\"$record.目标流量\",\"连接方式\":\"$record.连接方式\",\"驱动方式\":\"$record.驱动方式\",\"泄漏等级\":\"$record.泄漏等级\",\"预算等级\":\"$record.预算等级\",\"交期要求\":\"$record.交期要求\",\"安装位号\":\"$record.安装位号\",\"技术备注\":\"$record.技术备注\"}}"
+          }
+        },
+        {
+          "id": "build_status_patch",
+          "type": "generic",
+          "specId": "generic:record-transform",
+          "position": {
+            "x": 760,
+            "y": 100
+          },
+          "data": {
+            "propertiesJson": "{\"includeSource\":false,\"fieldMap\":{\"需求编号\":\"$record.需求编号\",\"受理状态\":\"$record.受理状态\",\"技术完整度\":\"$record.技术完整度\",\"风险标签\":\"$record.风险标签\",\"状态说明\":\"=record.缺失项 ? \\\"存在待补充字段，仍需澄清\\\" : \\\"已生成技术画像，可进入候选筛选\\\"\"}}"
+          }
+        },
+        {
+          "id": "write_profile",
+          "type": "behavior",
+          "specId": "behavior-upsert-table-row",
+          "position": {
+            "x": 760,
+            "y": 220
+          },
+          "data": {
+            "propertiesJson": "{\"tableId\":\"technical_profile\",\"sheetName\":\"技术画像\",\"keyField\":\"技术画像ID\",\"keyValueExpr\":\"$row.技术画像ID\"}"
+          }
+        },
+        {
+          "id": "write_request",
+          "type": "behavior",
+          "specId": "behavior-upsert-table-row",
+          "position": {
+            "x": 760,
+            "y": 340
+          },
+          "data": {
+            "propertiesJson": "{\"tableId\":\"request_intake\",\"sheetName\":\"需求受理台账\",\"keyField\":\"需求编号\",\"keyValueExpr\":\"$row.需求编号\"}"
+          }
+        },
+        {
+          "id": "fill_form",
+          "type": "behavior",
+          "specId": "behavior-set-values",
+          "position": {
+            "x": 1010,
+            "y": 220
+          },
+          "data": {
+            "propertiesJson": "{\"fieldMap\":{\"技术画像ID\":\"$record.技术画像ID\",\"标准介质组\":\"$record.标准介质组\",\"温度分段\":\"$record.温度分段\",\"压力分段\":\"$record.压力分段\",\"技术完整度\":\"$record.技术完整度\",\"风险标签\":\"$record.风险标签\",\"缺失项\":\"$record.缺失项\",\"受理状态\":\"$record.受理状态\"}}"
+          }
+        },
+        {
+          "id": "show_message",
+          "type": "behavior",
+          "specId": "behavior-compose-message",
+          "position": {
+            "x": 1010,
+            "y": 340
+          },
+          "data": {
+            "propertiesJson": "{\"template\":\"技术画像已生成，当前状态 {受理状态}\",\"messageType\":\"success\"}"
           }
         },
         {
@@ -116,62 +354,167 @@
           "type": "formflow",
           "specId": "workflow:export",
           "position": {
-            "x": 760,
-            "y": 180
+            "x": 1230,
+            "y": 220
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"normalizedProfile\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"normalizedProfile\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"missingFields\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"missingFields\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"riskFlags\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"riskFlags\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"statusPatch\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"statusPatch\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"profileId\\\",\\\"type\\\":\\\"number\\\",\\\"label\\\":\\\"profileId\\\",\\\"description\\\":\\\"\\\"}]\"}"
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"normalizedProfile\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"normalizedProfile\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"missingFields\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"missingFields\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"riskFlags\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"riskFlags\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"statusPatch\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"statusPatch\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"profileId\\\",\\\"type\\\":\\\"number\\\",\\\"label\\\":\\\"profileId\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"writeProfile\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"writeProfile\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"writeRequest\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"writeRequest\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"message\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"message\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"appliedFields\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"appliedFields\\\",\\\"description\\\":\\\"\\\"}]\"}"
           }
         }
       ],
       "edges": [
         {
-          "id": "edge_request_script",
+          "id": "edge_import_classify_profile",
           "source": "workflow:import",
-          "target": "normalize_script",
+          "target": "classify_profile",
           "sourceHandle": "out:request",
-          "targetHandle": "in:request"
+          "targetHandle": "in:record"
         },
         {
-          "id": "edge_profile_id_script",
+          "id": "edge_import_classify_missing",
+          "source": "workflow:import",
+          "target": "classify_missing",
+          "sourceHandle": "out:request",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_import_classify_risk",
+          "source": "workflow:import",
+          "target": "classify_risk",
+          "sourceHandle": "out:request",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_import_build_profile",
+          "source": "workflow:import",
+          "target": "build_profile",
+          "sourceHandle": "out:request",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_classifications_build_profile",
+          "source": "classify_profile",
+          "target": "build_profile",
+          "sourceHandle": "out:values",
+          "targetHandle": "in:classifications"
+        },
+        {
+          "id": "edge_missing_build_profile",
+          "source": "classify_missing",
+          "target": "build_profile",
+          "sourceHandle": "out:labels",
+          "targetHandle": "in:missingFields"
+        },
+        {
+          "id": "edge_risk_build_profile",
+          "source": "classify_risk",
+          "target": "build_profile",
+          "sourceHandle": "out:labels",
+          "targetHandle": "in:riskFlags"
+        },
+        {
+          "id": "edge_profile_id_build_profile",
           "source": "next_profile_id",
-          "target": "normalize_script",
+          "target": "build_profile",
           "sourceHandle": "out:value",
           "targetHandle": "in:profileId"
         },
         {
-          "id": "edge_profile_export",
-          "source": "normalize_script",
+          "id": "edge_profile_patch",
+          "source": "build_profile",
+          "target": "build_status_patch",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_profile_write_profile",
+          "source": "build_profile",
+          "target": "write_profile",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:row"
+        },
+        {
+          "id": "edge_request_write_request",
+          "source": "build_status_patch",
+          "target": "write_request",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:row"
+        },
+        {
+          "id": "edge_profile_fill_form",
+          "source": "build_profile",
+          "target": "fill_form",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_profile_show_message",
+          "source": "build_profile",
+          "target": "show_message",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_export_normalized_profile",
+          "source": "build_profile",
           "target": "workflow:export",
-          "sourceHandle": "out:normalizedProfile",
+          "sourceHandle": "out:record",
           "targetHandle": "in:normalizedProfile"
         },
         {
-          "id": "edge_missing_export",
-          "source": "normalize_script",
+          "id": "edge_export_missing_fields",
+          "source": "classify_missing",
           "target": "workflow:export",
-          "sourceHandle": "out:missingFields",
+          "sourceHandle": "out:labels",
           "targetHandle": "in:missingFields"
         },
         {
-          "id": "edge_risk_export",
-          "source": "normalize_script",
+          "id": "edge_export_risk_flags",
+          "source": "classify_risk",
           "target": "workflow:export",
-          "sourceHandle": "out:riskFlags",
+          "sourceHandle": "out:labels",
           "targetHandle": "in:riskFlags"
         },
         {
-          "id": "edge_status_export",
-          "source": "normalize_script",
+          "id": "edge_export_status_patch",
+          "source": "build_status_patch",
           "target": "workflow:export",
-          "sourceHandle": "out:statusPatch",
+          "sourceHandle": "out:record",
           "targetHandle": "in:statusPatch"
         },
         {
-          "id": "edge_profile_id_export",
-          "source": "normalize_script",
+          "id": "edge_export_write_profile",
+          "source": "write_profile",
           "target": "workflow:export",
-          "sourceHandle": "out:profileId",
+          "sourceHandle": "out:writeBack",
+          "targetHandle": "in:writeProfile"
+        },
+        {
+          "id": "edge_export_write_request",
+          "source": "write_request",
+          "target": "workflow:export",
+          "sourceHandle": "out:writeBack",
+          "targetHandle": "in:writeRequest"
+        },
+        {
+          "id": "edge_export_fill_message",
+          "source": "show_message",
+          "target": "workflow:export",
+          "sourceHandle": "out:message",
+          "targetHandle": "in:message"
+        },
+        {
+          "id": "edge_export_fill_applied",
+          "source": "fill_form",
+          "target": "workflow:export",
+          "sourceHandle": "out:appliedFields",
+          "targetHandle": "in:appliedFields"
+        },
+        {
+          "id": "edge_export_profile_id",
+          "source": "next_profile_id",
+          "target": "workflow:export",
+          "sourceHandle": "out:value",
           "targetHandle": "in:profileId"
         }
       ]
@@ -188,23 +531,119 @@
           "type": "formflow",
           "specId": "workflow:import",
           "position": {
-            "x": 60,
+            "x": 40,
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"profile\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"profile\\\",\\\"description\\\":\\\"profile 输入\\\"}]\"}"
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"profile\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"技术画像\\\",\\\"description\\\":\\\"技术画像对象\\\"}]\"}"
           }
         },
         {
-          "id": "script",
+          "id": "classify_profile",
           "type": "generic",
-          "specId": "behavior-js-script",
+          "specId": "generic:field-classifier",
           "position": {
-            "x": 360,
-            "y": 180
+            "x": 240,
+            "y": 120
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":{\"profile\":\"object\"},\"outputPorts\":{\"normalizedProfile\":\"object\",\"statusPatch\":\"object\"},\"script\":\"const profile = { ...(inputs.profile || {}) };\\nconst missingFields = ['驱动方式', '泄漏等级', '预算等级', '交期要求', '安装位号'].filter((field) => profile[field] === '' || profile[field] === undefined || profile[field] === null);\\nprofile.技术完整度 = missingFields.length === 0 ? '完整' : missingFields.length <= 2 ? '中' : '低';\\nprofile.缺失项 = missingFields.join('、');\\nprofile.受理状态 = missingFields.length === 0 ? '待筛选' : '待澄清';\\nreturn {\\n  normalizedProfile: profile,\\n  statusPatch: { 受理状态: profile.受理状态, 技术完整度: profile.技术完整度, 缺失项: profile.缺失项 },\\n  sideEffects: [\\n    { kind: 'upsert-table-row', tableId: 'technical_profile', sheetName: '技术画像', keyField: '技术画像ID', keyValue: profile.技术画像ID, row: profile },\\n    { kind: 'upsert-table-row', tableId: 'request_intake', sheetName: '需求受理台账', keyField: '需求编号', keyValue: profile.需求编号, row: { 需求编号: profile.需求编号, 受理状态: profile.受理状态, 技术完整度: profile.技术完整度, 状态说明: missingFields.length === 0 ? '画像已固化，等待候选筛选' : '澄清未完成，需继续补充' } },\\n    { kind: 'set-form-value', field: '技术完整度', value: profile.技术完整度 },\\n    { kind: 'set-form-value', field: '缺失项', value: profile.缺失项 },\\n    { kind: 'set-form-value', field: '受理状态', value: profile.受理状态 },\\n    { kind: 'show-message', message: missingFields.length === 0 ? '技术画像已固化' : '仍有缺失字段', level: missingFields.length === 0 ? 'success' : 'warning' },\\n  ],\\n};\"}"
+            "propertiesJson": "{\"rules\":[{\"target\":\"标准介质组\",\"source\":\"$record.介质\",\"mode\":\"enum\",\"defaultValue\":\"通用系统\",\"map\":{\"清水\":\"水系统\",\"蒸汽\":\"蒸汽系统\",\"油品\":\"油品系统\",\"腐蚀液\":\"腐蚀系统\",\"天然气\":\"气体系统\"}},{\"target\":\"温度分段\",\"source\":\"$record.设计温度\",\"mode\":\"range\",\"defaultValue\":\"常温\",\"ranges\":[{\"min\":260,\"value\":\"高温\"},{\"min\":120,\"max\":260,\"value\":\"中高温\"},{\"min\":-9999,\"max\":120,\"value\":\"常温\"}]},{\"target\":\"压力分段\",\"source\":\"$record.压力等级PN\",\"mode\":\"range\",\"defaultValue\":\"常压\",\"ranges\":[{\"min\":40,\"value\":\"超高压\"},{\"min\":25,\"max\":40,\"value\":\"中高压\"},{\"min\":-9999,\"max\":25,\"value\":\"常压\"}]}]}"
+          }
+        },
+        {
+          "id": "classify_missing",
+          "type": "generic",
+          "specId": "generic:field-classifier",
+          "position": {
+            "x": 240,
+            "y": 260
+          },
+          "data": {
+            "propertiesJson": "{\"rules\":[{\"mode\":\"tags\",\"tags\":[{\"label\":\"驱动方式\",\"when\":\"=record[\\\"驱动方式\\\"] === \\\"\\\" || record[\\\"驱动方式\\\"] === undefined || record[\\\"驱动方式\\\"] === null\"},{\"label\":\"泄漏等级\",\"when\":\"=record[\\\"泄漏等级\\\"] === \\\"\\\" || record[\\\"泄漏等级\\\"] === undefined || record[\\\"泄漏等级\\\"] === null\"},{\"label\":\"预算等级\",\"when\":\"=record[\\\"预算等级\\\"] === \\\"\\\" || record[\\\"预算等级\\\"] === undefined || record[\\\"预算等级\\\"] === null\"},{\"label\":\"交期要求\",\"when\":\"=record[\\\"交期要求\\\"] === \\\"\\\" || record[\\\"交期要求\\\"] === undefined || record[\\\"交期要求\\\"] === null\"},{\"label\":\"安装位号\",\"when\":\"=record[\\\"安装位号\\\"] === \\\"\\\" || record[\\\"安装位号\\\"] === undefined || record[\\\"安装位号\\\"] === null\"}]}]}"
+          }
+        },
+        {
+          "id": "classify_risk",
+          "type": "generic",
+          "specId": "generic:field-classifier",
+          "position": {
+            "x": 240,
+            "y": 400
+          },
+          "data": {
+            "propertiesJson": "{\"rules\":[{\"mode\":\"tags\",\"tags\":[{\"label\":\"高温\",\"when\":\"=Number(record.设计温度 || 0) >= 260\"},{\"label\":\"高压\",\"when\":\"=Number(record.压力等级PN || 0) >= 25\"},{\"label\":\"腐蚀\",\"when\":\"=String(record.介质 || \\\"\\\") === \\\"腐蚀液\\\"\"},{\"label\":\"交付紧急\",\"when\":\"=String(record.交期要求 || \\\"\\\") === \\\"加急\\\"\"},{\"label\":\"严密封\",\"when\":\"=String(record.泄漏等级 || \\\"\\\") === \\\"VI级\\\"\"}]}]}"
+          }
+        },
+        {
+          "id": "build_profile",
+          "type": "generic",
+          "specId": "generic:record-transform",
+          "position": {
+            "x": 520,
+            "y": 220
+          },
+          "data": {
+            "propertiesJson": "{\"includeSource\":false,\"fieldMap\":{\"技术画像ID\":\"$record.技术画像ID\",\"需求编号\":\"=Number(record.需求编号 || 0)\",\"标准介质组\":\"=inputs.classifications[\\\"标准介质组\\\"]\",\"温度分段\":\"=inputs.classifications[\\\"温度分段\\\"]\",\"压力分段\":\"=inputs.classifications[\\\"压力分段\\\"]\",\"技术完整度\":\"=inputs.missingFields.length === 0 ? \\\"高\\\" : inputs.missingFields.length <= 2 ? \\\"中\\\" : \\\"低\\\"\",\"风险标签\":\"=inputs.riskFlags.length > 0 ? inputs.riskFlags.join(\\\"、\\\") : \\\"常规\\\"\",\"缺失项\":\"=inputs.missingFields.join(\\\"、\\\")\",\"受理状态\":\"=inputs.missingFields.length === 0 ? \\\"待筛选\\\" : \\\"待澄清\\\"\",\"阀门品类\":\"$record.阀门品类\",\"公称通径DN\":\"$record.公称通径DN\",\"压力等级PN\":\"$record.压力等级PN\",\"设计温度\":\"$record.设计温度\",\"目标流量\":\"$record.目标流量\",\"连接方式\":\"$record.连接方式\",\"驱动方式\":\"$record.驱动方式\",\"泄漏等级\":\"$record.泄漏等级\",\"预算等级\":\"$record.预算等级\",\"交期要求\":\"$record.交期要求\",\"安装位号\":\"$record.安装位号\",\"技术备注\":\"$record.技术备注\"}}"
+          }
+        },
+        {
+          "id": "build_status_patch",
+          "type": "generic",
+          "specId": "generic:record-transform",
+          "position": {
+            "x": 760,
+            "y": 100
+          },
+          "data": {
+            "propertiesJson": "{\"includeSource\":false,\"fieldMap\":{\"需求编号\":\"$record.需求编号\",\"受理状态\":\"$record.受理状态\",\"技术完整度\":\"$record.技术完整度\",\"风险标签\":\"$record.风险标签\",\"状态说明\":\"=record.缺失项 ? \\\"存在待补充字段，仍需澄清\\\" : \\\"已生成技术画像，可进入候选筛选\\\"\"}}"
+          }
+        },
+        {
+          "id": "write_profile",
+          "type": "behavior",
+          "specId": "behavior-upsert-table-row",
+          "position": {
+            "x": 760,
+            "y": 220
+          },
+          "data": {
+            "propertiesJson": "{\"tableId\":\"technical_profile\",\"sheetName\":\"技术画像\",\"keyField\":\"技术画像ID\",\"keyValueExpr\":\"$row.技术画像ID\"}"
+          }
+        },
+        {
+          "id": "write_request",
+          "type": "behavior",
+          "specId": "behavior-upsert-table-row",
+          "position": {
+            "x": 760,
+            "y": 340
+          },
+          "data": {
+            "propertiesJson": "{\"tableId\":\"request_intake\",\"sheetName\":\"需求受理台账\",\"keyField\":\"需求编号\",\"keyValueExpr\":\"$row.需求编号\"}"
+          }
+        },
+        {
+          "id": "fill_form",
+          "type": "behavior",
+          "specId": "behavior-set-values",
+          "position": {
+            "x": 1010,
+            "y": 220
+          },
+          "data": {
+            "propertiesJson": "{\"fieldMap\":{\"技术画像ID\":\"$record.技术画像ID\",\"标准介质组\":\"$record.标准介质组\",\"温度分段\":\"$record.温度分段\",\"压力分段\":\"$record.压力分段\",\"技术完整度\":\"$record.技术完整度\",\"风险标签\":\"$record.风险标签\",\"缺失项\":\"$record.缺失项\",\"受理状态\":\"$record.受理状态\"}}"
+          }
+        },
+        {
+          "id": "show_message",
+          "type": "behavior",
+          "specId": "behavior-compose-message",
+          "position": {
+            "x": 1010,
+            "y": 340
+          },
+          "data": {
+            "propertiesJson": "{\"template\":\"技术画像已生成，当前状态 {受理状态}\",\"messageType\":\"success\"}"
           }
         },
         {
@@ -212,35 +651,154 @@
           "type": "formflow",
           "specId": "workflow:export",
           "position": {
-            "x": 680,
-            "y": 180
+            "x": 1230,
+            "y": 220
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"normalizedProfile\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"normalizedProfile\\\",\\\"description\\\":\\\"normalizedProfile 输出\\\"},{\\\"name\\\":\\\"statusPatch\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"statusPatch\\\",\\\"description\\\":\\\"statusPatch 输出\\\"}]\"}"
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"normalizedProfile\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"normalizedProfile\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"missingFields\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"missingFields\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"riskFlags\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"riskFlags\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"statusPatch\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"statusPatch\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"profileId\\\",\\\"type\\\":\\\"number\\\",\\\"label\\\":\\\"profileId\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"writeProfile\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"writeProfile\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"writeRequest\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"writeRequest\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"message\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"message\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"appliedFields\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"appliedFields\\\",\\\"description\\\":\\\"\\\"}]\"}"
           }
         }
       ],
       "edges": [
         {
-          "id": "edge_import_profile",
+          "id": "edge_import_classify_profile",
           "source": "workflow:import",
-          "target": "script",
+          "target": "classify_profile",
           "sourceHandle": "out:profile",
-          "targetHandle": "in:profile"
+          "targetHandle": "in:record"
         },
         {
-          "id": "edge_export_normalizedProfile",
-          "source": "script",
+          "id": "edge_import_classify_missing",
+          "source": "workflow:import",
+          "target": "classify_missing",
+          "sourceHandle": "out:profile",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_import_classify_risk",
+          "source": "workflow:import",
+          "target": "classify_risk",
+          "sourceHandle": "out:profile",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_import_build_profile",
+          "source": "workflow:import",
+          "target": "build_profile",
+          "sourceHandle": "out:profile",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_classifications_build_profile",
+          "source": "classify_profile",
+          "target": "build_profile",
+          "sourceHandle": "out:values",
+          "targetHandle": "in:classifications"
+        },
+        {
+          "id": "edge_missing_build_profile",
+          "source": "classify_missing",
+          "target": "build_profile",
+          "sourceHandle": "out:labels",
+          "targetHandle": "in:missingFields"
+        },
+        {
+          "id": "edge_risk_build_profile",
+          "source": "classify_risk",
+          "target": "build_profile",
+          "sourceHandle": "out:labels",
+          "targetHandle": "in:riskFlags"
+        },
+        {
+          "id": "edge_profile_patch",
+          "source": "build_profile",
+          "target": "build_status_patch",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_profile_write_profile",
+          "source": "build_profile",
+          "target": "write_profile",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:row"
+        },
+        {
+          "id": "edge_request_write_request",
+          "source": "build_status_patch",
+          "target": "write_request",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:row"
+        },
+        {
+          "id": "edge_profile_fill_form",
+          "source": "build_profile",
+          "target": "fill_form",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_profile_show_message",
+          "source": "build_profile",
+          "target": "show_message",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_export_normalized_profile",
+          "source": "build_profile",
           "target": "workflow:export",
-          "sourceHandle": "out:normalizedProfile",
+          "sourceHandle": "out:record",
           "targetHandle": "in:normalizedProfile"
         },
         {
-          "id": "edge_export_statusPatch",
-          "source": "script",
+          "id": "edge_export_missing_fields",
+          "source": "classify_missing",
           "target": "workflow:export",
-          "sourceHandle": "out:statusPatch",
+          "sourceHandle": "out:labels",
+          "targetHandle": "in:missingFields"
+        },
+        {
+          "id": "edge_export_risk_flags",
+          "source": "classify_risk",
+          "target": "workflow:export",
+          "sourceHandle": "out:labels",
+          "targetHandle": "in:riskFlags"
+        },
+        {
+          "id": "edge_export_status_patch",
+          "source": "build_status_patch",
+          "target": "workflow:export",
+          "sourceHandle": "out:record",
           "targetHandle": "in:statusPatch"
+        },
+        {
+          "id": "edge_export_write_profile",
+          "source": "write_profile",
+          "target": "workflow:export",
+          "sourceHandle": "out:writeBack",
+          "targetHandle": "in:writeProfile"
+        },
+        {
+          "id": "edge_export_write_request",
+          "source": "write_request",
+          "target": "workflow:export",
+          "sourceHandle": "out:writeBack",
+          "targetHandle": "in:writeRequest"
+        },
+        {
+          "id": "edge_export_fill_message",
+          "source": "show_message",
+          "target": "workflow:export",
+          "sourceHandle": "out:message",
+          "targetHandle": "in:message"
+        },
+        {
+          "id": "edge_export_fill_applied",
+          "source": "fill_form",
+          "target": "workflow:export",
+          "sourceHandle": "out:appliedFields",
+          "targetHandle": "in:appliedFields"
         }
       ]
     },
@@ -288,15 +846,87 @@
           }
         },
         {
-          "id": "candidate_script",
+          "id": "filter_valves",
           "type": "generic",
-          "specId": "behavior-js-script",
+          "specId": "generic:criteria-filter",
           "position": {
-            "x": 520,
+            "x": 500,
+            "y": 80
+          },
+          "data": {
+            "propertiesJson": "{\"criteria\":[{\"field\":\"阀门品类\",\"operator\":\"equals\",\"valuePath\":\"$context.阀门品类\"},{\"field\":\"介质组\",\"operator\":\"equals\",\"valuePath\":\"$context.标准介质组\"},{\"field\":\"适用DN\",\"operator\":\"equals\",\"valuePath\":\"$context.公称通径DN\"},{\"field\":\"最高PN\",\"operator\":\">=\",\"valuePath\":\"$context.压力等级PN\"},{\"field\":\"最高温度\",\"operator\":\">=\",\"valuePath\":\"$context.设计温度\"},{\"field\":\"连接方式\",\"operator\":\"equals\",\"valuePath\":\"$context.连接方式\"}]}"
+          }
+        },
+        {
+          "id": "filter_drive",
+          "type": "generic",
+          "specId": "generic:criteria-filter",
+          "position": {
+            "x": 740,
+            "y": 80
+          },
+          "data": {
+            "propertiesJson": "{\"criteria\":[{\"field\":\"驱动方式\",\"operator\":\"equals\",\"valuePath\":\"$context.驱动方式\"}]}"
+          }
+        },
+        {
+          "id": "filter_leakage",
+          "type": "generic",
+          "specId": "generic:criteria-filter",
+          "position": {
+            "x": 980,
+            "y": 80
+          },
+          "data": {
+            "propertiesJson": "{\"criteria\":[{\"field\":\"泄漏等级\",\"operator\":\"equals\",\"value\":\"VI级\",\"enabled\":false}]}"
+          }
+        },
+        {
+          "id": "enrich_candidates",
+          "type": "generic",
+          "specId": "generic:array-enrich",
+          "position": {
+            "x": 1220,
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":{\"profile\":\"object\",\"valves\":\"array\",\"options\":\"array\"},\"outputPorts\":{\"candidateRows\":\"array\",\"candidateCount\":\"number\",\"filterSummary\":\"string\"},\"script\":\"const profile = inputs.profile || {};\\nconst valves = Array.isArray(inputs.valves) ? inputs.valves : [];\\nconst options = Array.isArray(inputs.options) ? inputs.options : [];\\nconst optionMap = new Map(options.map((item) => [item.选项键, item]));\\nconst matches = valves.filter((row) =>\\n  String(row.阀门品类 || '') === String(profile.阀门品类 || '')\\n  && String(row.介质组 || '') === String(profile.标准介质组 || '')\\n  && Number(row.适用DN || 0) === Number(profile.公称通径DN || 0)\\n  && Number(row.最高PN || 0) >= Number(profile.压力等级PN || 0)\\n  && Number(row.最高温度 || 0) >= Number(profile.设计温度 || 0)\\n  && String(row.连接方式 || '') === String(profile.连接方式 || '')\\n  && (String(row.驱动方式 || '') === String(profile.驱动方式 || '') || String(row.驱动方式 || '') === '通用')\\n  && (String(profile.泄漏等级 || '') !== 'VI级' || String(row.泄漏等级 || '') === 'VI级')\\n);\\nconst candidateRows = matches.map((row, index) => {\\n  const option = optionMap.get(row.选项键) || {};\\n  return {\\n    方案编码: `CAN-${profile.需求编号 || ''}-${index + 1}`,\\n    型号: row.型号,\\n    阀门品类: row.阀门品类,\\n    材质: row.材质,\\n    基础报价: Number(row.基础报价 || 0),\\n    报价附加: Number(option.报价附加 || 0),\\n    组合报价: Number(row.基础报价 || 0) + Number(option.报价附加 || 0),\\n    预计交期天数: Number(row.交期天数 || 0),\\n    附件包: option.附件包 || '',\\n    执行器型号: option.执行器型号 || '',\\n    密封方案: option.密封方案 || '',\\n    风险系数: Number(row.风险系数 || 1),\\n    推荐优先级: Number(row.推荐优先级 || 99),\\n    维护系数: Number(row.维护系数 || 1),\\n    适配说明: option.适配说明 || '',\\n  };\\n});\\nconst filterSummary = candidateRows.length === 0\\n  ? `未找到满足 ${profile.阀门品类 || ''}/${profile.标准介质组 || ''}/DN${profile.公称通径DN || ''}/PN${profile.压力等级PN || ''} 的候选`\\n  : `已根据阀门品类、介质组、DN、PN、温度、连接方式和驱动方式筛出 ${candidateRows.length} 条候选`;\\nreturn {\\n  candidateRows,\\n  candidateCount: candidateRows.length,\\n  filterSummary,\\n  sideEffects: [\\n    { kind: 'set-form-value', field: '候选方案清单', value: candidateRows },\\n    { kind: 'set-form-value', field: '候选数量', value: candidateRows.length },\\n    { kind: 'set-form-value', field: '候选过滤摘要', value: filterSummary },\\n    { kind: 'show-message', message: candidateRows.length === 0 ? '未命中候选方案' : `已生成 ${candidateRows.length} 条候选方案`, level: candidateRows.length === 0 ? 'warning' : 'success' },\\n  ],\\n};\"}"
+            "propertiesJson": "{\"leftKey\":\"选项键\",\"rightKey\":\"选项键\",\"fieldMap\":{\"方案编码\":\"= \\\"CAN-\\\" + (context?.需求编号 || \\\"\\\") + \\\"-\\\" + (inputs.index != null ? inputs.index + 1 : 1)\",\"型号\":\"$record.型号\",\"阀门品类\":\"$record.阀门品类\",\"材质\":\"$record.材质\",\"基础报价\":\"$record.基础报价\",\"报价附加\":\"$context.reference.报价附加\",\"组合报价\":\"=Number(record.基础报价 || 0) + Number(context.reference?.报价附加 || 0)\",\"预计交期天数\":\"$record.交期天数\",\"附件包\":\"$context.reference.附件包\",\"执行器型号\":\"$context.reference.执行器型号\",\"密封方案\":\"$context.reference.密封方案\",\"风险系数\":\"$record.风险系数\",\"推荐优先级\":\"$record.推荐优先级\",\"维护系数\":\"$record.维护系数\",\"适配说明\":\"$context.reference.适配说明\"}}"
+          }
+        },
+        {
+          "id": "build_candidate_summary",
+          "type": "generic",
+          "specId": "generic:record-transform",
+          "position": {
+            "x": 1460,
+            "y": 120
+          },
+          "data": {
+            "propertiesJson": "{\"includeSource\":false,\"fieldMap\":{\"summary\":\"=inputs.candidateCount === 0 ? `未找到满足 ${inputs.profile?.阀门品类 || \\\"\\\"}/${inputs.profile?.标准介质组 || \\\"\\\"}/DN${inputs.profile?.公称通径DN || \\\"\\\"}/PN${inputs.profile?.压力等级PN || \\\"\\\"} 的候选` : `已根据阀门品类、介质组、DN、PN、温度、连接方式和驱动方式筛出 ${inputs.candidateCount} 条候选`\"}}"
+          }
+        },
+        {
+          "id": "fill_candidates",
+          "type": "behavior",
+          "specId": "behavior-set-values",
+          "position": {
+            "x": 1460,
+            "y": 240
+          },
+          "data": {
+            "propertiesJson": "{\"fieldMap\":{\"候选方案清单\":\"$records\",\"候选数量\":\"$count\",\"候选过滤摘要\":\"$message\"},\"emptyPatch\":{\"候选方案清单\":[],\"候选数量\":0,\"候选过滤摘要\":\"$message\"}}"
+          }
+        },
+        {
+          "id": "show_message",
+          "type": "behavior",
+          "specId": "behavior-compose-message",
+          "position": {
+            "x": 1460,
+            "y": 360
+          },
+          "data": {
+            "propertiesJson": "{\"template\":\"{summary}\",\"messageType\":\"success\"}"
           }
         },
         {
@@ -308,52 +938,150 @@
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"candidateRows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"candidateRows\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"candidateCount\\\",\\\"type\\\":\\\"number\\\",\\\"label\\\":\\\"candidateCount\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"filterSummary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"filterSummary\\\",\\\"description\\\":\\\"\\\"}]\"}"
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"candidateRows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"candidateRows\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"candidateCount\\\",\\\"type\\\":\\\"number\\\",\\\"label\\\":\\\"candidateCount\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"filterSummary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"filterSummary\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"message\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"message\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"appliedFields\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"appliedFields\\\",\\\"description\\\":\\\"\\\"}]\"}"
           }
         }
       ],
       "edges": [
         {
-          "id": "edge_profile_to_script",
+          "id": "edge_profile_filter",
           "source": "workflow:import",
-          "target": "candidate_script",
+          "target": "filter_valves",
+          "sourceHandle": "out:profile",
+          "targetHandle": "in:context"
+        },
+        {
+          "id": "edge_valves_filter",
+          "source": "query_valves",
+          "target": "filter_valves",
+          "sourceHandle": "out:data",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "edge_profile_drive",
+          "source": "workflow:import",
+          "target": "filter_drive",
+          "sourceHandle": "out:profile",
+          "targetHandle": "in:context"
+        },
+        {
+          "id": "edge_filter_drive_data",
+          "source": "filter_valves",
+          "target": "filter_drive",
+          "sourceHandle": "out:rows",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "edge_profile_leakage",
+          "source": "workflow:import",
+          "target": "filter_leakage",
+          "sourceHandle": "out:profile",
+          "targetHandle": "in:context"
+        },
+        {
+          "id": "edge_filter_leakage_data",
+          "source": "filter_drive",
+          "target": "filter_leakage",
+          "sourceHandle": "out:rows",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "edge_filtered_options",
+          "source": "query_options",
+          "target": "enrich_candidates",
+          "sourceHandle": "out:data",
+          "targetHandle": "in:referenceRows"
+        },
+        {
+          "id": "edge_filtered_rows",
+          "source": "filter_leakage",
+          "target": "enrich_candidates",
+          "sourceHandle": "out:rows",
+          "targetHandle": "in:rows"
+        },
+        {
+          "id": "edge_profile_enrich",
+          "source": "workflow:import",
+          "target": "enrich_candidates",
+          "sourceHandle": "out:profile",
+          "targetHandle": "in:context"
+        },
+        {
+          "id": "edge_profile_summary",
+          "source": "workflow:import",
+          "target": "build_candidate_summary",
           "sourceHandle": "out:profile",
           "targetHandle": "in:profile"
         },
         {
-          "id": "edge_valves_to_script",
-          "source": "query_valves",
-          "target": "candidate_script",
-          "sourceHandle": "out:data",
-          "targetHandle": "in:valves"
+          "id": "edge_candidate_count_summary",
+          "source": "enrich_candidates",
+          "target": "build_candidate_summary",
+          "sourceHandle": "out:count",
+          "targetHandle": "in:candidateCount"
         },
         {
-          "id": "edge_options_to_script",
-          "source": "query_options",
-          "target": "candidate_script",
-          "sourceHandle": "out:data",
-          "targetHandle": "in:options"
+          "id": "edge_candidate_fill_rows",
+          "source": "enrich_candidates",
+          "target": "fill_candidates",
+          "sourceHandle": "out:rows",
+          "targetHandle": "in:records"
+        },
+        {
+          "id": "edge_candidate_fill_count",
+          "source": "enrich_candidates",
+          "target": "fill_candidates",
+          "sourceHandle": "out:count",
+          "targetHandle": "in:count"
+        },
+        {
+          "id": "edge_candidate_fill_message",
+          "source": "show_message",
+          "target": "fill_candidates",
+          "sourceHandle": "out:message",
+          "targetHandle": "in:message"
+        },
+        {
+          "id": "edge_summary_message",
+          "source": "build_candidate_summary",
+          "target": "show_message",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
         },
         {
           "id": "edge_rows_export",
-          "source": "candidate_script",
+          "source": "enrich_candidates",
           "target": "workflow:export",
-          "sourceHandle": "out:candidateRows",
+          "sourceHandle": "out:rows",
           "targetHandle": "in:candidateRows"
         },
         {
           "id": "edge_count_export",
-          "source": "candidate_script",
+          "source": "enrich_candidates",
           "target": "workflow:export",
-          "sourceHandle": "out:candidateCount",
+          "sourceHandle": "out:count",
           "targetHandle": "in:candidateCount"
         },
         {
           "id": "edge_summary_export",
-          "source": "candidate_script",
+          "source": "show_message",
           "target": "workflow:export",
-          "sourceHandle": "out:filterSummary",
+          "sourceHandle": "out:message",
           "targetHandle": "in:filterSummary"
+        },
+        {
+          "id": "edge_message_export",
+          "source": "show_message",
+          "target": "workflow:export",
+          "sourceHandle": "out:message",
+          "targetHandle": "in:message"
+        },
+        {
+          "id": "edge_applied_export",
+          "source": "fill_candidates",
+          "target": "workflow:export",
+          "sourceHandle": "out:appliedFields",
+          "targetHandle": "in:appliedFields"
         }
       ]
     },
@@ -369,23 +1097,59 @@
           "type": "formflow",
           "specId": "workflow:import",
           "position": {
-            "x": 60,
+            "x": 40,
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"profile\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"profile\\\",\\\"description\\\":\\\"profile 输入\\\"},{\\\"name\\\":\\\"candidateRows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"candidateRows\\\",\\\"description\\\":\\\"candidateRows 输入\\\"}]\"}"
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"profile\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"profile\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"candidateRows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"candidateRows\\\",\\\"description\\\":\\\"\\\"}]\"}"
           }
         },
         {
-          "id": "script",
+          "id": "score_candidates",
           "type": "generic",
-          "specId": "behavior-js-script",
+          "specId": "generic:score-records",
           "position": {
-            "x": 360,
+            "x": 280,
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":{\"profile\":\"object\",\"candidateRows\":\"array\"},\"outputPorts\":{\"rankedCandidates\":\"array\",\"scoreSummary\":\"string\"},\"script\":\"const profile = inputs.profile || {};\\nconst rows = Array.isArray(inputs.candidateRows) ? inputs.candidateRows : [];\\nconst rankedCandidates = rows.map((row) => {\\n  const deliveryScore = String(profile.交期要求 || '') === '加急'\\n    ? Math.max(0, 40 - Number(row.预计交期天数 || 0) * 2)\\n    : Math.max(0, 30 - Number(row.预计交期天数 || 0));\\n  const costScore = String(profile.预算等级 || '') === '经济型'\\n    ? Math.max(0, 40 - Math.round(Number(row.组合报价 || 0) / 500))\\n    : String(profile.预算等级 || '') === '标准型'\\n      ? Math.max(0, 30 - Math.round(Number(row.组合报价 || 0) / 800))\\n      : Math.max(0, 25 - Math.round(Number(row.组合报价 || 0) / 1200));\\n  const techScore = 60 - Math.round(Number(row.风险系数 || 1) * 10) + Math.max(0, 6 - Number(row.推荐优先级 || 5));\\n  const maintenanceScore = Math.max(0, 20 - Math.round(Number(row.维护系数 || 1) * 8));\\n  const totalScore = techScore + deliveryScore + costScore + maintenanceScore;\\n  return { ...row, 技术评分: techScore, 交期评分: deliveryScore, 成本评分: costScore, 维护评分: maintenanceScore, 总评分: totalScore };\\n}).sort((a, b) => Number(b.总评分 || 0) - Number(a.总评分 || 0));\\nconst scoreSummary = rankedCandidates.length === 0 ? '无候选可评分' : `已完成 ${rankedCandidates.length} 条候选评分，最高分 ${rankedCandidates[0].总评分}`;\\nreturn {\\n  rankedCandidates,\\n  scoreSummary,\\n  sideEffects: [\\n    { kind: 'set-form-value', field: '评分结果', value: rankedCandidates },\\n    { kind: 'set-form-value', field: '评分摘要', value: scoreSummary },\\n    { kind: 'show-message', message: scoreSummary, level: rankedCandidates.length === 0 ? 'warning' : 'success' },\\n  ],\\n};\"}"
+            "propertiesJson": "{\"scoreRules\":[{\"target\":\"技术评分\",\"expr\":\"=60 - Math.round(Number(record.风险系数 || 1) * 10) + Math.max(0, 6 - Number(record.推荐优先级 || 5))\"},{\"target\":\"交期评分\",\"expr\":\"=String(context?.交期要求 || \\\"\\\") === \\\"加急\\\" ? Math.max(0, 40 - Number(record.预计交期天数 || 0) * 2) : Math.max(0, 30 - Number(record.预计交期天数 || 0))\"},{\"target\":\"成本评分\",\"expr\":\"=String(context?.预算等级 || \\\"\\\") === \\\"经济型\\\" ? Math.max(0, 40 - Math.round(Number(record.组合报价 || 0) / 500)) : (String(context?.预算等级 || \\\"\\\") === \\\"标准型\\\" ? Math.max(0, 30 - Math.round(Number(record.组合报价 || 0) / 800)) : Math.max(0, 25 - Math.round(Number(record.组合报价 || 0) / 1200)))\"},{\"target\":\"维护评分\",\"expr\":\"=Math.max(0, 20 - Math.round(Number(record.维护系数 || 1) * 8))\"}],\"totalField\":\"总评分\",\"sorts\":[{\"field\":\"总评分\",\"order\":\"desc\"}]}"
+          }
+        },
+        {
+          "id": "build_score_summary",
+          "type": "generic",
+          "specId": "generic:record-transform",
+          "position": {
+            "x": 520,
+            "y": 100
+          },
+          "data": {
+            "propertiesJson": "{\"includeSource\":false,\"fieldMap\":{\"summary\":\"=inputs.count === 0 ? \\\"无候选可评分\\\" : `已完成 ${inputs.count} 条候选评分，最高分 ${inputs.first?.总评分 ?? \\\"\\\"}`\"}}"
+          }
+        },
+        {
+          "id": "fill_scores",
+          "type": "behavior",
+          "specId": "behavior-set-values",
+          "position": {
+            "x": 520,
+            "y": 240
+          },
+          "data": {
+            "propertiesJson": "{\"fieldMap\":{\"评分结果\":\"$records\",\"评分摘要\":\"$message\"}}"
+          }
+        },
+        {
+          "id": "show_message",
+          "type": "behavior",
+          "specId": "behavior-compose-message",
+          "position": {
+            "x": 520,
+            "y": 360
+          },
+          "data": {
+            "propertiesJson": "{\"template\":\"{summary}\",\"messageType\":\"success\"}"
           }
         },
         {
@@ -393,42 +1157,91 @@
           "type": "formflow",
           "specId": "workflow:export",
           "position": {
-            "x": 680,
+            "x": 760,
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"rankedCandidates\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"rankedCandidates\\\",\\\"description\\\":\\\"rankedCandidates 输出\\\"},{\\\"name\\\":\\\"scoreSummary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"scoreSummary\\\",\\\"description\\\":\\\"scoreSummary 输出\\\"}]\"}"
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"rankedCandidates\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"rankedCandidates\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"scoreSummary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"scoreSummary\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"message\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"message\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"appliedFields\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"appliedFields\\\",\\\"description\\\":\\\"\\\"}]\"}"
           }
         }
       ],
       "edges": [
         {
-          "id": "edge_import_profile",
+          "id": "edge_profile_score",
           "source": "workflow:import",
-          "target": "script",
+          "target": "score_candidates",
           "sourceHandle": "out:profile",
-          "targetHandle": "in:profile"
+          "targetHandle": "in:context"
         },
         {
-          "id": "edge_import_candidateRows",
+          "id": "edge_rows_score",
           "source": "workflow:import",
-          "target": "script",
+          "target": "score_candidates",
           "sourceHandle": "out:candidateRows",
-          "targetHandle": "in:candidateRows"
+          "targetHandle": "in:rows"
         },
         {
-          "id": "edge_export_rankedCandidates",
-          "source": "script",
+          "id": "edge_score_summary_count",
+          "source": "score_candidates",
+          "target": "build_score_summary",
+          "sourceHandle": "out:count",
+          "targetHandle": "in:count"
+        },
+        {
+          "id": "edge_score_summary_first",
+          "source": "score_candidates",
+          "target": "build_score_summary",
+          "sourceHandle": "out:first",
+          "targetHandle": "in:first"
+        },
+        {
+          "id": "edge_score_fill_rows",
+          "source": "score_candidates",
+          "target": "fill_scores",
+          "sourceHandle": "out:rows",
+          "targetHandle": "in:records"
+        },
+        {
+          "id": "edge_score_fill_summary",
+          "source": "show_message",
+          "target": "fill_scores",
+          "sourceHandle": "out:message",
+          "targetHandle": "in:message"
+        },
+        {
+          "id": "edge_score_message",
+          "source": "build_score_summary",
+          "target": "show_message",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_score_export_rows",
+          "source": "score_candidates",
           "target": "workflow:export",
-          "sourceHandle": "out:rankedCandidates",
+          "sourceHandle": "out:rows",
           "targetHandle": "in:rankedCandidates"
         },
         {
-          "id": "edge_export_scoreSummary",
-          "source": "script",
+          "id": "edge_score_export_summary",
+          "source": "show_message",
           "target": "workflow:export",
-          "sourceHandle": "out:scoreSummary",
+          "sourceHandle": "out:message",
           "targetHandle": "in:scoreSummary"
+        },
+        {
+          "id": "edge_score_export_message",
+          "source": "show_message",
+          "target": "workflow:export",
+          "sourceHandle": "out:message",
+          "targetHandle": "in:message"
+        },
+        {
+          "id": "edge_score_export_applied",
+          "source": "fill_scores",
+          "target": "workflow:export",
+          "sourceHandle": "out:appliedFields",
+          "targetHandle": "in:appliedFields"
         }
       ]
     },
@@ -444,23 +1257,95 @@
           "type": "formflow",
           "specId": "workflow:import",
           "position": {
-            "x": 60,
+            "x": 40,
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"profile\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"profile\\\",\\\"description\\\":\\\"profile 输入\\\"},{\\\"name\\\":\\\"rankedCandidates\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"rankedCandidates\\\",\\\"description\\\":\\\"rankedCandidates 输入\\\"}]\"}"
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"profile\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"profile\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"rankedCandidates\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"rankedCandidates\\\",\\\"description\\\":\\\"\\\"}]\"}"
           }
         },
         {
-          "id": "script",
+          "id": "pick_recommended",
           "type": "generic",
-          "specId": "behavior-js-script",
+          "specId": "generic:pick-record",
           "position": {
-            "x": 360,
+            "x": 260,
+            "y": 120
+          },
+          "data": {
+            "propertiesJson": "{\"pickMode\":\"first\",\"sorts\":[{\"field\":\"总评分\",\"order\":\"desc\"}]}"
+          }
+        },
+        {
+          "id": "pick_top_rows",
+          "type": "generic",
+          "specId": "generic:pick-record",
+          "position": {
+            "x": 260,
+            "y": 280
+          },
+          "data": {
+            "propertiesJson": "{\"pickMode\":\"topN\",\"topN\":4,\"sorts\":[{\"field\":\"总评分\",\"order\":\"desc\"}]}"
+          }
+        },
+        {
+          "id": "build_patch",
+          "type": "generic",
+          "specId": "generic:record-transform",
+          "position": {
+            "x": 520,
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":{\"profile\":\"object\",\"rankedCandidates\":\"array\"},\"outputPorts\":{\"patch\":\"object\",\"recommendedOption\":\"object\",\"alternativeOptions\":\"array\",\"pricingSummary\":\"string\",\"reasonSummary\":\"string\"},\"script\":\"const profile = inputs.profile || {};\\nconst rows = Array.isArray(inputs.rankedCandidates) ? inputs.rankedCandidates : [];\\nconst recommended = rows[0] || null;\\nconst alternatives = rows.slice(1, 4);\\nconst pricingSummary = recommended ? '推荐组合报价 ' + recommended.组合报价 + ' 元，预计交期 ' + recommended.预计交期天数 + ' 天' : '暂无可生成提案的候选';\\nconst reasonSummary = recommended\\n  ? '优先推荐 ' + recommended.型号 + '，因其总评分最高，兼顾 ' + (profile.预算等级 || '预算') + '、' + (profile.交期要求 || '交期') + ' 与 ' + (profile.风险标签 || '风险') + '。'\\n  : '未找到满足条件的候选，建议回到技术澄清阶段调整边界。';\\nconst patch = recommended ? {\\n  推荐方案号: 'CASE-' + profile.需求编号,\\n  推荐型号: recommended.型号,\\n  推荐附件: recommended.附件包,\\n  推荐报价: recommended.组合报价,\\n  预计交期天数: recommended.预计交期天数,\\n  推荐理由: reasonSummary,\\n  备选方案: alternatives,\\n  受理状态: '待确认',\\n} : {\\n  推荐方案号: '',\\n  推荐型号: '',\\n  推荐附件: '',\\n  推荐报价: '',\\n  预计交期天数: '',\\n  推荐理由: reasonSummary,\\n  备选方案: [],\\n  受理状态: '待澄清',\\n};\\nreturn {\\n  patch,\\n  recommendedOption: recommended || {},\\n  alternativeOptions: alternatives,\\n  pricingSummary,\\n  reasonSummary,\\n  sideEffects: [\\n    { kind: 'set-form-value', field: '推荐方案号', value: patch.推荐方案号 },\\n    { kind: 'set-form-value', field: '推荐型号', value: patch.推荐型号 },\\n    { kind: 'set-form-value', field: '推荐附件', value: patch.推荐附件 },\\n    { kind: 'set-form-value', field: '推荐报价', value: patch.推荐报价 },\\n    { kind: 'set-form-value', field: '预计交期天数', value: patch.预计交期天数 },\\n    { kind: 'set-form-value', field: '推荐理由', value: patch.推荐理由 },\\n    { kind: 'set-form-value', field: '备选方案', value: patch.备选方案 },\\n    { kind: 'set-form-value', field: '受理状态', value: patch.受理状态 },\\n    { kind: 'show-message', message: recommended ? '推荐提案已生成' : '未生成提案，请先调整条件', level: recommended ? 'success' : 'warning' },\\n  ],\\n};\"}"
+            "propertiesJson": "{\"includeSource\":false,\"fieldMap\":{\"推荐方案号\":\"=inputs.recommended ? \\\"CASE-\\\" + (inputs.profile?.需求编号 || \\\"\\\") : \\\"\\\"\",\"推荐型号\":\"=inputs.recommended?.型号 || \\\"\\\"\",\"推荐附件\":\"=inputs.recommended?.附件包 || \\\"\\\"\",\"推荐报价\":\"=inputs.recommended?.组合报价 || \\\"\\\"\",\"预计交期天数\":\"=inputs.recommended?.预计交期天数 || \\\"\\\"\",\"推荐理由\":\"=inputs.recommended ? `优先推荐 ${inputs.recommended.型号}，因其总评分最高，兼顾 ${inputs.profile?.预算等级 || \\\"预算\\\"}、${inputs.profile?.交期要求 || \\\"交期\\\"} 与 ${inputs.profile?.风险标签 || \\\"风险\\\"}。` : \\\"未找到满足条件的候选，建议回到技术澄清阶段调整边界。\\\"\",\"备选方案\":\"=Array.isArray(inputs.topRows) ? inputs.topRows.slice(1, 4) : []\",\"受理状态\":\"=inputs.recommended ? \\\"待确认\\\" : \\\"待澄清\\\"\",\"pricingSummary\":\"=inputs.recommended ? `推荐组合报价 ${inputs.recommended.组合报价} 元，预计交期 ${inputs.recommended.预计交期天数} 天` : \\\"暂无可生成提案的候选\\\"\",\"reasonSummary\":\"=inputs.recommended ? `优先推荐 ${inputs.recommended.型号}，因其总评分最高，兼顾 ${inputs.profile?.预算等级 || \\\"预算\\\"}、${inputs.profile?.交期要求 || \\\"交期\\\"} 与 ${inputs.profile?.风险标签 || \\\"风险\\\"}。` : \\\"未找到满足条件的候选，建议回到技术澄清阶段调整边界。\\\"\"}}"
+          }
+        },
+        {
+          "id": "fill_patch",
+          "type": "behavior",
+          "specId": "behavior-set-values",
+          "position": {
+            "x": 760,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"fieldMap\":{\"推荐方案号\":\"$record.推荐方案号\",\"推荐型号\":\"$record.推荐型号\",\"推荐附件\":\"$record.推荐附件\",\"推荐报价\":\"$record.推荐报价\",\"预计交期天数\":\"$record.预计交期天数\",\"推荐理由\":\"$record.推荐理由\",\"备选方案\":\"$record.备选方案\",\"受理状态\":\"$record.受理状态\"}}"
+          }
+        },
+        {
+          "id": "show_message",
+          "type": "behavior",
+          "specId": "behavior-compose-message",
+          "position": {
+            "x": 760,
+            "y": 320
+          },
+          "data": {
+            "propertiesJson": "{\"template\":\"{reasonSummary}\",\"messageType\":\"success\"}"
+          }
+        },
+        {
+          "id": "extract_alternatives",
+          "type": "behavior",
+          "specId": "behavior-calculate",
+          "position": {
+            "x": 760,
+            "y": 40
+          },
+          "data": {
+            "propertiesJson": "{\"expression\":\"inputs.record?.备选方案 || []\",\"targetField\":\"\"}"
+          }
+        },
+        {
+          "id": "extract_pricing",
+          "type": "behavior",
+          "specId": "behavior-calculate",
+          "position": {
+            "x": 760,
+            "y": 80
+          },
+          "data": {
+            "propertiesJson": "{\"expression\":\"String(inputs.record?.pricingSummary || \\\"\\\")\",\"targetField\":\"\"}"
           }
         },
         {
@@ -468,63 +1353,126 @@
           "type": "formflow",
           "specId": "workflow:export",
           "position": {
-            "x": 680,
+            "x": 980,
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"patch\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"patch\\\",\\\"description\\\":\\\"patch 输出\\\"},{\\\"name\\\":\\\"recommendedOption\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"recommendedOption\\\",\\\"description\\\":\\\"recommendedOption 输出\\\"},{\\\"name\\\":\\\"alternativeOptions\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"alternativeOptions\\\",\\\"description\\\":\\\"alternativeOptions 输出\\\"},{\\\"name\\\":\\\"pricingSummary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"pricingSummary\\\",\\\"description\\\":\\\"pricingSummary 输出\\\"},{\\\"name\\\":\\\"reasonSummary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"reasonSummary\\\",\\\"description\\\":\\\"reasonSummary 输出\\\"}]\"}"
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"patch\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"patch\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"recommendedOption\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"recommendedOption\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"alternativeOptions\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"alternativeOptions\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"pricingSummary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"pricingSummary\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"reasonSummary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"reasonSummary\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"message\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"message\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"appliedFields\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"appliedFields\\\",\\\"description\\\":\\\"\\\"}]\"}"
           }
         }
       ],
       "edges": [
         {
-          "id": "edge_import_profile",
+          "id": "edge_import_recommended",
           "source": "workflow:import",
-          "target": "script",
+          "target": "pick_recommended",
+          "sourceHandle": "out:rankedCandidates",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "edge_import_top_rows",
+          "source": "workflow:import",
+          "target": "pick_top_rows",
+          "sourceHandle": "out:rankedCandidates",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "edge_import_build_patch_profile",
+          "source": "workflow:import",
+          "target": "build_patch",
           "sourceHandle": "out:profile",
           "targetHandle": "in:profile"
         },
         {
-          "id": "edge_import_rankedCandidates",
-          "source": "workflow:import",
-          "target": "script",
-          "sourceHandle": "out:rankedCandidates",
-          "targetHandle": "in:rankedCandidates"
+          "id": "edge_recommended_build_patch",
+          "source": "pick_recommended",
+          "target": "build_patch",
+          "sourceHandle": "out:first",
+          "targetHandle": "in:recommended"
+        },
+        {
+          "id": "edge_top_rows_build_patch",
+          "source": "pick_top_rows",
+          "target": "build_patch",
+          "sourceHandle": "out:rows",
+          "targetHandle": "in:topRows"
+        },
+        {
+          "id": "edge_patch_fill",
+          "source": "build_patch",
+          "target": "fill_patch",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_patch_message",
+          "source": "build_patch",
+          "target": "show_message",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_patch_alternatives",
+          "source": "build_patch",
+          "target": "extract_alternatives",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_patch_pricing",
+          "source": "build_patch",
+          "target": "extract_pricing",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
         },
         {
           "id": "edge_export_patch",
-          "source": "script",
+          "source": "build_patch",
           "target": "workflow:export",
-          "sourceHandle": "out:patch",
+          "sourceHandle": "out:record",
           "targetHandle": "in:patch"
         },
         {
-          "id": "edge_export_recommendedOption",
-          "source": "script",
+          "id": "edge_export_recommended",
+          "source": "pick_recommended",
           "target": "workflow:export",
-          "sourceHandle": "out:recommendedOption",
+          "sourceHandle": "out:first",
           "targetHandle": "in:recommendedOption"
         },
         {
-          "id": "edge_export_alternativeOptions",
-          "source": "script",
+          "id": "edge_export_alternative",
+          "source": "extract_alternatives",
           "target": "workflow:export",
-          "sourceHandle": "out:alternativeOptions",
+          "sourceHandle": "out:value",
           "targetHandle": "in:alternativeOptions"
         },
         {
-          "id": "edge_export_pricingSummary",
-          "source": "script",
+          "id": "edge_export_pricing",
+          "source": "extract_pricing",
           "target": "workflow:export",
-          "sourceHandle": "out:pricingSummary",
+          "sourceHandle": "out:value",
           "targetHandle": "in:pricingSummary"
         },
         {
-          "id": "edge_export_reasonSummary",
-          "source": "script",
+          "id": "edge_export_reason",
+          "source": "show_message",
           "target": "workflow:export",
-          "sourceHandle": "out:reasonSummary",
+          "sourceHandle": "out:message",
           "targetHandle": "in:reasonSummary"
+        },
+        {
+          "id": "edge_export_proposal_message",
+          "source": "show_message",
+          "target": "workflow:export",
+          "sourceHandle": "out:message",
+          "targetHandle": "in:message"
+        },
+        {
+          "id": "edge_export_proposal_applied",
+          "source": "fill_patch",
+          "target": "workflow:export",
+          "sourceHandle": "out:appliedFields",
+          "targetHandle": "in:appliedFields"
         }
       ]
     },
@@ -540,23 +1488,95 @@
           "type": "formflow",
           "specId": "workflow:import",
           "position": {
-            "x": 60,
+            "x": 40,
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"confirmation\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"confirmation\\\",\\\"description\\\":\\\"confirmation 输入\\\"}]\"}"
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"confirmation\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"confirmation\\\",\\\"description\\\":\\\"\\\"}]\"}"
           }
         },
         {
-          "id": "script",
+          "id": "build_request_patch",
           "type": "generic",
-          "specId": "behavior-js-script",
+          "specId": "generic:record-transform",
           "position": {
-            "x": 360,
+            "x": 260,
+            "y": 120
+          },
+          "data": {
+            "propertiesJson": "{\"includeSource\":false,\"fieldMap\":{\"需求编号\":\"$record.需求编号\",\"受理状态\":\"已确认\",\"推荐方案号\":\"=record.推荐方案号 || (\\\"CASE-\\\" + (record.需求编号 || \\\"\\\"))\",\"最终确认人\":\"=record.最终确认人 || \\\"待指派\\\"\",\"状态说明\":\"已完成方案确认，等待归档\"}}"
+          }
+        },
+        {
+          "id": "build_profile_patch",
+          "type": "generic",
+          "specId": "generic:record-transform",
+          "position": {
+            "x": 260,
+            "y": 280
+          },
+          "data": {
+            "propertiesJson": "{\"includeSource\":false,\"fieldMap\":{\"技术画像ID\":\"$record.技术画像ID\",\"需求编号\":\"$record.需求编号\",\"受理状态\":\"已确认\"}}"
+          }
+        },
+        {
+          "id": "write_request",
+          "type": "behavior",
+          "specId": "behavior-upsert-table-row",
+          "position": {
+            "x": 500,
+            "y": 120
+          },
+          "data": {
+            "propertiesJson": "{\"tableId\":\"request_intake\",\"sheetName\":\"需求受理台账\",\"keyField\":\"需求编号\",\"keyValueExpr\":\"$row.需求编号\"}"
+          }
+        },
+        {
+          "id": "write_profile",
+          "type": "behavior",
+          "specId": "behavior-upsert-table-row",
+          "position": {
+            "x": 500,
+            "y": 280
+          },
+          "data": {
+            "propertiesJson": "{\"tableId\":\"technical_profile\",\"sheetName\":\"技术画像\",\"keyField\":\"技术画像ID\",\"keyValueExpr\":\"$row.技术画像ID\"}"
+          }
+        },
+        {
+          "id": "fill_form",
+          "type": "behavior",
+          "specId": "behavior-set-values",
+          "position": {
+            "x": 740,
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":{\"confirmation\":\"object\"},\"outputPorts\":{\"finalCaseId\":\"string\",\"statusPatch\":\"object\"},\"script\":\"const confirmation = inputs.confirmation || {};\\nconst finalCaseId = String(confirmation.推荐方案号 || ('CASE-' + (confirmation.需求编号 || '')));\\nconst rowPatch = {\\n  需求编号: confirmation.需求编号,\\n  受理状态: '已确认',\\n  推荐方案号: finalCaseId,\\n  最终确认人: confirmation.最终确认人 || '待指派',\\n  状态说明: '已完成方案确认，等待归档',\\n};\\nreturn {\\n  finalCaseId,\\n  statusPatch: rowPatch,\\n  sideEffects: [\\n    { kind: 'upsert-table-row', tableId: 'request_intake', sheetName: '需求受理台账', keyField: '需求编号', keyValue: confirmation.需求编号, row: rowPatch },\\n    { kind: 'upsert-table-row', tableId: 'technical_profile', sheetName: '技术画像', keyField: '技术画像ID', keyValue: confirmation.技术画像ID, row: { 技术画像ID: confirmation.技术画像ID, 需求编号: confirmation.需求编号, 受理状态: '已确认' } },\\n    { kind: 'set-form-value', field: '推荐方案号', value: finalCaseId },\\n    { kind: 'set-form-value', field: '受理状态', value: '已确认' },\\n    { kind: 'show-message', message: '方案 ' + finalCaseId + ' 已确认', level: 'success' },\\n  ],\\n};\"}"
+            "propertiesJson": "{\"fieldMap\":{\"推荐方案号\":\"$record.推荐方案号\",\"受理状态\":\"$record.受理状态\"}}"
+          }
+        },
+        {
+          "id": "show_message",
+          "type": "behavior",
+          "specId": "behavior-compose-message",
+          "position": {
+            "x": 740,
+            "y": 300
+          },
+          "data": {
+            "propertiesJson": "{\"template\":\"方案 {推荐方案号} 已确认\",\"messageType\":\"success\"}"
+          }
+        },
+        {
+          "id": "extract_final_case",
+          "type": "behavior",
+          "specId": "behavior-calculate",
+          "position": {
+            "x": 740,
+            "y": 60
+          },
+          "data": {
+            "propertiesJson": "{\"expression\":\"String(inputs.record?.推荐方案号 || \\\"\\\")\",\"targetField\":\"\"}"
           }
         },
         {
@@ -564,35 +1584,105 @@
           "type": "formflow",
           "specId": "workflow:export",
           "position": {
-            "x": 680,
+            "x": 960,
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"finalCaseId\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"finalCaseId\\\",\\\"description\\\":\\\"finalCaseId 输出\\\"},{\\\"name\\\":\\\"statusPatch\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"statusPatch\\\",\\\"description\\\":\\\"statusPatch 输出\\\"}]\"}"
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"finalCaseId\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"finalCaseId\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"statusPatch\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"statusPatch\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"writeRequest\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"writeRequest\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"writeProfile\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"writeProfile\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"message\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"message\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"appliedFields\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"appliedFields\\\",\\\"description\\\":\\\"\\\"}]\"}"
           }
         }
       ],
       "edges": [
         {
-          "id": "edge_import_confirmation",
+          "id": "edge_import_request_patch",
           "source": "workflow:import",
-          "target": "script",
+          "target": "build_request_patch",
           "sourceHandle": "out:confirmation",
-          "targetHandle": "in:confirmation"
+          "targetHandle": "in:record"
         },
         {
-          "id": "edge_export_finalCaseId",
-          "source": "script",
+          "id": "edge_import_profile_patch",
+          "source": "workflow:import",
+          "target": "build_profile_patch",
+          "sourceHandle": "out:confirmation",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_write_request",
+          "source": "build_request_patch",
+          "target": "write_request",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:row"
+        },
+        {
+          "id": "edge_write_profile",
+          "source": "build_profile_patch",
+          "target": "write_profile",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:row"
+        },
+        {
+          "id": "edge_fill_confirm",
+          "source": "build_request_patch",
+          "target": "fill_form",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_message_confirm",
+          "source": "build_request_patch",
+          "target": "show_message",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_extract_final_case",
+          "source": "build_request_patch",
+          "target": "extract_final_case",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_export_final_case",
+          "source": "extract_final_case",
           "target": "workflow:export",
-          "sourceHandle": "out:finalCaseId",
+          "sourceHandle": "out:value",
           "targetHandle": "in:finalCaseId"
         },
         {
-          "id": "edge_export_statusPatch",
-          "source": "script",
+          "id": "edge_export_confirm_patch",
+          "source": "build_request_patch",
           "target": "workflow:export",
-          "sourceHandle": "out:statusPatch",
+          "sourceHandle": "out:record",
           "targetHandle": "in:statusPatch"
+        },
+        {
+          "id": "edge_export_confirm_write_request",
+          "source": "write_request",
+          "target": "workflow:export",
+          "sourceHandle": "out:writeBack",
+          "targetHandle": "in:writeRequest"
+        },
+        {
+          "id": "edge_export_confirm_write_profile",
+          "source": "write_profile",
+          "target": "workflow:export",
+          "sourceHandle": "out:writeBack",
+          "targetHandle": "in:writeProfile"
+        },
+        {
+          "id": "edge_export_confirm_message",
+          "source": "show_message",
+          "target": "workflow:export",
+          "sourceHandle": "out:message",
+          "targetHandle": "in:message"
+        },
+        {
+          "id": "edge_export_confirm_applied",
+          "source": "fill_form",
+          "target": "workflow:export",
+          "sourceHandle": "out:appliedFields",
+          "targetHandle": "in:appliedFields"
         }
       ]
     },
@@ -608,23 +1698,119 @@
           "type": "formflow",
           "specId": "workflow:import",
           "position": {
-            "x": 60,
+            "x": 40,
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"archiveRecord\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"archiveRecord\\\",\\\"description\\\":\\\"archiveRecord 输入\\\"}]\"}"
+            "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"archiveRecord\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"archiveRecord\\\",\\\"description\\\":\\\"\\\"}]\"}"
           }
         },
         {
-          "id": "script",
+          "id": "build_case_row",
           "type": "generic",
-          "specId": "behavior-js-script",
+          "specId": "generic:record-transform",
           "position": {
-            "x": 360,
+            "x": 260,
+            "y": 120
+          },
+          "data": {
+            "propertiesJson": "{\"includeSource\":false,\"fieldMap\":{\"案例ID\":\"=record.推荐方案号 || (\\\"CASE-\\\" + (record.需求编号 || \\\"\\\"))\",\"需求编号\":\"$record.需求编号\",\"推荐方案号\":\"=record.推荐方案号 || (\\\"CASE-\\\" + (record.需求编号 || \\\"\\\"))\",\"推荐型号\":\"$record.推荐型号\",\"推荐附件\":\"$record.推荐附件\",\"推荐报价\":\"$record.推荐报价\",\"预计交期天数\":\"$record.预计交期天数\",\"风险标签\":\"$record.风险标签\",\"最终确认人\":\"$record.最终确认人\",\"候选数量\":\"=Array.isArray(record.评分结果) ? record.评分结果.length : Number(record.候选数量 || 0)\",\"归档时间\":\"2026-07-06T18:00:00.000Z\"}}"
+          }
+        },
+        {
+          "id": "build_audit_row",
+          "type": "generic",
+          "specId": "generic:record-transform",
+          "position": {
+            "x": 260,
+            "y": 280
+          },
+          "data": {
+            "propertiesJson": "{\"includeSource\":false,\"fieldMap\":{\"审计ID\":\"= \\\"AUD-\\\" + (record.需求编号 || \\\"\\\") + \\\"-FINAL\\\"\",\"需求编号\":\"$record.需求编号\",\"节点名称\":\"归档案例\",\"节点结论\":\"已归档\",\"状态流转\":\"已确认->已归档\",\"操作人\":\"=record.最终确认人 || \\\"系统\\\"\",\"时间戳\":\"2026-07-06T18:00:00.000Z\",\"备注\":\"由第三代流程样板自动归档\"}}"
+          }
+        },
+        {
+          "id": "write_case",
+          "type": "behavior",
+          "specId": "behavior-upsert-table-row",
+          "position": {
+            "x": 500,
+            "y": 120
+          },
+          "data": {
+            "propertiesJson": "{\"tableId\":\"selection_cases\",\"sheetName\":\"选型案例库\",\"keyField\":\"案例ID\",\"keyValueExpr\":\"$row.案例ID\"}"
+          }
+        },
+        {
+          "id": "write_audit",
+          "type": "behavior",
+          "specId": "behavior-upsert-table-row",
+          "position": {
+            "x": 500,
+            "y": 280
+          },
+          "data": {
+            "propertiesJson": "{\"tableId\":\"selection_audit_log\",\"sheetName\":\"选型审计日志\",\"keyField\":\"审计ID\",\"keyValueExpr\":\"$row.审计ID\"}"
+          }
+        },
+        {
+          "id": "case_summary",
+          "type": "generic",
+          "specId": "generic:record-transform",
+          "position": {
+            "x": 740,
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":{\"archiveRecord\":\"object\"},\"outputPorts\":{\"caseId\":\"string\",\"auditId\":\"string\"},\"script\":\"const record = inputs.archiveRecord || {};\\nconst caseId = String(record.推荐方案号 || ('CASE-' + (record.需求编号 || '')));\\nconst auditId = 'AUD-' + (record.需求编号 || '') + '-FINAL';\\nconst caseRow = {\\n  案例ID: caseId,\\n  需求编号: record.需求编号,\\n  推荐方案号: caseId,\\n  推荐型号: record.推荐型号,\\n  推荐附件: record.推荐附件,\\n  推荐报价: record.推荐报价,\\n  预计交期天数: record.预计交期天数,\\n  风险标签: record.风险标签,\\n  最终确认人: record.最终确认人,\\n  候选数量: Array.isArray(record.评分结果) ? record.评分结果.length : Number(record.候选数量 || 0),\\n  归档时间: '2026-07-06T18:00:00.000Z',\\n};\\nconst auditRow = {\\n  审计ID: auditId,\\n  需求编号: record.需求编号,\\n  节点名称: '归档案例',\\n  节点结论: '已归档',\\n  状态流转: '已确认->已归档',\\n  操作人: record.最终确认人 || '系统',\\n  时间戳: '2026-07-06T18:00:00.000Z',\\n  备注: '由第三代流程样板自动归档',\\n};\\nreturn {\\n  caseId,\\n  auditId,\\n  sideEffects: [\\n    { kind: 'upsert-table-row', tableId: 'selection_cases', sheetName: '选型案例库', keyField: '案例ID', keyValue: caseId, row: caseRow },\\n    { kind: 'upsert-table-row', tableId: 'selection_audit_log', sheetName: '选型审计日志', keyField: '审计ID', keyValue: auditId, row: auditRow },\\n    { kind: 'set-form-value', field: '案例摘要', value: '已归档案例 ' + caseId + '，确认人 ' + (record.最终确认人 || '系统') },\\n    { kind: 'show-message', message: '案例 ' + caseId + ' 已归档', level: 'success' },\\n  ],\\n};\"}"
+            "propertiesJson": "{\"includeSource\":false,\"fieldMap\":{\"案例摘要\":\"= `已归档案例 ${inputs.caseRow?.案例ID || \\\"\\\"}，确认人 ${inputs.archiveRecord?.最终确认人 || \\\"系统\\\"}`\"}}"
+          }
+        },
+        {
+          "id": "fill_summary",
+          "type": "behavior",
+          "specId": "behavior-set-values",
+          "position": {
+            "x": 960,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"fieldMap\":{\"案例摘要\":\"$record.案例摘要\"}}"
+          }
+        },
+        {
+          "id": "show_message",
+          "type": "behavior",
+          "specId": "behavior-compose-message",
+          "position": {
+            "x": 740,
+            "y": 320
+          },
+          "data": {
+            "propertiesJson": "{\"template\":\"案例 {案例ID} 已归档\",\"messageType\":\"success\"}"
+          }
+        },
+        {
+          "id": "extract_case_id",
+          "type": "behavior",
+          "specId": "behavior-calculate",
+          "position": {
+            "x": 960,
+            "y": 60
+          },
+          "data": {
+            "propertiesJson": "{\"expression\":\"String(inputs.record?.案例ID || \\\"\\\")\",\"targetField\":\"\"}"
+          }
+        },
+        {
+          "id": "extract_audit_id",
+          "type": "behavior",
+          "specId": "behavior-calculate",
+          "position": {
+            "x": 960,
+            "y": 100
+          },
+          "data": {
+            "propertiesJson": "{\"expression\":\"String(inputs.record?.审计ID || \\\"\\\")\",\"targetField\":\"\"}"
           }
         },
         {
@@ -632,35 +1818,126 @@
           "type": "formflow",
           "specId": "workflow:export",
           "position": {
-            "x": 680,
+            "x": 1180,
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"caseId\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"caseId\\\",\\\"description\\\":\\\"caseId 输出\\\"},{\\\"name\\\":\\\"auditId\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"auditId\\\",\\\"description\\\":\\\"auditId 输出\\\"}]\"}"
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"caseId\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"caseId\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"auditId\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"auditId\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"writeCase\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"writeCase\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"writeAudit\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"writeAudit\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"message\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"message\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"appliedFields\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"appliedFields\\\",\\\"description\\\":\\\"\\\"}]\"}"
           }
         }
       ],
       "edges": [
         {
-          "id": "edge_import_archiveRecord",
+          "id": "edge_import_case_row",
           "source": "workflow:import",
-          "target": "script",
+          "target": "build_case_row",
+          "sourceHandle": "out:archiveRecord",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_import_audit_row",
+          "source": "workflow:import",
+          "target": "build_audit_row",
+          "sourceHandle": "out:archiveRecord",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_write_case_row",
+          "source": "build_case_row",
+          "target": "write_case",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:row"
+        },
+        {
+          "id": "edge_write_audit_row",
+          "source": "build_audit_row",
+          "target": "write_audit",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:row"
+        },
+        {
+          "id": "edge_archive_record_summary",
+          "source": "workflow:import",
+          "target": "case_summary",
           "sourceHandle": "out:archiveRecord",
           "targetHandle": "in:archiveRecord"
         },
         {
-          "id": "edge_export_caseId",
-          "source": "script",
+          "id": "edge_case_row_summary",
+          "source": "build_case_row",
+          "target": "case_summary",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:caseRow"
+        },
+        {
+          "id": "edge_fill_case_summary",
+          "source": "case_summary",
+          "target": "fill_summary",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_show_archive_message",
+          "source": "build_case_row",
+          "target": "show_message",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_extract_case_id",
+          "source": "build_case_row",
+          "target": "extract_case_id",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_extract_audit_id",
+          "source": "build_audit_row",
+          "target": "extract_audit_id",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_export_case_id",
+          "source": "extract_case_id",
           "target": "workflow:export",
-          "sourceHandle": "out:caseId",
+          "sourceHandle": "out:value",
           "targetHandle": "in:caseId"
         },
         {
-          "id": "edge_export_auditId",
-          "source": "script",
+          "id": "edge_export_audit_id",
+          "source": "extract_audit_id",
           "target": "workflow:export",
-          "sourceHandle": "out:auditId",
+          "sourceHandle": "out:value",
           "targetHandle": "in:auditId"
+        },
+        {
+          "id": "edge_export_archive_write_case",
+          "source": "write_case",
+          "target": "workflow:export",
+          "sourceHandle": "out:writeBack",
+          "targetHandle": "in:writeCase"
+        },
+        {
+          "id": "edge_export_archive_write_audit",
+          "source": "write_audit",
+          "target": "workflow:export",
+          "sourceHandle": "out:writeBack",
+          "targetHandle": "in:writeAudit"
+        },
+        {
+          "id": "edge_export_archive_message",
+          "source": "show_message",
+          "target": "workflow:export",
+          "sourceHandle": "out:message",
+          "targetHandle": "in:message"
+        },
+        {
+          "id": "edge_export_archive_applied",
+          "source": "fill_summary",
+          "target": "workflow:export",
+          "sourceHandle": "out:appliedFields",
+          "targetHandle": "in:appliedFields"
         }
       ]
     },
@@ -696,15 +1973,51 @@
           }
         },
         {
-          "id": "fill_script",
+          "id": "lookup_request",
           "type": "generic",
-          "specId": "behavior-js-script",
+          "specId": "generic:array-lookup",
           "position": {
             "x": 500,
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":{\"requestId\":\"number\",\"rows\":\"array\"},\"outputPorts\":{\"record\":\"object\",\"matched\":\"boolean\"},\"script\":\"const requestId = Number(inputs.requestId || 0);\\nconst rows = Array.isArray(inputs.rows) ? inputs.rows : [];\\nconst record = rows.find((row) => Number(row?.需求编号 || 0) === requestId) || null;\\nconst fillFields = ['介质', '阀门品类', '公称通径DN', '压力等级PN', '设计温度', '目标流量', '连接方式', '驱动方式', '泄漏等级', '预算等级', '交期要求'];\\nconst sideEffects = [];\\nif (record) {\\n  for (const field of fillFields) sideEffects.push({ kind: 'set-form-value', field, value: record[field] ?? '' });\\n  sideEffects.push({ kind: 'show-message', message: '已按需求编号自动带出历史工况', level: 'success' });\\n} else if (requestId) {\\n  sideEffects.push({ kind: 'show-message', message: '未找到对应需求编号，保留手工输入', level: 'warning' });\\n}\\nreturn { record: record || {}, matched: !!record, sideEffects };\"}"
+            "propertiesJson": "{\"keyField\":\"需求编号\"}"
+          }
+        },
+        {
+          "id": "fill_form",
+          "type": "behavior",
+          "specId": "behavior-fill-form",
+          "position": {
+            "x": 720,
+            "y": 140
+          },
+          "data": {
+            "propertiesJson": "{\"fieldMap\":{\"介质\":\"介质\",\"阀门品类\":\"阀门品类\",\"公称通径DN\":\"公称通径DN\",\"压力等级PN\":\"压力等级PN\",\"设计温度\":\"设计温度\",\"目标流量\":\"目标流量\",\"连接方式\":\"连接方式\",\"驱动方式\":\"驱动方式\",\"泄漏等级\":\"泄漏等级\",\"预算等级\":\"预算等级\",\"交期要求\":\"交期要求\"},\"messageField\":\"状态说明\"}"
+          }
+        },
+        {
+          "id": "show_message",
+          "type": "behavior",
+          "specId": "behavior-compose-message",
+          "position": {
+            "x": 720,
+            "y": 280
+          },
+          "data": {
+            "propertiesJson": "{\"template\":\"已按需求编号自动带出历史工况\",\"messageType\":\"success\"}"
+          }
+        },
+        {
+          "id": "matched_bool",
+          "type": "behavior",
+          "specId": "behavior-calculate",
+          "position": {
+            "x": 720,
+            "y": 60
+          },
+          "data": {
+            "propertiesJson": "{\"expression\":\"Number(inputs.count || 0) > 0\",\"targetField\":\"\"}"
           }
         },
         {
@@ -716,7 +2029,7 @@
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"record\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"record\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"matched\\\",\\\"type\\\":\\\"boolean\\\",\\\"label\\\":\\\"matched\\\",\\\"description\\\":\\\"\\\"}]\"}"
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"record\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"record\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"matched\\\",\\\"type\\\":\\\"boolean\\\",\\\"label\\\":\\\"matched\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"message\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"message\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"appliedFields\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"appliedFields\\\",\\\"description\\\":\\\"\\\"}]\"}"
           }
         }
       ],
@@ -724,30 +2037,65 @@
         {
           "id": "edge_fill_request_id",
           "source": "workflow:import",
-          "target": "fill_script",
+          "target": "lookup_request",
           "sourceHandle": "out:requestId",
-          "targetHandle": "in:requestId"
+          "targetHandle": "in:keyValue"
         },
         {
           "id": "edge_fill_rows",
           "source": "query_requests",
-          "target": "fill_script",
+          "target": "lookup_request",
           "sourceHandle": "out:data",
           "targetHandle": "in:rows"
         },
         {
+          "id": "edge_fill_record_form",
+          "source": "lookup_request",
+          "target": "fill_form",
+          "sourceHandle": "out:first",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_fill_record_message",
+          "source": "lookup_request",
+          "target": "show_message",
+          "sourceHandle": "out:first",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_fill_matched_bool",
+          "source": "lookup_request",
+          "target": "matched_bool",
+          "sourceHandle": "out:count",
+          "targetHandle": "in:count"
+        },
+        {
           "id": "edge_fill_record",
-          "source": "fill_script",
+          "source": "lookup_request",
           "target": "workflow:export",
-          "sourceHandle": "out:record",
+          "sourceHandle": "out:first",
           "targetHandle": "in:record"
         },
         {
           "id": "edge_fill_matched",
-          "source": "fill_script",
+          "source": "matched_bool",
           "target": "workflow:export",
-          "sourceHandle": "out:matched",
+          "sourceHandle": "out:value",
           "targetHandle": "in:matched"
+        },
+        {
+          "id": "edge_fill_message_export",
+          "source": "show_message",
+          "target": "workflow:export",
+          "sourceHandle": "out:message",
+          "targetHandle": "in:message"
+        },
+        {
+          "id": "edge_fill_applied_export",
+          "source": "fill_form",
+          "target": "workflow:export",
+          "sourceHandle": "out:appliedFields",
+          "targetHandle": "in:appliedFields"
         }
       ]
     },
@@ -768,6 +2116,18 @@
           },
           "data": {
             "propertiesJson": "{\"outputPorts\":\"[{\\\"name\\\":\\\"request\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"选型输入\\\",\\\"description\\\":\\\"快速推荐表单输入对象\\\"}]\"}"
+          }
+        },
+        {
+          "id": "classify_profile",
+          "type": "generic",
+          "specId": "generic:field-classifier",
+          "position": {
+            "x": 220,
+            "y": 40
+          },
+          "data": {
+            "propertiesJson": "{\"rules\":[{\"target\":\"标准介质组\",\"source\":\"$record.介质\",\"mode\":\"enum\",\"defaultValue\":\"通用系统\",\"map\":{\"清水\":\"水系统\",\"蒸汽\":\"蒸汽系统\",\"油品\":\"油品系统\",\"腐蚀液\":\"腐蚀系统\",\"天然气\":\"气体系统\"}},{\"target\":\"温度分段\",\"source\":\"$record.设计温度\",\"mode\":\"range\",\"defaultValue\":\"常温\",\"ranges\":[{\"min\":260,\"value\":\"高温\"},{\"min\":120,\"max\":260,\"value\":\"中高温\"},{\"min\":-9999,\"max\":120,\"value\":\"常温\"}]},{\"target\":\"压力分段\",\"source\":\"$record.压力等级PN\",\"mode\":\"range\",\"defaultValue\":\"常压\",\"ranges\":[{\"min\":40,\"value\":\"超高压\"},{\"min\":25,\"max\":40,\"value\":\"中高压\"},{\"min\":-9999,\"max\":25,\"value\":\"常压\"}]}]}"
           }
         },
         {
@@ -795,15 +2155,123 @@
           }
         },
         {
-          "id": "recommend_script",
+          "id": "build_profile",
           "type": "generic",
-          "specId": "behavior-js-script",
+          "specId": "generic:record-transform",
           "position": {
-            "x": 520,
+            "x": 460,
+            "y": 40
+          },
+          "data": {
+            "propertiesJson": "{\"includeSource\":true,\"fieldMap\":{\"标准介质组\":\"=inputs.classifications[\\\"标准介质组\\\"]\"}}"
+          }
+        },
+        {
+          "id": "filter_valves",
+          "type": "generic",
+          "specId": "generic:criteria-filter",
+          "position": {
+            "x": 500,
+            "y": 120
+          },
+          "data": {
+            "propertiesJson": "{\"criteria\":[{\"field\":\"阀门品类\",\"operator\":\"equals\",\"valuePath\":\"$context.阀门品类\"},{\"field\":\"介质组\",\"operator\":\"equals\",\"valuePath\":\"$context.标准介质组\"},{\"field\":\"适用DN\",\"operator\":\"equals\",\"valuePath\":\"$context.公称通径DN\"},{\"field\":\"最高PN\",\"operator\":\">=\",\"valuePath\":\"$context.压力等级PN\"},{\"field\":\"最高温度\",\"operator\":\">=\",\"valuePath\":\"$context.设计温度\"},{\"field\":\"连接方式\",\"operator\":\"equals\",\"valuePath\":\"$context.连接方式\"}]}"
+          }
+        },
+        {
+          "id": "filter_drive",
+          "type": "generic",
+          "specId": "generic:criteria-filter",
+          "position": {
+            "x": 720,
+            "y": 120
+          },
+          "data": {
+            "propertiesJson": "{\"criteria\":[{\"field\":\"驱动方式\",\"operator\":\"equals\",\"valuePath\":\"$context.驱动方式\"}]}"
+          }
+        },
+        {
+          "id": "enrich_candidates",
+          "type": "generic",
+          "specId": "generic:array-enrich",
+          "position": {
+            "x": 940,
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":{\"request\":\"object\",\"valves\":\"array\",\"options\":\"array\"},\"outputPorts\":{\"patch\":\"object\",\"candidateRows\":\"array\",\"recommendedOption\":\"object\",\"filterSummary\":\"string\",\"reasonSummary\":\"string\"},\"script\":\"const request = inputs.request || {};\\nconst valves = Array.isArray(inputs.valves) ? inputs.valves : [];\\nconst options = Array.isArray(inputs.options) ? inputs.options : [];\\nconst mediumGroupMap = { 清水: '水系统', 蒸汽: '蒸汽系统', 油品: '油品系统', 腐蚀液: '腐蚀系统', 天然气: '气体系统' };\\nconst mediumGroup = mediumGroupMap[String(request.介质 || '')] || '通用系统';\\nconst optionMap = new Map(options.map((item) => [item.选项键, item]));\\nconst candidates = valves\\n  .filter((row) =>\\n    String(row.阀门品类 || '') === String(request.阀门品类 || '')\\n    && String(row.介质组 || '') === mediumGroup\\n    && Number(row.适用DN || 0) === Number(request.公称通径DN || 0)\\n    && Number(row.最高PN || 0) >= Number(request.压力等级PN || 0)\\n    && Number(row.最高温度 || 0) >= Number(request.设计温度 || 0)\\n    && String(row.连接方式 || '') === String(request.连接方式 || '')\\n    && String(row.驱动方式 || '') === String(request.驱动方式 || '')\\n    && (String(request.泄漏等级 || '') !== 'VI级' || String(row.泄漏等级 || '') === 'VI级')\\n  )\\n  .map((row, index) => {\\n    const option = optionMap.get(row.选项键) || {};\\n    const deliveryScore = String(request.交期要求 || '') === '加急'\\n      ? Math.max(0, 40 - Number(row.交期天数 || 0) * 2)\\n      : Math.max(0, 30 - Number(row.交期天数 || 0));\\n    const costBase = Number(row.基础报价 || 0) + Number(option.报价附加 || 0);\\n    const costScore = String(request.预算等级 || '') === '经济型'\\n      ? Math.max(0, 40 - Math.round(costBase / 500))\\n      : String(request.预算等级 || '') === '标准型'\\n        ? Math.max(0, 30 - Math.round(costBase / 800))\\n        : Math.max(0, 25 - Math.round(costBase / 1200));\\n    const techScore = 60 - Math.round(Number(row.风险系数 || 1) * 10) + Math.max(0, 6 - Number(row.推荐优先级 || 5));\\n    const maintenanceScore = Math.max(0, 20 - Math.round(Number(row.维护系数 || 1) * 8));\\n    return {\\n      方案编码: 'FAST-' + (request.需求编号 || 'REQ') + '-' + (index + 1),\\n      型号: row.型号,\\n      阀门品类: row.阀门品类,\\n      材质: row.材质,\\n      附件包: option.附件包 || '',\\n      执行器型号: option.执行器型号 || '',\\n      密封方案: option.密封方案 || '',\\n      组合报价: costBase,\\n      预计交期天数: Number(row.交期天数 || 0),\\n      风险系数: Number(row.风险系数 || 1),\\n      推荐优先级: Number(row.推荐优先级 || 99),\\n      总评分: techScore + deliveryScore + costScore + maintenanceScore,\\n      适配说明: option.适配说明 || '',\\n    };\\n  })\\n  .sort((a, b) => Number(b.总评分 || 0) - Number(a.总评分 || 0))\\n  .slice(0, 5);\\nconst recommended = candidates[0] || null;\\nconst filterSummary = candidates.length === 0\\n  ? '未找到满足当前工况边界的候选，请调整温度、压力或驱动方式。'\\n  : '已按介质组、品类、DN、PN、温度、连接与驱动综合筛出 ' + candidates.length + ' 条候选';\\nconst reasonSummary = recommended\\n  ? '推荐 ' + recommended.型号 + '，其综合评分最高，兼顾预算、交期与风险要求。'\\n  : '暂无可推荐型号，建议回到三代技术澄清流程补充条件。';\\nconst patch = recommended ? {\\n  标准介质组: mediumGroup,\\n  候选方案清单: candidates,\\n  候选数量: candidates.length,\\n  推荐方案号: 'FAST-' + (request.需求编号 || 'REQ'),\\n  推荐型号: recommended.型号,\\n  推荐附件: recommended.附件包,\\n  推荐报价: recommended.组合报价,\\n  预计交期天数: recommended.预计交期天数,\\n  推荐理由: reasonSummary,\\n  候选过滤摘要: filterSummary,\\n} : {\\n  标准介质组: mediumGroup,\\n  候选方案清单: [],\\n  候选数量: 0,\\n  推荐方案号: '',\\n  推荐型号: '',\\n  推荐附件: '',\\n  推荐报价: '',\\n  预计交期天数: '',\\n  推荐理由: reasonSummary,\\n  候选过滤摘要: filterSummary,\\n};\\nreturn {\\n  patch,\\n  candidateRows: candidates,\\n  recommendedOption: recommended || {},\\n  filterSummary,\\n  reasonSummary,\\n  sideEffects: [\\n    { kind: 'set-form-value', field: '标准介质组', value: patch.标准介质组 },\\n    { kind: 'set-form-value', field: '候选方案清单', value: patch.候选方案清单 },\\n    { kind: 'set-form-value', field: '候选数量', value: patch.候选数量 },\\n    { kind: 'set-form-value', field: '推荐方案号', value: patch.推荐方案号 },\\n    { kind: 'set-form-value', field: '推荐型号', value: patch.推荐型号 },\\n    { kind: 'set-form-value', field: '推荐附件', value: patch.推荐附件 },\\n    { kind: 'set-form-value', field: '推荐报价', value: patch.推荐报价 },\\n    { kind: 'set-form-value', field: '预计交期天数', value: patch.预计交期天数 },\\n    { kind: 'set-form-value', field: '推荐理由', value: patch.推荐理由 },\\n    { kind: 'set-form-value', field: '候选过滤摘要', value: patch.候选过滤摘要 },\\n    { kind: 'show-message', message: candidates.length === 0 ? '快速推荐未命中候选' : '快速推荐已生成', level: candidates.length === 0 ? 'warning' : 'success' },\\n  ],\\n};\"}"
+            "propertiesJson": "{\"leftKey\":\"选项键\",\"rightKey\":\"选项键\",\"fieldMap\":{\"方案编码\":\"= \\\"FAST-\\\" + (context?.需求编号 || \\\"REQ\\\") + \\\"-\\\" + (inputs.index != null ? inputs.index + 1 : 1)\",\"型号\":\"$record.型号\",\"阀门品类\":\"$record.阀门品类\",\"材质\":\"$record.材质\",\"附件包\":\"$context.reference.附件包\",\"执行器型号\":\"$context.reference.执行器型号\",\"密封方案\":\"$context.reference.密封方案\",\"组合报价\":\"=Number(record.基础报价 || 0) + Number(context.reference?.报价附加 || 0)\",\"预计交期天数\":\"$record.交期天数\",\"风险系数\":\"$record.风险系数\",\"推荐优先级\":\"$record.推荐优先级\",\"维护系数\":\"$record.维护系数\",\"适配说明\":\"$context.reference.适配说明\"}}"
+          }
+        },
+        {
+          "id": "score_candidates",
+          "type": "generic",
+          "specId": "generic:score-records",
+          "position": {
+            "x": 1180,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"scoreRules\":[{\"target\":\"技术评分\",\"expr\":\"=60 - Math.round(Number(record.风险系数 || 1) * 10) + Math.max(0, 6 - Number(record.推荐优先级 || 5))\"},{\"target\":\"交期评分\",\"expr\":\"=String(context?.交期要求 || \\\"\\\") === \\\"加急\\\" ? Math.max(0, 40 - Number(record.预计交期天数 || 0) * 2) : Math.max(0, 30 - Number(record.预计交期天数 || 0))\"},{\"target\":\"成本评分\",\"expr\":\"=String(context?.预算等级 || \\\"\\\") === \\\"经济型\\\" ? Math.max(0, 40 - Math.round(Number(record.组合报价 || 0) / 500)) : (String(context?.预算等级 || \\\"\\\") === \\\"标准型\\\" ? Math.max(0, 30 - Math.round(Number(record.组合报价 || 0) / 800)) : Math.max(0, 25 - Math.round(Number(record.组合报价 || 0) / 1200)))\"},{\"target\":\"维护评分\",\"expr\":\"=Math.max(0, 20 - Math.round(Number(record.维护系数 || 1) * 8))\"}],\"totalField\":\"总评分\",\"sorts\":[{\"field\":\"总评分\",\"order\":\"desc\"}]}"
+          }
+        },
+        {
+          "id": "pick_recommended",
+          "type": "generic",
+          "specId": "generic:pick-record",
+          "position": {
+            "x": 1420,
+            "y": 80
+          },
+          "data": {
+            "propertiesJson": "{\"pickMode\":\"first\",\"sorts\":[{\"field\":\"总评分\",\"order\":\"desc\"}]}"
+          }
+        },
+        {
+          "id": "build_patch",
+          "type": "generic",
+          "specId": "generic:record-transform",
+          "position": {
+            "x": 1420,
+            "y": 220
+          },
+          "data": {
+            "propertiesJson": "{\"includeSource\":false,\"fieldMap\":{\"标准介质组\":\"$inputs.profile.标准介质组\",\"候选方案清单\":\"=inputs.candidateRows || []\",\"候选数量\":\"=inputs.count || 0\",\"推荐方案号\":\"=inputs.recommended ? \\\"FAST-\\\" + (inputs.profile?.需求编号 || \\\"REQ\\\") : \\\"\\\"\",\"推荐型号\":\"=inputs.recommended?.型号 || \\\"\\\"\",\"推荐附件\":\"=inputs.recommended?.附件包 || \\\"\\\"\",\"推荐报价\":\"=inputs.recommended?.组合报价 || \\\"\\\"\",\"预计交期天数\":\"=inputs.recommended?.预计交期天数 || \\\"\\\"\",\"推荐理由\":\"=inputs.recommended ? `推荐 ${inputs.recommended.型号}，其综合评分最高，兼顾预算、交期与风险要求。` : \\\"暂无可推荐型号，建议回到三代技术澄清流程补充条件。\\\"\",\"候选过滤摘要\":\"=inputs.count === 0 ? \\\"未找到满足当前工况边界的候选，请调整温度、压力或驱动方式。\\\" : `已按介质组、品类、DN、PN、温度、连接与驱动综合筛出 ${inputs.count} 条候选`\"}}"
+          }
+        },
+        {
+          "id": "fill_patch",
+          "type": "behavior",
+          "specId": "behavior-set-values",
+          "position": {
+            "x": 1660,
+            "y": 180
+          },
+          "data": {
+            "propertiesJson": "{\"fieldMap\":{\"标准介质组\":\"$record.标准介质组\",\"候选方案清单\":\"$record.候选方案清单\",\"候选数量\":\"$record.候选数量\",\"推荐方案号\":\"$record.推荐方案号\",\"推荐型号\":\"$record.推荐型号\",\"推荐附件\":\"$record.推荐附件\",\"推荐报价\":\"$record.推荐报价\",\"预计交期天数\":\"$record.预计交期天数\",\"推荐理由\":\"$record.推荐理由\",\"候选过滤摘要\":\"$record.候选过滤摘要\"}}"
+          }
+        },
+        {
+          "id": "show_message",
+          "type": "behavior",
+          "specId": "behavior-compose-message",
+          "position": {
+            "x": 1660,
+            "y": 320
+          },
+          "data": {
+            "propertiesJson": "{\"template\":\"{推荐理由}\",\"messageType\":\"success\"}"
+          }
+        },
+        {
+          "id": "extract_filter_summary",
+          "type": "behavior",
+          "specId": "behavior-calculate",
+          "position": {
+            "x": 1660,
+            "y": 60
+          },
+          "data": {
+            "propertiesJson": "{\"expression\":\"String(inputs.record?.候选过滤摘要 || \\\"\\\")\",\"targetField\":\"\"}"
           }
         },
         {
@@ -815,66 +2283,199 @@
             "y": 180
           },
           "data": {
-            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"patch\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"patch\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"candidateRows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"candidateRows\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"recommendedOption\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"recommendedOption\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"filterSummary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"filterSummary\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"reasonSummary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"reasonSummary\\\",\\\"description\\\":\\\"\\\"}]\"}"
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"patch\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"patch\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"candidateRows\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"candidateRows\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"recommendedOption\\\",\\\"type\\\":\\\"object\\\",\\\"label\\\":\\\"recommendedOption\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"filterSummary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"filterSummary\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"reasonSummary\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"reasonSummary\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"message\\\",\\\"type\\\":\\\"string\\\",\\\"label\\\":\\\"message\\\",\\\"description\\\":\\\"\\\"},{\\\"name\\\":\\\"appliedFields\\\",\\\"type\\\":\\\"array\\\",\\\"label\\\":\\\"appliedFields\\\",\\\"description\\\":\\\"\\\"}]\"}"
           }
         }
       ],
       "edges": [
         {
-          "id": "edge_quick_request",
+          "id": "edge_quick_request_classify",
           "source": "workflow:import",
-          "target": "recommend_script",
+          "target": "classify_profile",
           "sourceHandle": "out:request",
-          "targetHandle": "in:request"
+          "targetHandle": "in:record"
         },
         {
-          "id": "edge_quick_valves",
+          "id": "edge_quick_request_profile",
+          "source": "workflow:import",
+          "target": "build_profile",
+          "sourceHandle": "out:request",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_quick_profile_classifications",
+          "source": "classify_profile",
+          "target": "build_profile",
+          "sourceHandle": "out:values",
+          "targetHandle": "in:classifications"
+        },
+        {
+          "id": "edge_quick_profile_filter",
+          "source": "build_profile",
+          "target": "filter_valves",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:context"
+        },
+        {
+          "id": "edge_quick_valves_filter",
           "source": "query_valves",
-          "target": "recommend_script",
+          "target": "filter_valves",
           "sourceHandle": "out:data",
-          "targetHandle": "in:valves"
+          "targetHandle": "in:data"
         },
         {
-          "id": "edge_quick_options",
+          "id": "edge_quick_profile_drive",
+          "source": "build_profile",
+          "target": "filter_drive",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:context"
+        },
+        {
+          "id": "edge_quick_drive_data",
+          "source": "filter_valves",
+          "target": "filter_drive",
+          "sourceHandle": "out:rows",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "edge_quick_enrich_rows",
+          "source": "filter_drive",
+          "target": "enrich_candidates",
+          "sourceHandle": "out:rows",
+          "targetHandle": "in:rows"
+        },
+        {
+          "id": "edge_quick_enrich_options",
           "source": "query_options",
-          "target": "recommend_script",
+          "target": "enrich_candidates",
           "sourceHandle": "out:data",
-          "targetHandle": "in:options"
+          "targetHandle": "in:referenceRows"
         },
         {
-          "id": "edge_quick_patch",
-          "source": "recommend_script",
-          "target": "workflow:export",
-          "sourceHandle": "out:patch",
-          "targetHandle": "in:patch"
+          "id": "edge_quick_enrich_profile",
+          "source": "build_profile",
+          "target": "enrich_candidates",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:context"
         },
         {
-          "id": "edge_quick_rows",
-          "source": "recommend_script",
-          "target": "workflow:export",
-          "sourceHandle": "out:candidateRows",
+          "id": "edge_quick_score_profile",
+          "source": "build_profile",
+          "target": "score_candidates",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:context"
+        },
+        {
+          "id": "edge_quick_score_rows",
+          "source": "enrich_candidates",
+          "target": "score_candidates",
+          "sourceHandle": "out:rows",
+          "targetHandle": "in:rows"
+        },
+        {
+          "id": "edge_quick_pick_rows",
+          "source": "score_candidates",
+          "target": "pick_recommended",
+          "sourceHandle": "out:rows",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "edge_quick_build_patch_profile",
+          "source": "build_profile",
+          "target": "build_patch",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:profile"
+        },
+        {
+          "id": "edge_quick_build_patch_rows",
+          "source": "score_candidates",
+          "target": "build_patch",
+          "sourceHandle": "out:rows",
           "targetHandle": "in:candidateRows"
         },
         {
-          "id": "edge_quick_recommended",
-          "source": "recommend_script",
+          "id": "edge_quick_build_patch_count",
+          "source": "score_candidates",
+          "target": "build_patch",
+          "sourceHandle": "out:count",
+          "targetHandle": "in:count"
+        },
+        {
+          "id": "edge_quick_build_patch_recommended",
+          "source": "pick_recommended",
+          "target": "build_patch",
+          "sourceHandle": "out:first",
+          "targetHandle": "in:recommended"
+        },
+        {
+          "id": "edge_quick_fill_patch",
+          "source": "build_patch",
+          "target": "fill_patch",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_quick_show_message",
+          "source": "build_patch",
+          "target": "show_message",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_quick_extract_filter",
+          "source": "build_patch",
+          "target": "extract_filter_summary",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:record"
+        },
+        {
+          "id": "edge_quick_export_patch",
+          "source": "build_patch",
           "target": "workflow:export",
-          "sourceHandle": "out:recommendedOption",
+          "sourceHandle": "out:record",
+          "targetHandle": "in:patch"
+        },
+        {
+          "id": "edge_quick_export_rows",
+          "source": "score_candidates",
+          "target": "workflow:export",
+          "sourceHandle": "out:rows",
+          "targetHandle": "in:candidateRows"
+        },
+        {
+          "id": "edge_quick_export_recommended",
+          "source": "pick_recommended",
+          "target": "workflow:export",
+          "sourceHandle": "out:first",
           "targetHandle": "in:recommendedOption"
         },
         {
-          "id": "edge_quick_filter",
-          "source": "recommend_script",
+          "id": "edge_quick_export_filter",
+          "source": "extract_filter_summary",
           "target": "workflow:export",
-          "sourceHandle": "out:filterSummary",
+          "sourceHandle": "out:value",
           "targetHandle": "in:filterSummary"
         },
         {
-          "id": "edge_quick_reason",
-          "source": "recommend_script",
+          "id": "edge_quick_export_reason",
+          "source": "show_message",
           "target": "workflow:export",
-          "sourceHandle": "out:reasonSummary",
+          "sourceHandle": "out:message",
           "targetHandle": "in:reasonSummary"
+        },
+        {
+          "id": "edge_quick_export_message",
+          "source": "show_message",
+          "target": "workflow:export",
+          "sourceHandle": "out:message",
+          "targetHandle": "in:message"
+        },
+        {
+          "id": "edge_quick_export_applied",
+          "source": "fill_patch",
+          "target": "workflow:export",
+          "sourceHandle": "out:appliedFields",
+          "targetHandle": "in:appliedFields"
         }
       ]
     }

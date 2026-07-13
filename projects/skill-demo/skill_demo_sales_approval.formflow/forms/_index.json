@@ -1,0 +1,12 @@
+{
+  "defaultFormId": "sales-order-review",
+  "forms": [
+    {
+      "behaviorsFileName": "sales-order-review.behaviors.json",
+      "fileName": "sales-order-review.json",
+      "formMode": "edit",
+      "id": "sales-order-review",
+      "name": "销售订单审批"
+    }
+  ]
+}

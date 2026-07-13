@@ -5,6 +5,7 @@ import {
   cloneProject, deleteProject as deleteProjectFn, loadProjectStructure,
 } from '../../project/manager';
 import { downloadPackageZip, importFromZip, openFilePicker } from '../../project/packageManager';
+import { request } from '../../services/io/api';
 import Modal, { ModalFooter, ModalHeader } from '../../components/Modal';
 import {
   PROJECT_TEMPLATES,
@@ -18,6 +19,8 @@ import {
 import { useProjectStore } from '../../project/store';
 import { buildProjectPath, buildWorkspacePath, buildEditorPath, buildUsagePath } from '../../services/io/routes';
 import type { ProjectStructure } from '../../project/types';
+import { ShareDialog } from '../../components/ShareDialog';
+import { getSession } from '../../services/io/auth';
 
 function createInitialDraft(): ProjectWizardDraft {
   return {
@@ -79,19 +82,29 @@ function getProjectGradient(name: string): string {
 export default function ProjectsListPage() {
   const navigate = useNavigate();
   const setProject = useProjectStore((s) => s.setProject);
-  const [projectList, setProjectList] = useState<Array<{ id: string; name: string; updatedAt: string; tableCount: number }>>([]);
+  const [projectList, setProjectList] = useState<Array<{ id: string; name: string; updatedAt: string; tableCount: number; shared?: boolean }>>([]);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [draft, setDraft] = useState<ProjectWizardDraft>(createInitialDraft());
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [searchQuery, setSearchQuery] = useState('');
+  const [projectTab, setProjectTab] = useState<'all' | 'shared'>('all');
+  const [sharedList, setSharedList] = useState<Array<{ id: string; name: string; updatedAt: string; tableCount: number; shared?: boolean }>>([]);
+  const [shareDialogProject, setShareDialogProject] = useState<{ id: string; name: string } | null>(null);
+  const isCloudMode = ((import.meta as any).env?.VITE_APP_MODE || 'local') === 'cloud';
 
   useEffect(() => { listProjects().then(setProjectList).catch(() => {}); }, []);
+  useEffect(() => {
+    if (isCloudMode && getSession()) {
+      request('/projects/shared-with-me').then(setSharedList).catch(() => {});
+    }
+  }, [isCloudMode]);
 
   const filteredList = useMemo(() => {
-    if (!searchQuery.trim()) return projectList;
+    const source = projectTab === 'shared' ? sharedList : projectList;
+    if (!searchQuery.trim()) return source;
     const q = searchQuery.toLowerCase();
-    return projectList.filter((p) => p.name.toLowerCase().includes(q));
-  }, [projectList, searchQuery]);
+    return source.filter((p) => p.name.toLowerCase().includes(q));
+  }, [projectList, sharedList, searchQuery, projectTab]);
 
   const closeWizard = useCallback(() => {
     setWizardOpen(false);
@@ -285,10 +298,17 @@ export default function ProjectsListPage() {
         <p>管理、创建、导入导出你的表单项目</p>
       </div>
 
+      {isCloudMode && (
+        <div className="projects-tabs" style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          <button type="button" className={`ui-btn ${projectTab === 'all' ? 'ui-btn-primary' : ''}`} onClick={() => setProjectTab('all')}>我的项目</button>
+          <button type="button" className={`ui-btn ${projectTab === 'shared' ? 'ui-btn-primary' : ''}`} onClick={() => setProjectTab('shared')}>共享给我的</button>
+        </div>
+      )}
+
       <div className="projects-toolbar">
         <div className="projects-toolbar-left">
-          <button className="primary" onClick={openWizard}>新建项目</button>
-          <button onClick={importPackage}>导入项目包</button>
+          <button type="button" className="ui-btn ui-btn-primary" onClick={openWizard}>新建项目</button>
+          <button type="button" className="ui-btn" onClick={importPackage}>导入项目包</button>
         </div>
         <div className="projects-toolbar-right">
           <div className="projects-search">
@@ -300,11 +320,12 @@ export default function ProjectsListPage() {
               placeholder="搜索项目…"
             />
             {searchQuery && (
-              <button className="projects-search-clear" onClick={() => setSearchQuery('')}>×</button>
+              <button type="button" className="projects-search-clear" onClick={() => setSearchQuery('')}>×</button>
             )}
           </div>
           <div className="projects-view-toggle">
             <button
+              type="button"
               className={viewMode === 'grid' ? 'active' : ''}
               onClick={() => setViewMode('grid')}
               title="网格视图"
@@ -312,6 +333,7 @@ export default function ProjectsListPage() {
               ⊞
             </button>
             <button
+              type="button"
               className={viewMode === 'list' ? 'active' : ''}
               onClick={() => setViewMode('list')}
               title="列表视图"
@@ -319,6 +341,7 @@ export default function ProjectsListPage() {
               ☰
             </button>
             <button
+              type="button"
               className={viewMode === 'compact' ? 'active' : ''}
               onClick={() => setViewMode('compact')}
               title="紧凑视图"
@@ -341,6 +364,7 @@ export default function ProjectsListPage() {
             <div className="card-body">
               <div className="card-header">
                 <span className="card-name">{p.name}</span>
+                {p.shared && <span className="project-shared-badge">共享</span>}
               </div>
               <div className="card-stats">
                 <span>{p.tableCount} 个数据表</span>
@@ -348,15 +372,16 @@ export default function ProjectsListPage() {
               </div>
               {viewMode !== 'compact' && (
                 <div className="card-modes" onClick={(e) => e.stopPropagation()}>
-                  <button className="card-mode-btn" onClick={() => navigate(buildUsagePath(p.id))}>使用模式</button>
+                  <button type="button" className="card-mode-btn" onClick={() => navigate(buildUsagePath(p.id))}>使用模式</button>
                 </div>
               )}
               {viewMode !== 'compact' && (
                 <div className="card-actions" onClick={(e) => e.stopPropagation()}>
-                  <button onClick={() => openProject(p.id)}>打开</button>
-                  <button onClick={() => duplicateProject(p.id, p.name)}>复制</button>
-                  <button onClick={() => exportProject(p.id)}>导出</button>
-                  <button className="danger" onClick={() => deleteProject(p.id, p.name)}>删除</button>
+                  <button type="button" className="ui-btn ui-btn-xs" onClick={() => openProject(p.id)}>打开</button>
+                  <button type="button" className="ui-btn ui-btn-xs" onClick={() => duplicateProject(p.id, p.name)}>复制</button>
+                  <button type="button" className="ui-btn ui-btn-xs" onClick={() => exportProject(p.id)}>导出</button>
+                  {isCloudMode && <button type="button" className="ui-btn ui-btn-xs" onClick={() => setShareDialogProject({ id: p.id, name: p.name })}>共享</button>}
+                  <button type="button" className="ui-btn ui-btn-danger ui-btn-xs" onClick={() => deleteProject(p.id, p.name)}>删除</button>
                 </div>
               )}
             </div>
@@ -420,7 +445,7 @@ export default function ProjectsListPage() {
 
               {draft.mode === 'zip' && (
                 <div className="project-wizard-import-box">
-                  <button type="button" className="primary" onClick={chooseZipFile} disabled={draft.busy}>
+                  <button type="button" className="ui-btn ui-btn-primary" onClick={chooseZipFile} disabled={draft.busy}>
                     {draft.busy ? '正在校验 ZIP…' : '选择 ZIP 项目包'}
                   </button>
                   <p>{draft.fileName ? `已选择：${draft.fileName}` : '尚未选择文件'}</p>
@@ -499,17 +524,25 @@ export default function ProjectsListPage() {
           {draft.error && <div className="project-wizard-error">{draft.error}</div>}
         </div>
         <ModalFooter>
-          <button onClick={closeWizard} disabled={draft.busy}>取消</button>
-          <button onClick={movePrev} disabled={draft.busy || draft.step === 0}>上一步</button>
+          <button type="button" className="ui-btn" onClick={closeWizard} disabled={draft.busy}>取消</button>
+          <button type="button" className="ui-btn" onClick={movePrev} disabled={draft.busy || draft.step === 0}>上一步</button>
           {draft.step < 2 ? (
-            <button className="primary" onClick={moveNext} disabled={draft.busy || !canMoveNext}>下一步</button>
+            <button type="button" className="ui-btn ui-btn-primary" onClick={moveNext} disabled={draft.busy || !canMoveNext}>下一步</button>
           ) : (
-            <button className="primary" onClick={submitWizard} disabled={draft.busy}>
+            <button type="button" className="ui-btn ui-btn-primary" onClick={submitWizard} disabled={draft.busy}>
               {draft.busy ? '创建中…' : '创建并进入项目'}
             </button>
           )}
         </ModalFooter>
       </Modal>
+      {shareDialogProject && (
+        <ShareDialog
+          projectId={shareDialogProject.id}
+          projectName={shareDialogProject.name}
+          open={!!shareDialogProject}
+          onClose={() => setShareDialogProject(null)}
+        />
+      )}
     </div>
   );
 }

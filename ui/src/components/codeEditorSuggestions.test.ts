@@ -6,8 +6,8 @@ import { createEventContextExtraLib, createEventContextSuggestions, createFlowPa
 const workflow: WorkflowFile = {
   id: 'flow-1', name: '客户审批', description: '',
   nodes: [{
-    id: 'input', type: 'flow-node', specId: 'generic:variable-input', position: { x: 0, y: 0 },
-    data: { propertiesJson: JSON.stringify({ varName: 'customerName' }) },
+    id: 'input', type: 'flow-node', specId: 'generic:value-input', position: { x: 0, y: 0 },
+    data: { propertiesJson: JSON.stringify({ name: 'customerName', valueType: 'string' }) },
   }],
   edges: [], createdAt: '', updatedAt: '',
 };
@@ -24,6 +24,8 @@ test('event suggestions are generated from current fields, event and workflows',
   assert.ok(suggestions.some((item) => item.label === 'ctx.values.active' && item.detail?.includes('boolean')));
   assert.ok(suggestions.some((item) => item.label === '运行流程 客户审批' && item.insertText?.includes('flow-1')));
   assert.ok(suggestions.some((item) => item.label === 'typed async callback' && item.insertText?.includes('FormEventContext')));
+  assert.ok(suggestions.some((item) => item.label === 'getValue' && item.insertText?.includes("getValue('字段名')")));
+  assert.ok(suggestions.some((item) => item.label === 'PrintDebug' && item.detail?.includes('debug')));
   assert.ok(suggestions.some((item) => item.label === 'ctx.previousValue'));
   assert.ok(suggestions.some((item) => item.label === 'ctx.detail.previousValue'));
   assert.ok(suggestions.some((item) => item.label === 'ctx.controls'));
@@ -78,6 +80,9 @@ test('event extra lib carries current field and value typing', () => {
   assert.match(lib.content, /changedFields: EventFieldName\[\]/);
   assert.match(lib.content, /interface FormEventControlHandle/);
   assert.match(lib.content, /controls: Record<string, FormEventControlHandle>;/);
+  assert.match(lib.content, /declare function getValue/);
+  assert.match(lib.content, /declare function PrintDebug\(\.\.\.args: unknown\[\]\): void;/);
+  assert.match(lib.content, /declare const value: CurrentEventValue;/);
 });
 
 test('event-specific suggestions follow the selected behavior event', () => {

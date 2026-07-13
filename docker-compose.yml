@@ -1,0 +1,34 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      FORMFLOW_MODE: cloud
+      PORT: 3001
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      REDIS_URL: redis://redis:6379
+      FORMFLOW_DATA_DIR: /data/server
+      FORMFLOW_PROJECTS_DIR: /data/projects
+      PYTHON_EXECUTABLE: /usr/bin/python3
+    volumes:
+      - formflow-data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+volumes:
+  formflow-data:
+  redis-data:

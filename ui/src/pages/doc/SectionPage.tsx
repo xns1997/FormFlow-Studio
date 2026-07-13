@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { DesignerIcon } from '../../designer/icons';
+import ComponentDocPlayground from '../../components/ComponentDocPlayground';
 import { DocSidebar } from '../../components/DocSidebar';
 import type {
   BehaviorApiReference,
@@ -122,14 +123,21 @@ export default function SectionPage({ sectionId, sectionTitle, docs, categories 
   }, [activeCategory, docsWithCategory, query]);
 
   const currentDoc = slug ? docsWithCategory.find((doc) => doc.slug === slug) : undefined;
+  const componentPlaygroundType = currentDoc && sectionId === 'form-design' && currentDoc.id.startsWith('form-design:')
+    ? currentDoc.id.slice('form-design:'.length)
+    : null;
 
   const tocSections = useMemo(() => {
     if (!currentDoc) return [];
-    return currentDoc.sections.map((section, index) => ({
+    const sections = currentDoc.sections.map((section, index) => ({
       id: `section-${index}`,
       title: section.title,
     }));
-  }, [currentDoc]);
+    if (componentPlaygroundType) {
+      return [{ id: 'section-playground', title: 'Playground' }, ...sections];
+    }
+    return sections;
+  }, [componentPlaygroundType, currentDoc]);
 
   if (!slug) {
     return (
@@ -231,6 +239,10 @@ export default function SectionPage({ sectionId, sectionTitle, docs, categories 
             <Link to={basePath} className="docs-link-button">返回{sectionTitle}</Link>
           </div>
         </div>
+
+        {componentPlaygroundType && (
+          <ComponentDocPlayground componentType={componentPlaygroundType} title={currentDoc.title} />
+        )}
 
         {currentDoc.sections.map((section, index) => (
           <section key={`${currentDoc.id}:${section.title}`} id={`section-${index}`} className="docs-section">

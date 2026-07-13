@@ -1,8 +1,8 @@
 {
   "id": "func-date-input",
   "label": "日期选择",
-  "description": "日期选择组件",
-  "category": "功能 · 表单组件",
+  "description": "独立日期输入节点，保留日期选择语义，不再归入旧选择组件集合。",
+  "category": "功能 · 输入扩展",
   "kind": "generic",
   "methods": [],
   "properties": [

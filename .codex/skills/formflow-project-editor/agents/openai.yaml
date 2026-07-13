@@ -1,0 +1,4 @@
+interface:
+  display_name: "FormFlow 项目编辑器"
+  short_description: "用紧凑 YAML 创建、规范化和校验 FormFlow v2 项目包"
+  default_prompt: "Use $formflow-project-editor to create or safely normalize a FormFlow v2 project package from a compact YAML specification."

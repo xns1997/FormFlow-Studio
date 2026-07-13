@@ -1,0 +1,18 @@
+{
+  "id": "behavior-compose-message",
+  "label": "拼装消息",
+  "description": "通过模板和字段插值生成提示消息，可直接展示或写回表单字段",
+  "category": "行为 · 动作",
+  "kind": "generic",
+  "properties": [
+    { "name": "template", "label": "消息模板", "type": "string", "default": "", "description": "使用 {字段名} 进行插值" },
+    { "name": "values", "label": "插值数据", "type": "json", "default": {}, "description": "附加插值对象" },
+    { "name": "messageField", "label": "消息字段", "type": "string", "default": "", "description": "生成消息写回的表单字段" },
+    { "name": "messageType", "label": "消息级别", "type": "enum", "enum": ["info", "success", "warning", "error"], "default": "info", "description": "展示消息的级别" }
+  ],
+  "ports": [
+    { "name": "record", "label": "记录", "type": "object", "direction": "input", "description": "用于插值的记录对象" },
+    { "name": "message", "label": "消息", "type": "string", "direction": "output", "description": "拼装后的消息文本" }
+  ],
+  "keywords": ["消息模板", "compose", "message", "提示语", "插值"]
+}

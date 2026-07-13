@@ -1,0 +1,9 @@
+node_modules
+dist
+.git
+.playwright-cli
+test-results
+venv
+server/data
+projects/data
+*.zip

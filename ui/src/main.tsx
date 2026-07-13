@@ -4,7 +4,7 @@ import './style/index.css';
 
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Layout, ProjectsListPage, SystemSettingsLayout, SystemSettingsPage } from './pages/home';
 import {
   ProjectDetailPage,
@@ -18,6 +18,11 @@ import {
   LegacyProjectRedirectPage,
   UsagePage,
   UnifiedEditorPage,
+  TaskMonitorPage,
+  DashboardPage,
+  DataQualityPage,
+  DataLineagePage,
+  MetadataPage,
 } from './pages/editor';
 import {
   BehaviorDocsPage,
@@ -28,13 +33,23 @@ import {
   BackendSectionPage,
 } from './pages/doc';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { LoginPage } from './pages/auth';
+import { getSession } from './services/io/auth';
+
+const isCloudMode = ((import.meta as any).env?.VITE_APP_MODE || 'local') === 'cloud';
+function ModeGate() {
+  const location = useLocation();
+  if (isCloudMode && !getSession()) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  return <Layout />;
+}
 
 function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
         <Routes>
-          <Route element={<Layout />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route element={<ModeGate />}>
             <Route index element={<Navigate to="/projects" replace />} />
             <Route path="/projects" element={<ProjectsListPage />} />
             <Route path="/docs">
@@ -58,6 +73,11 @@ function App() {
               <Route index element={<Navigate to="editor" replace />} />
               <Route path="editor" element={<UnifiedEditorPage />} />
               <Route path="usage" element={<UsagePage />} />
+              <Route path="tasks" element={<TaskMonitorPage />} />
+              <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="quality" element={<DataQualityPage />} />
+              <Route path="lineage" element={<DataLineagePage />} />
+              <Route path="metadata" element={<MetadataPage />} />
               <Route path="workspace" element={<WorkspaceLayout />}>
                 <Route index element={<Navigate to="data" replace />} />
                 <Route path="data" element={<DataPreviewPage />} />

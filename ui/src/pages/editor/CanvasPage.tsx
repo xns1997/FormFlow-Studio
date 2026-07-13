@@ -27,6 +27,7 @@ import type { RangeRef } from '../../models';
 import RangeSelector from '../../components/RangeSelector';
 import TypeDisplayer from '../../components/TypeDisplayer';
 import OutputPreviewModal, { type OutputPreviewTarget } from '../../components/OutputPreviewModal';
+import Modal, { ModalHeader } from '../../components/Modal';
 import CodeEditor from '../../components/CodeEditor';
 import { createCustomJsNodeExtraLib, createCustomJsNodeSuggestions, formatCustomJsPortMap, getNodeEffectivePorts, isCustomJsNodeSpec, parseCustomJsPortDefinitions, resolveNodeProperties, toCustomJsPortMap } from '../../services/config/customJsNode';
 import { formatStructuredProperty, isStructuredProperty, parseStructuredProperty } from '../../services/data/structuredProperties';
@@ -34,6 +35,8 @@ import { jsonSuggestions } from '../../components/codeEditorSuggestions';
 import NodePalette, { QuickNodePicker } from '../../components/NodePalette';
 import { createQuickNodeConnection, portTypesCompatible, type NodeConnectionContext } from '../../services/config/nodeDiscovery';
 import { createWorkflowIoScaffold, ensureWorkflowIo } from '../../services/engine/workflowIo';
+import { layoutWorkflow, type LayoutDiagnostics, type MeasuredNodeBox } from '../../services/layout';
+import { createRemovedWorkflowNodeSpec, isRemovedWorkflowNode } from '../../services/engine/removedWorkflowNodes';
 
 type FlowNodeData = {
   specId: string;
@@ -50,7 +53,56 @@ type FlowNodeData = {
 };
 
 type FlowNode = Node<FlowNodeData>;
+type ToolbarLogLevel = 'info' | 'success' | 'warning' | 'error';
+type ToolbarLogSource = 'layout' | 'save' | 'run' | 'export';
+
+type ToolbarLogEntry = {
+  id: string;
+  message: string;
+  level: ToolbarLogLevel;
+  createdAt: string;
+  source: ToolbarLogSource;
+};
+
 const INPUT_OVERRIDE_KEY = '__inputOverrides';
+const MAX_TOOLBAR_LOGS = 50;
+
+function formatToolbarLogTime(value: Date) {
+  return value.toLocaleTimeString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+}
+
+function getToolbarLogLevelLabel(level: ToolbarLogLevel) {
+  switch (level) {
+    case 'success':
+      return '成功';
+    case 'warning':
+      return '警告';
+    case 'error':
+      return '错误';
+    default:
+      return '信息';
+  }
+}
+
+function getToolbarLogSourceLabel(source: ToolbarLogSource) {
+  switch (source) {
+    case 'layout':
+      return '自动整理';
+    case 'save':
+      return '保存';
+    case 'run':
+      return '运行';
+    case 'export':
+      return '导出';
+    default:
+      return source;
+  }
+}
 
 function nodeDataFromSpec(spec: FlowNodeSpec): FlowNodeData {
   return { specId: spec.id, label: spec.label, kind: spec.kind, category: spec.category, description: spec.description, propertiesJson: '{}', connectedPortsJson: '[]' };
@@ -148,6 +200,10 @@ function createNode(spec: FlowNodeSpec, index: number, position?: { x: number; y
     position: position || { x: 120 + (index % 4) * 280, y: 120 + Math.floor(index / 4) * 180 },
     data: nodeDataFromSpec(spec),
   };
+}
+
+function resolveCanvasNodeSpec(registry: NodeRegistry | null | undefined, specId: string): FlowNodeSpec | undefined {
+  return registry?.byId.get(specId) || (isRemovedWorkflowNode(specId) ? createRemovedWorkflowNodeSpec(specId) : undefined);
 }
 
 function downloadFileData(value: unknown, fileName: string, mimeType: string) {
@@ -291,7 +347,7 @@ function PortTableEditor({ value, onChange, disabled }: { value: unknown; onChan
 
 function FormFlowNode({ data, selected }: NodeProps<FlowNode>) {
   const kindClass = data.kind === 'scenario' ? 'scenario' : data.kind === 'generic' ? 'generic' : data.kind === 'behavior' ? 'behavior' : 'method';
-  const spec = (globalThis as any).__formflowRegistry?.byId.get(data.specId) as FlowNodeSpec | undefined;
+  const spec = resolveCanvasNodeSpec((globalThis as any).__formflowRegistry as NodeRegistry | undefined, data.specId);
   const properties = spec?.properties || [];
   const nodeProps = useMemo(() => resolveNodeProperties(spec, data.propertiesJson), [spec, data.propertiesJson]);
 
@@ -471,15 +527,15 @@ const SchemaField = React.memo(function SchemaField({ prop, value, onChange, con
   );
 
   // ── 数据感知的下拉选择 ──────────────────────────
-  const isWorksheetSelect = specId === 'generic:worksheet-select';
-  const isFilePicker = specId === 'generic:file-picker';
-  const isRangeSelect = specId === 'generic:range-select';
+  const isSheetSource = specId === 'generic:sheet-source';
+  const isFileSource = specId === 'generic:file-source';
+  const isValueInput = specId === 'generic:value-input';
   const isGeneric = specId?.startsWith('generic:') || specId?.startsWith('func:');
   const allSheets = (tables || []).flatMap(t => t.sheets.map(s => ({ tableId: t.id, fileName: t.fileName, sheetName: s.name, label: `${t.fileName} / ${s.name}`, headers: s.headers, rowCount: s.rowCount })));
   const allFiles = (tables || []).map(t => ({ id: t.id, fileName: t.fileName, sheets: t.sheets.map(s => s.name) }));
 
-  // 工作表选择器 → 下拉选择实际工作表
-  if (isWorksheetSelect && prop.name === 'sheetName' && allSheets.length > 0) {
+  // 表与区域来源 → 下拉选择实际工作表
+  if (isSheetSource && prop.name === 'sheetName' && allSheets.length > 0) {
     return (
       <div className={`schema-field ${disabled ? 'port-connected' : ''}`}>
         <span>{prop.label}{prop.required && <em className="required">*</em>}{portBadge}</span>
@@ -488,7 +544,7 @@ const SchemaField = React.memo(function SchemaField({ prop, value, onChange, con
             <select value={String(current)} onChange={(e) => {
               onChange(prop.name, e.target.value);
               const sel = allSheets.find(s => s.sheetName === e.target.value);
-              if (sel) { onChange('selectMode', 'byName'); }
+              if (sel) { onChange('worksheetMode', 'byName'); }
             }}>
               <option value="">-- 选择工作表 --</option>
               {allSheets.map(s => <option key={`${s.tableId}:${s.sheetName}`} value={s.sheetName}>{s.label} ({s.rowCount}行)</option>)}
@@ -503,8 +559,27 @@ const SchemaField = React.memo(function SchemaField({ prop, value, onChange, con
     );
   }
 
-  // 文件选择器 → 下拉选择已上传的文件
-  if (isFilePicker && allFiles.length > 0 && (prop.name === 'accept' || prop.name === 'multiple')) {
+  // 文件来源 → 下拉选择已上传的文件
+  if (isFileSource && allFiles.length > 0 && prop.name === 'selectedFile') {
+    return (
+      <div className={`schema-field ${disabled ? 'port-connected' : ''}`}>
+        <span>{prop.label}{prop.required && <em className="required">*</em>}{portBadge}</span>
+        {disabled ? connectedValueDisplay : (
+          <>
+            <select value={String(current)} onChange={(e) => onChange(prop.name, e.target.value)}>
+              <option value="">-- 自动选择第一个文件 --</option>
+              {allFiles.map((file) => <option key={file.id} value={file.fileName}>{file.fileName}</option>)}
+            </select>
+            <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4 }}>
+              未连线时优先从项目文件中选择；运行时仍可由输入口覆盖。
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  if (isFileSource && allFiles.length > 0 && (prop.name === 'accept' || prop.name === 'multiple')) {
     return (
       <div className={`schema-field ${disabled ? 'port-connected' : ''}`}>
         <span>{prop.label}{prop.required && <em className="required">*</em>}{portBadge}</span>
@@ -527,8 +602,8 @@ const SchemaField = React.memo(function SchemaField({ prop, value, onChange, con
     );
   }
 
-  // 区域选择器 → 选择数据范围
-  if (isRangeSelect && prop.name === 'address' && allSheets.length > 0) {
+  // 区域来源 → 选择数据范围
+  if (isSheetSource && currentProps?.sourceMode === 'range' && prop.name === 'address' && allSheets.length > 0) {
     const selectedSheet = currentProps?.sheetName ? allSheets.find(s => s.sheetName === currentProps.sheetName) : allSheets[0];
     return (
       <div className={`schema-field ${disabled ? 'port-connected' : ''}`}>
@@ -538,7 +613,7 @@ const SchemaField = React.memo(function SchemaField({ prop, value, onChange, con
             <div style={{ display: 'flex', gap: 4 }}>
               <input type="text" value={String(current)} placeholder="A1:C10" style={{ flex: 1 }} onChange={(e) => onChange(prop.name, e.target.value)} />
               {onOpenRangeSelector && tables && tables.length > 0 && (
-                <button onClick={onOpenRangeSelector} style={{ padding: '2px 8px', fontSize: 10, border: '1px solid var(--accent)', borderRadius: 4, background: 'var(--accent)', color: '#fff', whiteSpace: 'nowrap' }}>
+                <button type="button" className="ui-btn ui-btn-primary ui-btn-xs" onClick={onOpenRangeSelector} style={{ whiteSpace: 'nowrap' }}>
                   选择
                 </button>
               )}
@@ -549,6 +624,20 @@ const SchemaField = React.memo(function SchemaField({ prop, value, onChange, con
               </div>
             )}
           </>
+        )}
+      </div>
+    );
+  }
+
+  if (isValueInput && prop.name === 'value' && currentProps?.valueType === 'boolean') {
+    return (
+      <div className={`schema-field ${disabled ? 'port-connected' : ''}`}>
+        <span>{prop.label}{prop.required && <em className="required">*</em>}{portBadge}</span>
+        {disabled ? connectedValueDisplay : (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <input type="checkbox" checked={!!current} onChange={(e) => onChange(prop.name, e.target.checked)} />
+            <span>{!!current ? 'true' : 'false'}</span>
+          </label>
         )}
       </div>
     );
@@ -585,7 +674,7 @@ const SchemaField = React.memo(function SchemaField({ prop, value, onChange, con
     );
   }
 
-  // 默认文本输入
+  // 默认字符串输入
   return (
     <div className={`schema-field ${disabled ? 'port-connected' : ''}`}>
       <span>{prop.label}{prop.required && <em className="required">*</em>}{portBadge}</span>
@@ -698,12 +787,8 @@ function InputPortEditor({
     if (source.__fromProject && source.tableId && source.sheetName) {
       return normalizeSheetKey(String(source.tableId), String(source.sheetName));
     }
-    if (port.type === 'json-rows' && Array.isArray(effectiveValue)) {
-      const matched = sheetOptions.find(({ sheet }) => JSON.stringify(sheet.preview) === JSON.stringify(effectiveValue));
-      if (matched) return normalizeSheetKey(matched.table.id, matched.sheet.name);
-    }
     return '';
-  }, [effectiveValue, port.type, sheetOptions]);
+  }, [effectiveValue]);
   const activeSource = useMemo(() => {
     if (!sourceInfos?.length) return undefined;
     return sourceInfos.find((item) => item.edgeId === selectedEdgeId) || sourceInfos[sourceInfos.length - 1];
@@ -782,7 +867,7 @@ function InputPortEditor({
             <div><strong>{activeSource?.nodeLabel || '上游节点'}</strong> · {activeSource?.portLabel || port.name}</div>
           )}
           {activeSource?.summary && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{activeSource.summary}</div>}
-          <button type="button" onClick={() => activeSource && onJumpToSource(activeSource.nodeId)} style={{ marginTop: 6, fontSize: 11 }}>
+          <button type="button" className="ui-btn ui-btn-xs" onClick={() => activeSource && onJumpToSource(activeSource.nodeId)} style={{ marginTop: 6 }}>
             跳到上游节点
           </button>
         </div>
@@ -799,7 +884,7 @@ function InputPortEditor({
       {!connected && value !== undefined && (
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
           <TypeDisplayer type={port.type} value={value} compact />
-          <button type="button" onClick={() => onChange(undefined)} style={{ fontSize: 11 }}>清空</button>
+          <button type="button" className="ui-btn ui-btn-ghost ui-btn-xs" onClick={() => onChange(undefined)}>清空</button>
         </div>
       )}
     </div>
@@ -869,8 +954,11 @@ export default function CanvasPage() {
   const connectionStartRef = useRef<{ context: NodeConnectionContext; nodeId: string; handleId: string } | null>(null);
   const palettePointerDragRef = useRef<{ spec: FlowNodeSpec; pointerId: number; startX: number; startY: number; moved: boolean } | null>(null);
   const [paletteDragPreview, setPaletteDragPreview] = useState<{ label: string; x: number; y: number; overCanvas: boolean } | null>(null);
+  const [toolbarLogs, setToolbarLogs] = useState<ToolbarLogEntry[]>([]);
+  const [showToolbarLogModal, setShowToolbarLogModal] = useState(false);
   const nodeSequenceRef = useRef(0);
   const nodeTypes = useMemo(() => ({ formflow: FormFlowNode }), []);
+  const latestToolbarLog = toolbarLogs[0] || null;
 
   useEffect(() => {
     loadNodeRegistry().then((reg) => {
@@ -878,7 +966,7 @@ export default function CanvasPage() {
       setRegistry(reg);
       const scaffold = createWorkflowIoScaffold();
       const initNodes: FlowNode[] = scaffold.nodes.map((node) => {
-        const spec = reg.byId.get(node.specId);
+        const spec = resolveCanvasNodeSpec(reg, node.specId);
         return spec ? {
           id: node.id,
           type: 'formflow',
@@ -903,9 +991,10 @@ export default function CanvasPage() {
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null;
   const selectedRangeRef = useMemo<RangeRef | null>(() => {
-    if (!selectedNode || selectedNode.data.specId !== 'generic:range-select') return null;
+    if (!selectedNode || selectedNode.data.specId !== 'generic:sheet-source') return null;
     try {
       const properties = JSON.parse(selectedNode.data.propertiesJson || '{}');
+      if (properties.sourceMode !== 'range') return null;
       return properties.rangeRef || null;
     } catch { return null; }
   }, [selectedNode]);
@@ -939,7 +1028,7 @@ export default function CanvasPage() {
   const onConnect = useCallback((connection: Connection) => {
     if (!isValidConnection(connection)) return;
     setEdges((c) => {
-      const next = dedupeEdges(addEdge({ ...connection, animated: true }, c));
+      const next = dedupeEdges(addEdge({ ...connection, animated: true, type: 'smoothstep' }, c));
       setNodes((prev) => syncConnectedPorts(prev, next));
       return next;
     });
@@ -989,12 +1078,63 @@ export default function CanvasPage() {
     const node = addSpecNode(spec, quickPicker.flowPosition);
     const connection: Connection = createQuickNodeConnection(quickPicker.context, quickPicker.nodeId, quickPicker.handleId, node.id, port);
     setEdges((current) => {
-      const next = dedupeEdges(addEdge({ ...connection, animated: true }, current));
+      const next = dedupeEdges(addEdge({ ...connection, animated: true, type: 'smoothstep' }, current));
       setNodes((nodeList) => syncConnectedPorts(nodeList, next));
       return next;
     });
     setQuickPicker(null);
   }, [quickPicker, addSpecNode, syncConnectedPorts]);
+
+  const formatLayoutNotice = useCallback((diagnostics: LayoutDiagnostics, count: number) => {
+    const overlapDelta = Math.max(0, diagnostics.overlapCountBefore - diagnostics.overlapCountAfter);
+    const crossingDelta = Math.max(0, diagnostics.edgeCrossingsBefore - diagnostics.edgeCrossingsAfter);
+    const warningText = diagnostics.warnings[0] ? ` · ${diagnostics.warnings[0]}` : '';
+    return `已整理 ${count} 个节点，消除 ${overlapDelta} 处重叠，减少 ${crossingDelta} 处交叉${warningText}`;
+  }, []);
+
+  const appendToolbarLog = useCallback((entry: Omit<ToolbarLogEntry, 'id' | 'createdAt'> & { id?: string; createdAt?: string }) => {
+    const now = new Date();
+    const nextEntry: ToolbarLogEntry = {
+      id: entry.id || `${now.getTime()}-${Math.random().toString(36).slice(2, 8)}`,
+      createdAt: entry.createdAt || now.toISOString(),
+      level: entry.level,
+      message: entry.message,
+      source: entry.source,
+    };
+    setToolbarLogs((current) => [nextEntry, ...current].slice(0, MAX_TOOLBAR_LOGS));
+  }, []);
+
+  const handleAutoLayout = useCallback(() => {
+    const measuredNodes: MeasuredNodeBox[] = nodes.map((node) => {
+      const runtimeNode = reactFlow.getNode(node.id);
+      const width = Number((runtimeNode as any)?.measured?.width || runtimeNode?.width || 220);
+      const height = Number((runtimeNode as any)?.measured?.height || runtimeNode?.height || 140);
+      return { id: node.id, width, height };
+    });
+    const workflow = {
+      nodes: nodes.map((node) => ({ id: node.id, type: node.type || 'formflow', specId: node.data.specId, position: node.position, data: node.data })),
+      edges: edges.map((edge) => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        sourceHandle: edge.sourceHandle ?? undefined,
+        targetHandle: edge.targetHandle ?? undefined,
+      })),
+    };
+    const result = layoutWorkflow(workflow, measuredNodes);
+    const byId = new Map(result.nodes.map((node) => [node.id, node] as const));
+    setNodes((current) => current.map((node) => {
+      const laidOut = byId.get(node.id);
+      return laidOut ? { ...node, position: laidOut.position } : node;
+    }));
+    setEdges((current) => current.map((edge) => ({ ...edge, type: result.edgeType, animated: true })));
+    appendToolbarLog({
+      level: result.diagnostics.warnings.length > 0 ? 'warning' : 'success',
+      message: formatLayoutNotice(result.diagnostics, nodes.length),
+      source: 'layout',
+    });
+    window.requestAnimationFrame(() => reactFlow.fitView({ padding: 0.2, duration: 250 }));
+  }, [nodes, edges, reactFlow, formatLayoutNotice, appendToolbarLog]);
 
   const startPalettePointerDrag = useCallback((spec: FlowNodeSpec, event: React.PointerEvent) => {
     palettePointerDragRef.current = { spec, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, moved: false };
@@ -1069,7 +1209,7 @@ export default function CanvasPage() {
       seenByPort.set(portName, seenKeys);
       const sourceNode = nodes.find(n => n.id === e.source);
       if (!sourceNode) continue;
-      const sourceSpec = registry.byId.get(sourceNode.data.specId);
+      const sourceSpec = resolveCanvasNodeSpec(registry, sourceNode.data.specId);
       const sourcePorts = getNodeEffectivePorts(sourceSpec, resolveNodeProperties(sourceSpec, sourceNode.data.propertiesJson));
       const sourcePortName = (e.sourceHandle || '').replace(/^out:/, '');
       const sourcePort = sourcePorts.find((p) => p.name === sourcePortName);
@@ -1156,13 +1296,13 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
     }
     const activeWorkflow = migrated.workflow;
     const loadedNodes: FlowNode[] = (activeWorkflow.nodes || []).map((n: any) => {
-      const spec = registry.byId.get(n.specId);
+      const spec = resolveCanvasNodeSpec(registry, n.specId);
       if (!spec) return null;
       const savedOutputs = n.data?.outputs;
       const savedError = n.data?.error;
       return { id: n.id, type: 'formflow', position: n.position, data: { specId: n.specId, label: spec.label, kind: spec.kind, category: spec.category, description: spec.description, propertiesJson: JSON.stringify(n.data?.propertiesJson ? JSON.parse(n.data.propertiesJson) : {}), connectedPortsJson: '[]', ...(savedOutputs ? { outputs: savedOutputs } : {}), ...(savedError ? { error: savedError } : {}) } };
     }).filter(Boolean) as FlowNode[];
-    const loadedEdges: Edge[] = dedupeEdges((activeWorkflow.edges || []).map((e: any) => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle, animated: true })));
+      const loadedEdges: Edge[] = dedupeEdges((activeWorkflow.edges || []).map((e: any) => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle, animated: true, type: 'smoothstep' })));
     setNodes(loadedNodes);
     setEdges(loadedEdges);
     setCurrentWorkflowId(activeWorkflow.id);
@@ -1216,7 +1356,7 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
           }
         }
 
-        if (nr.success && n.data.specId === 'generic:worksheet-select') {
+        if (nr.success && n.data.specId === 'generic:sheet-source') {
           const headers = (nr.outputs as any)?.headers;
           if (headers && Array.isArray(headers)) {
             try {
@@ -1288,6 +1428,7 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
       updateNodeData(selectedNode.id, {
         propertiesJson: JSON.stringify({
           ...currentProps,
+          sourceMode: 'range',
           address: rangeToAddress(ref),
           sheetName: ref.sheetName,
           rangeMode: 'address',
@@ -1299,7 +1440,7 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
   }, [selectedNode, updateNodeData]);
 
   // ── Memoized inspector values (必须在条件返回之前) ──
-  const inspectorSpec = selectedNode && registry ? registry.byId.get(selectedNode.data.specId) : undefined;
+  const inspectorSpec = selectedNode ? resolveCanvasNodeSpec(registry, selectedNode.data.specId) : undefined;
   const inspectorProps = inspectorSpec?.properties || [];
   const currentProps = useMemo(() => resolveNodeProperties(inspectorSpec, selectedNode?.data.propertiesJson), [inspectorSpec, selectedNode?.data.propertiesJson]);
   const inspectorPorts = useMemo(() => getNodeEffectivePorts(inspectorSpec, currentProps), [inspectorSpec, currentProps]);
@@ -1352,7 +1493,7 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
         <NodePalette
           specs={registry.specs}
           tables={project?.srcTable || []}
-          selectedSpec={selectedNode ? registry.byId.get(selectedNode.data.specId) : undefined}
+          selectedSpec={selectedNode ? resolveCanvasNodeSpec(registry, selectedNode.data.specId) : undefined}
           onAdd={addSpecNode}
           onPointerDragStart={startPalettePointerDrag}
           onClose={() => setPaletteOpen(false)}
@@ -1366,6 +1507,7 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
           <span>流程: {project?.workflows.length || 0} 个</span>
           {currentWorkflowId && <span className="workflow-id">当前: {project?.workflows.find((w) => w.id === currentWorkflowId)?.name}</span>}
           <button onClick={saveWorkflow}>保存流程</button>
+          <button onClick={handleAutoLayout} disabled={nodes.length === 0}>自动整理流程</button>
           <select value={currentWorkflowId || ''} onChange={(e) => e.target.value && loadWorkflow(e.target.value)}>
             <option value="" disabled>加载流程…</option>
             {(project?.workflows || []).map((wf) => <option key={wf.id} value={wf.id}>{wf.name}</option>)}
@@ -1378,11 +1520,11 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
             <option value="json">JSON</option>
             <option value="html">HTML</option>
           </select>
-          <button onClick={stepFlow} disabled={flowRunning || nodes.length === 0} title="单步执行" style={{ fontSize: 11 }}>
+          <button onClick={stepFlow} disabled={flowRunning || nodes.length === 0} title="单步执行" className="ui-btn ui-btn-xs">
             ⏭ 单步
           </button>
           {stepResults.size > 0 && (
-            <button onClick={resetDebug} style={{ fontSize: 11, color: 'var(--danger)' }}>重置</button>
+            <button onClick={resetDebug} className="ui-btn ui-btn-danger ui-btn-xs">重置</button>
           )}
           {stepResults.size > 0 && (
             <span style={{ fontSize: 11, color: 'var(--muted)' }}>
@@ -1394,6 +1536,22 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
               {flowResult.success ? `✓ 完成 (${flowResult.totalDuration}ms)` : `✗ 失败 (${flowResult.errors.length} 错误)`}
             </span>
           )}
+          <div className="canvas-toolbar-logbar">
+            <div className={`canvas-toolbar-log latest ${latestToolbarLog ? `level-${latestToolbarLog.level}` : 'level-empty'}`}>
+              <span className="canvas-toolbar-log-dot" aria-hidden="true" />
+              <span className="canvas-toolbar-log-message" title={latestToolbarLog?.message || '暂无日志'}>
+                {latestToolbarLog?.message || '暂无日志'}
+              </span>
+              {latestToolbarLog && (
+                <span className="canvas-toolbar-log-time">
+                  {formatToolbarLogTime(new Date(latestToolbarLog.createdAt))}
+                </span>
+              )}
+            </div>
+            <button type="button" className="ui-btn ui-btn-xs" onClick={() => setShowToolbarLogModal(true)}>
+              查看全部
+            </button>
+          </div>
         </div>
         <ReactFlow
           nodes={nodes}
@@ -1406,6 +1564,7 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
           onConnectEnd={onConnectEnd}
           isValidConnection={isValidConnection}
           onNodeClick={(_e, n) => setSelectedNodeId(n.id)}
+          defaultEdgeOptions={{ type: 'smoothstep', animated: true }}
           fitView
         >
           <Background /><MiniMap pannable zoomable nodeColor={(n) => {
@@ -1418,9 +1577,41 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
           }} /><Controls />
         </ReactFlow>
       </section>
+      <Modal
+        open={showToolbarLogModal}
+        onClose={() => setShowToolbarLogModal(false)}
+        width="min(760px, 92vw)"
+        maxHeight="78vh"
+        containerClassName="canvas-log-modal"
+      >
+        <ModalHeader title={`操作日志${toolbarLogs.length > 0 ? ` (${toolbarLogs.length})` : ''}`} onClose={() => setShowToolbarLogModal(false)} />
+        <div className="modal-body canvas-log-modal-body">
+          {toolbarLogs.length === 0 ? (
+            <div className="canvas-log-empty">暂无日志</div>
+          ) : (
+            <div className="canvas-log-list">
+              {toolbarLogs.map((entry) => (
+                <article key={entry.id} className={`canvas-log-entry level-${entry.level}`}>
+                  <div className="canvas-log-entry-meta">
+                    <span className={`canvas-log-entry-level level-${entry.level}`}>{getToolbarLogLevelLabel(entry.level)}</span>
+                    <span>{formatToolbarLogTime(new Date(entry.createdAt))}</span>
+                    <span>{getToolbarLogSourceLabel(entry.source)}</span>
+                  </div>
+                  <div className="canvas-log-entry-message">{entry.message}</div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="modal-footer">
+          <button type="button" className="ui-btn ui-btn-xs" onClick={() => setToolbarLogs([])} disabled={toolbarLogs.length === 0}>清空日志</button>
+          <button type="button" className="primary" onClick={() => setShowToolbarLogModal(false)}>关闭</button>
+        </div>
+      </Modal>
 
       {selectedNode && registry && (() => {
-        const isWorksheetSelect = selectedNode.data.specId === 'generic:worksheet-select';
+        const isWorksheetSelect = selectedNode.data.specId === 'generic:sheet-source' && currentProps.sourceMode !== 'range';
+        const isRemovedNode = isRemovedWorkflowNode(selectedNode.data.specId);
         const isDataNode = selectedNode.data.specId.startsWith('generic:') || selectedNode.data.specId.startsWith('func:');
         const selectedSheetName = String(currentProps.sheetName || '');
         const matchedSheet = srcTables.flatMap(t => t.sheets.map(s => ({ ...s, fileName: t.fileName, tableId: t.id }))).find(s => s.name === selectedSheetName);
@@ -1459,8 +1650,26 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
                   </div>
                 </section>
               )}
-              <div className="inspector-run-bar"><button className="primary" onClick={() => runNode(selectedNode)}>从最上游运行到此节点</button></div>
+              <div className="inspector-run-bar"><button className="primary" onClick={() => runNode(selectedNode)} disabled={isRemovedNode}>从最上游运行到此节点</button></div>
               {inspectorPorts.length > 0 && <InspectorPortSection key={selectedNode.id} ports={inspectorPorts} connectedPorts={connectedPorts} />}
+
+              <section className="inspector-section schema-config">
+                <div className="inspector-section-title"><h4>重试配置</h4></div>
+                <div className="schema-fields">
+                  <label className="prop-field">
+                    <span>重试次数</span>
+                    <input type="number" min={0} max={10} value={Number(currentProps.retryCount || 0)} onChange={(e) => updateProp('retryCount', Math.max(0, Math.min(10, Number(e.target.value))))} style={{ width: 80 }} />
+                  </label>
+                  <label className="prop-field">
+                    <span>重试间隔 (ms)</span>
+                    <input type="number" min={0} step={100} value={Number(currentProps.retryDelayMs || 0)} onChange={(e) => updateProp('retryDelayMs', Math.max(0, Number(e.target.value)))} style={{ width: 100 }} />
+                  </label>
+                  <label className="prop-field">
+                    <span>匹配错误 (留空=全部)</span>
+                    <input type="text" value={String(currentProps.retryOn || '')} onChange={(e) => updateProp('retryOn', e.target.value)} placeholder="留空则匹配所有错误" />
+                  </label>
+                </div>
+              </section>
 
               {showDataPreview && matchedSheet && (
                 <section className="inspector-section data-preview-section">
@@ -1478,7 +1687,7 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
                 </section>
               )}
 
-              {!showDataPreview && srcTables.length > 0 && isDataNode && (
+              {!showDataPreview && srcTables.length > 0 && isDataNode && !isRemovedNode && (
                 <section className="inspector-section data-preview-section">
                   <div className="inspector-section-title"><h4>可用数据源</h4><span>{srcTables.reduce((sum, table) => sum + table.sheets.length, 0)} 个表</span></div>
                   <div className="data-source-list">
@@ -1497,6 +1706,12 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
               )}
 
               {selectedNode.data.error && <div className="result-box error"><h4>错误</h4><pre>{selectedNode.data.error}</pre></div>}
+              {isRemovedNode && (
+                <div className="result-box error">
+                  <h4>已移除节点</h4>
+                  <pre>{`该节点已被新版输入/选择节点体系移除，请手动替换。\n原节点: ${selectedNode.data.specId}`}</pre>
+                </div>
+              )}
               {selectedNode.data.outputs && Object.keys(selectedNode.data.outputs).length > 0 && (
                 <div className="result-box">
                   <div className="inspector-section-title"><h4>输出</h4><span>{Object.keys(selectedNode.data.outputs).filter((key) => !key.startsWith('__')).length} 项</span></div>

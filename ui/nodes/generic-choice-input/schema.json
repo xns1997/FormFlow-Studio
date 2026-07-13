@@ -1,0 +1,144 @@
+{
+  "id": "generic-choice-input",
+  "label": "选项选择",
+  "description": "统一处理下拉、单选和多选类选项输入",
+  "category": "功能 · 输入节点",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    {
+      "name": "selectionMode",
+      "label": "选择模式",
+      "type": "enum",
+      "enum": ["single", "multiple"],
+      "default": "single",
+      "description": "单选或多选"
+    },
+    {
+      "name": "displayMode",
+      "label": "显示形式",
+      "type": "enum",
+      "enum": ["select", "radio", "checkbox"],
+      "default": "select",
+      "description": "用于表达交互形态"
+    },
+    {
+      "name": "optionsSource",
+      "label": "选项来源",
+      "type": "enum",
+      "enum": ["static", "input"],
+      "default": "static",
+      "description": "静态配置或运行时输入"
+    },
+    {
+      "name": "options",
+      "label": "选项列表",
+      "type": "options",
+      "default": [],
+      "description": "标准选项数组"
+    },
+    {
+      "name": "defaultValue",
+      "label": "默认值",
+      "type": "any",
+      "default": "",
+      "description": "默认选中值"
+    },
+    {
+      "name": "placeholder",
+      "label": "占位提示",
+      "type": "string",
+      "default": "请选择",
+      "description": "select 形态下的占位文本"
+    }
+  ],
+  "inputs": [
+    {
+      "name": "value",
+      "type": "any",
+      "required": false,
+      "description": "当前值"
+    },
+    {
+      "name": "options",
+      "type": "options",
+      "required": false,
+      "description": "运行时覆盖选项"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "value",
+      "type": "any",
+      "description": "单值输出"
+    },
+    {
+      "name": "values",
+      "type": "array",
+      "description": "数组形式输出"
+    },
+    {
+      "name": "selectedOption",
+      "type": "object",
+      "description": "当前选中项"
+    },
+    {
+      "name": "selectedOptions",
+      "type": "array",
+      "description": "当前选中项数组"
+    }
+  ],
+  "ports": [
+    {
+      "name": "value",
+      "label": "值",
+      "type": "any",
+      "direction": "input",
+      "description": "当前值"
+    },
+    {
+      "name": "options",
+      "label": "选项",
+      "type": "options",
+      "direction": "input",
+      "description": "选项列表"
+    },
+    {
+      "name": "value",
+      "label": "值",
+      "type": "any",
+      "direction": "output",
+      "description": "单值输出"
+    },
+    {
+      "name": "values",
+      "label": "值数组",
+      "type": "array",
+      "direction": "output",
+      "description": "数组形式输出"
+    },
+    {
+      "name": "selectedOption",
+      "label": "当前选项",
+      "type": "object",
+      "direction": "output",
+      "description": "当前选中项"
+    },
+    {
+      "name": "selectedOptions",
+      "label": "已选项",
+      "type": "array",
+      "direction": "output",
+      "description": "当前选中项数组"
+    }
+  ],
+  "keywords": [
+    "选项选择",
+    "下拉",
+    "单选",
+    "多选",
+    "select",
+    "radio",
+    "checkbox"
+  ]
+}

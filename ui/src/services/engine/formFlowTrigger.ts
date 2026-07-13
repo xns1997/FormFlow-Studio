@@ -173,11 +173,11 @@ export function getWorkflowVariableNames(workflow: WorkflowFile | undefined): st
   if (!workflow) return [];
   const names: string[] = [];
   for (const node of workflow.nodes) {
-    if (node.specId !== 'generic:variable-input') continue;
+    if (node.specId !== 'generic:value-input') continue;
     try {
       const raw = node.data?.propertiesJson;
       const properties = typeof raw === 'string' ? JSON.parse(raw) : raw || {};
-      const name = String((properties as any).varName || '').trim();
+      const name = String((properties as any).name || '').trim();
       if (name && !names.includes(name)) names.push(name);
     } catch {}
   }

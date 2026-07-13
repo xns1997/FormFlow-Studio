@@ -1,0 +1,9 @@
+{
+  "id":"generic-data-quality","label":"数据质量检查","description":"按非空、范围、格式和唯一性规则检查数据","category":"通用 · 数据治理","kind":"generic",
+  "properties":[
+    {"name":"rules","label":"质量规则","type":"json-string","default":"[]","required":true},
+    {"name":"stopOnError","label":"发现问题时中止","type":"boolean","default":false}
+  ],
+  "ports":[{"name":"data","label":"数据","type":"json-rows","direction":"input","required":true},{"name":"validRows","label":"合格数据","type":"json-rows","direction":"output"},{"name":"issues","label":"问题","type":"array","direction":"output"},{"name":"score","label":"质量分数","type":"number","direction":"output"}],
+  "keywords":["质量","非空","范围","格式","唯一性","governance"]
+}

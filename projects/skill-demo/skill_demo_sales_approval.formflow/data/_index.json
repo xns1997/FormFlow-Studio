@@ -1,0 +1,12 @@
+{
+  "sources": [
+    {
+      "behaviorsFile": "sales_orders.behaviors.json",
+      "fileName": "销售订单.csv",
+      "fileType": "csv",
+      "id": "sales_orders",
+      "metaFile": "sales_orders.meta.json",
+      "uploadedAt": "2026-07-13T00:00:00.000Z"
+    }
+  ]
+}

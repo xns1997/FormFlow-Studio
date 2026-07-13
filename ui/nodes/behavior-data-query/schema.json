@@ -76,9 +76,34 @@
       "description": "触发输出"
     },
     {
+      "name": "data",
+      "type": "json-rows",
+      "description": "查询结果行"
+    },
+    {
       "name": "result",
-      "type": "any",
-      "description": "查询结果"
+      "type": "json-rows",
+      "description": "查询结果（兼容别名）"
+    },
+    {
+      "name": "count",
+      "type": "number",
+      "description": "结果数量"
+    },
+    {
+      "name": "headers",
+      "type": "array",
+      "description": "表头字段"
+    },
+    {
+      "name": "tableId",
+      "type": "string",
+      "description": "命中的表 ID"
+    },
+    {
+      "name": "sheetName",
+      "type": "string",
+      "description": "命中的 Sheet 名"
     }
   ],
   "ports": [
@@ -113,11 +138,46 @@
       "description": "触发输出"
     },
     {
+      "name": "data",
+      "label": "数据行",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "查询结果行"
+    },
+    {
       "name": "result",
       "label": "结果",
-      "type": "any",
+      "type": "json-rows",
       "direction": "output",
-      "description": "查询结果"
+      "description": "查询结果（兼容别名）"
+    },
+    {
+      "name": "count",
+      "label": "数量",
+      "type": "number",
+      "direction": "output",
+      "description": "结果数量"
+    },
+    {
+      "name": "headers",
+      "label": "表头",
+      "type": "array",
+      "direction": "output",
+      "description": "表头字段"
+    },
+    {
+      "name": "tableId",
+      "label": "表 ID",
+      "type": "string",
+      "direction": "output",
+      "description": "命中的表 ID"
+    },
+    {
+      "name": "sheetName",
+      "label": "Sheet",
+      "type": "string",
+      "direction": "output",
+      "description": "命中的 Sheet 名"
     }
   ],
   "keywords": [

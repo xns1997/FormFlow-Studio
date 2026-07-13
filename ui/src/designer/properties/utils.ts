@@ -4,20 +4,20 @@ export function getDefaultEventCode(eventKey: string, fieldName: string): string
   const templates: Record<string, string> = {
     onChange: `/** @param {FormEventContext} ctx */
 async (ctx) => {
-  ctx.console.log('${fieldName} 变更为:', ctx.value);
-  return ctx.value;
+  PrintDebug('${fieldName} 变更为:', value);
+  return value;
 }`,
     onBlur: `/** @param {FormEventContext} ctx */
 async (ctx) => {
-  ctx.console.log('${fieldName} 失焦, 当前值:', ctx.value);
+  PrintDebug('${fieldName} 失焦, 当前值:', value);
 }`,
     onFocus: `/** @param {FormEventContext} ctx */
 async (ctx) => {
-  ctx.console.log('${fieldName} 获得焦点');
+  PrintDebug('${fieldName} 获得焦点');
 }`,
     onClick: `/** @param {FormEventContext} ctx */
 async (ctx) => {
-  ctx.console.log('${fieldName} 被点击', ctx.values);
+  PrintDebug('${fieldName} 被点击', values);
 }`,
   };
   return templates[eventKey] || `// ${eventKey}\n`;

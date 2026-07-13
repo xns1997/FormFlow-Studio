@@ -1,0 +1,14 @@
+{
+  "behaviors": [
+    {
+      "code": "if (field === '金额' && Number(value) < 0) showMessage('订单金额不能小于 0', 'error')",
+      "createdAt": "2026-07-13T00:00:00.000Z",
+      "enabled": true,
+      "event": "fieldChange",
+      "id": "validate-order-amount",
+      "name": "校验订单金额",
+      "priority": 10,
+      "updatedAt": "2026-07-13T00:00:00.000Z"
+    }
+  ]
+}

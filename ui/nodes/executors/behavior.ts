@@ -12,6 +12,17 @@ import {
   validateRequiredFields,
 } from '../../src/services/engine/crudHelpers';
 
+registerExecutor('behavior-schedule-trigger', async ({ properties }) => {
+  const response = await fetch('/api/tasks/schedules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: properties.name, cron: properties.cron, timezone: properties.timezone, enabled: properties.enabled !== false, payload: {} }) });
+  const schedule = await response.json();
+  if (!response.ok) throw new Error(schedule.error || '创建定时任务失败');
+  return { trigger: schedule, scheduledAt: new Date().toISOString() };
+});
+registerExecutor('behavior-notify', async ({ inputs, properties }) => {
+  const status = String(inputs.status || 'completed'); const events = String(properties.events || 'always'); if (events !== 'always' && events !== status) return { sent: { skipped: true } };
+  const interpolate = (value: unknown) => String(value || '').replace(/\{\{status\}\}/g, status); const response = await fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channels: String(properties.channels || 'inApp').split(',').map((value) => value.trim()), title: interpolate(properties.title), message: interpolate(properties.message), email: properties.email, webhookUrl: properties.webhookUrl, data: inputs.data }) }); const result = await response.json(); if (!response.ok) throw new Error(result.error || '通知发送失败'); return { sent: result };
+});
+
 registerExecutor('behavior-on-form-load', (ctx) => {
   const { inputs, properties } = ctx;
   return {
@@ -196,6 +207,14 @@ function resolveSetValuesToken(token: unknown, sources: {
   return token;
 }
 
+function interpolateTemplate(template: string, values: Record<string, unknown>) {
+  return template.replace(/\{([^}]+)\}/g, (_, key) => {
+    const trimmed = String(key || '').trim();
+    const value = values[trimmed];
+    return value == null ? '' : String(value);
+  });
+}
+
 registerExecutor('behavior-set-values', (ctx) => {
   const record = (ctx.inputs.record && typeof ctx.inputs.record === 'object' && !Array.isArray(ctx.inputs.record))
     ? ctx.inputs.record as Record<string, unknown>
@@ -210,7 +229,9 @@ registerExecutor('behavior-set-values', (ctx) => {
   const patch: Record<string, unknown> = { ...staticPatch };
 
   if (shouldUseEmptyPatch) {
-    Object.assign(patch, emptyPatch);
+    for (const [field, source] of Object.entries(emptyPatch)) {
+      patch[field] = resolveSetValuesToken(source, { record, records, count, message });
+    }
   } else {
     for (const [field, source] of Object.entries(fieldMap)) {
       patch[field] = resolveSetValuesToken(source, { record, records, count, message });
@@ -228,6 +249,50 @@ registerExecutor('behavior-set-values', (ctx) => {
     patch,
     sideEffects,
   };
+});
+
+registerExecutor('behavior-compose-message', (ctx) => {
+  const template = String(ctx.inputs.template ?? ctx.properties.template ?? '');
+  const values = parsePatchConfig(ctx.inputs.values ?? ctx.properties.values);
+  const record = (ctx.inputs.record && typeof ctx.inputs.record === 'object' && !Array.isArray(ctx.inputs.record))
+    ? ctx.inputs.record as Record<string, unknown>
+    : {};
+  const mergedValues = { ...record, ...values } as Record<string, unknown>;
+  const message = interpolateTemplate(template, mergedValues);
+  const messageField = String(ctx.properties.messageField || '');
+  const messageType = String(ctx.properties.messageType || 'info');
+  const sideEffects: FlowSideEffect[] = [];
+  if (messageField) sideEffects.push(normalizeFlowSideEffect({ kind: 'set-form-value', field: messageField, value: message })!);
+  if (message) sideEffects.push(normalizeFlowSideEffect({ kind: 'show-message', message, level: messageType })!);
+  return { message, sideEffects };
+});
+
+registerExecutor('behavior-upsert-table-row', (ctx) => {
+  const tableId = String(ctx.inputs.tableId ?? ctx.properties.tableId ?? '');
+  const sheetName = String(ctx.inputs.sheetName ?? ctx.properties.sheetName ?? '');
+  const row = (ctx.inputs.row && typeof ctx.inputs.row === 'object' && !Array.isArray(ctx.inputs.row))
+    ? ctx.inputs.row as Record<string, unknown>
+    : {};
+  const keyField = String(ctx.inputs.keyField ?? ctx.properties.keyField ?? '')
+    || resolveSingleKeyField(ctx.tables, tableId, sheetName)
+    || '';
+  const keyValueExpr = String(ctx.inputs.keyValueExpr ?? ctx.properties.keyValueExpr ?? '');
+  const keyValue = keyValueExpr && keyValueExpr.startsWith('$row.')
+    ? row[keyValueExpr.slice('$row.'.length)]
+    : (ctx.inputs.keyValue ?? ctx.properties.keyValue ?? row[keyField]);
+  if (!tableId || !sheetName || !keyField || keyValue == null || keyValue === '') {
+    throw new Error('表写回配置不完整');
+  }
+  const writeBack = normalizeFlowSideEffect({
+    kind: 'upsert-table-row',
+    tableId,
+    sheetName,
+    keyField,
+    keyValue,
+    row,
+  });
+  const sideEffects = writeBack ? [writeBack] : [];
+  return { row, keyField, keyValue, writeBack, sideEffects };
 });
 
 registerExecutor('behavior-set-visible', (ctx) => {
@@ -416,9 +481,18 @@ registerExecutor('behavior-data-query', (ctx) => {
       rows = rows.filter(row => Object.entries(filter).every(([k, v]) => row[k] === v));
     }
     const rowsCheck = checkType('json-rows', rows);
-    return { data: rowsCheck.valid ? rowsCheck.normalized : rows, count: rows.length, headers: sheet.headers, tableId: table.id, sheetName: sheet.name };
+    const normalizedRows = rowsCheck.valid ? rowsCheck.normalized : rows;
+    return {
+      data: normalizedRows,
+      result: normalizedRows,
+      rows: normalizedRows,
+      count: rows.length,
+      headers: sheet.headers,
+      tableId: table.id,
+      sheetName: sheet.name,
+    };
   }
-  return { data: [], count: 0, headers: [], tableId, sheetName };
+  return { data: [], result: [], rows: [], count: 0, headers: [], tableId, sheetName };
 });
 
 registerExecutor('behavior-row-lookup', (ctx) => {

@@ -1,0 +1,18 @@
+{
+  "id": "generic-field-classifier",
+  "label": "字段分类器",
+  "description": "按枚举、区间和条件标签规则对记录字段做分类输出",
+  "category": "功能 · 数据操作",
+  "kind": "generic",
+  "properties": [
+    { "name": "rules", "label": "分类规则", "type": "json", "default": [], "description": "支持 enum/range/tags 三种模式" }
+  ],
+  "ports": [
+    { "name": "record", "label": "记录", "type": "object", "direction": "input", "required": true, "description": "待分类记录" },
+    { "name": "context", "label": "上下文", "type": "object", "direction": "input", "description": "供标签表达式使用的上下文" },
+    { "name": "values", "label": "分类值", "type": "object", "direction": "output", "description": "输出的分类字段对象" },
+    { "name": "labels", "label": "标签", "type": "array", "direction": "output", "description": "命中的标签数组" },
+    { "name": "result", "label": "结果", "type": "object", "direction": "output", "description": "分类值结果" }
+  ],
+  "keywords": ["分类", "标签", "风险标签", "classifier", "range"]
+}

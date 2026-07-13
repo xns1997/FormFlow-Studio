@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import type { AuthRequest } from '../middleware/auth';
+import { getNotificationSettings, listNotifications, markNotification, saveNotificationSettings, sendNotification } from '../services/notification';
+const router = Router();
+router.get('/', (req: AuthRequest, res) => res.json(listNotifications(req.user?.id)));
+router.post('/', async (req: AuthRequest, res) => { try { res.status(201).json(await sendNotification({ ...req.body, userId: req.body.userId || req.user?.id })); } catch (error) { res.status(400).json({ error: error instanceof Error ? error.message : String(error) }); } });
+router.patch('/:id/read', (req, res) => { const item = markNotification(req.params.id, req.body.read !== false); return item ? res.json(item) : res.status(404).json({ error: '通知不存在' }); });
+router.get('/settings/current', (_req, res) => res.json(getNotificationSettings()));
+router.put('/settings/current', (req, res) => res.json(saveNotificationSettings(req.body)));
+export { router as notificationRouter };

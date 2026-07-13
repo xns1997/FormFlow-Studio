@@ -1,0 +1,143 @@
+{
+  "id": "generic-file-source",
+  "label": "文件来源",
+  "description": "选择项目内文件或上传文件，输出文件对象与二进制数据",
+  "category": "功能 · 输入节点",
+  "kind": "generic",
+  "methods": [],
+  "properties": [
+    {
+      "name": "accept",
+      "label": "允许类型",
+      "type": "string",
+      "default": ".xlsx,.xls,.csv",
+      "description": "允许的文件扩展名"
+    },
+    {
+      "name": "multiple",
+      "label": "允许多选",
+      "type": "boolean",
+      "default": false,
+      "description": "是否允许多选"
+    },
+    {
+      "name": "readAs",
+      "label": "读取方式",
+      "type": "enum",
+      "enum": ["arrayBuffer", "text", "dataURL"],
+      "default": "arrayBuffer",
+      "description": "文件读取方式"
+    },
+    {
+      "name": "selectedFile",
+      "label": "默认文件",
+      "type": "string",
+      "default": "",
+      "description": "未连线时优先选取的项目文件名"
+    }
+  ],
+  "inputs": [
+    {
+      "name": "trigger",
+      "type": "trigger",
+      "required": true,
+      "description": "触发文件选择"
+    },
+    {
+      "name": "accept",
+      "type": "string",
+      "required": false,
+      "description": "文件类型过滤"
+    },
+    {
+      "name": "multiple",
+      "type": "boolean",
+      "required": false,
+      "description": "允许多选"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "file",
+      "type": "object",
+      "description": "选中的文件对象"
+    },
+    {
+      "name": "data",
+      "type": "file-data",
+      "description": "文件数据"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "文件名"
+    },
+    {
+      "name": "size",
+      "type": "number",
+      "description": "文件大小"
+    }
+  ],
+  "ports": [
+    {
+      "name": "trigger",
+      "label": "触发",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "触发文件选择"
+    },
+    {
+      "name": "accept",
+      "label": "文件类型",
+      "type": "string",
+      "direction": "input",
+      "defaultValue": ".xlsx,.xls,.csv",
+      "description": "允许的文件扩展名"
+    },
+    {
+      "name": "multiple",
+      "label": "多选",
+      "type": "boolean",
+      "direction": "input",
+      "defaultValue": false,
+      "description": "是否允许多选"
+    },
+    {
+      "name": "file",
+      "label": "文件",
+      "type": "object",
+      "direction": "output",
+      "description": "选中的文件对象"
+    },
+    {
+      "name": "data",
+      "label": "文件数据",
+      "type": "file-data",
+      "direction": "output",
+      "description": "文件二进制或文本数据"
+    },
+    {
+      "name": "name",
+      "label": "文件名",
+      "type": "string",
+      "direction": "output",
+      "description": "文件名"
+    },
+    {
+      "name": "size",
+      "label": "大小",
+      "type": "number",
+      "direction": "output",
+      "description": "文件大小"
+    }
+  ],
+  "keywords": [
+    "文件来源",
+    "文件上传",
+    "文件选择",
+    "file",
+    "upload",
+    "source"
+  ]
+}

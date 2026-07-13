@@ -7,6 +7,12 @@ import type {
 } from './types';
 
 export const sharedContextFields: BehaviorReferenceField[] = [
+  { name: 'field', type: 'string', description: 'ctx.field 的顶层别名；推荐在脚本里直接使用。' },
+  { name: 'value', type: 'unknown', description: 'ctx.value 的顶层别名；推荐在脚本里直接使用。' },
+  { name: 'values', type: 'Record<string, unknown>', description: 'ctx.values 的顶层别名。' },
+  { name: 'formData', type: 'Record<string, unknown>', description: '当前完整表单值快照的顶层别名。' },
+  { name: 'originalValues', type: 'Record<string, unknown>', description: '表单初始值快照的顶层别名。' },
+  { name: 'detail', type: 'unknown', description: 'ctx.detail 的顶层别名。' },
   { name: 'ctx.field', type: 'string', description: '当前触发事件的字段名或绑定键。' },
   { name: 'ctx.value', type: 'unknown', description: '当前事件对应的值。不同事件下会映射成当前控件值、提交结果或触发值。' },
   { name: 'ctx.values', type: 'Record<string, unknown>', description: '当前完整表单值快照。' },
@@ -28,6 +34,16 @@ export const controlOnlyContextFields: BehaviorReferenceField[] = [
 ];
 
 export const scriptOnlyContextFields: BehaviorReferenceField[] = [
+  { name: 'getValue(fieldId)', type: 'unknown', description: '读取行为脚本当前看到的字段值；推荐优先使用这个顶层 API。' },
+  { name: 'setValue(fieldId, value)', type: 'Promise<void>', description: '修改字段值的顶层 API。' },
+  { name: 'showMessage(message, level?)', type: 'Promise<void>', description: '显示用户可见提示的顶层 API。' },
+  { name: 'Print(...args)', type: 'void', description: '写入调试日志，可在 Console 与调试抽屉中查看。' },
+  { name: 'PrintWarn(...args)', type: 'void', description: '写入 warn 级内部调试日志。' },
+  { name: 'PrintError(...args)', type: 'void', description: '写入 error 级内部调试日志。' },
+  { name: 'PrintDebug(...args)', type: 'void', description: '写入 debug 级内部调试日志。' },
+  { name: 'PrintJson(label, data?)', type: 'void', description: '以 JSON 结构输出调试对象。' },
+  { name: 'PrintTable(label, rows?)', type: 'void', description: '以表格形式输出数组对象调试信息。' },
+  { name: 'PrintGroup(label, data?)', type: 'void', description: '输出阶段性分组调试日志。' },
   { name: 'ctx.getValue(fieldId)', type: 'unknown', description: '读取行为脚本当前看到的字段值。' },
   { name: 'ctx.getValues(fieldIds)', type: 'Record<string, unknown>', description: '批量读取多个字段值，减少重复 getValue。' },
   { name: 'ctx.setValue(fieldId, value)', type: 'void', description: '修改字段值，并立即更新运行时数据。' },
@@ -60,6 +76,20 @@ export const flowParameterShortcuts: BehaviorReferenceShortcut[] = [
 ];
 
 export const scriptApis: BehaviorApiReference[] = [
+  { name: 'getValue', signature: 'getValue(fieldId)', description: '获取字段当前值。推荐优先使用顶层 API。' },
+  { name: 'getValues', signature: 'getValues(fieldIds)', description: '批量读取字段值。' },
+  { name: 'setValue', signature: 'await setValue(fieldId, value)', description: '设置字段值。' },
+  { name: 'setValues', signature: 'await setValues({ fieldA: valueA, fieldB: valueB })', description: '批量设置字段值。' },
+  { name: 'showMessage', signature: "await showMessage(message, type = 'info')", description: '显示用户可见提示。' },
+  { name: 'runConfiguredWorkflow', signature: 'await runConfiguredWorkflow(parameters?)', description: '执行当前事件已绑定的流程。' },
+  { name: 'Print', signature: 'Print(...args)', description: '写入调试日志；可在 Console 与调试抽屉中查看。' },
+  { name: 'PrintInfo', signature: 'PrintInfo(...args)', description: '写入 info 级内部调试日志。' },
+  { name: 'PrintWarn', signature: 'PrintWarn(...args)', description: '写入 warn 级内部调试日志。' },
+  { name: 'PrintError', signature: 'PrintError(...args)', description: '写入 error 级内部调试日志。' },
+  { name: 'PrintDebug', signature: 'PrintDebug(...args)', description: '写入 debug 级内部调试日志。' },
+  { name: 'PrintJson', signature: 'PrintJson(label, data?)', description: '以 JSON 结构输出调试对象。' },
+  { name: 'PrintTable', signature: 'PrintTable(label, rows?)', description: '以表格形式输出数组对象。' },
+  { name: 'PrintGroup', signature: 'PrintGroup(label, data?)', description: '输出阶段性分组调试日志。' },
   { name: 'ctx.getValue', signature: 'ctx.getValue(fieldId)', description: '获取字段当前值。' },
   { name: 'ctx.getValues', signature: 'ctx.getValues(fieldIds)', description: '批量读取字段值。' },
   { name: 'ctx.setValue', signature: 'ctx.setValue(fieldId, value)', description: '设置字段值。' },
@@ -93,6 +123,19 @@ export const scriptApis: BehaviorApiReference[] = [
 ];
 
 export const controlApis: BehaviorApiReference[] = [
+  { name: 'getValue', signature: 'getValue(fieldId)', description: '读取任意字段的当前值；推荐优先使用顶层 API。' },
+  { name: 'getValues', signature: 'getValues(fieldIds)', description: '批量读取多个字段值。' },
+  { name: 'setValue', signature: 'await setValue(fieldId, value)', description: '异步修改字段值。' },
+  { name: 'setValues', signature: 'await setValues({ fieldA: valueA, fieldB: valueB })', description: '异步批量修改字段值。' },
+  { name: 'showMessage', signature: "await showMessage(message, type = 'info')", description: '显示即时提示消息。' },
+  { name: 'runConfiguredWorkflow', signature: 'await runConfiguredWorkflow(parameters?)', description: '执行当前事件已绑定的流程。' },
+  { name: 'Print', signature: 'Print(...args)', description: '写入调试日志；可在 Console 与调试抽屉中查看。' },
+  { name: 'PrintWarn', signature: 'PrintWarn(...args)', description: '写入 warn 级内部调试日志。' },
+  { name: 'PrintError', signature: 'PrintError(...args)', description: '写入 error 级内部调试日志。' },
+  { name: 'PrintDebug', signature: 'PrintDebug(...args)', description: '写入 debug 级内部调试日志。' },
+  { name: 'PrintJson', signature: 'PrintJson(label, data?)', description: '以 JSON 结构输出调试对象。' },
+  { name: 'PrintTable', signature: 'PrintTable(label, rows?)', description: '以表格形式输出数组对象。' },
+  { name: 'PrintGroup', signature: 'PrintGroup(label, data?)', description: '输出阶段性分组调试日志。' },
   { name: 'ctx.controls', signature: 'ctx.controls.controlName.value = nextValue', description: '通过控件句柄直接读写其它控件。支持 value / visible / disabled / required。' },
   { name: 'ctx.getValue', signature: 'ctx.getValue(fieldId)', description: '读取任意字段的当前值。' },
   { name: 'ctx.getValues', signature: 'ctx.getValues(fieldIds)', description: '批量读取多个字段值。' },
@@ -123,7 +166,7 @@ export const controlApis: BehaviorApiReference[] = [
   { name: 'ctx.runConfiguredWorkflow', signature: 'await ctx.runConfiguredWorkflow(parameters?)', description: '执行当前事件已绑定的流程。' },
   { name: 'ctx.runWorkflow', signature: 'await ctx.runWorkflow(workflowIdOrName, parameters?, options?)', description: '按 ID 或名称执行任意流程。' },
   { name: 'ctx.call', signature: 'await ctx.call(name, ...args)', description: '调用宿主注册的回调函数。' },
-  { name: 'ctx.console.log', signature: 'ctx.console.log(...args)', description: '输出调试日志。' },
+  { name: 'ctx.console.log', signature: 'ctx.console.log(...args)', description: '兼容旧脚本的调试入口；新脚本推荐直接用原生 console 或 Print 系列。' },
 ];
 
 export function mergeContextFields(scope: BehaviorDocScope) {

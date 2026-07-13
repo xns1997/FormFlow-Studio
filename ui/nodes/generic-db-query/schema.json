@@ -1,0 +1,11 @@
+{
+  "id":"generic-db-query","label":"数据库查询","description":"执行参数化 SQL 并输出结果集","category":"通用 · 集成","kind":"generic",
+  "properties":[
+    {"name":"driver","label":"数据库类型","type":"enum","enum":["mysql","postgres","mssql"],"default":"postgres"},
+    {"name":"connectionString","label":"连接字符串","type":"string","default":"","required":true},
+    {"name":"query","label":"SQL","type":"code","language":"sql","default":"SELECT 1","required":true},
+    {"name":"params","label":"参数","type":"json-string","default":"[]"}
+  ],
+  "ports":[{"name":"connection","label":"连接配置","type":"object","direction":"input"},{"name":"params","label":"参数","type":"array","direction":"input"},{"name":"data","label":"结果","type":"json-rows","direction":"output"},{"name":"rowCount","label":"行数","type":"number","direction":"output"}],
+  "keywords":["数据库","SQL","查询"]
+}

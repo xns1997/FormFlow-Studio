@@ -30,7 +30,7 @@ export function getControlSnippetExamples(options: {
   const components = options.components || [];
   const namedControls = uniqueControls(components);
   const currentField = String(options.currentField || resolveControlName(namedControls[0] || { id: '', fieldBinding: '', props: {} }) || 'field').trim() || 'field';
-  const currentHandle = `ctx.controls.${currentField}`;
+  const currentHandle = `controls.${currentField}`;
   const firstPeer = namedControls.find((component) => resolveControlName(component) !== currentField);
   const messageTarget = pickControl(components, (component, name) =>
     name !== currentField && (/(summary|result|status|hint|preview|message|note)/i.test(name) || component.type === 'text'));
@@ -48,8 +48,8 @@ export function getControlSnippetExamples(options: {
     {
       id: 'read-current-control',
       title: '读取当前控件句柄',
-      summary: '直接从 ctx.controls 读取当前控件值，适合代替手写字段查找。',
-      code: `const current = ${currentHandle}.value;\nctx.console.log('${currentField} 当前值：', current);`,
+      summary: '直接从 controls 读取当前控件值，适合代替手写字段查找。',
+      code: `const current = ${currentHandle}.value;\nPrintDebug('${currentField} 当前值：', current);`,
     },
   ];
 
@@ -58,7 +58,7 @@ export function getControlSnippetExamples(options: {
       id: 'write-peer-control',
       title: '写入相邻控件',
       summary: `把 ${currentField} 的值直接写到 ${writeTarget}，适合同表单内轻量联动。`,
-      code: `const value = String(${currentHandle}.value || '').trim();\nctx.controls.${writeTarget}.value = value;`,
+      code: `const value = String(${currentHandle}.value || '').trim();\ncontrols.${writeTarget}.value = value;`,
     });
   }
 
@@ -67,7 +67,7 @@ export function getControlSnippetExamples(options: {
       id: 'toggle-button-disabled',
       title: '按输入启用按钮',
       summary: `根据 ${currentField} 是否为空，直接切换 ${buttonName} 的禁用状态。`,
-      code: `const ready = String(${currentHandle}.value || '').trim().length > 0;\nctx.controls.${buttonName}.disabled = !ready;`,
+      code: `const ready = String(${currentHandle}.value || '').trim().length > 0;\ncontrols.${buttonName}.disabled = !ready;`,
     });
   }
 
@@ -76,7 +76,7 @@ export function getControlSnippetExamples(options: {
       id: 'toggle-target-visible',
       title: '切换目标控件显隐',
       summary: `根据 ${currentField} 是否有值，直接显示或隐藏 ${visibleName}。`,
-      code: `ctx.controls.${visibleName}.visible = Boolean(${currentHandle}.value);`,
+      code: `controls.${visibleName}.visible = Boolean(${currentHandle}.value);`,
     });
   }
 
@@ -85,7 +85,7 @@ export function getControlSnippetExamples(options: {
       id: 'write-workflow-result',
       title: '把流程结果写到表格',
       summary: `按钮类事件里执行流程后，直接把结果回填到 ${tableName}。`,
-      code: `const result = await ctx.runConfiguredWorkflow();\nconst rows = result.nodeResults.get('filter')?.outputs.result || [];\nctx.controls.${tableName}.value = rows;`,
+      code: `const result = await runConfiguredWorkflow();\nconst rows = result.nodeResults.get('filter')?.outputs.result || [];\ncontrols.${tableName}.value = rows;`,
     });
   }
 
@@ -95,31 +95,31 @@ export function getControlSnippetExamples(options: {
         id: 'crud-next-sequence',
         title: '生成下一个编号',
         summary: '常见 CRUD 起手式：扫描项目数据表，生成下一条记录编号。',
-        code: `const nextId = ctx.nextSequence('employees', '员工ID', { start: 1000 });\nawait ctx.setValue('员工ID', nextId);`,
+        code: `const nextId = nextSequence('employees', '员工ID', { start: 1000 });\nawait setValue('员工ID', nextId);`,
       },
       {
         id: 'crud-find-row-fill-form',
         title: '按主键查询并回填',
         summary: 'lookup-edit 场景优先用 findRow + fillForm，避免手写逐字段 setValue。',
-        code: `const row = ctx.findRow('employees', { 员工ID: ctx.getValue('员工ID') });\nif (!row) return ctx.showMessage('未找到记录', 'warning');\nawait ctx.fillForm(row);`,
+        code: `const row = findRow('employees', { 员工ID: getValue('员工ID') });\nif (!row) return showMessage('未找到记录', 'warning');\nawait fillForm(row);`,
       },
       {
         id: 'crud-require-fields',
         title: '提交前必填校验',
         summary: '把多字段必填检查收敛成一个 requireFields 调用。',
-        code: `const check = await ctx.requireFields(['姓名', '手机号']);\nif (!check.valid) return;`,
+        code: `const check = await requireFields(['姓名', '手机号']);\nif (!check.valid) return;`,
       },
       {
         id: 'crud-reset-form',
         title: '提交后重置为下一条',
         summary: '提交成功后批量清空字段、写默认值并聚焦首字段。',
-        code: `const nextId = ctx.nextSequence('employees', '员工ID', { start: 1000 });\nawait ctx.resetForm({\n  clearFields: ['姓名', '手机号', '备注'],\n  defaults: { 员工ID: nextId, 状态: '草稿' },\n  focusField: '姓名',\n  message: '表单已重置，可继续录入。',\n});`,
+        code: `const nextId = nextSequence('employees', '员工ID', { start: 1000 });\nawait resetForm({\n  clearFields: ['姓名', '手机号', '备注'],\n  defaults: { 员工ID: nextId, 状态: '草稿' },\n  focusField: '姓名',\n  message: '表单已重置，可继续录入。',\n});`,
       },
       {
         id: 'crud-load-filtered-list',
         title: '加载筛选列表',
         summary: '查询并写回列表字段与提示文案。',
-        code: `const rows = ctx.findRows('employees', { 部门: ctx.getValue('筛选部门') || '技术部' });\nawait ctx.setValue('员工列表', rows);\nawait ctx.setValue('处理提示', \`已加载 \${rows.length} 条记录\`);`,
+        code: `const rows = findRows('employees', { 部门: getValue('筛选部门') || '技术部' });\nawait setValue('员工列表', rows);\nawait setValue('处理提示', \`已加载 \${rows.length} 条记录\`);`,
       },
     );
   }

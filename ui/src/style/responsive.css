@@ -1,0 +1,88 @@
+/* ── Mobile Responsive Overrides ─────────────────────────── */
+
+/* Navigation sidebar collapses on mobile */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: -260px;
+    z-index: 1000;
+    transition: left 0.3s ease;
+  }
+  .sidebar.open { left: 0; }
+  .sidebar-toggle { display: flex !important; }
+
+  /* Main content full width */
+  .page-container { padding: 12px; }
+  .page-header h2 { font-size: 18px; }
+
+  /* Projects page */
+  .projects-toolbar { flex-direction: column; gap: 8px; }
+  .projects-toolbar-left, .projects-toolbar-right { width: 100%; }
+  .projects-grid { grid-template-columns: 1fr !important; }
+  .projects-list .project-card { flex-direction: column; }
+  .card-cover { height: 80px !important; }
+  .card-actions { flex-wrap: wrap; }
+
+  /* Canvas layout */
+  .canvas-layout { flex-direction: column; }
+  .canvas-inspector {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 50vh;
+    z-index: 900;
+    border-top: 2px solid var(--border);
+    border-left: none;
+  }
+  .canvas-toolbar { flex-wrap: wrap; gap: 4px; }
+  .canvas-toolbar button { font-size: 11px; padding: 4px 8px; }
+
+  /* Designer */
+  .designer-layout { flex-direction: column; }
+  .designer-left-panel { width: 100% !important; max-height: 200px; }
+  .designer-right-panel { width: 100% !important; }
+
+  /* Data table */
+  .data-preview-card { overflow-x: auto; }
+  .ag-root-wrapper { font-size: 12px; }
+
+  /* Dashboard */
+  .dashboard-page { padding: 8px; }
+  .dashboard-toolbar { flex-wrap: wrap; }
+
+  /* Modal */
+  .modal-content { max-width: 95vw !important; max-height: 90vh !important; }
+
+  /* Notification center */
+  .notification-drawer { width: 100% !important; }
+
+  /* Tabs */
+  .projects-tabs { overflow-x: auto; }
+
+  /* Inspector sections */
+  .inspector-section { padding: 8px; }
+  .schema-fields label { flex-direction: column; align-items: stretch; }
+  .schema-fields input, .schema-fields select { width: 100% !important; }
+}
+
+/* Tablet breakpoint */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .projects-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .canvas-inspector { width: 280px; }
+  .designer-left-panel { width: 200px !important; }
+}
+
+/* Touch-friendly targets */
+@media (pointer: coarse) {
+  button, .ui-btn, a { min-height: 44px; min-width: 44px; }
+  .card-actions button { min-height: 36px; }
+  input, select, textarea { font-size: 16px; }
+}
+
+/* Print styles */
+@media print {
+  .sidebar, .canvas-toolbar, .palette-toggle, .card-actions { display: none !important; }
+  .canvas-layout { display: block; }
+  .canvas-inspector { position: static; width: 100%; max-height: none; }
+}

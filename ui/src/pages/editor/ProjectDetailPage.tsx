@@ -20,6 +20,6 @@ export default function ProjectDetailPage() {
   }, [loading, project, id, navigate]);
 
   if (loading) return <div className="loading-splash"><div className="loading-spinner" /><p>加载项目…</p></div>;
-  if (!project) return <div className="loading-splash"><p>项目不存在</p><button onClick={() => navigate('/projects')}>返回列表</button></div>;
+  if (!project) return <div className="loading-splash"><p>项目不存在</p><button type="button" className="ui-btn ui-btn-primary" onClick={() => navigate('/projects')}>返回列表</button></div>;
   return <Outlet />;
 }

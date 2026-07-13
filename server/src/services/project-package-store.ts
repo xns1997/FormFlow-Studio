@@ -193,6 +193,8 @@ export function listProjectPackages(): JsonObject[] {
           name: project.config.name,
           updatedAt: project.config.updatedAt,
           tableCount: project.srcTable.length,
+          access: project.config.access,
+          shared: Boolean(project.config.access?.members && Object.keys(project.config.access.members).length),
         }] : [];
       } catch { return []; }
     });

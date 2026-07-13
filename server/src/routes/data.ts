@@ -3,17 +3,89 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 
 import { join } from 'path';
 import XLSX from 'xlsx';
 import { serverDataPath } from '../config/paths';
+import { getTableSheetData, readProjectPackage, updateTableSheetData } from '../services/project-package-store';
 
 const router = Router();
 const DATA_DIR = serverDataPath('data');
 const FILES_DIR = serverDataPath('files');
 if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 
+function getCachePath(fileId: string, sheetName: string, projectId?: string) {
+  const prefix = projectId ? `${projectId}__${fileId}` : fileId;
+  return join(DATA_DIR, `${prefix}_${sheetName}.json`);
+}
+
+function getProjectSheet(projectId: string, tableId: string, sheetName?: string) {
+  const project = readProjectPackage(projectId);
+  if (!project) return null;
+  const table = (project.srcTable || []).find((entry: Record<string, any>) => entry.id === tableId);
+  if (!table) return null;
+  const sheet = sheetName
+    ? (table.sheets || []).find((entry: Record<string, any>) => entry.name === sheetName)
+    : table.sheets?.[0];
+  if (!sheet) return null;
+  return { project, table, sheet };
+}
+
+function buildColumns(headers: string[], data: Record<string, unknown>[]) {
+  return headers.map((header, index) => {
+    const values = data.map((row) => row[header]);
+    const nonEmpty = values.filter((value) => value !== '' && value !== null && value !== undefined);
+    return {
+      name: header,
+      index,
+      rowCount: values.length,
+      uniqueCount: new Set(values.map(String)).size,
+      emptyCount: values.length - nonEmpty.length,
+      sampleValues: [...new Set(values.map(String))].filter(Boolean).slice(0, 5),
+    };
+  });
+}
+
+// POST /api/data/paginated - 项目表或已解析文件的统一分页入口
+router.post('/paginated', (req, res) => {
+  try {
+    const page = Math.max(1, Number(req.body.page) || 1);
+    const pageSize = Math.min(5000, Math.max(1, Number(req.body.pageSize) || 100));
+    let headers: string[] = []; let data: Record<string, unknown>[] = [];
+    if (req.body.projectId) {
+      const result = getTableSheetData(req.body.projectId, req.body.tableId || req.body.fileId, req.body.sheetName);
+      if (!result) return res.status(404).json({ error: '项目数据不存在' });
+      headers = result.headers; data = result.data;
+    } else {
+      const path = getCachePath(req.body.fileId, req.body.sheetName);
+      if (!existsSync(path)) return res.status(404).json({ error: '数据不存在' });
+      const cache = JSON.parse(readFileSync(path, 'utf8')); headers = cache.headers || []; data = cache.data || [];
+    }
+    const start = (page - 1) * pageSize;
+    res.json({ headers, rows: data.slice(start, start + pageSize), total: data.length, page, pageSize, totalPages: Math.ceil(data.length / pageSize), hasMore: start + pageSize < data.length });
+  } catch (error) { res.status(500).json({ error: error instanceof Error ? error.message : String(error) }); }
+});
+
 // POST /api/data/parse - 解析文件并缓存数据
 router.post('/parse', (req, res) => {
   try {
-    const { fileId, sheetName } = req.body;
+    const { fileId, sheetName, projectId } = req.body;
     if (!fileId) return res.status(400).json({ error: '缺少 fileId 参数', detail: '请提供 fileId' });
+
+    if (projectId) {
+      const source = getProjectSheet(projectId, fileId, sheetName);
+      if (!source) return res.status(404).json({ error: '项目表不存在', detail: `项目: ${projectId}, 表: ${fileId}, Sheet: ${sheetName || '(默认)'}` });
+      const targetSheetName = String(source.sheet.name);
+      const headers = Array.isArray(source.sheet.headers) ? source.sheet.headers : [];
+      const data = Array.isArray(source.sheet.preview) ? source.sheet.preview : [];
+      const cache = {
+        projectId,
+        fileId,
+        sheetName: targetSheetName,
+        headers,
+        rowCount: data.length,
+        data,
+        parsedAt: new Date().toISOString(),
+      };
+      writeFileSync(getCachePath(fileId, targetSheetName, projectId), JSON.stringify(cache, null, 2));
+      return res.json({ headers, rowCount: data.length, sheetName: targetSheetName, fileId, projectId });
+    }
 
     const metaPath = join(FILES_DIR, `${fileId}.meta.json`);
     if (!existsSync(metaPath)) return res.status(404).json({ error: '文件不存在', detail: `ID: ${fileId}, 期望路径: ${metaPath}` });
@@ -34,7 +106,7 @@ router.post('/parse', (req, res) => {
     const jsonData = XLSX.utils.sheet_to_json(ws);
     const headers = jsonData.length > 0 ? Object.keys(jsonData[0]) : [];
     const cache = { fileId, sheetName: targetSheet, headers, rowCount: jsonData.length, data: jsonData, parsedAt: new Date().toISOString() };
-    writeFileSync(join(DATA_DIR, `${fileId}_${targetSheet}.json`), JSON.stringify(cache, null, 2));
+    writeFileSync(getCachePath(fileId, targetSheet), JSON.stringify(cache, null, 2));
     res.json({ headers, rowCount: jsonData.length, sheetName: targetSheet, fileId });
   } catch (e) {
     console.error('[parse]', e);
@@ -46,7 +118,20 @@ router.post('/parse', (req, res) => {
 router.get('/:fileId/:sheetName/rows', (req, res) => {
   try {
     const { fileId, sheetName } = req.params;
-    const dataPath = join(DATA_DIR, `${fileId}_${sheetName}.json`);
+    const projectId = req.query.projectId as string | undefined;
+    if (projectId) {
+      const result = getTableSheetData(projectId, fileId, sheetName);
+      if (!result) {
+        return res.status(404).json({ error: '项目数据不存在', detail: `项目: ${projectId}, 表: ${fileId}, Sheet: ${sheetName}` });
+      }
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = parseInt(req.query.pageSize as string) || 100;
+      const start = (page - 1) * pageSize;
+      const rows = result.data.slice(start, start + pageSize);
+      return res.json({ rows, total: result.data.length, page, pageSize, totalPages: Math.ceil(result.data.length / pageSize) });
+    }
+
+    const dataPath = getCachePath(fileId, sheetName);
     if (!existsSync(dataPath)) {
       const cached = readdirSync(DATA_DIR).filter((f) => f.startsWith(fileId));
       return res.status(404).json({ error: '数据不存在', detail: `文件: ${fileId}, Sheet: ${sheetName}`, cachedFiles: cached });
@@ -66,15 +151,17 @@ router.get('/:fileId/:sheetName/rows', (req, res) => {
 // GET /api/data/:fileId/:sheetName/columns - 获取列信息
 router.get('/:fileId/:sheetName/columns', (req, res) => {
   try {
-    const dataPath = join(DATA_DIR, `${req.params.fileId}_${req.params.sheetName}.json`);
+    const projectId = req.query.projectId as string | undefined;
+    if (projectId) {
+      const result = getTableSheetData(projectId, req.params.fileId, req.params.sheetName);
+      if (!result) return res.status(404).json({ error: '项目数据不存在' });
+      return res.json(buildColumns(result.headers, result.data));
+    }
+
+    const dataPath = getCachePath(req.params.fileId, req.params.sheetName);
     if (!existsSync(dataPath)) return res.status(404).json({ error: '数据不存在' });
     const cache = JSON.parse(readFileSync(dataPath, 'utf-8'));
-    const columns = cache.headers.map((h: string, i: number) => {
-      const values = cache.data.map((row: Record<string, unknown>) => row[h]);
-      const nonEmpty = values.filter((v: unknown) => v !== '' && v !== null && v !== undefined);
-      return { name: h, index: i, rowCount: values.length, uniqueCount: new Set(values.map(String)).size, emptyCount: values.length - nonEmpty.length, sampleValues: [...new Set(values.map(String))].filter(Boolean).slice(0, 5) };
-    });
-    res.json(columns);
+    res.json(buildColumns(cache.headers, cache.data));
   } catch (e) { res.status(500).json({ error: String(e) }); }
 });
 
@@ -82,12 +169,22 @@ router.get('/:fileId/:sheetName/columns', (req, res) => {
 router.post('/:fileId/:sheetName/rows', (req, res) => {
   try {
     const { fileId, sheetName } = req.params;
-    const dataPath = join(DATA_DIR, `${fileId}_${sheetName}.json`);
+    const newRow = req.body;
+    if (!newRow || typeof newRow !== 'object') return res.status(400).json({ error: '无效的行数据' });
+
+    const projectId = (req.query.projectId as string | undefined) || (req.body?.projectId as string | undefined);
+    if (projectId) {
+      const result = getTableSheetData(projectId, fileId, sheetName);
+      if (!result) return res.status(404).json({ error: '项目数据不存在' });
+      const next = [...result.data, newRow];
+      updateTableSheetData(projectId, fileId, sheetName, next);
+      return res.json({ success: true, rowIndex: next.length - 1, total: next.length });
+    }
+
+    const dataPath = getCachePath(fileId, sheetName);
     if (!existsSync(dataPath)) return res.status(404).json({ error: '数据不存在' });
 
     const cache = JSON.parse(readFileSync(dataPath, 'utf-8'));
-    const newRow = req.body;
-    if (!newRow || typeof newRow !== 'object') return res.status(400).json({ error: '无效的行数据' });
 
     cache.data.push(newRow);
     cache.rowCount = cache.data.length;
@@ -104,15 +201,26 @@ router.post('/:fileId/:sheetName/rows', (req, res) => {
 router.put('/:fileId/:sheetName/rows/:rowIdx', (req, res) => {
   try {
     const { fileId, sheetName, rowIdx } = req.params;
-    const dataPath = join(DATA_DIR, `${fileId}_${sheetName}.json`);
+    const patch = req.body;
+    if (!patch || typeof patch !== 'object') return res.status(400).json({ error: '无效的更新数据' });
+    const idx = parseInt(rowIdx);
+
+    const projectId = (req.query.projectId as string | undefined) || (req.body?.projectId as string | undefined);
+    if (projectId) {
+      const result = getTableSheetData(projectId, fileId, sheetName);
+      if (!result) return res.status(404).json({ error: '项目数据不存在' });
+      if (isNaN(idx) || idx < 0 || idx >= result.data.length) return res.status(400).json({ error: '无效的行索引' });
+      const next = [...result.data];
+      next[idx] = { ...next[idx], ...patch };
+      updateTableSheetData(projectId, fileId, sheetName, next);
+      return res.json({ success: true, rowIndex: idx, row: next[idx] });
+    }
+
+    const dataPath = getCachePath(fileId, sheetName);
     if (!existsSync(dataPath)) return res.status(404).json({ error: '数据不存在' });
 
     const cache = JSON.parse(readFileSync(dataPath, 'utf-8'));
-    const idx = parseInt(rowIdx);
     if (isNaN(idx) || idx < 0 || idx >= cache.data.length) return res.status(400).json({ error: '无效的行索引' });
-
-    const patch = req.body;
-    if (!patch || typeof patch !== 'object') return res.status(400).json({ error: '无效的更新数据' });
 
     cache.data[idx] = { ...cache.data[idx], ...patch };
     writeFileSync(dataPath, JSON.stringify(cache, null, 2));
@@ -128,11 +236,21 @@ router.put('/:fileId/:sheetName/rows/:rowIdx', (req, res) => {
 router.delete('/:fileId/:sheetName/rows/:rowIdx', (req, res) => {
   try {
     const { fileId, sheetName, rowIdx } = req.params;
-    const dataPath = join(DATA_DIR, `${fileId}_${sheetName}.json`);
+    const idx = parseInt(rowIdx);
+    const projectId = (req.query.projectId as string | undefined) || (req.body?.projectId as string | undefined);
+    if (projectId) {
+      const result = getTableSheetData(projectId, fileId, sheetName);
+      if (!result) return res.status(404).json({ error: '项目数据不存在' });
+      if (isNaN(idx) || idx < 0 || idx >= result.data.length) return res.status(400).json({ error: '无效的行索引' });
+      const next = result.data.filter((_, index) => index !== idx);
+      updateTableSheetData(projectId, fileId, sheetName, next);
+      return res.json({ success: true, rowIndex: idx, total: next.length });
+    }
+
+    const dataPath = getCachePath(fileId, sheetName);
     if (!existsSync(dataPath)) return res.status(404).json({ error: '数据不存在' });
 
     const cache = JSON.parse(readFileSync(dataPath, 'utf-8'));
-    const idx = parseInt(rowIdx);
     if (isNaN(idx) || idx < 0 || idx >= cache.data.length) return res.status(400).json({ error: '无效的行索引' });
 
     cache.data.splice(idx, 1);

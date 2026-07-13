@@ -1,0 +1,47 @@
+{
+  "exportedAt": "2026-07-13T00:00:00.000Z",
+  "workflows": [
+    {
+      "createdAt": "2026-07-13T00:00:00.000Z",
+      "description": "接收当前订单并在结果表格中展示。",
+      "edges": [
+        {
+          "id": "edge-order-input-result-table-1",
+          "source": "order-input",
+          "sourceHandle": "out:value",
+          "target": "result-table",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "show-approval-result",
+      "name": "展示审批结果",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"order\",\"valueType\":\"object\"}"
+          },
+          "id": "order-input",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{\"title\":\"审批结果\"}"
+          },
+          "id": "result-table",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-07-13T00:00:00.000Z"
+    }
+  ]
+}

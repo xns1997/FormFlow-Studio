@@ -44,7 +44,7 @@ const project: ProjectStructure = {
     name: '筛选高价值待审批订单',
     description: '按表单输入的最低金额筛选销售订单并输出表格。',
     nodes: [
-      { id: 'source', specId: 'generic:variable-input', position: { x: 80, y: 160 }, data: { propertiesJson: JSON.stringify({ varName: 'orders', varType: 'array', varValue: salesRows }) } },
+      { id: 'source', specId: 'generic:value-input', position: { x: 80, y: 160 }, data: { propertiesJson: JSON.stringify({ name: 'orders', valueType: 'array', value: salesRows }) } },
       { id: 'filter', specId: 'generic:filter', position: { x: 380, y: 160 }, data: { propertiesJson: JSON.stringify({ field: '金额', operator: '>=', value: 10000 }) } },
       { id: 'display', specId: 'generic:display-table', position: { x: 700, y: 160 }, data: { propertiesJson: '{}' } },
     ],

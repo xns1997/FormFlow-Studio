@@ -1,0 +1,18 @@
+{
+  "openapi":"3.1.0","info":{"title":"FormFlow Studio API","version":"0.5.0","description":"FormFlow projects, data, workflows, tasks, governance and integrations API"},
+  "servers":[{"url":"/api"}],
+  "components":{"securitySchemes":{"bearerAuth":{"type":"http","scheme":"bearer","bearerFormat":"JWT"}},"schemas":{"Error":{"type":"object","properties":{"error":{"type":"string"}}},"Task":{"type":"object","properties":{"id":{"type":"string"},"state":{"enum":["queued","running","completed","failed","cancelled"]},"progress":{"type":"number"}}}}},
+  "paths":{
+    "/health":{"get":{"summary":"Health check","responses":{"200":{"description":"Healthy"}}}},
+    "/users/login":{"post":{"summary":"Login","requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","required":["username","password"],"properties":{"username":{"type":"string"},"password":{"type":"string"}}}}}},"responses":{"200":{"description":"Session"},"401":{"description":"Invalid credentials"}}}},
+    "/projects":{"get":{"summary":"List accessible projects","security":[{"bearerAuth":[]}],"responses":{"200":{"description":"Projects"}}},"post":{"summary":"Create project","security":[{"bearerAuth":[]}],"responses":{"200":{"description":"Created"}}}},
+    "/data/paginated":{"post":{"summary":"Read paginated table data","responses":{"200":{"description":"Rows"}}}},
+    "/database/test":{"post":{"summary":"Test database connection","responses":{"200":{"description":"Connected"}}}},
+    "/database/query":{"post":{"summary":"Execute parameterized SQL","responses":{"200":{"description":"Query result"}}}},
+    "/tasks":{"get":{"summary":"List background tasks","responses":{"200":{"description":"Tasks"}}},"post":{"summary":"Enqueue task","responses":{"202":{"description":"Queued","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Task"}}}}}}},
+    "/notifications":{"get":{"summary":"List notifications","responses":{"200":{"description":"Notifications"}}},"post":{"summary":"Send notification","responses":{"201":{"description":"Sent"}}}},
+    "/ai/chat":{"post":{"summary":"Chat with configured LLM","responses":{"200":{"description":"Completion"}}}},
+    "/export/pdf":{"post":{"summary":"Export rows as PDF","responses":{"200":{"description":"PDF file","content":{"application/pdf":{"schema":{"type":"string","contentEncoding":"binary"}}}}}}},
+    "/metadata/{projectId}":{"get":{"summary":"Get project metadata","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"responses":{"200":{"description":"Metadata"}}},"put":{"summary":"Update project metadata","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"responses":{"200":{"description":"Updated"}}}}
+  }
+}

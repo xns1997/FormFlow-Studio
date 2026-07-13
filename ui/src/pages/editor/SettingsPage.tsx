@@ -102,7 +102,7 @@ export default function SettingsPage() {
           <span>项目设置 · {sectionMeta[section].title}</span>
           <div className="settings-toolbar-actions">
             <Link to={docLink} className="docs-link-button">查看相关文档</Link>
-            <button onClick={save} style={{ padding: '2px 8px', fontSize: 11, border: '1px solid var(--line)', borderRadius: 4, background: saved ? '#dcfce7' : 'var(--panel)' }}>{saved ? '✓ 已保存' : '保存'}</button>
+            <button type="button" onClick={save} className={`ui-btn ui-btn-xs ${saved ? 'ui-btn-success' : 'ui-btn-subtle'}`}>{saved ? '✓ 已保存' : '保存'}</button>
           </div>
         </div>
         <div className="page-section-body">
@@ -151,6 +151,10 @@ export default function SettingsPage() {
               <div className="settings-toggle-list" style={{ marginBottom: 14 }}>
                 <label className="settings-option-item"><input type="checkbox" checked={projectSettings.behavior.enableJsScripts} onChange={(e) => updateBehaviorSettings({ enableJsScripts: e.target.checked })} /><span>启用 JS 脚本行为</span></label>
                 <label className="settings-option-item"><input type="checkbox" checked={projectSettings.behavior.enableNodeBehavior} onChange={(e) => updateBehaviorSettings({ enableNodeBehavior: e.target.checked })} /><span>启用节点行为</span></label>
+                <label className="settings-option-item"><input type="checkbox" checked={projectSettings.behavior.enableDebugDrawer} onChange={(e) => updateBehaviorSettings({ enableDebugDrawer: e.target.checked })} /><span>启用调试抽屉</span></label>
+                <label className="settings-option-item"><input type="checkbox" checked={projectSettings.behavior.autoOpenDebugDrawerOnWarnOrError} onChange={(e) => updateBehaviorSettings({ autoOpenDebugDrawerOnWarnOrError: e.target.checked })} /><span>出现告警/错误时自动展开调试抽屉</span></label>
+                <label className="settings-option-item"><input type="checkbox" checked={projectSettings.behavior.mirrorScriptLogsToConsole} onChange={(e) => updateBehaviorSettings({ mirrorScriptLogsToConsole: e.target.checked })} /><span>脚本日志同步到浏览器 Console</span></label>
+                <label className="settings-option-item"><input type="checkbox" checked={projectSettings.behavior.enableServerDebugApi} onChange={(e) => updateBehaviorSettings({ enableServerDebugApi: e.target.checked })} /><span>启用服务端调试 API</span></label>
               </div>
               <div className="settings-form settings-grid">
                 <label><span>脚本超时（毫秒）</span><input type="number" value={projectSettings.behavior.scriptTimeout} onChange={(e) => updateBehaviorSettings({ scriptTimeout: Number(e.target.value) || 5000 })} /></label>
@@ -187,7 +191,7 @@ export default function SettingsPage() {
               </div>
               <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
                 <input style={{ flex: 1 }} value={versionLabel} onChange={(e) => setVersionLabel(e.target.value)} placeholder="版本备注…" />
-                <button onClick={saveVersion}>保存版本</button>
+                <button type="button" className="ui-btn ui-btn-primary ui-btn-sm" onClick={saveVersion}>保存版本</button>
               </div>
               <div className="settings-version-list">
                 {versions.length === 0 ? (
@@ -198,7 +202,7 @@ export default function SettingsPage() {
                       <strong>v{version.version} · {version.label}</strong>
                       <small>{new Date(version.timestamp).toLocaleString()}</small>
                     </div>
-                    <button onClick={() => restoreVer(version.id)}>恢复</button>
+                    <button type="button" className="ui-btn ui-btn-xs" onClick={() => restoreVer(version.id)}>恢复</button>
                   </div>
                 ))}
               </div>

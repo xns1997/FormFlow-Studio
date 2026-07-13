@@ -55,29 +55,16 @@ export class ErrorBoundary extends Component<Props, State> {
           </p>
           <div style={{ display: 'flex', gap: 8 }}>
             <button
+              type="button"
               onClick={this.handleReset}
-              style={{
-                padding: '8px 16px',
-                fontSize: 13,
-                border: '1px solid var(--line)',
-                borderRadius: 'var(--radius)',
-                background: 'var(--panel)',
-                cursor: 'pointer',
-              }}
+              className="ui-btn"
             >
               重试
             </button>
             <button
+              type="button"
               onClick={() => window.location.reload()}
-              style={{
-                padding: '8px 16px',
-                fontSize: 13,
-                border: 'none',
-                borderRadius: 'var(--radius)',
-                background: 'var(--accent)',
-                color: '#fff',
-                cursor: 'pointer',
-              }}
+              className="ui-btn ui-btn-primary"
             >
               刷新页面
             </button>

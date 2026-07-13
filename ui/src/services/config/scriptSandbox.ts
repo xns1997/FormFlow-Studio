@@ -1,5 +1,5 @@
 import type { RuntimeState } from '../../models';
-import type { SrcTableEntry } from '../../project/types';
+import type { DebugEntry, SrcTableEntry } from '../../project/types';
 import { setFormValue, setComponentState, addBehaviorLog, setValidationError, clearValidationError } from '../engine/runtime';
 import { validateField } from '../engine/validator';
 import {
@@ -17,6 +17,12 @@ import {
   type RequireFieldsOptions,
   type ResetFormOptions,
 } from '../engine/crudHelpers';
+import {
+  createScriptExecutionScope,
+  executeInjectedScript,
+  getNativeConsole,
+  type ScriptLogEntry,
+} from './scriptRuntime';
 
 export interface SandboxContext {
   getValue: (fieldId: string) => unknown;
@@ -28,6 +34,7 @@ export interface SandboxContext {
   setField: (fieldId: string, value: unknown) => void;
   formData: Record<string, unknown>;
   originalData: Record<string, unknown>;
+  originalValues: Record<string, unknown>;
   setVisible: (componentId: string, visible: boolean) => void;
   toggleVisible: (componentId: string) => Promise<boolean>;
   setDisabled: (componentId: string, disabled: boolean) => void;
@@ -53,6 +60,10 @@ export interface SandboxContext {
   updateRow: (rowId: string, patch: Record<string, unknown>) => void;
   submit: () => void;
   getState: () => RuntimeState;
+  callbacks: Record<string, never>;
+  debug: (label: string, data?: unknown, options?: Partial<DebugEntry>) => void;
+  console: Pick<Console, 'log' | 'warn' | 'error' | 'debug'>;
+  logDebug: (level: 'info' | 'warn' | 'error' | 'debug', message: string) => void;
 }
 
 export function createSandboxContext(
@@ -102,6 +113,7 @@ export function createSandboxContext(
     },
     get formData() { return localValues; },
     get originalData() { return state.originalValues; },
+    get originalValues() { return state.originalValues; },
     setVisible: (componentId: string, visible: boolean) => {
       localVisible[componentId] = visible;
       setState((prev) => setComponentState(prev, componentId, { visible }));
@@ -198,6 +210,9 @@ export function createSandboxContext(
     showMessage: (message: string, type: string = 'info') => {
       setState((prev) => addBehaviorLog(prev, { timestamp: Date.now(), level: type as any, source: 'js', message }));
     },
+    logDebug: (level, message) => {
+      setState((prev) => addBehaviorLog(prev, { timestamp: Date.now(), level, source: 'js', message }));
+    },
     validateField: (fieldId: string) => {
       const value = localValues[fieldId];
       const error = validateField(value, [{ type: 'required', message: `${fieldId} 为必填项` }]);
@@ -291,33 +306,42 @@ export function createSandboxContext(
       ...state,
       formValues: { ...localValues },
     }),
+    callbacks: {},
+    debug: (label: string, data?: unknown) => {
+      const suffix = data === undefined ? '' : ` ${typeof data === 'string' ? data : JSON.stringify(data)}`;
+      appendLog('debug', `${label}${suffix}`);
+    },
+    console: getNativeConsole(),
   };
 }
 
-export function executeScript(
+export async function executeScript(
   code: string,
   context: SandboxContext,
   timeout: number = 5000,
-): { success: boolean; result?: unknown; error?: string } {
-  const sandbox = {
-    ctx: context,
-    console: { log: (...args: unknown[]) => context.showMessage(args.join(' '), 'info'), warn: (...args: unknown[]) => context.showMessage(args.join(' '), 'warn'), error: (...args: unknown[]) => context.showMessage(args.join(' '), 'error') },
-  };
-
+): Promise<{ success: boolean; result?: unknown; error?: string }> {
+  const scope = createScriptExecutionScope(context as unknown as Record<string, unknown>, {
+    callbacks: context.callbacks,
+    writeLog: ({ level, message }: ScriptLogEntry) => {
+      const nativeConsole = context.console || getNativeConsole();
+      if (level === 'warn') nativeConsole.warn('[Print]', message);
+      else if (level === 'error') nativeConsole.error('[Print]', message);
+      else if (level === 'debug') nativeConsole.debug('[Print]', message);
+      else nativeConsole.log('[Print]', message);
+      context.logDebug(level, message);
+    },
+  });
   try {
-    const keys = Object.keys(sandbox);
-    const values = Object.values(sandbox);
-    const fn = new Function(...keys, `with(sandbox) { ${code} }`);
-    let result: unknown = null;
-
-    const timer = setTimeout(() => { throw new Error(`脚本执行超时 (${timeout}ms)`); }, timeout);
+    let timer: ReturnType<typeof setTimeout> | null = null;
     try {
-      result = fn(...values);
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`脚本执行超时 (${timeout}ms)`)), timeout);
+      });
+      const result = await Promise.race([executeInjectedScript(code, scope), timeoutPromise]);
+      return { success: true, result };
     } finally {
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
     }
-
-    return { success: true, result };
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : String(e) };
   }

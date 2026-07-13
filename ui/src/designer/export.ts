@@ -43,7 +43,7 @@ function mapControlType(type: string): ComponentNode['type'] {
 
 function buildPorts(dc: DesignComponent): ComponentNode['ports'] {
   const ports: ComponentNode['ports'] = [];
-  const hasValue = !['button', 'text', 'divider', 'card', 'tabs', 'steps', 'form', 'image', 'table', 'chart'].includes(dc.type);
+  const hasValue = !['button', 'text', 'animatedNumber', 'divider', 'card', 'tabs', 'steps', 'form', 'image', 'table', 'chart'].includes(dc.type);
   if (hasValue) {
     ports.push({ name: 'value', direction: 'input', type: getDesignValuePortType(dc.type) });
   }

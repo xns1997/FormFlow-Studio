@@ -1,0 +1,8 @@
+import { randomUUID } from 'crypto';
+export type Transaction<T> = { id: string; resource: string; snapshot: T; state: 'active' | 'committed' | 'rolledback'; startedAt: string; finishedAt?: string };
+const transactions = new Map<string, Transaction<unknown>>();
+export function beginTransaction<T>(resource: string, snapshot: T): Transaction<T> { const transaction: Transaction<T> = { id: `tx_${randomUUID()}`, resource, snapshot: structuredClone(snapshot), state: 'active', startedAt: new Date().toISOString() }; transactions.set(transaction.id, transaction); return transaction; }
+export function commitTransaction(id: string) { const transaction = transactions.get(id); if (!transaction || transaction.state !== 'active') throw new Error('事务不存在或已结束'); transaction.state = 'committed'; transaction.finishedAt = new Date().toISOString(); return transaction; }
+export function rollbackTransaction<T>(id: string, restore: (snapshot: T) => void) { const transaction = transactions.get(id) as Transaction<T> | undefined; if (!transaction || transaction.state !== 'active') throw new Error('事务不存在或已结束'); restore(structuredClone(transaction.snapshot)); transaction.state = 'rolledback'; transaction.finishedAt = new Date().toISOString(); return transaction; }
+export async function runTransaction<T, R>(resource: string, read: () => T, restore: (snapshot: T) => void, action: () => Promise<R>) { const transaction = beginTransaction(resource, read()); try { const result = await action(); commitTransaction(transaction.id); return result; } catch (error) { rollbackTransaction(transaction.id, restore); throw error; } }
+export function getTransaction(id: string) { return transactions.get(id); }

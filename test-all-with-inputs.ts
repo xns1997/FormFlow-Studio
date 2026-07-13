@@ -30,7 +30,7 @@ function edge(s: string, t: string, sh: string, th: string): FlowEdgeDef {
 
 // 数据源节点组
 const dataSrc: FlowNodeDef[] = [
-  node('ws', 'generic:worksheet-select', { sheetName: 'Sheet1' }),
+  node('ws', 'generic:sheet-source', { sourceMode: 'worksheet', worksheetMode: 'byName', sheetName: 'Sheet1' }),
   node('s2j', 'method:XLSX.utils.sheet_to_json'),
   node('json_out', 'generic:output-display'),
 ];
@@ -68,13 +68,11 @@ async function main() {
   // ── Generic 节点 (自包含，无前置依赖) ──
   console.log('--- Generic ---');
   for (const [name, specId, props] of [
-    ['文件选择器', 'generic:file-picker', {}],
-    ['工作表选择器', 'generic:worksheet-select', { sheetName: 'Sheet1' }],
-    ['区域选择器', 'generic:range-select', { address: 'A1:C3' }],
-    ['变量输入', 'generic:variable-input', { varName: 'x', varValue: 'hello' }],
-    ['文本输入', 'generic:text-input', { value: 'test' }],
-    ['数字输入', 'generic:number-input', { value: 42 }],
-    ['布尔开关', 'generic:boolean-switch', { value: true }],
+    ['文件来源', 'generic:file-source', {}],
+    ['表与区域来源', 'generic:sheet-source', { sourceMode: 'worksheet', worksheetMode: 'byName', sheetName: 'Sheet1' }],
+    ['区域来源', 'generic:sheet-source', { sourceMode: 'range', rangeMode: 'address', address: 'A1:C3', sheetName: 'Sheet1' }],
+    ['值输入', 'generic:value-input', { name: 'x', valueType: 'string', value: 'hello' }],
+    ['选项输入', 'generic:choice-input', { selectionMode: 'single', displayMode: 'select', optionsSource: 'static', options: [{ label: 'A', value: 'a' }] }],
     ['输出显示', 'generic:output-display', {}],
   ] as const) {
     await runTest(name, [node('t', specId, props)], []);
@@ -167,9 +165,6 @@ async function main() {
   for (const [name, specId, props] of [
     ['表单校验', 'func-form-validate', {}],
     ['表单提交', 'func-form-submit', {}],
-    ['下拉选择', 'func-select-input', { options: [{ label: 'A', value: 'a' }] }],
-    ['单选', 'func-radio-input', { options: [{ label: 'A', value: 'a' }] }],
-    ['多选', 'func-checkbox-input', { options: [{ label: 'A', value: 'a' }] }],
     ['日期输入', 'func-date-input', {}],
     ['开关', 'func-switch-input', {}],
     ['评分', 'func-rating-input', {}],

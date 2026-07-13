@@ -1,0 +1,21 @@
+{
+  "id": "generic-record-transform",
+  "label": "记录变换",
+  "description": "按字段映射、默认值和表达式规则把单条对象转换为新记录",
+  "category": "功能 · 数据操作",
+  "kind": "generic",
+  "properties": [
+    { "name": "includeSource", "label": "保留原记录", "type": "boolean", "default": true, "description": "是否先拷贝输入记录字段" },
+    { "name": "fieldMap", "label": "字段映射", "type": "json", "default": {}, "description": "目标字段到来源 token 或表达式的映射" },
+    { "name": "defaults", "label": "默认值", "type": "json", "default": {}, "description": "预先写入的新记录默认字段" },
+    { "name": "valueRules", "label": "规则列表", "type": "json", "default": [], "description": "target/from/expr/value 形式的附加赋值规则" }
+  ],
+  "ports": [
+    { "name": "record", "label": "记录", "type": "object", "direction": "input", "required": true, "description": "待转换记录" },
+    { "name": "context", "label": "上下文", "type": "object", "direction": "input", "description": "供表达式引用的上下文对象" },
+    { "name": "result", "label": "结果", "type": "object", "direction": "output", "description": "转换后的记录" },
+    { "name": "record", "label": "新记录", "type": "object", "direction": "output", "description": "转换后的记录" },
+    { "name": "fields", "label": "字段列表", "type": "array", "direction": "output", "description": "输出记录包含的字段名" }
+  ],
+  "keywords": ["记录变换", "对象映射", "patch", "transform", "normalize"]
+}

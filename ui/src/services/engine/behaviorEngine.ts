@@ -24,7 +24,8 @@ export type ActionType =
   | 'setValue' | 'clearValue' | 'setVisible' | 'setHidden'
   | 'setEnabled' | 'setDisabled' | 'setRequired' | 'setOptional'
   | 'showMessage' | 'logMessage' | 'switchTab' | 'executeScript'
-  | 'submitData' | 'callApi' | 'refreshData' | 'navigate';
+  | 'submitData' | 'callApi' | 'refreshData' | 'navigate'
+  | 'runWorkflow';
 
 export interface BehaviorRule {
   id: string;
@@ -52,6 +53,12 @@ export interface ConditionConfig {
   value2?: unknown;
   customExpression?: string;
   logic: 'AND' | 'OR';
+  /** 数据源：'form'（默认）| 'flow'（流程输出）| 'behavior'（其他行为结果） */
+  dataSource?: 'form' | 'flow' | 'behavior';
+  /** 当 dataSource='flow' 时，指定流程输出字段名 */
+  flowOutputField?: string;
+  /** 当 dataSource='behavior' 时，指定行为名称 */
+  behaviorName?: string;
 }
 
 export interface ActionConfig {
@@ -66,6 +73,24 @@ export interface ActionConfig {
   scriptCode?: string;
   apiUrl?: string;
   apiMethod?: string;
+  /** API 请求体（JSON） */
+  apiBody?: unknown;
+  /** 自定义请求头 */
+  apiHeaders?: Record<string, string>;
+  /** API 认证类型 */
+  apiAuthType?: 'none' | 'bearer' | 'apikey';
+  /** API 认证值 */
+  apiAuthValue?: string;
+  /** 超时毫秒数，默认 10000 */
+  apiTimeoutMs?: number;
+  /** 重试次数，默认 0 */
+  apiRetryCount?: number;
+  /** 响应回写映射 { "responseField": "formField" } */
+  apiResponseMap?: Record<string, string>;
+  /** runWorkflow：要执行的流程 ID */
+  workflowId?: string;
+  /** runWorkflow：传入流程的参数 */
+  workflowParameters?: Record<string, unknown>;
 }
 
 export interface SideEffectConfig {
@@ -80,6 +105,12 @@ export interface BehaviorExecutionResult {
   sideEffectsExecuted: number;
   errors: string[];
   logs: BehaviorLog[];
+}
+
+export interface BehaviorExecutionContext {
+  flowOutputs?: Record<string, unknown>;
+  behaviorResults?: Record<string, unknown>;
+  runWorkflow?: (workflowId: string, parameters?: Record<string, unknown>) => Promise<unknown>;
 }
 
 const PRIORITY_ORDER: Record<number, string> = {
@@ -115,12 +146,24 @@ export function evaluateCondition(value: unknown, condition: ConditionConfig): b
   }
 }
 
-export function evaluateConditions(conditions: ConditionConfig[], formValues: Record<string, unknown>): boolean {
+export function evaluateConditions(
+  conditions: ConditionConfig[],
+  formValues: Record<string, unknown>,
+  context?: BehaviorExecutionContext,
+): boolean {
   if (conditions.length === 0) return true;
   let result = true;
   let currentLogic: 'AND' | 'OR' = 'AND';
   for (const cond of conditions) {
-    const value = formValues[cond.fieldName];
+    let value: unknown;
+    const source = cond.dataSource || 'form';
+    if (source === 'flow' && context?.flowOutputs && cond.flowOutputField) {
+      value = context.flowOutputs[cond.flowOutputField];
+    } else if (source === 'behavior' && context?.behaviorResults && cond.behaviorName) {
+      value = context.behaviorResults[cond.behaviorName];
+    } else {
+      value = formValues[cond.fieldName];
+    }
     const passed = evaluateCondition(value, cond);
     if (currentLogic === 'AND') result = result && passed;
     else result = result || passed;
@@ -129,7 +172,7 @@ export function evaluateConditions(conditions: ConditionConfig[], formValues: Re
   return result;
 }
 
-export async function executeAction(action: ActionConfig, state: RuntimeState, setState: (updater: (prev: RuntimeState) => RuntimeState) => void, tables?: any[], onSubmit?: () => void): Promise<void> {
+export async function executeAction(action: ActionConfig, state: RuntimeState, setState: (updater: (prev: RuntimeState) => RuntimeState) => void, tables?: any[], onSubmit?: () => void, context?: BehaviorExecutionContext): Promise<void> {
   switch (action.type) {
     case 'setValue':
       if (action.targetField) setState((prev) => {
@@ -224,39 +267,71 @@ export async function executeAction(action: ActionConfig, state: RuntimeState, s
       break;
     case 'callApi':
       if (action.apiUrl) {
+        const method = action.apiMethod || 'GET';
+        const timeoutMs = action.apiTimeoutMs ?? 10000;
+        const retryCount = action.apiRetryCount ?? 0;
+        const headers: Record<string, string> = { 'Content-Type': 'application/json', ...action.apiHeaders };
+        if (action.apiAuthType === 'bearer' && action.apiAuthValue) {
+          headers['Authorization'] = `Bearer ${action.apiAuthValue}`;
+        } else if (action.apiAuthType === 'apikey' && action.apiAuthValue) {
+          headers['X-API-Key'] = action.apiAuthValue;
+        }
         setState((prev) => ({
           ...prev,
           behaviorLogs: [...prev.behaviorLogs, {
             timestamp: Date.now(), level: 'info', source: 'behavior-engine',
-            message: `callApi ${action.apiMethod || 'GET'} ${action.apiUrl}`,
+            message: `callApi ${method} ${action.apiUrl}`,
           }],
         }));
-        try {
-          const method = action.apiMethod || 'GET';
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10000);
-          const response = await fetch(action.apiUrl!, {
-            method,
-            signal: controller.signal,
-            headers: { 'Content-Type': 'application/json' },
-          });
-          clearTimeout(timeoutId);
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const data = await response.json();
-          setState((prev) => ({
-            ...prev,
-            behaviorLogs: [...prev.behaviorLogs, {
-              timestamp: Date.now(), level: 'info', source: 'behavior-engine',
-              message: `callApi 成功: ${JSON.stringify(data).slice(0, 100)}`,
-              data,
-            }],
-          }));
-        } catch (e) {
+        let lastError: Error | null = null;
+        for (let attempt = 0; attempt <= retryCount; attempt++) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+            const fetchOptions: RequestInit = { method, signal: controller.signal, headers };
+            if (action.apiBody && method !== 'GET') {
+              fetchOptions.body = JSON.stringify(action.apiBody);
+            }
+            const response = await fetch(action.apiUrl!, fetchOptions);
+            clearTimeout(timeoutId);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            if (action.apiResponseMap && typeof data === 'object' && data !== null) {
+              for (const [respKey, formField] of Object.entries(action.apiResponseMap)) {
+                const parts = respKey.split('.');
+                let val: any = data;
+                for (const part of parts) val = val?.[part];
+                if (val !== undefined) {
+                  setState((prev) => ({
+                    ...prev,
+                    formValues: { ...prev.formValues, [formField]: val },
+                  }));
+                }
+              }
+            }
+            setState((prev) => ({
+              ...prev,
+              behaviorLogs: [...prev.behaviorLogs, {
+                timestamp: Date.now(), level: 'info', source: 'behavior-engine',
+                message: `callApi 成功: ${method} ${action.apiUrl}`,
+                data,
+              }],
+            }));
+            lastError = null;
+            break;
+          } catch (e) {
+            lastError = e instanceof Error ? e : new Error(String(e));
+            if (attempt < retryCount) {
+              await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+            }
+          }
+        }
+        if (lastError) {
           setState((prev) => ({
             ...prev,
             behaviorLogs: [...prev.behaviorLogs, {
               timestamp: Date.now(), level: 'error', source: 'behavior-engine',
-              message: `callApi 失败: ${e instanceof Error ? e.message : String(e)}`,
+              message: `callApi 失败: ${lastError!.message}`,
             }],
           }));
         }
@@ -328,6 +403,45 @@ export async function executeAction(action: ActionConfig, state: RuntimeState, s
         }
       }
       break;
+    case 'runWorkflow':
+      if (action.workflowId && context?.runWorkflow) {
+        setState((prev) => ({
+          ...prev,
+          behaviorLogs: [...prev.behaviorLogs, {
+            timestamp: Date.now(), level: 'info', source: 'behavior-engine',
+            message: `runWorkflow: ${action.workflowId}`,
+          }],
+        }));
+        try {
+          const result = await context.runWorkflow(action.workflowId, action.workflowParameters);
+          if (result && typeof result === 'object' && 'finalOutputs' in result) {
+            const outputs = (result as { finalOutputs: Record<string, unknown> }).finalOutputs;
+            for (const [key, value] of Object.entries(outputs)) {
+              if (key.startsWith('__')) continue;
+              setState((prev) => ({
+                ...prev,
+                formValues: { ...prev.formValues, [key]: value },
+              }));
+            }
+          }
+          setState((prev) => ({
+            ...prev,
+            behaviorLogs: [...prev.behaviorLogs, {
+              timestamp: Date.now(), level: 'info', source: 'behavior-engine',
+              message: `runWorkflow 完成: ${action.workflowId}`,
+            }],
+          }));
+        } catch (e) {
+          setState((prev) => ({
+            ...prev,
+            behaviorLogs: [...prev.behaviorLogs, {
+              timestamp: Date.now(), level: 'error', source: 'behavior-engine',
+              message: `runWorkflow 失败: ${e instanceof Error ? e.message : String(e)}`,
+            }],
+          }));
+        }
+      }
+      break;
   }
 }
 
@@ -355,18 +469,19 @@ export async function executeBehaviorRule(
   setState: (updater: (prev: RuntimeState) => RuntimeState) => void,
   tables?: SrcTableEntry[],
   onSubmit?: () => void,
+  context?: BehaviorExecutionContext,
 ): Promise<BehaviorExecutionResult> {
   const result: BehaviorExecutionResult = { success: true, actionsExecuted: 0, sideEffectsExecuted: 0, errors: [], logs: [] };
 
   if (!rule.enabled) return result;
   if (rule.trigger.type !== triggerType) return result;
 
-  const conditionsPassed = evaluateConditions(rule.conditions, state.formValues);
+  const conditionsPassed = evaluateConditions(rule.conditions, state.formValues, context);
   if (!conditionsPassed) return result;
 
   try {
     for (const action of rule.actions) {
-      await executeAction(action, state, setState, tables, onSubmit);
+      await executeAction(action, state, setState, tables, onSubmit, context);
       result.actionsExecuted++;
     }
     for (const sideEffect of rule.sideEffects) {
@@ -400,12 +515,13 @@ export async function executeAllRules(
   setState: (updater: (prev: RuntimeState) => RuntimeState) => void,
   tables?: SrcTableEntry[],
   onSubmit?: () => void,
+  context?: BehaviorExecutionContext,
 ): Promise<BehaviorExecutionResult> {
   const sortedRules = [...rules].sort((a, b) => a.priority - b.priority);
   const totalResult: BehaviorExecutionResult = { success: true, actionsExecuted: 0, sideEffectsExecuted: 0, errors: [], logs: [] };
 
   for (const rule of sortedRules) {
-    const result = await executeBehaviorRule(rule, triggerType, state, setState, tables, onSubmit);
+    const result = await executeBehaviorRule(rule, triggerType, state, setState, tables, onSubmit, context);
     totalResult.actionsExecuted += result.actionsExecuted;
     totalResult.sideEffectsExecuted += result.sideEffectsExecuted;
     totalResult.errors.push(...result.errors);

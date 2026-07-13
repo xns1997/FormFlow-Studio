@@ -1,0 +1,22 @@
+{
+  "id": "generic-array-enrich",
+  "label": "数组增强",
+  "description": "按关联键把参考数组的信息补充到主数组记录中",
+  "category": "功能 · 数据操作",
+  "kind": "generic",
+  "properties": [
+    { "name": "leftKey", "label": "主键字段", "type": "string", "default": "", "description": "主数组中的关联字段" },
+    { "name": "rightKey", "label": "参考键字段", "type": "string", "default": "", "description": "参考数组中的关联字段" },
+    { "name": "fieldMap", "label": "字段映射", "type": "json", "default": {}, "description": "目标字段到来源 token/表达式的映射" },
+    { "name": "enrichRules", "label": "增强规则", "type": "json", "default": [], "description": "target/from/expr/defaultValue 形式的附加增强规则" }
+  ],
+  "ports": [
+    { "name": "rows", "label": "主数组", "type": "json-rows", "direction": "input", "required": true, "description": "待增强数组" },
+    { "name": "referenceRows", "label": "参考数组", "type": "json-rows", "direction": "input", "required": true, "description": "用来补充字段的参考数组" },
+    { "name": "context", "label": "上下文", "type": "object", "direction": "input", "description": "表达式上下文" },
+    { "name": "rows", "label": "结果行", "type": "json-rows", "direction": "output", "description": "增强后的数组" },
+    { "name": "result", "label": "结果", "type": "json-rows", "direction": "output", "description": "增强后的数组" },
+    { "name": "count", "label": "数量", "type": "number", "direction": "output", "description": "输出数量" }
+  ],
+  "keywords": ["enrich", "merge", "补全字段", "附件合并", "join"]
+}

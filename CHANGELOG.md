@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.9.0] - 2026-07-13
+
+### 新增
+- 新增仓库内置 skill [`formflow-project-editor`](./.codex/skills/formflow-project-editor/)，用于让智能体以紧凑 YAML 创建、编辑、校验和打包 FormFlow v2 项目
+- 新增确定性 CLI [`scripts/formflow-project.mjs`](./.codex/skills/formflow-project-editor/scripts/formflow-project.mjs)，支持 `inspect`、`create`、`normalize`、`validate`、`pack` 和 `unpack`
+- 新增冻结的 FormFlow v2 引用文档，覆盖作者输入格式、项目结构、规范化规则、引用完整性和节点端口校验
+- 新增基于 skill 生成的示例项目 [`projects/skill-demo`](./projects/skill-demo/)，包含销售审批 YAML、CSV 数据、规范化目录与 ZIP 产物
+
+### 校验与兼容性
+- `create`/`normalize` 统一输出规范化目录结构、稳定排序和一致的 JSON 缩进，重复执行结果可复现
+- 数据导入支持 Excel、CSV 和 JSON，并在生成阶段校验空 key、重复 key、字段推断和显示配置
+- `validate` 增加对 schema、稳定 ID、跨文件引用、流程端口连接和项目交付门禁的机器可读结果输出
+- 遇到未知字段或插件扩展字段时立即报错并列出路径，避免静默丢失信息
+
+### 修复
+- 修复通过 skill 生成项目时对 UTF-8 中文 CSV 的解析问题，确保示例数据和导入场景可稳定通过校验
+
 ## [0.8.0] - 2026-07-11
 
 ### 流程引擎核心改进

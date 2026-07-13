@@ -1,0 +1,9 @@
+import { useState } from 'react';
+import { Button, Drawer, Input, Select, Space, message } from 'antd';
+import { request } from '../services/io/api';
+type ChatMessage = { role: 'user' | 'assistant'; content: string };
+export function AiAssistant() {
+  const [open, setOpen] = useState(false); const [provider, setProvider] = useState<'openai' | 'local'>('openai'); const [messages, setMessages] = useState<ChatMessage[]>([]); const [draft, setDraft] = useState(''); const [busy, setBusy] = useState(false);
+  async function send() { if (!draft.trim()) return; const next = [...messages, { role: 'user' as const, content: draft.trim() }]; setMessages(next); setDraft(''); setBusy(true); try { const result = await request('/ai/chat', { method: 'POST', body: JSON.stringify({ provider, messages: next }) }); setMessages([...next, { role: 'assistant', content: result.content }]); } catch (error) { message.error(error instanceof Error ? error.message : String(error)); } finally { setBusy(false); } }
+  return <><Button className="ai-assistant-fab" type="primary" shape="circle" onClick={() => setOpen(true)}>AI</Button><Drawer title="AI 助手" open={open} onClose={() => setOpen(false)} size="large" extra={<Select value={provider} onChange={setProvider} options={[{ value: 'openai', label: 'OpenAI' }, { value: 'local', label: '本地模型' }]}/>}><div className="ai-chat-messages">{messages.map((item, index) => <div key={index} className={`ai-chat-message ${item.role}`}>{item.content}</div>)}</div><Space.Compact block><Input.TextArea value={draft} onChange={(event) => setDraft(event.target.value)} autoSize={{ minRows: 2, maxRows: 6 }} onPressEnter={(event) => { if (!event.shiftKey) { event.preventDefault(); void send(); } }}/><Button type="primary" loading={busy} onClick={send}>发送</Button></Space.Compact></Drawer></>;
+}

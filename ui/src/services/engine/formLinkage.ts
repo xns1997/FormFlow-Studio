@@ -90,10 +90,24 @@ async function executeAction(action: FormLinkageAction, ctx: LinkageRuntimeConte
     case 'showMessage':
       if (action.message) await ctx.showMessage(action.message, action.level || 'info');
       return;
-    case 'runWorkflow':
-      if (action.workflowId) await ctx.runWorkflow(action.workflowId, action.parameters || {});
-      else await ctx.runConfiguredWorkflow(action.parameters || {});
+    case 'runWorkflow': {
+      let result: unknown;
+      if (action.workflowId) result = await ctx.runWorkflow(action.workflowId, action.parameters || {});
+      else result = await ctx.runConfiguredWorkflow(action.parameters || {});
+      // 流程输出自动回写表单字段
+      if (result && typeof result === 'object' && 'finalOutputs' in result) {
+        const outputs = (result as { finalOutputs: Record<string, unknown> }).finalOutputs;
+        for (const [key, value] of Object.entries(outputs)) {
+          if (key.startsWith('__')) continue;
+          if (action.targetField && key === 'result') {
+            await ctx.setValue(action.targetField, value);
+          } else if (!action.targetField) {
+            await ctx.setValue(key, value);
+          }
+        }
+      }
       return;
+    }
   }
 }
 

@@ -10,7 +10,7 @@ const saveProject = writeProjectPackage;
 router.get('/:projectId', (req, res) => {
   const project = loadProject(req.params.projectId);
   if (!project) return res.status(404).json({ error: '项目不存在' });
-  res.json(project.behaviors || []);
+  res.json(project.globalBehaviors || project.behaviors || []);
 });
 
 // POST /api/behaviors/:projectId - 创建行为
@@ -18,7 +18,7 @@ router.post('/:projectId', (req, res) => {
   const project = loadProject(req.params.projectId);
   if (!project) return res.status(404).json({ error: '项目不存在' });
   const behavior = { ...req.body, id: `bh_${Date.now()}`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-  project.behaviors = [...(project.behaviors || []), behavior];
+  project.globalBehaviors = [...(project.globalBehaviors || project.behaviors || []), behavior];
   project.config.updatedAt = new Date().toISOString();
   saveProject(project);
   res.json(behavior);
@@ -28,17 +28,17 @@ router.post('/:projectId', (req, res) => {
 router.put('/:projectId/:behaviorId', (req, res) => {
   const project = loadProject(req.params.projectId);
   if (!project) return res.status(404).json({ error: '项目不存在' });
-  project.behaviors = (project.behaviors || []).map((b: any) => b.id === req.params.behaviorId ? { ...b, ...req.body, updatedAt: new Date().toISOString() } : b);
+  project.globalBehaviors = (project.globalBehaviors || project.behaviors || []).map((b: any) => b.id === req.params.behaviorId ? { ...b, ...req.body, updatedAt: new Date().toISOString() } : b);
   project.config.updatedAt = new Date().toISOString();
   saveProject(project);
-  res.json(project.behaviors.find((b: any) => b.id === req.params.behaviorId));
+  res.json(project.globalBehaviors.find((b: any) => b.id === req.params.behaviorId));
 });
 
 // DELETE /api/behaviors/:projectId/:behaviorId - 删除行为
 router.delete('/:projectId/:behaviorId', (req, res) => {
   const project = loadProject(req.params.projectId);
   if (!project) return res.status(404).json({ error: '项目不存在' });
-  project.behaviors = (project.behaviors || []).filter((b: any) => b.id !== req.params.behaviorId);
+  project.globalBehaviors = (project.globalBehaviors || project.behaviors || []).filter((b: any) => b.id !== req.params.behaviorId);
   project.config.updatedAt = new Date().toISOString();
   saveProject(project);
   res.json({ success: true });

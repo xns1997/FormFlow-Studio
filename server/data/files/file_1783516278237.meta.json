@@ -1,0 +1,34 @@
+{
+  "id": "file_1783516278237",
+  "originalName": "medical_insurance_cost_dataset.csv",
+  "storedName": "1783516278137_medical_insurance_cost_dataset.csv",
+  "size": 647655,
+  "mimeType": "text/csv",
+  "fileType": "csv",
+  "uploadedAt": "2026-07-08T13:11:18.237Z",
+  "sheets": [
+    {
+      "name": "Sheet1",
+      "rowCount": 7500,
+      "colCount": 16,
+      "headers": [
+        "customer_id",
+        "age",
+        "gender",
+        "bmi",
+        "children",
+        "smoker",
+        "region",
+        "occupation",
+        "annual_income_usd",
+        "exercise_level",
+        "chronic_diseases",
+        "doctor_visits_per_year",
+        "hospitalizations_last_year",
+        "alcohol_consumption_per_week",
+        "insurance_plan",
+        "annual_medical_cost_usd"
+      ]
+    }
+  ]
+}

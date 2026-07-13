@@ -1,0 +1,7 @@
+export async function exportChartSvg(svg: SVGElement, fileName = 'chart.svg') { const content = new XMLSerializer().serializeToString(svg); const blob = new Blob([content], { type: 'image/svg+xml;charset=utf-8' }); download(blob, fileName); }
+export async function exportChartPng(element: HTMLCanvasElement | SVGElement, fileName = 'chart.png', scale = 2) {
+  if (element instanceof HTMLCanvasElement) return new Promise<void>((resolve) => element.toBlob((blob) => { if (blob) download(blob, fileName); resolve(); }, 'image/png'));
+  const content = new XMLSerializer().serializeToString(element); const blob = new Blob([content], { type: 'image/svg+xml' }); const url = URL.createObjectURL(blob); const image = new Image();
+  await new Promise<void>((resolve, reject) => { image.onload = () => resolve(); image.onerror = reject; image.src = url; }); const box = element.getBoundingClientRect(); const canvas = document.createElement('canvas'); canvas.width = Math.max(1, box.width * scale); canvas.height = Math.max(1, box.height * scale); canvas.getContext('2d')!.drawImage(image, 0, 0, canvas.width, canvas.height); URL.revokeObjectURL(url); const png = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png')); if (png) download(png, fileName);
+}
+function download(blob: Blob, fileName: string) { const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = fileName; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }

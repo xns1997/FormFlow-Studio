@@ -424,9 +424,29 @@ test('valve selection v3 example supports staged intake, normalization, candidat
     'workflow:import',
     'behavior-data-query',
     'behavior-data-query',
-    'behavior-js-script',
+    'generic:criteria-filter',
+    'generic:criteria-filter',
+    'generic:criteria-filter',
+    'generic:array-enrich',
+    'generic:record-transform',
+    'behavior-set-values',
+    'behavior-compose-message',
     'workflow:export',
   ]);
+  const coreWorkflowIds = [
+    'example_valve_selection_v3_wf_normalize_profile',
+    'example_valve_selection_v3_wf_complete_profile',
+    'example_valve_selection_v3_wf_generate_candidates',
+    'example_valve_selection_v3_wf_score_candidates',
+    'example_valve_selection_v3_wf_build_proposal',
+    'example_valve_selection_v3_wf_quick_recommend',
+  ];
+  const coreJsNodeCount = project.workflows
+    .filter((workflow) => coreWorkflowIds.includes(workflow.id))
+    .flatMap((workflow) => workflow.nodes)
+    .filter((node) => node.specId === 'behavior-js-script')
+    .length;
+  assert.equal(coreJsNodeCount, 0);
 
   const intakeValues = {
     需求编号: 9901,
@@ -470,7 +490,7 @@ test('valve selection v3 example supports staged intake, normalization, candidat
   };
 
   const completed = await clickButtonWithSideEffects(normalized.project, 2, 'example_valve_selection_v3_complete_btn', profileValues);
-  assert.equal(completed.patches['技术完整度'], '完整');
+  assert.equal(completed.patches['技术完整度'], '高');
   assert.equal(completed.patches['受理状态'], '待筛选');
 
   const decisionBaseValues = {

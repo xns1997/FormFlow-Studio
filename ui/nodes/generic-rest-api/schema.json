@@ -1,0 +1,19 @@
+{
+  "id":"generic-rest-api","label":"REST API","description":"调用 REST 接口，支持认证与分页聚合","category":"通用 · 集成","kind":"generic",
+  "properties":[
+    {"name":"url","label":"请求地址","type":"string","default":"","required":true},
+    {"name":"method","label":"方法","type":"enum","enum":["GET","POST","PUT","DELETE"],"default":"GET"},
+    {"name":"authType","label":"认证","type":"enum","enum":["none","apiKey","bearer","oauth2"],"default":"none"},
+    {"name":"apiKeyHeader","label":"API Key 请求头","type":"string","default":"X-API-Key"},
+    {"name":"apiKey","label":"API Key / Token","type":"string","default":""},
+    {"name":"tokenUrl","label":"OAuth2 Token URL","type":"string","default":""},
+    {"name":"clientId","label":"Client ID","type":"string","default":""},
+    {"name":"clientSecret","label":"Client Secret","type":"string","default":""},
+    {"name":"scope","label":"Scope","type":"string","default":""},
+    {"name":"headers","label":"请求头","type":"json-string","default":"{}"},
+    {"name":"pagination","label":"分页模式","type":"enum","enum":["none","page","nextUrl"],"default":"none"},
+    {"name":"maxPages","label":"最大页数","type":"number","default":20,"min":1,"max":200}
+  ],
+  "ports":[{"name":"body","label":"请求体","type":"object","direction":"input"},{"name":"response","label":"响应","type":"any","direction":"output"},{"name":"data","label":"聚合数据","type":"json-rows","direction":"output"},{"name":"status","label":"状态码","type":"number","direction":"output"}],
+  "keywords":["REST","HTTP","OAuth","API Key","分页"]
+}

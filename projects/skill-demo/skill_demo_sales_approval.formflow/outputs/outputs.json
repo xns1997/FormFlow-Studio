@@ -1,0 +1,12 @@
+{
+  "exportedAt": "2026-07-13T00:00:00.000Z",
+  "outputs": [
+    {
+      "createdAt": "2026-07-13T00:00:00.000Z",
+      "format": "xlsx",
+      "id": "approval-export",
+      "name": "销售订单审批结果",
+      "size": 0
+    }
+  ]
+}

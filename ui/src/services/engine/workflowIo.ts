@@ -173,14 +173,14 @@ function migrateImportFields(workflow: WorkflowFile, importNode: WorkflowNode, o
   const currentFields = getWorkflowImportFields(importNode);
   if (currentFields.length > 0) return { node: importNode, fields: currentFields, changed: false };
   const variableFields = workflow.nodes
-    .filter((node) => node.specId === 'generic:variable-input')
+    .filter((node) => node.specId === 'generic:value-input')
     .map((node) => {
       const props = parseProperties(node);
-      const varName = String(props.varName || '').trim();
+      const varName = String(props.name || '').trim();
       const existing = LEGACY_EVENT_FIELD_MAP.get(varName);
       return {
         name: varName,
-        type: (existing?.type || String(props.varType || 'any')) as PortDefinitionEntry['type'],
+        type: (existing?.type || String(props.valueType || 'any')) as PortDefinitionEntry['type'],
         label: existing?.label || varName,
         description: existing?.description || `迁移自变量 ${varName}`,
       } satisfies PortDefinitionEntry;
@@ -279,9 +279,9 @@ export function ensureWorkflowIo(workflow: WorkflowFile, options: { legacyTarget
   const exportFields = exportMigration.fields;
 
   for (const node of nextNodes) {
-    if (node.specId !== 'generic:variable-input') continue;
+    if (node.specId !== 'generic:value-input') continue;
     const props = parseProperties(node);
-    const varName = String(props.varName || '').trim();
+    const varName = String(props.name || '').trim();
     if (!varName || !importFields.some((field) => field.name === varName)) continue;
     if (hasIncomingEdge({ edges: nextEdges }, node.id, 'in:override')) continue;
     const edgeId = nextEdgeId(`workflow-io:${importNode.id}:${varName}:${node.id}`, edgeIds);

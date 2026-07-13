@@ -1,0 +1,145 @@
+{
+  "bindings": [],
+  "components": [
+    {
+      "children": [
+        "order-id",
+        "customer",
+        "amount",
+        "status",
+        "reviewer",
+        "run-review"
+      ],
+      "height": 600,
+      "id": "review-root",
+      "props": {
+        "title": "销售订单审批"
+      },
+      "type": "form",
+      "width": 900,
+      "x": 60,
+      "y": 60,
+      "zIndex": 0
+    },
+    {
+      "fieldBinding": "订单号",
+      "height": 72,
+      "id": "order-id",
+      "parentId": "review-root",
+      "props": {
+        "disabled": true,
+        "label": "订单号",
+        "name": "orderId",
+        "required": true
+      },
+      "type": "text",
+      "width": 260,
+      "x": 360,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "客户",
+      "height": 72,
+      "id": "customer",
+      "parentId": "review-root",
+      "props": {
+        "label": "客户",
+        "name": "customer",
+        "required": true
+      },
+      "type": "text",
+      "width": 260,
+      "x": 660,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "金额",
+      "height": 72,
+      "id": "amount",
+      "parentId": "review-root",
+      "props": {
+        "label": "订单金额",
+        "min": 0,
+        "name": "amount",
+        "required": true
+      },
+      "type": "number",
+      "width": 260,
+      "x": 60,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "状态",
+      "height": 72,
+      "id": "status",
+      "parentId": "review-root",
+      "props": {
+        "label": "审批状态",
+        "name": "status",
+        "options": [
+          "待审批",
+          "已通过",
+          "已驳回"
+        ]
+      },
+      "type": "select",
+      "width": 260,
+      "x": 360,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "负责人",
+      "height": 72,
+      "id": "reviewer",
+      "parentId": "review-root",
+      "props": {
+        "label": "负责人",
+        "name": "reviewer"
+      },
+      "type": "text",
+      "width": 260,
+      "x": 660,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "height": 48,
+      "id": "run-review",
+      "parentId": "review-root",
+      "props": {
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "parameterMap": {
+              "order": "$form"
+            },
+            "workflowId": "show-approval-result"
+          }
+        },
+        "label": "查看审批结果",
+        "name": "runReview",
+        "variant": "primary"
+      },
+      "type": "button",
+      "width": 260,
+      "x": 60,
+      "y": 260,
+      "zIndex": 2
+    }
+  ],
+  "createdAt": "2026-07-13T00:00:00.000Z",
+  "formMode": "edit",
+  "gridSize": 10,
+  "id": "sales-order-review",
+  "name": "销售订单审批",
+  "updatedAt": "2026-07-13T00:00:00.000Z",
+  "viewport": {
+    "panX": 0,
+    "panY": 0,
+    "zoom": 1
+  }
+}

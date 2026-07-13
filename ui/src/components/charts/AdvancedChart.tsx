@@ -1,0 +1,17 @@
+import { useMemo } from 'react';
+export type AdvancedChartType = 'sankey' | 'heatmap' | 'radar' | 'funnel' | 'map' | 'tree';
+export type ChartDatum = { label: string; value: number; group?: string; target?: string };
+export function AdvancedChart({ type, data, onSelect }: { type: AdvancedChartType; data: ChartDatum[]; onSelect?: (datum: ChartDatum) => void }) {
+  const max = Math.max(1, ...data.map((item) => item.value));
+  const colors = ['#1677ff', '#13c2c2', '#52c41a', '#faad14', '#f5222d', '#722ed1'];
+  const points = useMemo(() => data.map((item, index) => ({ ...item, x: 50 + (index % 4) * 110, y: 45 + Math.floor(index / 4) * 80 })), [data]);
+  if (type === 'heatmap') return <div className="advanced-heatmap">{data.map((item, index) => <button key={`${item.label}-${index}`} onClick={() => onSelect?.(item)} style={{ background: `color-mix(in srgb, ${colors[index % colors.length]} ${20 + item.value / max * 80}%, transparent)` }}><span>{item.label}</span><b>{item.value}</b></button>)}</div>;
+  if (type === 'funnel') return <div className="advanced-funnel">{[...data].sort((a, b) => b.value - a.value).map((item, index) => <button key={item.label} onClick={() => onSelect?.(item)} style={{ width: `${30 + item.value / max * 70}%`, background: colors[index % colors.length] }}>{item.label} · {item.value}</button>)}</div>;
+  if (type === 'radar') {
+    const center = 150; const radius = 110; const polygon = data.map((item, index) => { const angle = index / data.length * Math.PI * 2 - Math.PI / 2; const r = radius * item.value / max; return `${center + Math.cos(angle) * r},${center + Math.sin(angle) * r}`; }).join(' ');
+    return <svg className="advanced-svg" viewBox="0 0 300 300"><circle cx="150" cy="150" r={radius} fill="none" stroke="currentColor" opacity=".15"/><polygon points={polygon} fill="#1677ff55" stroke="#1677ff"/>{data.map((item, index) => { const angle = index / data.length * Math.PI * 2 - Math.PI / 2; return <text key={item.label} x={center + Math.cos(angle) * 130} y={center + Math.sin(angle) * 130} textAnchor="middle" onClick={() => onSelect?.(item)}>{item.label}</text>; })}</svg>;
+  }
+  if (type === 'map') return <svg className="advanced-svg" viewBox="0 0 440 240"><path d="M35 130L75 70l60-25 45 35 55-10 60 40 70-5 45 55-55 35-80-20-55 25-75-30-70 5z" fill="currentColor" opacity=".08"/>{points.map((item, index) => <g key={item.label} onClick={() => onSelect?.(item)}><circle cx={item.x} cy={item.y + 35} r={8 + item.value / max * 20} fill={colors[index % colors.length]} opacity=".75"/><text x={item.x} y={item.y + 70} textAnchor="middle">{item.label}</text></g>)}</svg>;
+  const isSankey = type === 'sankey';
+  return <svg className="advanced-svg" viewBox="0 0 480 280">{points.slice(1).map((item, index) => <path key={`edge-${item.label}`} d={isSankey ? `M${points[0]?.x + 30},${points[0]?.y} C220,${points[0]?.y} 220,${item.y} ${item.x},${item.y}` : `M${points[Math.floor((index) / 2)]?.x},${points[Math.floor(index / 2)]?.y} L${item.x},${item.y}`} stroke={colors[index % colors.length]} strokeWidth={isSankey ? Math.max(2, item.value / max * 18) : 2} opacity=".45" fill="none"/>)}{points.map((item, index) => <g key={item.label} onClick={() => onSelect?.(item)}><rect x={item.x - 36} y={item.y - 18} width="72" height="36" rx="6" fill={colors[index % colors.length]}/><text x={item.x} y={item.y + 4} textAnchor="middle" fill="white">{item.label}</text></g>)}</svg>;
+}

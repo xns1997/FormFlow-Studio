@@ -23,6 +23,7 @@ import {
   type DocSection,
 } from '../services/io/behaviorDocs';
 import { DocSidebar } from './DocSidebar';
+import ComponentDocPlayground from './ComponentDocPlayground';
 
 interface DocModalProps {
   open: boolean;
@@ -793,6 +794,12 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
       id: `section-${index}`,
       title: section.title,
     }));
+    const componentPlaygroundType = route.sectionId === 'form-design' && genericCurrentDoc.id.startsWith('form-design:')
+      ? genericCurrentDoc.id.slice('form-design:'.length)
+      : null;
+    const sidebarSections = componentPlaygroundType
+      ? [{ id: 'section-playground', title: 'Playground' }, ...tocSections]
+      : tocSections;
 
     return (
       <div className="page-container docs-page docs-page--with-sidebar">
@@ -818,6 +825,10 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
             </div>
           </div>
 
+          {componentPlaygroundType && (
+            <ComponentDocPlayground componentType={componentPlaygroundType} title={genericCurrentDoc.title} variant="modal" />
+          )}
+
           {genericCurrentDoc.sections.map((section, index) => (
             <section key={`${genericCurrentDoc.id}:${section.title}`} id={`section-${index}`} className="docs-section">
               <h3>{section.title}</h3>
@@ -831,7 +842,7 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
         </div>
 
         <aside className="docs-page-sidebar">
-          <DocSidebar sections={tocSections} />
+          <DocSidebar sections={sidebarSections} />
         </aside>
       </div>
     );

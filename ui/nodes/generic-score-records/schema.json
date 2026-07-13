@@ -1,0 +1,20 @@
+{
+  "id": "generic-score-records",
+  "label": "记录评分",
+  "description": "按配置规则对记录数组逐条打分并排序",
+  "category": "功能 · 数据操作",
+  "kind": "generic",
+  "properties": [
+    { "name": "scoreRules", "label": "评分规则", "type": "json", "default": [], "description": "target/expr/weight 形式的评分规则" },
+    { "name": "totalField", "label": "总分字段", "type": "string", "default": "总评分", "description": "汇总分数字段名" },
+    { "name": "sorts", "label": "排序规则", "type": "json", "default": [], "description": "为空时默认按总分倒序" }
+  ],
+  "ports": [
+    { "name": "rows", "label": "记录数组", "type": "json-rows", "direction": "input", "required": true, "description": "待评分记录数组" },
+    { "name": "context", "label": "上下文", "type": "object", "direction": "input", "description": "供评分表达式引用的上下文" },
+    { "name": "rows", "label": "结果行", "type": "json-rows", "direction": "output", "description": "评分排序后的数组" },
+    { "name": "first", "label": "首条", "type": "object", "direction": "output", "description": "评分最高的记录" },
+    { "name": "count", "label": "数量", "type": "number", "direction": "output", "description": "评分记录数量" }
+  ],
+  "keywords": ["评分", "排序", "score", "recommend", "rank"]
+}

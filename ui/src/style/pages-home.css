@@ -20,8 +20,8 @@
   background: var(--accent-soft);
 }
 
-.upload-zone p { font-size: 13px; color: var(--muted); margin-top: 8px; }
-.upload-zone small { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.upload-zone p { font-size: 13px; color: var(--muted); margin-top: var(--space-sm); }
+.upload-zone small { font-size: 11px; color: var(--muted); margin-top: var(--space-xs); }
 
 /* ── Projects List Page ────────────────────────────── */
 
@@ -29,19 +29,20 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-md);
   margin-bottom: 18px;
   flex-wrap: wrap;
 }
 
 .projects-toolbar-left {
   display: flex;
-  gap: 8px;
+  gap: var(--space-sm);
+  align-items: center;
 }
 
 .projects-toolbar-right {
   display: flex;
-  gap: 8px;
+  gap: var(--space-sm);
   align-items: center;
 }
 
@@ -53,7 +54,7 @@
 
 .projects-search-icon {
   position: absolute;
-  left: 10px;
+  left: var(--space-sm);
   color: var(--muted);
   font-size: 14px;
   pointer-events: none;
@@ -62,7 +63,7 @@
 .projects-search input {
   padding: 6px 30px 6px 30px;
   font-size: 12px;
-  border: 1px solid var(--line);
+  border: var(--border);
   border-radius: var(--radius);
   background: var(--panel);
   width: 200px;
@@ -89,7 +90,7 @@
 
 .projects-view-toggle {
   display: flex;
-  border: 1px solid var(--line);
+  border: var(--border);
   border-radius: var(--radius);
   overflow: hidden;
 }
@@ -117,14 +118,14 @@
 .projects-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+  gap: var(--space-lg);
 }
 
 /* 列表视图 */
 .projects-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .projects-list .project-card-list {
@@ -150,12 +151,12 @@
 
 .projects-list .card-stats {
   flex-direction: row;
-  gap: 12px;
+  gap: var(--space-md);
 }
 
 .projects-list .card-actions {
   flex-direction: row;
-  gap: 4px;
+  gap: var(--space-xs);
   margin-top: 0;
   margin-left: auto;
 }
@@ -174,7 +175,7 @@
 .projects-compact .card-cover {
   width: 32px;
   height: 32px;
-  border-radius: 6px;
+  border-radius: var(--radius);
 }
 
 .projects-compact .card-name {
@@ -191,7 +192,7 @@
   flex-direction: column;
   background: var(--panel);
   border-radius: var(--radius);
-  border: 1px solid var(--line);
+  border: var(--border);
   cursor: pointer;
   transition: all 0.2s;
   overflow: hidden;
@@ -212,14 +213,14 @@
 }
 
 .card-body {
-  padding: 14px;
+  padding: var(--space-md);
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
 .card-header {
-  margin-bottom: 8px;
+  margin-bottom: var(--space-sm);
 }
 
 .card-name {
@@ -235,10 +236,10 @@
 .card-stats {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-xs);
   font-size: 11px;
   color: var(--muted);
-  margin-bottom: 12px;
+  margin-bottom: var(--space-md);
 }
 
 .card-modes {
@@ -252,7 +253,7 @@
   padding: 6px 10px;
   font-size: 11px;
   font-weight: 500;
-  border: 1px solid var(--line);
+  border: var(--border);
   border-radius: var(--radius);
   background: var(--panel-soft);
   color: var(--text);
@@ -278,11 +279,11 @@
   opacity: 1;
 }
 
-.card-actions button {
+.card-actions button:not(.ui-btn) {
   flex: 1;
   padding: 5px 8px;
   font-size: 11px;
-  border: 1px solid var(--line);
+  border: var(--border);
   border-radius: var(--radius-sm);
   background: var(--panel);
   color: var(--text);
@@ -290,13 +291,13 @@
   transition: all 0.15s;
 }
 
-.card-actions button:hover {
+.card-actions button:not(.ui-btn):hover {
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent);
 }
 
-.card-actions button.danger:hover {
+.card-actions button:not(.ui-btn).danger:hover {
   background: var(--danger-soft);
   border-color: var(--danger);
   color: var(--danger);
@@ -317,7 +318,7 @@
   font-size: 16px;
   font-weight: 600;
   color: var(--text);
-  margin-bottom: 8px;
+  margin-bottom: var(--space-sm);
 }
 
 .projects-empty .hint {
@@ -341,8 +342,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
+  padding: var(--space-md) var(--space-md);
+  border: var(--border);
   border-radius: var(--radius);
   background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 92%, white 8%) 0%, var(--panel) 100%);
   color: var(--muted);
@@ -354,7 +355,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--panel-soft);
   font-size: 11px;
   font-weight: 700;
@@ -379,22 +380,22 @@
 .project-wizard-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-lg);
 }
 
 .project-wizard-mode-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--space-md);
 }
 
 .project-wizard-mode-card,
 .project-wizard-template-card {
-  border: 1px solid var(--line);
+  border: var(--border);
   border-radius: 18px;
   background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 94%, white 6%) 0%, var(--panel) 100%);
   text-align: left;
-  padding: 16px;
+  padding: var(--space-lg);
   cursor: pointer;
   transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -408,7 +409,7 @@
 .project-wizard-mode-card.active,
 .project-wizard-template-card.active {
   border-color: var(--accent);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-md);
   background: linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 55%, white 45%) 0%, var(--panel) 100%);
 }
 
@@ -430,15 +431,15 @@
 .project-wizard-template-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--space-md);
 }
 
 .project-wizard-template-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
 }
 
 .project-wizard-template-head span {
@@ -453,14 +454,14 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 12px;
+  margin-top: var(--space-md);
 }
 
 .project-wizard-tags span {
   display: inline-flex;
   align-items: center;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--panel-soft);
   color: var(--muted);
   font-size: 10px;
@@ -487,7 +488,7 @@
 .project-wizard-form label {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .project-wizard-form span {
@@ -498,30 +499,38 @@
 .project-wizard-form input,
 .project-wizard-form textarea {
   width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  border: var(--border);
+  border-radius: var(--radius-xl);
   background: var(--panel);
   color: var(--text);
   padding: 11px 12px;
   font: inherit;
+  transition: all 0.15s ease;
+}
+
+.project-wizard-form input:focus,
+.project-wizard-form textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 .project-wizard-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--space-md);
 }
 
 .project-wizard-summary {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-  gap: 12px;
+  gap: var(--space-md);
 }
 
 .project-wizard-summary-card {
-  border: 1px solid var(--line);
+  border: var(--border);
   border-radius: 18px;
-  padding: 16px;
+  padding: var(--space-lg);
   background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 95%, white 5%) 0%, var(--panel) 100%);
 }
 
@@ -538,7 +547,7 @@
 .project-wizard-summary-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .project-wizard-summary-list p,
@@ -550,8 +559,8 @@
 }
 
 .project-wizard-error {
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-xl);
   background: color-mix(in srgb, var(--danger) 12%, white);
   color: var(--danger);
   font-size: 12px;
@@ -565,3 +574,14 @@
     grid-template-columns: 1fr;
   }
 }
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--bg-layout);
+  padding: 24px;
+}
+
+.auth-card { width: min(400px, 100%); }
+.auth-card .ant-segmented { margin: 12px 0 24px; }
+.project-shared-badge { font-size: 11px; color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius: 10px; padding: 1px 6px; }

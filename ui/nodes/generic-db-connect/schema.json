@@ -1,0 +1,9 @@
+{
+  "id":"generic-db-connect","label":"数据库连接","description":"配置并测试 MySQL、PostgreSQL 或 SQL Server 连接","category":"通用 · 集成","kind":"generic",
+  "properties":[
+    {"name":"driver","label":"数据库类型","type":"enum","enum":["mysql","postgres","mssql"],"default":"postgres"},
+    {"name":"connectionString","label":"连接字符串","type":"string","default":"","required":true}
+  ],
+  "ports":[{"name":"trigger","label":"触发","type":"any","direction":"input"},{"name":"connection","label":"连接配置","type":"object","direction":"output"},{"name":"connected","label":"已连接","type":"boolean","direction":"output"}],
+  "keywords":["数据库","连接","mysql","postgresql","sql server"]
+}

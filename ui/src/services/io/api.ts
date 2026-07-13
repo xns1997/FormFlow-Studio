@@ -3,11 +3,16 @@
 export const API_BASE = (((import.meta as any).env?.VITE_API_BASE) || '/api').replace(/\/$/, '');
 
 export async function request(path: string, options?: RequestInit) {
+  let token = '';
+  try { token = JSON.parse(localStorage.getItem('formflow.session') || 'null')?.token || ''; } catch { /* ignore */ }
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
     ...options,
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options?.headers },
   });
-  if (!res.ok) throw new Error(`API Error: ${res.status}`);
+  if (!res.ok) {
+    const detail = await res.json().catch(() => null);
+    throw new Error(detail?.error || `API Error: ${res.status}`);
+  }
   return res.json();
 }
 
@@ -91,4 +96,12 @@ export const configApi = {
 export const describeApi = {
   get: (fileId: string, sheet?: string) => request(`/describe/${fileId}${sheet ? `?sheet=${encodeURIComponent(sheet)}` : ''}`),
   delete: (fileId: string) => request(`/describe/${fileId}`, { method: 'DELETE' }),
+};
+
+export const taskApi = {
+  list: (limit = 100) => request(`/tasks?limit=${limit}`),
+  get: (id: string) => request(`/tasks/${encodeURIComponent(id)}`),
+  cancel: (id: string) => request(`/tasks/${encodeURIComponent(id)}/cancel`, { method: 'POST' }),
+  create: (name: string, payload: unknown) => request('/tasks', { method: 'POST', body: JSON.stringify({ name, payload }) }),
+  schedules: () => request('/tasks/schedules'),
 };

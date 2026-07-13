@@ -116,7 +116,7 @@ export default function NodePalette({ specs, tables, selectedSpec, onAdd, onPoin
   const [compatibilityDirection, setCompatibilityDirection] = useState<CompatibilityDirection>('downstream');
   const [activeIndex, setActiveIndex] = useState(0);
   const [collapsed, setCollapsed] = useState<Set<NodeDiscoveryGroup>>(() => new Set(
-    NODE_DISCOVERY_GROUPS.filter((item) => item !== '场景模板' && item !== '输入与选择'),
+    NODE_DISCOVERY_GROUPS.filter((item) => item !== '场景模板'),
   ));
   const [dataOpen, setDataOpen] = useState(true);
   const [recentOpen, setRecentOpen] = useState(true);

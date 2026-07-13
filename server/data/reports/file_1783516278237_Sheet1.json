@@ -1,0 +1,1153 @@
+{
+  "fileName": "1783516278137_medical_insurance_cost_dataset.csv",
+  "sheetName": "Sheet1",
+  "overview": {
+    "rows": 7500,
+    "columns": 16,
+    "memoryUsage": "3377.4 KB",
+    "missingTotal": 0,
+    "missingPercent": "0.0%",
+    "duplicateRows": 0,
+    "duplicatePercent": "0.0%"
+  },
+  "columns": [
+    {
+      "name": "customer_id",
+      "dtype": "str",
+      "nonNull": 7500,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 7500,
+      "sampleValues": [
+        "MIC100001",
+        "MIC100002",
+        "MIC100003",
+        "MIC100004",
+        "MIC100005"
+      ],
+      "type": "string",
+      "cardinality": "high"
+    },
+    {
+      "name": "age",
+      "dtype": "int64",
+      "nonNull": 7500,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 48,
+      "sampleValues": [
+        "56",
+        "29",
+        "20",
+        "59",
+        "61"
+      ],
+      "stats": {
+        "mean": 41.3324,
+        "std": 13.9133,
+        "min": 18,
+        "q25": 29,
+        "median": 41,
+        "q75": 53,
+        "max": 65
+      },
+      "type": "number",
+      "hasOutliers": false,
+      "outlierCount": 0,
+      "cardinality": "high"
+    },
+    {
+      "name": "gender",
+      "dtype": "str",
+      "nonNull": 7500,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 2,
+      "sampleValues": [
+        "Male",
+        "Female"
+      ],
+      "type": "string",
+      "cardinality": "low"
+    },
+    {
+      "name": "bmi",
+      "dtype": "float64",
+      "nonNull": 7500,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 270,
+      "sampleValues": [
+        "25.2",
+        "25.7",
+        "30.1",
+        "18.2",
+        "31.2"
+      ],
+      "stats": {
+        "mean": 28.0542,
+        "std": 4.9322,
+        "min": 16,
+        "q25": 24.6,
+        "median": 28,
+        "q75": 31.5,
+        "max": 45
+      },
+      "type": "number",
+      "hasOutliers": true,
+      "outlierCount": 15,
+      "cardinality": "high"
+    },
+    {
+      "name": "children",
+      "dtype": "int64",
+      "nonNull": 7500,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 6,
+      "sampleValues": [
+        "2",
+        "1",
+        "5",
+        "0",
+        "4"
+      ],
+      "stats": {
+        "mean": 1.4939,
+        "std": 1.2104,
+        "min": 0,
+        "q25": 1,
+        "median": 1,
+        "q75": 2,
+        "max": 5
+      },
+      "type": "number",
+      "hasOutliers": true,
+      "outlierCount": 499,
+      "cardinality": "medium"
+    },
+    {
+      "name": "smoker",
+      "dtype": "str",
+      "nonNull": 7500,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 2,
+      "sampleValues": [
+        "Yes",
+        "No"
+      ],
+      "type": "string",
+      "cardinality": "low"
+    },
+    {
+      "name": "region",
+      "dtype": "str",
+      "nonNull": 7500,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 5,
+      "sampleValues": [
+        "Northeast",
+        "Northwest",
+        "Central",
+        "Southeast",
+        "Southwest"
+      ],
+      "type": "string",
+      "cardinality": "low"
+    },
+    {
+      "name": "occupation",
+      "dtype": "str",
+      "nonNull": 7500,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 11,
+      "sampleValues": [
+        "Driver",
+        "Doctor",
+        "Teacher",
+        "Engineer",
+        "Nurse"
+      ],
+      "type": "string",
+      "cardinality": "medium"
+    },
+    {
+      "name": "annual_income_usd",
+      "dtype": "int64",
+      "nonNull": 7500,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 6922,
+      "sampleValues": [
+        "77885",
+        "18000",
+        "85811",
+        "42331",
+        "130838"
+      ],
+      "stats": {
+        "mean": 65344.24,
+        "std": 24728.4595,
+        "min": 18000,
+        "q25": 47987.5,
+        "median": 65041.5,
+        "q75": 82228,
+        "max": 176977
+      },
+      "type": "number",
+      "hasOutliers": true,
+      "outlierCount": 23,
+      "cardinality": "high"
+    },
+    {
+      "name": "exercise_level",
+      "dtype": "str",
+      "nonNull": 7500,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 3,
+      "sampleValues": [
+        "Moderate",
+        "High",
+        "Low"
+      ],
+      "type": "string",
+      "cardinality": "low"
+    },
+    {
+      "name": "chronic_diseases",
+      "dtype": "int64",
+      "nonNull": 7500,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 6,
+      "sampleValues": [
+        "0",
+        "1",
+        "2",
+        "4",
+        "3"
+      ],
+      "stats": {
+        "mean": 0.7045,
+        "std": 0.8471,
+        "min": 0,
+        "q25": 0,
+        "median": 1,
+        "q75": 1,
+        "max": 5
+      },
+      "type": "number",
+      "hasOutliers": true,
+      "outlierCount": 265,
+      "cardinality": "medium"
+    },
+    {
+      "name": "doctor_visits_per_year",
+      "dtype": "int64",
+      "nonNull": 7500,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 16,
+      "sampleValues": [
+        "2",
+        "5",
+        "10",
+        "7",
+        "8"
+      ],
+      "stats": {
+        "mean": 4.7131,
+        "std": 2.2906,
+        "min": 0,
+        "q25": 3,
+        "median": 4,
+        "q75": 6,
+        "max": 15
+      },
+      "type": "number",
+      "hasOutliers": true,
+      "outlierCount": 106,
+      "cardinality": "medium"
+    },
+    {
+      "name": "hospitalizations_last_year",
+      "dtype": "int64",
+      "nonNull": 7500,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 4,
+      "sampleValues": [
+        "0",
+        "2",
+        "1",
+        "3"
+      ],
+      "stats": {
+        "mean": 0.3437,
+        "std": 0.5612,
+        "min": 0,
+        "q25": 0,
+        "median": 0,
+        "q75": 1,
+        "max": 3
+      },
+      "type": "number",
+      "hasOutliers": true,
+      "outlierCount": 18,
+      "cardinality": "low"
+    },
+    {
+      "name": "alcohol_consumption_per_week",
+      "dtype": "int64",
+      "nonNull": 7500,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 15,
+      "sampleValues": [
+        "13",
+        "3",
+        "1",
+        "8",
+        "11"
+      ],
+      "stats": {
+        "mean": 6.9755,
+        "std": 4.2987,
+        "min": 0,
+        "q25": 3,
+        "median": 7,
+        "q75": 11,
+        "max": 14
+      },
+      "type": "number",
+      "hasOutliers": false,
+      "outlierCount": 0,
+      "cardinality": "medium"
+    },
+    {
+      "name": "insurance_plan",
+      "dtype": "str",
+      "nonNull": 7500,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 4,
+      "sampleValues": [
+        "Basic",
+        "Standard",
+        "Premium",
+        "Gold"
+      ],
+      "type": "string",
+      "cardinality": "low"
+    },
+    {
+      "name": "annual_medical_cost_usd",
+      "dtype": "float64",
+      "nonNull": 7500,
+      "nullCount": 0,
+      "nullPercent": "0.0%",
+      "uniqueCount": 7486,
+      "sampleValues": [
+        "24353.46",
+        "22530.6",
+        "13393.16",
+        "17937.26",
+        "22147.64"
+      ],
+      "stats": {
+        "mean": 17912.5268,
+        "std": 7574.4601,
+        "min": 1500,
+        "q25": 12385.62,
+        "median": 16361.925,
+        "q75": 22555.1075,
+        "max": 49332.68
+      },
+      "type": "number",
+      "hasOutliers": true,
+      "outlierCount": 83,
+      "cardinality": "high"
+    }
+  ],
+  "correlations": {
+    "numericColumns": [
+      "age",
+      "bmi",
+      "children",
+      "annual_income_usd",
+      "chronic_diseases",
+      "doctor_visits_per_year",
+      "hospitalizations_last_year",
+      "alcohol_consumption_per_week",
+      "annual_medical_cost_usd"
+    ],
+    "matrix": [
+      [
+        1,
+        0.0059,
+        -0.0032,
+        -0.0129,
+        0.0002,
+        0.005,
+        -0.0009,
+        -0.0329,
+        0.1594
+      ],
+      [
+        0.0059,
+        1,
+        0.0065,
+        0.007,
+        -0.0037,
+        0.0064,
+        -0.0045,
+        -0.0034,
+        0.0661
+      ],
+      [
+        -0.0032,
+        0.0065,
+        1,
+        -0.0107,
+        0.0007,
+        0.0004,
+        -0.0065,
+        0.0058,
+        0.067
+      ],
+      [
+        -0.0129,
+        0.007,
+        -0.0107,
+        1,
+        -0.0152,
+        -0.0209,
+        -0.0079,
+        -0.0022,
+        0.0163
+      ],
+      [
+        0.0002,
+        -0.0037,
+        0.0007,
+        -0.0152,
+        1,
+        0.3353,
+        0.2361,
+        -0.0171,
+        0.3763
+      ],
+      [
+        0.005,
+        0.0064,
+        0.0004,
+        -0.0209,
+        0.3353,
+        1,
+        0.0854,
+        -0.0162,
+        0.1697
+      ],
+      [
+        -0.0009,
+        -0.0045,
+        -0.0065,
+        -0.0079,
+        0.2361,
+        0.0854,
+        1,
+        -0.003,
+        0.3111
+      ],
+      [
+        -0.0329,
+        -0.0034,
+        0.0058,
+        -0.0022,
+        -0.0171,
+        -0.0162,
+        -0.003,
+        1,
+        -0.0003
+      ],
+      [
+        0.1594,
+        0.0661,
+        0.067,
+        0.0163,
+        0.3763,
+        0.1697,
+        0.3111,
+        -0.0003,
+        1
+      ]
+    ]
+  },
+  "distributions": [
+    {
+      "columnName": "age",
+      "bins": [
+        {
+          "range": "18.00-22.70",
+          "count": 796,
+          "percent": 10.6
+        },
+        {
+          "range": "22.70-27.40",
+          "count": 794,
+          "percent": 10.6
+        },
+        {
+          "range": "27.40-32.10",
+          "count": 809,
+          "percent": 10.8
+        },
+        {
+          "range": "32.10-36.80",
+          "count": 613,
+          "percent": 8.2
+        },
+        {
+          "range": "36.80-41.50",
+          "count": 795,
+          "percent": 10.6
+        },
+        {
+          "range": "41.50-46.20",
+          "count": 738,
+          "percent": 9.8
+        },
+        {
+          "range": "46.20-50.90",
+          "count": 624,
+          "percent": 8.3
+        },
+        {
+          "range": "50.90-55.60",
+          "count": 801,
+          "percent": 10.7
+        },
+        {
+          "range": "55.60-60.30",
+          "count": 723,
+          "percent": 9.6
+        },
+        {
+          "range": "60.30-65.00",
+          "count": 807,
+          "percent": 10.8
+        }
+      ],
+      "histogram": [
+        796,
+        794,
+        809,
+        613,
+        795,
+        738,
+        624,
+        801,
+        723,
+        807
+      ]
+    },
+    {
+      "columnName": "bmi",
+      "bins": [
+        {
+          "range": "16.00-18.90",
+          "count": 230,
+          "percent": 3.1
+        },
+        {
+          "range": "18.90-21.80",
+          "count": 550,
+          "percent": 7.3
+        },
+        {
+          "range": "21.80-24.70",
+          "count": 1098,
+          "percent": 14.6
+        },
+        {
+          "range": "24.70-27.60",
+          "count": 1595,
+          "percent": 21.3
+        },
+        {
+          "range": "27.60-30.50",
+          "count": 1674,
+          "percent": 22.3
+        },
+        {
+          "range": "30.50-33.40",
+          "count": 1285,
+          "percent": 17.1
+        },
+        {
+          "range": "33.40-36.30",
+          "count": 703,
+          "percent": 9.4
+        },
+        {
+          "range": "36.30-39.20",
+          "count": 264,
+          "percent": 3.5
+        },
+        {
+          "range": "39.20-42.10",
+          "count": 86,
+          "percent": 1.1
+        },
+        {
+          "range": "42.10-45.00",
+          "count": 15,
+          "percent": 0.2
+        }
+      ],
+      "histogram": [
+        230,
+        550,
+        1098,
+        1595,
+        1674,
+        1285,
+        703,
+        264,
+        86,
+        15
+      ]
+    },
+    {
+      "columnName": "children",
+      "bins": [
+        {
+          "range": "0.00-0.50",
+          "count": 1684,
+          "percent": 22.5
+        },
+        {
+          "range": "0.50-1.00",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "1.00-1.50",
+          "count": 2495,
+          "percent": 33.3
+        },
+        {
+          "range": "1.50-2.00",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "2.00-2.50",
+          "count": 1906,
+          "percent": 25.4
+        },
+        {
+          "range": "2.50-3.00",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "3.00-3.50",
+          "count": 916,
+          "percent": 12.2
+        },
+        {
+          "range": "3.50-4.00",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "4.00-4.50",
+          "count": 346,
+          "percent": 4.6
+        },
+        {
+          "range": "4.50-5.00",
+          "count": 153,
+          "percent": 2
+        }
+      ],
+      "histogram": [
+        1684,
+        0,
+        2495,
+        0,
+        1906,
+        0,
+        916,
+        0,
+        346,
+        153
+      ]
+    },
+    {
+      "columnName": "annual_income_usd",
+      "bins": [
+        {
+          "range": "18000.00-33897.70",
+          "count": 816,
+          "percent": 10.9
+        },
+        {
+          "range": "33897.70-49795.40",
+          "count": 1225,
+          "percent": 16.3
+        },
+        {
+          "range": "49795.40-65693.10",
+          "count": 1789,
+          "percent": 23.9
+        },
+        {
+          "range": "65693.10-81590.80",
+          "count": 1746,
+          "percent": 23.3
+        },
+        {
+          "range": "81590.80-97488.50",
+          "count": 1156,
+          "percent": 15.4
+        },
+        {
+          "range": "97488.50-113386.20",
+          "count": 551,
+          "percent": 7.3
+        },
+        {
+          "range": "113386.20-129283.90",
+          "count": 177,
+          "percent": 2.4
+        },
+        {
+          "range": "129283.90-145181.60",
+          "count": 33,
+          "percent": 0.4
+        },
+        {
+          "range": "145181.60-161079.30",
+          "count": 4,
+          "percent": 0.1
+        },
+        {
+          "range": "161079.30-176977.00",
+          "count": 3,
+          "percent": 0
+        }
+      ],
+      "histogram": [
+        816,
+        1225,
+        1789,
+        1746,
+        1156,
+        551,
+        177,
+        33,
+        4,
+        3
+      ]
+    },
+    {
+      "columnName": "chronic_diseases",
+      "bins": [
+        {
+          "range": "0.00-0.50",
+          "count": 3734,
+          "percent": 49.8
+        },
+        {
+          "range": "0.50-1.00",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "1.00-1.50",
+          "count": 2573,
+          "percent": 34.3
+        },
+        {
+          "range": "1.50-2.00",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "2.00-2.50",
+          "count": 928,
+          "percent": 12.4
+        },
+        {
+          "range": "2.50-3.00",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "3.00-3.50",
+          "count": 212,
+          "percent": 2.8
+        },
+        {
+          "range": "3.50-4.00",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "4.00-4.50",
+          "count": 46,
+          "percent": 0.6
+        },
+        {
+          "range": "4.50-5.00",
+          "count": 7,
+          "percent": 0.1
+        }
+      ],
+      "histogram": [
+        3734,
+        0,
+        2573,
+        0,
+        928,
+        0,
+        212,
+        0,
+        46,
+        7
+      ]
+    },
+    {
+      "columnName": "doctor_visits_per_year",
+      "bins": [
+        {
+          "range": "0.00-1.50",
+          "count": 449,
+          "percent": 6
+        },
+        {
+          "range": "1.50-3.00",
+          "count": 788,
+          "percent": 10.5
+        },
+        {
+          "range": "3.00-4.50",
+          "count": 2522,
+          "percent": 33.6
+        },
+        {
+          "range": "4.50-6.00",
+          "count": 1260,
+          "percent": 16.8
+        },
+        {
+          "range": "6.00-7.50",
+          "count": 1609,
+          "percent": 21.5
+        },
+        {
+          "range": "7.50-9.00",
+          "count": 415,
+          "percent": 5.5
+        },
+        {
+          "range": "9.00-10.50",
+          "count": 351,
+          "percent": 4.7
+        },
+        {
+          "range": "10.50-12.00",
+          "count": 68,
+          "percent": 0.9
+        },
+        {
+          "range": "12.00-13.50",
+          "count": 28,
+          "percent": 0.4
+        },
+        {
+          "range": "13.50-15.00",
+          "count": 10,
+          "percent": 0.1
+        }
+      ],
+      "histogram": [
+        449,
+        788,
+        2522,
+        1260,
+        1609,
+        415,
+        351,
+        68,
+        28,
+        10
+      ]
+    },
+    {
+      "columnName": "hospitalizations_last_year",
+      "bins": [
+        {
+          "range": "0.00-0.30",
+          "count": 5239,
+          "percent": 69.9
+        },
+        {
+          "range": "0.30-0.60",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "0.60-0.90",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "0.90-1.20",
+          "count": 1962,
+          "percent": 26.2
+        },
+        {
+          "range": "1.20-1.50",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "1.50-1.80",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "1.80-2.10",
+          "count": 281,
+          "percent": 3.7
+        },
+        {
+          "range": "2.10-2.40",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "2.40-2.70",
+          "count": 0,
+          "percent": 0
+        },
+        {
+          "range": "2.70-3.00",
+          "count": 18,
+          "percent": 0.2
+        }
+      ],
+      "histogram": [
+        5239,
+        0,
+        0,
+        1962,
+        0,
+        0,
+        281,
+        0,
+        0,
+        18
+      ]
+    },
+    {
+      "columnName": "alcohol_consumption_per_week",
+      "bins": [
+        {
+          "range": "0.00-1.40",
+          "count": 991,
+          "percent": 13.2
+        },
+        {
+          "range": "1.40-2.80",
+          "count": 496,
+          "percent": 6.6
+        },
+        {
+          "range": "2.80-4.20",
+          "count": 1015,
+          "percent": 13.5
+        },
+        {
+          "range": "4.20-5.60",
+          "count": 498,
+          "percent": 6.6
+        },
+        {
+          "range": "5.60-7.00",
+          "count": 520,
+          "percent": 6.9
+        },
+        {
+          "range": "7.00-8.40",
+          "count": 1000,
+          "percent": 13.3
+        },
+        {
+          "range": "8.40-9.80",
+          "count": 522,
+          "percent": 7
+        },
+        {
+          "range": "9.80-11.20",
+          "count": 984,
+          "percent": 13.1
+        },
+        {
+          "range": "11.20-12.60",
+          "count": 488,
+          "percent": 6.5
+        },
+        {
+          "range": "12.60-14.00",
+          "count": 986,
+          "percent": 13.1
+        }
+      ],
+      "histogram": [
+        991,
+        496,
+        1015,
+        498,
+        520,
+        1000,
+        522,
+        984,
+        488,
+        986
+      ]
+    },
+    {
+      "columnName": "annual_medical_cost_usd",
+      "bins": [
+        {
+          "range": "1500.00-6283.27",
+          "count": 149,
+          "percent": 2
+        },
+        {
+          "range": "6283.27-11066.54",
+          "count": 1148,
+          "percent": 15.3
+        },
+        {
+          "range": "11066.54-15849.80",
+          "count": 2213,
+          "percent": 29.5
+        },
+        {
+          "range": "15849.80-20633.07",
+          "count": 1711,
+          "percent": 22.8
+        },
+        {
+          "range": "20633.07-25416.34",
+          "count": 944,
+          "percent": 12.6
+        },
+        {
+          "range": "25416.34-30199.61",
+          "count": 715,
+          "percent": 9.5
+        },
+        {
+          "range": "30199.61-34982.88",
+          "count": 425,
+          "percent": 5.7
+        },
+        {
+          "range": "34982.88-39766.14",
+          "count": 153,
+          "percent": 2
+        },
+        {
+          "range": "39766.14-44549.41",
+          "count": 32,
+          "percent": 0.4
+        },
+        {
+          "range": "44549.41-49332.68",
+          "count": 10,
+          "percent": 0.1
+        }
+      ],
+      "histogram": [
+        149,
+        1148,
+        2213,
+        1711,
+        944,
+        715,
+        425,
+        153,
+        32,
+        10
+      ]
+    }
+  ],
+  "qualityScore": 65,
+  "timeSeries": [],
+  "oscillations": [
+    {
+      "columnName": "age",
+      "oscillationRatio": 0.686,
+      "volatility": 0.3366,
+      "isHighOscillation": false
+    },
+    {
+      "columnName": "bmi",
+      "oscillationRatio": 0.673,
+      "volatility": 0.1758,
+      "isHighOscillation": false
+    },
+    {
+      "columnName": "children",
+      "oscillationRatio": 0.799,
+      "volatility": 0.8103,
+      "isHighOscillation": true
+    },
+    {
+      "columnName": "annual_income_usd",
+      "oscillationRatio": 0.673,
+      "volatility": 0.3784,
+      "isHighOscillation": false
+    },
+    {
+      "columnName": "chronic_diseases",
+      "oscillationRatio": 0.775,
+      "volatility": 1.2024,
+      "isHighOscillation": true
+    },
+    {
+      "columnName": "doctor_visits_per_year",
+      "oscillationRatio": 0.762,
+      "volatility": 0.486,
+      "isHighOscillation": true
+    },
+    {
+      "columnName": "hospitalizations_last_year",
+      "oscillationRatio": 0.631,
+      "volatility": 1.6327,
+      "isHighOscillation": false
+    },
+    {
+      "columnName": "alcohol_consumption_per_week",
+      "oscillationRatio": 0.728,
+      "volatility": 0.6163,
+      "isHighOscillation": true
+    },
+    {
+      "columnName": "annual_medical_cost_usd",
+      "oscillationRatio": 0.671,
+      "volatility": 0.4229,
+      "isHighOscillation": false
+    }
+  ]
+}

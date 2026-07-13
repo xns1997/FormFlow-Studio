@@ -1,5 +1,6 @@
 allowBuilds:
   electron: true
   esbuild: true
+  msgpackr-extract: true
 minimumReleaseAgeExclude:
   - vite@8.1.3

@@ -1,0 +1,5 @@
+import { createHash } from 'crypto';
+import { addAudit } from './audit-store';
+export type AuditContext = { userId?: string; username?: string; action: string; resource: string; projectId?: string; before?: unknown; after?: unknown; ip?: string; userAgent?: string; requestId?: string };
+function changedFields(before: any, after: any) { if (!before || !after || typeof before !== 'object' || typeof after !== 'object') return []; return [...new Set([...Object.keys(before), ...Object.keys(after)])].filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key])); }
+export function logAudit(context: AuditContext) { return addAudit({ userId: context.userId, username: context.username, action: context.action, resource: context.resource, projectId: context.projectId, detail: { requestId: context.requestId, changedFields: changedFields(context.before, context.after), ipHash: context.ip ? createHash('sha256').update(context.ip).digest('hex').slice(0, 16) : undefined, userAgent: context.userAgent?.slice(0, 300) } }); }

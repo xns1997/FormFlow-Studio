@@ -21,6 +21,10 @@ export const overviewDocs: BehaviorTopicDocEntry[] = [
         ],
       },
       {
+        title: '典型使用场景',
+        body: '1. 数据录入：员工信息、客户资料、订单录入\n2. 数据查询：工单查询、库存查询、报表查看\n3. 审批流程：请假审批、报销审批、合同审批\n4. 数据分析：销售统计、绩效分析、趋势预测',
+      },
+      {
         title: '技术栈',
         body: '前端：React + TypeScript + Ant Design + Vite\n后端：Node.js + Express + SheetJS\n数据：Excel/CSV/JSON 文件 + SQLite\n流程：自研节点引擎 + Python ML 集成',
       },
@@ -52,6 +56,12 @@ export const overviewDocs: BehaviorTopicDocEntry[] = [
         title: '第五步：测试运行',
         body: '切换到「测试运行」标签页，预览表单效果并测试行为逻辑。支持实时查看脚本日志和数据变化。',
       },
+      {
+        title: '快速上手示例',
+        examples: [
+          { title: '创建员工录入表单', code: '1. 创建项目：名称 "员工管理"\n2. 导入数据：上传员工信息.xlsx\n3. 设计表单：拖入文本输入（姓名）、数字输入（工号）、下拉选择（部门）\n4. 添加行为：onFormLoad 设置默认状态为"在职"\n5. 测试运行：填写表单并提交' },
+        ],
+      },
     ],
   },
   {
@@ -74,6 +84,34 @@ export const overviewDocs: BehaviorTopicDocEntry[] = [
       {
         title: '数据格式',
         body: '所有配置文件使用 JSON 格式。数据文件支持 .xlsx、.xls、.csv、.json、.sqlite 五种格式。项目包以 .formflow 为扩展名。',
+      },
+    ],
+  },
+  {
+    id: 'overview:faq',
+    slug: 'faq',
+    title: '常见问题',
+    summary: '解答使用 FormFlow 过程中的常见问题。',
+    sections: [
+      {
+        title: 'Q: 如何实现字段联动？',
+        body: 'A: 在「行为定义」标签页，为字段的 onFieldChange 事件编写脚本。例如：当部门字段变化时，显示或隐藏技术栈字段：\n\nif (field === "部门") {\n  await setVisible("技术栈", value === "技术部");\n}',
+      },
+      {
+        title: 'Q: 如何在提交前校验数据？',
+        body: 'A: 使用 onSubmit 或 onBeforeSubmit 事件。推荐使用 requireFields 批量校验：\n\nconst check = await ctx.requireFields(["姓名", "手机号"]);\nif (!check.valid) {\n  showMessage("请填写必填项", "error");\n  return;\n}',
+      },
+      {
+        title: 'Q: 如何实现级联选择？',
+        body: 'A: 为父级字段的 onFieldChange 事件编写脚本，动态设置子级字段的选项。例如省份-城市联动：\n\nconst cityOptions = {\n  "广东": ["广州", "深圳"],\n  "浙江": ["杭州", "宁波"]\n};\nconst options = cityOptions[value] || [];\nawait setValue("城市", options[0] || "");',
+      },
+      {
+        title: 'Q: 如何调用流程？',
+        body: 'A: 在按钮的 onClick 事件中使用 runConfiguredWorkflow()。流程需要先在「流程编排」标签页设计好，并绑定到按钮事件。',
+      },
+      {
+        title: 'Q: 如何导出数据？',
+        body: 'A: 使用流程中的「数据导出」节点，支持导出为 Excel、CSV、JSON 格式。也可以在使用模式中直接导出当前数据。',
       },
     ],
   },

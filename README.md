@@ -86,6 +86,46 @@
 
 ---
 
+## 智能体项目生成与编辑
+
+仓库内置了一个面向 Codex 的 FormFlow v2 skill：[`formflow-project-editor`](./.codex/skills/formflow-project-editor/)。它把“紧凑 YAML 意图”转换成规范化的 `.formflow` 目录和 ZIP，适合让智能体创建项目、编辑现有项目、做引用校验和打包，而不必重复输出整套项目 JSON。
+
+核心能力：
+
+- `inspect`：读取目录或 ZIP，输出项目摘要、数据表、表单、行为、流程和引用关系
+- `create`：根据 YAML 创建规范化 FormFlow v2 项目，并可同时输出 ZIP
+- `normalize`：把现有项目映射到冻结的 v2 结构后，再按稳定 ID 应用增删改
+- `validate`：检查 schema、ID、索引、引用、数据 key、流程端口和交付门禁
+- `pack` / `unpack`：确定性打包和解包，保证重复执行结果稳定
+
+示例 skill 位于 [`./.codex/skills/formflow-project-editor/`](./.codex/skills/formflow-project-editor/)，示例项目规格位于 [`./projects/skill-demo/sales-approval.yaml`](./projects/skill-demo/sales-approval.yaml)。
+
+常用命令：
+
+```bash
+# 根据紧凑 YAML 生成项目目录和 ZIP
+node .codex/skills/formflow-project-editor/scripts/formflow-project.mjs \
+  create projects/skill-demo/sales-approval.yaml \
+  --out projects/skill-demo/skill_demo_sales_approval.formflow
+
+# 校验生成结果（支持目录或 ZIP）
+node .codex/skills/formflow-project-editor/scripts/formflow-project.mjs \
+  validate projects/skill-demo/skill_demo_sales_approval.formflow.zip \
+  --json
+
+# 查看现有项目摘要，便于让智能体先读结构再编辑
+node .codex/skills/formflow-project-editor/scripts/formflow-project.mjs \
+  inspect projects/skill-demo/skill_demo_sales_approval.formflow.zip
+```
+
+这一版冻结支持 FormFlow v2，并且对未知字段采取“停止并报告”的策略，不会静默删除扩展字段。相关格式、默认值和规范化规则见：
+
+- [`authoring-spec.md`](./.codex/skills/formflow-project-editor/references/authoring-spec.md)
+- [`formflow-v2-format.md`](./.codex/skills/formflow-project-editor/references/formflow-v2-format.md)
+- [`validation-rules.md`](./.codex/skills/formflow-project-editor/references/validation-rules.md)
+
+---
+
 ## 快速开始
 
 macOS / Linux：

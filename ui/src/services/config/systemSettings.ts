@@ -3,19 +3,29 @@ export interface SystemSettings {
     language: string;
     timezone: string;
     autoOpenLastProject: boolean;
+    dateFormat: 'YYYY-MM-DD' | 'YYYY/MM/DD' | 'locale';
+    showClock: boolean;
+    use24Hour: boolean;
+    showSeconds: boolean;
   };
   storage: {
     apiBase: string;
     preferOfflineSave: boolean;
+    autoSaveDrafts: boolean;
+    requestTimeoutMs: number;
   };
   editor: {
     fontSize: number;
     lineNumbers: boolean;
     suggestionDocs: boolean;
+    wordWrap: boolean;
+    formatOnSave: boolean;
   };
   experiments: {
     enableNewRouter: boolean;
     enablePreviewDocs: boolean;
+    enablePlaygroundDocs: boolean;
+    enableDebugTools: boolean;
   };
   updatedAt: string;
 }
@@ -28,19 +38,29 @@ export function createDefaultSystemSettings(): SystemSettings {
       language: 'zh-CN',
       timezone: 'Asia/Shanghai',
       autoOpenLastProject: true,
+      dateFormat: 'YYYY-MM-DD',
+      showClock: true,
+      use24Hour: true,
+      showSeconds: true,
     },
     storage: {
       apiBase: 'http://localhost:3001/api',
       preferOfflineSave: true,
+      autoSaveDrafts: true,
+      requestTimeoutMs: 15000,
     },
     editor: {
       fontSize: 13,
       lineNumbers: true,
       suggestionDocs: true,
+      wordWrap: true,
+      formatOnSave: false,
     },
     experiments: {
       enableNewRouter: true,
       enablePreviewDocs: true,
+      enablePlaygroundDocs: true,
+      enableDebugTools: true,
     },
     updatedAt: new Date().toISOString(),
   };

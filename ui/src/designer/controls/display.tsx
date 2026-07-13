@@ -3,6 +3,7 @@ import { registerControl } from '../registry';
 import type { DesignComponent } from '../../project/types';
 import { controlText, ios } from './styles';
 import ChartWidget from '../../components/ChartWidget';
+import AnimatedNumber from '../../components/AnimatedNumber';
 import type { MetricConfig } from '../../components/ChartWidget';
 import { resolveRange } from '../../services/data/rangeResolver';
 import { useProjectStore } from '../../project/store';
@@ -43,22 +44,31 @@ registerControl({
   ],
   eventSchema: [],
   defaultSize: { w: 180, h: 36 },
-  render: ({ component }: { component: DesignComponent }) => (
-    <div style={{ width: '100%', height: '100%', minWidth: 0, display: 'flex', alignItems: 'center', padding: '0 2px', boxSizing: 'border-box', overflow: 'hidden' }}>
-      <span style={controlText({
-        fontSize: component.props.fontSize || 15,
-        fontWeight: component.props.fontWeight || 'normal',
-        fontFamily: component.props.fontFamily || undefined,
-        color: component.props.color || '#1c1c1e',
-        textAlign: component.props.textAlign || 'left',
-        letterSpacing: component.props.letterSpacing || 0,
-        lineHeight: component.props.lineHeight || 1.5,
-        textDecoration: component.props.textDecoration || 'none',
-      })}>
-        {component.props.content || '文本'}
-      </span>
-    </div>
-  ),
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
+    const hasExplicitBinding = Boolean(
+      component.fieldBinding
+      || component.props.rangeRef
+      || component.props.tableBinding,
+    );
+    const previewValue = mode === 'preview' && hasExplicitBinding ? runtime?.value : undefined;
+    const content = previewValue ?? component.props.content ?? '文本';
+    return (
+      <div style={{ width: '100%', height: '100%', minWidth: 0, display: 'flex', alignItems: 'center', padding: '0 2px', boxSizing: 'border-box', overflow: 'hidden' }}>
+        <span style={controlText({
+          fontSize: component.props.fontSize || 15,
+          fontWeight: component.props.fontWeight || 'normal',
+          fontFamily: component.props.fontFamily || undefined,
+          color: component.props.color || '#1c1c1e',
+          textAlign: component.props.textAlign || 'left',
+          letterSpacing: component.props.letterSpacing || 0,
+          lineHeight: component.props.lineHeight || 1.5,
+          textDecoration: component.props.textDecoration || 'none',
+        })}>
+          {String(content)}
+        </span>
+      </div>
+    );
+  },
 });
 
 registerControl({
@@ -90,6 +100,80 @@ registerControl({
       )}
     </div>
   ),
+});
+
+registerControl({
+  type: 'animatedNumber', label: '跳动数字', category: 'display', icon: '🔢',
+  defaultProps: {
+    content: '0', name: '',
+    fontSize: 32, fontWeight: 'bold', fontFamily: '', color: '#2563eb',
+    textAlign: 'left', letterSpacing: 0, lineHeight: 1.2, textDecoration: 'none',
+    duration: 1200, decimals: 0, prefix: '', suffix: '', useGrouping: true,
+    rangeRef: null,
+  },
+  propSchema: [
+    { key: 'content', label: '默认值', type: 'string', group: '基础' },
+    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'duration', label: '动画时长(ms)', type: 'number', group: '动画', min: 0, max: 6000, step: 100 },
+    { key: 'decimals', label: '小数位', type: 'number', group: '动画', min: 0, max: 6 },
+    { key: 'prefix', label: '前缀', type: 'string', group: '格式' },
+    { key: 'suffix', label: '后缀', type: 'string', group: '格式' },
+    { key: 'useGrouping', label: '千分位', type: 'boolean', group: '格式' },
+    { key: 'fontSize', label: '字号', type: 'number', group: '文本样式', min: 8, max: 72 },
+    { key: 'fontWeight', label: '字重', type: 'select', group: '文本样式', options: [
+      { label: '细体', value: '300' }, { label: '常规', value: 'normal' }, { label: '中等', value: '500' },
+      { label: '半粗', value: '600' }, { label: '粗体', value: 'bold' },
+    ]},
+    { key: 'fontFamily', label: '字体', type: 'select', group: '文本样式', options: [
+      { label: '系统默认', value: '' }, { label: '等宽字体', value: 'monospace' },
+      { label: '衬线体', value: 'Georgia, serif' }, { label: '无衬线', value: 'Helvetica, sans-serif' },
+    ]},
+    { key: 'color', label: '颜色', type: 'color', group: '文本样式' },
+    { key: 'textAlign', label: '对齐', type: 'select', group: '文本样式', options: [
+      { label: '左对齐', value: 'left' }, { label: '居中', value: 'center' }, { label: '右对齐', value: 'right' },
+    ]},
+    { key: 'letterSpacing', label: '字间距', type: 'number', group: '文本样式', min: -2, max: 10, step: 0.5 },
+    { key: 'lineHeight', label: '行高', type: 'number', group: '文本样式', min: 1, max: 3, step: 0.1 },
+    { key: 'textDecoration', label: '装饰', type: 'select', group: '文本样式', options: [
+      { label: '无', value: 'none' }, { label: '下划线', value: 'underline' },
+      { label: '删除线', value: 'line-through' }, { label: '上划线', value: 'overline' },
+    ]},
+    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+  ],
+  eventSchema: [],
+  defaultSize: { w: 200, h: 44 },
+  render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
+    const hasExplicitBinding = Boolean(
+      component.fieldBinding
+      || component.props.rangeRef
+      || component.props.tableBinding,
+    );
+    const previewValue = mode === 'preview' && hasExplicitBinding ? runtime?.value : undefined;
+    const content = previewValue == null || previewValue === '' ? (component.props.content ?? '0') : previewValue;
+    const textStyle = controlText({
+      fontSize: component.props.fontSize || 32,
+      fontWeight: component.props.fontWeight || 'bold',
+      fontFamily: component.props.fontFamily || undefined,
+      color: component.props.color || '#2563eb',
+      textAlign: component.props.textAlign || 'left',
+      letterSpacing: component.props.letterSpacing || 0,
+      lineHeight: component.props.lineHeight || 1.2,
+      textDecoration: component.props.textDecoration || 'none',
+    });
+    return (
+      <div style={{ width: '100%', height: '100%', minWidth: 0, display: 'flex', alignItems: 'center', padding: '0 2px', boxSizing: 'border-box', overflow: 'hidden' }}>
+        <AnimatedNumber
+          value={content}
+          duration={Number(component.props.duration) || 1200}
+          decimals={Number(component.props.decimals) || 0}
+          prefix={String(component.props.prefix ?? '')}
+          suffix={String(component.props.suffix ?? '')}
+          useGrouping={component.props.useGrouping !== false}
+          style={textStyle}
+        />
+      </div>
+    );
+  },
 });
 
 registerControl({

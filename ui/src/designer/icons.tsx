@@ -83,6 +83,7 @@ const ICONS: Record<string, IconComponent> = {
   button: Application,
   text: Text,
   image: Picture,
+  animatedNumber: ChartHistogram,
   table: Table,
   chart: ChartHistogram,
   card: CardTwo,

@@ -280,3 +280,17 @@
   text-align: right;
   flex-shrink: 0;
 }
+.dashboard-page { padding: 20px; height: 100%; overflow: auto; }
+.dashboard-toolbar { margin-bottom: 16px; }
+.dashboard-widget { height: 100%; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); overflow: hidden; padding: 10px; }
+.react-resizable { position: relative; }
+.react-resizable-handle { position: absolute; right: 3px; bottom: 3px; width: 14px; height: 14px; cursor: se-resize; }
+.dashboard-widget-title { font-weight: 600; cursor: move; padding: 2px 4px 8px; }
+.advanced-svg { width: 100%; height: calc(100% - 32px); color: var(--text-color); }
+.advanced-svg text { font-size: 11px; cursor: pointer; }
+.advanced-heatmap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; height: calc(100% - 32px); }
+.advanced-heatmap button, .advanced-funnel button { border: 0; color: inherit; cursor: pointer; border-radius: 4px; }
+.advanced-heatmap button { display: grid; place-content: center; }
+.advanced-heatmap b { font-size: 18px; }
+.advanced-funnel { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.advanced-funnel button { min-height: 30px; color: white; }

@@ -21,8 +21,8 @@ const workflow: WorkflowFile = {
   description: '',
   nodes: [
     {
-      id: 'input', type: 'flow-node', specId: 'generic:variable-input', position: { x: 0, y: 0 },
-      data: { propertiesJson: JSON.stringify({ varName: 'customerName', varValue: '默认值' }) },
+      id: 'input', type: 'flow-node', specId: 'generic:value-input', position: { x: 0, y: 0 },
+      data: { propertiesJson: JSON.stringify({ name: 'customerName', valueType: 'string', value: '默认值' }) },
     },
     {
       id: 'display', type: 'flow-node', specId: 'generic:output-display', position: { x: 200, y: 0 },
@@ -361,6 +361,52 @@ test('callbacks can call host-registered functions by name', async () => {
   });
   assert.equal(result.error, undefined);
   assert.equal(result.callbackResult, '新客户');
+});
+
+test('bare scripts can use top-level aliases without ctx', async () => {
+  const writes: Array<[string, unknown]> = [];
+  const result = await executeFormControlEvent(context, {
+    workflows: [],
+    setValue: (field, value) => { writes.push([field, value]); },
+    code: `await setValue('summary', getValue('customerName'));
+return getValue('summary');`,
+  });
+  assert.equal(result.error, undefined);
+  assert.deepEqual(writes, [['summary', '新客户']]);
+  assert.equal(result.callbackResult, '新客户');
+});
+
+test('Print helpers write internal debug logs without user-facing messages', async () => {
+  const notices: string[] = [];
+  const result = await executeFormControlEvent(context, {
+    workflows: [],
+    setValue: () => {},
+    showMessage: (message) => { notices.push(message); },
+    code: `Print('开始处理', { field, value });
+PrintWarn('注意', previousValue);
+PrintError(new Error('打印测试'));
+PrintDebug('详细', changedFields);
+return value;`,
+  });
+  assert.equal(result.error, undefined);
+  assert.equal(result.callbackResult, '新客户');
+  assert.deepEqual(notices, []);
+  assert.equal(result.trace.effects.debugLogs.length, 4);
+  assert.deepEqual(result.trace.effects.debugLogs.map((item) => item.level), ['info', 'warn', 'error', 'debug']);
+});
+
+test('function callback bodies can mix ctx access with top-level aliases', async () => {
+  const result = await executeFormControlEvent(context, {
+    workflows: [],
+    setValue: () => {},
+    code: `async (ctx) => {
+      PrintDebug('function callback', value);
+      return ctx.getValue('customerName') + ':' + value;
+    }`,
+  });
+  assert.equal(result.error, undefined);
+  assert.equal(result.callbackResult, '新客户:新客户');
+  assert.equal(result.trace.effects.debugLogs[0]?.level, 'debug');
 });
 
 test('a callback can run its configured workflow with direct parameters without an automatic duplicate run', async () => {

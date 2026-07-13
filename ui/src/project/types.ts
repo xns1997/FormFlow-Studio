@@ -79,6 +79,10 @@ export interface ProjectBehaviorSettings {
   scriptTimeout: number;
   errorStrategy: 'show-error' | 'silent';
   loopProtection: number;
+  enableDebugDrawer: boolean;
+  autoOpenDebugDrawerOnWarnOrError: boolean;
+  mirrorScriptLogsToConsole: boolean;
+  enableServerDebugApi: boolean;
 }
 
 export interface ProjectPublishSettings {
@@ -113,6 +117,10 @@ export function createDefaultProjectSettings(): ProjectSettings {
       scriptTimeout: 5000,
       errorStrategy: 'show-error',
       loopProtection: 100,
+      enableDebugDrawer: true,
+      autoOpenDebugDrawerOnWarnOrError: true,
+      mirrorScriptLogsToConsole: true,
+      enableServerDebugApi: true,
     },
     publish: {
       format: 'json',
@@ -293,6 +301,7 @@ export interface TableConfig {
   rowHeight: number;
   alternateRowColor: boolean;
   showGridLines: boolean;
+  showRowNumbers: boolean;
   autoFitColumns: boolean;
   filterEnabled: boolean;
   sortEnabled: boolean;
@@ -316,6 +325,7 @@ export function createDefaultTableConfig(id: string, tableName: string): TableCo
     rowHeight: 28,
     alternateRowColor: true,
     showGridLines: true,
+    showRowNumbers: true,
     autoFitColumns: true,
     filterEnabled: true,
     sortEnabled: true,
@@ -578,6 +588,29 @@ export interface FormEventExecutionStage {
   details?: string[];
 }
 
+export type DebugEntryLevel = 'info' | 'warn' | 'error' | 'debug';
+export type DebugEntrySource = 'script' | 'flow' | 'workflow-node' | 'ui' | 'server';
+export type DebugEntryChannel = 'preview' | 'usage' | 'behavior-test' | 'backend';
+export type DebugEntryFormat = 'text' | 'json' | 'table' | 'group';
+
+export interface DebugEntry {
+  id: string;
+  timestamp: number;
+  level: DebugEntryLevel;
+  source: DebugEntrySource;
+  channel?: DebugEntryChannel;
+  title?: string;
+  message: string;
+  format?: DebugEntryFormat;
+  context?: Record<string, unknown>;
+  eventName?: string;
+  field?: string;
+  componentId?: string;
+  workflowId?: string;
+  nodeId?: string;
+  requestId?: string;
+}
+
 export interface FormEventExecutionTrace {
   eventName: string;
   field: string;
@@ -587,6 +620,7 @@ export interface FormEventExecutionTrace {
     updatedComponents: string[];
     requiredFields: string[];
     messages: Array<{ level: 'info' | 'success' | 'warning' | 'error'; message: string }>;
+    debugLogs: DebugEntry[];
   };
 }
 

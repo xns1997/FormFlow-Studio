@@ -88,7 +88,7 @@ export type ComponentType =
   | 'input' | 'textarea' | 'select' | 'radio' | 'checkbox'
   | 'datePicker' | 'timePicker' | 'dateRange' | 'numberInput' | 'switch' | 'rating'
   | 'segmented' | 'tagInput'
-  | 'upload' | 'imageUpload' | 'image' | 'table' | 'container'
+  | 'upload' | 'imageUpload' | 'image' | 'animatedNumber' | 'table' | 'container'
   | 'tabs' | 'steps' | 'button' | 'text' | 'custom';
 
 export interface ComponentNode {
@@ -96,6 +96,7 @@ export interface ComponentNode {
   type: ComponentType;
   name: string;
   label: string;
+  fieldBinding?: string;
   props: Record<string, unknown>;
   layout: LayoutPosition;
   ports: ComponentPort[];

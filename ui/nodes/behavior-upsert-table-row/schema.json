@@ -1,0 +1,20 @@
+{
+  "id": "behavior-upsert-table-row",
+  "label": "写回表记录",
+  "description": "按主键把单条记录写回指定数据表",
+  "category": "行为 · 动作",
+  "kind": "generic",
+  "properties": [
+    { "name": "tableId", "label": "数据表 ID", "type": "string", "default": "", "description": "目标数据表 ID" },
+    { "name": "sheetName", "label": "工作表", "type": "string", "default": "", "description": "目标工作表名称" },
+    { "name": "keyField", "label": "主键字段", "type": "string", "default": "", "description": "写回使用的主键字段" },
+    { "name": "keyValue", "label": "主键值", "type": "string", "default": "", "description": "固定主键值，可被运行时覆盖" },
+    { "name": "keyValueExpr", "label": "主键表达式", "type": "string", "default": "", "description": "支持 $row.xxx 形式从记录取主键值" }
+  ],
+  "ports": [
+    { "name": "row", "label": "记录", "type": "object", "direction": "input", "required": true, "description": "待写回的记录对象" },
+    { "name": "writeBack", "label": "写回动作", "type": "object", "direction": "output", "description": "生成的 upsert sideEffect" },
+    { "name": "keyValue", "label": "主键值", "type": "any", "direction": "output", "description": "最终使用的主键值" }
+  ],
+  "keywords": ["upsert", "写回", "保存记录", "table row", "crud"]
+}

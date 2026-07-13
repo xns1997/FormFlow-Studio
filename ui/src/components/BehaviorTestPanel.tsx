@@ -2,6 +2,8 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import type { EventFieldDescriptor } from './codeEditorSuggestions';
+import type { DebugEntry } from '../project/types';
+import DebugDrawer from './DebugDrawer';
 
 interface TestLog {
   timestamp: number;
@@ -21,15 +23,31 @@ interface BehaviorTestPanelProps {
 export default function BehaviorTestPanel({ code, eventName, fields }: BehaviorTestPanelProps) {
   const [testValues, setTestValues] = useState<Record<string, string>>({});
   const [logs, setLogs] = useState<TestLog[]>([]);
+  const [debugEntries, setDebugEntries] = useState<DebugEntry[]>([]);
+  const [debugOpen, setDebugOpen] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
 
   const addLog = useCallback((log: Omit<TestLog, 'timestamp'>) => {
     setLogs((prev) => [...prev, { ...log, timestamp: Date.now() }]);
+    const level = log.type === 'error' ? 'error' : log.type === 'info' ? 'info' : 'debug';
+    setDebugEntries((prev) => [...prev, {
+      id: `behavior-test:${Date.now()}:${prev.length}`,
+      timestamp: Date.now(),
+      level,
+      source: 'script',
+      channel: 'behavior-test',
+      title: log.method || 'behavior-test',
+      message: log.message,
+      context: log.args ? { args: log.args, result: log.result } : undefined,
+      eventName,
+    }]);
+    if (log.type === 'error') setDebugOpen(true);
   }, []);
 
   const runTest = useCallback(() => {
     setIsRunning(true);
     setLogs([]);
+    setDebugEntries([]);
     addLog({ type: 'info', message: `开始执行 [${eventName}] 脚本...` });
 
     // Parse test values into formValues
@@ -202,7 +220,7 @@ export default function BehaviorTestPanel({ code, eventName, fields }: BehaviorT
   const clearLogs = useCallback(() => setLogs([]), []);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
       {/* 测试数据输入 */}
       <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--line)', flexShrink: 0 }}>
         <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>模拟数据</div>
@@ -222,18 +240,14 @@ export default function BehaviorTestPanel({ code, eventName, fields }: BehaviorT
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
           <button
+            type="button"
             onClick={runTest}
             disabled={isRunning}
-            style={{
-              padding: '4px 12px', fontSize: 11, fontWeight: 600,
-              border: 'none', borderRadius: 6,
-              background: isRunning ? 'var(--line)' : 'var(--accent)',
-              color: '#fff', cursor: isRunning ? 'not-allowed' : 'pointer',
-            }}
+            className="ui-btn ui-btn-primary ui-btn-xs"
           >
             {isRunning ? '执行中...' : '▶ 运行测试'}
           </button>
-          <button onClick={clearLogs} style={{ padding: '4px 10px', fontSize: 11, border: '1px solid var(--line)', borderRadius: 6, background: 'var(--panel)' }}>清空日志</button>
+          <button type="button" onClick={clearLogs} className="ui-btn ui-btn-subtle ui-btn-xs">清空日志</button>
         </div>
       </div>
 
@@ -265,6 +279,12 @@ export default function BehaviorTestPanel({ code, eventName, fields }: BehaviorT
           </div>
         )}
       </div>
+      <DebugDrawer
+        entries={debugEntries}
+        open={debugOpen}
+        onToggle={setDebugOpen}
+        title="行为测试调试"
+      />
     </div>
   );
 }

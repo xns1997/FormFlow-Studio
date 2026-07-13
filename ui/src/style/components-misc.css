@@ -5,16 +5,16 @@
 .project-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .project-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
   background: var(--panel);
-  border: 1px solid var(--line);
+  border: var(--border);
   border-radius: var(--radius);
   cursor: pointer;
   transition: all 0.15s;
@@ -22,7 +22,7 @@
 
 .project-item:hover {
   border-color: var(--accent);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-md);
 }
 
 .project-item.active {
@@ -33,7 +33,7 @@
 .project-item-icon {
   width: 36px;
   height: 36px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--accent-soft);
   display: flex;
   align-items: center;
@@ -58,7 +58,7 @@
 
 .project-item-actions {
   display: flex;
-  gap: 4px;
+  gap: var(--space-xs);
   opacity: 0;
   transition: opacity 0.15s;
 }
@@ -68,11 +68,12 @@
 }
 
 .project-item-actions button {
-  padding: 4px 8px;
+  padding: var(--space-xs) var(--space-sm);
   font-size: 11px;
-  border: 1px solid var(--line);
+  border: var(--border);
   border-radius: var(--radius);
   background: var(--panel);
+  transition: all 0.15s ease;
 }
 
 .project-item-actions button:hover {
@@ -89,7 +90,7 @@
 }
 
 .interface-tree-item {
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--border);
 }
 
 .interface-tree-row {
@@ -145,10 +146,10 @@
 /* ── Left Panel (tabs: Toolbox + Tree) ──────────────────── */
 
 .left-panel {
-  width: 240px;
+  width: var(--col-left-width);
   flex-shrink: 0;
   background: var(--panel);
-  border-right: 1px solid var(--line);
+  border-right: var(--border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -156,12 +157,12 @@
 
 .left-panel-tabs {
   display: flex;
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--border);
 }
 
 .left-panel-tab {
   flex: 1;
-  padding: 8px;
+  padding: var(--space-sm);
   font-size: 11px;
   font-weight: 600;
   text-align: center;
@@ -170,6 +171,7 @@
   color: var(--muted);
   cursor: pointer;
   border-bottom: 2px solid transparent;
+  transition: all 0.15s ease;
 }
 
 .left-panel-tab.active {
@@ -185,17 +187,18 @@
 /* ── Component Tree ─────────────────────────────────────── */
 
 .component-tree {
-  padding: 8px;
+  padding: var(--space-sm);
 }
 
 .component-tree-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
+  padding: var(--space-xs) var(--space-sm);
   border-radius: var(--radius);
   cursor: pointer;
   font-size: 11px;
+  transition: all 0.15s ease;
 }
 
 .component-tree-item:hover {
@@ -220,14 +223,14 @@
 /* ── Property Events ────────────────────────────────────── */
 
 .prop-event {
-  margin-bottom: 8px;
+  margin-bottom: var(--space-sm);
 }
 
 .prop-event-header {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 4px;
+  margin-bottom: var(--space-xs);
 }
 
 .prop-event-key {
@@ -385,3 +388,13 @@
   border: 1px solid var(--line);
   font-family: monospace;
 }
+.ai-assistant-fab { position: fixed; right: 24px; bottom: 24px; z-index: 900; width: 48px; height: 48px; }
+.ai-chat-messages { display: flex; flex-direction: column; gap: 10px; min-height: 300px; max-height: calc(100vh - 250px); overflow: auto; margin-bottom: 16px; }
+.ai-chat-message { max-width: 85%; white-space: pre-wrap; padding: 10px 12px; border-radius: 10px; background: var(--bg-muted); }
+.ai-chat-message.user { align-self: flex-end; background: color-mix(in srgb, var(--accent) 16%, var(--bg-card)); }
+.notification-unread { background: color-mix(in srgb, var(--accent) 8%, transparent); font-weight: 600; }
+.notification-settings { display: grid; gap: 16px; }
+.notification-settings label { display: flex; justify-content: space-between; align-items: center; }
+.notification-list { display: grid; gap: 2px; }
+.notification-item { display: grid; gap: 4px; text-align: left; border: 0; border-bottom: 1px solid var(--border-color); background: transparent; color: inherit; padding: 12px; cursor: pointer; }
+.notification-item span { color: var(--text-secondary); font-size: 12px; }

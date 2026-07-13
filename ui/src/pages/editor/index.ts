@@ -9,3 +9,8 @@ export { default as FormDesignerPage } from './FormDesignerPage';
 export { default as LegacyProjectRedirectPage } from './LegacyProjectRedirectPage';
 export { default as UsagePage } from './UsagePage';
 export { default as UnifiedEditorPage } from './UnifiedEditorPage';
+export { TaskMonitorPage } from './TaskMonitorPage';
+export { DashboardPage } from './DashboardPage';
+export { DataQualityPage } from './DataQualityPage';
+export { DataLineagePage } from './DataLineagePage';
+export { MetadataPage } from './MetadataPage';

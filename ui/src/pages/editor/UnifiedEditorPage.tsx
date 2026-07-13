@@ -35,7 +35,7 @@ export default function UnifiedEditorPage() {
   const [forms, setForms] = useState<FormEntry[]>([]);
   const [activeFormId, setActiveFormId] = useState<string | null>(null);
   const [leftPanelTab, setLeftPanelTab] = useState<'controls' | 'forms' | 'behaviors' | 'workflows'>('controls');
-  const [editMode, setEditMode] = useState<EditMode>('design');
+  const [editMode, setEditMode] = useState<EditMode>('data');
 
   // 行为相关状态
   const [editingBehaviorId, setEditingBehaviorId] = useState<string | null>(null);
@@ -137,6 +137,22 @@ export default function UnifiedEditorPage() {
   const switchToSettings = useCallback(() => {
     setEditMode('settings');
   }, []);
+
+  useEffect(() => {
+    if (editMode !== 'design') return;
+    const first = requestAnimationFrame(() => {
+      designer.refreshCanvasSize?.();
+    });
+    const second = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        designer.refreshCanvasSize?.();
+      });
+    });
+    return () => {
+      cancelAnimationFrame(first);
+      cancelAnimationFrame(second);
+    };
+  }, [editMode, designer]);
 
   // ── 表单操作 ──────────────────────────────────
 
@@ -256,47 +272,50 @@ export default function UnifiedEditorPage() {
     <div className="unified-editor">
       {/* 工具栏 */}
       <div className="unified-toolbar">
-        {/* 模式切换 */}
-        <div className="unified-mode-switch">
-          <button className={`unified-mode-btn ${editMode === 'design' ? 'active' : ''}`} onClick={switchToDesign}>
-            表单设计
-          </button>
-          <button className={`unified-mode-btn ${editMode === 'behavior' ? 'active' : ''}`} onClick={() => switchToBehavior()}>
-            行为定义
-          </button>
-          <button className={`unified-mode-btn ${editMode === 'flow' ? 'active' : ''}`} onClick={switchToFlow}>
-            流程编排
-          </button>
+        <div className="unified-toolbar-primary">
+          <div className="unified-mode-switch unified-mode-switch-main">
+            <button className={`unified-mode-btn ${editMode === 'data' ? 'active' : ''}`} onClick={switchToData}>
+              数据预览
+            </button>
+            <button className={`unified-mode-btn ${editMode === 'design' ? 'active' : ''}`} onClick={switchToDesign}>
+              表单设计
+            </button>
+            <button className={`unified-mode-btn ${editMode === 'behavior' ? 'active' : ''}`} onClick={() => switchToBehavior()}>
+              行为定义
+            </button>
+            <button className={`unified-mode-btn ${editMode === 'flow' ? 'active' : ''}`} onClick={switchToFlow}>
+              流程编排
+            </button>
+            <button className={`unified-mode-btn ${editMode === 'settings' ? 'active' : ''}`} onClick={switchToSettings}>
+              项目设置
+            </button>
+          </div>
         </div>
-        <span className="toolbar-sep" />
-        <div className="unified-mode-switch">
-          <button className={`unified-mode-btn ${editMode === 'data' ? 'active' : ''}`} onClick={switchToData}>
-            数据预览
-          </button>
-          <button className={`unified-mode-btn ${editMode === 'settings' ? 'active' : ''}`} onClick={switchToSettings}>
-            项目设置
-          </button>
-        </div>
-        <span className="toolbar-sep" />
-        {editMode === 'design' && (
-          <button onClick={handleSaveDesign} className="toolbar-btn">保存</button>
-        )}
-        <span className="toolbar-info">
-          {editMode === 'flow' ? `${allWorkflows.length} 个流程` : (
-            <>
-              <select
-                className="toolbar-form-select"
-                value={activeFormId || ''}
-                onChange={(e) => { setActiveFormId(e.target.value); if (editMode === 'behavior') switchToDesign(); }}
-              >
-                {forms.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-              </select>
-              <span className="toolbar-info-detail">
-                {editMode === 'design' ? `${designer.components.length} 个控件` : `${activeBehaviors.length + globalBehaviors.length} 个行为`}
-              </span>
-            </>
+        <div className="unified-toolbar-secondary">
+          {editMode === 'design' && (
+            <button onClick={handleSaveDesign} className="toolbar-btn">保存</button>
           )}
-        </span>
+          <div className="unified-toolbar-context">
+            {editMode === 'flow' ? (
+              <>
+                <span className="unified-context-text">{allWorkflows.length} 个流程</span>
+              </>
+            ) : (
+              <>
+                <select
+                  className="toolbar-form-select"
+                  value={activeFormId || ''}
+                  onChange={(e) => { setActiveFormId(e.target.value); if (editMode === 'behavior') switchToDesign(); }}
+                >
+                  {forms.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+                </select>
+                <span className="toolbar-info-detail">
+                  {editMode === 'design' ? `${designer.components.length} 个控件` : `${activeBehaviors.length + globalBehaviors.length} 个行为`}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="unified-body">

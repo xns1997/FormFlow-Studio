@@ -4,6 +4,7 @@ import type { DesignComponent } from '../../project/types';
 export type ExtendedComponentType =
   | ComponentType
   | 'image'
+  | 'animatedNumber'
   | 'timePicker'
   | 'dateRange'
   | 'segmented'
@@ -27,6 +28,7 @@ const DESIGN_TO_RUNTIME_TYPE: Record<string, ExtendedComponentType> = {
   upload: 'upload',
   imageUpload: 'imageUpload',
   image: 'image',
+  animatedNumber: 'animatedNumber',
   button: 'button',
   text: 'text',
   table: 'table',
@@ -106,6 +108,7 @@ const CHROMELESS_TYPES = new Set<ExtendedComponentType>([
   'tabs',
   'steps',
   'custom',
+  'animatedNumber',
 ]);
 
 export function getRuntimeComponentType(type: string): ExtendedComponentType {

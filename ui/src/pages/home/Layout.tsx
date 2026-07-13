@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import DocModal from '../../components/DocModal';
 import { DesignerIcon } from '../../designer/icons';
 import { useProjectStore } from '../../project/store';
+import { useSystemSettingsStore } from '../../project/systemSettingsStore';
 import {
   buildDocsPath,
   buildProjectSettingsPath,
@@ -13,6 +14,8 @@ import {
   type SystemSettingsSection,
   type WorkspaceTab,
 } from '../../services/io/routes';
+import { AiAssistant } from '../../components/AiAssistant';
+import { NotificationCenter } from '../../components/NotificationCenter';
 
 const homeNavItems = [
   { to: buildProjectsPath(), label: '项目列表', icon: 'projects', match: '/projects' },
@@ -46,7 +49,9 @@ const systemSettingsTabs: Array<{ section: SystemSettingsSection; label: string;
 export default function Layout() {
   const location = useLocation();
   const project = useProjectStore((s) => s.project);
+  const { settings, initSettings } = useSystemSettingsStore();
   const [docOpen, setDocOpen] = useState(false);
+  const [now, setNow] = useState(() => new Date());
   const match = location.pathname.match(/^\/projects\/([^/]+)/);
   const projectId = match?.[1] || '';
   const inWorkspace = !!projectId && location.pathname.includes('/workspace/');
@@ -56,6 +61,43 @@ export default function Layout() {
   const workspaceTab = (location.pathname.split('/').pop() || 'data') as WorkspaceTab;
   const projectSettingsTab = (location.pathname.split('/').pop() || 'general') as ProjectSettingsSection;
   const systemSettingsTab = (location.pathname.split('/').pop() || 'general') as SystemSettingsSection;
+
+  useEffect(() => {
+    initSettings();
+  }, [initSettings]);
+
+  useEffect(() => {
+    if (!settings.general.showClock) return undefined;
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, [settings.general.showClock]);
+
+  const clockText = useMemo(() => {
+    if (!settings.general.showClock) return '';
+    const datePart = settings.general.dateFormat === 'locale'
+      ? now.toLocaleDateString(settings.general.language, { timeZone: settings.general.timezone })
+      : (() => {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+          timeZone: settings.general.timezone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).formatToParts(now);
+        const year = parts.find((part) => part.type === 'year')?.value || '0000';
+        const month = parts.find((part) => part.type === 'month')?.value || '00';
+        const day = parts.find((part) => part.type === 'day')?.value || '00';
+        const separator = settings.general.dateFormat === 'YYYY/MM/DD' ? '/' : '-';
+        return `${year}${separator}${month}${separator}${day}`;
+      })();
+    const timePart = new Intl.DateTimeFormat(settings.general.language, {
+      timeZone: settings.general.timezone,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: settings.general.showSeconds ? '2-digit' : undefined,
+      hour12: !settings.general.use24Hour,
+    }).format(now);
+    return `${datePart} ${timePart}`;
+  }, [now, settings.general.dateFormat, settings.general.language, settings.general.showClock, settings.general.showSeconds, settings.general.timezone, settings.general.use24Hour]);
 
   return (
     <div className="app-layout">
@@ -140,6 +182,13 @@ export default function Layout() {
         )}
 
         <div className="nav-links nav-links-doc">
+          <NotificationCenter />
+          {settings.general.showClock && (
+            <div className="nav-status-clock" title={settings.general.timezone}>
+              <DesignerIcon name="timePicker" className="nav-icon" />
+              <span className="nav-status-clock-text">{clockText}</span>
+            </div>
+          )}
           {projectId ? (
             <button
               type="button"
@@ -164,6 +213,7 @@ export default function Layout() {
         <Outlet />
       </main>
       {projectId && <DocModal open={docOpen} onClose={() => setDocOpen(false)} />}
+      {projectId && <AiAssistant />}
     </div>
   );
 }

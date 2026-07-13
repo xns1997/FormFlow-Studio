@@ -1,5 +1,5 @@
 import type { ComponentNode } from '../../models';
-import type { SrcTableEntry, WorkflowFile } from '../../project/types';
+import type { DebugEntry, SrcTableEntry, WorkflowFile } from '../../project/types';
 import type { FormEventExecutionStage, FormEventExecutionTrace, FormLinkageRule } from '../../project/types';
 import {
   executeFormFlowTrigger,
@@ -26,6 +26,12 @@ import {
   type ResetFormOptions,
   type ResetFormResult,
 } from './crudHelpers';
+import {
+  createScriptExecutionScope,
+  executeInjectedScript,
+  getNativeConsole,
+  type ScriptLogEntry,
+} from '../config/scriptRuntime';
 
 export type FormEventCallback = (context: FormEventRuntimeContext, ...args: unknown[]) => unknown | Promise<unknown>;
 
@@ -81,7 +87,8 @@ export interface FormEventRuntimeContext extends FormControlEventContext {
   runConfiguredWorkflow: (parameters?: Record<string, unknown>) => Promise<FlowExecutionResult>;
   call: (name: string, ...args: unknown[]) => Promise<unknown>;
   callbacks: Record<string, FormEventCallback>;
-  console: Pick<Console, 'log' | 'warn' | 'error'>;
+  debug: (label: string, data?: unknown, options?: Partial<DebugEntry>) => void;
+  console: Pick<Console, 'log' | 'warn' | 'error' | 'debug'>;
 }
 
 function sameValue(left: unknown, right: unknown): boolean {
@@ -104,6 +111,8 @@ function createEventDetail(eventContext: FormControlEventContext, previousValue:
   }
 }
 
+export type ExecutionStageType = 'linkage' | 'script' | 'flow';
+
 export interface ExecuteFormEventOptions {
   workflows: WorkflowFile[];
   tables?: SrcTableEntry[];
@@ -119,6 +128,10 @@ export interface ExecuteFormEventOptions {
   autoRunConfiguredFlow?: boolean;
   components?: ComponentNode[];
   hostRoot?: HTMLElement | null;
+  /** 自定义执行顺序，默认 ['linkage', 'script', 'flow'] */
+  executionOrder?: ExecutionStageType[];
+  /** 流程执行后是否自动将 export 输出回写到表单字段，默认 true */
+  autoWriteFlowOutput?: boolean;
 }
 
 export interface FormEventExecutionResult {
@@ -130,8 +143,6 @@ export interface FormEventExecutionResult {
   trace: FormEventExecutionTrace;
   error?: Error;
 }
-
-const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor as new (...args: string[]) => (...args: unknown[]) => Promise<unknown>;
 
 function createControlAccessors(
   components: ComponentNode[],
@@ -222,32 +233,17 @@ function scrollElementIntoView(target: Element | null) {
   (target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
 }
 
-function isFunctionExpression(code: string): boolean {
-  const source = code.trim();
-  return /^(async\s+)?function\b/.test(source)
-    || /^(async\s*)?\([^)]*\)\s*=>/.test(source)
-    || /^(async\s+)?[A-Za-z_$][\w$]*\s*=>/.test(source);
-}
-
 async function executeCallbackCode(
   code: string,
   context: FormEventRuntimeContext,
   callbacks: Record<string, FormEventCallback>,
+  writeLog: (entry: ScriptLogEntry) => void,
 ): Promise<unknown> {
-  if (isFunctionExpression(code)) {
-    const evaluate = new AsyncFunction('ctx', 'callbacks', `
-      const callback = (${code});
-      if (typeof callback !== 'function') throw new Error('事件代码必须返回一个回调函数');
-      return await callback(ctx);
-    `);
-    return evaluate(context, callbacks);
-  }
-  const evaluate = new AsyncFunction('ctx', 'callbacks', `
-    with (ctx) {
-      return await (async () => { ${code}\n })();
-    }
-  `);
-  return evaluate(context, callbacks);
+  const scope = createScriptExecutionScope(context as unknown as Record<string, unknown>, {
+    callbacks,
+    writeLog,
+  });
+  return executeInjectedScript(code, scope);
 }
 
 export async function executeFormControlEvent(
@@ -274,6 +270,8 @@ export async function executeFormControlEvent(
   const updatedComponents = new Set<string>();
   const requiredFields = new Set<string>();
   const messages: Array<{ level: 'info' | 'success' | 'warning' | 'error'; message: string }> = [];
+  const debugLogs: DebugEntry[] = [];
+  const debugRequestId = `event_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const visibleByComponent = Object.fromEntries(components.map((component) => [component.id, (component as ComponentNode & { visible?: boolean }).visible ?? true]));
   const disabledByComponent = Object.fromEntries(components.map((component) => [component.id, !!component.props.disabled]));
   const requiredByField = Object.fromEntries(components.map((component) => [findComponentField(component), !!component.props.required]));
@@ -428,9 +426,53 @@ export async function executeFormControlEvent(
       parameterMap: { ...(trigger?.parameterMap || {}), ...parameters },
     };
     const result = await executeFormFlowTrigger(workflow, config, runtimeContext, options.tables || []);
+    if (result.debug) {
+      result.debug.workflowId = workflow.id;
+      result.debug.requestId = result.debug.requestId || debugRequestId;
+      for (const entry of result.debug.events) {
+        debugLogs.push({
+          ...entry,
+          workflowId: entry.workflowId || workflow.id,
+          requestId: entry.requestId || result.debug.requestId,
+          eventName: eventContext.eventName,
+          field: eventContext.field,
+          componentId: eventContext.component.id,
+        });
+      }
+    }
+    debugLogs.push({
+      id: `${debugRequestId}:workflow:${workflow.id}`,
+      timestamp: Date.now(),
+      level: result.success ? 'info' : 'error',
+      source: 'flow',
+      title: `流程 ${workflow.name}`,
+      message: result.success ? '流程执行完成' : '流程执行失败',
+      workflowId: workflow.id,
+      requestId: result.debug?.requestId || debugRequestId,
+      eventName: eventContext.eventName,
+      field: eventContext.field,
+      componentId: eventContext.component.id,
+      context: {
+        executedNodeCount: result.debug?.executedNodeCount ?? result.nodeResults.size,
+        exportKeys: result.debug?.exportKeys ?? Object.keys(result.finalOutputs),
+        duration: result.totalDuration,
+        errors: result.errors,
+      },
+    });
     flowResults.push(result);
     if (!result.success) throw new Error(result.errors.join('\n') || `流程 ${workflow.name} 执行失败`);
     return result;
+  };
+
+  const writeDebug = (entry: Omit<DebugEntry, 'id' | 'timestamp'>) => {
+    debugLogs.push({
+      id: `${debugRequestId}:${debugLogs.length + 1}`,
+      timestamp: Date.now(),
+      eventName: entry.eventName || eventContext.eventName,
+      field: entry.field || eventContext.field,
+      componentId: entry.componentId || eventContext.component.id,
+      ...entry,
+    });
   };
 
   runtimeContext = {
@@ -599,10 +641,37 @@ export async function executeFormControlEvent(
       return callback(runtimeContext, ...args);
     },
     callbacks,
+    debug: (label, data, debugOptions = {}) => {
+      writeDebug({
+        level: debugOptions.level || 'debug',
+        source: debugOptions.source || 'script',
+        channel: debugOptions.channel,
+        title: label,
+        message: typeof data === 'string' ? data : label,
+        format: debugOptions.format,
+        context: data && typeof data === 'object' && !Array.isArray(data) ? data as Record<string, unknown> : (Array.isArray(data) ? { rows: data } : undefined),
+        workflowId: debugOptions.workflowId,
+        nodeId: debugOptions.nodeId,
+        requestId: debugOptions.requestId || debugRequestId,
+      });
+    },
     console: {
-      log: (...args) => console.log('[Form Event]', ...args),
-      warn: (...args) => console.warn('[Form Event]', ...args),
-      error: (...args) => console.error('[Form Event]', ...args),
+      log: (...args) => {
+        getNativeConsole().log('[Form Event]', ...args);
+        writeDebug({ level: 'info', source: 'script', title: '[console]', message: args.map(String).join(' ') });
+      },
+      warn: (...args) => {
+        getNativeConsole().warn('[Form Event]', ...args);
+        writeDebug({ level: 'warn', source: 'script', title: '[console]', message: args.map(String).join(' ') });
+      },
+      error: (...args) => {
+        getNativeConsole().error('[Form Event]', ...args);
+        writeDebug({ level: 'error', source: 'script', title: '[console]', message: args.map(String).join(' ') });
+      },
+      debug: (...args) => {
+        getNativeConsole().debug('[Form Event]', ...args);
+        writeDebug({ level: 'debug', source: 'script', title: '[console]', message: args.map(String).join(' ') });
+      },
     },
   };
 
@@ -615,30 +684,50 @@ export async function executeFormControlEvent(
       updatedComponents: [...updatedComponents],
       requiredFields: [...requiredFields],
       messages,
+      debugLogs,
     },
   });
 
   try {
-    if (Array.isArray(linkageRules) && linkageRules.length > 0) {
-      const linkage = await executeLinkageRules(linkageRules, runtimeContext);
-      stages.push(...linkage.stages);
+    const order = options.executionOrder || ['linkage', 'script', 'flow'];
+
+    for (const stage of order) {
+      switch (stage) {
+        case 'linkage':
+          if (Array.isArray(linkageRules) && linkageRules.length > 0) {
+            const linkage = await executeLinkageRules(linkageRules, runtimeContext);
+            stages.push(...linkage.stages);
+          }
+          break;
+        case 'script':
+          if (code) {
+            callbackExecuted = true;
+            const scriptStage: FormEventExecutionStage = {
+              id: `script:${eventContext.eventName}`,
+              type: 'script',
+              label: '高级脚本',
+              status: 'success',
+              details: [],
+            };
+            callbackResult = await executeCallbackCode(code, runtimeContext, callbacks, (entry) => {
+              writeDebug({
+                ...entry,
+                source: entry.source || 'script',
+                requestId: entry.requestId || debugRequestId,
+              });
+            });
+            scriptStage.details = callbackResult === undefined ? ['已执行'] : ['已执行并返回结果'];
+            stages.push(scriptStage);
+          }
+          break;
+        case 'flow':
+          if (options.autoRunConfiguredFlow !== false && trigger?.enabled && trigger.workflowId && !configuredFlowInvoked) {
+            await runWorkflow();
+          }
+          break;
+      }
     }
-    if (code) {
-      callbackExecuted = true;
-      const scriptStage: FormEventExecutionStage = {
-        id: `script:${eventContext.eventName}`,
-        type: 'script',
-        label: '高级脚本',
-        status: 'success',
-        details: [],
-      };
-      callbackResult = await executeCallbackCode(code, runtimeContext, callbacks);
-      scriptStage.details = callbackResult === undefined ? ['已执行'] : ['已执行并返回结果'];
-      stages.push(scriptStage);
-    }
-    if (options.autoRunConfiguredFlow !== false && trigger?.enabled && trigger.workflowId && !configuredFlowInvoked) {
-      await runWorkflow();
-    }
+
     if (flowResults.length > 0) {
       stages.push({
         id: `flow:${trigger?.workflowId || 'runtime'}`,
@@ -647,7 +736,49 @@ export async function executeFormControlEvent(
         status: 'success',
         details: [`执行 ${flowResults.length} 次`],
       });
+
+      // ── 流程输出自动回写表单字段 ──
+      if (options.autoWriteFlowOutput !== false) {
+        const lastResult = flowResults[flowResults.length - 1];
+        if (lastResult.success) {
+          const exportOutputs = lastResult.finalOutputs;
+          const flowModifiedFields: string[] = [];
+          for (const [key, value] of Object.entries(exportOutputs)) {
+            if (key.startsWith('__')) continue;
+            if (!sameValue(runtimeValues[key], value)) {
+              flowModifiedFields.push(key);
+              runtimeValues[key] = value;
+              updatedFields.add(key);
+              await options.setValue(key, value);
+            }
+          }
+          if (flowModifiedFields.length > 0) {
+            stages.push({
+              id: `flow-post:${trigger?.workflowId || 'runtime'}`,
+              type: 'flow',
+              label: '流程输出回写',
+              status: 'success',
+              details: [`回写字段: ${flowModifiedFields.join(', ')}`],
+            });
+            for (const field of flowModifiedFields) {
+              debugLogs.push({
+                id: `${debugRequestId}:flow-output:${field}`,
+                timestamp: Date.now(),
+                level: 'info',
+                source: 'flow',
+                title: '流程输出回写',
+                message: `字段 "${field}" 已被流程输出更新`,
+                workflowId: trigger?.workflowId,
+                requestId: debugRequestId,
+                field,
+                context: { value: runtimeValues[field] },
+              });
+            }
+          }
+        }
+      }
     }
+
     return {
       callbackExecuted,
       callbackResult,

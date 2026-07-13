@@ -1,0 +1,46 @@
+{
+  "config": {
+    "author": "FormFlow Agent",
+    "createdAt": "2026-07-13T00:00:00.000Z",
+    "description": "使用 formflow-project-editor skill 从紧凑 YAML 生成的项目。",
+    "id": "skill_demo_sales_approval",
+    "name": "Skill 示例 · 销售订单审批",
+    "tags": [
+      "Skill 示例",
+      "销售",
+      "审批"
+    ],
+    "updatedAt": "2026-07-13T00:00:00.000Z",
+    "version": "2.0.0"
+  },
+  "formatVersion": 2,
+  "kind": "formflow-project",
+  "release": {
+    "allowBehaviorEditor": true,
+    "allowDesigner": true,
+    "allowWorkflowEditor": true,
+    "defaultFormId": "sales-order-review",
+    "defaultSheet": "Sheet1",
+    "mode": "design"
+  },
+  "settings": {
+    "behavior": {
+      "autoOpenDebugDrawerOnWarnOrError": true,
+      "enableDebugDrawer": true,
+      "enableJsScripts": true,
+      "enableNodeBehavior": true,
+      "enableServerDebugApi": true,
+      "errorStrategy": "show-error",
+      "loopProtection": 100,
+      "mirrorScriptLogsToConsole": true,
+      "scriptTimeout": 5000
+    },
+    "publish": {
+      "allowWriteBack": true,
+      "format": "xlsx",
+      "generateChangeLog": true,
+      "outputFileName": "销售订单审批结果"
+    },
+    "updatedAt": "2026-07-13T00:00:00.000Z"
+  }
+}

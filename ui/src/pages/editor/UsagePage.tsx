@@ -233,10 +233,10 @@ export default function UsagePage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 11, color: 'var(--muted)' }}>{totalRows} 行 × {activeSheet.headers.length} 列</span>
               <div style={{ display: 'flex', gap: 4 }}>
-                <button onClick={handleAddRow} style={{ padding: '3px 8px', fontSize: 11, border: '1px solid var(--line)', borderRadius: 4, background: 'var(--panel)', cursor: 'pointer' }}>+ 新增行</button>
-                <button onClick={handleDeleteRow} disabled={selectedRowIdx === null} style={{ padding: '3px 8px', fontSize: 11, border: '1px solid var(--line)', borderRadius: 4, background: 'var(--panel)', cursor: selectedRowIdx !== null ? 'pointer' : 'not-allowed', opacity: selectedRowIdx !== null ? 1 : 0.5 }}>删除行</button>
+                <button type="button" className="ui-btn ui-btn-xs" onClick={handleAddRow}>+ 新增行</button>
+                <button type="button" className="ui-btn ui-btn-xs" onClick={handleDeleteRow} disabled={selectedRowIdx === null}>删除行</button>
                 {changeCount > 0 && (
-                  <button onClick={handleSave} disabled={saving} style={{ padding: '3px 10px', fontSize: 11, border: 'none', borderRadius: 4, background: saving ? 'var(--line)' : 'var(--accent)', color: '#fff', cursor: saving ? 'wait' : 'pointer' }}>
+                  <button type="button" className="ui-btn ui-btn-primary ui-btn-xs" onClick={handleSave} disabled={saving}>
                     {saving ? '保存中...' : `保存 (${changeCount})`}
                   </button>
                 )}
