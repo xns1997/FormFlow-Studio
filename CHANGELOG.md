@@ -1,3 +1,46 @@
+# 1.0.0 (2026-07-13)
+
+
+### Bug Fixes
+
+* clean duplicate behavior rules + delete legacy style.css + update TODO ([7e4cbfe](https://github.com/xns1997/FormFlow-Studio/commit/7e4cbfe603f37729d28bd342105cffa9153bb64a)), closes [#1](https://github.com/xns1997/FormFlow-Studio/issues/1) [#2](https://github.com/xns1997/FormFlow-Studio/issues/2)
+* condition-branch executor uses evaluateConfiguredExpression for richer scope, removes redundant variable, adds error logging, and adds false-branch test ([9f7cc46](https://github.com/xns1997/FormFlow-Studio/commit/9f7cc465438294a0e14d7ce91f0b232492016e8c))
+* execute custom event code in form components ([5b5fe4d](https://github.com/xns1997/FormFlow-Studio/commit/5b5fe4d09d54fa9bc11b9903df27b302d4e2c33a))
+* Monaco fullscreen button positioning and suggest widget clipping ([511895d](https://github.com/xns1997/FormFlow-Studio/commit/511895d648635ff076c59b43a48135a037452e9a))
+* Monaco suggestions clipping and enable all node executors ([772242f](https://github.com/xns1997/FormFlow-Studio/commit/772242f2a568e090be1991c7929d619335674e67))
+* onNodeFailure abort now stops execution in both sequential and parallel modes ([94c5cd4](https://github.com/xns1997/FormFlow-Studio/commit/94c5cd4fc76c03b67628eae3639b33578f9cb388))
+* passive event warnings and full default outputs for all event nodes ([60e7950](https://github.com/xns1997/FormFlow-Studio/commit/60e79502fab7581a84ad0017617d44a20611d02c))
+* redesign Monaco editor container to allow suggest widget overflow ([b9e88ed](https://github.com/xns1997/FormFlow-Studio/commit/b9e88eda72561f395f9898de3d536e2bb8e661db))
+* revert Monaco overflow hacks causing button/suggestion misplacement ([0ca7d17](https://github.com/xns1997/FormFlow-Studio/commit/0ca7d17c6c82eb9c99dc0d38f53396280661b4dc))
+* sanitize checkpoint id parameter to prevent path traversal attacks ([7ad3641](https://github.com/xns1997/FormFlow-Studio/commit/7ad364154acece319bb8b407a61fcac282e15a91))
+
+
+### Features
+
+* add 18 ML nodes with Python backend ([439f9f2](https://github.com/xns1997/FormFlow-Studio/commit/439f9f209bf6c45718d5c141e57481cbfb07c081))
+* add 25 data processing nodes for complete ETL system ([6d0842a](https://github.com/xns1997/FormFlow-Studio/commit/6d0842a72a9ef5e8251eba34e8cd66c30c8d6c66))
+* add debug option for variable snapshots in flow engine events ([876d8f7](https://github.com/xns1997/FormFlow-Studio/commit/876d8f7bd7f2c6bdb62572e73738323769898f9f))
+* add default event code templates for form components ([57fc024](https://github.com/xns1997/FormFlow-Studio/commit/57fc0243f6ab2ec2198f0966d12c4dbb69f3ff15))
+* add export and display nodes ([a6c7996](https://github.com/xns1997/FormFlow-Studio/commit/a6c7996cf7cb10221f33ca84def5e81ab36ff6f0))
+* add generic-call-workflow node for sub-workflow invocation ([6641541](https://github.com/xns1997/FormFlow-Studio/commit/66415416f52e28ea211187fe50d24df46016290b))
+* add generic-condition-branch node for flow control routing ([bc3a307](https://github.com/xns1997/FormFlow-Studio/commit/bc3a307cca7e09dd71cc889dbed08ceabd5039e6))
+* add generic-for-each loop node for array iteration ([c2b0937](https://github.com/xns1997/FormFlow-Studio/commit/c2b0937e4e1979aa8beadef01154ac99ddcdfa13))
+* add hover tooltips and search keywords to all nodes ([5749451](https://github.com/xns1997/FormFlow-Studio/commit/574945194f7301c49129c1faee63c3e5d51c1147))
+* add isolatedScopes option for variable scope isolation in flow engine ([7537852](https://github.com/xns1997/FormFlow-Studio/commit/75378520889ea63c77f78c8d47363f174b6b6897))
+* add onNodeFailure option to ExecuteFlowOptions ([dcccb6d](https://github.com/xns1997/FormFlow-Studio/commit/dcccb6d5ba8f3ef555a85319b42c7d8c30fb9092))
+* add parallel execution option for flow engine nodes ([a33c3fb](https://github.com/xns1997/FormFlow-Studio/commit/a33c3fb5d097fc2eab5ed77931e791f1712e0c9b))
+* add server-side checkpoint persistence API ([444670a](https://github.com/xns1997/FormFlow-Studio/commit/444670a94e042154065c98519ca9f9ecc3e1c46b))
+* add transactionalSideEffects option for side effect rollback on failure ([6593d43](https://github.com/xns1997/FormFlow-Studio/commit/6593d43f6d268f5d3db6197987d66e1cb1a5e6f9))
+* AG Grid dark theme + Playwright E2E tests ([126f696](https://github.com/xns1997/FormFlow-Studio/commit/126f696a528332e65359c4fad75d54b1609b66d0))
+* complete all 18 TODO items - v0.3.0 ([4d762b8](https://github.com/xns1997/FormFlow-Studio/commit/4d762b857d90eaafc7946e1c72da55281f37c432)), closes [#4](https://github.com/xns1997/FormFlow-Studio/issues/4) [#7](https://github.com/xns1997/FormFlow-Studio/issues/7) [#9](https://github.com/xns1997/FormFlow-Studio/issues/9) [#13](https://github.com/xns1997/FormFlow-Studio/issues/13) [#16](https://github.com/xns1997/FormFlow-Studio/issues/16) [#18](https://github.com/xns1997/FormFlow-Studio/issues/18) [#8](https://github.com/xns1997/FormFlow-Studio/issues/8)
+* complete form orchestration framework ([a2dbbb5](https://github.com/xns1997/FormFlow-Studio/commit/a2dbbb5df013c30d25820bc2f6d9a3a61ac0e937))
+* debug mode + result persistence + error context + version history + minimap colors ([2505895](https://github.com/xns1997/FormFlow-Studio/commit/25058955e153ffc5bd88c283df173c4d0fce4fc6)), closes [#4](https://github.com/xns1997/FormFlow-Studio/issues/4) [#7](https://github.com/xns1997/FormFlow-Studio/issues/7) [#8](https://github.com/xns1997/FormFlow-Studio/issues/8) [#9](https://github.com/xns1997/FormFlow-Studio/issues/9) [#11](https://github.com/xns1997/FormFlow-Studio/issues/11) [#12](https://github.com/xns1997/FormFlow-Studio/issues/12) [#13](https://github.com/xns1997/FormFlow-Studio/issues/13) [#16](https://github.com/xns1997/FormFlow-Studio/issues/16) [#17](https://github.com/xns1997/FormFlow-Studio/issues/17) [#18](https://github.com/xns1997/FormFlow-Studio/issues/18)
+* **flowEngine:** add timeoutMs and nodeTimeoutMs options ([589effe](https://github.com/xns1997/FormFlow-Studio/commit/589effe008c2ce2cb449c850ee1e3470ea719841))
+* v0.2.0 - 全部节点真实可运行 + Range Selector Excel级 + 表单预览可交互 + Monaco浅色主题 ([77df53d](https://github.com/xns1997/FormFlow-Studio/commit/77df53dee784c406c27baea23fb511e5d040ff0b))
+* v0.6.0 - UI 代码结构重构 + 全局文档系统 ([40681ae](https://github.com/xns1997/FormFlow-Studio/commit/40681aeabdbee370d51d26c789d9870af190a03a))
+* v0.7.0 - 工作流I/O节点 + CRUD节点包 + 输入端口增强 + 阀门选型示例 ([4dced51](https://github.com/xns1997/FormFlow-Studio/commit/4dced517460a161ddb97c041e88c06d39c3b9eed))
+* v0.7.1 - 设计器画布修复 + 文档样式优化 + 上海餐饮企业分析示例 ([72067ed](https://github.com/xns1997/FormFlow-Studio/commit/72067ed3a0285a71affe891131ccde0ad47dc329))
+
 # Changelog
 
 ## [0.9.0] - 2026-07-13
