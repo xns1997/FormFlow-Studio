@@ -815,7 +815,7 @@ let registryInstance: NodeRegistry | null = null;
 let registryPromise: Promise<NodeRegistry> | null = null;
 let pluginHotReloadInitialized = false;
 
-export const EXPECTED_NODE_COUNT = 147;
+export const EXPECTED_NODE_COUNT = 160;
 
 export const CURATED_XLSX_METHODS = new Set([
   'XLSX.read',

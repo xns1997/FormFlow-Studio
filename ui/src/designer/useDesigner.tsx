@@ -471,11 +471,13 @@ export function useDesigner() {
     });
     graph.bindKey(['meta+z', 'ctrl+z'], () => {
       graph.undo();
+      state.bumpHistoryRevision();
       requestAnimationFrame(syncComponentsFromGraph);
       return false;
     });
     graph.bindKey(['meta+shift+z', 'ctrl+shift+z'], () => {
       graph.redo();
+      state.bumpHistoryRevision();
       requestAnimationFrame(syncComponentsFromGraph);
       return false;
     });
@@ -664,11 +666,12 @@ export function useDesigner() {
   }, [graphRef, componentsRef, commitComponents, setNodeComponentData, selectedIdRef, syncComponentsFromGraph]);
 
   return {
-    containerRef, graphRef, initGraph,
-    selectedId, setSelectedId: selectComponent, selectionOverlay, components, zoom, mode,
+    containerRef, graphRef, resizeObserverRef, initGraph,
+    selectedId, setSelectedId: selectComponent, selectionOverlay, components, zoom, mode, historyRevision: state.historyRevision,
     addComponent: actions.addComponent,
     removeComponent: actions.removeComponent,
     updateComponentProps: actions.updateComponentProps,
+    updateComponentGeometry: actions.updateComponentGeometry,
     reparentComponent: actions.reparentComponent,
     clearDesign: io.clearDesign,
     loadDesign: io.loadDesign,

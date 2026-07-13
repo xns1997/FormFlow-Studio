@@ -6,17 +6,19 @@ interface DesignerHistoryCtx extends DesignerState {
 }
 
 export function useDesignerHistory(ctx: DesignerHistoryCtx) {
-  const { graphRef, syncComponentsFromGraph } = ctx;
+  const { graphRef, syncComponentsFromGraph, bumpHistoryRevision } = ctx;
 
   const undo = useCallback(() => {
     graphRef.current?.undo();
+    bumpHistoryRevision();
     requestAnimationFrame(syncComponentsFromGraph);
-  }, [graphRef, syncComponentsFromGraph]);
+  }, [graphRef, syncComponentsFromGraph, bumpHistoryRevision]);
 
   const redo = useCallback(() => {
     graphRef.current?.redo();
+    bumpHistoryRevision();
     requestAnimationFrame(syncComponentsFromGraph);
-  }, [graphRef, syncComponentsFromGraph]);
+  }, [graphRef, syncComponentsFromGraph, bumpHistoryRevision]);
 
   return { undo, redo };
 }

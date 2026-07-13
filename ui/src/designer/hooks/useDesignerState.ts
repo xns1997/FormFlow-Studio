@@ -58,6 +58,7 @@ export function useDesignerState() {
   const [components, setComponents] = useState<DesignComponent[]>([]);
   const [zoom, setZoom] = useState(1);
   const [mode, setMode] = useState<'design' | 'preview'>('design');
+  const [historyRevision, setHistoryRevision] = useState(0);
 
   // Helper functions
   const commitComponents = useCallback((updater: React.SetStateAction<DesignComponent[]>) => {
@@ -86,6 +87,7 @@ export function useDesignerState() {
       height: Math.max(min.h, height),
     };
   }, []);
+  const bumpHistoryRevision = useCallback(() => setHistoryRevision((value) => value + 1), []);
 
   return {
     // Refs
@@ -109,6 +111,8 @@ export function useDesignerState() {
     setZoom,
     mode,
     setMode,
+    historyRevision,
+    bumpHistoryRevision,
     // Helpers
     commitComponents,
     setNodeComponentData,

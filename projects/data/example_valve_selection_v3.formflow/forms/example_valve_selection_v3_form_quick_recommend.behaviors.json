@@ -1,3 +1,14 @@
 {
-  "behaviors": []
+  "behaviors": [
+    {
+      "id": "bh_1783918868609",
+      "name": "嗷嗷",
+      "event": "onFieldChange",
+      "code": "// 嗷嗷\n",
+      "priority": 10,
+      "enabled": true,
+      "createdAt": "2026-07-13T05:01:08.609Z",
+      "updatedAt": "2026-07-13T05:01:08.609Z"
+    }
+  ]
 }

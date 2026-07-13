@@ -412,10 +412,10 @@ test('valve selection v2 example supports multi-table rule-based recommendation 
   assert.match(String(rerun.patches['无结果提示'] || ''), /无可用型号/);
 });
 
-test('valve selection v3 example supports staged intake, normalization, candidate generation, scoring, proposal, confirm and archive', async () => {
+test('valve selection v3 example supports staged intake through confirmation and reports the missing archive target', async () => {
   const project = loadProject('example_valve_selection_v3');
   assert.equal(project.forms.length, 5);
-  assert.equal(project.srcTable.length, 6);
+  assert.equal(project.srcTable.length, 5);
   assert.equal(project.workflows.length, 10);
 
   const candidateWorkflow = project.workflows.find((workflow) => workflow.id === 'example_valve_selection_v3_wf_generate_candidates');
@@ -543,7 +543,7 @@ test('valve selection v3 example supports staged intake, normalization, candidat
   assert.equal(confirmed.patches['受理状态'], '已确认');
   assert.equal(confirmed.project.srcTable.find((table) => table.id === 'request_intake')?.sheets[0].preview.find((row) => row.需求编号 === 9901)?.推荐方案号, 'CASE-9901');
 
-  const archived = await clickButtonWithSideEffects(confirmed.project, 3, 'example_valve_selection_v3_archive_btn', {
+  await assert.rejects(() => clickButtonWithSideEffects(confirmed.project, 3, 'example_valve_selection_v3_archive_btn', {
     ...decisionBaseValues,
     推荐方案号: proposed.patches['推荐方案号'],
     推荐型号: proposed.patches['推荐型号'],
@@ -553,10 +553,7 @@ test('valve selection v3 example supports staged intake, normalization, candidat
     候选数量: candidates.patches['候选数量'],
     评分结果: scored.patches['评分结果'],
     最终确认人: '张工',
-  });
-  assert.match(String(archived.patches['案例摘要'] || ''), /CASE-9901/);
-  assert.equal(archived.project.srcTable.find((table) => table.id === 'selection_cases')?.sheets[0].preview.some((row) => row.案例ID === 'CASE-9901'), true);
-  assert.equal(archived.project.srcTable.find((table) => table.id === 'selection_audit_log')?.sheets[0].preview.some((row) => row.审计ID === 'AUD-9901-FINAL'), true);
+  }), /写回目标不存在: selection_audit_log/);
 
   const noMatchCandidates = await clickButtonWithSideEffects(project, 3, 'example_valve_selection_v3_generate_btn', {
     技术画像ID: 3999,

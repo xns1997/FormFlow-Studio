@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { checkPortType } from '../../nodes/port-types';
+import { checkPortType } from '../../../nodes/port-types';
 import {
   canonicalizeAreas,
   combineRangeAreas,

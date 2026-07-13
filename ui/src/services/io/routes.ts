@@ -16,7 +16,11 @@ export function buildEditorPath(projectId: string) {
 }
 
 export function buildWorkspacePath(projectId: string, tab?: WorkspaceTab) {
-  return tab ? `/projects/${projectId}/workspace/${tab}` : `/projects/${projectId}/workspace`;
+  if (tab === 'test') return `/projects/${projectId}/usage`;
+  const modes: Record<Exclude<WorkspaceTab, 'test'>, string> = {
+    data: 'data', canvas: 'flow', designer: 'design', behavior: 'behavior',
+  };
+  return `/projects/${projectId}/editor?mode=${modes[tab || 'data']}`;
 }
 
 export function buildProjectSettingsPath(projectId: string, section?: ProjectSettingsSection) {

@@ -12,7 +12,7 @@
     "dev:all": "concurrently \"cross-env FORMFLOW_MODE=local npm run dev:server\" \"cross-env VITE_APP_MODE=local npm run dev\"",
     "dev:cloud": "concurrently \"cross-env FORMFLOW_MODE=cloud npm run dev:server\" \"cross-env VITE_APP_MODE=cloud npm run dev\"",
     "server": "npx tsx server/src/index.ts",
-    "test": "tsx --test server/src/**/*.test.ts ui/src/**/*.test.ts ui/nodes/**/*.test.ts",
+    "test": "node scripts/run-tests.mjs",
     "typecheck": "tsc --noEmit -p ui/tsconfig.json",
     "build": "vite build ui",
     "preview": "vite preview ui",

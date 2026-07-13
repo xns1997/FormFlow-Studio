@@ -372,7 +372,7 @@ export default function ProjectsListPage() {
               </div>
               {viewMode !== 'compact' && (
                 <div className="card-modes" onClick={(e) => e.stopPropagation()}>
-                  <button type="button" className="card-mode-btn" onClick={() => navigate(buildUsagePath(p.id))}>使用模式</button>
+                  <button type="button" className="card-mode-btn" onClick={() => navigate(buildUsagePath(p.id))}>直接使用</button>
                 </div>
               )}
               {viewMode !== 'compact' && (

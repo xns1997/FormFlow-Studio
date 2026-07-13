@@ -1,10 +1,32 @@
 import type { ControlDef } from './types';
 
+export { getPropertyEditor, registerPropertyEditor } from './properties/propertyEditorRegistry';
+
 const controls = new Map<string, ControlDef>();
 const categories = ['basic', 'select', 'container', 'display'] as const;
 
+function inferPropertyContract(def: ControlDef) {
+  const result = { ...(def.propertyContract || {}) };
+  const validationKeys = new Set(['required', 'readonly', 'disabled', 'validator', 'pattern', 'patternMessage', 'customMessage', 'validationRules', 'minLength', 'maxLength', 'minSelect', 'maxSelect', 'integer', 'positive']);
+  const metadataKeys = new Set(['name', 'label']);
+  for (const schema of def.propSchema) {
+    const keys = 'kind' in schema ? schema.keys : [schema.key];
+    for (const key of keys) {
+      if (result[key]) continue;
+      result[key] = !('kind' in schema) && schema.target === 'geometry' ? 'geometry'
+        : key === 'dataBinding' || key === 'rangeRef' || key === 'tableBinding' ? 'binding'
+          : key.endsWith('Expression') || key === 'contentTemplate' ? 'expression'
+            : validationKeys.has(key) ? 'validation'
+              : metadataKeys.has(key) ? 'metadata'
+                : 'render';
+    }
+  }
+  for (const key of Object.keys(def.defaultProps)) if (!result[key]) result[key] = key === 'rangeRef' || key === 'tableBinding' || key === 'dataBinding' ? 'binding' : metadataKeys.has(key) ? 'metadata' : 'render';
+  return result;
+}
+
 export function registerControl(def: ControlDef) {
-  controls.set(def.type, def);
+  controls.set(def.type, { ...def, propertyContract: inferPropertyContract(def) });
 }
 
 export function getControl(type: string): ControlDef | undefined {

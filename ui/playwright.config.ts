@@ -19,7 +19,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: 'PORT=3103 pnpm server',
+      command: 'PORT=3103 CORS_ORIGINS=http://localhost:5175 pnpm server',
       url: 'http://localhost:3103/api/health',
       reuseExistingServer: true,
       timeout: 30000,

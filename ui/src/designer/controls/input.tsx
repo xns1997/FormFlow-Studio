@@ -65,6 +65,13 @@ function UploadPreview({ component, mode, runtime, imageOnly = false }: { compon
       <AntdUploadInput
         files={files}
         imageOnly={imageOnly}
+        constraints={{
+          accept: String(component.props.accept || (imageOnly ? 'image/*' : '')),
+          maxFileSizeMb: Number(component.props.maxFileSizeMb || 0),
+          maxCount: Number(component.props.maxCount || 0),
+          minImageWidth: Number(component.props.minImageWidth || 0), maxImageWidth: Number(component.props.maxImageWidth || 0),
+          minImageHeight: Number(component.props.minImageHeight || 0), maxImageHeight: Number(component.props.maxImageHeight || 0),
+        }}
         disabled={mode !== 'preview' || !!component.props.disabled}
         onChange={(next) => runtime?.emit('onChange', next)}
       />
@@ -101,12 +108,12 @@ registerControl({
     label: 'Label', placeholder: '请输入', name: '', required: false, readonly: false, disabled: false,
     fontSize: 15, fontWeight: '400', color: '#1c1c1e', textAlign: 'left',
     minLength: 0, maxLength: 0, pattern: '', patternMessage: '',
-    validator: 'none', customMessage: '',
+    validator: 'none', customMessage: '', validationRules: [],
     rangeRef: null,
   },
   propSchema: [
     { key: 'label', label: '标签', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name', help: '可选择已有字段，也可直接输入新的字段名。' },
     { key: 'placeholder', label: '占位符', type: 'string', group: '基础' },
     { key: 'required', label: '必填', type: 'boolean', group: '校验' },
     { key: 'readonly', label: '只读', type: 'boolean', group: '校验' },
@@ -115,21 +122,18 @@ registerControl({
       { label: '无', value: 'none' }, { label: '邮箱', value: 'email' }, { label: '手机号', value: 'phone' },
       { label: 'URL', value: 'url' }, { label: '身份证', value: 'idcard' }, { label: '自定义正则', value: 'pattern' },
     ]},
-    { key: 'pattern', label: '正则表达式', type: 'string', group: '校验', placeholder: '^\\d+$' },
+    { key: 'pattern', label: '正则表达式', type: 'string', editor: 'regex', group: '校验', placeholder: '^\\d+$', visibleWhen: { key: 'validator', value: 'pattern' }, help: '提供范例、语法检查和隔离 Worker 测试。', assistantCapability: { capability: 'regex.generate-or-repair', contextKeys: ['label', 'placeholder'], resultType: 'value' } },
     { key: 'patternMessage', label: '校验提示', type: 'string', group: '校验', placeholder: '格式不正确' },
     { key: 'minLength', label: '最小长度', type: 'number', group: '校验', min: 0 },
     { key: 'maxLength', label: '最大长度', type: 'number', group: '校验', min: 0 },
     { key: 'customMessage', label: '自定义错误提示', type: 'string', group: '校验' },
-    { key: 'fontSize', label: '字号', type: 'number', group: '文本样式', min: 10, max: 48 },
-    { key: 'fontWeight', label: '字重', type: 'select', group: '文本样式', options: [
-      { label: '细体', value: '300' }, { label: '常规', value: '400' }, { label: '中等', value: '500' },
-      { label: '半粗', value: '600' }, { label: '粗体', value: '700' },
-    ]},
-    { key: 'color', label: '文字颜色', type: 'color', group: '文本样式' },
-    { key: 'textAlign', label: '对齐', type: 'select', group: '文本样式', options: [
-      { label: '左对齐', value: 'left' }, { label: '居中', value: 'center' }, { label: '右对齐', value: 'right' },
-    ]},
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'validationRules', label: '组合校验规则', type: 'json', editor: 'validation-rules', group: '校验', help: '可组合必填、范围、格式与跨字段比较规则，并按顺序执行。' },
+    { kind: 'composite', key: 'typography', keys: ['fontFamily', 'fontSize', 'fontWeight', 'color', 'lineHeight', 'letterSpacing', 'textAlign'], label: '字体与排版', editor: 'typography', group: '文本样式', help: '集中配置字体、字号、字重、颜色、行高、字间距与对齐。' },
+    { key: 'valueExpression', label: '计算值', type: 'string', editor: 'expression', group: '表达式', help: '值变化时使用受限 DSL 重新计算。', assistantCapability: { capability: 'expression.generate-or-repair', contextKeys: ['name', 'label'], resultType: 'value' } },
+    { key: 'visibleExpression', label: '可见条件', type: 'string', editor: 'expression', group: '表达式' },
+    { key: 'disabledExpression', label: '禁用条件', type: 'string', editor: 'expression', group: '表达式' },
+    { key: 'requiredExpression', label: '必填条件', type: 'string', editor: 'expression', group: '表达式' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 240, h: 72 },
@@ -141,7 +145,7 @@ registerControl({
         placeholder={component.props.placeholder || ''}
         readOnly={!!component.props.readonly}
         disabled={mode !== 'preview' || !!component.props.disabled}
-        style={{ fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', textAlign: component.props.textAlign || 'left' }}
+        style={{ fontFamily: component.props.fontFamily || undefined, fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', lineHeight: component.props.lineHeight || undefined, letterSpacing: `${Number(component.props.letterSpacing) || 0}px`, textAlign: component.props.textAlign || 'left' }}
         onChange={(next) => runtime?.emit('onChange', next)}
         onBlur={() => runtime?.emit('onBlur')}
         onFocus={() => runtime?.emit('onFocus')}
@@ -156,12 +160,12 @@ registerControl({
     label: 'Label', placeholder: '请输入', name: '', rows: 3, required: false, readonly: false, disabled: false,
     maxLength: 0, showCount: false, autoResize: false,
     fontSize: 15, fontWeight: '400', color: '#1c1c1e', lineHeight: 1.5,
-    minLength: 0, pattern: '', patternMessage: '', customMessage: '',
+    minLength: 0, pattern: '', patternMessage: '', customMessage: '', validationRules: [],
     rangeRef: null,
   },
   propSchema: [
     { key: 'label', label: '标签', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'placeholder', label: '占位符', type: 'string', group: '基础' },
     { key: 'rows', label: '行数', type: 'number', group: '基础', min: 1, max: 20 },
     { key: 'required', label: '必填', type: 'boolean', group: '校验' },
@@ -169,16 +173,18 @@ registerControl({
     { key: 'disabled', label: '禁用', type: 'boolean', group: '校验' },
     { key: 'maxLength', label: '最大字数', type: 'number', group: '校验', min: 0 },
     { key: 'showCount', label: '显示字数统计', type: 'boolean', group: '校验' },
+    { key: 'autoResize', label: '自动调整高度', type: 'boolean', group: '高级', level: 'advanced' },
     { key: 'minLength', label: '最小长度', type: 'number', group: '校验', min: 0 },
-    { key: 'pattern', label: '正则校验', type: 'string', group: '校验' },
+    { key: 'pattern', label: '正则校验', type: 'string', editor: 'regex', group: '校验' },
     { key: 'customMessage', label: '自定义错误提示', type: 'string', group: '校验' },
+    { key: 'validationRules', label: '组合校验规则', type: 'json', editor: 'validation-rules', group: '校验' },
     { key: 'fontSize', label: '字号', type: 'number', group: '文本样式', min: 10, max: 48 },
     { key: 'fontWeight', label: '字重', type: 'select', group: '文本样式', options: [
       { label: '细体', value: '300' }, { label: '常规', value: '400' }, { label: '中等', value: '500' }, { label: '粗体', value: '700' },
     ]},
     { key: 'color', label: '文字颜色', type: 'color', group: '文本样式' },
     { key: 'lineHeight', label: '行高', type: 'number', group: '文本样式', min: 1, max: 3, step: 0.1 },
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 280, h: 132 },
@@ -192,6 +198,8 @@ registerControl({
         disabled={mode !== 'preview' || !!component.props.disabled}
         rows={Number(component.props.rows) || 3}
         autoSize={component.props.autoResize ? { minRows: Number(component.props.rows) || 3, maxRows: 8 } : false}
+        maxLength={Number(component.props.maxLength) || undefined}
+        showCount={!!component.props.showCount}
         style={{ fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', lineHeight: component.props.lineHeight || 1.5 }}
         onChange={(next) => runtime?.emit('onChange', next)}
         onBlur={() => runtime?.emit('onBlur')}
@@ -212,7 +220,7 @@ registerControl({
   },
   propSchema: [
     { key: 'label', label: '标签', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'placeholder', label: '占位符', type: 'string', group: '基础' },
     { key: 'required', label: '必填', type: 'boolean', group: '校验' },
     { key: 'readonly', label: '只读', type: 'boolean', group: '校验' },
@@ -220,8 +228,7 @@ registerControl({
     { key: 'integer', label: '仅整数', type: 'boolean', group: '校验' },
     { key: 'positive', label: '仅正数', type: 'boolean', group: '校验' },
     { key: 'customMessage', label: '自定义错误提示', type: 'string', group: '校验' },
-    { key: 'min', label: '最小值', type: 'number', group: '数值范围' },
-    { key: 'max', label: '最大值', type: 'number', group: '数值范围' },
+    { kind: 'composite', key: 'numberRange', keys: ['min', 'max'], label: '数值范围', editor: 'number-range', group: '数值范围' },
     { key: 'step', label: '步长', type: 'number', group: '数值范围', min: 0 },
     { key: 'precision', label: '小数位数', type: 'number', group: '数值范围', min: 0, max: 10 },
     { key: 'prefix', label: '前缀', type: 'string', group: '数值范围', placeholder: '¥' },
@@ -234,7 +241,7 @@ registerControl({
     { key: 'textAlign', label: '对齐', type: 'select', group: '文本样式', options: [
       { label: '左对齐', value: 'left' }, { label: '居中', value: 'center' }, { label: '右对齐', value: 'right' },
     ]},
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 220, h: 72 },
@@ -249,6 +256,9 @@ registerControl({
         min={component.props.min}
         max={component.props.max}
         step={component.props.step}
+        precision={Number.isFinite(Number(component.props.precision)) ? Number(component.props.precision) : undefined}
+        prefix={component.props.prefix || undefined}
+        suffix={component.props.suffix || undefined}
         style={{ fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', textAlign: component.props.textAlign || 'left', width: '100%' }}
         onChange={(next) => runtime?.emit('onChange', next === '' ? '' : Number(next))}
         onBlur={() => runtime?.emit('onBlur')}
@@ -269,13 +279,12 @@ registerControl({
   },
   propSchema: [
     { key: 'label', label: '标签', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'placeholder', label: '占位符', type: 'string', group: '基础' },
     { key: 'required', label: '必填', type: 'boolean', group: '校验' },
     { key: 'readonly', label: '只读', type: 'boolean', group: '校验' },
     { key: 'disabled', label: '禁用', type: 'boolean', group: '校验' },
-    { key: 'minDate', label: '最早日期', type: 'date', group: '校验', placeholder: '2020-01-01' },
-    { key: 'maxDate', label: '最晚日期', type: 'date', group: '校验', placeholder: '2030-12-31' },
+    { kind: 'composite', key: 'dateRange', keys: ['minDate', 'maxDate'], label: '日期范围', editor: 'date-range', group: '校验' },
     { key: 'customMessage', label: '自定义错误提示', type: 'string', group: '校验' },
     { key: 'format', label: '日期格式', type: 'select', group: '样式', options: [
       { label: 'YYYY-MM-DD', value: 'YYYY-MM-DD' }, { label: 'YYYY/MM/DD', value: 'YYYY/MM/DD' },
@@ -290,7 +299,7 @@ registerControl({
       { label: '常规', value: '400' }, { label: '中等', value: '500' }, { label: '粗体', value: '700' },
     ]},
     { key: 'color', label: '文字颜色', type: 'color', group: '样式' },
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 220, h: 72 },
@@ -305,7 +314,7 @@ registerControl({
   },
   propSchema: [
     { key: 'label', label: '标签', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'placeholder', label: '占位符', type: 'string', group: '基础' },
     { key: 'required', label: '必填', type: 'boolean', group: '校验' },
     { key: 'readonly', label: '只读', type: 'boolean', group: '校验' },
@@ -315,7 +324,7 @@ registerControl({
       { label: 'HH:mm', value: 'HH:mm' },
       { label: 'HH:mm:ss', value: 'HH:mm:ss' },
     ]},
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 220, h: 72 },
@@ -346,7 +355,7 @@ registerControl({
   },
   propSchema: [
     { key: 'label', label: '标签', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'required', label: '必填', type: 'boolean', group: '校验' },
     { key: 'readonly', label: '只读', type: 'boolean', group: '校验' },
     { key: 'disabled', label: '禁用', type: 'boolean', group: '校验' },
@@ -357,7 +366,7 @@ registerControl({
       { label: 'YYYY/MM/DD', value: 'YYYY/MM/DD' },
       { label: 'YYYY年MM月DD日', value: 'YYYY年MM月DD日' },
     ]},
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 280, h: 72 },
@@ -390,7 +399,7 @@ registerControl({
   },
   propSchema: [
     { key: 'label', label: '标签', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'disabled', label: '禁用', type: 'boolean', group: '基础' },
     { key: 'defaultValue', label: '默认开启', type: 'boolean', group: '基础' },
     { key: 'size', label: '尺寸', type: 'select', group: '样式', options: [
@@ -398,7 +407,7 @@ registerControl({
     ]},
     { key: 'activeColor', label: '开启颜色', type: 'color', group: '样式' },
     { key: 'inactiveColor', label: '关闭颜色', type: 'color', group: '样式' },
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }],
   defaultSize: { w: 180, h: 52 },
@@ -410,6 +419,9 @@ registerControl({
         <AntdSwitchInput
           checked={checked}
           disabled={mode !== 'preview' || !!component.props.disabled}
+          size={component.props.size || 'default'}
+          activeColor={component.props.activeColor}
+          inactiveColor={component.props.inactiveColor}
           onChange={(next) => runtime?.emit('onChange', next)}
         />
       </div>
@@ -427,7 +439,7 @@ registerControl({
   },
   propSchema: [
     { key: 'label', label: '标签', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'max', label: '最大值', type: 'number', group: '基础', min: 1, max: 10 },
     { key: 'defaultValue', label: '默认值', type: 'number', group: '基础', min: 0 },
     { key: 'disabled', label: '禁用', type: 'boolean', group: '基础' },
@@ -440,7 +452,7 @@ registerControl({
     { key: 'inactiveColor', label: '未激活颜色', type: 'color', group: '样式' },
     { key: 'allowHalf', label: '允许半星', type: 'boolean', group: '样式' },
     { key: 'showText', label: '显示分值', type: 'boolean', group: '样式' },
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }],
   defaultSize: { w: 220, h: 52 },
@@ -455,6 +467,10 @@ registerControl({
             count={max}
             value={val}
             disabled={mode !== 'preview' || !!component.props.disabled}
+            size={component.props.size || 'default'}
+            color={component.props.activeColor}
+            inactiveColor={component.props.inactiveColor}
+            allowHalf={!!component.props.allowHalf}
             onChange={(next) => runtime?.emit('onChange', next)}
           />
           {component.props.showText && <span style={{ fontSize: 12, color: '#8e8e93', marginLeft: 4 }}>{val}/{max}</span>}
@@ -471,11 +487,11 @@ registerControl({
   },
   propSchema: [
     { key: 'label', label: '标签', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'placeholder', label: '占位符', type: 'string', group: '基础' },
     { key: 'required', label: '必填', type: 'boolean', group: '校验' },
     { key: 'disabled', label: '禁用', type: 'boolean', group: '校验' },
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 280, h: 84 },
@@ -485,15 +501,17 @@ registerControl({
 registerControl({
   type: 'upload', label: '文件上传', category: 'basic', icon: '📎',
   defaultProps: {
-    label: '文件上传', name: '', placeholder: '点击选择文件', required: false, disabled: false, rangeRef: null,
+    label: '文件上传', name: '', placeholder: '点击选择文件', required: false, disabled: false,
+    accept: '', maxFileSizeMb: 0, maxCount: 0, rangeRef: null,
   },
   propSchema: [
     { key: 'label', label: '标签', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'placeholder', label: '占位符', type: 'string', group: '基础' },
     { key: 'required', label: '必填', type: 'boolean', group: '校验' },
     { key: 'disabled', label: '禁用', type: 'boolean', group: '校验' },
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { kind: 'composite', key: 'uploadConstraints', keys: ['accept', 'maxFileSizeMb', 'maxCount'], label: '上传限制', editor: 'upload-constraints', group: '校验' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '文件改变时触发' }],
   defaultSize: { w: 280, h: 112 },
@@ -503,15 +521,17 @@ registerControl({
 registerControl({
   type: 'imageUpload', label: '图片上传', category: 'basic', icon: '🖼️',
   defaultProps: {
-    label: '图片上传', name: '', placeholder: '点击选择图片', required: false, disabled: false, rangeRef: null,
+    label: '图片上传', name: '', placeholder: '点击选择图片', required: false, disabled: false,
+    accept: 'image/*', maxFileSizeMb: 0, maxCount: 1, minImageWidth: 0, maxImageWidth: 0, minImageHeight: 0, maxImageHeight: 0, rangeRef: null,
   },
   propSchema: [
     { key: 'label', label: '标签', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'placeholder', label: '占位符', type: 'string', group: '基础' },
     { key: 'required', label: '必填', type: 'boolean', group: '校验' },
     { key: 'disabled', label: '禁用', type: 'boolean', group: '校验' },
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { kind: 'composite', key: 'uploadConstraints', keys: ['accept', 'maxFileSizeMb', 'maxCount', 'minImageWidth', 'maxImageWidth', 'minImageHeight', 'maxImageHeight'], label: '上传与尺寸限制', editor: 'upload-constraints', group: '校验' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '图片改变时触发' }],
   defaultSize: { w: 280, h: 144 },
@@ -528,23 +548,23 @@ registerControl({
   },
   propSchema: [
     { key: 'label', label: '文本', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'btn_submit' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'btn_submit' },
     { key: 'variant', label: '样式', type: 'select', group: '基础', options: [
       { label: '主要', value: 'primary' }, { label: '默认', value: 'default' },
       { label: '危险', value: 'danger' }, { label: '幽灵', value: 'ghost' },
     ]},
     { key: 'disabled', label: '禁用', type: 'boolean', group: '基础' },
     { key: 'loading', label: '加载中', type: 'boolean', group: '基础' },
-    { key: 'icon', label: '图标 (emoji)', type: 'string', group: '基础', placeholder: '🚀' },
+    { key: 'icon', label: '图标', type: 'string', editor: 'icon', group: '基础', placeholder: '🚀', help: '兼容现有 emoji，也可输入图标字符。' },
     { key: 'fontSize', label: '字号', type: 'number', group: '样式', min: 10, max: 32 },
     { key: 'fontWeight', label: '字重', type: 'select', group: '样式', options: [
       { label: '常规', value: '400' }, { label: '中等', value: '500' }, { label: '半粗', value: '600' }, { label: '粗体', value: '700' },
     ]},
     { key: 'color', label: '文字颜色', type: 'color', group: '样式' },
     { key: 'backgroundColor', label: '自定义背景色', type: 'color', group: '样式' },
-    { key: 'borderRadius', label: '圆角', type: 'number', group: '样式', min: 0, max: 50 },
+    { key: 'borderRadius', label: '圆角', type: 'number', editor: 'radius', group: '样式', min: 0, max: 50 },
     { key: 'fullWidth', label: '满宽', type: 'boolean', group: '样式' },
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onClick', label: '点击', description: '按钮点击时触发' }],
   defaultSize: { w: 180, h: 48 },
@@ -553,15 +573,18 @@ registerControl({
     const isPrimary = p.variant === 'primary';
     const isDanger = p.variant === 'danger';
     const isGhost = p.variant === 'ghost';
-    const bg = p.backgroundColor || (isPrimary ? 'linear-gradient(180deg, #0a84ff 0%, #007aff 100%)' : isDanger ? 'linear-gradient(180deg, #ff453a 0%, #ff3b30 100%)' : isGhost ? 'transparent' : 'rgba(118,118,128,0.10)');
+    const bg = p.backgroundColor || (isPrimary ? '#007aff' : isDanger ? '#ff3b30' : isGhost ? 'transparent' : 'rgba(118,118,128,0.10)');
     const textColor = p.color || (isPrimary || isDanger ? '#fff' : isGhost ? '#007aff' : '#007aff');
     return withAntdField(
       <div style={{ width: '100%', height: '100%', minWidth: 0, display: 'flex', alignItems: 'flex-start', boxSizing: 'border-box', padding: 4 }}>
-        <div style={{ width: p.fullWidth ? '100%' : '100%' }}>
+        <div style={{ width: p.fullWidth ? '100%' : 'auto' }}>
           <AntdActionButton
             label={`${p.icon ? `${p.icon} ` : ''}${p.loading ? '加载中...' : (p.label || '按钮')}`}
             disabled={!!p.disabled || !!p.loading}
             variant={p.variant === 'ghost' ? 'ghost' : p.variant === 'default' ? 'outline' : 'solid'}
+            danger={isDanger}
+            block={!!p.fullWidth}
+            style={{ fontSize: Number(p.fontSize) || 16, fontWeight: p.fontWeight || 650, color: textColor, background: bg, borderRadius: Number(p.borderRadius) || 0 }}
             onClick={() => runtime?.emit('onClick')}
           />
         </div>

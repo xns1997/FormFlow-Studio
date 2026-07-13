@@ -6,21 +6,49 @@ import { useProjectStore } from '../project/store';
 
 interface Props {
   designer: ReturnType<typeof useDesigner>;
+  readOnly?: boolean;
+  hideToolbar?: boolean;
 }
 
-export function DesignCanvas({ designer }: Props) {
+export function DesignCanvas({ designer, readOnly = false, hideToolbar = false }: Props) {
   const { containerRef, initGraph, mode } = designer;
   const lastPlacementRef = useRef<{ type: string; x: number; y: number; at: number } | null>(null);
   const workflows = useProjectStore((state) => state.project?.workflows || []);
   const tables = useProjectStore((state) => state.project?.srcTable || []);
 
   useEffect(() => {
-    const raf = requestAnimationFrame(() => initGraph());
-    return () => cancelAnimationFrame(raf);
-  }, [initGraph]);
+    let mountedGraph: any = null;
+    const raf = requestAnimationFrame(() => {
+      initGraph();
+      const graph = designer.graphRef.current;
+      if (!graph) return;
+      mountedGraph = graph;
+      graph.options.interacting = readOnly ? { nodeMovable: false, edgeMovable: false } : { nodeMovable: true, edgeMovable: false };
+      if (readOnly) {
+        graph.disableKeyboard();
+        graph.disableClipboard();
+        graph.disableHistory();
+      } else {
+        graph.enableKeyboard();
+        graph.enableClipboard();
+        graph.enableHistory();
+      }
+    });
+    return () => {
+      cancelAnimationFrame(raf);
+      designer.resizeObserverRef.current?.disconnect();
+      designer.resizeObserverRef.current = null;
+      if (mountedGraph && designer.graphRef.current === mountedGraph) {
+        designer.graphRef.current = null;
+        // X6 React shape owns nested React roots. Dispose after the current
+        // React commit so those roots are not synchronously unmounted mid-render.
+        queueMicrotask(() => mountedGraph.dispose());
+      }
+    };
+  }, [initGraph, readOnly]);
 
   const placeControl = (type: string, clientX: number, clientY: number) => {
-    if (mode === 'preview') return;
+    if (mode === 'preview' || readOnly) return;
     const graph = designer.graphRef.current;
     if (!graph) return;
     const localPoint = graph.clientToLocal(clientX, clientY);
@@ -36,7 +64,7 @@ export function DesignCanvas({ designer }: Props) {
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    if (mode === 'preview') return;
+    if (mode === 'preview' || readOnly) return;
     const type = e.dataTransfer.getData('control-type') || e.dataTransfer.getData('text/plain');
     if (!type) return;
     placeControl(type, e.clientX, e.clientY);
@@ -46,12 +74,12 @@ export function DesignCanvas({ designer }: Props) {
 
   return (
     <div
-      className={`designer-canvas-shell ${mode === 'preview' ? 'mode-preview' : ''}`}
+      className={`designer-canvas-shell ${mode === 'preview' ? 'mode-preview' : ''} ${readOnly ? 'mode-readonly' : ''}`}
       onDragEnter={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
       onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
       onDrop={handleDrop}
     >
-      <div className="canvas-floating-toolbar" aria-label="画布工具">
+      {!hideToolbar && <div className="canvas-floating-toolbar" aria-label="画布工具">
         <div className="toolbar-group toolbar-group-mode">
           <button
             type="button"
@@ -92,13 +120,13 @@ export function DesignCanvas({ designer }: Props) {
           <button type="button" onClick={designer.fitContent} title="适应内容"><DesignerIcon name="fitContent" /></button>
           <button type="button" onClick={designer.resetView} title="重置视图"><DesignerIcon name="resetView" /></button>
         </div>
-      </div>
-      <div className="canvas-status-pill">
+      </div>}
+      {!hideToolbar && <div className="canvas-status-pill">
         {mode === 'preview'
           ? '预览模式 · 可交互不可编辑 · 点击左上角切换'
           : '右键拖动画布 · ⌘/Ctrl+滚轮缩放 · 方向键微调'
         }
-      </div>
+      </div>}
       <div
         ref={containerRef}
         className={`designer-canvas ${mode === 'preview' ? 'designer-canvas-hidden' : ''}`}
@@ -107,7 +135,7 @@ export function DesignCanvas({ designer }: Props) {
       {mode === 'preview' && (
         <PreviewCanvas components={designer.components} zoom={designer.zoom} workflows={workflows} tables={tables} />
       )}
-      {mode === 'design' && designer.selectionOverlay && (
+      {mode === 'design' && !readOnly && designer.selectionOverlay && (
         <div
           className="designer-selection-overlay"
           style={{

@@ -3,11 +3,11 @@ import { getAllControls, getControlsByCategory, getCategories, CATEGORY_LABELS }
 import { DesignerIcon } from './icons';
 import { AntdTextInput, FormAntdProvider } from '../components/AntdFormControls';
 
-const CATEGORY_META: Record<string, { hint: string; accent: string }> = {
-  basic: { hint: '录入与表单字段', accent: 'rgba(37,99,235,0.12)' },
-  select: { hint: '选项、枚举与选择', accent: 'rgba(14,165,233,0.12)' },
-  container: { hint: '布局与分组容器', accent: 'rgba(245,158,11,0.14)' },
-  display: { hint: '展示与结果输出', accent: 'rgba(16,185,129,0.14)' },
+const CATEGORY_META: Record<string, { hint: string }> = {
+  basic: { hint: '录入与表单字段' },
+  select: { hint: '选项与选择' },
+  container: { hint: '布局与分组' },
+  display: { hint: '内容与结果' },
 };
 
 export function Toolbox() {
@@ -25,6 +25,7 @@ export function Toolbox() {
     <div
       key={c.type}
       className="toolbox-item"
+      title={`拖入画布添加${c.label}`}
       draggable
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = 'copy';
@@ -36,7 +37,6 @@ export function Toolbox() {
         <DesignerIcon name={c.type} fallback={c.icon} className="toolbox-item-icon" />
       </div>
       <span className="toolbox-item-label">{c.label}</span>
-      <span className="toolbox-item-meta">{c.type}</span>
     </div>
   );
 
@@ -44,17 +44,15 @@ export function Toolbox() {
     <FormAntdProvider>
     <div className="designer-toolbox">
       <div className="toolbox-header">
-        <div className="toolbox-header-row">
-          <div className="toolbox-search-shell">
-            <span className="toolbox-search-icon">⌕</span>
-            <AntdTextInput
-              placeholder="搜索控件、类型…"
-              value={search}
-              onChange={(next) => setSearch(next)}
-              style={{ width: '100%' }}
-            />
+        <div className="toolbox-search-shell">
+          <span className="toolbox-search-icon">⌕</span>
+          <AntdTextInput
+            placeholder="搜索控件"
+            value={search}
+            onChange={(next) => setSearch(next)}
+            style={{ width: '100%' }}
+          />
           {search && <button type="button" className="toolbox-search-clear" onClick={() => setSearch('')}>×</button>}
-        </div>
         </div>
       </div>
       <div className="toolbox-body">
@@ -73,8 +71,8 @@ export function Toolbox() {
           )
         ) : (
           getCategories().map((cat) => (
-            <div key={cat} className="toolbox-category">
-              <div className="toolbox-category-header" onClick={() => toggle(cat)}>
+            <section key={cat} className="toolbox-category">
+              <button type="button" className="toolbox-category-header" aria-expanded={expanded[cat]} onClick={() => toggle(cat)}>
                 <span className="toolbox-category-title">
                   <span className="toolbox-category-arrow">
                     <DesignerIcon name={expanded[cat] ? 'expand' : 'collapse'} size={12} />
@@ -84,13 +82,13 @@ export function Toolbox() {
                     <small>{CATEGORY_META[cat]?.hint || '控件分类'}</small>
                   </span>
                 </span>
-              </div>
+              </button>
               {expanded[cat] && (
                 <div className="toolbox-grid">
                   {getControlsByCategory(cat).map((c) => renderItem(c))}
                 </div>
               )}
-            </div>
+            </section>
           ))
         )}
       </div>

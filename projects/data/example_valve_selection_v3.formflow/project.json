@@ -7,7 +7,7 @@
     "description": "基于全新流程域拆分的通用阀门选型平台示例，覆盖受理、澄清、筛选、评分、提案、确认与归档。",
     "version": "3.0.0",
     "createdAt": "2026-07-06T18:00:00.000Z",
-    "updatedAt": "2026-07-09T06:16:38.630Z",
+    "updatedAt": "2026-07-13T09:04:01.753Z",
     "author": "FormFlow Studio",
     "tags": [
       "示例",
@@ -23,7 +23,11 @@
       "enableNodeBehavior": true,
       "scriptTimeout": 5000,
       "errorStrategy": "show-error",
-      "loopProtection": 100
+      "loopProtection": 100,
+      "enableDebugDrawer": true,
+      "autoOpenDebugDrawerOnWarnOrError": true,
+      "mirrorScriptLogsToConsole": true,
+      "enableServerDebugApi": true
     },
     "publish": {
       "format": "json",

@@ -21,6 +21,7 @@ test('project storage contains the generated industry examples plus support ops 
     'example_check_valve_selection.formflow',
     'example_employee_mgmt.formflow',
     'example_renewable_generation.formflow',
+    'example_shanghai_catering.formflow',
     'example_student_info.formflow',
     'example_support_ops.formflow',
     'example_valve_selection_v2.formflow',
@@ -54,7 +55,7 @@ test('the valve selection v3 example loads as a staged workflow platform project
   const project = readProjectPackage('example_valve_selection_v3') as ProjectStructure | undefined;
   assert.ok(project);
   assert.equal(project.config.version, '3.0.0');
-  assert.equal(project.srcTable.length, 6);
+  assert.equal(project.srcTable.length, 5);
   assert.equal(project.forms.length, 5);
   assert.equal(project.workflows.length, 10);
   assert.equal(project.release?.defaultFormId, 'example_valve_selection_v3_form_intake');

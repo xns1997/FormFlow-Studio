@@ -14,10 +14,12 @@ import {
   Switch,
   TimePicker,
   Upload,
+  message,
 } from 'antd';
 import type { UploadFile } from 'antd/es/upload/interface';
 import dayjs, { type Dayjs } from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+import { validateImageDimensions, validateUploadCandidate, type UploadConstraints } from '../services/engine/uploadConstraints';
 
 dayjs.extend(customParseFormat);
 
@@ -182,6 +184,8 @@ export function AntdTextAreaInput(props: {
   readOnly?: boolean;
   rows?: number;
   autoSize?: boolean | { minRows?: number; maxRows?: number };
+  maxLength?: number;
+  showCount?: boolean;
   style?: React.CSSProperties;
   onChange?: (value: string) => void;
   onBlur?: () => void;
@@ -196,6 +200,8 @@ export function AntdTextAreaInput(props: {
       readOnly={props.readOnly}
       rows={props.rows}
       autoSize={props.autoSize}
+      maxLength={props.maxLength && props.maxLength > 0 ? props.maxLength : undefined}
+      showCount={props.showCount}
       style={props.style}
       onChange={(event) => props.onChange?.(event.target.value)}
       onBlur={props.onBlur}
@@ -212,6 +218,9 @@ export function AntdNumberInput(props: {
   min?: number;
   max?: number;
   step?: number;
+  precision?: number;
+  prefix?: React.ReactNode;
+  suffix?: React.ReactNode;
   style?: React.CSSProperties;
   onChange?: (value: number | string) => void;
   onBlur?: () => void;
@@ -227,6 +236,9 @@ export function AntdNumberInput(props: {
       min={props.min}
       max={props.max}
       step={props.step}
+      precision={props.precision}
+      prefix={props.prefix}
+      suffix={props.suffix}
       style={props.style}
       changeOnWheel
       onChange={(value) => props.onChange?.(value == null ? '' : value)}
@@ -241,14 +253,27 @@ export function AntdColorInput(props: {
   disabled?: boolean;
   onChange?: (value: string) => void;
 }) {
+  const [recentColors, setRecentColors] = React.useState<string[]>(() => {
+    try { return typeof localStorage === 'undefined' ? [] : JSON.parse(localStorage.getItem('formflow.recentColors') || '[]').slice(0, 8); } catch { return []; }
+  });
+  const commit = (value: string) => {
+    const next = [value, ...recentColors.filter((color) => color !== value)].slice(0, 8);
+    setRecentColors(next);
+    try { if (typeof localStorage !== 'undefined') localStorage.setItem('formflow.recentColors', JSON.stringify(next)); } catch { /* storage may be unavailable */ }
+    props.onChange?.(value);
+  };
   return (
     <ColorPicker
       className="ff-antd-color"
       value={props.value || '#000000'}
       disabled={props.disabled}
       format="hex"
+      presets={[
+        { label: '主题色', colors: ['#007aff', '#34c759', '#ff9500', '#ff3b30', '#af52de', '#1c1c1e', '#ffffff'] },
+        ...(recentColors.length ? [{ label: '最近使用', colors: recentColors }] : []),
+      ]}
       showText
-      onChange={(_, hex) => props.onChange?.(hex)}
+      onChange={(color, hex) => commit((color as any).toHex8String?.() || hex)}
     />
   );
 }
@@ -257,8 +282,11 @@ export function AntdSelectInput(props: {
   value: string | string[] | undefined;
   placeholder?: string;
   disabled?: boolean;
+  readOnly?: boolean;
   options: FormOption[];
   multiple?: boolean;
+  allowClear?: boolean;
+  showSearch?: boolean;
   style?: React.CSSProperties;
   onChange?: (value: string | string[]) => void;
   onBlur?: () => void;
@@ -270,10 +298,14 @@ export function AntdSelectInput(props: {
       value={props.value}
       placeholder={props.placeholder}
       disabled={props.disabled}
+      open={props.readOnly ? false : undefined}
       mode={props.multiple ? 'multiple' : undefined}
+      allowClear={props.allowClear}
+      showSearch={props.showSearch}
+      optionFilterProp="label"
       options={props.options}
       style={props.style}
-      onChange={(value) => props.onChange?.(value as string | string[])}
+      onChange={(value) => { if (!props.readOnly) props.onChange?.(value as string | string[]); }}
       onBlur={props.onBlur}
       onFocus={props.onFocus}
     />
@@ -304,6 +336,7 @@ export function AntdRadioInput(props: {
   disabled?: boolean;
   options: FormOption[];
   direction?: 'vertical' | 'horizontal';
+  style?: React.CSSProperties;
   onChange?: (value: string) => void;
 }) {
   return (
@@ -311,6 +344,7 @@ export function AntdRadioInput(props: {
       className={`ff-antd-radio-group ${props.direction === 'horizontal' ? 'horizontal' : 'vertical'}`}
       value={props.value}
       disabled={props.disabled}
+      style={props.style}
       onChange={(event) => props.onChange?.(String(event.target.value))}
     >
       {props.options.map((option) => <Radio key={option.value} value={option.value}>{option.label}</Radio>)}
@@ -323,6 +357,7 @@ export function AntdCheckboxInput(props: {
   disabled?: boolean;
   options: FormOption[];
   direction?: 'vertical' | 'horizontal';
+  style?: React.CSSProperties;
   onChange?: (value: string[]) => void;
 }) {
   return (
@@ -330,6 +365,7 @@ export function AntdCheckboxInput(props: {
       className={`ff-antd-checkbox-group ${props.direction === 'horizontal' ? 'horizontal' : 'vertical'}`}
       value={props.value}
       disabled={props.disabled}
+      style={props.style}
       options={props.options}
       onChange={(values) => props.onChange?.(values.map(String))}
     />
@@ -441,18 +477,27 @@ export function AntdDateRangeInput(props: {
 export function AntdSwitchInput(props: {
   checked: boolean;
   disabled?: boolean;
+  size?: 'small' | 'default' | 'large';
+  activeColor?: string;
+  inactiveColor?: string;
   onChange?: (value: boolean) => void;
 }) {
-  return <Switch className="ff-antd-switch" checked={props.checked} disabled={props.disabled} onChange={props.onChange} />;
+  const scale = props.size === 'large' ? 1.16 : 1;
+  return <Switch className="ff-antd-switch" size={props.size === 'small' ? 'small' : 'medium'} checked={props.checked} disabled={props.disabled} style={{ background: props.checked ? props.activeColor : props.inactiveColor, transform: scale === 1 ? undefined : `scale(${scale})` }} onChange={props.onChange} />;
 }
 
 export function AntdRateInput(props: {
   value: number;
   disabled?: boolean;
   count?: number;
+  allowHalf?: boolean;
+  color?: string;
+  inactiveColor?: string;
+  size?: 'small' | 'default' | 'large';
   onChange?: (value: number) => void;
 }) {
-  return <Rate className="ff-antd-rate" value={props.value} disabled={props.disabled} count={props.count} onChange={props.onChange} />;
+  const fontSize = props.size === 'small' ? 16 : props.size === 'large' ? 28 : 22;
+  return <Rate className="ff-antd-rate" value={props.value} disabled={props.disabled} count={props.count} allowHalf={props.allowHalf} style={{ color: props.color, fontSize, '--ff-rate-inactive': props.inactiveColor } as React.CSSProperties} onChange={props.onChange} />;
 }
 
 export function AntdTagInput(props: {
@@ -484,16 +529,33 @@ export function AntdUploadInput(props: {
   files: UploadFileValue[];
   disabled?: boolean;
   imageOnly?: boolean;
+  constraints?: UploadConstraints;
   onChange?: (files: UploadFileValue[]) => void;
 }) {
+  const constraints = props.constraints || {};
+  const beforeUpload = async (file: File) => {
+    const error = validateUploadCandidate(file, props.files.length, constraints);
+    if (error) { message.error(error); return Upload.LIST_IGNORE; }
+    if (props.imageOnly && (constraints.minImageWidth || constraints.maxImageWidth || constraints.minImageHeight || constraints.maxImageHeight)) {
+      const dimensionError = await new Promise<string | null>((resolve) => {
+        const image = new Image(); const url = URL.createObjectURL(file);
+        image.onload = () => { URL.revokeObjectURL(url); resolve(validateImageDimensions(image.naturalWidth, image.naturalHeight, constraints)); };
+        image.onerror = () => { URL.revokeObjectURL(url); resolve('无法读取图片尺寸'); };
+        image.src = url;
+      });
+      if (dimensionError) { message.error(dimensionError); return Upload.LIST_IGNORE; }
+    }
+    return false;
+  };
   return (
     <Upload.Dragger
       className="ff-antd-upload"
       disabled={props.disabled}
-      accept={props.imageOnly ? 'image/*' : undefined}
-      multiple={!props.imageOnly}
+      accept={constraints.accept || (props.imageOnly ? 'image/*' : undefined)}
+      multiple={(constraints.maxCount || 0) !== 1 && !props.imageOnly}
+      maxCount={constraints.maxCount || undefined}
       fileList={toUploadFileList(props.files)}
-      beforeUpload={() => false}
+      beforeUpload={beforeUpload}
       listType={props.imageOnly ? 'picture-card' : 'text'}
       onChange={({ fileList }) => props.onChange?.(fromUploadFileList(fileList))}
     >
@@ -507,6 +569,9 @@ export function AntdActionButton(props: {
   label: string;
   disabled?: boolean;
   variant?: 'solid' | 'outline' | 'ghost';
+  danger?: boolean;
+  block?: boolean;
+  style?: React.CSSProperties;
   onClick?: () => void;
 }) {
   return (
@@ -514,6 +579,9 @@ export function AntdActionButton(props: {
       className="ff-antd-button"
       type={props.variant === 'outline' ? 'default' : 'primary'}
       ghost={props.variant === 'ghost'}
+      danger={props.danger}
+      block={props.block}
+      style={props.style}
       disabled={props.disabled}
       onClick={props.onClick}
     >

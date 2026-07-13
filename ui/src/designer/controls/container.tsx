@@ -3,6 +3,7 @@ import { registerControl } from '../registry';
 import type { DesignComponent } from '../../project/types';
 import { controlText, ios } from './styles';
 import type { PreviewControlRuntime } from '../types';
+import { spacingToCss } from '../../services/style/propertyStyles';
 
 registerControl({
   type: 'container', label: '容器', category: 'container', icon: '📦',
@@ -13,10 +14,10 @@ registerControl({
   propSchema: [
     { key: 'title', label: '标题', type: 'string', group: '基础' },
     { key: 'subtitle', label: '副标题', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'background', label: '背景色', type: 'color', group: '样式' },
-    { key: 'borderRadius', label: '圆角', type: 'number', group: '样式', min: 0, max: 50 },
-    { key: 'padding', label: '内边距', type: 'number', group: '样式', min: 0, max: 50 },
+    { key: 'borderRadius', label: '圆角', type: 'number', editor: 'radius', group: '样式', min: 0, max: 50 },
+    { key: 'padding', label: '内边距', type: 'number', editor: 'spacing', group: '样式', min: 0, max: 50 },
   ],
   eventSchema: [],
   defaultSize: { w: 360, h: 200 },
@@ -31,7 +32,7 @@ registerControl({
         flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
         background: component.props.background || 'rgba(255,255,255,0.72)',
         borderRadius: component.props.borderRadius ?? 10,
-        padding: component.props.padding ?? 12,
+        padding: spacingToCss(component.props.padding, 12),
         boxShadow: '0 1px 2px rgba(0,0,0,0.04), inset 0 0 0 0.5px rgba(60,60,67,0.10)',
         justifyContent: 'flex-start',
         alignItems: 'stretch',
@@ -58,13 +59,13 @@ registerControl({
   propSchema: [
     { key: 'title', label: '标题', type: 'string', group: '基础' },
     { key: 'subtitle', label: '副标题', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'background', label: '背景色', type: 'color', group: '样式' },
-    { key: 'borderRadius', label: '圆角', type: 'number', group: '样式', min: 0, max: 50 },
-    { key: 'padding', label: '内边距', type: 'number', group: '样式', min: 0, max: 50 },
+    { key: 'borderRadius', label: '圆角', type: 'number', editor: 'radius', group: '样式', min: 0, max: 50 },
+    { key: 'padding', label: '内边距', type: 'number', editor: 'spacing', group: '样式', min: 0, max: 50 },
     { key: 'shadow', label: '阴影', type: 'boolean', group: '样式' },
     { key: 'borderColor', label: '边框颜色', type: 'color', group: '样式' },
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onDrop', label: '放入控件', description: '控件放入卡片时触发' }],
   defaultSize: { w: 360, h: 220 },
@@ -80,7 +81,7 @@ registerControl({
           ...ios.glass, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
           background: component.props.background || 'rgba(255,255,255,0.72)',
           borderRadius: component.props.borderRadius ?? 10,
-          padding: component.props.padding ?? 10,
+          padding: spacingToCss(component.props.padding, 10),
           boxShadow: component.props.shadow !== false ? '0 1px 2px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.65)' : 'none',
           borderColor: component.props.borderColor || 'rgba(60,60,67,0.10)',
           justifyContent: 'flex-start',
@@ -102,9 +103,9 @@ registerControl({
     style: 'segmented', activeColor: '#007aff', inactiveColor: '#8e8e93',
   },
   propSchema: [
-    { key: 'tabs', label: '标签名 (JSON)', type: 'json', group: '基础' },
+    { key: 'tabs', label: '标签页', type: 'json', editor: 'tabs', group: '基础', help: '支持排序、批量编辑和源码模式。' },
     { key: 'defaultTab', label: '默认选中', type: 'number', group: '基础', min: 0 },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'style', label: '样式', type: 'select', group: '样式', options: [
       { label: '分段', value: 'segmented' }, { label: '下划线', value: 'underline' }, { label: '胶囊', value: 'pill' },
     ]},
@@ -117,16 +118,17 @@ registerControl({
     const tabs = component.props.tabs || ['选项一', '选项二'];
     const activeColor = component.props.activeColor || '#007aff';
     const inactiveColor = component.props.inactiveColor || '#8e8e93';
+    const variant = component.props.style || 'segmented';
     const active = Number(runtime?.value ?? component.props.defaultTab ?? 0);
     return (
       <div style={{ width: '100%', height: '100%', minWidth: 0, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 6, padding: 6, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', minWidth: 0, background: 'rgba(118,118,128,0.10)', borderRadius: 9, padding: 2, flexShrink: 0 }}>
+        <div style={{ display: 'flex', minWidth: 0, background: variant === 'segmented' ? 'rgba(118,118,128,0.10)' : 'transparent', borderRadius: variant === 'pill' ? 999 : 9, padding: 2, gap: variant === 'pill' ? 4 : 0, flexShrink: 0 }}>
           {tabs.map((t: string, i: number) => (
             <button type="button" key={i} onClick={() => mode === 'preview' && runtime?.emit('onTabChange', i, { index: i, label: t })} style={{
-              flex: 1, minWidth: 0, padding: '5px 6px', fontSize: 13, fontWeight: 600, textAlign: 'center', borderRadius: 7,
-              border: 'none', cursor: mode === 'preview' ? 'pointer' : 'default',
-              background: i === active ? 'rgba(255,255,255,0.8)' : 'transparent',
-              color: i === active ? activeColor : inactiveColor,
+              flex: 1, minWidth: 0, padding: '5px 6px', fontSize: 13, fontWeight: 600, textAlign: 'center', borderRadius: variant === 'pill' ? 999 : 7,
+              border: 'none', borderBottom: variant === 'underline' ? `2px solid ${i === active ? activeColor : 'transparent'}` : 'none', cursor: mode === 'preview' ? 'pointer' : 'default',
+              background: i === active && variant !== 'underline' ? (variant === 'pill' ? activeColor : 'rgba(255,255,255,0.8)') : 'transparent',
+              color: i === active ? (variant === 'pill' ? '#fff' : activeColor) : inactiveColor,
               boxShadow: i === active ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
               backdropFilter: 'blur(20px)',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -148,9 +150,9 @@ registerControl({
     activeColor: '#2563eb', inactiveColor: '#94a3b8',
   },
   propSchema: [
-    { key: 'steps', label: '步骤名 (JSON)', type: 'json', group: '基础' },
+    { key: 'steps', label: '步骤', type: 'json', editor: 'steps', group: '基础', help: '支持排序、批量编辑和源码模式。' },
     { key: 'defaultStep', label: '默认步骤', type: 'number', group: '基础', min: 0 },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'activeColor', label: '激活颜色', type: 'color', group: '样式' },
     { key: 'inactiveColor', label: '未激活颜色', type: 'color', group: '样式' },
   ],
@@ -214,7 +216,7 @@ registerControl({
     const color = component.props.color || 'rgba(60,60,67,0.12)';
     const thickness = component.props.thickness || 0.5;
     return (
-      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: Number(component.props.margin) || 0, boxSizing: 'border-box' }}>
         <div style={component.props.orientation === 'vertical' ? { width: thickness, height: '100%', background: color } : { width: '100%', height: thickness, background: color }} />
       </div>
     );

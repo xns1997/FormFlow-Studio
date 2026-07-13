@@ -9,7 +9,7 @@
   },
   "gridSize": 10,
   "createdAt": "2026-07-06T18:00:00.000Z",
-  "updatedAt": "2026-07-06T18:00:00.000Z",
+  "updatedAt": "2026-07-13T06:58:56.987Z",
   "bindings": [],
   "components": [
     {
@@ -49,7 +49,7 @@
       "x": 24,
       "y": 116,
       "width": 220,
-      "height": 60,
+      "height": 64,
       "zIndex": 2,
       "fieldBinding": "需求编号",
       "props": {
@@ -66,7 +66,7 @@
       "x": 276,
       "y": 116,
       "width": 220,
-      "height": 60,
+      "height": 64,
       "zIndex": 2,
       "fieldBinding": "阀门品类",
       "props": {
@@ -89,7 +89,7 @@
       "x": 528,
       "y": 116,
       "width": 220,
-      "height": 60,
+      "height": 64,
       "zIndex": 2,
       "fieldBinding": "介质",
       "props": {
@@ -113,7 +113,7 @@
       "x": 24,
       "y": 196,
       "width": 220,
-      "height": 60,
+      "height": 64,
       "zIndex": 2,
       "fieldBinding": "公称通径DN",
       "props": {
@@ -130,7 +130,7 @@
       "x": 276,
       "y": 196,
       "width": 220,
-      "height": 60,
+      "height": 64,
       "zIndex": 2,
       "fieldBinding": "压力等级PN",
       "props": {
@@ -147,7 +147,7 @@
       "x": 528,
       "y": 196,
       "width": 220,
-      "height": 60,
+      "height": 64,
       "zIndex": 2,
       "fieldBinding": "设计温度",
       "props": {
@@ -164,7 +164,7 @@
       "x": 24,
       "y": 276,
       "width": 220,
-      "height": 60,
+      "height": 64,
       "zIndex": 2,
       "fieldBinding": "目标流量",
       "props": {
@@ -181,7 +181,7 @@
       "x": 276,
       "y": 276,
       "width": 220,
-      "height": 60,
+      "height": 64,
       "zIndex": 2,
       "fieldBinding": "连接方式",
       "props": {
@@ -203,7 +203,7 @@
       "x": 528,
       "y": 276,
       "width": 220,
-      "height": 60,
+      "height": 64,
       "zIndex": 2,
       "fieldBinding": "驱动方式",
       "props": {
@@ -225,7 +225,7 @@
       "x": 24,
       "y": 356,
       "width": 220,
-      "height": 60,
+      "height": 64,
       "zIndex": 2,
       "fieldBinding": "泄漏等级",
       "props": {
@@ -246,7 +246,7 @@
       "x": 276,
       "y": 356,
       "width": 220,
-      "height": 60,
+      "height": 64,
       "zIndex": 2,
       "fieldBinding": "预算等级",
       "props": {
@@ -268,7 +268,7 @@
       "x": 528,
       "y": 356,
       "width": 220,
-      "height": 60,
+      "height": 64,
       "zIndex": 2,
       "fieldBinding": "交期要求",
       "props": {
@@ -289,7 +289,7 @@
       "x": 24,
       "y": 436,
       "width": 220,
-      "height": 60,
+      "height": 64,
       "zIndex": 2,
       "fieldBinding": "安装位号",
       "props": {
@@ -306,7 +306,7 @@
       "x": 24,
       "y": 476,
       "width": 220,
-      "height": 60,
+      "height": 64,
       "zIndex": 2,
       "fieldBinding": "技术画像ID",
       "props": {
@@ -323,7 +323,7 @@
       "x": 276,
       "y": 476,
       "width": 220,
-      "height": 60,
+      "height": 64,
       "zIndex": 2,
       "fieldBinding": "标准介质组",
       "props": {
@@ -340,7 +340,7 @@
       "x": 528,
       "y": 476,
       "width": 220,
-      "height": 60,
+      "height": 64,
       "zIndex": 2,
       "fieldBinding": "温度分段",
       "props": {
@@ -357,7 +357,7 @@
       "x": 780,
       "y": 476,
       "width": 220,
-      "height": 60,
+      "height": 64,
       "zIndex": 2,
       "fieldBinding": "压力分段",
       "props": {
@@ -374,7 +374,7 @@
       "x": 24,
       "y": 556,
       "width": 220,
-      "height": 60,
+      "height": 64,
       "zIndex": 2,
       "fieldBinding": "技术完整度",
       "props": {
@@ -391,7 +391,7 @@
       "x": 276,
       "y": 556,
       "width": 220,
-      "height": 60,
+      "height": 64,
       "zIndex": 2,
       "fieldBinding": "受理状态",
       "props": {
@@ -408,7 +408,7 @@
       "x": 528,
       "y": 556,
       "width": 220,
-      "height": 90,
+      "height": 92,
       "zIndex": 2,
       "fieldBinding": "风险标签",
       "props": {
@@ -424,14 +424,18 @@
       "x": 780,
       "y": 556,
       "width": 220,
-      "height": 90,
+      "height": 92,
       "zIndex": 2,
       "fieldBinding": "缺失项",
       "props": {
         "name": "缺失项",
         "label": "缺失项",
         "readonly": true,
-        "rows": 3
+        "rows": 3,
+        "events": {
+          "onChange": "/** @param {FormEventContext} ctx */\nasync (ctx) => {\n  PrintDebug('缺失项 变更为:', value);\n  return value;\n}"
+        },
+        "fontSize": 48
       }
     },
     {

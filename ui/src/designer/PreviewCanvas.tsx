@@ -11,6 +11,9 @@ import { collectFlowSideEffects } from '../services/engine/flowSideEffects';
 import { useProjectStore } from '../project/store';
 import { getPreviewInitialValue } from '../services/display/previewValues';
 import DebugDrawer from '../components/DebugDrawer';
+import { resolveExpressionValues, resolveRuntimeProperties } from '../services/engine/propertyExpression';
+import { compileComponentValidation, validateField } from '../services/engine/validator';
+import { resolveBindingWrite, resolveDataBindingValue } from '../services/data/dataBinding';
 
 interface PreviewCanvasProps {
   components: DesignComponent[];
@@ -35,6 +38,7 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
   const [componentVisibility, setComponentVisibility] = useState<Record<string, boolean>>({});
   const [componentDisabled, setComponentDisabled] = useState<Record<string, boolean>>({});
   const [fieldRequired, setFieldRequired] = useState<Record<string, boolean>>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<EventStatus | null>(null);
   const [debugEntries, setDebugEntries] = useState<DebugEntry[]>([]);
   const [debugOpen, setDebugOpen] = useState(false);
@@ -42,6 +46,14 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
   const debugEnabled = behaviorSettings?.enableDebugDrawer !== false;
   const autoOpenDebug = behaviorSettings?.autoOpenDebugDrawerOnWarnOrError !== false;
   const enableServerDebugApi = behaviorSettings?.enableServerDebugApi !== false;
+  const expressionResolution = useMemo(() => resolveExpressionValues(components.map((component) => ({
+    field: getDesignComponentField(component), props: component.props,
+  })), values, originalValues), [components, values, originalValues]);
+  const expressionValues = expressionResolution.values;
+  const dirtyFieldsRef = useRef(new Set<string>());
+  const componentFieldsRef = useRef(new Map<string, string>());
+  const initializationSignaturesRef = useRef(new Map<string, string>());
+  const validationSignaturesRef = useRef(new Map<string, string>());
 
   // ── 表单 → 工作表同步（防抖） ──────────────────────
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -69,28 +81,66 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
   const queueTableSync = useCallback((field: string, value: unknown) => {
     const component = components.find((c) => getDesignComponentField(c) === field);
     if (!component) return;
-    const binding = component.props.tableBinding as { tableId?: string; sheetName?: string; keyField?: string; keyValue?: unknown; column?: string } | undefined;
-    if (!binding?.tableId || !binding.sheetName || !binding.keyField || binding.keyValue == null || !binding.column) return;
-    pendingSyncsRef.current.push({ tableId: binding.tableId, sheetName: binding.sheetName, keyField: binding.keyField, keyValue: binding.keyValue, column: binding.column, value });
+    const nextValues = { ...expressionValues, [field]: value };
+    const runtime = resolveRuntimeProperties(component.props, value, { form: nextValues, original: originalValues, component: component.props });
+    const validationError = validateField(value, compileComponentValidation({ ...runtime.props, required: fieldRequired[field] ?? runtime.required }), nextValues);
+    if (validationError) { setStatus({ key: Date.now(), label: `未写回：${validationError}`, state: 'error', details: [] }); return; }
+    const resolved = resolveBindingWrite(component, tables, value);
+    if (!resolved.ok || !resolved.write) { if (resolved.diagnostic) setStatus({ key: Date.now(), label: `未写回：${resolved.diagnostic}`, state: 'error', details: [] }); return; }
+    pendingSyncsRef.current.push(resolved.write);
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     syncTimerRef.current = setTimeout(flushSyncs, 500);
-  }, [components, flushSyncs]);
+  }, [components, expressionValues, fieldRequired, flushSyncs, originalValues, tables]);
 
   useEffect(() => () => { if (syncTimerRef.current) clearTimeout(syncTimerRef.current); }, []);
 
   useEffect(() => {
-    const initial = Object.fromEntries(components.map((component) => [getDesignComponentField(component), getPreviewInitialValue(component, tables)]));
-    setValues(initial);
-    setOriginalValues(initial);
-    setComponentVisibility({});
-    setComponentDisabled({});
-    setFieldRequired({});
-    setStatus(null);
-    setDebugEntries([]);
-    setDebugOpen(false);
+    const nextFields = new Map<string, string>();
+    const nextInitSignatures = new Map<string, string>();
+    const nextValidationSignatures = new Map<string, string>();
+    const ids = new Set(components.map((component) => component.id));
+    const fields = new Set<string>();
+    for (const component of components) {
+      const field = getDesignComponentField(component);
+      fields.add(field); nextFields.set(component.id, field);
+      nextInitSignatures.set(component.id, JSON.stringify({ defaultValue: component.props.defaultValue, value: component.props.value, dataBinding: component.props.dataBinding, tableBinding: component.props.tableBinding, rangeRef: component.props.rangeRef }));
+      nextValidationSignatures.set(component.id, JSON.stringify({ required: component.props.required, requiredExpression: component.props.requiredExpression, validator: component.props.validator, pattern: component.props.pattern, min: component.props.min, max: component.props.max, validationRules: component.props.validationRules }));
+    }
+    setValues((current) => {
+      const next: Record<string, unknown> = {};
+      for (const component of components) {
+        const field = nextFields.get(component.id)!;
+        const previousField = componentFieldsRef.current.get(component.id);
+        const renamedValue = previousField && previousField !== field && Object.prototype.hasOwnProperty.call(current, previousField) ? current[previousField] : undefined;
+        const dirty = dirtyFieldsRef.current.has(field) || (!!previousField && dirtyFieldsRef.current.has(previousField));
+        const initializationChanged = initializationSignaturesRef.current.get(component.id) !== nextInitSignatures.get(component.id);
+        next[field] = renamedValue !== undefined ? renamedValue : dirty || (!initializationChanged && Object.prototype.hasOwnProperty.call(current, field)) ? current[field] : getPreviewInitialValue(component, tables);
+        if (previousField && previousField !== field && dirtyFieldsRef.current.delete(previousField)) dirtyFieldsRef.current.add(field);
+      }
+      return next;
+    });
+    setOriginalValues((current) => Object.fromEntries(components.map((component) => {
+      const field = nextFields.get(component.id)!;
+      const previousField = componentFieldsRef.current.get(component.id);
+      const dirty = dirtyFieldsRef.current.has(field);
+      return [field, dirty ? (previousField && current[previousField] !== undefined ? current[previousField] : current[field]) : getPreviewInitialValue(component, tables)];
+    })));
+    setComponentVisibility((current) => Object.fromEntries(Object.entries(current).filter(([id]) => ids.has(id))));
+    setComponentDisabled((current) => Object.fromEntries(Object.entries(current).filter(([id]) => ids.has(id))));
+    setFieldRequired((current) => Object.fromEntries(Object.entries(current).filter(([field]) => fields.has(field))));
+    setFieldErrors((current) => Object.fromEntries(Object.entries(current).filter(([field]) => {
+      if (!fields.has(field)) return false;
+      const component = components.find((item) => nextFields.get(item.id) === field);
+      return !!component && validationSignaturesRef.current.get(component.id) === nextValidationSignatures.get(component.id);
+    })));
+    dirtyFieldsRef.current = new Set([...dirtyFieldsRef.current].filter((field) => fields.has(field)));
+    componentFieldsRef.current = nextFields;
+    initializationSignaturesRef.current = nextInitSignatures;
+    validationSignaturesRef.current = nextValidationSignatures;
   }, [components, tables]);
 
   const setFieldValue = useCallback((field: string, value: unknown) => {
+    dirtyFieldsRef.current.add(field);
     setValues((current) => ({ ...current, [field]: value }));
     queueTableSync(field, value);
   }, [queueTableSync]);
@@ -144,14 +194,48 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
     }
   }, [autoOpenDebug, debugEnabled]);
 
+  const expressionDiagnosticKey = JSON.stringify(expressionResolution.diagnostics);
+  useEffect(() => {
+    const entries = Object.entries(expressionResolution.diagnostics).flatMap(([field, messages]) => messages.map((message, index) => ({
+      id: `preview:expression:${field}:${index}:${message}`,
+      timestamp: Date.now(),
+      level: 'warn' as const,
+      source: 'ui' as const,
+      channel: 'preview' as const,
+      title: `${field} 表达式诊断`,
+      message,
+      field,
+    })));
+    appendDebugEntries(entries);
+  }, [appendDebugEntries, expressionDiagnosticKey]);
+
   const emit = useCallback(async (component: DesignComponent, eventName: string, value?: unknown, detail?: unknown) => {
     const field = getDesignComponentField(component);
     const resetValues = eventName === 'onReset'
       ? Object.fromEntries(components.map((item) => [getDesignComponentField(item), getPreviewInitialValue(item, tables)]))
       : null;
-    const nextValue = resetValues ? resetValues : (value === undefined ? values[field] : value);
-    const nextValues = resetValues || (value === undefined ? values : { ...values, [field]: value });
-    if (resetValues) setValues(resetValues);
+    const nextValue = resetValues ? resetValues : (value === undefined ? expressionValues[field] : value);
+    const nextValues = resetValues || (value === undefined ? expressionValues : { ...expressionValues, [field]: value });
+    if (eventName === 'onBlur') {
+      const resolved = resolveRuntimeProperties(component.props, nextValues[field], { form: nextValues, original: originalValues, component: component.props });
+      const required = fieldRequired[field] ?? resolved.required;
+      const error = validateField(nextValue, compileComponentValidation({ ...resolved.props, required }), nextValues);
+      setFieldErrors((current) => ({ ...current, [field]: error || '' }));
+    }
+    if (eventName === 'onClick' && component.type === 'button') {
+      const nextErrors = Object.fromEntries(components.map((item) => {
+        const itemField = getDesignComponentField(item);
+        const resolved = resolveRuntimeProperties(item.props, nextValues[itemField], { form: nextValues, original: originalValues, component: item.props });
+        const required = fieldRequired[itemField] ?? resolved.required;
+        return [itemField, validateField(nextValues[itemField], compileComponentValidation({ ...resolved.props, required }), nextValues) || ''];
+      }));
+      setFieldErrors(nextErrors);
+      if (Object.values(nextErrors).some(Boolean)) {
+        setStatus({ key: Date.now(), label: '请先修正表单中的校验错误', state: 'error', details: [] });
+        return;
+      }
+    }
+    if (resetValues) { dirtyFieldsRef.current.clear(); setValues(resetValues); setOriginalValues(resetValues); }
     else if (value !== undefined) setFieldValue(field, value);
     const key = Date.now();
     setStatus({ key, label: `${field}.${eventName}`, state: 'running', details: [] });
@@ -164,7 +248,7 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
     };
     let result: DesignPreviewEventResult = await executeDesignPreviewEvent({
       eventName, field, value: nextValue, detail, values: nextValues, originalValues, component,
-      previousValue: values[field], timestamp: key,
+      previousValue: expressionValues[field], timestamp: key,
     }, {
       workflows,
       tables,
@@ -275,7 +359,7 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
       persisted,
       details: result.error ? [] : successDetails,
     } : current);
-  }, [appendDebugEntries, components, originalValues, persistProject, project, tables, values, workflows, setFieldValue, setPreviewVisible, setPreviewDisabled, setPreviewRequired, formatStatusDetails, formatTraceDetails]);
+  }, [appendDebugEntries, components, originalValues, persistProject, project, tables, values, expressionValues, workflows, setFieldValue, setPreviewVisible, setPreviewDisabled, setPreviewRequired, formatStatusDetails, formatTraceDetails]);
 
   const bounds = useMemo(() => {
     const maxX = Math.max(960, ...components.map((component) => component.x + component.width + 80));
@@ -292,13 +376,16 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
             if (!control) return null;
             const Control = control.render;
             const field = getDesignComponentField(component);
-            const isHidden = (componentVisibility[component.id] ?? component.visible) === false;
-            const isDisabled = !!(componentDisabled[component.id] ?? component.props.disabled);
-            const isRequired = !!(fieldRequired[field] ?? component.props.required);
+            const bound = resolveDataBindingValue(component, tables, expressionValues);
+            const inputValue = !dirtyFieldsRef.current.has(field) && bound.found ? bound.value : expressionValues[field];
+            const resolved = resolveRuntimeProperties(component.props, inputValue, { form: expressionValues, original: originalValues, component: component.props });
+            const isHidden = (componentVisibility[component.id] ?? component.visible) === false || !resolved.visible;
+            const isDisabled = !!(componentDisabled[component.id] ?? component.props.disabled) || resolved.disabled || !!component.props.valueExpression;
+            const isRequired = !!(fieldRequired[field] ?? resolved.required);
             const patchedComponent = {
               ...component,
               props: {
-                ...component.props,
+                ...resolved.props,
                 disabled: isDisabled,
                 required: isRequired,
               },
@@ -325,12 +412,13 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
                   component={patchedComponent}
                   mode="preview"
                   runtime={{
-                    value: values[field],
-                    values,
+                    value: resolved.value,
+                    values: expressionValues,
                     setValue: (value) => setFieldValue(field, value),
                     emit: (eventName, value, detail) => { void emit(component, eventName, value, detail); },
                   }}
                 />
+                {!!fieldErrors[field] && <div className="designer-preview-field-error">{fieldErrors[field]}</div>}
                 {(isHidden || isDisabled) && (
                   <div className="designer-preview-control-indicators" aria-hidden="true">
                     {isHidden && <span className="designer-preview-control-indicator hidden" title="当前为隐藏状态" />}

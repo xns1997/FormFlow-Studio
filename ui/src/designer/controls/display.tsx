@@ -9,38 +9,26 @@ import { resolveRange } from '../../services/data/rangeResolver';
 import { useProjectStore } from '../../project/store';
 import { DesignerIcon } from '../icons';
 import type { PreviewControlRuntime } from '../types';
+import { normalizeDataBinding } from '../../services/data/dataBinding';
 
 registerControl({
   type: 'text', label: '文本', category: 'display', icon: '📄',
   defaultProps: {
-    content: '文本内容', name: '',
+    content: '文本内容', contentTemplate: '', name: '',
     fontSize: 15, fontWeight: 'normal', fontFamily: '', color: '#1c1c1e',
     textAlign: 'left', letterSpacing: 0, lineHeight: 1.5, textDecoration: 'none',
     rangeRef: null,
   },
   propSchema: [
     { key: 'content', label: '内容', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
-    { key: 'fontSize', label: '字号', type: 'number', group: '文本样式', min: 8, max: 72 },
-    { key: 'fontWeight', label: '字重', type: 'select', group: '文本样式', options: [
-      { label: '细体', value: '300' }, { label: '常规', value: 'normal' }, { label: '中等', value: '500' },
-      { label: '半粗', value: '600' }, { label: '粗体', value: 'bold' },
-    ]},
-    { key: 'fontFamily', label: '字体', type: 'select', group: '文本样式', options: [
-      { label: '系统默认', value: '' }, { label: '等宽字体', value: 'monospace' },
-      { label: '衬线体', value: 'Georgia, serif' }, { label: '无衬线', value: 'Helvetica, sans-serif' },
-    ]},
-    { key: 'color', label: '颜色', type: 'color', group: '文本样式' },
-    { key: 'textAlign', label: '对齐', type: 'select', group: '文本样式', options: [
-      { label: '左对齐', value: 'left' }, { label: '居中', value: 'center' }, { label: '右对齐', value: 'right' },
-    ]},
-    { key: 'letterSpacing', label: '字间距', type: 'number', group: '文本样式', min: -2, max: 10, step: 0.5 },
-    { key: 'lineHeight', label: '行高', type: 'number', group: '文本样式', min: 1, max: 3, step: 0.1 },
+    { key: 'contentTemplate', label: '动态内容模板', type: 'string', editor: 'template', group: '表达式', help: '使用 {{form.字段名}} 插值并实时预览。' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
+    { kind: 'composite', key: 'typography', keys: ['fontFamily', 'fontSize', 'fontWeight', 'color', 'lineHeight', 'letterSpacing', 'textAlign'], label: '字体与排版', editor: 'typography', group: '文本样式' },
     { key: 'textDecoration', label: '装饰', type: 'select', group: '文本样式', options: [
       { label: '无', value: 'none' }, { label: '下划线', value: 'underline' },
       { label: '删除线', value: 'line-through' }, { label: '上划线', value: 'overline' },
     ]},
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [],
   defaultSize: { w: 180, h: 36 },
@@ -71,6 +59,23 @@ registerControl({
   },
 });
 
+function formatTableCell(value: unknown, type?: string, format?: string) {
+  if (value === null || value === undefined || value === '') return '—';
+  if (type === 'number') {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return String(value);
+    const digits = format?.match(/0\.(0+)/)?.[1].length;
+    return new Intl.NumberFormat('zh-CN', digits === undefined ? undefined : { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(number);
+  }
+  if (type === 'date') {
+    const date = new Date(String(value));
+    if (Number.isNaN(date.getTime())) return String(value);
+    return format === 'datetime' ? date.toLocaleString('zh-CN') : date.toLocaleDateString('zh-CN');
+  }
+  if (type === 'boolean') return value === true || value === 'true' || value === 1 ? '是' : '否';
+  return String(value);
+}
+
 registerControl({
   type: 'image', label: '图片', category: 'display', icon: '🖼️',
   defaultProps: {
@@ -78,16 +83,16 @@ registerControl({
     rangeRef: null,
   },
   propSchema: [
-    { key: 'src', label: '图片URL', type: 'string', group: '基础' },
+    { key: 'src', label: '图片 URL', type: 'string', editor: 'url', group: '基础', validation: { pattern: '^https?://' } },
     { key: 'alt', label: '替代文本', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'fit', label: '填充方式', type: 'select', group: '样式', options: [
       { label: '覆盖', value: 'cover' }, { label: '包含', value: 'contain' },
       { label: '拉伸', value: 'fill' }, { label: '适应', value: 'scale-down' },
     ]},
-    { key: 'borderRadius', label: '圆角', type: 'number', group: '样式', min: 0, max: 100 },
-    { key: 'opacity', label: '透明度', type: 'number', group: '样式', min: 0, max: 1, step: 0.1 },
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'borderRadius', label: '圆角', type: 'number', editor: 'radius', group: '样式', min: 0, max: 100 },
+    { key: 'opacity', label: '透明度', type: 'number', editor: 'opacity', group: '样式', min: 0, max: 1, step: 0.1 },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onClick', label: '点击', description: '点击图片时触发' }],
   defaultSize: { w: 240, h: 160 },
@@ -113,7 +118,7 @@ registerControl({
   },
   propSchema: [
     { key: 'content', label: '默认值', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'duration', label: '动画时长(ms)', type: 'number', group: '动画', min: 0, max: 6000, step: 100 },
     { key: 'decimals', label: '小数位', type: 'number', group: '动画', min: 0, max: 6 },
     { key: 'prefix', label: '前缀', type: 'string', group: '格式' },
@@ -138,7 +143,7 @@ registerControl({
       { label: '无', value: 'none' }, { label: '下划线', value: 'underline' },
       { label: '删除线', value: 'line-through' }, { label: '上划线', value: 'overline' },
     ]},
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [],
   defaultSize: { w: 200, h: 44 },
@@ -185,9 +190,9 @@ registerControl({
     rangeRef: null,
   },
   propSchema: [
-    { key: 'columns', label: '列名 (JSON)', type: 'json', group: '数据' },
+    { key: 'columns', label: '表格列', type: 'json', editor: 'table-columns', group: '数据' },
     { key: 'rows', label: '行数', type: 'number', group: '数据', min: 1, max: 50 },
-    { key: 'name', label: '字段名', type: 'string', group: '数据', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '数据', placeholder: 'field_name' },
     { key: 'headerBackground', label: '表头背景', type: 'color', group: '样式' },
     { key: 'headerColor', label: '表头文字颜色', type: 'color', group: '样式' },
     { key: 'headerFontWeight', label: '表头字重', type: 'select', group: '样式', options: [
@@ -196,12 +201,18 @@ registerControl({
     { key: 'cellColor', label: '单元格文字颜色', type: 'color', group: '样式' },
     { key: 'showGrid', label: '显示网格线', type: 'boolean', group: '样式' },
     { key: 'striped', label: '斑马纹', type: 'boolean', group: '样式' },
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onRowClick', label: '行点击', description: '点击表格行时触发' }],
   defaultSize: { w: 360, h: 180 },
   render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
-    const configuredColumns = Array.isArray(component.props.columns) ? component.props.columns.map(String) : ['列A', '列B'];
+    const configuredColumns = (Array.isArray(component.props.columns) ? component.props.columns : ['列A', '列B']).map((column: unknown, index: number) => {
+      if (column && typeof column === 'object') {
+        const record = column as Record<string, unknown>;
+        return { title: String(record.title || record.label || record.dataIndex || `列${index + 1}`), key: String(record.dataIndex || record.key || record.title || `列${index + 1}`), width: Number(record.width || 0), type: String(record.type || 'text'), format: String(record.format || ''), visible: record.visible !== false && record.visible !== 'hide' };
+      }
+      return { title: String(column), key: String(column), width: 0, type: 'text', format: '', visible: true };
+    }).filter((column) => column.visible);
     const rawRows = Array.isArray(runtime?.value)
       ? runtime.value
       : Array.isArray(component.props.data)
@@ -211,25 +222,25 @@ registerControl({
       .map((row) => {
         if (row && typeof row === 'object' && !Array.isArray(row)) return row as Record<string, unknown>;
         if (Array.isArray(row)) {
-          return Object.fromEntries(row.map((cell, index) => [configuredColumns[index] || `列${index + 1}`, cell]));
+          return Object.fromEntries(row.map((cell, index) => [configuredColumns[index]?.key || `列${index + 1}`, cell]));
         }
         return { value: row };
       });
     const derivedColumns = normalizedRows.length > 0
       ? [...new Set(normalizedRows.flatMap((row) => Object.keys(row)))]
       : [];
-    const cols = configuredColumns.length > 0 ? configuredColumns : derivedColumns;
+    const cols = configuredColumns.length > 0 ? configuredColumns : derivedColumns.map((key) => ({ title: key, key, width: 0, type: 'text', format: '', visible: true }));
     const placeholderRows = Math.max(1, Number(component.props.rows) || 3);
     const displayRows = normalizedRows.length > 0
       ? normalizedRows
-      : Array.from({ length: placeholderRows }, () => Object.fromEntries(cols.map((column) => [column, '—'])));
+      : Array.from({ length: placeholderRows }, () => Object.fromEntries(cols.map((column) => [column.key, '—'])));
     return (
       <div style={ios.glass}>
         <table style={{ width: '100%', minWidth: 0, borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed' }}>
           <thead>
             <tr>
-              {cols.map((c: string, i: number) => (
-                <th key={i} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: component.props.headerFontWeight || 600, color: component.props.headerColor || '#8e8e93', fontSize: 12, borderBottom: component.props.showGrid !== false ? '0.5px solid rgba(60,60,67,0.08)' : 'none', background: component.props.headerBackground || 'rgba(118,118,128,0.06)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c}</th>
+              {cols.map((c, i: number) => (
+                <th key={c.key || i} style={{ width: c.width || undefined, padding: '8px 10px', textAlign: 'left', fontWeight: component.props.headerFontWeight || 600, color: component.props.headerColor || '#8e8e93', fontSize: 12, borderBottom: component.props.showGrid !== false ? '0.5px solid rgba(60,60,67,0.08)' : 'none', background: component.props.headerBackground || 'rgba(118,118,128,0.06)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.title}</th>
               ))}
             </tr>
           </thead>
@@ -240,8 +251,8 @@ registerControl({
                 onClick={() => mode === 'preview' && runtime?.emit('onRowClick', r, { rowIndex: r, row })}
                 style={{ cursor: mode === 'preview' ? 'pointer' : 'default' }}
               >
-                {cols.map((column: string, c: number) => (
-                  <td key={c} style={{ padding: '9px 10px', borderBottom: component.props.showGrid !== false && r < displayRows.length - 1 ? '0.5px solid rgba(60,60,67,0.06)' : 'none', color: component.props.cellColor || '#3a3a3c', background: component.props.striped && r % 2 === 1 ? 'rgba(118,118,128,0.03)' : 'transparent', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{String(row[column] ?? '—')}</td>
+                {cols.map((column, c: number) => (
+                  <td key={column.key || c} style={{ padding: '9px 10px', borderBottom: component.props.showGrid !== false && r < displayRows.length - 1 ? '0.5px solid rgba(60,60,67,0.06)' : 'none', color: component.props.cellColor || '#3a3a3c', background: component.props.striped && r % 2 === 1 ? 'rgba(118,118,128,0.03)' : 'transparent', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formatTableCell(row[column.key], column.type, column.format)}</td>
                 ))}
               </tr>
             ))}
@@ -303,14 +314,14 @@ registerControl({
       { label: '环形图', value: 'doughnut' }, { label: '面积图', value: 'area' },
     ]},
     { key: 'title', label: '标题', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'chartData', label: '自定义数据 (JSON)', type: 'json', group: '数据' },
     { key: '__dimMetric', label: '', type: 'dimMetric' as any, group: '维度/指标' },
     { key: 'barColor', label: '主色', type: 'color', group: '样式' },
     { key: 'lineColor', label: '辅色', type: 'color', group: '样式' },
     { key: 'showLegend', label: '显示图例', type: 'boolean', group: '样式' },
     { key: 'showValues', label: '显示数值', type: 'boolean', group: '样式' },
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onClick', label: '点击', description: '点击图表时触发' }],
   defaultSize: { w: 360, h: 220 },
@@ -319,7 +330,8 @@ registerControl({
 
 function ChartRender({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) {
   const tables = useProjectStore((s) => s.project?.srcTable || []);
-  const rangeRef = component.props.rangeRef;
+  const binding = normalizeDataBinding(component);
+  const rangeRef = binding?.source.kind === 'range' ? binding.source.ref : component.props.rangeRef;
 
   // 稳定化 resolved 数据引用
   const resolved = useMemo(

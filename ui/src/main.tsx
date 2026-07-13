@@ -4,7 +4,7 @@ import './style/index.css';
 
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { Layout, ProjectsListPage, SystemSettingsLayout, SystemSettingsPage } from './pages/home';
 import {
   ProjectDetailPage,
@@ -79,11 +79,12 @@ function App() {
               <Route path="lineage" element={<DataLineagePage />} />
               <Route path="metadata" element={<MetadataPage />} />
               <Route path="workspace" element={<WorkspaceLayout />}>
-                <Route index element={<Navigate to="data" replace />} />
-                <Route path="data" element={<DataPreviewPage />} />
-                <Route path="canvas" element={<CanvasWithProvider />} />
-                <Route path="designer" element={<FormDesignerPage />} />
-                <Route path="behavior" element={<BehaviorPage />} />
+                <Route index element={<WorkspaceEditorRedirect mode="data" />} />
+                <Route path="data" element={<WorkspaceEditorRedirect mode="data" />} />
+                <Route path="canvas" element={<WorkspaceEditorRedirect mode="flow" />} />
+                <Route path="designer" element={<WorkspaceEditorRedirect mode="design" />} />
+                <Route path="behavior" element={<WorkspaceEditorRedirect mode="behavior" />} />
+                <Route path="test" element={<WorkspaceEditorRedirect mode="test" />} />
               </Route>
               <Route path="settings" element={<ProjectSettingsLayout />}>
                 <Route index element={<Navigate to="general" replace />} />
@@ -97,6 +98,15 @@ function App() {
       </BrowserRouter>
     </ErrorBoundary>
   );
+}
+
+function WorkspaceEditorRedirect({ mode }: { mode: 'data' | 'design' | 'behavior' | 'flow' | 'test' }) {
+  const { id = '' } = useParams<{ id: string }>();
+  const location = useLocation();
+  const query = new URLSearchParams(location.search);
+  if (mode === 'test') return <Navigate to={`/projects/${id}/usage?${query.toString()}`} replace />;
+  query.set('mode', mode);
+  return <Navigate to={`/projects/${id}/editor?${query.toString()}`} replace />;
 }
 
 const root = createRoot(document.querySelector('#app') as HTMLElement);

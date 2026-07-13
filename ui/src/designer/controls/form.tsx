@@ -3,6 +3,7 @@ import { registerControl } from '../registry';
 import type { DesignComponent } from '../../project/types';
 import { controlText } from './styles';
 import type { PreviewControlRuntime } from '../types';
+import { spacingToCss } from '../../services/style/propertyStyles';
 
 registerControl({
   type: 'form', label: '表单窗体', category: 'container', icon: '📋',
@@ -12,8 +13,6 @@ registerControl({
     background: '#f2f2f7',
     padding: 20,
     borderRadius: 12,
-    width: 600,
-    height: 800,
     submitText: '提交',
     resetText: '重置',
     showFooter: true,
@@ -21,11 +20,11 @@ registerControl({
   propSchema: [
     { key: 'title', label: '标题', type: 'string', group: '基础' },
     { key: 'subtitle', label: '副标题', type: 'string', group: '基础' },
-    { key: 'width', label: '宽度', type: 'number', group: '尺寸' },
-    { key: 'height', label: '高度', type: 'number', group: '尺寸' },
+    { key: 'width', label: '宽度', type: 'number', target: 'geometry', group: '尺寸', min: 320 },
+    { key: 'height', label: '高度', type: 'number', target: 'geometry', group: '尺寸', min: 240 },
     { key: 'background', label: '背景色', type: 'color', group: '样式' },
-    { key: 'padding', label: '内边距', type: 'number', group: '样式' },
-    { key: 'borderRadius', label: '圆角', type: 'number', group: '样式' },
+    { key: 'padding', label: '内边距', type: 'number', editor: 'spacing', group: '样式', help: '兼容原有统一数字；编辑后可分别设置四个方向。' },
+    { key: 'borderRadius', label: '圆角', type: 'number', editor: 'radius', group: '样式' },
     { key: 'submitText', label: '提交按钮', type: 'string', group: '底部' },
     { key: 'resetText', label: '重置按钮', type: 'string', group: '底部' },
     { key: 'showFooter', label: '显示底栏', type: 'boolean', group: '底部' },
@@ -42,7 +41,7 @@ registerControl({
         width: '100%', height: '100%', minWidth: 0, boxSizing: 'border-box',
         background: p.background || '#f2f2f7',
         borderRadius: p.borderRadius ?? 12,
-        padding: p.padding ?? 20,
+        padding: spacingToCss(p.padding, 20),
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
       }}>

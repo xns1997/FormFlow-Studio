@@ -31,6 +31,8 @@ import { formatStructuredProperty, isStructuredProperty, parseStructuredProperty
 import { resolveRange } from '../services/data/rangeResolver';
 import type { FormControlEventContext } from '../services/engine/formFlowTrigger';
 import { getRuntimeComponentType, isEditableComponentType, normalizeDateTimeValue, shouldShowFieldChrome } from '../services/config/controlTypes';
+import { resolveExpressionValues, resolveRuntimeProperties } from '../services/engine/propertyExpression';
+import { compileComponentValidation, validateField } from '../services/engine/validator';
 
 interface FormRendererProps {
   components: ComponentNode[];
@@ -69,6 +71,9 @@ export default function FormRenderer({
   const [touched, setTouched] = useState<Set<string>>(new Set());
   const [currentStep, setCurrentStep] = useState(0);
   const formRef = useRef<HTMLDivElement>(null);
+  const expressionValues = useMemo(() => resolveExpressionValues(components.map((component) => ({
+    field: resolveComponentFieldName(component), props: normalizeRenderProps(component),
+  })), values, originalValues).values, [components, values, originalValues]);
 
   const handleRangeConfirm = useCallback((ref: RangeRef) => {
     if (connectingField && onRangeChange) onRangeChange(connectingField, ref);
@@ -91,10 +96,12 @@ export default function FormRenderer({
   const requiredFields = components.filter((c) => {
     const state = componentStates[c.id] || { visible: true };
     if (!state.visible) return false;
-    return !!normalizeRenderProps(c).required;
+    const props = normalizeRenderProps(c);
+    const field = resolveComponentFieldName(c);
+    return resolveRuntimeProperties(props, expressionValues[field], { form: expressionValues, original: originalValues, component: props }).required;
   });
   const filledRequired = requiredFields.filter((c) => {
-    const v = values[c.name];
+    const v = expressionValues[resolveComponentFieldName(c)];
     return v != null && v !== '' && !(Array.isArray(v) && v.length === 0);
   });
   const requiredProgress = requiredFields.length > 0 ? `${filledRequired.length}/${requiredFields.length}` : null;
@@ -102,6 +109,21 @@ export default function FormRenderer({
   const handleFieldBlur = useCallback((field: string) => {
     setTouched((prev) => new Set(prev).add(field));
   }, []);
+
+  const validationErrors = useMemo(() => Object.fromEntries(components.map((component) => {
+    const field = resolveComponentFieldName(component);
+    const props = normalizeRenderProps(component);
+    const runtime = resolveRuntimeProperties(props, expressionValues[field], { form: expressionValues, original: originalValues, component: props });
+    const required = componentStates[component.id]?.visible === false ? false : runtime.required;
+    return [field, validateField(expressionValues[field], compileComponentValidation({ ...runtime.props, required }), expressionValues) || ''];
+  })), [components, componentStates, expressionValues, originalValues]);
+
+  const validateBeforeSubmit = useCallback(() => {
+    const invalidFields = Object.entries(validationErrors).filter(([, error]) => !!error).map(([field]) => field);
+    if (!invalidFields.length) return true;
+    setTouched((current) => new Set([...current, ...invalidFields]));
+    return false;
+  }, [validationErrors]);
 
   // ── Wizard mode: group visible editable components into steps ──
   const visibleComponents = components.filter((c) => {
@@ -138,12 +160,15 @@ export default function FormRenderer({
   // ── Render a single field ──
   const renderField = (comp: ComponentNode) => {
     const state = componentStates[comp.id] || { visible: true, disabled: false, readonly: false };
-    if (!state.visible) return null;
-    const props = normalizeRenderProps(comp);
+    const baseProps = normalizeRenderProps(comp);
     const fieldName = resolveComponentFieldName(comp);
-    const hasError = !!errors[fieldName];
+    const runtime = resolveRuntimeProperties(baseProps, expressionValues[fieldName], { form: expressionValues, original: originalValues, component: baseProps });
+    if (!state.visible || !runtime.visible) return null;
+    const props: Record<string, unknown> = { ...runtime.props, required: runtime.required };
+    const fieldError = errors[fieldName] || validationErrors[fieldName];
+    const hasError = !!fieldError;
     const isTouched = touched.has(fieldName);
-    const isDirty = JSON.stringify(values[fieldName]) !== JSON.stringify(originalValues[fieldName]);
+    const isDirty = JSON.stringify(expressionValues[fieldName]) !== JSON.stringify(originalValues[fieldName]);
     const showSuccess = isTouched && !hasError && isDirty && !!props.required;
     const rangeRef = rangeConnections[fieldName] || null;
     const showChrome = shouldShowFieldChrome(comp.type);
@@ -165,42 +190,43 @@ export default function FormRenderer({
         <FormFieldInput
           type={comp.type}
           name={fieldName}
-          value={values[fieldName]}
+          value={runtime.value}
           originalValue={originalValues[fieldName]}
-          disabled={state.disabled || state.readonly || !!props.disabled || !!props.readonly}
+          disabled={state.disabled || state.readonly || runtime.disabled || !!props.disabled || !!props.readonly || !!baseProps.valueExpression}
           props={props}
           error={isTouched ? errors[fieldName] : undefined}
           onChange={(val) => {
-            const nextValues = { ...values, [fieldName]: val };
+            const nextValues = { ...expressionValues, [fieldName]: val };
             onChange(fieldName, val);
             void onControlEvent?.({
               eventName: 'onChange', field: fieldName, value: val,
-              values: nextValues, originalValues, component: comp, previousValue: values[fieldName], timestamp: Date.now(),
+              values: nextValues, originalValues, component: comp, previousValue: expressionValues[fieldName], timestamp: Date.now(),
             });
           }}
           onBlur={() => {
             handleFieldBlur(fieldName);
             onBlur?.(fieldName);
             void onControlEvent?.({
-              eventName: 'onBlur', field: fieldName, value: values[fieldName],
-              values, originalValues, component: comp, previousValue: values[fieldName], timestamp: Date.now(),
+              eventName: 'onBlur', field: fieldName, value: expressionValues[fieldName],
+              values: expressionValues, originalValues, component: comp, previousValue: expressionValues[fieldName], timestamp: Date.now(),
             });
           }}
           onFocus={() => {
             onFocus?.(fieldName);
             void onControlEvent?.({
-              eventName: 'onFocus', field: fieldName, value: values[fieldName],
-              values, originalValues, component: comp, previousValue: values[fieldName], timestamp: Date.now(),
+              eventName: 'onFocus', field: fieldName, value: expressionValues[fieldName],
+              values: expressionValues, originalValues, component: comp, previousValue: expressionValues[fieldName], timestamp: Date.now(),
             });
           }}
           onKeyDown={onKeyDown ? (e) => onKeyDown(fieldName, e) : undefined}
           onPaste={onPaste ? (e) => onPaste(fieldName, e) : undefined}
           onClear={onClear ? () => onClear(fieldName) : undefined}
           onButtonClick={() => {
+            if (!validateBeforeSubmit()) return;
             onButtonClick?.(fieldName);
             void onControlEvent?.({
-              eventName: 'onClick', field: fieldName, value: values[fieldName],
-              values, originalValues, component: comp, previousValue: values[fieldName], timestamp: Date.now(),
+              eventName: 'onClick', field: fieldName, value: expressionValues[fieldName],
+              values: expressionValues, originalValues, component: comp, previousValue: expressionValues[fieldName], timestamp: Date.now(),
             });
           }}
           onTableRowClick={(rowIndex, row) => {
@@ -208,10 +234,10 @@ export default function FormRenderer({
               eventName: 'onRowClick',
               field: fieldName,
               value: rowIndex,
-              values,
+              values: expressionValues,
               originalValues,
               component: comp,
-              previousValue: values[fieldName],
+              previousValue: expressionValues[fieldName],
               timestamp: Date.now(),
               detail: { rowIndex, row },
             });
@@ -225,7 +251,7 @@ export default function FormRenderer({
             onDisconnect={() => onRangeChange?.(fieldName, null)}
           />
         )}
-        {hasError && isTouched && <span className="lg-error">{errors[fieldName]}</span>}
+        {hasError && isTouched && <span className="lg-error">{fieldError}</span>}
       </div>
     );
   };
@@ -289,7 +315,7 @@ export default function FormRenderer({
               下一步
             </button>
           ) : (
-            <button className="lg-btn lg-btn-primary" type="button" onClick={() => onButtonClick?.('__submit')}>
+            <button className="lg-btn lg-btn-primary" type="button" onClick={() => validateBeforeSubmit() && onButtonClick?.('__submit')}>
               完成
             </button>
           )}
@@ -409,6 +435,8 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
             value={String(effectiveValue ?? '')}
             placeholder={props.placeholder as string}
             disabled={disabled}
+            readOnly={!!props.readonly}
+            style={{ fontFamily: props.fontFamily ? String(props.fontFamily) : undefined, fontSize: Number(props.fontSize) || 15, fontWeight: String(props.fontWeight || 400), color: String(props.color || '#1c1c1e'), lineHeight: props.lineHeight ? Number(props.lineHeight) : undefined, letterSpacing: `${Number(props.letterSpacing) || 0}px`, textAlign: String(props.textAlign || 'left') as React.CSSProperties['textAlign'] }}
             onChange={onChange as (value: string) => void}
             onBlur={onBlur}
             onFocus={onFocus}
@@ -423,10 +451,14 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
               value={effectiveValue === '' ? '' : (effectiveValue as number | string | null)}
               placeholder={props.placeholder as string}
               disabled={disabled}
+              readOnly={!!props.readonly}
               min={props.min as number}
               max={props.max as number}
               step={props.step as number}
-              style={{ width: '100%' }}
+              precision={Number.isFinite(Number(props.precision)) ? Number(props.precision) : undefined}
+              prefix={props.prefix as React.ReactNode}
+              suffix={props.suffix as React.ReactNode}
+              style={{ width: '100%', fontSize: Number(props.fontSize) || 15, fontWeight: String(props.fontWeight || 400), color: String(props.color || '#1c1c1e'), textAlign: String(props.textAlign || 'left') as React.CSSProperties['textAlign'] }}
               onChange={(next) => onChange(next === '' ? '' : Number(next))}
               onBlur={onBlur}
               onFocus={onFocus}
@@ -444,8 +476,12 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
             value={String(effectiveValue ?? '')}
             placeholder={props.placeholder as string}
             disabled={disabled}
+            readOnly={!!props.readonly}
             rows={props.rows as number || 3}
             autoSize={props.autoResize ? { minRows: props.rows as number || 3, maxRows: 8 } : false}
+            maxLength={Number(props.maxLength) || undefined}
+            showCount={!!props.showCount}
+            style={{ fontSize: Number(props.fontSize) || 15, fontWeight: String(props.fontWeight || 400), color: String(props.color || '#1c1c1e'), lineHeight: Number(props.lineHeight) || 1.5 }}
             onChange={onChange as (value: string) => void}
             onBlur={onBlur}
             onFocus={onFocus}
@@ -458,9 +494,11 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
           <AntdSelectInput
             value={Array.isArray(effectiveValue) ? effectiveValue.map(String) : String(effectiveValue ?? '')}
             disabled={disabled}
+            readOnly={!!props.readonly}
             options={optionList}
             multiple={!!props.multiple}
             placeholder={props.placeholder as string || '请选择'}
+            style={{ width: '100%', fontSize: Number(props.fontSize) || 15, fontWeight: String(props.fontWeight || 400), color: String(props.color || '#1c1c1e') }}
             onChange={onChange as (value: string | string[]) => void}
             onBlur={onBlur}
             onFocus={onFocus}
@@ -487,6 +525,7 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
             disabled={disabled}
             options={optionList}
             direction={(props.direction as 'vertical' | 'horizontal') || 'vertical'}
+            style={{ fontSize: props.size === 'small' ? 13 : props.size === 'large' ? 17 : Number(props.fontSize) || 15, fontWeight: String(props.fontWeight || 400), color: String(props.color || '#1c1c1e') }}
             onChange={(next) => { onChange(next); onBlur(); }}
           />
         </FormAntdProvider>
@@ -499,6 +538,7 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
             disabled={disabled}
             options={optionList}
             direction={(props.direction as 'vertical' | 'horizontal') || 'vertical'}
+            style={{ fontSize: props.size === 'small' ? 13 : props.size === 'large' ? 17 : Number(props.fontSize) || 15, fontWeight: String(props.fontWeight || 400), color: String(props.color || '#1c1c1e') }}
             onChange={(next) => { onChange(next); onBlur(); }}
           />
         </FormAntdProvider>
@@ -573,6 +613,9 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
           <AntdSwitchInput
             checked={!!effectiveValue}
             disabled={disabled}
+            size={(props.size as 'small' | 'default' | 'large') || 'default'}
+            activeColor={String(props.activeColor || '#34c759')}
+            inactiveColor={String(props.inactiveColor || 'rgba(118,118,128,0.18)')}
             onChange={(next) => { onChange(next); onBlur(); }}
           />
         </FormAntdProvider>
@@ -584,6 +627,10 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
             value={Number(effectiveValue) || 0}
             count={Number(props.max) || 5}
             disabled={disabled}
+            size={(props.size as 'small' | 'default' | 'large') || 'default'}
+            color={String(props.activeColor || '#ff9500')}
+            inactiveColor={String(props.inactiveColor || '#e5e5ea')}
+            allowHalf={!!props.allowHalf}
             onChange={(next) => { onChange(next); onBlur(); }}
           />
         </FormAntdProvider>
@@ -595,6 +642,9 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
             label={props.label as string || '按钮'}
             disabled={disabled}
             variant={props.variant === 'ghost' ? 'ghost' : props.variant === 'default' ? 'outline' : 'solid'}
+            danger={props.variant === 'danger'}
+            block={!!props.fullWidth}
+            style={{ fontSize: Number(props.fontSize) || 16, fontWeight: String(props.fontWeight || 650), color: String(props.color || '#fff'), background: props.backgroundColor ? String(props.backgroundColor) : undefined, borderRadius: Number(props.borderRadius) || 0 }}
             onClick={onButtonClick}
           />
         </FormAntdProvider>
@@ -646,6 +696,7 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
           <AntdUploadInput
             disabled={disabled}
             files={normalizeFileList(effectiveValue)}
+            constraints={{ accept: String(props.accept || ''), maxFileSizeMb: Number(props.maxFileSizeMb || 0), maxCount: Number(props.maxCount || 0) }}
             onChange={onChange as (files: UploadFileValue[]) => void}
           />
         </FormAntdProvider>
@@ -657,12 +708,19 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
             disabled={disabled}
             imageOnly
             files={normalizeFileList(effectiveValue)}
+            constraints={{ accept: String(props.accept || 'image/*'), maxFileSizeMb: Number(props.maxFileSizeMb || 0), maxCount: Number(props.maxCount || 0), minImageWidth: Number(props.minImageWidth || 0), maxImageWidth: Number(props.maxImageWidth || 0), minImageHeight: Number(props.minImageHeight || 0), maxImageHeight: Number(props.maxImageHeight || 0) }}
             onChange={onChange as (files: UploadFileValue[]) => void}
           />
         </FormAntdProvider>
       );
     case 'table': {
-      const configuredColumns = Array.isArray(props.columns) ? props.columns.map(String) : [];
+      const configuredColumns = (Array.isArray(props.columns) ? props.columns : []).map((column, index) => {
+        if (column && typeof column === 'object') {
+          const record = column as Record<string, unknown>;
+          return { title: String(record.title || record.label || record.dataIndex || `列${index + 1}`), key: String(record.dataIndex || record.key || record.title || `列${index + 1}`), visible: record.visible !== false && record.visible !== 'hide' };
+        }
+        return { title: String(column), key: String(column), visible: true };
+      }).filter((column) => column.visible);
       const rawRows = Array.isArray(effectiveValue)
         ? effectiveValue
         : Array.isArray(props.data)
@@ -672,22 +730,22 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
         .map((row) => {
           if (row && typeof row === 'object' && !Array.isArray(row)) return row as Record<string, unknown>;
           if (Array.isArray(row)) {
-            return Object.fromEntries(row.map((cell, index) => [configuredColumns[index] || `列${index + 1}`, cell]));
+            return Object.fromEntries(row.map((cell, index) => [configuredColumns[index]?.key || `列${index + 1}`, cell]));
           }
           return { value: row };
         });
       const derivedColumns = normalizedRows.length > 0
         ? [...new Set(normalizedRows.flatMap((row) => Object.keys(row)))]
         : [];
-      const columns = configuredColumns.length > 0 ? configuredColumns : derivedColumns;
+      const columns = configuredColumns.length > 0 ? configuredColumns : derivedColumns.map((key) => ({ title: key, key, visible: true }));
       const placeholderRows = Math.max(1, Number(props.rows) || 3);
       const displayRows = normalizedRows.length > 0
         ? normalizedRows
-        : Array.from({ length: placeholderRows }, () => Object.fromEntries(columns.map((column) => [column, '-'])));
+        : Array.from({ length: placeholderRows }, () => Object.fromEntries(columns.map((column) => [column.key, '-'])));
       return (
         <table className="lg-render-table">
           <thead>
-            <tr>{columns.map((column) => <th key={column}>{column}</th>)}</tr>
+            <tr>{columns.map((column) => <th key={column.key}>{column.title}</th>)}</tr>
           </thead>
           <tbody>
             {displayRows.map((row, rowIndex) => (
@@ -696,7 +754,7 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
                 onClick={() => onTableRowClick?.(rowIndex, row)}
                 style={{ cursor: onTableRowClick ? 'pointer' : 'default' }}
               >
-                {columns.map((column) => <td key={column}>{String(row[column] ?? '-')}</td>)}
+                {columns.map((column) => <td key={column.key}>{String(row[column.key] ?? '-')}</td>)}
               </tr>
             ))}
           </tbody>

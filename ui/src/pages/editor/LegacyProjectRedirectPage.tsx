@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, useLocation, useParams } from 'react-router-dom';
-import { buildDocsPath, buildProjectSettingsPath, buildProjectPath, buildWorkspacePath } from '../../services/io/routes';
+import { buildDocsPath, buildProjectSettingsPath, buildProjectPath } from '../../services/io/routes';
 
 function resolveLegacyPath(projectId: string, splat: string | undefined, search: string) {
   const tail = (splat || '').replace(/^\/+/, '');
@@ -12,7 +12,11 @@ function resolveLegacyPath(projectId: string, splat: string | undefined, search:
     return buildDocsPath(slug, { fromProject: projectId, fromPage: 'workspace', fromTab: 'behavior' });
   }
   if (head === 'data' || head === 'canvas' || head === 'designer' || head === 'behavior' || head === 'test') {
-    return `${buildWorkspacePath(projectId, head)}${search}`;
+    if (head === 'test') return `${buildProjectPath(projectId)}/usage${search}`;
+    const mode = head === 'canvas' ? 'flow' : head === 'designer' ? 'design' : head;
+    const query = new URLSearchParams(search);
+    query.set('mode', mode);
+    return `${buildProjectPath(projectId)}/editor?${query.toString()}`;
   }
   return `${buildProjectPath(projectId)}${search}`;
 }

@@ -6,15 +6,14 @@ import { useProjectStore } from '../../project/store';
 import { useSystemSettingsStore } from '../../project/systemSettingsStore';
 import {
   buildDocsPath,
+  buildEditorPath,
   buildProjectSettingsPath,
   buildProjectsPath,
   buildSystemSettingsPath,
   buildWorkspacePath,
   type ProjectSettingsSection,
   type SystemSettingsSection,
-  type WorkspaceTab,
 } from '../../services/io/routes';
-import { AiAssistant } from '../../components/AiAssistant';
 import { NotificationCenter } from '../../components/NotificationCenter';
 
 const homeNavItems = [
@@ -23,14 +22,6 @@ const homeNavItems = [
 ];
 
 const docNavItem = { to: buildDocsPath(), label: '文档', icon: 'docs', match: '/docs' };
-
-const workspaceTabs: Array<{ tab: WorkspaceTab; label: string; icon: string }> = [
-  { tab: 'data', label: '数据预览', icon: 'data' },
-  { tab: 'canvas', label: '流程编辑', icon: 'canvas' },
-  { tab: 'designer', label: '表单设计', icon: 'designer' },
-  { tab: 'behavior', label: '行为定义', icon: 'behavior' },
-  { tab: 'test', label: '测试运行', icon: 'test' },
-];
 
 const projectSettingsTabs: Array<{ section: ProjectSettingsSection; label: string; icon: string }> = [
   { section: 'general', label: '常规', icon: 'settings' },
@@ -54,11 +45,11 @@ export default function Layout() {
   const [now, setNow] = useState(() => new Date());
   const match = location.pathname.match(/^\/projects\/([^/]+)/);
   const projectId = match?.[1] || '';
-  const inWorkspace = !!projectId && location.pathname.includes('/workspace/');
+  const inWorkspace = !!projectId && (location.pathname.endsWith('/editor') || location.pathname.endsWith('/usage') || location.pathname.includes('/workspace/'));
   const inProjectSettings = !!projectId && location.pathname.includes('/settings/');
   const inSystemSettings = !projectId && location.pathname.startsWith('/settings');
   const currentProjectName = project && project.config.id === projectId ? project.config.name : '';
-  const workspaceTab = (location.pathname.split('/').pop() || 'data') as WorkspaceTab;
+  const inUsage = location.pathname.endsWith('/usage');
   const projectSettingsTab = (location.pathname.split('/').pop() || 'general') as ProjectSettingsSection;
   const systemSettingsTab = (location.pathname.split('/').pop() || 'general') as SystemSettingsSection;
 
@@ -126,16 +117,14 @@ export default function Layout() {
             <span className="nav-project-badge">{currentProjectName || `项目 ${projectId}`}</span>
             {inWorkspace && (
               <div className="nav-links nav-links-context">
-                {workspaceTabs.map((item) => (
-                  <Link
-                    key={item.tab}
-                    to={buildWorkspacePath(projectId, item.tab)}
-                    className={`nav-link ${workspaceTab === item.tab ? 'active' : ''}`}
-                  >
-                    <DesignerIcon name={item.icon} className="nav-icon" />
-                    <span className="nav-label">{item.label}</span>
-                  </Link>
-                ))}
+                <Link to={buildEditorPath(projectId)} className={`nav-link ${!inUsage ? 'active' : ''}`}>
+                  <DesignerIcon name="designer" className="nav-icon" />
+                  <span className="nav-label">编辑工作台</span>
+                </Link>
+                <Link to={buildWorkspacePath(projectId, 'test')} className={`nav-link ${inUsage ? 'active' : ''}`}>
+                  <DesignerIcon name="test" className="nav-icon" />
+                  <span className="nav-label">测试运行</span>
+                </Link>
                 <Link to={buildProjectSettingsPath(projectId, 'general')} className="nav-link nav-link-subtle">
                   <DesignerIcon name="settings" className="nav-icon" />
                   <span className="nav-label">项目设置</span>
@@ -213,7 +202,6 @@ export default function Layout() {
         <Outlet />
       </main>
       {projectId && <DocModal open={docOpen} onClose={() => setDocOpen(false)} />}
-      {projectId && <AiAssistant />}
     </div>
   );
 }

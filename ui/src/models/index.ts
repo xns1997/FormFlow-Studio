@@ -45,8 +45,12 @@ export interface RowData {
 }
 
 export interface ValidationRule {
-  type: 'required' | 'email' | 'phone' | 'number' | 'minLength' | 'maxLength' | 'pattern' | 'custom';
+  type: 'required' | 'email' | 'phone' | 'url' | 'idcard' | 'number' | 'integer' | 'positive' | 'min' | 'max'
+    | 'minLength' | 'maxLength' | 'pattern' | 'minSelect' | 'maxSelect' | 'date'
+    | 'compare' | 'custom';
   param?: string;
+  field?: string;
+  operator?: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte';
   message: string;
 }
 
@@ -330,4 +334,21 @@ export interface RangeValue {
   areas?: Array<{ address: string; rows: number; cols: number; data: unknown[][] }>;
   areaCount?: number;
   cellCount?: number;
+}
+
+export type DataBindingDirection = 'dataToUi' | 'uiToData' | 'twoWay';
+export type DataBindingValueMode = 'auto' | 'firstCell' | 'firstRow' | 'column' | 'table';
+
+export type DataBindingSource =
+  | { kind: 'none' }
+  | { kind: 'formField'; path: string }
+  | { kind: 'range'; ref: RangeRef }
+  | { kind: 'tableCell'; tableId: string; sheetName: string; column: string; keyField?: string; keyValue?: unknown };
+
+export interface DataBindingConfig {
+  version: 1;
+  source: DataBindingSource;
+  direction: DataBindingDirection;
+  valueMode?: DataBindingValueMode;
+  defaultValue?: unknown;
 }

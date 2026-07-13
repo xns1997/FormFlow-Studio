@@ -30,20 +30,20 @@ registerControl({
   },
   propSchema: [
     { key: 'label', label: '标签', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'placeholder', label: '占位符', type: 'string', group: '基础' },
     { key: 'required', label: '必填', type: 'boolean', group: '校验' },
     { key: 'readonly', label: '只读', type: 'boolean', group: '校验' },
     { key: 'disabled', label: '禁用', type: 'boolean', group: '校验' },
     { key: 'multiple', label: '多选', type: 'boolean', group: '校验' },
     { key: 'customMessage', label: '自定义错误提示', type: 'string', group: '校验' },
-    { key: 'options', label: '选项 (JSON)', type: 'json', group: '数据' },
+    { key: 'options', label: '选项', type: 'json', editor: 'options', group: '数据', help: '支持拖动顺序、批量粘贴、CSV 格式导入以及重复值检查。' },
     { key: 'fontSize', label: '字号', type: 'number', group: '文本样式', min: 10, max: 48 },
     { key: 'fontWeight', label: '字重', type: 'select', group: '文本样式', options: [
       { label: '常规', value: '400' }, { label: '中等', value: '500' }, { label: '粗体', value: '700' },
     ]},
     { key: 'color', label: '文字颜色', type: 'color', group: '文本样式' },
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 240, h: 72 },
@@ -59,6 +59,8 @@ registerControl({
           multiple={!!component.props.multiple}
           placeholder={component.props.placeholder || '请选择'}
           disabled={mode !== 'preview' || !!component.props.disabled}
+          readOnly={!!component.props.readonly}
+          style={{ fontSize: Number(component.props.fontSize) || 15, fontWeight: component.props.fontWeight || 400, color: component.props.color || '#1c1c1e', width: '100%' }}
           onChange={(next) => runtime?.emit('onChange', next)}
           onBlur={() => runtime?.emit('onBlur')}
           onFocus={() => runtime?.emit('onFocus')}
@@ -78,11 +80,11 @@ registerControl({
   },
   propSchema: [
     { key: 'label', label: '标签', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'required', label: '必填', type: 'boolean', group: '校验' },
     { key: 'disabled', label: '禁用', type: 'boolean', group: '校验' },
-    { key: 'options', label: '选项 (JSON)', type: 'json', group: '数据' },
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'options', label: '选项', type: 'json', editor: 'options', group: '数据' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 280, h: 72 },
@@ -121,11 +123,11 @@ registerControl({
   },
   propSchema: [
     { key: 'label', label: '标签', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'required', label: '必填', type: 'boolean', group: '校验' },
     { key: 'disabled', label: '禁用', type: 'boolean', group: '校验' },
     { key: 'customMessage', label: '自定义错误提示', type: 'string', group: '校验' },
-    { key: 'options', label: '选项 (JSON)', type: 'json', group: '数据' },
+    { key: 'options', label: '选项', type: 'json', editor: 'options', group: '数据' },
     { key: 'direction', label: '排列方向', type: 'select', group: '样式', options: [
       { label: '垂直', value: 'vertical' }, { label: '水平', value: 'horizontal' },
     ]},
@@ -137,7 +139,7 @@ registerControl({
     { key: 'size', label: '控件尺寸', type: 'select', group: '样式', options: [
       { label: '小', value: 'small' }, { label: '默认', value: 'default' }, { label: '大', value: 'large' },
     ]},
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 240, h: 150 },
@@ -153,6 +155,7 @@ registerControl({
           options={opts}
           direction={component.props.direction === 'horizontal' ? 'horizontal' : 'vertical'}
           disabled={mode !== 'preview' || !!component.props.disabled}
+          style={{ fontSize: component.props.size === 'small' ? 13 : component.props.size === 'large' ? 17 : Number(component.props.fontSize) || 15, fontWeight: component.props.fontWeight || 400, color: component.props.color || '#1c1c1e' }}
           onChange={(next) => runtime?.emit('onChange', next)}
         />
       </div>
@@ -173,13 +176,12 @@ registerControl({
   },
   propSchema: [
     { key: 'label', label: '标签', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
     { key: 'required', label: '必填', type: 'boolean', group: '校验' },
     { key: 'disabled', label: '禁用', type: 'boolean', group: '校验' },
-    { key: 'minSelect', label: '最少选择', type: 'number', group: '校验', min: 0 },
-    { key: 'maxSelect', label: '最多选择', type: 'number', group: '校验', min: 0 },
+    { kind: 'composite', key: 'selectionRange', keys: ['minSelect', 'maxSelect'], label: '选择数量范围', editor: 'selection-range', group: '校验' },
     { key: 'customMessage', label: '自定义错误提示', type: 'string', group: '校验' },
-    { key: 'options', label: '选项 (JSON)', type: 'json', group: '数据' },
+    { key: 'options', label: '选项', type: 'json', editor: 'options', group: '数据' },
     { key: 'direction', label: '排列方向', type: 'select', group: '样式', options: [
       { label: '垂直', value: 'vertical' }, { label: '水平', value: 'horizontal' },
     ]},
@@ -191,7 +193,7 @@ registerControl({
     { key: 'size', label: '控件尺寸', type: 'select', group: '样式', options: [
       { label: '小', value: 'small' }, { label: '默认', value: 'default' }, { label: '大', value: 'large' },
     ]},
-    { key: 'rangeRef', label: '数据源', type: 'range', group: '数据源' },
+    { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
   defaultSize: { w: 240, h: 150 },
@@ -207,6 +209,7 @@ registerControl({
           options={opts}
           direction={component.props.direction === 'horizontal' ? 'horizontal' : 'vertical'}
           disabled={mode !== 'preview' || !!component.props.disabled}
+          style={{ fontSize: component.props.size === 'small' ? 13 : component.props.size === 'large' ? 17 : Number(component.props.fontSize) || 15, fontWeight: component.props.fontWeight || 400, color: component.props.color || '#1c1c1e' }}
           onChange={(next) => runtime?.emit('onChange', next)}
         />
       </div>

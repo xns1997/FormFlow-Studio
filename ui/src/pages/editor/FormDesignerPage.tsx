@@ -144,6 +144,7 @@ export default function FormDesignerPage() {
           component={selectedComponent}
           components={designer.components}
           onUpdate={designer.updateComponentProps}
+          onUpdateGeometry={designer.updateComponentGeometry}
           onRemove={designer.removeComponent}
         />}
       </div>

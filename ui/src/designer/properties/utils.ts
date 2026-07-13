@@ -142,6 +142,7 @@ export interface Props {
   component: DesignComponent | null;
   components?: DesignComponent[];
   onUpdate: (id: string, patch: Record<string, any>) => void;
+  onUpdateGeometry?: (id: string, patch: Partial<Pick<DesignComponent, 'x' | 'y' | 'width' | 'height'>>) => void;
   onRemove: (id: string) => void;
 }
 

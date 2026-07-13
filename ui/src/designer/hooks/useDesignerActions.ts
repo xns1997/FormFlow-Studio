@@ -104,17 +104,38 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
   }, [removeComponent, ctx.selectedId]);
 
   const updateComponentProps = useCallback((id: string, patch: Record<string, any>) => {
-    commitComponents((prev) => finalizeComponents(prev.map((c) => {
-      if (c.id !== id) return c;
-      const next = { ...c, props: { ...c.props, ...patch } };
-      const node = graphRef.current?.getCellById(id) as Node | null;
-      if (node) {
-        setNodeComponentData(node, next);
-      }
-      return next;
-    })));
+    const nextComponents = finalizeComponents(componentsRef.current.map((c) => c.id === id
+      ? { ...c, props: { ...c.props, ...patch } }
+      : c));
+    const next = nextComponents.find((item) => item.id === id);
+    const graph = graphRef.current;
+    const node = graph?.getCellById(id) as Node | null;
+    if (node && next) {
+      graph?.startBatch('property-edit');
+      try { setNodeComponentData(node, next); } finally { graph?.stopBatch('property-edit'); }
+    }
+    commitComponents(nextComponents);
     syncSelectionOverlay(id);
-  }, [graphRef, commitComponents, finalizeComponents, setNodeComponentData, syncSelectionOverlay]);
+  }, [graphRef, componentsRef, commitComponents, finalizeComponents, setNodeComponentData, syncSelectionOverlay]);
+
+  const updateComponentGeometry = useCallback((id: string, patch: Partial<Pick<DesignComponent, 'x' | 'y' | 'width' | 'height'>>) => {
+    const current = componentsRef.current.find((item) => item.id === id);
+    if (!current) return;
+    const size = clampSize(current.type, Number(patch.width ?? current.width), Number(patch.height ?? current.height));
+    const next = { ...current, ...patch, width: size.width, height: size.height };
+    const graph = graphRef.current;
+    const node = graph?.getCellById(id) as Node | null;
+    if (node) {
+      graph?.startBatch('geometry-edit');
+      try {
+        node.setPosition(Number(next.x), Number(next.y));
+        node.setSize(next.width, next.height);
+        setNodeComponentData(node, next);
+      } finally { graph?.stopBatch('geometry-edit'); }
+    }
+    commitComponents((items) => finalizeComponents(items.map((item) => item.id === id ? next : item)));
+    syncSelectionOverlay(id);
+  }, [clampSize, commitComponents, componentsRef, finalizeComponents, graphRef, setNodeComponentData, syncSelectionOverlay]);
 
   const resizeSelected = useCallback((handle: ResizeHandle, clientX: number, clientY: number, start: {
     x: number;
@@ -257,6 +278,7 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
     removeComponent,
     deleteSelected,
     updateComponentProps,
+    updateComponentGeometry,
     resizeSelected,
     reparentComponent,
     startResize,
