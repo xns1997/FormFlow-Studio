@@ -4,6 +4,7 @@ import { join } from 'path';
 import XLSX from 'xlsx';
 import { serverDataPath } from '../config/paths';
 import { getTableSheetData, readProjectPackage, updateTableSheetData } from '../services/project-package-store';
+import { applyBatchChanges, dataVersion, queryRows, validateConfiguredKeys } from '../services/data-preview';
 
 const router = Router();
 const DATA_DIR = serverDataPath('data');
@@ -13,6 +14,12 @@ if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 function getCachePath(fileId: string, sheetName: string, projectId?: string) {
   const prefix = projectId ? `${projectId}__${fileId}` : fileId;
   return join(DATA_DIR, `${prefix}_${sheetName}.json`);
+}
+
+function attachmentHeader(fileName: string, extension: string) {
+  const raw = `${fileName || 'export'}.${extension}`;
+  const fallback = raw.replace(/[^\x20-\x7E]/g, '_').replace(/["\\]/g, '_');
+  return `attachment; filename="${fallback}"; filename*=UTF-8''${encodeURIComponent(raw)}`;
 }
 
 function getProjectSheet(projectId: string, tableId: string, sheetName?: string) {
@@ -45,21 +52,81 @@ function buildColumns(headers: string[], data: Record<string, unknown>[]) {
 // POST /api/data/paginated - 项目表或已解析文件的统一分页入口
 router.post('/paginated', (req, res) => {
   try {
-    const page = Math.max(1, Number(req.body.page) || 1);
-    const pageSize = Math.min(5000, Math.max(1, Number(req.body.pageSize) || 100));
-    let headers: string[] = []; let data: Record<string, unknown>[] = [];
+    let headers: string[] = []; let data: Record<string, unknown>[] = []; let keyFields: string[] = [];
     if (req.body.projectId) {
       const result = getTableSheetData(req.body.projectId, req.body.tableId || req.body.fileId, req.body.sheetName);
       if (!result) return res.status(404).json({ error: '项目数据不存在' });
-      headers = result.headers; data = result.data;
+      headers = result.headers; data = result.data; keyFields = result.keyFields;
     } else {
       const path = getCachePath(req.body.fileId, req.body.sheetName);
       if (!existsSync(path)) return res.status(404).json({ error: '数据不存在' });
       const cache = JSON.parse(readFileSync(path, 'utf8')); headers = cache.headers || []; data = cache.data || [];
     }
-    const start = (page - 1) * pageSize;
-    res.json({ headers, rows: data.slice(start, start + pageSize), total: data.length, page, pageSize, totalPages: Math.ceil(data.length / pageSize), hasMore: start + pageSize < data.length });
+    res.json({
+      headers,
+      ...queryRows({
+        rows: data,
+        headers,
+        keyFields,
+        page: req.body.page,
+        pageSize: req.body.pageSize,
+        search: req.body.search,
+        keySearch: req.body.keySearch,
+        sortModel: req.body.sortModel,
+        filterModel: req.body.filterModel,
+      }),
+    });
   } catch (error) { res.status(500).json({ error: error instanceof Error ? error.message : String(error) }); }
+});
+
+// POST /api/data/batch - 使用稳定 rowKey 原子应用跨页变更
+router.post('/batch', (req, res) => {
+  try {
+    const { projectId, tableId, sheetName, baseVersion, adds, updates, deletes } = req.body || {};
+    if (!projectId || !tableId || !sheetName) return res.status(400).json({ error: '缺少项目、数据表或 Sheet 参数' });
+    const result = getTableSheetData(projectId, tableId, sheetName);
+    if (!result) return res.status(404).json({ error: '项目数据不存在' });
+    const currentVersion = dataVersion(result.data);
+    if (baseVersion && baseVersion !== currentVersion) {
+      return res.status(409).json({ error: '数据已被其他操作修改，请重新加载后重试', code: 'DATA_VERSION_CONFLICT', dataVersion: currentVersion });
+    }
+    const next = applyBatchChanges(result.data, result.keyFields, { adds, updates, deletes });
+    validateConfiguredKeys(next, result.keyFields);
+    updateTableSheetData(projectId, tableId, sheetName, next);
+    res.json({
+      success: true,
+      total: next.length,
+      dataVersion: dataVersion(next),
+      applied: { adds: adds?.length || 0, updates: updates?.length || 0, deletes: deletes?.length || 0 },
+    });
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : String(error) });
+  }
+});
+
+// POST /api/data/export-query - 导出服务端筛选和排序后的完整结果
+router.post('/export-query', (req, res) => {
+  try {
+    const { projectId, tableId, sheetName, search, keySearch, sortModel, filterModel, format, fileName } = req.body || {};
+    const result = getTableSheetData(projectId, tableId, sheetName);
+    if (!result) return res.status(404).json({ error: '项目数据不存在' });
+    const queried = queryRows({ rows: result.data, headers: result.headers, keyFields: result.keyFields, search, keySearch, sortModel, filterModel, page: 1, pageSize: result.data.length || 1, maxPageSize: result.data.length || 1 });
+    const rows = queried.rows.map(({ __rowKey: _key, __rowIndex: _index, ...row }) => row);
+    const ws = XLSX.utils.json_to_sheet(rows, { header: result.headers });
+    if (format === 'csv') {
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', attachmentHeader(fileName, 'csv'));
+      return res.send(`\ufeff${XLSX.utils.sheet_to_csv(ws)}`);
+    }
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName || 'Sheet1');
+    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', attachmentHeader(fileName, 'xlsx'));
+    return res.send(Buffer.from(buffer));
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+  }
 });
 
 // POST /api/data/parse - 解析文件并缓存数据
@@ -273,12 +340,12 @@ router.post('/export', (req, res) => {
     XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
     if (format === 'csv') {
       res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename="${fileName || 'export'}.csv"`);
+      res.setHeader('Content-Disposition', attachmentHeader(fileName, 'csv'));
       res.send(XLSX.utils.sheet_to_csv(ws));
     } else {
       const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename="${fileName || 'export'}.xlsx"`);
+      res.setHeader('Content-Disposition', attachmentHeader(fileName, 'xlsx'));
       res.send(Buffer.from(buf));
     }
   } catch (e) { res.status(500).json({ error: String(e) }); }

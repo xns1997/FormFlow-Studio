@@ -1,0 +1,4 @@
+{
+  "behaviors": [],
+  "ruleCode": "# 故障处理表单行为规则：处理结果字段权限控制和复核退回处理\n# 只有处理负责人可以填写处理结果字段，其他人只读\n\n# 表单加载时初始化：处理结果字段禁用且可选\non load -> disable(@处理结果); optional($处理结果)\n\n# 处理负责人字段变化时的规则\nwhen $处理负责人 is not empty -> enable(@处理结果); require($处理结果)\nelse -> disable(@处理结果); optional($处理结果); clear($处理结果)\n\n# 复核退回规则：当复核意见为不通过时，状态退回处理中\nwhen $复核意见 == \"不通过\" -> set($状态, \"处理中\"); message(\"复核不通过，已退回处理中，请填写复核意见原因\", warning)\nelse -> message(\"复核通过\", success)\n\n# 提交前验证：确保复核意见已填写\nbefore submit -> require($复核意见); message(\"正在验证处理负责人权限...\", info)"
+}

@@ -71,10 +71,9 @@ export function DocSidebar({ sections, className }: DocSidebarProps) {
       <ul className="docs-sidebar-list">
         {sections.map((section) => (
           <li key={section.id}>
-            <button
+            <button type="button"
               className={`docs-sidebar-item ${activeId === section.id ? 'docs-sidebar-item--active' : ''}`}
               onClick={() => handleClick(section.id)}
-              type="button"
             >
               {section.title}
             </button>

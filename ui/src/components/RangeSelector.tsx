@@ -3,6 +3,7 @@ import type { RangeRef } from '../models';
 import type { SrcTableEntry } from '../project/types';
 import { combineRangeAreas, formatRangeAddress, getEditableRangeSources, type RangeArea } from '../services/data/rangeGeometry';
 import Modal, { ModalHeader, ModalFooter } from './Modal';
+import { AntdCompatSelect } from './AntdFormControls';
 
 // ── Column name helper (supports AA, AB, ... ZZ+) ───────────
 function colName(i: number): string {
@@ -639,18 +640,18 @@ export default function RangeSelector({ tables, value, onConfirm, onCancel }: Ra
         </div>
         <div className="rs-field">
           <label>工作簿</label>
-          <select
+          <AntdCompatSelect
             className="lg-select"
             value={tableId}
             onChange={e => { setTableId(e.target.value); setSheetName(''); clearAll(); }}
           >
             {tables.map(t => <option key={t.id} value={t.id}>{t.fileName}</option>)}
-          </select>
+          </AntdCompatSelect>
         </div>
         {table && (
           <div className="rs-sheets">
             {table.sheets.map(s => (
-              <button
+              <button type="button"
                 key={s.name}
                 className={`rs-sheet-tab ${sheetName === s.name ? 'active' : ''}`}
                 onClick={() => { setSheetName(s.name); clearAll(); }}
@@ -662,11 +663,11 @@ export default function RangeSelector({ tables, value, onConfirm, onCancel }: Ra
           </div>
         )}
         <div className="rs-combine-mode" aria-label="区域组合方式">
-          <button className={combinationMode === 'selection' ? 'active' : ''} onClick={() => setCombinationMode('selection')} title="保留所选的全部单元格区域">多区域</button>
-          <button className={combinationMode === 'intersection' ? 'active' : ''} onClick={() => setCombinationMode('intersection')} title="只保留所有选区共同覆盖的单元格">交集</button>
+          <button type="button" className={combinationMode === 'selection' ? 'active' : ''} onClick={() => setCombinationMode('selection')} title="保留所选的全部单元格区域">多区域</button>
+          <button type="button" className={combinationMode === 'intersection' ? 'active' : ''} onClick={() => setCombinationMode('intersection')} title="只保留所有选区共同覆盖的单元格">交集</button>
         </div>
         {(selectionMode !== 'cell' || rawRanges.length > 0) && (
-          <button className="rs-clear-btn" onClick={clearAll} title="清除选择">✕ 清除</button>
+          <button type="button" className="rs-clear-btn" onClick={clearAll} title="清除选择">✕ 清除</button>
         )}
       </div>
 
@@ -692,7 +693,7 @@ export default function RangeSelector({ tables, value, onConfirm, onCancel }: Ra
               <span className="rs-range-chip" key={`${range.startRow}:${range.startCol}:${range.endRow}:${range.endCol}:${index}`}>
                 <b>{String.fromCharCode(65 + index)}</b>
                 {formatRangeAddress([range])}
-                <button onClick={() => removeRawRange(index)} title="移除此区域">×</button>
+                <button type="button" onClick={() => removeRawRange(index)} title="移除此区域">×</button>
               </span>
             ))}
           </div>
@@ -705,7 +706,7 @@ export default function RangeSelector({ tables, value, onConfirm, onCancel }: Ra
       {sheet && (
         <label className="rs-header-check">
           <span>首行标题</span>
-          <select
+          <AntdCompatSelect
             className="rs-header-select"
             value={firstRowIsHeader === true ? 'yes' : firstRowIsHeader === false ? 'no' : 'auto'}
             onChange={(e) => setFirstRowIsHeader(e.target.value === 'yes' ? true : e.target.value === 'no' ? false : undefined)}
@@ -713,7 +714,7 @@ export default function RangeSelector({ tables, value, onConfirm, onCancel }: Ra
             <option value="auto">自动检测</option>
             <option value="yes">是，首行是标题</option>
             <option value="no">否，全部是数据</option>
-          </select>
+          </AntdCompatSelect>
           <span className="rs-header-check-hint">
             {firstRowIsHeader === undefined ? '自动识别字段名行' : firstRowIsHeader ? '第一行作为列名，不纳入数据' : '所有行都作为数据'}
           </span>
@@ -816,11 +817,11 @@ export default function RangeSelector({ tables, value, onConfirm, onCancel }: Ra
 
       {/* ── Context Menu ── */}
       {contextMenu && (
-        <div className="rs-context-menu" style={{ left: contextMenu.x, top: contextMenu.y }}>
-          <div className="rs-context-item" onClick={ctxSelectRow}>选择整行</div>
-          <div className="rs-context-item" onClick={ctxSelectCol}>选择整列</div>
+        <div className="rs-context-menu" role="menu" aria-label="单元格操作" style={{ left: contextMenu.x, top: contextMenu.y }}>
+          <button type="button" role="menuitem" className="rs-context-item" onClick={ctxSelectRow}>选择整行</button>
+          <button type="button" role="menuitem" className="rs-context-item" onClick={ctxSelectCol}>选择整列</button>
           <div className="rs-context-sep" />
-          <div className="rs-context-item" onClick={ctxCopyAddress}>复制单元格地址</div>
+          <button type="button" role="menuitem" className="rs-context-item" onClick={ctxCopyAddress}>复制单元格地址</button>
         </div>
       )}
 
@@ -839,8 +840,8 @@ export default function RangeSelector({ tables, value, onConfirm, onCancel }: Ra
           )}
         </div>
         <div className="rs-actions">
-          <button className="lg-btn" onClick={onCancel}>取消</button>
-          <button className="lg-btn lg-btn-primary" onClick={handleConfirm} disabled={effectiveRanges.length === 0}>确认</button>
+          <button type="button" className="lg-btn" onClick={onCancel}>取消</button>
+          <button type="button" className="lg-btn lg-btn-primary" onClick={handleConfirm} disabled={effectiveRanges.length === 0}>确认</button>
         </div>
       </ModalFooter>
     </Modal>

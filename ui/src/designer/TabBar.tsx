@@ -17,10 +17,10 @@ export function TabBar({ designs, activeId, onSelect, onClose, onCreate, onRenam
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
-  const barRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const el = barRef.current;
+    const el = listRef.current;
     if (!el) return;
     const handler = (e: WheelEvent) => {
       if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
@@ -51,10 +51,9 @@ export function TabBar({ designs, activeId, onSelect, onClose, onCreate, onRenam
   return (
     <FormAntdProvider>
     <div
-      ref={barRef}
       className="designer-tabbar"
     >
-      <div className="designer-tab-list">
+      <div ref={listRef} className="designer-tab-list">
         {designs.map((d) => (
           <div
             key={d.id}
@@ -74,7 +73,7 @@ export function TabBar({ designs, activeId, onSelect, onClose, onCreate, onRenam
             ) : (
               <span onDoubleClick={() => startRename(d.id, d.name)}>{d.name}</span>
             )}
-            <button
+            <button type="button"
               className="tab-close"
               onClick={(e) => { e.stopPropagation(); onClose(d.id); }}
             >
@@ -84,7 +83,7 @@ export function TabBar({ designs, activeId, onSelect, onClose, onCreate, onRenam
         ))}
       </div>
       <div className="designer-tab-actions">
-        <button className="designer-tab-add" onClick={() => setMenuOpen((value) => !value)}>+</button>
+        <button type="button" className="designer-tab-add" onClick={() => setMenuOpen((value) => !value)}>+</button>
         {menuOpen && (
           <div className="designer-template-menu">
             {DESIGN_TEMPLATES.map((template) => (

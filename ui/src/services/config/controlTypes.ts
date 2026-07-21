@@ -135,6 +135,12 @@ export function getDefaultComponentValue(component: Pick<DesignComponent, 'type'
   if (component.props.value !== undefined) return component.props.value;
   if (component.props.defaultValue !== undefined) return component.props.defaultValue;
 
+  // 展示型文本使用 content 作为设计期默认内容。预览运行态也必须拿到同一值，
+  // 否则带字段/数据绑定的文本控件会被初始化为空字符串并遮住设计内容。
+  if (getRuntimeComponentType(component.type) === 'text' && component.props.content !== undefined) {
+    return component.props.content;
+  }
+
   switch (getRuntimeComponentType(component.type)) {
     case 'checkbox':
     case 'tagInput':

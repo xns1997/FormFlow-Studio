@@ -30,5 +30,5 @@ test('control event detail metadata stays aligned with suggestions', () => {
   const controlHandlesDoc = getBehaviorDocBySlug('control-handles-reference');
   assert.ok(controlHandlesDoc && 'sections' in controlHandlesDoc);
   assert.ok(controlHandlesDoc.sections.some((section) =>
-    section.shortcuts?.some((item) => item.path === 'controls.approvalResults.value = rows')));
+    section.shortcuts?.some((item) => item.path === "controls['状态'].value = '已批准'")));
 });

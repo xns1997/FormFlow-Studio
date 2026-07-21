@@ -1,0 +1,16 @@
+{
+  "id": "form:lookup-fill", "label": "查询并回填", "description": "按条件查询唯一记录并按映射回填表单", "category": "高阶 · 表单", "kind": "generic", "macro": { "version": 1, "expansion": "runtime-composite", "debugMapping": "node-output", "snapshot": [] },
+  "properties": [
+    { "name": "tableId", "label": "数据表", "type": "string", "default": "" },
+    { "name": "sheetName", "label": "工作表", "type": "string", "default": "" },
+    { "name": "criteria", "label": "查询条件", "type": "json", "default": {} },
+    { "name": "fieldMap", "label": "回填映射", "type": "json", "default": {} },
+    { "name": "notFoundMessage", "label": "未找到提示", "type": "string", "default": "未找到记录" }
+  ],
+  "ports": [
+    { "name": "criteria", "label": "查询条件", "type": "object", "direction": "input" },
+    { "name": "matched", "label": "是否命中", "type": "boolean", "direction": "output" },
+    { "name": "record", "label": "记录", "type": "object", "direction": "output" },
+    { "name": "patch", "label": "表单补丁", "type": "object", "direction": "output" }
+  ], "keywords": ["查询回填", "lookup", "fill form", "编辑加载"]
+}

@@ -3,6 +3,7 @@
 import type { RuntimeState, BehaviorLog } from '../../models';
 import type { SrcTableEntry } from '../../project/types';
 import { createSandboxContext } from '../config/scriptSandbox';
+import { evaluatePropertyExpression } from './propertyExpression';
 
 export type TriggerType =
   // 基础事件（原有）
@@ -17,7 +18,7 @@ export type TriggerType =
 
 export type ConditionOperator =
   | '==' | '!=' | '>' | '<' | '>=' | '<='
-  | 'contains' | 'notContains' | 'startsWith' | 'endsWith'
+  | 'contains' | 'notContains' | 'startsWith' | 'notStartsWith' | 'endsWith' | 'notEndsWith'
   | 'isEmpty' | 'isNotEmpty' | 'regex' | 'custom';
 
 export type ActionType =
@@ -25,7 +26,7 @@ export type ActionType =
   | 'setEnabled' | 'setDisabled' | 'setRequired' | 'setOptional'
   | 'showMessage' | 'logMessage' | 'switchTab' | 'executeScript'
   | 'submitData' | 'callApi' | 'refreshData' | 'navigate'
-  | 'runWorkflow';
+  | 'runWorkflow' | 'setOptions';
 
 export interface BehaviorRule {
   id: string;
@@ -91,6 +92,7 @@ export interface ActionConfig {
   workflowId?: string;
   /** runWorkflow：传入流程的参数 */
   workflowParameters?: Record<string, unknown>;
+  optionsConfig?: { table: string; filterField: string; filterValue?: unknown; labelField?: string; valueField?: string };
 }
 
 export interface SideEffectConfig {
@@ -128,8 +130,8 @@ export function getPriorityName(priority: number): string {
 export function evaluateCondition(value: unknown, condition: ConditionConfig): boolean {
   const { operator, value: cv, value2 } = condition;
   switch (operator) {
-    case '==': return value == cv;
-    case '!=': return value != cv;
+    case '==': return value === cv;
+    case '!=': return value !== cv;
     case '>': return Number(value) > Number(cv);
     case '<': return Number(value) < Number(cv);
     case '>=': return Number(value) >= Number(cv);
@@ -137,7 +139,9 @@ export function evaluateCondition(value: unknown, condition: ConditionConfig): b
     case 'contains': return String(value).includes(String(cv));
     case 'notContains': return !String(value).includes(String(cv));
     case 'startsWith': return String(value).startsWith(String(cv));
+    case 'notStartsWith': return !String(value).startsWith(String(cv));
     case 'endsWith': return String(value).endsWith(String(cv));
+    case 'notEndsWith': return !String(value).endsWith(String(cv));
     case 'isEmpty': return value === null || value === undefined || value === '';
     case 'isNotEmpty': return value !== null && value !== undefined && value !== '';
     case 'regex': try { return new RegExp(String(cv)).test(String(value)); } catch { return false; }
@@ -176,7 +180,13 @@ export async function executeAction(action: ActionConfig, state: RuntimeState, s
   switch (action.type) {
     case 'setValue':
       if (action.targetField) setState((prev) => {
-        const formValues = { ...prev.formValues, [action.targetField!]: action.value };
+        const evaluated = action.expression ? evaluatePropertyExpression(action.expression, {
+          form: prev.formValues,
+          row: prev.originalValues,
+          flow: context?.flowOutputs,
+          event: context,
+        }) : { ok: true, value: action.value };
+        const formValues = { ...prev.formValues, [action.targetField!]: evaluated.ok ? evaluated.value : action.value };
         return { ...prev, formValues };
       });
       break;

@@ -1,9 +1,0 @@
-{
-  "mode": "use",
-  "allowDesigner": false,
-  "allowBehaviorEditor": false,
-  "allowWorkflowEditor": false,
-  "defaultFormId": "example_valve_selection_v2_form_create",
-  "defaultSheet": "客户需求",
-  "lastVerifiedAt": "2026-07-06T18:00:00.000Z"
-}

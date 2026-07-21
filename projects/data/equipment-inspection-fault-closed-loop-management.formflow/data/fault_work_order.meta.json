@@ -1,0 +1,179 @@
+{
+  "id": "fault_work_order",
+  "fileName": "fault_work_order.csv",
+  "fileSize": 342,
+  "fileType": "csv",
+  "uploadedAt": "2026-07-20T09:57:20.667Z",
+  "dataHash": "5a3b9943953199db7f0028c15afeb52c5d777829466ba130ef2274c0941029f0",
+  "sheets": [
+    {
+      "name": "Sheet1",
+      "rowCount": 1,
+      "colCount": 12,
+      "headers": [
+        "工单编号",
+        "来源巡检单号",
+        "设备编号",
+        "故障等级",
+        "故障描述",
+        "处理负责人",
+        "创建时间",
+        "计划完成时间",
+        "实际完成时间",
+        "状态",
+        "处理结果",
+        "复核意见"
+      ],
+      "columns": [
+        {
+          "name": "工单编号",
+          "index": 0,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "WO20231101001"
+          ]
+        },
+        {
+          "name": "来源巡检单号",
+          "index": 1,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "IC20231101001"
+          ]
+        },
+        {
+          "name": "设备编号",
+          "index": 2,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "EQ001"
+          ]
+        },
+        {
+          "name": "故障等级",
+          "index": 3,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "中等"
+          ]
+        },
+        {
+          "name": "故障描述",
+          "index": 4,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "设备运行异响"
+          ]
+        },
+        {
+          "name": "处理负责人",
+          "index": 5,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "王五"
+          ]
+        },
+        {
+          "name": "创建时间",
+          "index": 6,
+          "dataType": "number",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            45231.375497685185
+          ]
+        },
+        {
+          "name": "计划完成时间",
+          "index": 7,
+          "dataType": "number",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            45233.70883101852
+          ]
+        },
+        {
+          "name": "实际完成时间",
+          "index": 8,
+          "dataType": "number",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            45232.687997685185
+          ]
+        },
+        {
+          "name": "状态",
+          "index": 9,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "已完成"
+          ]
+        },
+        {
+          "name": "处理结果",
+          "index": 10,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "已更换轴承"
+          ]
+        },
+        {
+          "name": "复核意见",
+          "index": 11,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "确认维修完成"
+          ]
+        }
+      ],
+      "preview": [
+        {
+          "工单编号": "WO20231101001",
+          "来源巡检单号": "IC20231101001",
+          "设备编号": "EQ001",
+          "故障等级": "中等",
+          "故障描述": "设备运行异响",
+          "处理负责人": "王五",
+          "创建时间": 45231.375497685185,
+          "计划完成时间": 45233.70883101852,
+          "实际完成时间": 45232.687997685185,
+          "状态": "已完成",
+          "处理结果": "已更换轴承",
+          "复核意见": "确认维修完成"
+        }
+      ],
+      "config": {
+        "id": "Sheet1",
+        "tableName": "Sheet1",
+        "keyFields": [
+          "工单编号"
+        ],
+        "readOnly": false,
+        "frozenRows": 0,
+        "frozenColumns": 0,
+        "filterEnabled": true,
+        "sortEnabled": true
+      }
+    }
+  ]
+}

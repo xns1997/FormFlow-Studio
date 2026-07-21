@@ -1,0 +1,15 @@
+{
+  "id": "form:cascade-options", "label": "级联选项", "description": "根据父级值过滤字典记录并生成下拉选项", "category": "高阶 · 表单", "kind": "generic", "macro": { "version": 1, "expansion": "runtime-composite", "debugMapping": "node-output", "snapshot": [] },
+  "properties": [
+    { "name": "parentField", "label": "父级列", "type": "string", "default": "parent" },
+    { "name": "labelField", "label": "显示列", "type": "string", "default": "label" },
+    { "name": "valueField", "label": "值列", "type": "string", "default": "value" }
+  ],
+  "ports": [
+    { "name": "rows", "label": "字典记录", "type": "json-rows", "direction": "input", "required": true },
+    { "name": "parentValue", "label": "父级值", "type": "any", "direction": "input", "required": true },
+    { "name": "options", "label": "选项", "type": "array", "direction": "output" },
+    { "name": "values", "label": "可选值", "type": "array", "direction": "output" },
+    { "name": "first", "label": "首个值", "type": "any", "direction": "output" }
+  ], "keywords": ["级联", "下拉选项", "字典", "cascade"]
+}

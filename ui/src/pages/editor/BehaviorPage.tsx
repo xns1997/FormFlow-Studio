@@ -1,8 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { notification } from 'antd';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import CodeEditor from '../../components/CodeEditor';
+import { AntdCompatSelect } from '../../components/AntdFormControls';
 import {
   createEventContextExtraLib,
+  createChainApiExtraLib,
   createEventContextSuggestions,
   type EventFieldDescriptor,
 } from '../../components/codeEditorSuggestions';
@@ -22,8 +25,10 @@ import {
 } from '../../services/io/behaviorDocs';
 import { getControlSnippetExamples } from '../../services/display/controlSnippets';
 import { buildDocsPath } from '../../services/io/routes';
+import { useAppInteraction } from '../../components/AppInteractionProvider';
 
 export default function BehaviorPage() {
+  const { announce } = useAppInteraction();
   const { id: projectId = '' } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const project = useProjectStore((s) => s.project);
@@ -123,7 +128,12 @@ export default function BehaviorPage() {
       const text = await readFileAsText(file);
       const { behaviors, errors } = importBehaviors(text);
       if (errors.length > 0) {
-        alert(`导入警告:\n${errors.join('\n')}`);
+        notification.warning({
+          message: '部分行为未能导入',
+          description: errors.join('\n'),
+          duration: 0,
+        });
+        announce(`导入行为时发现 ${errors.length} 个问题`);
       }
       const now = new Date().toISOString();
       for (const bh of behaviors) {
@@ -133,10 +143,12 @@ export default function BehaviorPage() {
         addBehavior({ ...bh, id, createdAt: now, updatedAt: now });
       }
     } catch (err) {
-      alert(`导入失败: ${err instanceof Error ? err.message : String(err)}`);
+      const description = err instanceof Error ? err.message : String(err);
+      notification.error({ message: '导入行为失败', description });
+      announce('导入行为失败');
     }
     if (importRef.current) importRef.current.value = '';
-  }, [scripts, addBehavior]);
+  }, [addBehavior, announce, scripts]);
 
   const deleteScript = useCallback((id: string) => {
     removeBehavior(id);
@@ -320,10 +332,10 @@ export default function BehaviorPage() {
           <span>脚本 ({scripts.length})</span>
           <div className="behavior-toolbar-actions">
             <input ref={importRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImport} />
-            <button onClick={() => importRef.current?.click()} className="behavior-toolbar-btn" title="导入">↑</button>
-            <button onClick={handleExport} disabled={scripts.length === 0} className="behavior-toolbar-btn" style={{ opacity: scripts.length === 0 ? 0.5 : 1 }} title="导出">↓</button>
-            <button onClick={() => setShowTemplates(true)} className="behavior-toolbar-btn primary">模板</button>
-            <button onClick={addScript} className="behavior-toolbar-btn primary">+ 新建</button>
+            <button type="button" onClick={() => importRef.current?.click()} className="behavior-toolbar-btn" title="导入">↑</button>
+            <button type="button" onClick={handleExport} disabled={scripts.length === 0} className="behavior-toolbar-btn" style={{ opacity: scripts.length === 0 ? 0.5 : 1 }} title="导出">↓</button>
+            <button type="button" onClick={() => setShowTemplates(true)} className="behavior-toolbar-btn primary">模板</button>
+            <button type="button" onClick={addScript} className="behavior-toolbar-btn primary">+ 新建</button>
           </div>
         </div>
         <div className="page-section-body">
@@ -335,13 +347,13 @@ export default function BehaviorPage() {
             <div key={event}>
               <div className="behavior-event-group">{event}</div>
               {items.map((s) => (
-                <div key={s.id} className={`sidebar-item ${editingId === s.id ? 'active' : ''}`} onClick={() => setEditingId(s.id)}>
+                <div key={s.id} className={`sidebar-item ${editingId === s.id ? 'active' : ''}`} role="button" tabIndex={0} onClick={() => setEditingId(s.id)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setEditingId(s.id); } }}>
                   <span className={`behavior-status-dot ${s.enabled ? 'enabled' : 'disabled'}`}>{s.enabled ? '●' : '○'}</span>
                   <div className="sidebar-item-info">
                     <span className="sidebar-item-name">{s.name}</span>
                     <span className="sidebar-item-meta">{(s.code || '').length} 字符</span>
                   </div>
-                  <button className="sidebar-item-delete" onClick={(e) => { e.stopPropagation(); deleteScript(s.id); }}>×</button>
+                  <button type="button" className="sidebar-item-delete" aria-label={`删除脚本 ${s.name}`} onClick={(e) => { e.stopPropagation(); deleteScript(s.id); }}>×</button>
                 </div>
               ))}
             </div>
@@ -357,22 +369,22 @@ export default function BehaviorPage() {
             <div className="behavior-editor-toolbar">
               {/* 模式切换 */}
               <div className="behavior-mode-toggle">
-                <button
+                <button type="button"
                   onClick={() => setEditorMode('visual')}
                   className={`behavior-mode-btn ${editorMode === 'visual' ? 'active' : ''}`}
                 >
                   可视化
                 </button>
-                <button
+                <button type="button"
                   onClick={() => setEditorMode('code')}
                   className={`behavior-mode-btn ${editorMode === 'code' ? 'active' : ''}`}
                 >
                   代码
                 </button>
               </div>
-              <select value={editingScript.event} onChange={(e) => updateEvent(editingScript.id, e.target.value)} style={{ padding: '3px 6px', fontSize: 11, border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)' }}>
+              <AntdCompatSelect value={editingScript.event} onChange={(e) => updateEvent(editingScript.id, e.target.value)} style={{ fontSize: 11 }}>
                 {events.map((ev) => <option key={ev} value={ev}>{ev}</option>)}
-              </select>
+              </AntdCompatSelect>
               <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11 }}>
                 <input type="checkbox" checked={editingScript.enabled} onChange={(e) => toggleEnabled(editingScript.id, e.target.checked)} />
                 <span>启用</span>
@@ -405,6 +417,7 @@ export default function BehaviorPage() {
                     fields: fieldDescriptors,
                     eventName: editingScript.event,
                   }),
+                  createChainApiExtraLib(`inmemory://model/behavior-${editingScript.id}-chain.d.ts`),
                 ]}
                 suggestions={createEventContextSuggestions({
                   fields: fieldDescriptors,
@@ -430,13 +443,13 @@ export default function BehaviorPage() {
       {/* 右侧：API 参考 / 测试 */}
       <div className="page-inspector">
         <div className="page-section-header" style={{ display: 'flex', gap: 0, padding: 0 }}>
-          <button
+          <button type="button"
             onClick={() => setRightPanelTab('api')}
             className={`behavior-tab-btn ${rightPanelTab === 'api' ? 'active' : ''}`}
           >
             API 参考
           </button>
-          <button
+          <button type="button"
             onClick={() => setRightPanelTab('test')}
             className={`behavior-tab-btn ${rightPanelTab === 'test' ? 'active' : ''}`}
           >

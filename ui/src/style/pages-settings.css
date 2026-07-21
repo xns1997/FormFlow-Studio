@@ -55,27 +55,27 @@
   padding: 24px;
 }
 
-.settings-form {
+.settings-layout .settings-form {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 480px;
+  max-width: none;
 }
 
-.settings-form label {
+.settings-layout .settings-form label {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.settings-form label span {
+.settings-layout .settings-form label span {
   font-size: 12px;
   font-weight: 600;
 }
 
-.settings-form input,
-.settings-form select,
-.settings-form textarea {
+.settings-layout .settings-form input,
+.settings-layout .settings-form select,
+.settings-layout .settings-form textarea {
   padding: 8px 12px;
   font-size: 13px;
   border: 1px solid var(--line);

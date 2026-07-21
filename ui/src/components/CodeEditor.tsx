@@ -52,6 +52,7 @@ export interface CodeEditorProps {
   onBlur?: () => void;
   extraLibs?: CodeEditorExtraLib[];
   autoSuggestPolicy?: 'explicit' | 'contextual' | 'json-contextual';
+  suggestionContextResolver?: (context: { fullPrefix: string; linePrefix: string; completionPrefix: string }) => string;
 }
 
 const baseOptions: editor.IStandaloneEditorConstructionOptions = {
@@ -92,19 +93,13 @@ function resolveSuggestionKind(monaco: Monaco, kind: CodeEditorSuggestion['kind'
   return monaco.languages.CompletionItemKind.Snippet;
 }
 
-type SuggestionMode =
-  | 'top-level'
-  | 'ctx-member'
-  | 'ctx-values-member'
-  | 'ctx-detail-member'
-  | 'field-name'
-  | 'json-object-key'
-  | 'json-object-value'
-  | 'json-array-value'
-  | 'json-string-value';
+type SuggestionMode = string;
 
 function resolveCompletionInsertText(item: CodeEditorSuggestion, completionPrefix: string, mode: SuggestionMode) {
   const rawInsertText = item.insertText ?? item.label;
+  if (completionPrefix.endsWith('$') && rawInsertText.startsWith('$')) {
+    return rawInsertText.slice(1);
+  }
   if (completionPrefix.endsWith('ctx.') && rawInsertText.startsWith('ctx.')) {
     return rawInsertText.slice(4);
   }
@@ -326,6 +321,7 @@ export default function CodeEditor({
   onBlur,
   extraLibs,
   autoSuggestPolicy = 'explicit',
+  suggestionContextResolver,
 }: CodeEditorProps) {
   const [fullOpen, setFullOpen] = useState(false);
   const suggestionsRef = useRef(suggestions);
@@ -468,7 +464,7 @@ export default function CodeEditor({
           ));
           const linePrefix = model.getValueInRange(new monaco.Range(position.lineNumber, 1, position.lineNumber, position.column));
           const completionPrefix = linePrefix.slice(0, Math.max(0, linePrefix.length - (word.word?.length || 0)));
-          const mode = resolveCompletionMode(language, fullPrefix, completionPrefix);
+          const mode = suggestionContextResolver?.({ fullPrefix, linePrefix, completionPrefix }) || resolveCompletionMode(language, fullPrefix, completionPrefix);
           const query = resolveCompletionQuery(language, mode, fullPrefix, word);
           const range = new monaco.Range(
             position.lineNumber,
@@ -525,7 +521,7 @@ export default function CodeEditor({
           : '';
         const word = model && position ? model.getWordUntilPosition(position) : { word: '', startColumn: position?.column || 1, endColumn: position?.column || 1 };
         const completionPrefix = linePrefix.slice(0, Math.max(0, linePrefix.length - ((word && 'word' in word ? word.word : '')?.length || 0)));
-        const mode = resolveCompletionMode(language, fullPrefix, completionPrefix);
+        const mode = suggestionContextResolver?.({ fullPrefix, linePrefix, completionPrefix }) || resolveCompletionMode(language, fullPrefix, completionPrefix);
         const isWordLikeTyping = /[\w$\u4e00-\u9fa5-]/.test(typedText);
         const allowContextual =
           autoSuggestPolicy === 'contextual'

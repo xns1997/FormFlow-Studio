@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { DesignComponent, SrcTableEntry, WorkflowFile } from '../../project/types';
 import { getBehaviorEventDoc, getEventReferenceShortcuts } from '../../services/io/behaviorDocs';
-import { createEventContextExtraLib, createEventContextSuggestions, type EventFieldDescriptor } from '../../components/codeEditorSuggestions';
+import { createChainApiExtraLib, createEventContextExtraLib, createEventContextSuggestions, type EventFieldDescriptor } from '../../components/codeEditorSuggestions';
 import CodeEditor from '../../components/CodeEditor';
 import Modal, { ModalFooter, ModalHeader } from '../../components/Modal';
 import { buildDocsPath } from '../../services/io/routes';
@@ -268,6 +268,7 @@ export function EventScriptEditorSection({
             currentField,
             eventName: evt.key,
           }),
+          createChainApiExtraLib(`inmemory://model/form-event-${component.id}-${evt.key}-chain.d.ts`),
         ]}
         suggestions={createEventContextSuggestions({
           fields: fieldDescriptors,
@@ -338,6 +339,7 @@ export function EventScriptEditorSection({
                     currentField,
                     eventName: evt.key,
                   }),
+                  createChainApiExtraLib(`inmemory://model/form-event-${component.id}-${evt.key}-workbench-chain.d.ts`),
                 ]}
                 suggestions={createEventContextSuggestions({
                   fields: fieldDescriptors,

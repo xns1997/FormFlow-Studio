@@ -32,8 +32,32 @@ import {
   getNativeConsole,
   type ScriptLogEntry,
 } from '../config/scriptRuntime';
+import { evaluatePropertyExpression } from './propertyExpression';
 
 export type FormEventCallback = (context: FormEventRuntimeContext, ...args: unknown[]) => unknown | Promise<unknown>;
+
+export interface FormFieldChain extends PromiseLike<void> {
+  show(): FormFieldChain;
+  hide(): FormFieldChain;
+  enable(): FormFieldChain;
+  disable(): FormFieldChain;
+  required(): FormFieldChain;
+  optional(): FormFieldChain;
+  clear(): FormFieldChain;
+  set(value: unknown): FormFieldChain;
+}
+
+export interface FormRequireChain extends PromiseLike<RequireFieldsResult> {
+  focusFirstInvalid(): FormRequireChain;
+}
+
+export interface FormTableFindChain extends PromiseLike<Record<string, unknown> | null> {
+  fillForm(fieldMap?: Record<string, string>, options?: FillFormOptions): Promise<FillFormResult | null>;
+}
+
+export interface FormFlowChain extends PromiseLike<FlowExecutionResult> {
+  writeBack(): Promise<FlowExecutionResult>;
+}
 
 export interface FormEventRuntimeContext extends FormControlEventContext {
   event: string;
@@ -60,6 +84,7 @@ export interface FormEventRuntimeContext extends FormControlEventContext {
   setDisabled: (componentId: string, disabled: boolean) => void | Promise<void>;
   toggleDisabled: (componentId: string) => Promise<boolean>;
   setRequired: (field: string, required: boolean) => void | Promise<void>;
+  setOptions: (field: string, config: { table: string; filterField: string; filterValue?: unknown; labelField?: string; valueField?: string }) => void | Promise<void>;
   toggleRequired: (field: string) => Promise<boolean>;
   setFieldState: (
     fieldOrComponentId: string,
@@ -79,6 +104,20 @@ export interface FormEventRuntimeContext extends FormControlEventContext {
   fillForm: (record: Record<string, unknown> | null | undefined, fieldMap?: Record<string, string>, options?: FillFormOptions) => Promise<FillFormResult>;
   requireFields: (fields: string[], options?: RequireFieldsOptions) => Promise<RequireFieldsResult>;
   resetForm: (options?: ResetFormOptions) => Promise<ResetFormResult>;
+  evaluate: (expression: string) => unknown;
+  fields: (fields: string | string[]) => FormFieldChain;
+  form: {
+    values: () => Record<string, unknown>;
+    require: (fields: string[]) => FormRequireChain;
+  };
+  table: (sheetId: string) => {
+    find: (criteria: Record<string, unknown>, options?: FindRowOptions) => FormTableFindChain;
+    rows: (criteria?: Record<string, unknown>, options?: FindRowsOptions) => Record<string, unknown>[];
+    upsert: (record: Record<string, unknown>, options: { key: string }) => Promise<{ created: boolean; updated: boolean; key: unknown; record: Record<string, unknown> }>;
+  };
+  flow: (workflow?: string | WorkflowFile) => {
+    run: (parameters?: Record<string, unknown>, options?: { targetNodeId?: string }) => FormFlowChain;
+  };
   runWorkflow: (
     workflow?: string | WorkflowFile,
     parameters?: Record<string, unknown>,
@@ -120,7 +159,9 @@ export interface ExecuteFormEventOptions {
   setVisible?: (componentId: string, visible: boolean) => void | Promise<void>;
   setDisabled?: (componentId: string, disabled: boolean) => void | Promise<void>;
   setRequired?: (field: string, required: boolean) => void | Promise<void>;
+  setOptions?: (field: string, config: { table: string; filterField: string; filterValue?: unknown; labelField?: string; valueField?: string }) => void | Promise<void>;
   showMessage?: (message: string, level?: 'info' | 'success' | 'warning' | 'error') => void | Promise<void>;
+  upsertRow?: (sheetId: string, record: Record<string, unknown>, options: { key: string }) => void | Promise<void>;
   code?: string;
   trigger?: FormFlowTriggerConfig;
   linkageRules?: FormLinkageRule[];
@@ -550,6 +591,9 @@ export async function executeFormControlEvent(
       requiredFields.add(field);
       await options.setRequired?.(field, required);
     },
+    setOptions: async (field, config) => {
+      await options.setOptions?.(field, config);
+    },
     toggleRequired: async (field) => {
       const { fieldName } = getRequiredFieldTarget(field);
       const next = !(requiredByField[fieldName] ?? false);
@@ -633,6 +677,89 @@ export async function executeFormControlEvent(
       if (result.focusedField) await runtimeContext.focusField(result.focusedField);
       return result;
     },
+    evaluate: (expression) => {
+      const result = evaluatePropertyExpression(expression, {
+        form: runtimeValues,
+        row: originalValues,
+        event: { ...eventContext, detail: createEventDetail(eventContext, previousValue) },
+        table: Object.fromEntries((options.tables || []).flatMap((table) => table.sheets.map((sheet) => [sheet.name, sheet.preview]))),
+      });
+      if (!result.ok) throw new Error(result.error);
+      return result.value;
+    },
+    fields: (fieldOrFields) => {
+      const fields = Array.isArray(fieldOrFields) ? fieldOrFields : [fieldOrFields];
+      let pending = Promise.resolve();
+      const chain: FormFieldChain = {
+        show: () => { pending = pending.then(async () => { for (const field of fields) { const target = resolveFieldStateTarget(field); if (!target.component) throw new Error(`找不到控件: ${field}`); await runtimeContext.setVisible(target.component.id, true); } }); return chain; },
+        hide: () => { pending = pending.then(async () => { for (const field of fields) { const target = resolveFieldStateTarget(field); if (!target.component) throw new Error(`找不到控件: ${field}`); await runtimeContext.setVisible(target.component.id, false); } }); return chain; },
+        enable: () => { pending = pending.then(async () => { for (const field of fields) { const target = resolveFieldStateTarget(field); if (!target.component) throw new Error(`找不到控件: ${field}`); await runtimeContext.setDisabled(target.component.id, false); } }); return chain; },
+        disable: () => { pending = pending.then(async () => { for (const field of fields) { const target = resolveFieldStateTarget(field); if (!target.component) throw new Error(`找不到控件: ${field}`); await runtimeContext.setDisabled(target.component.id, true); } }); return chain; },
+        required: () => { pending = pending.then(async () => { for (const field of fields) await runtimeContext.setRequired(field, true); }); return chain; },
+        optional: () => { pending = pending.then(async () => { for (const field of fields) await runtimeContext.setRequired(field, false); }); return chain; },
+        clear: () => { pending = pending.then(async () => { for (const field of fields) await runtimeContext.clearValue(field); }); return chain; },
+        set: (value) => { pending = pending.then(async () => { for (const field of fields) await runtimeContext.setValue(field, value); }); return chain; },
+        then: (onfulfilled, onrejected) => pending.then(onfulfilled, onrejected),
+      };
+      return chain;
+    },
+    form: {
+      values: () => ({ ...runtimeValues }),
+      require: (fields) => {
+        let focus = false;
+        const run = () => runtimeContext.requireFields(fields, { focus });
+        const chain: FormRequireChain = {
+          focusFirstInvalid: () => { focus = true; return chain; },
+          then: (onfulfilled, onrejected) => run().then(onfulfilled, onrejected),
+        };
+        return chain;
+      },
+    },
+    table: (sheetId) => ({
+      rows: (criteria = {}, findOptions = {}) => runtimeContext.findRows(sheetId, criteria, findOptions),
+      find: (criteria, findOptions = {}) => {
+        const run = async () => runtimeContext.findRow(sheetId, criteria, findOptions);
+        const chain: FormTableFindChain = {
+          fillForm: async (fieldMap, fillOptions) => {
+            const row = await run();
+            return row ? runtimeContext.fillForm(row, fieldMap, fillOptions) : null;
+          },
+          then: (onfulfilled, onrejected) => run().then(onfulfilled, onrejected),
+        };
+        return chain;
+      },
+      upsert: async (record, upsertOptions) => {
+        const keyField = String(upsertOptions?.key || '').trim();
+        if (!keyField) throw new Error('upsert 需要 key 字段');
+        const keyValue = record[keyField];
+        if (keyValue == null || keyValue === '') throw new Error(`upsert 主键为空: ${keyField}`);
+        const sheet = (options.tables || []).flatMap((table) => table.sheets.map((item) => ({ table, sheet: item }))).find(({ table, sheet }) => sheetId === table.id || sheetId === sheet.name || sheetId === `${table.id}:${sheet.name}` || sheetId === `${table.id}::${sheet.name}`)?.sheet;
+        const index = sheet?.preview.findIndex((item) => item[keyField] === keyValue) ?? -1;
+        if (sheet) {
+          if (index >= 0) sheet.preview[index] = { ...sheet.preview[index], ...record };
+          else sheet.preview.push({ ...record });
+        }
+        await options.upsertRow?.(sheetId, record, { key: keyField });
+        return { created: index < 0, updated: index >= 0, key: keyValue, record: { ...record } };
+      },
+    }),
+    flow: (workflow) => ({
+      run: (parameters = {}, runOptions = {}) => {
+        const run = () => runtimeContext.runWorkflow(workflow, parameters, runOptions);
+        const chain: FormFlowChain = {
+          writeBack: async () => {
+            const result = await run();
+            for (const [field, value] of Object.entries(result.finalOutputs || {})) {
+              if (field.startsWith('__') || (field === 'result' && value && typeof value === 'object')) continue;
+              await runtimeContext.setValue(field, value);
+            }
+            return result;
+          },
+          then: (onfulfilled, onrejected) => run().then(onfulfilled, onrejected),
+        };
+        return chain;
+      },
+    }),
     runWorkflow,
     runConfiguredWorkflow: (parameters) => runWorkflow(undefined, parameters),
     call: async (name, ...args) => {
@@ -744,7 +871,7 @@ export async function executeFormControlEvent(
           const exportOutputs = lastResult.finalOutputs;
           const flowModifiedFields: string[] = [];
           for (const [key, value] of Object.entries(exportOutputs)) {
-            if (key.startsWith('__')) continue;
+            if (key.startsWith('__') || (key === 'result' && value && typeof value === 'object')) continue;
             if (!sameValue(runtimeValues[key], value)) {
               flowModifiedFields.push(key);
               runtimeValues[key] = value;

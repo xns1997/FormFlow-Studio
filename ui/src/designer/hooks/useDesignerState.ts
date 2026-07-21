@@ -1,18 +1,19 @@
 import { useRef, useCallback, useState } from 'react';
 import type { Node } from '@antv/x6';
 import type { DesignComponent, DesignFile } from '../../project/types';
+import { SINGLE_LINE_FIELD_HEIGHT } from '../controls/geometry';
 
 export type ResizeHandle = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
 
-const MIN_SIZES: Record<string, { w: number; h: number }> = {
-  input: { w: 160, h: 64 },
+export const DESIGNER_MIN_SIZES: Record<string, { w: number; h: number }> = {
+  input: { w: 160, h: SINGLE_LINE_FIELD_HEIGHT },
   textarea: { w: 180, h: 92 },
-  number: { w: 150, h: 64 },
-  datePicker: { w: 160, h: 64 },
-  timePicker: { w: 160, h: 64 },
-  dateRange: { w: 240, h: 64 },
-  select: { w: 170, h: 64 },
-  segmented: { w: 220, h: 64 },
+  number: { w: 150, h: SINGLE_LINE_FIELD_HEIGHT },
+  datePicker: { w: 160, h: SINGLE_LINE_FIELD_HEIGHT },
+  timePicker: { w: 160, h: SINGLE_LINE_FIELD_HEIGHT },
+  dateRange: { w: 240, h: SINGLE_LINE_FIELD_HEIGHT },
+  select: { w: 170, h: SINGLE_LINE_FIELD_HEIGHT },
+  segmented: { w: 220, h: SINGLE_LINE_FIELD_HEIGHT },
   radio: { w: 180, h: 112 },
   checkbox: { w: 180, h: 112 },
   tagInput: { w: 220, h: 84 },
@@ -23,7 +24,7 @@ const MIN_SIZES: Record<string, { w: number; h: number }> = {
   button: { w: 120, h: 40 },
   text: { w: 80, h: 28 },
   image: { w: 120, h: 90 },
-  table: { w: 220, h: 120 },
+  table: { w: 480, h: 200 },
   chart: { w: 220, h: 140 },
   card: { w: 220, h: 140 },
   tabs: { w: 240, h: 140 },
@@ -31,6 +32,11 @@ const MIN_SIZES: Record<string, { w: number; h: number }> = {
   divider: { w: 32, h: 8 },
   form: { w: 360, h: 420 },
 };
+
+export function clampDesignerSize(type: string, width: number, height: number) {
+  const min = DESIGNER_MIN_SIZES[type] ?? { w: 96, h: 28 };
+  return { width: Number.isFinite(width) && width > 0 ? Math.max(min.w, width) : min.w, height: Number.isFinite(height) && height > 0 ? Math.max(min.h, height) : min.h };
+}
 
 export interface SelectionOverlay {
   id: string;
@@ -81,11 +87,7 @@ export function useDesignerState() {
   }, []);
 
   const clampSize = useCallback((type: string, width: number, height: number) => {
-    const min = MIN_SIZES[type] ?? { w: 96, h: 28 };
-    return {
-      width: Math.max(min.w, width),
-      height: Math.max(min.h, height),
-    };
+    return clampDesignerSize(type, width, height);
   }, []);
   const bumpHistoryRevision = useCallback(() => setHistoryRevision((value) => value + 1), []);
 

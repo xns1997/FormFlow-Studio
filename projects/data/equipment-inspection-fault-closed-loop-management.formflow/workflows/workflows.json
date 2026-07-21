@@ -1,0 +1,120 @@
+{
+  "workflows": [
+    {
+      "id": "fault_handling_workflow",
+      "name": "故障处理工作流",
+      "description": "管理设备巡检故障处理的状态流转：待分派→处理中→待复核→已关闭",
+      "nodes": [
+        {
+          "id": "node_1",
+          "type": "formflow",
+          "specId": "state",
+          "position": {
+            "x": 100,
+            "y": 100
+          },
+          "data": {
+            "propertiesJson": "{\"label\":\"待分派\",\"isStart\":true}",
+            "connectedPortsJson": "{\"out\":[\"trigger\"]}"
+          }
+        },
+        {
+          "id": "node_2",
+          "type": "formflow",
+          "specId": "state",
+          "position": {
+            "x": 300,
+            "y": 100
+          },
+          "data": {
+            "propertiesJson": "{\"label\":\"处理中\"}",
+            "connectedPortsJson": "{\"in\":[\"trigger\"],\"out\":[\"trigger\"]}"
+          }
+        },
+        {
+          "id": "node_3",
+          "type": "formflow",
+          "specId": "state",
+          "position": {
+            "x": 500,
+            "y": 100
+          },
+          "data": {
+            "propertiesJson": "{\"label\":\"待复核\"}",
+            "connectedPortsJson": "{\"in\":[\"trigger\"],\"out\":[\"trigger\"]}"
+          }
+        },
+        {
+          "id": "node_4",
+          "type": "formflow",
+          "specId": "state",
+          "position": {
+            "x": 700,
+            "y": 100
+          },
+          "data": {
+            "propertiesJson": "{\"label\":\"已关闭\",\"isEnd\":true}",
+            "connectedPortsJson": "{\"in\":[\"trigger\"]}"
+          }
+        },
+        {
+          "id": "workflow:import",
+          "type": "flow-node",
+          "specId": "workflow:import",
+          "position": {
+            "x": -220,
+            "y": 140
+          },
+          "data": {
+            "propertiesJson": "{\"outputPorts\":\"[]\"}",
+            "connectedPortsJson": "[]"
+          }
+        },
+        {
+          "id": "workflow:export",
+          "type": "flow-node",
+          "specId": "workflow:export",
+          "position": {
+            "x": 1020,
+            "y": 140
+          },
+          "data": {
+            "propertiesJson": "{\"inputPorts\":\"[{\\\"name\\\":\\\"result\\\",\\\"type\\\":\\\"any\\\",\\\"label\\\":\\\"结果\\\",\\\"description\\\":\\\"迁移出的默认返回字段\\\"}]\"}",
+            "connectedPortsJson": "[]"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge_1_2",
+          "source": "node_1",
+          "target": "node_2",
+          "sourceHandle": "out:trigger",
+          "targetHandle": "in:trigger"
+        },
+        {
+          "id": "edge_2_3",
+          "source": "node_2",
+          "target": "node_3",
+          "sourceHandle": "out:trigger",
+          "targetHandle": "in:trigger"
+        },
+        {
+          "id": "edge_3_4",
+          "source": "node_3",
+          "target": "node_4",
+          "sourceHandle": "out:trigger",
+          "targetHandle": "in:trigger"
+        },
+        {
+          "id": "workflow-io:node_4:workflow:export:result",
+          "source": "node_4",
+          "target": "workflow:export",
+          "sourceHandle": "out:result",
+          "targetHandle": "in:result"
+        }
+      ],
+      "updatedAt": "2026-07-21T04:39:37.809Z"
+    }
+  ]
+}

@@ -1,0 +1,293 @@
+{
+  "id": "inspection_record_form_design",
+  "name": "inspection_record_form",
+  "formMode": "create",
+  "viewport": {
+    "zoom": 1,
+    "panX": 0,
+    "panY": 0
+  },
+  "gridSize": 12,
+  "components": [
+    {
+      "id": "inspection_record_form_root",
+      "type": "form",
+      "x": 40,
+      "y": 40,
+      "width": 900,
+      "height": 1130,
+      "zIndex": 0,
+      "props": {
+        "title": "inspection_record 表单"
+      },
+      "children": [
+        "inspection_record_form_field_1",
+        "inspection_record_form_field_2",
+        "inspection_record_form_field_3",
+        "inspection_record_form_field_4",
+        "inspection_record_form_field_5",
+        "inspection_record_form_field_6",
+        "inspection_record_form_field_7",
+        "inspection_record_form_field_8",
+        "inspection_record_form_field_9",
+        "inspection_record_form_field_10",
+        "inspection_record_form_field_11",
+        "inspection_record_form_field_12",
+        "inspection_record_form_field_13",
+        "inspection_record_form_field_14"
+      ]
+    },
+    {
+      "id": "inspection_record_form_field_1",
+      "type": "select",
+      "x": 80,
+      "y": 130,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "inspection_record_form_root",
+      "fieldBinding": "巡检单号",
+      "props": {
+        "name": "巡检单号",
+        "label": "巡检单号",
+        "required": true,
+        "readonly": false
+      }
+    },
+    {
+      "id": "inspection_record_form_field_2",
+      "type": "select",
+      "x": 470,
+      "y": 130,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "inspection_record_form_root",
+      "fieldBinding": "设备编号",
+      "props": {
+        "name": "设备编号",
+        "label": "设备编号",
+        "required": true,
+        "readonly": false
+      }
+    },
+    {
+      "id": "inspection_record_form_field_3",
+      "type": "select",
+      "x": 80,
+      "y": 220,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "inspection_record_form_root",
+      "fieldBinding": "巡检人员",
+      "props": {
+        "name": "巡检人员",
+        "label": "巡检人员",
+        "required": false,
+        "readonly": false
+      }
+    },
+    {
+      "id": "inspection_record_form_field_4",
+      "type": "datePicker",
+      "x": 470,
+      "y": 220,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "inspection_record_form_root",
+      "fieldBinding": "巡检时间",
+      "props": {
+        "name": "巡检时间",
+        "label": "巡检时间",
+        "required": false,
+        "readonly": false
+      }
+    },
+    {
+      "id": "inspection_record_form_field_5",
+      "type": "number",
+      "x": 80,
+      "y": 310,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "inspection_record_form_root",
+      "fieldBinding": "运行温度",
+      "props": {
+        "name": "运行温度",
+        "label": "运行温度",
+        "required": false,
+        "readonly": false
+      }
+    },
+    {
+      "id": "inspection_record_form_field_6",
+      "type": "number",
+      "x": 470,
+      "y": 310,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "inspection_record_form_root",
+      "fieldBinding": "振动值",
+      "props": {
+        "name": "振动值",
+        "label": "振动值",
+        "required": false,
+        "readonly": false
+      }
+    },
+    {
+      "id": "inspection_record_form_field_7",
+      "type": "select",
+      "x": 80,
+      "y": 400,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "inspection_record_form_root",
+      "fieldBinding": "外观状态",
+      "props": {
+        "name": "外观状态",
+        "label": "外观状态",
+        "required": false,
+        "readonly": false
+      }
+    },
+    {
+      "id": "inspection_record_form_field_8",
+      "type": "select",
+      "x": 470,
+      "y": 400,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "inspection_record_form_root",
+      "fieldBinding": "巡检结论",
+      "props": {
+        "name": "巡检结论",
+        "label": "巡检结论",
+        "required": false,
+        "readonly": false
+      }
+    },
+    {
+      "id": "inspection_record_form_field_9",
+      "type": "input",
+      "x": 80,
+      "y": 490,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "inspection_record_form_root",
+      "fieldBinding": "问题描述",
+      "props": {
+        "name": "问题描述",
+        "label": "问题描述",
+        "required": false,
+        "readonly": false
+      }
+    },
+    {
+      "id": "inspection_record_form_field_10",
+      "type": "select",
+      "x": 470,
+      "y": 490,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "inspection_record_form_root",
+      "fieldBinding": "现场照片",
+      "props": {
+        "name": "现场照片",
+        "label": "现场照片",
+        "required": false,
+        "readonly": false
+      }
+    },
+    {
+      "id": "inspection_record_form_field_11",
+      "type": "select",
+      "x": 80,
+      "y": 580,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "inspection_record_form_root",
+      "fieldBinding": "是否需要维修",
+      "props": {
+        "name": "是否需要维修",
+        "label": "是否需要维修",
+        "required": false,
+        "readonly": false
+      }
+    },
+    {
+      "id": "inspection_record_form_field_12",
+      "type": "input",
+      "x": 80,
+      "y": 670,
+      "width": 340,
+      "height": 68,
+      "parentId": "inspection_record_form_root",
+      "fieldBinding": "设备名称",
+      "props": {
+        "name": "设备名称",
+        "label": "设备名称",
+        "required": false,
+        "readonly": true
+      },
+      "zIndex": 0
+    },
+    {
+      "id": "inspection_record_form_field_13",
+      "type": "input",
+      "x": 470,
+      "y": 670,
+      "width": 340,
+      "height": 68,
+      "parentId": "inspection_record_form_root",
+      "fieldBinding": "所属区域",
+      "props": {
+        "name": "所属区域",
+        "label": "所属区域",
+        "required": false,
+        "readonly": true
+      },
+      "zIndex": 0
+    },
+    {
+      "id": "inspection_record_form_field_14",
+      "type": "input",
+      "x": 80,
+      "y": 760,
+      "width": 340,
+      "height": 68,
+      "parentId": "inspection_record_form_root",
+      "fieldBinding": "责任人",
+      "props": {
+        "name": "责任人",
+        "label": "责任人",
+        "required": false,
+        "readonly": true
+      },
+      "zIndex": 0
+    }
+  ],
+  "bindings": [
+    {
+      "id": "inspection_record_form_binding",
+      "sourceId": "inspection_record",
+      "targetId": "inspection_record_form",
+      "type": "table",
+      "config": {
+        "tableId": "inspection_record",
+        "sheetName": "Sheet1"
+      }
+    }
+  ],
+  "createdAt": "2026-07-20T10:01:04.487Z",
+  "updatedAt": "2026-07-20T10:01:04.487Z"
+}

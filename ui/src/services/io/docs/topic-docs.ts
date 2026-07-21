@@ -58,9 +58,9 @@ export const behaviorTopicDocs: BehaviorTopicDocEntry[] = [
       {
         title: '代码示例',
         shortcuts: [
-          { path: "controls.summaryPreview.value = `${controls.name.value}：${controls.note.value}`", description: '空白表单模板：按钮点击后生成摘要。' },
-          { path: "controls.saveLead.disabled = !controls.customerName.value", description: '数据录入模板：根据名称是否为空启用保存按钮。' },
-          { path: "controls.approvalResults.value = rows", description: '审批模板：把流程结果直接写进右侧表格。' },
+          { path: "controls['结果摘要'].value = `【${controls['优先级'].value}】${controls['需求名称'].value}`", description: '快速表单：按钮点击后生成摘要。' },
+          { path: "controls['线索编号'].value = `LEAD-${String(next).padStart(4, '0')}`", description: '数据录入：根据现有记录生成稳定编号。' },
+          { path: "controls['状态'].value = '已批准'", description: '审批处理：运行审批流程前写入明确状态。' },
         ],
       },
       {
@@ -132,6 +132,40 @@ export const behaviorTopicDocs: BehaviorTopicDocEntry[] = [
           { title: '查询并回填', code: "// onFieldChange 事件\nif (field === '工号') {\n  const row = findRow('employees', { 工号: value });\n  if (row) {\n    await fillForm(row);\n    showMessage('已自动填充员工信息', 'info');\n  } else {\n    showMessage('未找到该工号', 'warning');\n  }\n}" },
           { title: '提交并重置', code: "// onSubmitSuccess 事件\nshowMessage('提交成功！', 'success');\nconst nextId = nextSequence('orders', '订单号', { start: 10001 });\nawait resetForm({\n  clearFields: ['客户名称', '数量', '备注'],\n  defaults: { 订单号: nextId, 状态: '草稿' },\n  focusField: '客户名称',\n  message: '表单已重置，可继续录入。'\n});" },
         ],
+      },
+    ],
+  },
+  {
+    id: 'topic:behavior-rule-syntax',
+    slug: 'behavior-rule-syntax',
+    title: '规则语法 Reference',
+    summary: '在行为定义中用受控 DSL 编写显隐、必填、计算、级联和流程规则，并编译为可视化联动。',
+    sections: [
+      {
+        title: '编辑器能力',
+        body: '每个表单的行为列表默认包含一个空白“规则代码”实例。点击实例即可进入，无需先创建脚本；普通事件脚本通过“+ 新建”创建。Monaco 会提供语法高亮、逐行诊断和 Suggestion，源码随表单行为文件持久化。',
+      },
+      {
+        title: '规则骨架',
+        shortcuts: [
+          { path: 'when $字段 条件 值 -> 动作(...)', description: '字段变化且条件成立时执行动作。' },
+          { path: 'else -> 动作(...)', description: '执行上一条 when 的严格反向分支。' },
+          { path: 'compute $目标 = 表达式 watch($字段, ...)', description: '监听字段并重新计算目标值。' },
+          { path: 'on change($字段) -> 动作(...)', description: '字段变化时直接执行动作。' },
+          { path: 'before submit / on load / on submit -> 动作', description: '在表单生命周期执行规则。' },
+        ],
+      },
+      {
+        title: '完整示例',
+        examples: [
+          { title: '条件显隐', code: 'when $部门 == "技术部" -> show(@tech-stack); require($技术栈)\nelse -> hide(@tech-stack); clear($技术栈)' },
+          { title: '金额计算', code: 'compute $合计 = $数量 * $单价 watch($数量, $单价)' },
+          { title: '提交校验', code: 'before submit -> require($姓名, $手机号); message("请检查必填项", warning)' },
+        ],
+      },
+      {
+        title: '应用结果',
+        body: '通过诊断后点击“应用到当前表单”。规则会写入对应控件的 linkageRules，仍可回到表单设计器的事件属性中可视化调整。规则 DSL 不执行任意 JavaScript。',
       },
     ],
   },

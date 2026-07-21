@@ -79,7 +79,29 @@ test('parameter resolution includes built-in event context and custom mappings',
   assert.equal(parameters.city, '杭州');
   assert.equal(parameters.oldName, '旧客户');
   assert.deepEqual(parameters.formData, context.values);
+  assert.deepEqual(resolveFormFlowValue('$form', context), context.values);
   assert.equal((parameters.entireContext as FormControlEventContext).eventName, 'onChange');
+});
+
+test('legacy workflows without an export node still write form-value side effects back', async () => {
+  const targetWorkflow = workflow([
+    flowNode('form-data', 'generic:value-input', { name: 'formData', valueType: 'object' }),
+    flowNode('message', 'behavior-compose-message', {
+      template: '已保存 {customerName}',
+      messageField: 'save_status',
+      messageType: 'success',
+    }),
+    flowNode('other-sink', 'generic:value-input', { name: 'unused', valueType: 'string' }),
+  ], [
+    { id: 'edge-message', source: 'form-data', target: 'message', sourceHandle: 'out:value', targetHandle: 'in:record' },
+  ]);
+  const result = await executeFormFlowTrigger(targetWorkflow, {
+    enabled: true,
+    workflowId: targetWorkflow.id,
+    parameterMap: { formData: '$form' },
+  }, context);
+  assert.equal(result.success, true, result.errors.join('\n'));
+  assert.equal(result.finalOutputs.save_status, '已保存 新客户');
 });
 
 test('nodeId.port parameters are separated from workflow variables', () => {

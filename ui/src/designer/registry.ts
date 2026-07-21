@@ -1,3 +1,4 @@
+import type { DesignComponent } from '../project/types';
 import type { ControlDef } from './types';
 
 export { getPropertyEditor, registerPropertyEditor } from './properties/propertyEditorRegistry';
@@ -31,6 +32,17 @@ export function registerControl(def: ControlDef) {
 
 export function getControl(type: string): ControlDef | undefined {
   return controls.get(type);
+}
+
+/**
+ * 统一补齐新建与历史组件的属性初始值。
+ * 已保存值（包括 false、0 和空字符串）始终优先，不改写旧项目的语义。
+ */
+export function hydrateControlComponent(component: DesignComponent): DesignComponent {
+  const control = getControl(component.type);
+  if (!control) return component;
+  const finite = (value: unknown, fallback: number, positive = false) => { const number = Number(value); return Number.isFinite(number) && (!positive || number > 0) ? number : fallback; };
+  return { ...component, x: finite(component.x, 0), y: finite(component.y, 0), width: finite(component.width, control.defaultSize.w, true), height: finite(component.height, control.defaultSize.h, true), zIndex: finite(component.zIndex, 0), props: { ...control.defaultProps, ...(component.props || {}) } };
 }
 
 export function getControlsByCategory(cat: string): ControlDef[] {

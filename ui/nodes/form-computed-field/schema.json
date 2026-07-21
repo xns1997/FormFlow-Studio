@@ -1,0 +1,14 @@
+{
+  "id": "form:computed-field", "label": "派生字段", "description": "使用安全表达式计算并写回目标字段", "category": "高阶 · 表单", "kind": "generic", "macro": { "version": 1, "expansion": "runtime-composite", "debugMapping": "node-output", "snapshot": [] },
+  "properties": [
+    { "name": "expression", "label": "表达式", "type": "string", "default": "$数量 * $单价" },
+    { "name": "targetField", "label": "目标字段", "type": "string", "default": "" }
+  ],
+  "ports": [
+    { "name": "formData", "label": "表单数据", "type": "object", "direction": "input", "required": true },
+    { "name": "row", "label": "当前数据行", "type": "object", "direction": "input" },
+    { "name": "flow", "label": "流程输出", "type": "object", "direction": "input" },
+    { "name": "value", "label": "计算值", "type": "any", "direction": "output" },
+    { "name": "result", "label": "结果", "type": "any", "direction": "output" }
+  ], "keywords": ["计算字段", "公式", "派生", "computed"]
+}

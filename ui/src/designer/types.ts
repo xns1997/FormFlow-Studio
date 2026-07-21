@@ -11,7 +11,30 @@ export type PropertyEditorKind =
   | 'options' | 'string-list' | 'table-columns' | 'field-path' | 'key-value' | 'mapping'
   | 'filters' | 'sorting' | 'expression' | 'template' | 'typography' | 'spacing' | 'border'
   | 'radius' | 'shadow' | 'opacity' | 'dimension' | 'icon' | 'url' | 'upload-constraints'
-  | 'tabs' | 'steps' | 'dimension-metric' | 'data-binding' | 'range';
+  | 'tabs' | 'steps' | 'dimension-metric' | 'data-binding' | 'option-source' | 'range';
+
+export type PropertySection = 'function' | 'style';
+export type PropertyTaskId = 'content' | 'validation' | 'data' | 'binding' | 'logic' | 'events' | 'appearance' | 'effects' | 'layout' | 'format' | 'other';
+
+export interface PropertyGroupDescriptor {
+  id: string;
+  label: string;
+  section: PropertySection;
+  task: PropertyTaskId;
+  order: number;
+  defaultOpen?: boolean;
+}
+
+export interface PropertyDiagnostic {
+  severity: 'error' | 'warning';
+  message: string;
+  key?: string;
+}
+
+export interface PropertyStatus {
+  changed: boolean;
+  diagnostics: PropertyDiagnostic[];
+}
 
 export interface PropCondition {
   key: string;
@@ -51,6 +74,9 @@ export interface PropDef {
   default?: any;
   options?: Array<{ label: string; value: any }>;
   group?: string;
+  section?: PropertySection;
+  task?: PropertyTaskId;
+  order?: number;
   level?: 'common' | 'advanced';
   placeholder?: string;
   min?: number;
@@ -72,6 +98,9 @@ export interface CompositePropDef {
   validation?: PropValidation;
   assistantCapability?: PropertyAssistantCapability;
   group?: string;
+  section?: PropertySection;
+  task?: PropertyTaskId;
+  order?: number;
   level?: 'common' | 'advanced';
 }
 

@@ -1,0 +1,37 @@
+{
+  "forms": [
+    {
+      "id": "equipment_archive_form",
+      "name": "equipment_archive create",
+      "fileName": "equipment_archive_form.json",
+      "behaviorsFileName": "equipment_archive_form.behaviors.json",
+      "createdAt": "2026-07-20T10:00:09.629Z",
+      "updatedAt": "2026-07-21T05:40:44.476Z"
+    },
+    {
+      "id": "inspection_record_form",
+      "name": "inspection_record create",
+      "fileName": "inspection_record_form.json",
+      "behaviorsFileName": "inspection_record_form.behaviors.json",
+      "createdAt": "2026-07-20T10:01:04.487Z",
+      "updatedAt": "2026-07-20T10:01:04.487Z"
+    },
+    {
+      "id": "fault_work_order_form",
+      "name": "fault_work_order create",
+      "fileName": "fault_work_order_form.json",
+      "behaviorsFileName": "fault_work_order_form.behaviors.json",
+      "createdAt": "2026-07-20T10:02:43.566Z",
+      "updatedAt": "2026-07-21T02:04:18.542Z"
+    },
+    {
+      "id": "query_form",
+      "name": "设备巡检故障查询",
+      "fileName": "query_form.json",
+      "behaviorsFileName": "query_form.behaviors.json",
+      "createdAt": "2026-07-20T10:03:44.470Z",
+      "updatedAt": "2026-07-20T10:03:44.470Z"
+    }
+  ],
+  "defaultFormId": "equipment_archive_form"
+}

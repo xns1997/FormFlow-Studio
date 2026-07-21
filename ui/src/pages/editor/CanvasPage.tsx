@@ -29,14 +29,17 @@ import TypeDisplayer from '../../components/TypeDisplayer';
 import OutputPreviewModal, { type OutputPreviewTarget } from '../../components/OutputPreviewModal';
 import Modal, { ModalHeader } from '../../components/Modal';
 import CodeEditor from '../../components/CodeEditor';
+import { AntdCompatSelect } from '../../components/AntdFormControls';
 import { createCustomJsNodeExtraLib, createCustomJsNodeSuggestions, formatCustomJsPortMap, getNodeEffectivePorts, isCustomJsNodeSpec, parseCustomJsPortDefinitions, resolveNodeProperties, toCustomJsPortMap } from '../../services/config/customJsNode';
 import { formatStructuredProperty, isStructuredProperty, parseStructuredProperty } from '../../services/data/structuredProperties';
 import { jsonSuggestions } from '../../components/codeEditorSuggestions';
 import NodePalette, { QuickNodePicker } from '../../components/NodePalette';
-import { createQuickNodeConnection, portTypesCompatible, type NodeConnectionContext } from '../../services/config/nodeDiscovery';
+import { createQuickNodeConnection, findBestCompatiblePort, portTypesCompatible, type NodeConnectionContext } from '../../services/config/nodeDiscovery';
 import { createWorkflowIoScaffold, ensureWorkflowIo } from '../../services/engine/workflowIo';
 import { layoutWorkflow, type LayoutDiagnostics, type MeasuredNodeBox } from '../../services/layout';
 import { createRemovedWorkflowNodeSpec, isRemovedWorkflowNode } from '../../services/engine/removedWorkflowNodes';
+import { createFlowRecipe, FLOW_RECIPES, validateFlowRecipeParams, type FlowRecipeId } from '../../services/engine/flowRecipes';
+import { recordAuthoringEvent } from '../../services/formGeneration/authoringTelemetry';
 
 type FlowNodeData = {
   specId: string;
@@ -279,9 +282,9 @@ function PortTableEditor({ value, onChange, disabled }: { value: unknown; onChan
   return (
     <div className="port-table-editor">
       {!disabled && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-          <button type="button" className={mode === 'table' ? 'active' : ''} onClick={() => setMode('table')}>表格</button>
-          <button type="button" className={mode === 'json' ? 'active' : ''} onClick={() => setMode('json')}>JSON</button>
+        <div className="port-table-mode-switch" role="tablist" aria-label="导入字段编辑模式">
+          <button type="button" role="tab" aria-selected={mode === 'table'} className={`ui-btn ui-btn-xs ui-btn-toolbar ${mode === 'table' ? 'active' : ''}`} onClick={() => setMode('table')}>表格</button>
+          <button type="button" role="tab" aria-selected={mode === 'json'} className={`ui-btn ui-btn-xs ui-btn-toolbar ${mode === 'json' ? 'active' : ''}`} onClick={() => setMode('json')}>JSON</button>
         </div>
       )}
       {mode === 'json' ? (
@@ -319,6 +322,7 @@ function PortTableEditor({ value, onChange, disabled }: { value: unknown; onChan
       ) : (
         <>
           <table>
+            <colgroup><col className="port-col-name" /><col className="port-col-label" /><col className="port-col-type" /><col className="port-col-description" /><col className="port-col-action" /></colgroup>
             <thead><tr><th>名称</th><th>标签</th><th>类型</th><th>说明</th><th /></tr></thead>
             <tbody>
               {rows.map((row, i) => (
@@ -326,18 +330,18 @@ function PortTableEditor({ value, onChange, disabled }: { value: unknown; onChan
                   <td><input type="text" value={row.name} disabled={disabled} onChange={(e) => updateRow(i, 'name', e.target.value)} placeholder="name" /></td>
                   <td><input type="text" value={row.label} disabled={disabled} onChange={(e) => updateRow(i, 'label', e.target.value)} placeholder="标签" /></td>
                   <td>
-                    <select value={row.type || 'any'} disabled={disabled} onChange={(e) => updateRow(i, 'type', e.target.value)}>
+                    <AntdCompatSelect value={row.type || 'any'} disabled={disabled} onChange={(e) => updateRow(i, 'type', e.target.value)}>
                       {PORT_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-                    </select>
+                    </AntdCompatSelect>
                   </td>
                   <td><input type="text" value={row.description || ''} disabled={disabled} onChange={(e) => updateRow(i, 'description', e.target.value)} placeholder="说明" /></td>
-                  <td>{!disabled && <button type="button" onClick={() => removeRow(i)} className="port-table-remove">×</button>}</td>
+                  <td>{!disabled && <button type="button" onClick={() => removeRow(i)} className="ui-btn ui-btn-xs ui-btn-ghost port-table-remove" aria-label={`删除端口 ${row.name}`}>×</button>}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           {!disabled && (
-            <button type="button" onClick={addRow} className="port-table-add">+ 添加端口</button>
+            <button type="button" onClick={addRow} className="ui-btn ui-btn-xs ui-btn-subtle port-table-add">+  添加端口</button>
           )}
         </>
       )}
@@ -439,7 +443,7 @@ const SchemaField = React.memo(function SchemaField({ prop, value, onChange, con
   if (prop.type === 'enum') return (
     <div className={`schema-field ${disabled ? 'port-connected' : ''}`}>
       <span>{prop.label}{prop.required && <em className="required">*</em>}{portBadge}</span>
-      <select value={String(current)} disabled={disabled} onChange={(e) => onChange(prop.name, e.target.value)}>{prop.enum?.map((o: string) => <option key={o} value={o}>{o}</option>)}</select>
+      <AntdCompatSelect value={String(current)} disabled={disabled} onChange={(e) => onChange(prop.name, e.target.value)}>{prop.enum?.map((o: string) => <option key={o} value={o}>{o}</option>)}</AntdCompatSelect>
       {connectedValueDisplay}
     </div>
   );
@@ -541,14 +545,14 @@ const SchemaField = React.memo(function SchemaField({ prop, value, onChange, con
         <span>{prop.label}{prop.required && <em className="required">*</em>}{portBadge}</span>
         {disabled ? connectedValueDisplay : (
           <>
-            <select value={String(current)} onChange={(e) => {
+            <AntdCompatSelect value={String(current)} onChange={(e) => {
               onChange(prop.name, e.target.value);
               const sel = allSheets.find(s => s.sheetName === e.target.value);
               if (sel) { onChange('worksheetMode', 'byName'); }
             }}>
               <option value="">-- 选择工作表 --</option>
               {allSheets.map(s => <option key={`${s.tableId}:${s.sheetName}`} value={s.sheetName}>{s.label} ({s.rowCount}行)</option>)}
-            </select>
+            </AntdCompatSelect>
             {current && (() => {
               const sel = allSheets.find(s => s.sheetName === String(current));
               return sel ? <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>{sel.headers.join(', ')}</div> : null;
@@ -566,10 +570,10 @@ const SchemaField = React.memo(function SchemaField({ prop, value, onChange, con
         <span>{prop.label}{prop.required && <em className="required">*</em>}{portBadge}</span>
         {disabled ? connectedValueDisplay : (
           <>
-            <select value={String(current)} onChange={(e) => onChange(prop.name, e.target.value)}>
+            <AntdCompatSelect value={String(current)} onChange={(e) => onChange(prop.name, e.target.value)}>
               <option value="">-- 自动选择第一个文件 --</option>
               {allFiles.map((file) => <option key={file.id} value={file.fileName}>{file.fileName}</option>)}
-            </select>
+            </AntdCompatSelect>
             <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4 }}>
               未连线时优先从项目文件中选择；运行时仍可由输入口覆盖。
             </div>
@@ -651,7 +655,7 @@ const SchemaField = React.memo(function SchemaField({ prop, value, onChange, con
         <span>{prop.label}{prop.required && <em className="required">*</em>}{portBadge}</span>
         {disabled ? connectedValueDisplay : (
           <>
-            <select
+            <AntdCompatSelect
               value={currentSheet ? normalizeSheetKey(currentSheet.tableId, currentSheet.sheetName) : ''}
               onChange={(e) => {
                 const selected = allSheets.find((s) => normalizeSheetKey(s.tableId, s.sheetName) === e.target.value);
@@ -666,7 +670,7 @@ const SchemaField = React.memo(function SchemaField({ prop, value, onChange, con
             >
               <option value="">-- 选择 --</option>
               {allSheets.map(s => <option key={`${s.tableId}:${s.sheetName}`} value={normalizeSheetKey(s.tableId, s.sheetName)}>{s.label}</option>)}
-            </select>
+            </AntdCompatSelect>
             {currentSheet && <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>来源文件: {currentSheet.fileName}</div>}
           </>
         )}
@@ -806,7 +810,7 @@ function InputPortEditor({
     if (supportsProjectSheetInput(port) && sheetOptions.length > 0) {
       return (
         <>
-          <select
+          <AntdCompatSelect
             value={selectedSourceKey}
             onChange={(event) => {
               const selected = sheetOptions.find(({ table, sheet }) => normalizeSheetKey(table.id, sheet.name) === event.target.value);
@@ -819,7 +823,7 @@ function InputPortEditor({
                 {table.fileName} / {sheet.name}
               </option>
             ))}
-          </select>
+          </AntdCompatSelect>
           <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4 }}>
             未连线时可在这里直接选表；一旦接入上游连线，运行时优先使用连线数据。
           </div>
@@ -849,7 +853,7 @@ function InputPortEditor({
         <div className="connected-port-value">
           {sourceInfos && sourceInfos.length > 1 ? (
             <>
-              <select
+              <AntdCompatSelect
                 value={activeSource?.edgeId || ''}
                 onChange={(event) => onSelectSource(event.target.value || undefined)}
               >
@@ -858,7 +862,7 @@ function InputPortEditor({
                     {item.nodeLabel} · {item.portLabel}
                   </option>
                 ))}
-              </select>
+              </AntdCompatSelect>
               <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4 }}>
                 已连接 {sourceInfos.length} 路来源，当前执行使用下拉所选这一条。
               </div>
@@ -900,7 +904,7 @@ function InspectorPortSection({ ports, connectedPorts }: { ports: SchemaPort[]; 
       : connectedPorts.has(`in:${port.name}`) || connectedPorts.has(`out:${port.name}`)).length;
   return (
     <section className={`inspector-section port-status ${open ? 'open' : 'collapsed'}`}>
-      <button className="inspector-section-toggle" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
+      <button type="button" className="inspector-section-toggle" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
         <span><b>端口</b><em>{ports.length}</em></span>
         <small>{connectedCount} 已连接</small>
         <i>{open ? '−' : '+'}</i>
@@ -937,6 +941,7 @@ export default function CanvasPage() {
   const [edges, setEdges] = useState<Edge[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(true);
+  const [leftSidebarTab, setLeftSidebarTab] = useState<'workflows' | 'nodes'>('workflows');
   const [currentWorkflowId, setCurrentWorkflowId] = useState<string | null>(null);
   const [flowRunning, setFlowRunning] = useState(false);
   const [flowResult, setFlowResult] = useState<FlowExecutionResult | null>(null);
@@ -951,14 +956,30 @@ export default function CanvasPage() {
     nodeId: string;
     handleId: string;
   } | null>(null);
+  const [edgeInsertPicker, setEdgeInsertPicker] = useState<{ edge: Edge; context: NodeConnectionContext; clientPosition: { x: number; y: number }; flowPosition: { x: number; y: number } } | null>(null);
   const connectionStartRef = useRef<{ context: NodeConnectionContext; nodeId: string; handleId: string } | null>(null);
   const palettePointerDragRef = useRef<{ spec: FlowNodeSpec; pointerId: number; startX: number; startY: number; moved: boolean } | null>(null);
   const [paletteDragPreview, setPaletteDragPreview] = useState<{ label: string; x: number; y: number; overCanvas: boolean } | null>(null);
   const [toolbarLogs, setToolbarLogs] = useState<ToolbarLogEntry[]>([]);
   const [showToolbarLogModal, setShowToolbarLogModal] = useState(false);
+  const [showRecipeModal, setShowRecipeModal] = useState(false);
+  const [recipeId, setRecipeId] = useState<FlowRecipeId>('lookup-fill');
+  const [recipeDraft, setRecipeDraft] = useState({ name: '', tableId: '', sheetName: '', keyField: '' });
+  const [commandOpen, setCommandOpen] = useState(false);
   const nodeSequenceRef = useRef(0);
   const nodeTypes = useMemo(() => ({ formflow: FormFlowNode }), []);
   const latestToolbarLog = toolbarLogs[0] || null;
+
+  useEffect(() => {
+    const openPaletteShortcut = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.matches('input, textarea, select, [contenteditable="true"]') || target?.closest('.monaco-editor')) return;
+      if (event.key === '/') { event.preventDefault(); setPaletteOpen(true); setLeftSidebarTab('nodes'); setCommandOpen(true); }
+      else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { setPaletteOpen(true); setLeftSidebarTab('nodes'); }
+    };
+    window.addEventListener('keydown', openPaletteShortcut);
+    return () => window.removeEventListener('keydown', openPaletteShortcut);
+  }, []);
 
   useEffect(() => {
     loadNodeRegistry().then((reg) => {
@@ -1032,7 +1053,8 @@ export default function CanvasPage() {
       setNodes((prev) => syncConnectedPorts(prev, next));
       return next;
     });
-  }, [isValidConnection, syncConnectedPorts]);
+    recordAuthoringEvent('manual_edge_added', { source: connection.source, target: connection.target }, project?.config.id);
+  }, [isValidConnection, syncConnectedPorts, project?.config.id]);
 
   const addSpecNode = useCallback((spec: FlowNodeSpec, requestedPosition?: { x: number; y: number }) => {
     const sequence = nodeSequenceRef.current++;
@@ -1042,8 +1064,9 @@ export default function CanvasPage() {
     setNodes((current) => [...current, node]);
     setSelectedNodeId(node.id);
     window.dispatchEvent(new CustomEvent('formflow:node-used', { detail: spec.id }));
+    recordAuthoringEvent('manual_control_added', { specId: spec.id }, project?.config.id);
     return node;
-  }, [nodes.length, reactFlow]);
+  }, [nodes.length, reactFlow, project?.config.id]);
 
   const onConnectStart = useCallback((_event: MouseEvent | TouchEvent, params: { nodeId: string | null; handleId: string | null; handleType: 'source' | 'target' | null }) => {
     if (!params.nodeId || !params.handleId || !params.handleType || !registry) return;
@@ -1084,6 +1107,42 @@ export default function CanvasPage() {
     });
     setQuickPicker(null);
   }, [quickPicker, addSpecNode, syncConnectedPorts]);
+
+  const openEdgeInsertPicker = useCallback((event: React.MouseEvent, edgeValue: Edge) => {
+    if (!registry) return;
+    const sourceNode = nodes.find((item) => item.id === edgeValue.source);
+    const sourceSpec = sourceNode && resolveCanvasNodeSpec(registry, sourceNode.data.specId);
+    const sourcePortName = String(edgeValue.sourceHandle || '').replace(/^out:/, '');
+    const sourcePort = getNodeEffectivePorts(sourceSpec, resolveNodeProperties(sourceSpec, sourceNode?.data.propertiesJson)).find((port) => port.name === sourcePortName && (port.direction === 'output' || port.direction === 'both'));
+    if (!sourcePort) return;
+    const clientPosition = { x: event.clientX, y: event.clientY };
+    setEdgeInsertPicker({ edge: edgeValue, context: { direction: 'from-output', port: sourcePort, nodeId: edgeValue.source }, clientPosition, flowPosition: reactFlow.screenToFlowPosition(clientPosition) });
+  }, [registry, nodes, reactFlow]);
+
+  const chooseEdgeInsertNode = useCallback((spec: FlowNodeSpec, inputPort: SchemaPort) => {
+    if (!edgeInsertPicker || !registry) return;
+    const targetNode = nodes.find((item) => item.id === edgeInsertPicker.edge.target);
+    const targetSpec = targetNode && resolveCanvasNodeSpec(registry, targetNode.data.specId);
+    const targetPortName = String(edgeInsertPicker.edge.targetHandle || '').replace(/^in:/, '');
+    const targetPort = getNodeEffectivePorts(targetSpec, resolveNodeProperties(targetSpec, targetNode?.data.propertiesJson)).find((port) => port.name === targetPortName && (port.direction === 'input' || port.direction === 'both'));
+    if (!targetPort) return;
+    const outputPort = findBestCompatiblePort(spec, { direction: 'to-input', port: targetPort });
+    if (!outputPort) return;
+    const inserted = addSpecNode(spec, edgeInsertPicker.flowPosition);
+    const first = createQuickNodeConnection(edgeInsertPicker.context, edgeInsertPicker.edge.source, String(edgeInsertPicker.edge.sourceHandle), inserted.id, inputPort);
+    const second = createQuickNodeConnection({ direction: 'to-input', port: targetPort }, edgeInsertPicker.edge.target, String(edgeInsertPicker.edge.targetHandle), inserted.id, outputPort);
+    setEdges((current) => {
+      const withoutOriginal = current.filter((item) => item.id !== edgeInsertPicker.edge.id);
+      const next = dedupeEdges([
+        ...withoutOriginal,
+        { ...first, id: `${edgeInsertPicker.edge.id}:in`, animated: true, type: 'smoothstep' },
+        { ...second, id: `${edgeInsertPicker.edge.id}:out`, animated: true, type: 'smoothstep' },
+      ] as Edge[]);
+      setNodes((nodeList) => syncConnectedPorts(nodeList, next));
+      return next;
+    });
+    setEdgeInsertPicker(null);
+  }, [edgeInsertPicker, registry, nodes, addSpecNode, syncConnectedPorts]);
 
   const formatLayoutNotice = useCallback((diagnostics: LayoutDiagnostics, count: number) => {
     const overlapDelta = Math.max(0, diagnostics.overlapCountBefore - diagnostics.overlapCountAfter);
@@ -1259,6 +1318,118 @@ export default function CanvasPage() {
       setCurrentWorkflowId(wf.id);
     }
   }, [nodes, edges, currentWorkflowId, project, addWorkflow, updateWorkflow]);
+
+  const createBlankWorkflow = useCallback(() => {
+    if (!registry) return;
+    const now = new Date().toISOString();
+    const scaffold = createWorkflowIoScaffold();
+    const workflow = {
+      id: `wf_${Date.now()}`,
+      name: `流程 ${(project?.workflows.length || 0) + 1}`,
+      description: '',
+      nodes: scaffold.nodes,
+      edges: scaffold.edges,
+      versions: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+    addWorkflow(workflow);
+    setCurrentWorkflowId(workflow.id);
+    const nextNodes = scaffold.nodes.map((node) => {
+      const spec = resolveCanvasNodeSpec(registry, node.specId);
+      if (!spec) return null;
+      return {
+        id: node.id,
+        type: 'formflow',
+        position: node.position,
+        data: {
+          ...nodeDataFromSpec(spec),
+          propertiesJson: typeof node.data?.propertiesJson === 'string' ? node.data.propertiesJson : '{}',
+        },
+      } as FlowNode;
+    }).filter(Boolean) as FlowNode[];
+    setNodes(nextNodes);
+    setEdges([]);
+    setSelectedNodeId(nextNodes[0]?.id || null);
+    window.requestAnimationFrame(() => reactFlow.fitView({ padding: 0.2, duration: 250 }));
+  }, [registry, project?.workflows.length, addWorkflow, reactFlow]);
+
+  const insertRecipe = useCallback(() => {
+    if (!registry || validateFlowRecipeParams(recipeId, recipeDraft).length) return;
+    const workflow = createFlowRecipe(recipeId, recipeDraft);
+    const recipeNodes = workflow.nodes.map((item) => {
+      const spec = resolveCanvasNodeSpec(registry, item.specId);
+      if (!spec) return null;
+      return {
+        id: item.id,
+        type: 'formflow',
+        position: item.position,
+        data: { ...nodeDataFromSpec(spec), propertiesJson: String(item.data.propertiesJson || '{}') },
+      } as FlowNode;
+    }).filter(Boolean) as FlowNode[];
+    const recipeEdges = workflow.edges.map((item) => ({ ...item, animated: true, type: 'smoothstep' })) as Edge[];
+    addWorkflow(workflow);
+    setCurrentWorkflowId(workflow.id);
+    setNodes(syncConnectedPorts(recipeNodes, recipeEdges));
+    setEdges(recipeEdges);
+    setSelectedNodeId(recipeNodes[0]?.id || null);
+    setShowRecipeModal(false);
+    window.requestAnimationFrame(() => reactFlow.fitView({ padding: 0.2, duration: 250 }));
+  }, [registry, recipeId, recipeDraft, addWorkflow, syncConnectedPorts, reactFlow]);
+
+  const mapSelectedNodePorts = useCallback(() => {
+    if (!registry) return;
+    const selected = nodes.filter((item) => item.selected);
+    if (selected.length !== 2) return;
+    const [first, second] = [...selected].sort((a, b) => a.position.x - b.position.x);
+    const firstSpec = resolveCanvasNodeSpec(registry, first.data.specId);
+    const secondSpec = resolveCanvasNodeSpec(registry, second.data.specId);
+    const outputs = getNodeEffectivePorts(firstSpec, resolveNodeProperties(firstSpec, first.data.propertiesJson)).filter((port) => port.direction === 'output' || port.direction === 'both');
+    const inputs = getNodeEffectivePorts(secondSpec, resolveNodeProperties(secondSpec, second.data.propertiesJson)).filter((port) => port.direction === 'input' || port.direction === 'both');
+    const additions = outputs.flatMap((output) => {
+      const input = inputs.find((candidate) => candidate.name === output.name && portTypesCompatible(output.type, candidate.type));
+      return input ? [{ id: `auto:${first.id}:${output.name}:${second.id}`, source: first.id, target: second.id, sourceHandle: `out:${output.name}`, targetHandle: `in:${input.name}`, animated: true, type: 'smoothstep' }] : [];
+    });
+    setEdges((current) => {
+      const next = dedupeEdges([...current, ...additions] as Edge[]);
+      setNodes((nodeList) => syncConnectedPorts(nodeList, next));
+      return next;
+    });
+  }, [registry, nodes, syncConnectedPorts]);
+
+  const combineSelectedAsSubflow = useCallback(() => {
+    const selected = nodes.filter((item) => item.selected);
+    if (selected.length < 2) return;
+    const ids = new Set(selected.map((item) => item.id));
+    const now = new Date().toISOString();
+    const selectedWorkflow = ensureWorkflowIo({
+      id: `wf_subflow_${Date.now()}`,
+      name: `子流程 ${project?.workflows.length ? project.workflows.length + 1 : 1}`,
+      description: `由画布中选中的 ${selected.length} 个节点组合`,
+      nodes: selected.map((item) => ({ id: item.id, type: item.type || 'formflow', specId: item.data.specId, position: item.position, data: item.data })),
+      edges: edges.filter((item) => ids.has(item.source) && ids.has(item.target)).map((item) => ({ id: item.id, source: item.source, target: item.target, sourceHandle: item.sourceHandle || undefined, targetHandle: item.targetHandle || undefined })),
+      versions: [], createdAt: now, updatedAt: now,
+    }).workflow;
+    addWorkflow(selectedWorkflow);
+    appendToolbarLog({ source: 'save', level: 'success', message: `已将 ${selected.length} 个节点组合为“${selectedWorkflow.name}”` });
+  }, [nodes, edges, project?.workflows.length, addWorkflow, appendToolbarLog]);
+
+  const duplicateSelectedNodes = useCallback((mode: 'config' | 'replace-source' | 'reference') => {
+    const selected = nodes.filter((item) => item.selected);
+    if (!selected.length) return;
+    const stamp = Date.now();
+    const idMap = new Map(selected.map((item, index) => [item.id, `${item.id}:copy:${stamp}:${index}`]));
+    const copies = selected.map((item) => {
+      let properties = resolveNodeProperties(resolveCanvasNodeSpec(registry, item.data.specId), item.data.propertiesJson);
+      if (mode === 'replace-source') properties = Object.fromEntries(Object.entries(properties).filter(([key]) => !['tableId', 'sheetName', 'writeBackTableId', 'writeBackSheetName'].includes(key)));
+      if (mode === 'reference') properties = { __referenceNodeId: item.id };
+      return { ...item, id: idMap.get(item.id)!, selected: false, position: { x: item.position.x + 36, y: item.position.y + 36 }, data: { ...item.data, propertiesJson: JSON.stringify(properties), outputs: undefined, error: undefined } };
+    });
+    const copiedEdges = edges.filter((item) => idMap.has(item.source) && idMap.has(item.target)).map((item, index) => ({ ...item, id: `${item.id}:copy:${stamp}:${index}`, source: idMap.get(item.source)!, target: idMap.get(item.target)! }));
+    setNodes((current) => [...current, ...copies]);
+    setEdges((current) => dedupeEdges([...current, ...copiedEdges]));
+    setSelectedNodeId(copies[0]?.id || null);
+  }, [nodes, edges, registry]);
 
   const exportAsJson = useCallback(() => {
     const data = { nodes: nodes.map(n => ({ id: n.id, specId: n.data.specId, position: n.position, data: n.data })), edges: edges.map(e => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle })) };
@@ -1490,41 +1661,86 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
   return (
     <div className="canvas-layout" onPointerMove={movePalettePointerDrag} onPointerUp={finishPalettePointerDrag} onPointerCancel={cancelPalettePointerDrag}>
       {paletteOpen && (
-        <NodePalette
-          specs={registry.specs}
-          tables={project?.srcTable || []}
-          selectedSpec={selectedNode ? resolveCanvasNodeSpec(registry, selectedNode.data.specId) : undefined}
-          onAdd={addSpecNode}
-          onPointerDragStart={startPalettePointerDrag}
-          onClose={() => setPaletteOpen(false)}
-        />
+        <aside className="canvas-left-sidebar" aria-label="流程编排左侧栏">
+          <div className="canvas-left-tabs" role="tablist" aria-label="流程编排左侧栏视图">
+            <button type="button" role="tab" aria-selected={leftSidebarTab === 'workflows'} className={leftSidebarTab === 'workflows' ? 'active' : ''} onClick={() => setLeftSidebarTab('workflows')}>流程实例</button>
+            <button type="button" role="tab" aria-selected={leftSidebarTab === 'nodes'} className={leftSidebarTab === 'nodes' ? 'active' : ''} onClick={() => setLeftSidebarTab('nodes')}>节点库</button>
+            <button type="button" className="canvas-left-close" aria-label="收起左侧栏" title="收起左侧栏" onClick={() => setPaletteOpen(false)}>×</button>
+          </div>
+          <div className="canvas-left-panel">
+            {leftSidebarTab === 'workflows' ? (
+              <div className="workflow-instance-panel" role="tabpanel" aria-label="流程实例">
+                <div className="workflow-instance-header">
+                  <span>流程实例 <small>{project?.workflows.length || 0}</small></span>
+                  <div>
+                    <button type="button" onClick={createBlankWorkflow}>+ 新建</button>
+                    <button type="button" onClick={() => setShowRecipeModal(true)}>配方</button>
+                  </div>
+                </div>
+                <div className="workflow-instance-list" data-testid="workflow-instance-list">
+                  {(project?.workflows || []).map((workflow) => (
+                    <button
+                      type="button"
+                      key={workflow.id}
+                      className={`workflow-instance-item ${currentWorkflowId === workflow.id ? 'active' : ''}`}
+                      aria-current={currentWorkflowId === workflow.id ? 'true' : undefined}
+                      onClick={() => loadWorkflow(workflow.id)}
+                    >
+                      <span className="workflow-instance-icon" aria-hidden="true">⚡</span>
+                      <span className="workflow-instance-main">
+                        <strong>{workflow.name}</strong>
+                        <small>{workflow.nodes?.length || 0} 个节点 · {workflow.edges?.length || 0} 条连线</small>
+                      </span>
+                    </button>
+                  ))}
+                  {(project?.workflows || []).length === 0 && <div className="workflow-instance-empty">暂无流程实例</div>}
+                </div>
+              </div>
+            ) : (
+              <div className="canvas-node-library-panel" role="tabpanel" aria-label="节点库">
+                <NodePalette
+                  specs={registry.specs}
+                  tables={project?.srcTable || []}
+                  selectedSpec={selectedNode ? resolveCanvasNodeSpec(registry, selectedNode.data.specId) : undefined}
+                  onAdd={addSpecNode}
+                  onPointerDragStart={startPalettePointerDrag}
+                  onClose={() => setPaletteOpen(false)}
+                />
+              </div>
+            )}
+          </div>
+        </aside>
       )}
 
-      {!paletteOpen && <button className="palette-toggle" onClick={() => setPaletteOpen(true)}>☰</button>}
+      {!paletteOpen && <button type="button" className="palette-toggle" onClick={() => setPaletteOpen(true)} aria-label="展开流程编排左侧栏">☰</button>}
 
       <section className="canvas-flow">
         <div className="canvas-toolbar">
           <span>流程: {project?.workflows.length || 0} 个</span>
           {currentWorkflowId && <span className="workflow-id">当前: {project?.workflows.find((w) => w.id === currentWorkflowId)?.name}</span>}
-          <button onClick={saveWorkflow}>保存流程</button>
-          <button onClick={handleAutoLayout} disabled={nodes.length === 0}>自动整理流程</button>
-          <select value={currentWorkflowId || ''} onChange={(e) => e.target.value && loadWorkflow(e.target.value)}>
+          <button type="button" onClick={saveWorkflow}>保存流程</button>
+          <button type="button" onClick={() => setShowRecipeModal(true)}>从配方创建</button>
+          <button type="button" onClick={handleAutoLayout} disabled={nodes.length === 0}>自动整理流程</button>
+          {nodes.filter((item) => item.selected).length === 2 && <button type="button" onClick={mapSelectedNodePorts}>自动映射端口</button>}
+          {nodes.filter((item) => item.selected).length >= 2 && <button type="button" onClick={combineSelectedAsSubflow}>组合为子流程</button>}
+          {nodes.some((item) => item.selected) && <AntdCompatSelect defaultValue="" onChange={(event) => { if (event.target.value) duplicateSelectedNodes(event.target.value as 'config' | 'replace-source' | 'reference'); event.target.value = ''; }}><option value="" disabled>复制节点…</option><option value="config">复制配置</option><option value="replace-source">复制并替换数据源</option><option value="reference">复制为引用</option></AntdCompatSelect>}
+          <AntdCompatSelect value={currentWorkflowId || ''} onChange={(e) => e.target.value && loadWorkflow(e.target.value)}>
             <option value="" disabled>加载流程…</option>
             {(project?.workflows || []).map((wf) => <option key={wf.id} value={wf.id}>{wf.name}</option>)}
-          </select>
-          <button className="primary" onClick={runFlow} disabled={flowRunning || nodes.length === 0}>
+          </AntdCompatSelect>
+          <button type="button" className="primary" onClick={runFlow} disabled={flowRunning || nodes.length === 0}>
             {flowRunning ? '执行中…' : '▶ 运行流程'}
           </button>
-          <select onChange={(e) => { if (e.target.value === 'json') exportAsJson(); else if (e.target.value === 'html') exportAsHtml(); e.target.value = ''; }} style={{ fontSize: 11, padding: '2px 6px' }}>
+          <AntdCompatSelect defaultValue="" onChange={(e) => { if (e.target.value === 'json') exportAsJson(); else if (e.target.value === 'html') exportAsHtml(); e.target.value = ''; }} style={{ fontSize: 11 }}>
             <option value="">导出…</option>
             <option value="json">JSON</option>
             <option value="html">HTML</option>
-          </select>
-          <button onClick={stepFlow} disabled={flowRunning || nodes.length === 0} title="单步执行" className="ui-btn ui-btn-xs">
+          </AntdCompatSelect>
+          <button type="button" onClick={stepFlow} disabled={flowRunning || nodes.length === 0} title="单步执行" className="ui-btn ui-btn-xs">
             ⏭ 单步
           </button>
           {stepResults.size > 0 && (
-            <button onClick={resetDebug} className="ui-btn ui-btn-danger ui-btn-xs">重置</button>
+            <button type="button" onClick={resetDebug} className="ui-btn ui-btn-danger ui-btn-xs">重置</button>
           )}
           {stepResults.size > 0 && (
             <span style={{ fontSize: 11, color: 'var(--muted)' }}>
@@ -1560,6 +1776,7 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onEdgeDoubleClick={openEdgeInsertPicker}
           onConnectStart={onConnectStart}
           onConnectEnd={onConnectEnd}
           isValidConnection={isValidConnection}
@@ -1577,6 +1794,35 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
           }} /><Controls />
         </ReactFlow>
       </section>
+      <Modal open={showRecipeModal} onClose={() => setShowRecipeModal(false)} width="min(680px, 92vw)">
+        <ModalHeader title="从流程配方创建" onClose={() => setShowRecipeModal(false)} />
+        <div className="modal-body">
+          <div className="schema-fields">
+            <label className="prop-field"><span>业务配方</span><AntdCompatSelect value={recipeId} onChange={(event) => setRecipeId(event.target.value as FlowRecipeId)}>{FLOW_RECIPES.map((recipe) => <option key={recipe.id} value={recipe.id}>{recipe.name}</option>)}</AntdCompatSelect></label>
+            <p style={{ color: 'var(--muted)', margin: 0 }}>{FLOW_RECIPES.find((recipe) => recipe.id === recipeId)?.description}</p>
+            <label className="prop-field"><span>流程名称</span><input value={recipeDraft.name} onChange={(event) => setRecipeDraft((current) => ({ ...current, name: event.target.value }))} placeholder="留空使用配方名称" /></label>
+            {FLOW_RECIPES.find((recipe) => recipe.id === recipeId)?.required.includes('tableId') && <label className="prop-field"><span>数据表 *</span><AntdCompatSelect value={recipeDraft.tableId} onChange={(event) => setRecipeDraft((current) => ({ ...current, tableId: event.target.value, sheetName: '' }))}><option value="">请选择</option>{(project?.srcTable || []).map((table) => <option key={table.id} value={table.id}>{table.fileName}</option>)}</AntdCompatSelect></label>}
+            {FLOW_RECIPES.find((recipe) => recipe.id === recipeId)?.required.includes('sheetName') && <label className="prop-field"><span>工作表 *</span><AntdCompatSelect value={recipeDraft.sheetName} onChange={(event) => setRecipeDraft((current) => ({ ...current, sheetName: event.target.value }))}><option value="">请选择</option>{(project?.srcTable.find((table) => table.id === recipeDraft.tableId)?.sheets || []).map((sheet) => <option key={sheet.name} value={sheet.name}>{sheet.name}</option>)}</AntdCompatSelect></label>}
+            {FLOW_RECIPES.find((recipe) => recipe.id === recipeId)?.required.includes('keyField') && <label className="prop-field"><span>主键字段 *</span><AntdCompatSelect value={recipeDraft.keyField} onChange={(event) => setRecipeDraft((current) => ({ ...current, keyField: event.target.value }))}><option value="">请选择</option>{(project?.srcTable.find((table) => table.id === recipeDraft.tableId)?.sheets.find((sheet) => sheet.name === recipeDraft.sheetName)?.headers || []).map((header) => <option key={header} value={header}>{header}</option>)}</AntdCompatSelect></label>}
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button type="button" onClick={() => setShowRecipeModal(false)}>取消</button>
+          <button type="button" className="primary" disabled={validateFlowRecipeParams(recipeId, recipeDraft).length > 0} onClick={insertRecipe}>创建并打开</button>
+        </div>
+      </Modal>
+      <Modal open={commandOpen} onClose={() => setCommandOpen(false)} width="min(520px, 90vw)">
+        <ModalHeader title="画布命令" onClose={() => setCommandOpen(false)} />
+        <div className="modal-body" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <button type="button" className="ui-btn" onClick={() => { setPaletteOpen(true); setCommandOpen(false); }}>添加节点 / 搜索</button>
+          <button type="button" className="ui-btn" onClick={() => { setShowRecipeModal(true); setCommandOpen(false); }}>添加流程配方</button>
+          <button type="button" className="ui-btn" onClick={() => { void runFlow(); setCommandOpen(false); }}>运行整个流程</button>
+          <button type="button" className="ui-btn" disabled={!selectedNode} onClick={() => { if (selectedNode) void runNode(selectedNode); setCommandOpen(false); }}>运行到当前节点</button>
+          <button type="button" className="ui-btn" onClick={() => { handleAutoLayout(); setCommandOpen(false); }}>自动整理</button>
+          <button type="button" className="ui-btn" disabled={nodes.filter((item) => item.selected).length < 2} onClick={() => { combineSelectedAsSubflow(); setCommandOpen(false); }}>抽取为子流程</button>
+          <button type="button" className="ui-btn" disabled={!selectedNode?.data.outputs} onClick={() => { if (selectedNode?.data.outputs) setExpandedOutput({ key: `node:${selectedNode.id}`, type: 'object', label: `${selectedNode.data.label} 输出`, value: selectedNode.data.outputs }); setCommandOpen(false); }}>查看当前输出</button>
+        </div>
+      </Modal>
       <Modal
         open={showToolbarLogModal}
         onClose={() => setShowToolbarLogModal(false)}
@@ -1650,21 +1896,21 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
                   </div>
                 </section>
               )}
-              <div className="inspector-run-bar"><button className="primary" onClick={() => runNode(selectedNode)} disabled={isRemovedNode}>从最上游运行到此节点</button></div>
+              <div className="inspector-run-bar"><button type="button" className="ui-btn ui-btn-sm ui-btn-primary" onClick={() => runNode(selectedNode)} disabled={isRemovedNode}>从最上游运行到此节点</button></div>
               {inspectorPorts.length > 0 && <InspectorPortSection key={selectedNode.id} ports={inspectorPorts} connectedPorts={connectedPorts} />}
 
               <section className="inspector-section schema-config">
                 <div className="inspector-section-title"><h4>重试配置</h4></div>
-                <div className="schema-fields">
+                <div className="schema-fields retry-config-fields">
                   <label className="prop-field">
                     <span>重试次数</span>
-                    <input type="number" min={0} max={10} value={Number(currentProps.retryCount || 0)} onChange={(e) => updateProp('retryCount', Math.max(0, Math.min(10, Number(e.target.value))))} style={{ width: 80 }} />
+                    <input type="number" min={0} max={10} value={Number(currentProps.retryCount || 0)} onChange={(e) => updateProp('retryCount', Math.max(0, Math.min(10, Number(e.target.value))))} />
                   </label>
                   <label className="prop-field">
                     <span>重试间隔 (ms)</span>
-                    <input type="number" min={0} step={100} value={Number(currentProps.retryDelayMs || 0)} onChange={(e) => updateProp('retryDelayMs', Math.max(0, Number(e.target.value)))} style={{ width: 100 }} />
+                    <input type="number" min={0} step={100} value={Number(currentProps.retryDelayMs || 0)} onChange={(e) => updateProp('retryDelayMs', Math.max(0, Number(e.target.value)))} />
                   </label>
-                  <label className="prop-field">
+                  <label className="prop-field retry-config-match">
                     <span>匹配错误 (留空=全部)</span>
                     <input type="text" value={String(currentProps.retryOn || '')} onChange={(e) => updateProp('retryOn', e.target.value)} placeholder="留空则匹配所有错误" />
                   </label>
@@ -1677,7 +1923,7 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
                   <div className="data-preview-card">
                     <div><b>{selectedSheetName}</b><span>{matchedSheet.fileName} · {matchedSheet.rowCount.toLocaleString()}行 × {matchedSheet.colCount}列</span></div>
                     <div className="data-preview-fields">{matchedSheet.headers.slice(0, 8).map((header) => <span key={header}>{header}</span>)}{matchedSheet.headers.length > 8 && <span>+{matchedSheet.headers.length - 8}</span>}</div>
-                    <button onClick={() => setExpandedOutput({
+                    <button type="button" onClick={() => setExpandedOutput({
                       key: `source:${matchedSheet.tableId}:${matchedSheet.name}`,
                       type: 'worksheet',
                       label: `${matchedSheet.fileName} / ${matchedSheet.name}`,
@@ -1692,7 +1938,7 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
                   <div className="inspector-section-title"><h4>可用数据源</h4><span>{srcTables.reduce((sum, table) => sum + table.sheets.length, 0)} 个表</span></div>
                   <div className="data-source-list">
                     {srcTables.flatMap((table) => table.sheets.map((sheet) => ({ table, sheet }))).map(({ table, sheet }) => (
-                      <button key={`${table.id}:${sheet.name}`} className="data-source-row" onClick={() => setExpandedOutput({
+                      <button type="button" key={`${table.id}:${sheet.name}`} className="data-source-row" onClick={() => setExpandedOutput({
                         key: `source:${table.id}:${sheet.name}`,
                         type: 'worksheet',
                         label: `${table.fileName} / ${sheet.name}`,
@@ -1727,8 +1973,8 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
                           <div className="output-port-row-head">
                             <span className="output-port-name">{portDef?.label || key}</span>
                             <span className="output-port-type">{portType}</span>
-                            {portType === 'file-data' && (typeof val === 'string' || val instanceof ArrayBuffer || ArrayBuffer.isView(val) || val instanceof Blob) && <button className="output-download-btn" title="下载文件" onClick={() => downloadFileData(val, fileName, mimeType)}>↓</button>}
-                            <button className="output-expand-btn" title="弹窗预览" onClick={() => setExpandedOutput({ key, type: portType, value: val, label: portDef?.label || key, fileName, mimeType })}>⤢</button>
+                            {portType === 'file-data' && (typeof val === 'string' || val instanceof ArrayBuffer || ArrayBuffer.isView(val) || val instanceof Blob) && <button type="button" className="output-download-btn" title="下载文件" onClick={() => downloadFileData(val, fileName, mimeType)}>↓</button>}
+                            <button type="button" className="output-expand-btn" title="弹窗预览" onClick={() => setExpandedOutput({ key, type: portType, value: val, label: portDef?.label || key, fileName, mimeType })}>⤢</button>
                           </div>
                           <div className="output-port-value"><TypeDisplayer type={portType} value={val} compact /></div>
                         </div>
@@ -1759,6 +2005,16 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
           clientPosition={quickPicker.clientPosition}
           onChoose={chooseQuickNode}
           onClose={() => setQuickPicker(null)}
+        />
+      )}
+
+      {edgeInsertPicker && (
+        <QuickNodePicker
+          specs={registry.specs}
+          context={edgeInsertPicker.context}
+          clientPosition={edgeInsertPicker.clientPosition}
+          onChoose={chooseEdgeInsertNode}
+          onClose={() => setEdgeInsertPicker(null)}
         />
       )}
 

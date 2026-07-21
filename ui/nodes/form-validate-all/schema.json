@@ -1,0 +1,11 @@
+{
+  "id": "form:validate-all", "label": "表单完整校验", "description": "一次检查多个必填字段并汇总错误", "category": "高阶 · 表单", "kind": "generic", "macro": { "version": 1, "expansion": "runtime-composite", "debugMapping": "node-output", "snapshot": [] },
+  "properties": [{ "name": "requiredFields", "label": "必填字段", "type": "array", "default": [] }, { "name": "rules", "label": "类型、范围与正则规则", "type": "json", "default": {} }],
+  "ports": [
+    { "name": "formData", "label": "表单数据", "type": "object", "direction": "input", "required": true },
+    { "name": "rules", "label": "动态规则", "type": "object", "direction": "input" },
+    { "name": "valid", "label": "是否通过", "type": "boolean", "direction": "output" },
+    { "name": "missingFields", "label": "缺失字段", "type": "array", "direction": "output" },
+    { "name": "errors", "label": "错误汇总", "type": "object", "direction": "output" }
+  ], "keywords": ["表单校验", "必填", "validate all"]
+}

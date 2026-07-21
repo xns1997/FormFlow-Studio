@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package formflow.llm.v1;
+
+service LlmProvider {
+  rpc ListModels(ListModelsRequest) returns (ListModelsResponse);
+  rpc Chat(ChatRequest) returns (ChatResponse);
+  rpc ChatStream(ChatRequest) returns (stream StreamEvent);
+  rpc Embed(EmbedRequest) returns (EmbedResponse);
+  rpc StartAgentRun(AgentRunRequest) returns (AgentRunResponse);
+  rpc StreamAgentRun(AgentRunRequest) returns (stream StreamEvent);
+  rpc ResumeAgentRun(ResumeAgentRequest) returns (AgentRunResponse);
+  rpc GetAgentRun(GetAgentRunRequest) returns (AgentRunResponse);
+  rpc ListPlugins(ListPluginsRequest) returns (ListPluginsResponse);
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
+
+message ProviderConnection {
+  string provider = 1;
+  string base_url = 2;
+  string api_key = 3;
+  string model = 4;
+  int32 timeout_ms = 5;
+  map<string, string> headers = 6;
+}
+
+message Message {
+  string role = 1;
+  string content = 2;
+  string name = 3;
+  string tool_call_id = 4;
+}
+
+message ListModelsRequest { ProviderConnection connection = 1; string request_id = 2; }
+message ModelInfo { string id = 1; string provider = 2; repeated string capabilities = 3; }
+message ListModelsResponse { repeated ModelInfo models = 1; string request_id = 2; }
+
+message ChatRequest {
+  ProviderConnection connection = 1;
+  repeated Message messages = 2;
+  double temperature = 3;
+  int32 max_tokens = 4;
+  string tools_json = 5;
+  string response_schema_json = 6;
+  string request_id = 7;
+}
+
+message ChatResponse {
+  string content = 1;
+  string model = 2;
+  string usage_json = 3;
+  string tool_calls_json = 4;
+  string structured_json = 5;
+  string request_id = 6;
+}
+
+message StreamEvent { string type = 1; string data_json = 2; string request_id = 3; string run_id = 4; }
+
+message EmbedRequest { ProviderConnection connection = 1; repeated string input = 2; string request_id = 3; }
+message Embedding { repeated float values = 1; int32 index = 2; }
+message EmbedResponse { repeated Embedding embeddings = 1; string model = 2; string usage_json = 3; string request_id = 4; }
+
+message AgentRunRequest {
+  string definition_json = 1;
+  string input_json = 2;
+  ProviderConnection connection = 3;
+  string request_id = 4;
+  string tenant_id = 5;
+  string project_id = 6;
+}
+
+message ResumeAgentRequest { string run_id = 1; string tool_results_json = 2; string request_id = 3; ProviderConnection connection = 4; }
+message GetAgentRunRequest { string run_id = 1; string request_id = 2; }
+message AgentRunResponse { string run_id = 1; string status = 2; string state_json = 3; string events_json = 4; string request_id = 5; string tenant_id = 6; string project_id = 7; }
+
+message ListPluginsRequest { string request_id = 1; }
+message PluginInfo { string id = 1; string version = 2; string description = 3; bool enabled = 4; }
+message ListPluginsResponse { repeated PluginInfo plugins = 1; string request_id = 2; }
+message HealthRequest {}
+message HealthResponse {
+  string status = 1;
+  string version = 2;
+  reserved 3;
+  bool checkpoint_store_ready = 4;
+  string checkpoint_store = 5;
+}

@@ -17,7 +17,7 @@ export function normalizeNodePackageId(id: string): string {
 }
 
 export function isRegistryNodePackage(schema: NodeSchemaModule): boolean {
-  return typeof schema.id === 'string' && /^(func-|behavior[-:]|generic[-:]|ml[-:])/.test(schema.id);
+  return typeof schema.id === 'string' && /^(func-|behavior[-:]|generic[-:]|ml[-:]|form:|data:|logic:|flow:)/.test(schema.id);
 }
 
 export function discoverNodePackages(
@@ -41,7 +41,7 @@ export function nodePackageToSpec(pkg: NodePackage): FlowNodeSpec {
     label: schema.label,
     description: schema.description,
     category: schema.category,
-    kind: id.startsWith('behavior-') || id.startsWith('behavior:') ? 'behavior' : (schema.kind || 'generic'),
+    kind: id.startsWith('behavior-') || id.startsWith('behavior:') || id.startsWith('form:') ? 'behavior' : (schema.kind || 'generic'),
     properties: schema.properties || [],
     ports: schema.ports || [],
     keywords: schema.keywords || [],

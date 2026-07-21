@@ -107,12 +107,41 @@ registerExecutor('ml:hypothesis-test', async (ctx) => {
   return callML('hypothesis_test', { data: dataCheck.normalized, field1: properties.field1 || '', field2: properties.field2 || null, test_type: properties.test_type || 'ttest' });
 });
 
-registerExecutor('ml:time-series', async (ctx) => {
+async function executeTimeSeries(ctx: NodeExecContext) {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
-  if (!dataCheck.valid) return { error: `数据格式错误: ${dataCheck.error}` };
-  return callML('time_series', { data: dataCheck.normalized, field: properties.field || '', periods: properties.periods ?? 10 });
-});
+  if (!dataCheck.valid) return { moving_average: [], trend_slope: 0, error: `数据格式错误: ${dataCheck.error}` };
+  const rows = dataCheck.normalized as Record<string, unknown>[];
+  const field = String(properties.field || '');
+  const periods = Math.max(1, Math.trunc(Number(properties.periods) || 10));
+  const values = rows.map((row) => Number(row[field])).filter(Number.isFinite);
+  const localResult = () => {
+    const moving_average = values.map((_, index) => {
+      const window = values.slice(Math.max(0, index - periods + 1), index + 1);
+      return window.reduce((sum, value) => sum + value, 0) / Math.max(1, window.length);
+    });
+    const meanX = values.length > 0 ? (values.length - 1) / 2 : 0;
+    const meanY = values.length > 0 ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+    const denominator = values.reduce((sum, _value, index) => sum + (index - meanX) ** 2, 0);
+    const trend_slope = denominator === 0
+      ? 0
+      : values.reduce((sum, value, index) => sum + (index - meanX) * (value - meanY), 0) / denominator;
+    return { moving_average, trend_slope, source: 'local-fallback' };
+  };
+  try {
+    const remote = await callML('time_series', { data: rows, field, periods });
+    if (Array.isArray(remote?.moving_average) && Number.isFinite(Number(remote?.trend_slope))) {
+      return { ...remote, trend_slope: Number(remote.trend_slope), source: remote.source || 'ml-service' };
+    }
+    return { ...localResult(), warning: String(remote?.error || '外部 ML 服务未返回完整时间序列结果') };
+  } catch (error) {
+    return { ...localResult(), warning: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+// Keep the historical runtime namespace and the schema ID executable.
+registerExecutor('ml:time-series', executeTimeSeries);
+registerExecutor('ml-time-series', executeTimeSeries);
 
 // ── 挖掘 ────────────────────────────────────────────
 

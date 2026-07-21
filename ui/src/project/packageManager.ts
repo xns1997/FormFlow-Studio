@@ -1,4 +1,4 @@
-// 项目包管理器 - 支持本地目录和 ZIP 两种方式
+// 项目包管理器 - 外部统一使用 .formflow 单文件，内部采用 ZIP 容器
 
 import type {
   ProjectStructure, ProjectPackage, FormIndex, DataIndex,
@@ -50,7 +50,7 @@ async function ensureDir(dirHandle: FileSystemDirectoryHandle, ...path: string[]
 function buildImportedForms(
   formIndex: FormIndex | null,
   designs: DesignFile[],
-  behaviorsByFormId: Map<string, BehaviorFile[]>,
+  behaviorFilesByFormId: Map<string, { behaviors: BehaviorFile[]; ruleCode: string }>,
 ): FormEntry[] {
   if (!formIndex?.forms) return [];
   return formIndex.forms.map((form) => {
@@ -69,7 +69,8 @@ function buildImportedForms(
         bindings: [],
         components: [],
       },
-      behaviors: behaviorsByFormId.get(form.id) || [],
+      behaviors: behaviorFilesByFormId.get(form.id)?.behaviors || [],
+      ruleCode: behaviorFilesByFormId.get(form.id)?.ruleCode || '',
       createdAt: design?.createdAt || new Date().toISOString(),
       updatedAt: design?.updatedAt || new Date().toISOString(),
     };
@@ -109,7 +110,7 @@ export async function exportToPackage(
 
   for (const form of forms) {
     await writeJsonFile(formsDir, `${form.id}.json`, form.design);
-    await writeJsonFile(formsDir, `${form.id}.behaviors.json`, { behaviors: form.behaviors || [] });
+    await writeJsonFile(formsDir, `${form.id}.behaviors.json`, { behaviors: form.behaviors || [], ruleCode: form.ruleCode || '' });
   }
 
   // 3. 写入数据
@@ -160,6 +161,8 @@ export async function exportToPackage(
 
   const outputsDir = await ensureDir(dirHandle, OUTPUTS_DIR);
   await writeJsonFile(outputsDir, OUTPUTS_FILE, { outputs: project.outputs, exportedAt: new Date().toISOString() } satisfies OutputsFile);
+  const testingDir = await ensureDir(dirHandle, 'testing');
+  await writeJsonFile(testingDir, 'testing.json', project.testing || { profiles: [], suites: [], fixtures: [], runs: [] });
 }
 
 // ── 从项目包导入为 ProjectStructure ──────────────────
@@ -175,13 +178,13 @@ export async function importFromPackage(
   // 2. 读取表单
   const formIndex = await readJsonFile<FormIndex>(dirHandle, `${FORMS_DIR}/${FORM_INDEX_FILE}`);
   const designs: DesignFile[] = [];
-  const behaviorsByFormId = new Map<string, BehaviorFile[]>();
+  const behaviorFilesByFormId = new Map<string, { behaviors: BehaviorFile[]; ruleCode: string }>();
   if (formIndex?.forms) {
     for (const form of formIndex.forms) {
       const design = await readJsonFile<DesignFile>(dirHandle, `${FORMS_DIR}/${form.fileName}`);
       if (design) designs.push(design);
-      const behaviors = await readJsonFile<{ behaviors?: BehaviorFile[] }>(dirHandle, `${FORMS_DIR}/${form.behaviorsFileName}`);
-      behaviorsByFormId.set(form.id, behaviors?.behaviors || []);
+      const behaviorFile = await readJsonFile<{ behaviors?: BehaviorFile[]; ruleCode?: string }>(dirHandle, `${FORMS_DIR}/${form.behaviorsFileName}`);
+      behaviorFilesByFormId.set(form.id, { behaviors: behaviorFile?.behaviors || [], ruleCode: behaviorFile?.ruleCode || '' });
     }
   }
 
@@ -222,6 +225,7 @@ export async function importFromPackage(
 
   const outputsFile = await readJsonFile<OutputsFile>(dirHandle, `${OUTPUTS_DIR}/${OUTPUTS_FILE}`);
   const outputs: OutputFile[] = outputsFile?.outputs || [];
+  const testing = await readJsonFile<ProjectStructure['testing']>(dirHandle, 'testing/testing.json');
 
   return {
     config: pkg.config,
@@ -231,16 +235,20 @@ export async function importFromPackage(
     workflows,
     globalBehaviors: behaviors,
     sheetBehaviors,
-    forms: buildImportedForms(formIndex, designs, behaviorsByFormId),
+    forms: buildImportedForms(formIndex, designs, behaviorFilesByFormId),
     outputs,
+    testing: testing || { profiles: [], suites: [], fixtures: [], runs: [] },
     designs,
     behaviors,
   };
 }
 
-// ── ZIP 导出（使用 JSZip）──────────────────────────
+export const FORMFLOW_PACKAGE_EXTENSION = '.formflow';
+export const FORMFLOW_PACKAGE_MIME = 'application/vnd.formflow+zip';
 
-export async function exportToZip(project: ProjectStructure): Promise<Blob> {
+// ── FormFlow 项目包导出（使用 ZIP 容器）────────────
+
+export async function exportFormFlowPackage(project: ProjectStructure): Promise<Blob> {
   // 动态导入 JSZip
   const JSZip = (await import('jszip')).default;
   const zip = new JSZip();
@@ -271,7 +279,7 @@ export async function exportToZip(project: ProjectStructure): Promise<Blob> {
 
   for (const form of forms) {
     zip.file(`${FORMS_DIR}/${form.id}.json`, JSON.stringify(form.design, null, 2));
-    zip.file(`${FORMS_DIR}/${form.id}.behaviors.json`, JSON.stringify({ behaviors: form.behaviors || [] }, null, 2));
+    zip.file(`${FORMS_DIR}/${form.id}.behaviors.json`, JSON.stringify({ behaviors: form.behaviors || [], ruleCode: form.ruleCode || '' }, null, 2));
   }
 
   // 3. 数据元数据
@@ -320,13 +328,18 @@ export async function exportToZip(project: ProjectStructure): Promise<Blob> {
 
   const outputsFile: OutputsFile = { outputs: project.outputs, exportedAt: new Date().toISOString() };
   zip.file(`${OUTPUTS_DIR}/${OUTPUTS_FILE}`, JSON.stringify(outputsFile, null, 2));
+  zip.file('testing/testing.json', JSON.stringify(project.testing || { profiles: [], suites: [], fixtures: [], runs: [] }, null, 2));
 
-  return zip.generateAsync({ type: 'blob' });
+  const blob = await zip.generateAsync({ type: 'blob' });
+  return new Blob([blob], { type: FORMFLOW_PACKAGE_MIME });
 }
 
-// ── ZIP 导入 ──────────────────────────────────────
+// ── FormFlow 项目包导入（导入后由服务端落盘为解包目录）──
 
-export async function importFromZip(file: File): Promise<ProjectStructure | null> {
+export async function importFormFlowPackage(file: File): Promise<ProjectStructure | null> {
+  if (!file.name.toLowerCase().endsWith(FORMFLOW_PACKAGE_EXTENSION)) {
+    throw new Error('仅支持 .formflow 项目包');
+  }
   const JSZip = (await import('jszip')).default;
   const zip = await JSZip.loadAsync(await file.arrayBuffer());
 
@@ -342,14 +355,14 @@ export async function importFromZip(file: File): Promise<ProjectStructure | null
   const formIndexContent = await zip.file(`${FORMS_DIR}/${FORM_INDEX_FILE}`)?.async('text');
   const formIndex = formIndexContent ? JSON.parse(formIndexContent) as FormIndex : null;
   const designs: DesignFile[] = [];
-  const behaviorsByFormId = new Map<string, BehaviorFile[]>();
+  const behaviorFilesByFormId = new Map<string, { behaviors: BehaviorFile[]; ruleCode: string }>();
   if (formIndex?.forms) {
     for (const form of formIndex.forms) {
       const content = await zip.file(`${FORMS_DIR}/${form.fileName}`)?.async('text');
       if (content) designs.push(JSON.parse(content));
       const behaviorsContent = await zip.file(`${FORMS_DIR}/${form.behaviorsFileName}`)?.async('text');
-      const parsed = behaviorsContent ? JSON.parse(behaviorsContent) as { behaviors?: BehaviorFile[] } : null;
-      behaviorsByFormId.set(form.id, parsed?.behaviors || []);
+      const parsed = behaviorsContent ? JSON.parse(behaviorsContent) as { behaviors?: BehaviorFile[]; ruleCode?: string } : null;
+      behaviorFilesByFormId.set(form.id, { behaviors: parsed?.behaviors || [], ruleCode: parsed?.ruleCode || '' });
     }
   }
 
@@ -397,6 +410,8 @@ export async function importFromZip(file: File): Promise<ProjectStructure | null
   const outputsContent = await zip.file(`${OUTPUTS_DIR}/${OUTPUTS_FILE}`)?.async('text');
   const outputsFile = outputsContent ? JSON.parse(outputsContent) as OutputsFile : null;
   const outputs: OutputFile[] = outputsFile?.outputs || [];
+  const testingContent = await zip.file('testing/testing.json')?.async('text');
+  const testing = testingContent ? JSON.parse(testingContent) as ProjectStructure['testing'] : undefined;
 
   return {
     config: pkg.config,
@@ -406,21 +421,22 @@ export async function importFromZip(file: File): Promise<ProjectStructure | null
     workflows,
     globalBehaviors: behaviors,
     sheetBehaviors,
-    forms: buildImportedForms(formIndex, designs, behaviorsByFormId),
+    forms: buildImportedForms(formIndex, designs, behaviorFilesByFormId),
     outputs,
+    testing: testing || { profiles: [], suites: [], fixtures: [], runs: [] },
     designs,
     behaviors,
   };
 }
 
-// ── 下载 ZIP 文件 ──────────────────────────────────
+// ── 下载 .formflow 项目包 ──────────────────────────
 
-export async function downloadPackageZip(project: ProjectStructure): Promise<void> {
-  const blob = await exportToZip(project);
+export async function downloadFormFlowPackage(project: ProjectStructure): Promise<void> {
+  const blob = await exportFormFlowPackage(project);
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${project.config.name || 'formflow'}.zip`;
+  a.download = `${project.config.name || project.config.id || 'project'}${FORMFLOW_PACKAGE_EXTENSION}`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -441,9 +457,9 @@ export async function openDirectoryPicker(): Promise<FileSystemDirectoryHandle |
   }
 }
 
-// ── 打开 ZIP 文件选择器 ──────────────────────────────
+// ── 打开 .formflow 文件选择器 ───────────────────────
 
-export function openFilePicker(accept: string = '.zip'): Promise<File | null> {
+export function openFilePicker(accept: string = FORMFLOW_PACKAGE_EXTENSION): Promise<File | null> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';

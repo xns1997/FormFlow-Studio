@@ -199,26 +199,26 @@ export default function UsagePage() {
           {!project?.srcTable || project.srcTable.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--muted)', fontSize: 12 }}><p>暂无数据表</p></div>
           ) : project.srcTable.map((t) => (
-            <div key={t.id} className={`sidebar-item ${selectedTableId === t.id ? 'active' : ''}`} onClick={() => { setSelectedTableId(t.id); setActiveSheetIdx(0); setSelectedColIdx(null); }}>
+            <button type="button" key={t.id} className={`sidebar-item ${selectedTableId === t.id ? 'active' : ''}`} onClick={() => { setSelectedTableId(t.id); setActiveSheetIdx(0); setSelectedColIdx(null); }}>
               <span className="sidebar-item-icon"><DesignerIcon name={t.fileType === 'json' ? 'text' : t.fileType === 'sqlite' ? 'data' : 'table'} /></span>
               <div className="sidebar-item-info">
                 <span className="sidebar-item-name">{t.fileName}</span>
                 <span className="sidebar-item-meta">{t.sheets.length} sheets</span>
               </div>
-            </div>
+            </button>
           ))}
 
           {project?.forms && project.forms.length > 0 && (
             <div style={{ borderTop: '1px solid var(--line)', marginTop: 12, paddingTop: 12 }}>
               <h4 style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>表单</h4>
               {project.forms.map((form) => (
-                <div key={form.id} className="sidebar-item" onClick={() => setPreviewFormId(form.id)}>
+                <button type="button" key={form.id} className="sidebar-item" onClick={() => setPreviewFormId(form.id)}>
                   <span className="sidebar-item-icon"><DesignerIcon name="form" /></span>
                   <div className="sidebar-item-info">
                     <span className="sidebar-item-name">{form.name}</span>
                     <span className="sidebar-item-meta">{form.design?.components?.length || 0} 个控件</span>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}
@@ -252,7 +252,7 @@ export default function UsagePage() {
               {selectedTable && selectedTable.sheets.length > 1 && (
                 <div className="data-preview-sheet-tabs">
                   {selectedTable.sheets.map((s, i) => (
-                    <button key={s.name} className={activeSheetIdx === i ? 'sheet-tab active' : 'sheet-tab'} onClick={() => { setActiveSheetIdx(i); setSelectedColIdx(null); }}>
+                    <button type="button" key={s.name} className={activeSheetIdx === i ? 'sheet-tab active' : 'sheet-tab'} onClick={() => { setActiveSheetIdx(i); setSelectedColIdx(null); }}>
                       {s.name}<span className="sheet-count">{s.rowCount}</span>
                     </button>
                   ))}
@@ -328,7 +328,7 @@ export default function UsagePage() {
         <ModalHeader title={previewForm?.name || '表单预览'} onClose={() => setPreviewFormId(null)} />
         <div style={{ height: 'calc(90vh - 60px)', overflow: 'auto', position: 'relative' }}>
           {previewComponents.length > 0 ? (
-            <PreviewCanvas components={previewComponents} zoom={1} workflows={workflows} tables={tables} />
+            <PreviewCanvas formId={previewForm?.id} components={previewComponents} zoom={1} workflows={workflows} tables={tables} />
           ) : (
             <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--muted)' }}>该表单没有设计内容</div>
           )}

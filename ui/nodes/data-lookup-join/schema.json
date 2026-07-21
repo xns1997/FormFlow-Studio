@@ -1,0 +1,14 @@
+{
+  "id": "data:lookup-join", "label": "主数据关联", "description": "按键关联参考表并把字段补充到主记录", "category": "高阶 · 数据", "kind": "generic", "macro": { "version": 1, "expansion": "runtime-composite", "debugMapping": "node-output", "snapshot": [] },
+  "properties": [
+    { "name": "leftKey", "label": "主表键", "type": "string", "default": "id" },
+    { "name": "rightKey", "label": "参考表键", "type": "string", "default": "id" },
+    { "name": "prefix", "label": "关联字段前缀", "type": "string", "default": "" }
+  ],
+  "ports": [
+    { "name": "left", "label": "主记录", "type": "json-rows", "direction": "input", "required": true },
+    { "name": "right", "label": "参考记录", "type": "json-rows", "direction": "input", "required": true },
+    { "name": "rows", "label": "关联结果", "type": "json-rows", "direction": "output" },
+    { "name": "matchedCount", "label": "匹配数量", "type": "number", "direction": "output" }
+  ], "keywords": ["join", "lookup", "主数据", "参考表"]
+}

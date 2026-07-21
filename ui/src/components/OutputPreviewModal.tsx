@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Modal, { ModalHeader } from './Modal';
+import { AntdCompatSelect } from './AntdFormControls';
 import TypeDisplayer from './TypeDisplayer';
 import CodeEditor from './CodeEditor';
 import {
@@ -78,7 +79,7 @@ export default function OutputPreviewModal({ target, onClose, onDownload }: Prop
         <div className="output-preview-toolbar">
           <div className="output-preview-summary"><TypeDisplayer type={target.type} value={target.value} compact /></div>
           {sheetNames.length > 0 && (
-            <label>工作表<select value={sheetName} onChange={(event) => { setSheetName(event.target.value); setPage(0); }}>{sheetNames.map((name) => <option key={name}>{name}</option>)}</select></label>
+            <label>工作表<AntdCompatSelect value={sheetName} onChange={(event) => { setSheetName(event.target.value); setPage(0); }}>{sheetNames.map((name) => <option key={name} value={name}>{name}</option>)}</AntdCompatSelect></label>
           )}
           {table && (
             <label className="output-preview-search">

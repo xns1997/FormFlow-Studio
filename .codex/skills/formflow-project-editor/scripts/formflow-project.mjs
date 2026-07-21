@@ -113,8 +113,11 @@ function rowsToSheet(name, rows, config = {}) {
     return { name: header, index, dataType: inferType(values), nullable: present.length !== values.length, uniqueCount: new Set(present.map((value) => JSON.stringify(value))).size, sampleValues: [...new Set(present.map((value) => JSON.stringify(value)))].slice(0, 5).map((value) => JSON.parse(value)) };
   });
   const keyFields = arr(config.key);
+  const previewRows = Number.isFinite(Number(config.previewRows))
+    ? Math.max(1, Math.min(1000, Math.trunc(Number(config.previewRows))))
+    : 100;
   return {
-    name, rowCount: normalized.length, colCount: headers.length, headers, columns, preview: normalized.slice(0, 100),
+    name, rowCount: normalized.length, colCount: headers.length, headers, columns, preview: normalized.slice(0, previewRows),
     _rows: normalized,
     config: {
       id: config.id || name, tableName: name, keyFields, readOnly: !!config.readOnly,
@@ -175,7 +178,7 @@ function component(input, index) {
   };
 }
 function form(input, now) {
-  checkKeys(input, ['id', 'name', 'mode', 'formMode', 'templateKey', 'viewport', 'gridSize', 'components', 'bindings', 'behaviors', 'createdAt'], '$.forms[]');
+  checkKeys(input, ['id', 'name', 'mode', 'formMode', 'templateKey', 'viewport', 'gridSize', 'components', 'bindings', 'behaviors', 'ruleCode', 'createdAt'], '$.forms[]');
   checkId(input.id, '$.forms[].id');
   const mode = input.mode || input.formMode;
   if (mode && !FORM_MODES.has(mode)) fail('INVALID_FORM_MODE', `forms.${input.id}.mode`, 'invalid form mode');
@@ -183,7 +186,7 @@ function form(input, now) {
     id: input.id, name: input.name || input.id, formMode: mode, templateKey: input.templateKey,
     viewport: input.viewport || { zoom: 1, panX: 0, panY: 0 }, gridSize: input.gridSize || 10,
     components: arr(input.components).map(component), bindings: arr(input.bindings),
-    behaviors: arr(input.behaviors).map((item) => behavior(item, now, `forms.${input.id}.behaviors[]`)), createdAt: input.createdAt || now, updatedAt: now,
+    behaviors: arr(input.behaviors).map((item) => behavior(item, now, `forms.${input.id}.behaviors[]`)), ruleCode: typeof input.ruleCode === 'string' ? input.ruleCode : '', createdAt: input.createdAt || now, updatedAt: now,
   };
 }
 function workflow(input, now) {
@@ -207,19 +210,19 @@ function output(input, now) {
 }
 
 async function modelFromSpec(spec, specPath) {
-  checkKeys(spec, ['project', 'now', 'settings', 'release', 'data', 'forms', 'behaviors', 'sheetBehaviors', 'workflows', 'outputs'], '$');
+  checkKeys(spec, ['project', 'now', 'settings', 'release', 'data', 'forms', 'behaviors', 'sheetBehaviors', 'workflows', 'outputs', 'testing'], '$');
   const now = timestamp(spec); const project = object(spec.project, '$.project');
-  checkKeys(project, ['id', 'name', 'description', 'version', 'createdAt', 'author', 'tags'], '$.project');
+  checkKeys(project, ['id', 'name', 'description', 'version', 'createdAt', 'author', 'tags', 'access'], '$.project');
   checkId(project.id, '$.project.id');
   if (!project.name) fail('REQUIRED', '$.project.name', 'project name is required');
   const data = [];
   for (const source of arr(spec.data)) data.push(await readSource(source, dirname(resolve(specPath)), now));
   return {
-    config: { id: project.id, name: project.name, description: project.description || '', version: project.version || '2.0.0', createdAt: project.createdAt || now, updatedAt: now, author: project.author || 'FormFlow Agent', tags: arr(project.tags) },
+    config: { id: project.id, name: project.name, description: project.description || '', version: project.version || '2.0.0', createdAt: project.createdAt || now, updatedAt: now, author: project.author || 'FormFlow Agent', tags: arr(project.tags), ...(project.access ? { access: project.access } : {}) },
     settings: { ...merge(DEFAULT_SETTINGS, spec.settings || {}), updatedAt: now }, release: spec.release ? merge(DEFAULT_RELEASE, spec.release) : undefined,
     data, forms: arr(spec.forms).map((item) => form(item, now)), globalBehaviors: arr(spec.behaviors).map((item) => behavior(item, now, '$.behaviors[]')),
     sheetBehaviors: arr(spec.sheetBehaviors).map((item) => ({ tableId: item.tableId, sheetName: item.sheetName, behaviors: arr(item.behaviors).map((entry) => behavior(entry, now, '$.sheetBehaviors[].behaviors[]')), updatedAt: now })),
-    workflows: arr(spec.workflows).map((item) => workflow(item, now)), outputs: arr(spec.outputs).map((item) => output(item, now)), exportedAt: now,
+    workflows: arr(spec.workflows).map((item) => workflow(item, now)), outputs: arr(spec.outputs).map((item) => output(item, now)), testing: spec.testing || { profiles: [], suites: [], fixtures: [], runs: [] }, exportedAt: now,
   };
 }
 
@@ -227,15 +230,16 @@ async function writeModel(model, output) {
   const temp = `${output}.tmp-${process.pid}-${Date.now()}`;
   await mkdir(join(temp, 'forms'), { recursive: true }); await mkdir(join(temp, 'data'), { recursive: true });
   await mkdir(join(temp, 'workflows'), { recursive: true }); await mkdir(join(temp, 'outputs'), { recursive: true });
+  await mkdir(join(temp, 'testing'), { recursive: true });
   try {
     await writeFile(join(temp, 'project.json'), json({ kind: 'formflow-project', formatVersion: 2, config: model.config, settings: model.settings, release: model.release }));
     if (model.release) await writeFile(join(temp, 'release.json'), json(model.release));
     const forms = [...model.forms].sort((a, b) => a.id.localeCompare(b.id));
     await writeFile(join(temp, 'forms', '_index.json'), json({ forms: forms.map((item) => ({ id: item.id, name: item.name, formMode: item.formMode, fileName: `${item.id}.json`, behaviorsFileName: `${item.id}.behaviors.json` })), defaultFormId: model.release?.defaultFormId || forms[0]?.id }));
     for (const item of forms) {
-      const { behaviors, ...design } = item;
+      const { behaviors, ruleCode, ...design } = item;
       await writeFile(join(temp, 'forms', `${item.id}.json`), json(design));
-      await writeFile(join(temp, 'forms', `${item.id}.behaviors.json`), json({ behaviors }));
+      await writeFile(join(temp, 'forms', `${item.id}.behaviors.json`), json({ behaviors, ruleCode: ruleCode || '' }));
     }
     const sources = [...model.data].sort((a, b) => a.id.localeCompare(b.id));
     await writeFile(join(temp, 'data', '_index.json'), json({ sources: sources.map((item) => ({ id: item.id, fileName: item.fileName, fileType: item.fileType, metaFile: `${item.id}.meta.json`, behaviorsFile: `${item.id}.behaviors.json`, uploadedAt: item.uploadedAt })) }));
@@ -250,6 +254,7 @@ async function writeModel(model, output) {
     await writeFile(join(temp, 'global-behaviors.json'), json({ behaviors: model.globalBehaviors, exportedAt: model.exportedAt }));
     await writeFile(join(temp, 'workflows', 'workflows.json'), json({ workflows: model.workflows, exportedAt: model.exportedAt }));
     await writeFile(join(temp, 'outputs', 'outputs.json'), json({ outputs: model.outputs, exportedAt: model.exportedAt }));
+    await writeFile(join(temp, 'testing', 'testing.json'), json(model.testing || { profiles: [], suites: [], fixtures: [], runs: [] }));
     const report = await validateDirectory(temp);
     if (!report.valid) fail('VALIDATION_FAILED', '$', `${report.errors.length} validation error(s): ${report.errors[0].message}`);
     await rename(temp, output);
@@ -286,7 +291,7 @@ async function loadModel(path) {
     for (const entry of arr(formIndex.forms)) {
       const design = await readJson(join(root, 'forms', entry.fileName));
       const behaviorFile = await readJson(join(root, 'forms', entry.behaviorsFileName)).catch(() => ({ behaviors: [] }));
-      forms.push({ ...design, behaviors: arr(behaviorFile.behaviors) });
+      forms.push({ ...design, id: entry.id, name: entry.name || design.name, behaviors: arr(behaviorFile.behaviors), ruleCode: typeof behaviorFile.ruleCode === 'string' ? behaviorFile.ruleCode : '' });
     }
     const dataIndex = await readJson(join(root, 'data', '_index.json')).catch(() => ({ sources: [] }));
     const data = []; const sheetBehaviors = [];
@@ -299,7 +304,8 @@ async function loadModel(path) {
     const global = await readJson(join(root, 'global-behaviors.json')).catch(() => ({ behaviors: [], exportedAt: pkg.config?.updatedAt }));
     const workflows = await readJson(join(root, 'workflows', 'workflows.json')).catch(() => ({ workflows: [], exportedAt: global.exportedAt }));
     const outputs = await readJson(join(root, 'outputs', 'outputs.json')).catch(() => ({ outputs: [], exportedAt: global.exportedAt }));
-    return { model: { config: pkg.config, settings: pkg.settings, release: pkg.release, data, forms, globalBehaviors: arr(global.behaviors), sheetBehaviors, workflows: arr(workflows.workflows), outputs: arr(outputs.outputs), exportedAt: workflows.exportedAt || global.exportedAt }, opened, pkg, indexes: { formIndex, dataIndex } };
+    const testing = await readJson(join(root, 'testing', 'testing.json')).catch(() => ({ profiles: [], suites: [], fixtures: [], runs: [] }));
+    return { model: { config: pkg.config, settings: pkg.settings, release: pkg.release, data, forms, globalBehaviors: arr(global.behaviors), sheetBehaviors, workflows: arr(workflows.workflows), outputs: arr(outputs.outputs), testing, exportedAt: workflows.exportedAt || global.exportedAt }, opened, pkg, indexes: { formIndex, dataIndex } };
   } catch (error) { if (opened.cleanup) await rm(root, { recursive: true, force: true }); throw error; }
 }
 
@@ -361,10 +367,10 @@ function auditFrozenFields(model, errors) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return;
     for (const key of Object.keys(value)) if (!allowed.includes(key)) errors.push({ code: 'UNKNOWN_FIELD', path: `${path}.${key}`, message: 'field is not part of frozen FormFlow v2' });
   };
-  examine(model.config, ['id', 'name', 'description', 'version', 'createdAt', 'updatedAt', 'author', 'tags'], 'project.config');
+  examine(model.config, ['id', 'name', 'description', 'version', 'createdAt', 'updatedAt', 'author', 'tags', 'access'], 'project.config');
   examine(model.release, ['mode', 'defaultFormId', 'defaultSheet', 'allowDesigner', 'allowBehaviorEditor', 'allowWorkflowEditor', 'lastVerifiedAt'], 'release');
   for (const item of model.forms) {
-    examine(item, ['id', 'name', 'formMode', 'templateKey', 'viewport', 'gridSize', 'components', 'bindings', 'behaviors', 'createdAt', 'updatedAt'], `forms.${item.id}`);
+    examine(item, ['id', 'name', 'formMode', 'templateKey', 'viewport', 'gridSize', 'components', 'bindings', 'behaviors', 'ruleCode', 'createdAt', 'updatedAt'], `forms.${item.id}`);
     for (const componentItem of arr(item.components)) examine(componentItem, ['id', 'type', 'x', 'y', 'width', 'height', 'props', 'parentId', 'fieldBinding', 'behaviorBindings', 'children', 'locked', 'visible', 'zIndex'], `forms.${item.id}.components.${componentItem.id}`);
     for (const binding of arr(item.bindings)) examine(binding, ['id', 'sourceId', 'targetId', 'type', 'config'], `forms.${item.id}.bindings.${binding.id || '?'}`);
   }
@@ -439,9 +445,9 @@ function summary(model) {
   return {
     project: model.config,
     data: model.data.map((table) => ({ id: table.id, fileName: table.fileName, sheets: table.sheets.map((sheet) => ({ name: sheet.name, rows: sheet.rowCount, columns: sheet.headers, key: sheet.config?.keyFields || [], readOnly: !!sheet.config?.readOnly })) })),
-    forms: model.forms.map((item) => ({ id: item.id, name: item.name, mode: item.formMode, components: item.components.map((component) => ({ id: component.id, type: component.type, field: component.fieldBinding })), behaviors: item.behaviors.map((entry) => entry.id) })),
+    forms: model.forms.map((item) => ({ id: item.id, name: item.name, mode: item.formMode, components: item.components.map((component) => ({ id: component.id, type: component.type, field: component.fieldBinding })), behaviors: item.behaviors.map((entry) => entry.id), ruleCode: item.ruleCode || '' })),
     globalBehaviors: model.globalBehaviors.map((item) => item.id), sheetBehaviors: model.sheetBehaviors.map((item) => `${item.tableId}/${item.sheetName}`),
-    workflows: model.workflows.map((item) => ({ id: item.id, name: item.name, nodes: item.nodes.map((node) => `${node.id}:${node.specId}`), edges: item.edges.length })), outputs: model.outputs.map((item) => ({ id: item.id, format: item.format })),
+    workflows: model.workflows.map((item) => ({ id: item.id, name: item.name, nodes: item.nodes.map((node) => `${node.id}:${node.specId}`), edges: item.edges.length })), outputs: model.outputs.map((item) => ({ id: item.id, format: item.format })), testing: { suites: model.testing?.suites?.length || 0, fixtures: model.testing?.fixtures?.length || 0, runs: model.testing?.runs?.length || 0 },
   };
 }
 function printReport(report, asJson) {

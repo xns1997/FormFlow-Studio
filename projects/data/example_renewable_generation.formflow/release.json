@@ -1,9 +1,0 @@
-{
-  "mode": "use",
-  "allowDesigner": false,
-  "allowBehaviorEditor": false,
-  "allowWorkflowEditor": false,
-  "defaultFormId": "example_renewable_generation_form_create",
-  "defaultSheet": "新能源发电量",
-  "lastVerifiedAt": "2026-07-06T18:00:00.000Z"
-}

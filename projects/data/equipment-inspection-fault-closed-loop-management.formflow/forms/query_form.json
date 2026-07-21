@@ -1,0 +1,253 @@
+{
+  "id": "query_form_design",
+  "name": "query_form",
+  "formMode": "create",
+  "viewport": {
+    "zoom": 1,
+    "panX": 0,
+    "panY": 0
+  },
+  "gridSize": 12,
+  "components": [
+    {
+      "id": "query_form_root",
+      "type": "form",
+      "x": 40,
+      "y": 40,
+      "width": 1000,
+      "height": 800,
+      "zIndex": 0,
+      "props": {
+        "title": "设备巡检与故障查询"
+      },
+      "children": [
+        "query_filter_container",
+        "query_result_table"
+      ]
+    },
+    {
+      "id": "query_filter_container",
+      "type": "container",
+      "x": 60,
+      "y": 100,
+      "width": 880,
+      "height": 200,
+      "zIndex": 1,
+      "parentId": "query_form_root",
+      "props": {
+        "title": "查询条件",
+        "subtitle": "筛选设备、区域、时间范围、故障等级和工单状态"
+      },
+      "children": [
+        "query_device_id",
+        "query_area",
+        "query_date_range",
+        "query_fault_level",
+        "query_work_order_status",
+        "query_button"
+      ]
+    },
+    {
+      "id": "query_device_id",
+      "type": "select",
+      "x": 80,
+      "y": 150,
+      "width": 160,
+      "height": 40,
+      "zIndex": 2,
+      "parentId": "query_filter_container",
+      "props": {
+        "name": "设备编号",
+        "label": "设备编号",
+        "required": false,
+        "readonly": false,
+        "placeholder": "请选择设备编号",
+        "options": [
+          {
+            "label": "EQ001",
+            "value": "EQ001"
+          },
+          {
+            "label": "EQ002",
+            "value": "EQ002"
+          }
+        ]
+      }
+    },
+    {
+      "id": "query_area",
+      "type": "select",
+      "x": 260,
+      "y": 150,
+      "width": 160,
+      "height": 40,
+      "zIndex": 2,
+      "parentId": "query_filter_container",
+      "props": {
+        "name": "区域",
+        "label": "区域",
+        "required": false,
+        "readonly": false,
+        "placeholder": "请选择区域",
+        "options": [
+          {
+            "label": "A区",
+            "value": "A区"
+          },
+          {
+            "label": "B区",
+            "value": "B区"
+          }
+        ]
+      }
+    },
+    {
+      "id": "query_date_range",
+      "type": "dateRange",
+      "x": 440,
+      "y": 150,
+      "width": 240,
+      "height": 40,
+      "zIndex": 2,
+      "parentId": "query_filter_container",
+      "props": {
+        "name": "日期范围",
+        "label": "日期范围",
+        "required": false,
+        "readonly": false,
+        "startPlaceholder": "开始日期",
+        "endPlaceholder": "结束日期"
+      }
+    },
+    {
+      "id": "query_fault_level",
+      "type": "select",
+      "x": 700,
+      "y": 150,
+      "width": 160,
+      "height": 40,
+      "zIndex": 2,
+      "parentId": "query_filter_container",
+      "props": {
+        "name": "故障等级",
+        "label": "故障等级",
+        "required": false,
+        "readonly": false,
+        "placeholder": "请选择故障等级",
+        "options": [
+          {
+            "label": "高",
+            "value": "高"
+          },
+          {
+            "label": "中",
+            "value": "中"
+          },
+          {
+            "label": "低",
+            "value": "低"
+          }
+        ]
+      }
+    },
+    {
+      "id": "query_work_order_status",
+      "type": "select",
+      "x": 80,
+      "y": 200,
+      "width": 160,
+      "height": 40,
+      "zIndex": 2,
+      "parentId": "query_filter_container",
+      "props": {
+        "name": "工单状态",
+        "label": "工单状态",
+        "required": false,
+        "readonly": false,
+        "placeholder": "请选择工单状态",
+        "options": [
+          {
+            "label": "待处理",
+            "value": "待处理"
+          },
+          {
+            "label": "处理中",
+            "value": "处理中"
+          },
+          {
+            "label": "已完成",
+            "value": "已完成"
+          }
+        ]
+      }
+    },
+    {
+      "id": "query_button",
+      "type": "button",
+      "x": 260,
+      "y": 200,
+      "width": 80,
+      "height": 36,
+      "zIndex": 2,
+      "parentId": "query_filter_container",
+      "props": {
+        "name": "查询按钮",
+        "label": "查询",
+        "variant": "primary",
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "fault_handling_workflow",
+            "parameterMap": {}
+          }
+        },
+        "events": {
+          "onClick": "console.log('查询按钮被点击，开始执行查询操作'); message('查询条件已提交，正在刷新数据...', 'info'); return true;"
+        }
+      }
+    },
+    {
+      "id": "query_result_table",
+      "type": "table",
+      "x": 60,
+      "y": 320,
+      "width": 880,
+      "height": 400,
+      "zIndex": 1,
+      "parentId": "query_form_root",
+      "props": {
+        "name": "查询结果",
+        "columns": [
+          {
+            "title": "设备编号",
+            "dataIndex": "device_id"
+          },
+          {
+            "title": "区域",
+            "dataIndex": "area"
+          },
+          {
+            "title": "巡检时间",
+            "dataIndex": "inspection_time"
+          },
+          {
+            "title": "故障等级",
+            "dataIndex": "fault_level"
+          },
+          {
+            "title": "工单状态",
+            "dataIndex": "status"
+          },
+          {
+            "title": "处理结果",
+            "dataIndex": "result"
+          }
+        ],
+        "rows": []
+      }
+    }
+  ],
+  "bindings": [],
+  "createdAt": "2026-07-20T10:03:44.470Z",
+  "updatedAt": "2026-07-20T10:03:44.470Z"
+}

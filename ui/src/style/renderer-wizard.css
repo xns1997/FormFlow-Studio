@@ -40,9 +40,9 @@
 }
 
 .lg-wizard-step.done {
-  border-color: #16a34a;
+  border-color: var(--success);
   background: var(--success-soft);
-  color: #16a34a;
+  color: var(--success);
 }
 
 .lg-wizard-step-num {
@@ -65,7 +65,7 @@
 }
 
 .lg-wizard-step.done .lg-wizard-step-num {
-  background: #16a34a;
+  background: var(--success);
   color: #fff;
 }
 

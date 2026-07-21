@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { AntdSelectInput, AntdTextAreaInput, AntdTextInput } from '../../../components/AntdFormControls';
+import { AntdSelectInput, AntdSwitchInput, AntdTextAreaInput, AntdTextInput } from '../../../components/AntdFormControls';
 import type { PropertyEditorContext } from '../propertyEditorRegistry';
 import type { DataBindingConfig, DataBindingSource, RangeRef } from '../../../models';
 import { useProjectStore } from '../../../project/store';
 import RangeSelector from '../../../components/RangeSelector';
 import { rangeToAddress } from '../../../services/data/rangeResolver';
+import { normalizeOptionSource, resolveOptionSource, type TableOptionSourceConfig } from '../../../services/data/optionSource';
 
 interface OptionRow { label: string; value: string }
 
@@ -29,6 +30,50 @@ export function OptionsVisual({ value, onChange, onValidity }: { value: unknown;
     <label className="property-editor-label"><span>批量粘贴（每行“标签,值”，也支持 Tab/CSV）</span><AntdTextAreaInput value={paste} rows={4} onChange={setPaste} /></label>
     <button className="toolbar-btn" type="button" disabled={!paste.trim()} onClick={importRows}>导入到列表</button>
     <label className="property-csv-import"><span>或导入 CSV 文件</span><input type="file" accept=".csv,text/csv,text/tab-separated-values" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importCsvFile(file); event.currentTarget.value = ''; }} /></label>
+  </div>;
+}
+
+export function OptionSourceVisual({ value, onChange, onValidity }: { value: unknown; onChange: (value: Record<string, unknown>) => void; onValidity: (valid: boolean) => void }) {
+  const tables = useProjectStore((state) => state.project?.srcTable || []);
+  const source = normalizeOptionSource(value);
+  const table = tables.find((item) => item.id === source.tableId);
+  const sheet = table?.sheets.find((item) => item.name === source.sheetName);
+  const resolved = resolveOptionSource([], source, tables);
+  const invalid = source.mode === 'table' && !!resolved.diagnostic;
+  useEffect(() => onValidity(!invalid), [invalid, onValidity]);
+
+  const emit = (patch: Partial<TableOptionSourceConfig>) => onChange({ ...source, ...patch });
+  const defaultsForTable = (tableId: string) => {
+    const nextTable = tables.find((item) => item.id === tableId);
+    const nextSheet = nextTable?.sheets[0];
+    const firstField = nextSheet?.headers[0] || '';
+    onChange({ ...source, mode: 'table', tableId, sheetName: nextSheet?.name || '', labelField: firstField, valueField: firstField });
+  };
+  const defaultsForSheet = (sheetName: string) => {
+    const nextSheet = table?.sheets.find((item) => item.name === sheetName);
+    const firstField = nextSheet?.headers[0] || '';
+    emit({ sheetName, labelField: firstField, valueField: firstField });
+  };
+
+  return <div className="property-editor-stack">
+    <label className="property-editor-label"><span>选项来源</span><AntdSelectInput value={source.mode || 'static'} options={[{ label: '静态选项', value: 'static' }, { label: '项目数据源', value: 'table' }]} onChange={(mode) => {
+      if (String(mode) === 'table') defaultsForTable(source.tableId && tables.some((item) => item.id === source.tableId) ? source.tableId : tables[0]?.id || '');
+      else emit({ mode: 'static' });
+    }} /></label>
+    {source.mode === 'table' && <>
+      <div className="property-composite-grid">
+        <label><span>数据源</span><AntdSelectInput value={source.tableId || ''} options={tables.map((item) => ({ label: item.fileName, value: item.id }))} onChange={(tableId) => defaultsForTable(String(tableId))} /></label>
+        <label><span>工作表</span><AntdSelectInput value={source.sheetName || ''} options={(table?.sheets || []).map((item) => ({ label: item.name, value: item.name }))} onChange={(sheetName) => defaultsForSheet(String(sheetName))} /></label>
+        <label><span>显示字段</span><AntdSelectInput value={source.labelField || ''} options={(sheet?.headers || []).map((field) => ({ label: field, value: field }))} onChange={(labelField) => emit({ labelField: String(labelField), valueField: source.valueField || String(labelField) })} /></label>
+        <label><span>值字段</span><AntdSelectInput value={source.valueField || source.labelField || ''} options={(sheet?.headers || []).map((field) => ({ label: field, value: field }))} onChange={(valueField) => emit({ valueField: String(valueField) })} /></label>
+        <label><span>排序</span><AntdSelectInput value={source.sortOrder || 'none'} options={[{ label: '保持数据顺序', value: 'none' }, { label: '显示文字升序', value: 'asc' }, { label: '显示文字降序', value: 'desc' }]} onChange={(sortOrder) => emit({ sortOrder: String(sortOrder) as TableOptionSourceConfig['sortOrder'] })} /></label>
+        <label><span>值去重</span><AntdSwitchInput checked={source.unique !== false} onChange={(unique) => emit({ unique })} /></label>
+      </div>
+      {!tables.length && <div className="property-editor-warning">项目中还没有可用数据源，请先导入数据表。</div>}
+      {invalid && tables.length > 0 && <div className="property-editor-warning">{resolved.diagnostic}，请重新选择对应字段。</div>}
+      {!invalid && <div className="property-impact"><b>选项预览 · {resolved.options.length} 项</b><span>{resolved.options.slice(0, 8).map((item) => item.label).join('、') || '当前工作表没有非空选项'}{resolved.options.length > 8 ? '…' : ''}</span></div>}
+    </>}
+    {source.mode !== 'table' && <div className="property-editor-help">当前使用下方“静态选项”列表；切换为项目数据源后，将按所选字段自动生成下拉选项。</div>}
   </div>;
 }
 

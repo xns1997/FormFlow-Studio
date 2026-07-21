@@ -1,0 +1,27 @@
+{
+  "id": "form:save", "label": "表单保存", "description": "一次完成必填校验、字段映射、按主键写回和成功提示", "category": "高阶 · 表单", "kind": "generic", "macro": { "version": 1, "expansion": "runtime-composite", "debugMapping": "node-output", "snapshot": [] },
+  "properties": [
+    { "name": "tableId", "label": "数据表", "type": "string", "default": "" },
+    { "name": "sheetName", "label": "工作表", "type": "string", "default": "" },
+    { "name": "keyField", "label": "主键字段", "type": "string", "default": "" },
+    { "name": "requiredFields", "label": "必填字段", "type": "array", "default": [] },
+    { "name": "fieldMap", "label": "字段映射", "type": "json", "default": {} },
+    { "name": "rules", "label": "字段规则", "type": "json", "default": {} },
+    { "name": "conditionalRequired", "label": "条件必填", "type": "json", "default": [] },
+    { "name": "foreignKeys", "label": "外键校验", "type": "json", "default": [] },
+    { "name": "duplicatePolicy", "label": "重复主键策略", "type": "select", "default": "upsert", "options": [{ "label": "新增或更新", "value": "upsert" }, { "label": "拒绝重复", "value": "reject" }] },
+    { "name": "protectedUpdate", "label": "受保护更新", "type": "json", "default": {} },
+    { "name": "deriveFirstPurchase", "label": "计算首充标记", "type": "boolean", "default": false },
+    { "name": "successMessage", "label": "成功提示", "type": "string", "default": "保存成功" },
+    { "name": "resetAfterSave", "label": "保存后重置", "type": "boolean", "default": false },
+    { "name": "resetFields", "label": "重置字段", "type": "array", "default": [] }
+  ],
+  "ports": [
+    { "name": "formData", "label": "表单数据", "type": "object", "direction": "input", "required": true },
+    { "name": "saved", "label": "保存成功", "type": "boolean", "direction": "output" },
+    { "name": "status", "label": "保存状态", "type": "string", "direction": "output" },
+    { "name": "row", "label": "写入记录", "type": "object", "direction": "output" },
+    { "name": "missingFields", "label": "缺失字段", "type": "array", "direction": "output" },
+    { "name": "writeBack", "label": "写回动作", "type": "object", "direction": "output" }
+  ], "keywords": ["保存表单", "CRUD", "upsert", "校验并保存"]
+}

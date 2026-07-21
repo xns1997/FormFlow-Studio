@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { DesignComponent, SrcTableEntry } from '../project/types';
-import { getPreviewInitialValue } from '../services/display/previewValues';
+import { getPreviewInitialValue, getPreviewInitializationSignature } from '../services/display/previewValues';
 
 const component: DesignComponent = {
   id: 'name', type: 'input', x: 0, y: 0, width: 100, height: 40,
@@ -72,4 +72,18 @@ test('preview initial values use structured defaults for new control types', () 
   assert.deepEqual(getPreviewInitialValue({
     id: 'files', type: 'upload', x: 0, y: 0, width: 100, height: 40, props: {},
   }, tables), []);
+});
+
+test('preview passes text control content into runtime values', () => {
+  const text: DesignComponent = {
+    id: 'summary', type: 'text', x: 0, y: 0, width: 180, height: 36,
+    fieldBinding: 'summary',
+    props: { content: '等待生成结果' },
+  };
+
+  assert.equal(getPreviewInitialValue(text, tables), '等待生成结果');
+  assert.notEqual(
+    getPreviewInitializationSignature(text),
+    getPreviewInitializationSignature({ ...text, props: { ...text.props, content: '生成完成' } }),
+  );
 });

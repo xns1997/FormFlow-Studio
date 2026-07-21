@@ -172,7 +172,6 @@ registerControl({
             <button
               key={index}
               type="button"
-              disabled={mode !== 'preview'}
               onClick={() => runtime?.emit('onChange', index, { index, label: step })}
               style={{
                 flex: 1,

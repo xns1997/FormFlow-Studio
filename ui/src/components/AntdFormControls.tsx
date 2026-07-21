@@ -80,10 +80,12 @@ function formatDayValue(
   return value.format(options?.format || DEFAULT_DATE_FORMAT);
 }
 
-function resolvePopupContainer(triggerNode: HTMLElement) {
-  return (triggerNode.closest('.ff-antd-form-scope') as HTMLElement | null)
-    || triggerNode.parentElement
-    || document.body;
+export function resolvePopupContainer(triggerNode: HTMLElement) {
+  // Designer and preview controls intentionally clip their own canvas nodes.
+  // Mounting a picker popup inside `.ff-antd-form-scope` therefore cuts the
+  // calendar off at the component boundary. The owning document body escapes
+  // those overflow contexts and also remains correct for iframe documents.
+  return triggerNode.ownerDocument.body;
 }
 
 function resolveDateFormat(showTime?: boolean, explicitFormat?: string) {
@@ -123,21 +125,21 @@ export function FormAntdProvider({ children }: { children: React.ReactNode }) {
     <ConfigProvider
       theme={{
         token: {
-          borderRadius: 16,
-          colorPrimary: '#2563eb',
-          colorBgContainer: 'rgba(255,255,255,0.94)',
-          colorBorder: 'rgba(148,163,184,0.22)',
-          colorTextPlaceholder: '#94a3b8',
-          colorText: '#172033',
-          controlHeight: 42,
+          borderRadius: 9,
+          colorPrimary: '#007aff',
+          colorBgContainer: '#ffffff',
+          colorBorder: 'rgba(60,60,67,0.18)',
+          colorTextPlaceholder: '#8e8e93',
+          colorText: '#1c1c1e',
+          controlHeight: 36,
           fontSize: 14,
-          boxShadow: '0 10px 22px rgba(15,23,42,0.05), inset 0 1px 0 rgba(255,255,255,0.85)',
+          boxShadow: 'none',
         },
         components: {
-          Input: { activeShadow: '0 0 0 3px rgba(37,99,235,0.14)' },
-          InputNumber: { activeShadow: '0 0 0 3px rgba(37,99,235,0.14)' },
-          Select: { activeOutlineColor: 'rgba(37,99,235,0.14)' },
-          DatePicker: { activeShadow: '0 0 0 3px rgba(37,99,235,0.14)' },
+          Input: { activeShadow: '0 0 0 3px rgba(0,122,255,0.15)' },
+          InputNumber: { activeShadow: '0 0 0 3px rgba(0,122,255,0.15)' },
+          Select: { activeOutlineColor: 'rgba(0,122,255,0.15)' },
+          DatePicker: { activeShadow: '0 0 0 3px rgba(0,122,255,0.15)' },
         },
       }}
     >
@@ -312,6 +314,54 @@ export function AntdSelectInput(props: {
   );
 }
 
+type CompatSelectChangeEvent = { target: { value: string } };
+
+/**
+ * Ant Design Select with the value/onChange contract of a native select.
+ * This keeps legacy page code predictable while ensuring every visible
+ * dropdown uses the same antd popup, keyboard handling and visual language.
+ */
+export function AntdCompatSelect(props: {
+  value?: string | number;
+  defaultValue?: string | number;
+  disabled?: boolean;
+  className?: string;
+  style?: React.CSSProperties;
+  children?: React.ReactNode;
+  onChange?: (event: CompatSelectChangeEvent) => void;
+  'aria-label'?: string;
+}) {
+  const controlled = props.value !== undefined;
+  const [internalValue, setInternalValue] = React.useState(String(props.defaultValue ?? ''));
+  const options = React.Children.toArray(props.children).flatMap((child) => {
+    if (!React.isValidElement<{ value?: string | number; disabled?: boolean; children?: React.ReactNode }>(child)) return [];
+    const rawValue = child.props.value ?? child.key ?? '';
+    return [{
+      value: String(rawValue),
+      label: child.props.children,
+      disabled: child.props.disabled,
+    }];
+  });
+  const currentValue = controlled ? String(props.value ?? '') : internalValue;
+
+  return (
+    <Select
+      aria-label={props['aria-label']}
+      className={['ff-antd-control', 'ff-antd-select', 'ff-antd-compat-select', props.className].filter(Boolean).join(' ')}
+      value={currentValue}
+      disabled={props.disabled}
+      options={options}
+      optionFilterProp="label"
+      style={props.style}
+      onChange={(value) => {
+        const event: CompatSelectChangeEvent = { target: { value: String(value) } };
+        props.onChange?.(event);
+        if (!controlled) setInternalValue(event.target.value);
+      }}
+    />
+  );
+}
+
 export function AntdSegmentedInput(props: {
   value: string;
   disabled?: boolean;
@@ -482,8 +532,15 @@ export function AntdSwitchInput(props: {
   inactiveColor?: string;
   onChange?: (value: boolean) => void;
 }) {
-  const scale = props.size === 'large' ? 1.16 : 1;
-  return <Switch className="ff-antd-switch" size={props.size === 'small' ? 'small' : 'medium'} checked={props.checked} disabled={props.disabled} style={{ background: props.checked ? props.activeColor : props.inactiveColor, transform: scale === 1 ? undefined : `scale(${scale})` }} onChange={props.onChange} />;
+  const visualSize = props.size || 'default';
+  return <Switch
+    className={`ff-antd-switch ff-antd-switch-${visualSize}`}
+    size={visualSize === 'small' ? 'small' : 'medium'}
+    checked={props.checked}
+    disabled={props.disabled}
+    style={{ background: props.checked ? props.activeColor : props.inactiveColor }}
+    onChange={props.onChange}
+  />;
 }
 
 export function AntdRateInput(props: {

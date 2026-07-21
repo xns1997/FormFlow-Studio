@@ -342,6 +342,7 @@ registerExecutor('behavior-calculate', (ctx) => {
   return {
     trigger: inputs.trigger,
     targetField,
+    result,
     value: result,
     sideEffects: targetField ? [{ kind: 'set-form-value', field: targetField, value: result }] : [],
   };

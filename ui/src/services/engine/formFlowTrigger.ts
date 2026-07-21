@@ -5,6 +5,7 @@ import { executeFlow, type FlowExecutionResult } from './flowEngine';
 import {
   ensureWorkflowIo,
   getWorkflowExportFields,
+  getWorkflowExportNode,
   getWorkflowImportFields,
   getWorkflowImportNode,
 } from './workflowIo';
@@ -54,6 +55,7 @@ export function resolveFormFlowValue(expression: unknown, context: FormControlEv
     '$field': context.field,
     '$event': context.eventName,
     '$values': context.values,
+    '$form': context.values,
     '$formData': context.values,
     '$originalValues': context.originalValues || {},
     '$component': context.component,
@@ -139,6 +141,23 @@ export async function executeFormFlowTrigger(
   await loadNodeRegistry();
   const parameters = resolveFormFlowParameters(config, context);
   const migrated = ensureWorkflowIo(workflow, { legacyTargetNodeId: config.targetNodeId });
+  const isLegacyWithoutExport = !getWorkflowExportNode(workflow);
+  const hasOnlyMissingExportError = migrated.errors.length > 0
+    && migrated.errors.every((error) => error === '流程导出节点还没有定义字段');
+  if (isLegacyWithoutExport && hasOnlyMissingExportError) {
+    const { variables, nodeInputs } = splitFlowParameterTargets(workflow, parameters);
+    const result = await executeFlow(
+      workflow.nodes.map((node) => ({ id: node.id, specId: node.specId, position: node.position, data: node.data })),
+      workflow.edges.map((edge) => ({ ...edge })),
+      tables,
+      { targetNodeId: config.targetNodeId, variables, nodeInputs },
+    );
+    for (const effect of result.sideEffects) {
+      if (effect.kind === 'set-form-value') result.finalOutputs[effect.field] = effect.value;
+    }
+    if (result.debug) result.debug.exportKeys = Object.keys(result.finalOutputs);
+    return result;
+  }
   if (migrated.errors.length > 0) {
     throw new Error(migrated.errors.join('；'));
   }

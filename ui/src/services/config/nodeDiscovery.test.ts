@@ -92,7 +92,7 @@ test('compatible port selection prefers same name, then exact type, required and
 test('all registered nodes build searchable documents and map to current discovery groups', async () => {
   const root = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
   const packageDirs = readdirSync(join(root, 'nodes'), { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && /^(func-|behavior-|generic-|ml-)/.test(entry.name))
+    .filter((entry) => entry.isDirectory() && /^(func-|behavior-|generic-|ml-|form-|data-|logic-|flow-)/.test(entry.name))
     .filter((entry) => existsSync(join(root, 'nodes', entry.name, 'schema.json')))
     .map((entry) => entry.name);
   const base = await loadNodeRegistry();

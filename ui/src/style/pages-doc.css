@@ -657,7 +657,7 @@ button.docs-breadcrumb-link {
 
 .doc-code-copy:hover {
   color: #e2e8f0;
-  border-color: #64748b;
+  border-color: var(--text-secondary);
 }
 
 /* ── Section Divider & Heading Hierarchy ───────────────── */
@@ -1115,7 +1115,7 @@ button.docs-breadcrumb-link {
   padding: 4px 10px;
   border-radius: 999px;
   background: rgba(37, 99, 235, 0.1);
-  color: #1d4ed8;
+  color: var(--accent);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -1178,7 +1178,7 @@ button.docs-breadcrumb-link {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
-  color: #475569;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
@@ -1186,7 +1186,7 @@ button.docs-breadcrumb-link {
   padding: 3px 8px;
   border-radius: 999px;
   background: rgba(148, 163, 184, 0.12);
-  color: #334155;
+  color: var(--text-secondary);
 }
 
 .docs-playground-panels {
@@ -1212,8 +1212,8 @@ button.docs-breadcrumb-link {
   border: 1px solid rgba(148, 163, 184, 0.24);
   border-radius: 14px;
   padding: 12px;
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--panel-soft);
+  color: var(--text);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
   line-height: 1.6;

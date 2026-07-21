@@ -1,6 +1,7 @@
 // 可视化规则构建器 — 触发器/条件/动作 UI，与代码双向同步
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { AntdCompatSelect } from './AntdFormControls';
 import type { EventFieldDescriptor } from './codeEditorSuggestions';
 
 // ── 类型定义 ──────────────────────────────────────────
@@ -228,20 +229,20 @@ export default function RuleBuilder({ code, eventName, fields, onChange }: RuleB
       {/* 触发器 */}
       <div>
         <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', marginBottom: 4, textTransform: 'uppercase' }}>触发器</div>
-        <select
+        <AntdCompatSelect
           value={rule.trigger.type}
           onChange={(e) => updateRule((prev) => ({ ...prev, trigger: { ...prev.trigger, type: e.target.value } }))}
           style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid var(--line)', borderRadius: 6, background: 'var(--panel)' }}
         >
           {TRIGGER_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-        </select>
+        </AntdCompatSelect>
       </div>
 
       {/* 条件 */}
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
           <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase' }}>条件</span>
-          <button
+          <button type="button"
             onClick={() => updateRule((prev) => ({
               ...prev,
               conditions: [...prev.conditions, { field: fieldNames[0] || '', operator: '==', value: '', logic: 'AND' }],
@@ -258,7 +259,7 @@ export default function RuleBuilder({ code, eventName, fields, onChange }: RuleB
             {rule.conditions.map((cond, i) => (
               <div key={i} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                 {i > 0 && (
-                  <select
+                  <AntdCompatSelect
                     value={cond.logic}
                     onChange={(e) => updateRule((prev) => {
                       const conds = [...prev.conditions];
@@ -269,9 +270,9 @@ export default function RuleBuilder({ code, eventName, fields, onChange }: RuleB
                   >
                     <option value="AND">且</option>
                     <option value="OR">或</option>
-                  </select>
+                  </AntdCompatSelect>
                 )}
-                <select
+                <AntdCompatSelect
                   value={cond.field}
                   onChange={(e) => updateRule((prev) => {
                     const conds = [...prev.conditions];
@@ -281,8 +282,8 @@ export default function RuleBuilder({ code, eventName, fields, onChange }: RuleB
                   style={{ flex: 1, padding: '4px 6px', fontSize: 11, border: '1px solid var(--line)', borderRadius: 4, background: 'var(--panel)' }}
                 >
                   {fieldNames.map((f) => <option key={f} value={f}>{f}</option>)}
-                </select>
-                <select
+                </AntdCompatSelect>
+                <AntdCompatSelect
                   value={cond.operator}
                   onChange={(e) => updateRule((prev) => {
                     const conds = [...prev.conditions];
@@ -292,7 +293,7 @@ export default function RuleBuilder({ code, eventName, fields, onChange }: RuleB
                   style={{ width: 80, padding: '4px 6px', fontSize: 11, border: '1px solid var(--line)', borderRadius: 4, background: 'var(--panel)' }}
                 >
                   {CONDITION_OPERATORS.map((op) => <option key={op.value} value={op.value}>{op.label}</option>)}
-                </select>
+                </AntdCompatSelect>
                 {!['isEmpty', 'isNotEmpty'].includes(cond.operator) && (
                   <input
                     type="text"
@@ -306,7 +307,7 @@ export default function RuleBuilder({ code, eventName, fields, onChange }: RuleB
                     style={{ flex: 1, padding: '4px 6px', fontSize: 11, border: '1px solid var(--line)', borderRadius: 4, background: 'var(--panel)' }}
                   />
                 )}
-                <button
+                <button type="button"
                   onClick={() => updateRule((prev) => ({ ...prev, conditions: prev.conditions.filter((_, j) => j !== i) }))}
                   style={{ padding: '2px 6px', fontSize: 12, border: 'none', background: 'transparent', color: 'var(--muted)', cursor: 'pointer' }}
                 >
@@ -322,7 +323,7 @@ export default function RuleBuilder({ code, eventName, fields, onChange }: RuleB
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
           <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase' }}>动作</span>
-          <button
+          <button type="button"
             onClick={() => updateRule((prev) => ({
               ...prev,
               actions: [...prev.actions, { type: 'setValue', target: fieldNames[0] || '', value: '' }],
@@ -340,7 +341,7 @@ export default function RuleBuilder({ code, eventName, fields, onChange }: RuleB
               const actionType = ACTION_TYPES.find((a) => a.value === action.type);
               return (
                 <div key={i} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                  <select
+                  <AntdCompatSelect
                     value={action.type}
                     onChange={(e) => updateRule((prev) => {
                       const acts = [...prev.actions];
@@ -350,9 +351,9 @@ export default function RuleBuilder({ code, eventName, fields, onChange }: RuleB
                     style={{ width: 90, padding: '4px 6px', fontSize: 11, border: '1px solid var(--line)', borderRadius: 4, background: 'var(--panel)' }}
                   >
                     {ACTION_TYPES.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
-                  </select>
+                  </AntdCompatSelect>
                   {actionType?.needsTarget !== false && (
-                    <select
+                    <AntdCompatSelect
                       value={action.target}
                       onChange={(e) => updateRule((prev) => {
                         const acts = [...prev.actions];
@@ -362,7 +363,7 @@ export default function RuleBuilder({ code, eventName, fields, onChange }: RuleB
                       style={{ flex: 1, padding: '4px 6px', fontSize: 11, border: '1px solid var(--line)', borderRadius: 4, background: 'var(--panel)' }}
                     >
                       {fieldNames.map((f) => <option key={f} value={f}>{f}</option>)}
-                    </select>
+                    </AntdCompatSelect>
                   )}
                   {actionType?.needsValue !== false && (
                     <input
@@ -377,7 +378,7 @@ export default function RuleBuilder({ code, eventName, fields, onChange }: RuleB
                       style={{ flex: 1, padding: '4px 6px', fontSize: 11, border: '1px solid var(--line)', borderRadius: 4, background: 'var(--panel)' }}
                     />
                   )}
-                  <button
+                  <button type="button"
                     onClick={() => updateRule((prev) => ({ ...prev, actions: prev.actions.filter((_, j) => j !== i) }))}
                     style={{ padding: '2px 6px', fontSize: 12, border: 'none', background: 'transparent', color: 'var(--muted)', cursor: 'pointer' }}
                   >

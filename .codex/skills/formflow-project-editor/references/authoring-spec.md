@@ -18,6 +18,9 @@ project:
   version: 2.0.0
   author: FormFlow Agent
   tags: [员工, CRUD]
+  access:                       # optional; server-managed project ACL
+    ownerId: user-123
+    members: {}
 now: 2026-07-13T00:00:00.000Z # optional; stabilizes timestamps
 settings:
   publish:
@@ -30,6 +33,11 @@ forms: []
 behaviors: []
 workflows: []
 outputs: []
+testing:                         # optional; persisted regression assets
+  profiles: []
+  suites: []
+  fixtures: []
+  runs: []
 ```
 
 Only `project.id` and `project.name` are required. IDs must match `[A-Za-z0-9_-]+`. Omitted collections become empty and settings receive FormFlow defaults.
@@ -48,9 +56,10 @@ data:
         frozenRows: 1
         frozenColumns: 1
         filterEnabled: true
+        previewRows: 240             # optional; runtime preview rows, 1..1000, defaults to 100
 ```
 
-`path` accepts `.xlsx`, `.xls`, `.csv`, and `.json`. Relative paths resolve from the YAML file. JSON may be an array of objects or an object whose array-valued properties become sheets. The tool infers headers, column types, nullability, unique counts, samples, preview rows, hashes, and indexes. Configure every editable sheet with a non-empty unique key. `readOnly: true` permits no key.
+`path` accepts `.xlsx`, `.xls`, `.csv`, and `.json`. Relative paths resolve from the YAML file. JSON may be an array of objects or an object whose array-valued properties become sheets. The tool infers headers, column types, nullability, unique counts, samples, preview rows, hashes, and indexes. Runtime preview defaults to 100 rows; set `previewRows` from 1 to 1000 only when in-package workflows or controls must access more rows. Configure every editable sheet with a non-empty unique key. `readOnly: true` permits no key.
 
 ## Forms and behaviors
 
@@ -83,6 +92,9 @@ forms:
           flowTriggers:
             onClick: { enabled: true, workflowId: save-employee }
     bindings: []
+    ruleCode: |
+      when 部门 == "技术部" -> show 技术栈
+      otherwise -> hide 技术栈
     behaviors:
       - id: validate-name
         name: 校验姓名
@@ -98,6 +110,8 @@ sheetBehaviors:
 ```
 
 Coordinates and sizes are optional. The deterministic grid layout uses component order. Explicit values win. Components may contain arbitrary `props`; bindings may contain arbitrary `config`.
+
+Every form receives an independent `ruleCode` string. It defaults to an empty string and is stored in the form's `.behaviors.json` file alongside scripted behaviors. Use it for the controlled rule DSL edited by FormFlow's “行为定义 → 规则语法” workspace.
 
 ## Workflows and outputs
 

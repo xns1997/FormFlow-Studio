@@ -1,0 +1,165 @@
+{
+  "id": "inspection_record",
+  "fileName": "inspection_record.json",
+  "fileSize": 279,
+  "fileType": "json",
+  "uploadedAt": "2026-07-20T09:53:20.068Z",
+  "dataHash": "4935c1ef05049ce3fc4580c4a4b85f8093e48322c6dd229c95df0b93eefc2ea4",
+  "sheets": [
+    {
+      "name": "Sheet1",
+      "rowCount": 1,
+      "colCount": 11,
+      "headers": [
+        "巡检单号",
+        "设备编号",
+        "巡检人员",
+        "巡检时间",
+        "运行温度",
+        "振动值",
+        "外观状态",
+        "巡检结论",
+        "问题描述",
+        "现场照片",
+        "是否需要维修"
+      ],
+      "columns": [
+        {
+          "name": "巡检单号",
+          "index": 0,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "IC20231101001"
+          ]
+        },
+        {
+          "name": "设备编号",
+          "index": 1,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "EQ001"
+          ]
+        },
+        {
+          "name": "巡检人员",
+          "index": 2,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "李四"
+          ]
+        },
+        {
+          "name": "巡检时间",
+          "index": 3,
+          "dataType": "date",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "2023-11-01 08:30:00"
+          ]
+        },
+        {
+          "name": "运行温度",
+          "index": 4,
+          "dataType": "number",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            45.2
+          ]
+        },
+        {
+          "name": "振动值",
+          "index": 5,
+          "dataType": "number",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            0.12
+          ]
+        },
+        {
+          "name": "外观状态",
+          "index": 6,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "正常"
+          ]
+        },
+        {
+          "name": "巡检结论",
+          "index": 7,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "合格"
+          ]
+        },
+        {
+          "name": "问题描述",
+          "index": 8,
+          "dataType": "unknown",
+          "nullable": true,
+          "uniqueCount": 0,
+          "sampleValues": []
+        },
+        {
+          "name": "现场照片",
+          "index": 9,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "photo_001.jpg"
+          ]
+        },
+        {
+          "name": "是否需要维修",
+          "index": 10,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "否"
+          ]
+        }
+      ],
+      "preview": [
+        {
+          "巡检单号": "IC20231101001",
+          "设备编号": "EQ001",
+          "巡检人员": "李四",
+          "巡检时间": "2023-11-01 08:30:00",
+          "运行温度": 45.2,
+          "振动值": 0.12,
+          "外观状态": "正常",
+          "巡检结论": "合格",
+          "问题描述": "",
+          "现场照片": "photo_001.jpg",
+          "是否需要维修": "否"
+        }
+      ],
+      "config": {
+        "id": "Sheet1",
+        "tableName": "Sheet1",
+        "keyFields": [
+          "巡检单号"
+        ],
+        "readOnly": false,
+        "frozenRows": 0,
+        "frozenColumns": 0,
+        "filterEnabled": true,
+        "sortEnabled": true
+      }
+    }
+  ]
+}

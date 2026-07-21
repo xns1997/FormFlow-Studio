@@ -53,9 +53,9 @@ function tokenize(source: string): Token[] {
     }
     const operator = OPERATORS.find((candidate) => source.startsWith(candidate, index));
     if (operator) { tokens.push({ type: 'operator', value: operator, position: index }); index += operator.length; continue; }
-    if (/[A-Za-z_$\u4e00-\u9fff]/.test(char)) {
+    if (/[A-Za-z_$@\u4e00-\u9fff]/.test(char)) {
       const start = index++;
-      while (/[\w$\u4e00-\u9fff]/.test(source[index] || '')) index++;
+      while (/[\w$@\u4e00-\u9fff]/.test(source[index] || '')) index++;
       tokens.push({ type: 'identifier', value: source.slice(start, index), position: start });
       continue;
     }
@@ -84,6 +84,34 @@ const FUNCTIONS: Record<string, (...args: unknown[]) => unknown> = {
     const parsed = new Date(String(value ?? ''));
     if (Number.isNaN(parsed.getTime())) throw new Error('date() 收到无效日期');
     return parsed.toISOString();
+  },
+  dateDiff: (left, right, unit = 'day') => {
+    const milliseconds = new Date(String(left ?? '')).getTime() - new Date(String(right ?? '')).getTime();
+    if (Number.isNaN(milliseconds)) throw new Error('dateDiff() 收到无效日期');
+    const divisor = unit === 'hour' ? 3_600_000 : unit === 'minute' ? 60_000 : unit === 'second' ? 1_000 : 86_400_000;
+    return milliseconds / divisor;
+  },
+  formatDate: (value, format = 'YYYY-MM-DD') => {
+    const parsed = new Date(String(value ?? ''));
+    if (Number.isNaN(parsed.getTime())) throw new Error('formatDate() 收到无效日期');
+    const parts: Record<string, string> = {
+      YYYY: String(parsed.getFullYear()), MM: String(parsed.getMonth() + 1).padStart(2, '0'), DD: String(parsed.getDate()).padStart(2, '0'),
+      HH: String(parsed.getHours()).padStart(2, '0'), mm: String(parsed.getMinutes()).padStart(2, '0'), ss: String(parsed.getSeconds()).padStart(2, '0'),
+    };
+    return String(format).replace(/YYYY|MM|DD|HH|mm|ss/g, (part) => parts[part]);
+  },
+  sum: (value) => Array.isArray(value) ? value.reduce((total, item) => total + Number(item || 0), 0) : Number(value || 0),
+  unique: (value) => Array.isArray(value) ? [...new Set(value)] : value,
+  lookup: (collection, key, valueField) => {
+    if (Array.isArray(collection)) {
+      const row = collection.find((item) => item && typeof item === 'object' && (item as Record<string, unknown>).key === key);
+      return valueField && row && typeof row === 'object' ? (row as Record<string, unknown>)[String(valueField)] : row;
+    }
+    return collection && typeof collection === 'object' ? (collection as Record<string, unknown>)[String(key)] : undefined;
+  },
+  match: (value, ...cases) => {
+    for (let index = 0; index + 1 < cases.length; index += 2) if (value === cases[index]) return cases[index + 1];
+    return cases.length % 2 ? cases[cases.length - 1] : undefined;
   },
 };
 
@@ -142,7 +170,11 @@ class Parser {
       }
       return fn(...args);
     }
-    const path = [token.value];
+    if (token.value === '@today') return new Date().toISOString().slice(0, 10);
+    if (token.value === '@now') return new Date().toISOString();
+    const rootAliases = new Set(['form', 'row', 'table', 'flow', 'event', 'user', 'original', 'component', 'context']);
+    const rawRoot = token.value.startsWith('$') || token.value.startsWith('@') ? token.value.slice(1) : token.value;
+    const path = token.value.startsWith('$') && !rootAliases.has(rawRoot) ? ['form', rawRoot] : [rawRoot];
     while (true) {
       if (this.accept('.')) {
         const segment = this.take();
@@ -212,6 +244,8 @@ export const PROPERTY_EXPRESSION_FUNCTION_DETAILS: Record<string, string> = {
   contains: 'contains(value, search) → 是否包含', startsWith: 'startsWith(value, search) → 是否以文本开头', endsWith: 'endsWith(value, search) → 是否以文本结尾',
   coalesce: 'coalesce(a, b, ...) → 第一个非空值', round: 'round(value, digits) → 四舍五入', min: 'min(a, b, ...) → 最小值', max: 'max(a, b, ...) → 最大值',
   abs: 'abs(value) → 绝对值', now: 'now() → 当前时间', date: 'date(value) → ISO 日期时间',
+  dateDiff: 'dateDiff(a, b, unit?) → 日期差', formatDate: 'formatDate(value, format) → 格式化日期', sum: 'sum(values) → 求和',
+  unique: 'unique(values) → 去重', lookup: 'lookup(collection, key, valueField?) → 查找', match: 'match(value, case, result, ..., default?) → 匹配',
 };
 
 export interface RuntimePropertyResult {

@@ -26,7 +26,13 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
     syncSelectionOverlay,
   } = ctx;
 
-  const addComponent = useCallback((type: string, x: number, y: number, dropPoint?: { x: number; y: number }) => {
+  const addComponent = useCallback((
+    type: string,
+    x: number,
+    y: number,
+    dropPoint?: { x: number; y: number },
+    initialProps?: Record<string, any>,
+  ) => {
     const control = getControl(type);
     if (!control) return;
     const graph = graphRef.current;
@@ -42,7 +48,7 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
       width: size.width,
       height: size.height,
       zIndex: graph.getNodes().length + 1,
-      props: { ...control.defaultProps, name: autoName },
+      props: { ...control.defaultProps, name: autoName, ...initialProps },
     };
 
     comp.parentId = (dropPoint ? findContainerAtPoint(dropPoint.x, dropPoint.y, componentsRef.current) : undefined)
@@ -156,8 +162,6 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
     const currentPoint = graph.clientToLocal(clientX, clientY);
     const dx = currentPoint.x - startPoint.x;
     const dy = currentPoint.y - startPoint.y;
-    const min = { w: 96, h: 28 };
-
     let x = start.x;
     let y = start.y;
     let width = start.width;
@@ -174,13 +178,14 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
       y = start.y + dy;
     }
 
-    if (width < min.w) {
-      if (handle.includes('w')) x -= min.w - width;
-      width = min.w;
+    const bounded = clampSize(start.type, width, height);
+    if (width < bounded.width) {
+      if (handle.includes('w')) x -= bounded.width - width;
+      width = bounded.width;
     }
-    if (height < min.h) {
-      if (handle.includes('n')) y -= min.h - height;
-      height = min.h;
+    if (height < bounded.height) {
+      if (handle.includes('n')) y -= bounded.height - height;
+      height = bounded.height;
     }
 
     const next = {
@@ -201,7 +206,7 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
     setNodeComponentData(node, component, true);
     commitComponents((prev) => finalizeComponents(prev.map((item) => item.id === id ? component : item)));
     syncSelectionOverlay(id);
-  }, [graphRef, selectedIdRef, componentsRef, commitComponents, setNodeComponentData, finalizeComponents, syncSelectionOverlay]);
+  }, [graphRef, selectedIdRef, componentsRef, clampSize, commitComponents, setNodeComponentData, finalizeComponents, syncSelectionOverlay]);
 
   const reparentComponent = useCallback((id: string, parentId?: string) => {
     const target = parentId ? componentsRef.current.find((component) => component.id === parentId) : undefined;

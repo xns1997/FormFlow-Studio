@@ -33,7 +33,7 @@
   border: none;
   border-radius: 14px;
   background: transparent;
-  color: #475569;
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 700;
   transition: all 0.2s ease;

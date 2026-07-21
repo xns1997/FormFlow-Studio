@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import type { DesignComponent, DesignFile } from '../../project/types';
 import type { DesignerState } from './useDesignerState';
 import { autoResizeContainers } from '../utils';
+import { hydrateControlComponent } from '../registry';
 
 interface DesignerIOCtx extends DesignerState {
   renderDesignOnGraph: (graph: any, design: DesignFile) => void;
@@ -30,7 +31,8 @@ export function useDesignerIO(ctx: DesignerIOCtx) {
     if (!graph) {
       viewportRef.current = design.viewport;
       pendingDesignRef.current = design;
-      const normalized = autoResizeContainers(design.components.map((comp) => {
+      const normalized = autoResizeContainers(design.components.map((source) => {
+        const comp = hydrateControlComponent(source);
         const size = clampSize(comp.type, comp.width, comp.height);
         return { ...comp, width: size.width, height: size.height };
       }));

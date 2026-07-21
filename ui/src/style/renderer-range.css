@@ -10,7 +10,7 @@
 .lg-date-range-sep {
   font-size: 12px;
   font-weight: 700;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .lg-picker-shell {

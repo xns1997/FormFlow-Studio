@@ -9,13 +9,16 @@ import {
 import { applyProjectWriteBacks } from '../services/io/projectWriteBack';
 import { collectFlowSideEffects } from '../services/engine/flowSideEffects';
 import { useProjectStore } from '../project/store';
-import { getPreviewInitialValue } from '../services/display/previewValues';
+import { getPreviewInitialValue, getPreviewInitializationSignature } from '../services/display/previewValues';
 import DebugDrawer from '../components/DebugDrawer';
 import { resolveExpressionValues, resolveRuntimeProperties } from '../services/engine/propertyExpression';
 import { compileComponentValidation, validateField } from '../services/engine/validator';
 import { resolveBindingWrite, resolveDataBindingValue } from '../services/data/dataBinding';
+import { maskRuntimeValues, publishFormRuntimeSnapshot, removeFormRuntimeSnapshot } from '../services/engine/formRuntimeSnapshot';
+import { resolveOptionSource } from '../services/data/optionSource';
 
 interface PreviewCanvasProps {
+  formId?: string;
   components: DesignComponent[];
   zoom: number;
   workflows: WorkflowFile[];
@@ -30,7 +33,7 @@ interface EventStatus {
   details?: string[];
 }
 
-export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCanvasProps) {
+export function PreviewCanvas({ formId, components, zoom, workflows, tables }: PreviewCanvasProps) {
   const project = useProjectStore((state) => state.project);
   const persistProject = useProjectStore((state) => state.persistProject);
   const [values, setValues] = useState<Record<string, unknown>>({});
@@ -38,6 +41,7 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
   const [componentVisibility, setComponentVisibility] = useState<Record<string, boolean>>({});
   const [componentDisabled, setComponentDisabled] = useState<Record<string, boolean>>({});
   const [fieldRequired, setFieldRequired] = useState<Record<string, boolean>>({});
+  const [componentOptions, setComponentOptions] = useState<Record<string, Array<{ label: string; value: unknown }>>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<EventStatus | null>(null);
   const [debugEntries, setDebugEntries] = useState<DebugEntry[]>([]);
@@ -54,6 +58,30 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
   const componentFieldsRef = useRef(new Map<string, string>());
   const initializationSignaturesRef = useRef(new Map<string, string>());
   const validationSignaturesRef = useRef(new Map<string, string>());
+
+  useEffect(() => {
+    if (!formId) return;
+    publishFormRuntimeSnapshot({
+      formId,
+      capturedAt: new Date().toISOString(),
+      source: 'live',
+      values: maskRuntimeValues(expressionValues),
+      originalValues: maskRuntimeValues(originalValues),
+      dirtyFields: [...dirtyFieldsRef.current],
+      componentStates: Object.fromEntries(components.map((component) => {
+        const field = getDesignComponentField(component);
+        return [component.id, {
+          visible: componentVisibility[component.id] ?? component.visible !== false,
+          disabled: componentDisabled[component.id] ?? Boolean(component.props?.disabled),
+          required: fieldRequired[field] ?? Boolean(component.props?.required),
+        }];
+      })),
+      validationErrors: Object.fromEntries(Object.entries(fieldErrors).filter(([, message]) => Boolean(message))),
+      recentLogs: debugEntries.slice(-30).map(({ level, title, message, timestamp }) => ({ level, title, message, timestamp })),
+    });
+  }, [componentDisabled, componentVisibility, components, debugEntries, expressionValues, fieldErrors, fieldRequired, formId, originalValues]);
+
+  useEffect(() => () => { if (formId) removeFormRuntimeSnapshot(formId); }, [formId]);
 
   // ── 表单 → 工作表同步（防抖） ──────────────────────
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -103,7 +131,7 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
     for (const component of components) {
       const field = getDesignComponentField(component);
       fields.add(field); nextFields.set(component.id, field);
-      nextInitSignatures.set(component.id, JSON.stringify({ defaultValue: component.props.defaultValue, value: component.props.value, dataBinding: component.props.dataBinding, tableBinding: component.props.tableBinding, rangeRef: component.props.rangeRef }));
+      nextInitSignatures.set(component.id, getPreviewInitializationSignature(component));
       nextValidationSignatures.set(component.id, JSON.stringify({ required: component.props.required, requiredExpression: component.props.requiredExpression, validator: component.props.validator, pattern: component.props.pattern, min: component.props.min, max: component.props.max, validationRules: component.props.validationRules }));
     }
     setValues((current) => {
@@ -269,6 +297,15 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
         directEffects.required.add(nextField);
         setPreviewRequired(nextField, required);
       },
+      setOptions: (nextField, config) => {
+        const target = components.find((item) => getDesignComponentField(item) === nextField);
+        const source = tables.flatMap((table) => table.sheets.map((sheet) => ({ table, sheet }))).find(({ table, sheet }) => [table.id, table.fileName, sheet.name, `${table.id}:${sheet.name}`].includes(config.table));
+        if (!target || !source) return;
+        const labelField = config.labelField || source.sheet.headers.find((header) => header !== config.filterField) || source.sheet.headers[0];
+        const valueField = config.valueField || labelField;
+        const options = source.sheet.preview.filter((row) => row[config.filterField] == config.filterValue).map((row) => ({ label: String(row[labelField] ?? ''), value: row[valueField] }));
+        setComponentOptions((current) => ({ ...current, [target.id]: options }));
+      },
       showMessage: (message, level = 'info') => {
         directEffects.messages.push({ message, level });
       },
@@ -362,8 +399,8 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
   }, [appendDebugEntries, components, originalValues, persistProject, project, tables, values, expressionValues, workflows, setFieldValue, setPreviewVisible, setPreviewDisabled, setPreviewRequired, formatStatusDetails, formatTraceDetails]);
 
   const bounds = useMemo(() => {
-    const maxX = Math.max(960, ...components.map((component) => component.x + component.width + 80));
-    const maxY = Math.max(720, ...components.map((component) => component.y + component.height + 80));
+    const maxX = Math.max(960, ...components.map((component) => Number(component.x) + Number(component.width) + 80).filter(Number.isFinite));
+    const maxY = Math.max(720, ...components.map((component) => Number(component.y) + Number(component.height) + 80).filter(Number.isFinite));
     return { width: maxX, height: maxY };
   }, [components]);
 
@@ -382,10 +419,13 @@ export function PreviewCanvas({ components, zoom, workflows, tables }: PreviewCa
             const isHidden = (componentVisibility[component.id] ?? component.visible) === false || !resolved.visible;
             const isDisabled = !!(componentDisabled[component.id] ?? component.props.disabled) || resolved.disabled || !!component.props.valueExpression;
             const isRequired = !!(fieldRequired[field] ?? resolved.required);
+            const sourceOptions = component.type === 'select' ? resolveOptionSource(resolved.props.options, resolved.props.optionSource, tables).options : null;
             const patchedComponent = {
               ...component,
               props: {
                 ...resolved.props,
+                ...(sourceOptions ? { options: sourceOptions } : {}),
+                ...(componentOptions[component.id] ? { options: componentOptions[component.id] } : {}),
                 disabled: isDisabled,
                 required: isRequired,
               },

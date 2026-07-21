@@ -1,0 +1,766 @@
+{
+  "profiles": [],
+  "suites": [
+    {
+      "id": "suite_20260715",
+      "name": "项目自动回归",
+      "seed": 20260715,
+      "cases": [
+        {
+          "id": "equipment_archive_form:normal",
+          "formId": "equipment_archive_form",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "设备编号": "测试值1",
+            "设备名称": "测试值2",
+            "设备类型": "测试值3",
+            "所属区域": "测试值4",
+            "责任人": "测试值5",
+            "启用日期": "测试值6",
+            "运行状态": "测试值7",
+            "最近巡检日期": "测试值8",
+            "下次巡检日期": "测试值9"
+          },
+          "expectValid": true
+        },
+        {
+          "id": "equipment_archive_form:required",
+          "formId": "equipment_archive_form",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "设备编号": "",
+            "设备名称": "测试值2",
+            "设备类型": "测试值3",
+            "所属区域": "测试值4",
+            "责任人": "测试值5",
+            "启用日期": "测试值6",
+            "运行状态": "测试值7",
+            "最近巡检日期": "测试值8",
+            "下次巡检日期": "测试值9"
+          },
+          "expectValid": false
+        },
+        {
+          "id": "inspection_record_form:normal",
+          "formId": "inspection_record_form",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "巡检单号": "测试值1",
+            "设备编号": "测试值2",
+            "巡检人员": "测试值3",
+            "巡检时间": "测试值4",
+            "运行温度": "测试值5",
+            "振动值": "测试值6",
+            "外观状态": "测试值7",
+            "巡检结论": "测试值8",
+            "问题描述": "测试值9",
+            "现场照片": "测试值10",
+            "是否需要维修": "测试值11",
+            "设备名称": "测试值12",
+            "所属区域": "测试值13",
+            "责任人": "测试值14"
+          },
+          "expectValid": true
+        },
+        {
+          "id": "inspection_record_form:required",
+          "formId": "inspection_record_form",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "巡检单号": "",
+            "设备编号": "",
+            "巡检人员": "测试值3",
+            "巡检时间": "测试值4",
+            "运行温度": "测试值5",
+            "振动值": "测试值6",
+            "外观状态": "测试值7",
+            "巡检结论": "测试值8",
+            "问题描述": "测试值9",
+            "现场照片": "测试值10",
+            "是否需要维修": "测试值11",
+            "设备名称": "测试值12",
+            "所属区域": "测试值13",
+            "责任人": "测试值14"
+          },
+          "expectValid": false
+        },
+        {
+          "id": "fault_work_order_form:normal",
+          "formId": "fault_work_order_form",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "工单编号": "测试值1",
+            "来源巡检单号": "测试值2",
+            "设备编号": "测试值3",
+            "故障等级": "测试值4",
+            "故障描述": "测试值5",
+            "处理负责人": "测试值6",
+            "创建时间": "测试值7",
+            "计划完成时间": "测试值8",
+            "实际完成时间": "测试值9",
+            "状态": "测试值10",
+            "处理结果": "测试值11",
+            "复核意见": "测试值12"
+          },
+          "expectValid": true
+        },
+        {
+          "id": "fault_work_order_form:required",
+          "formId": "fault_work_order_form",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "工单编号": "",
+            "来源巡检单号": "测试值2",
+            "设备编号": "测试值3",
+            "故障等级": "测试值4",
+            "故障描述": "测试值5",
+            "处理负责人": "测试值6",
+            "创建时间": "测试值7",
+            "计划完成时间": "测试值8",
+            "实际完成时间": "测试值9",
+            "状态": "测试值10",
+            "处理结果": "测试值11",
+            "复核意见": "测试值12"
+          },
+          "expectValid": false
+        },
+        {
+          "id": "query_form:normal",
+          "formId": "query_form",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "设备编号": "测试值1",
+            "区域": "测试值2",
+            "日期范围": "测试值3",
+            "故障等级": "测试值4",
+            "工单状态": "测试值5"
+          },
+          "expectValid": true
+        }
+      ],
+      "createdAt": "2026-07-21T02:09:55.865Z"
+    },
+    {
+      "id": "suite_20260721",
+      "name": "项目自动回归",
+      "seed": 20260721,
+      "cases": [
+        {
+          "id": "equipment_archive_form:normal",
+          "formId": "equipment_archive_form",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "设备编号": "测试值1",
+            "设备名称": "测试值2",
+            "设备类型": "测试值3",
+            "所属区域": "测试值4",
+            "责任人": "测试值5",
+            "启用日期": "测试值6",
+            "运行状态": "测试值7",
+            "最近巡检日期": "测试值8",
+            "下次巡检日期": "测试值9"
+          },
+          "expectValid": true
+        },
+        {
+          "id": "equipment_archive_form:required",
+          "formId": "equipment_archive_form",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "设备编号": "",
+            "设备名称": "测试值2",
+            "设备类型": "测试值3",
+            "所属区域": "测试值4",
+            "责任人": "测试值5",
+            "启用日期": "测试值6",
+            "运行状态": "测试值7",
+            "最近巡检日期": "测试值8",
+            "下次巡检日期": "测试值9"
+          },
+          "expectValid": false
+        },
+        {
+          "id": "inspection_record_form:normal",
+          "formId": "inspection_record_form",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "巡检单号": "测试值1",
+            "设备编号": "测试值2",
+            "巡检人员": "测试值3",
+            "巡检时间": "测试值4",
+            "运行温度": "测试值5",
+            "振动值": "测试值6",
+            "外观状态": "测试值7",
+            "巡检结论": "测试值8",
+            "问题描述": "测试值9",
+            "现场照片": "测试值10",
+            "是否需要维修": "测试值11",
+            "设备名称": "测试值12",
+            "所属区域": "测试值13",
+            "责任人": "测试值14"
+          },
+          "expectValid": true
+        },
+        {
+          "id": "inspection_record_form:required",
+          "formId": "inspection_record_form",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "巡检单号": "",
+            "设备编号": "",
+            "巡检人员": "测试值3",
+            "巡检时间": "测试值4",
+            "运行温度": "测试值5",
+            "振动值": "测试值6",
+            "外观状态": "测试值7",
+            "巡检结论": "测试值8",
+            "问题描述": "测试值9",
+            "现场照片": "测试值10",
+            "是否需要维修": "测试值11",
+            "设备名称": "测试值12",
+            "所属区域": "测试值13",
+            "责任人": "测试值14"
+          },
+          "expectValid": false
+        },
+        {
+          "id": "fault_work_order_form:normal",
+          "formId": "fault_work_order_form",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "工单编号": "测试值1",
+            "来源巡检单号": "测试值2",
+            "设备编号": "测试值3",
+            "故障等级": "测试值4",
+            "故障描述": "测试值5",
+            "处理负责人": "测试值6",
+            "创建时间": "测试值7",
+            "计划完成时间": "测试值8",
+            "实际完成时间": "测试值9",
+            "状态": "测试值10",
+            "处理结果": "测试值11",
+            "复核意见": "测试值12"
+          },
+          "expectValid": true
+        },
+        {
+          "id": "fault_work_order_form:required",
+          "formId": "fault_work_order_form",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "工单编号": "",
+            "来源巡检单号": "测试值2",
+            "设备编号": "测试值3",
+            "故障等级": "测试值4",
+            "故障描述": "测试值5",
+            "处理负责人": "测试值6",
+            "创建时间": "测试值7",
+            "计划完成时间": "测试值8",
+            "实际完成时间": "测试值9",
+            "状态": "测试值10",
+            "处理结果": "测试值11",
+            "复核意见": "测试值12"
+          },
+          "expectValid": false
+        },
+        {
+          "id": "query_form:normal",
+          "formId": "query_form",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "设备编号": "测试值1",
+            "区域": "测试值2",
+            "日期范围": "测试值3",
+            "故障等级": "测试值4",
+            "工单状态": "测试值5"
+          },
+          "expectValid": true
+        }
+      ],
+      "createdAt": "2026-07-21T04:20:07.253Z"
+    }
+  ],
+  "fixtures": [],
+  "runs": [
+    {
+      "id": "run_57ec505f-6819-4742-bdf1-1b26ac9c0ac9",
+      "suiteId": "suite_20260715",
+      "passed": true,
+      "coverage": 100,
+      "validation": {
+        "valid": true,
+        "errors": [],
+        "counts": {
+          "forms": 4,
+          "dataSources": 3,
+          "workflows": 1,
+          "behaviors": 0,
+          "outputs": 0
+        }
+      },
+      "results": [
+        {
+          "id": "equipment_archive_form:normal",
+          "formId": "equipment_archive_form",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "设备编号": "测试值1",
+            "设备名称": "测试值2",
+            "设备类型": "测试值3",
+            "所属区域": "测试值4",
+            "责任人": "测试值5",
+            "启用日期": "测试值6",
+            "运行状态": "测试值7",
+            "最近巡检日期": "测试值8",
+            "下次巡检日期": "测试值9"
+          },
+          "expectValid": true,
+          "passed": true,
+          "actualValid": true,
+          "errors": []
+        },
+        {
+          "id": "equipment_archive_form:required",
+          "formId": "equipment_archive_form",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "设备编号": "",
+            "设备名称": "测试值2",
+            "设备类型": "测试值3",
+            "所属区域": "测试值4",
+            "责任人": "测试值5",
+            "启用日期": "测试值6",
+            "运行状态": "测试值7",
+            "最近巡检日期": "测试值8",
+            "下次巡检日期": "测试值9"
+          },
+          "expectValid": false,
+          "passed": true,
+          "actualValid": false,
+          "errors": [
+            "设备编号 为必填项"
+          ]
+        },
+        {
+          "id": "inspection_record_form:normal",
+          "formId": "inspection_record_form",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "巡检单号": "测试值1",
+            "设备编号": "测试值2",
+            "巡检人员": "测试值3",
+            "巡检时间": "测试值4",
+            "运行温度": "测试值5",
+            "振动值": "测试值6",
+            "外观状态": "测试值7",
+            "巡检结论": "测试值8",
+            "问题描述": "测试值9",
+            "现场照片": "测试值10",
+            "是否需要维修": "测试值11",
+            "设备名称": "测试值12",
+            "所属区域": "测试值13",
+            "责任人": "测试值14"
+          },
+          "expectValid": true,
+          "passed": true,
+          "actualValid": true,
+          "errors": []
+        },
+        {
+          "id": "inspection_record_form:required",
+          "formId": "inspection_record_form",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "巡检单号": "",
+            "设备编号": "",
+            "巡检人员": "测试值3",
+            "巡检时间": "测试值4",
+            "运行温度": "测试值5",
+            "振动值": "测试值6",
+            "外观状态": "测试值7",
+            "巡检结论": "测试值8",
+            "问题描述": "测试值9",
+            "现场照片": "测试值10",
+            "是否需要维修": "测试值11",
+            "设备名称": "测试值12",
+            "所属区域": "测试值13",
+            "责任人": "测试值14"
+          },
+          "expectValid": false,
+          "passed": true,
+          "actualValid": false,
+          "errors": [
+            "巡检单号 为必填项",
+            "设备编号 为必填项"
+          ]
+        },
+        {
+          "id": "fault_work_order_form:normal",
+          "formId": "fault_work_order_form",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "工单编号": "测试值1",
+            "来源巡检单号": "测试值2",
+            "设备编号": "测试值3",
+            "故障等级": "测试值4",
+            "故障描述": "测试值5",
+            "处理负责人": "测试值6",
+            "创建时间": "测试值7",
+            "计划完成时间": "测试值8",
+            "实际完成时间": "测试值9",
+            "状态": "测试值10",
+            "处理结果": "测试值11",
+            "复核意见": "测试值12"
+          },
+          "expectValid": true,
+          "passed": true,
+          "actualValid": true,
+          "errors": []
+        },
+        {
+          "id": "fault_work_order_form:required",
+          "formId": "fault_work_order_form",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "工单编号": "",
+            "来源巡检单号": "测试值2",
+            "设备编号": "测试值3",
+            "故障等级": "测试值4",
+            "故障描述": "测试值5",
+            "处理负责人": "测试值6",
+            "创建时间": "测试值7",
+            "计划完成时间": "测试值8",
+            "实际完成时间": "测试值9",
+            "状态": "测试值10",
+            "处理结果": "测试值11",
+            "复核意见": "测试值12"
+          },
+          "expectValid": false,
+          "passed": true,
+          "actualValid": false,
+          "errors": [
+            "工单编号 为必填项"
+          ]
+        },
+        {
+          "id": "query_form:normal",
+          "formId": "query_form",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "设备编号": "测试值1",
+            "区域": "测试值2",
+            "日期范围": "测试值3",
+            "故障等级": "测试值4",
+            "工单状态": "测试值5"
+          },
+          "expectValid": true,
+          "passed": true,
+          "actualValid": true,
+          "errors": []
+        }
+      ],
+      "ruleResults": [
+        {
+          "formId": "fault_work_order_form",
+          "passed": true,
+          "scenarios": [
+            {
+              "name": "语法与引用完整性",
+              "passed": true,
+              "details": [
+                "6 条规则已编译"
+              ]
+            },
+            {
+              "name": "副作用隔离",
+              "passed": true,
+              "details": [
+                "3 个外部动作已转为 mock"
+              ]
+            }
+          ],
+          "mockedEffects": [
+            {
+              "type": "message",
+              "detail": "mock message(warning)"
+            },
+            {
+              "type": "message",
+              "detail": "mock message(success)"
+            },
+            {
+              "type": "message",
+              "detail": "mock message(info)"
+            }
+          ],
+          "preview": [
+            "字段“处理负责人”变化且条件成立时，执行 2 个动作。",
+            "否则执行 3 个动作。",
+            "字段“复核意见”变化且条件成立时，执行 2 个动作。",
+            "否则执行 1 个动作。"
+          ]
+        }
+      ],
+      "mockedEffects": [
+        "数据写回",
+        "外部 API",
+        "流程副作用"
+      ],
+      "ranAt": "2026-07-21T02:10:00.796Z"
+    },
+    {
+      "id": "run_baf5db07-0677-4bff-a8eb-d3be30d91962",
+      "suiteId": "suite_20260721",
+      "passed": true,
+      "coverage": 100,
+      "validation": {
+        "valid": true,
+        "errors": [],
+        "counts": {
+          "forms": 4,
+          "dataSources": 3,
+          "workflows": 1,
+          "behaviors": 0,
+          "outputs": 0
+        }
+      },
+      "results": [
+        {
+          "id": "equipment_archive_form:normal",
+          "formId": "equipment_archive_form",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "设备编号": "测试值1",
+            "设备名称": "测试值2",
+            "设备类型": "测试值3",
+            "所属区域": "测试值4",
+            "责任人": "测试值5",
+            "启用日期": "测试值6",
+            "运行状态": "测试值7",
+            "最近巡检日期": "测试值8",
+            "下次巡检日期": "测试值9"
+          },
+          "expectValid": true,
+          "passed": true,
+          "actualValid": true,
+          "errors": []
+        },
+        {
+          "id": "equipment_archive_form:required",
+          "formId": "equipment_archive_form",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "设备编号": "",
+            "设备名称": "测试值2",
+            "设备类型": "测试值3",
+            "所属区域": "测试值4",
+            "责任人": "测试值5",
+            "启用日期": "测试值6",
+            "运行状态": "测试值7",
+            "最近巡检日期": "测试值8",
+            "下次巡检日期": "测试值9"
+          },
+          "expectValid": false,
+          "passed": true,
+          "actualValid": false,
+          "errors": [
+            "设备编号 为必填项"
+          ]
+        },
+        {
+          "id": "inspection_record_form:normal",
+          "formId": "inspection_record_form",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "巡检单号": "测试值1",
+            "设备编号": "测试值2",
+            "巡检人员": "测试值3",
+            "巡检时间": "测试值4",
+            "运行温度": "测试值5",
+            "振动值": "测试值6",
+            "外观状态": "测试值7",
+            "巡检结论": "测试值8",
+            "问题描述": "测试值9",
+            "现场照片": "测试值10",
+            "是否需要维修": "测试值11",
+            "设备名称": "测试值12",
+            "所属区域": "测试值13",
+            "责任人": "测试值14"
+          },
+          "expectValid": true,
+          "passed": true,
+          "actualValid": true,
+          "errors": []
+        },
+        {
+          "id": "inspection_record_form:required",
+          "formId": "inspection_record_form",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "巡检单号": "",
+            "设备编号": "",
+            "巡检人员": "测试值3",
+            "巡检时间": "测试值4",
+            "运行温度": "测试值5",
+            "振动值": "测试值6",
+            "外观状态": "测试值7",
+            "巡检结论": "测试值8",
+            "问题描述": "测试值9",
+            "现场照片": "测试值10",
+            "是否需要维修": "测试值11",
+            "设备名称": "测试值12",
+            "所属区域": "测试值13",
+            "责任人": "测试值14"
+          },
+          "expectValid": false,
+          "passed": true,
+          "actualValid": false,
+          "errors": [
+            "巡检单号 为必填项",
+            "设备编号 为必填项"
+          ]
+        },
+        {
+          "id": "fault_work_order_form:normal",
+          "formId": "fault_work_order_form",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "工单编号": "测试值1",
+            "来源巡检单号": "测试值2",
+            "设备编号": "测试值3",
+            "故障等级": "测试值4",
+            "故障描述": "测试值5",
+            "处理负责人": "测试值6",
+            "创建时间": "测试值7",
+            "计划完成时间": "测试值8",
+            "实际完成时间": "测试值9",
+            "状态": "测试值10",
+            "处理结果": "测试值11",
+            "复核意见": "测试值12"
+          },
+          "expectValid": true,
+          "passed": true,
+          "actualValid": true,
+          "errors": []
+        },
+        {
+          "id": "fault_work_order_form:required",
+          "formId": "fault_work_order_form",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "工单编号": "",
+            "来源巡检单号": "测试值2",
+            "设备编号": "测试值3",
+            "故障等级": "测试值4",
+            "故障描述": "测试值5",
+            "处理负责人": "测试值6",
+            "创建时间": "测试值7",
+            "计划完成时间": "测试值8",
+            "实际完成时间": "测试值9",
+            "状态": "测试值10",
+            "处理结果": "测试值11",
+            "复核意见": "测试值12"
+          },
+          "expectValid": false,
+          "passed": true,
+          "actualValid": false,
+          "errors": [
+            "工单编号 为必填项"
+          ]
+        },
+        {
+          "id": "query_form:normal",
+          "formId": "query_form",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "设备编号": "测试值1",
+            "区域": "测试值2",
+            "日期范围": "测试值3",
+            "故障等级": "测试值4",
+            "工单状态": "测试值5"
+          },
+          "expectValid": true,
+          "passed": true,
+          "actualValid": true,
+          "errors": []
+        }
+      ],
+      "ruleResults": [
+        {
+          "formId": "fault_work_order_form",
+          "passed": true,
+          "scenarios": [
+            {
+              "name": "语法与引用完整性",
+              "passed": true,
+              "details": [
+                "6 条规则已编译"
+              ]
+            },
+            {
+              "name": "副作用隔离",
+              "passed": true,
+              "details": [
+                "3 个外部动作已转为 mock"
+              ]
+            }
+          ],
+          "mockedEffects": [
+            {
+              "type": "message",
+              "detail": "mock message(warning)"
+            },
+            {
+              "type": "message",
+              "detail": "mock message(success)"
+            },
+            {
+              "type": "message",
+              "detail": "mock message(info)"
+            }
+          ],
+          "preview": [
+            "字段“处理负责人”变化且条件成立时，执行 2 个动作。",
+            "否则执行 3 个动作。",
+            "字段“复核意见”变化且条件成立时，执行 2 个动作。",
+            "否则执行 1 个动作。"
+          ]
+        }
+      ],
+      "mockedEffects": [
+        "数据写回",
+        "外部 API",
+        "流程副作用"
+      ],
+      "ranAt": "2026-07-21T04:20:12.102Z"
+    }
+  ]
+}

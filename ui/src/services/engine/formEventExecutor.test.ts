@@ -425,6 +425,36 @@ test('a callback can run its configured workflow with direct parameters without 
   assert.equal(result.flowResults.length, 1);
 });
 
+test('chain syntax batches field state, expressions, table lookup, and flow write-back', async () => {
+  const writes: Array<[string, unknown]> = [];
+  const visible: Array<[string, boolean]> = [];
+  const required: Array<[string, boolean]> = [];
+  const upserts: Array<[string, Record<string, unknown>, string]> = [];
+  const techComponent: ComponentNode = { ...component, id: 'tech', name: '技术栈', label: '技术栈' };
+  const result = await executeFormControlEvent({ ...context, values: { customerName: '新客户', 数量: 2, 单价: 6 } }, {
+    workflows: [workflow], tables, components: [component, techComponent],
+    setValue: (field, value) => { writes.push([field, value]); },
+    setVisible: (id, value) => { visible.push([id, value]); },
+    setRequired: (field, value) => { required.push([field, value]); },
+    upsertRow: (sheetId, record, options) => { upserts.push([sheetId, record, options.key]); },
+    code: `async (ctx) => {
+      await ctx.fields('技术栈').show().required().set('TypeScript');
+      await ctx.table('issue_catalog').find({ 问题类型: '账号开通' }).fillForm({ 默认处理人: '处理人' });
+      await ctx.table('issue_catalog').upsert({ 问题类型: '新问题', 默认处理人: ctx.getValue('customerName') }, { key: '问题类型' });
+      await ctx.flow('flow-1').run({ customerName: '链式流程' }).writeBack();
+      await ctx.setValue('总价', ctx.evaluate('$数量 * $单价'));
+      return ctx.form.values();
+    }`,
+  });
+  assert.equal(result.error, undefined);
+  assert.deepEqual(visible, [['tech', true]]);
+  assert.deepEqual(required, [['技术栈', true]]);
+  assert.ok(writes.some(([field, value]) => field === '技术栈' && value === 'TypeScript'));
+  assert.ok(writes.some(([field, value]) => field === '处理人' && value === '李青'));
+  assert.ok(writes.some(([field, value]) => field === '总价' && value === 12));
+  assert.deepEqual(upserts, [['issue_catalog', { 问题类型: '新问题', 默认处理人: '新客户' }, '问题类型']]);
+});
+
 test('event callbacks can query project sheets directly from ctx.querySheet', async () => {
   const typeComponent: ComponentNode = {
     id: 'issue-type',

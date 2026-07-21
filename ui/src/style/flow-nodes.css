@@ -21,14 +21,14 @@
 }
 
 .flow-node.scenario { border-left-color: var(--scenario); }
-.flow-node.generic { border-left-color: #ea580c; }
-.flow-node.behavior { border-left-color: #8b5cf6; }
+.flow-node.generic { border-left-color: var(--warning); }
+.flow-node.behavior { border-left-color: var(--paused); }
 .flow-node.method { border-left-color: var(--accent); }
-.flow-node.selected { outline: 2px solid rgba(37, 99, 235, 0.3); }
-.flow-node.debug-active { outline: 3px solid #f59e0b; box-shadow: 0 0 12px rgba(245, 158, 11, 0.4); }
+.flow-node.selected { outline: 2px solid var(--accent-line); }
+.flow-node.debug-active { outline: 3px solid var(--warning); box-shadow: 0 0 12px color-mix(in srgb, var(--warning) 40%, transparent); }
 
 .flow-node-kicker {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
@@ -87,7 +87,7 @@
 
 /* 右侧类型标签 - 右对齐 */
 .flow-node-field-type {
-  font-size: 9px;
+  font-size: 10px;
   font-family: 'SF Mono', 'Menlo', monospace;
   font-weight: 600;
   padding: 1px 6px;
@@ -103,34 +103,17 @@
   flex-shrink: 0;
 }
 
-/* 类型标签颜色 */
-.flow-node-field-type.type-any { background: #f3f4f6; color: #6b7280; }
-.flow-node-field-type.type-string { background: #dcfce7; color: #166534; }
-.flow-node-field-type.type-number { background: #dbeafe; color: #1e40af; }
-.flow-node-field-type.type-boolean { background: #fef3c7; color: #92400e; }
-.flow-node-field-type.type-array { background: #f3e8ff; color: #7c3aed; }
-.flow-node-field-type.type-object { background: #fce7f3; color: #9d174d; }
-.flow-node-field-type.type-enum { background: #e0e7ff; color: #3730a3; }
-.flow-node-field-type.type-color { background: #fee2e2; color: #991b1b; }
-.flow-node-field-type.type-trigger { background: #fef2f2; color: #dc2626; }
-.flow-node-field-type.type-workbook { background: #d1fae5; color: #065f46; }
-.flow-node-field-type.type-worksheet { background: #cffafe; color: #155e75; }
-.flow-node-field-type.type-cell { background: #dbeafe; color: #1e40af; }
-.flow-node-field-type.type-range { background: #dbeafe; color: #1e40af; }
-.flow-node-field-type.type-address { background: #dbeafe; color: #1e40af; }
-.flow-node-field-type.type-cell-ref { background: #dbeafe; color: #1e40af; }
-.flow-node-field-type.type-json-rows { background: #f3e8ff; color: #7c3aed; }
-.flow-node-field-type.type-aoa { background: #f3e8ff; color: #7c3aed; }
-.flow-node-field-type.type-headers { background: #dcfce7; color: #166534; }
-.flow-node-field-type.type-options { background: #fef3c7; color: #92400e; }
-.flow-node-field-type.type-file-data { background: #fee2e2; color: #991b1b; }
-.flow-node-field-type.type-csv-string { background: #dcfce7; color: #166534; }
-.flow-node-field-type.type-html-string { background: #fce7f3; color: #9d174d; }
-.flow-node-field-type.type-json-string { background: #f3e8ff; color: #7c3aed; }
-.flow-node-field-type.type-filter { background: #fef3c7; color: #92400e; }
-.flow-node-field-type.type-sort-config { background: #e0e7ff; color: #3730a3; }
-.flow-node-field-type.type-style { background: #fce7f3; color: #9d174d; }
-.flow-node-field-type.type-validation-rule { background: #fef3c7; color: #92400e; }
+/* 类型标签颜色：由一个语义色同时驱动标签与端口，自动适配深色模式。 */
+.flow-node-field-type { color: var(--type-color, var(--text-secondary)); background: color-mix(in srgb, var(--type-color, var(--text-secondary)) 13%, transparent); }
+.flow-node .type-any { --type-color: var(--text-secondary); }
+.flow-node :is(.type-string, .type-headers, .type-csv-string, .type-workbook) { --type-color: var(--success); }
+.flow-node :is(.type-number, .type-cell, .type-range, .type-address, .type-cell-ref) { --type-color: var(--accent); }
+.flow-node :is(.type-boolean, .type-options, .type-filter, .type-validation-rule) { --type-color: var(--warning); }
+.flow-node :is(.type-array, .type-json-rows, .type-aoa, .type-json-string, .type-sort-config, .type-style) { --type-color: var(--paused); }
+.flow-node :is(.type-object, .type-html-string) { --type-color: var(--excel); }
+.flow-node .type-enum { --type-color: var(--scenario); }
+.flow-node :is(.type-color, .type-trigger, .type-file-data) { --type-color: var(--danger); }
+.flow-node .type-worksheet { --type-color: #00a6b8; }
 
 /* 右侧占位 - 输出端口 */
 .flow-node-field-row > .port-placeholder:last-child,
@@ -153,59 +136,14 @@
 
 .port-handle:hover {
   transform: scale(1.3);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--type-color, var(--accent)) 20%, transparent);
 }
 
 .port-handle.in { left: -1px; }
 .port-handle.out { right: -1px; }
 
-/* 端口颜色 */
-.port-handle.type-string { border-color: #10b981; }
-.port-handle.type-string:hover { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); }
-
-.port-handle.type-number { border-color: #3b82f6; }
-.port-handle.type-number:hover { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
-
-.port-handle.type-boolean { border-color: #f59e0b; }
-.port-handle.type-boolean:hover { box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2); }
-
-.port-handle.type-array,
-.port-handle.type-json-rows,
-.port-handle.type-aoa { border-color: #8b5cf6; }
-.port-handle.type-array:hover,
-.port-handle.type-json-rows:hover,
-.port-handle.type-aoa:hover { box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2); }
-
-.port-handle.type-object,
-.port-handle.type-workbook,
-.port-handle.type-worksheet { border-color: #ec4899; }
-.port-handle.type-object:hover,
-.port-handle.type-workbook:hover,
-.port-handle.type-worksheet:hover { box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.2); }
-
-.port-handle.type-trigger { border-color: #ef4444; }
-.port-handle.type-trigger:hover { box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2); }
-
-.port-handle.type-any { border-color: #6b7280; }
-.port-handle.type-any:hover { box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.2); }
-
-.port-handle.type-headers,
-.port-handle.type-options { border-color: #10b981; }
-
-.port-handle.type-file-data,
-.port-handle.type-csv-string,
-.port-handle.type-html-string,
-.port-handle.type-json-string { border-color: #f59e0b; }
-
-.port-handle.type-filter,
-.port-handle.type-sort-config,
-.port-handle.type-style,
-.port-handle.type-validation-rule { border-color: #8b5cf6; }
-
-.port-handle.type-cell,
-.port-handle.type-range,
-.port-handle.type-address,
-.port-handle.type-cell-ref { border-color: #06b6d4; }
+/* 端口与对应类型标签共用同一语义色。 */
+.port-handle[class*="type-"] { border-color: var(--type-color, var(--accent)); }
 
 /* 端口占位 */
 .port-placeholder {
@@ -217,9 +155,9 @@
 .flow-node-error {
   padding: 4px 10px;
   font-size: 10px;
-  background: #fef2f2;
+  background: var(--danger-soft);
   color: var(--danger);
-  border-top: 1px solid #fecaca;
+  border-top: 1px solid color-mix(in srgb, var(--danger) 28%, transparent);
 }
 
 .flow-node-preview {
@@ -227,11 +165,11 @@
   height: 60px;
   margin: 0;
   overflow: auto;
-  background: #f0fdf4;
-  border-top: 1px solid #bbf7d0;
+  background: var(--success-soft);
+  border-top: 1px solid color-mix(in srgb, var(--success) 28%, transparent);
   padding: 4px 8px;
   font-size: 10px;
-  color: #0f5132;
+  color: var(--success);
   white-space: pre;
   word-break: break-all;
   overscroll-behavior: contain;
@@ -283,15 +221,45 @@
   overflow-x: auto;
 }
 
+.port-table-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 8px;
+  padding: 3px;
+  border: 1px solid rgba(148,163,184,.22);
+  border-radius: 9px;
+  background: var(--panel-soft);
+}
+
+.port-table-mode-switch .ui-btn-toolbar {
+  min-width: 54px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.port-table-mode-switch .ui-btn-toolbar.active {
+  border-color: rgba(37,99,235,.28);
+  background: var(--panel);
+  box-shadow: 0 2px 6px rgba(15,23,42,.10);
+}
+
 .port-table-editor table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 11px;
 }
 
+.port-table-editor .port-col-name { width: 23%; }
+.port-table-editor .port-col-label { width: 23%; }
+.port-table-editor .port-col-type { width: 21%; }
+.port-table-editor .port-col-description { width: auto; }
+.port-table-editor .port-col-action { width: 24px; }
+
 .port-table-editor th,
 .port-table-editor td {
-  padding: 3px 4px;
+  padding: 3px 2px;
   text-align: left;
   border-bottom: 1px solid var(--line);
 }
@@ -303,14 +271,19 @@
 }
 
 .port-table-editor td input,
-.port-table-editor td select {
+.port-table-editor td select,
+.port-table-editor td .ant-select {
   width: 100%;
-  padding: 3px 6px;
+  min-width: 0;
+  height: 27px;
+  padding: 3px 5px;
   font-size: 11px;
   border: 1px solid var(--line);
   border-radius: 3px;
   background: var(--panel);
 }
+
+.port-table-editor td .ant-select-selector { min-height: 27px; font-size: 11px; }
 
 .port-table-editor td input:focus,
 .port-table-editor td select:focus {
@@ -319,18 +292,14 @@
 }
 
 .port-table-remove {
-  width: 20px;
-  height: 20px;
-  border: none;
-  border-radius: 3px;
-  background: transparent;
+  width: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  height: 24px;
+  padding: 0;
   color: var(--danger);
-  cursor: pointer;
   font-size: 14px;
   line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .port-table-remove:hover {
@@ -339,14 +308,9 @@
 
 .port-table-add {
   width: 100%;
-  margin-top: 4px;
-  padding: 4px 8px;
-  font-size: 11px;
-  border: 1px dashed var(--line);
-  border-radius: 4px;
-  background: transparent;
+  margin-top: 6px;
+  border-style: dashed;
   color: var(--accent);
-  cursor: pointer;
 }
 
 .port-table-add:hover {

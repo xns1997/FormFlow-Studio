@@ -92,7 +92,7 @@ const complexKinds = new Set<PropertyEditorKind>([
   'json', 'regex', 'validation-rules', 'number-range', 'date-range', 'selection-range', 'options',
   'string-list', 'table-columns', 'key-value', 'mapping', 'filters', 'sorting', 'expression', 'template',
   'typography', 'spacing', 'border', 'radius', 'shadow', 'opacity', 'dimension', 'upload-constraints',
-  'tabs', 'steps', 'data-binding',
+  'tabs', 'steps', 'data-binding', 'option-source',
 ]);
 
 function summarizeComplex(value: unknown, kind: string) {
@@ -103,6 +103,12 @@ function summarizeComplex(value: unknown, kind: string) {
     const binding = value as any; const source = binding.source || {};
     const sourceText = source.kind === 'formField' ? source.path : source.kind === 'range' ? `${source.ref?.sheetName || '范围'}` : source.kind === 'tableCell' ? `${source.sheetName || '工作表'}.${source.column || '列'}` : '未配置';
     return `${sourceText} · ${binding.direction || 'dataToUi'}`;
+  }
+  if (kind === 'option-source' && value && typeof value === 'object') {
+    const source = value as any;
+    return source.mode === 'table'
+      ? `${source.sheetName || '工作表'} · ${source.labelField || '显示字段'} / ${source.valueField || source.labelField || '值字段'}`
+      : '静态选项';
   }
   if (Array.isArray(value)) return value.length ? `${value.length} 项` : '未配置';
   if (typeof value === 'object') return `${Object.values(value).filter((item) => item !== undefined && item !== null && item !== '').length} 项配置`;
@@ -137,11 +143,24 @@ export function registerBuiltinPropertyEditors() {
     validate: (value) => {
       if (kind === 'regex') { try { new RegExp(String(value || '')); } catch (error) { return error instanceof Error ? error.message : String(error); } }
       if (['options', 'string-list', 'table-columns', 'filters', 'sorting', 'tabs', 'steps', 'validation-rules'].includes(kind) && !Array.isArray(value)) return '配置必须是列表';
-      if (['key-value', 'mapping', 'data-binding'].includes(kind) && (!value || typeof value !== 'object' || Array.isArray(value))) return '配置必须是对象';
+      if (['key-value', 'mapping', 'data-binding', 'option-source'].includes(kind) && (!value || typeof value !== 'object' || Array.isArray(value))) return '配置必须是对象';
+      if (['number-range', 'date-range', 'selection-range'].includes(kind) && value && typeof value === 'object' && !Array.isArray(value)) {
+        const range = value as Record<string, unknown>;
+        const [startKey, endKey] = kind === 'number-range' ? ['min', 'max'] : kind === 'date-range' ? ['minDate', 'maxDate'] : ['minSelect', 'maxSelect'];
+        const hasStart = range[startKey] !== '' && range[startKey] !== undefined && range[startKey] !== null;
+        const hasEnd = range[endKey] !== '' && range[endKey] !== undefined && range[endKey] !== null;
+        const start = kind === 'date-range' ? Date.parse(String(range[startKey] || '')) : Number(range[startKey]);
+        const end = kind === 'date-range' ? Date.parse(String(range[endKey] || '')) : Number(range[endKey]);
+        if (hasStart && hasEnd && Number.isFinite(start) && Number.isFinite(end) && start > end) return '最小值不能大于最大值';
+      }
       if (kind === 'data-binding' && value && typeof value === 'object' && !Array.isArray(value)) {
         const binding = value as any; const source = binding.source;
         if (binding.version !== 1 || !source?.kind) return '绑定结构不完整';
         if (binding.direction !== 'dataToUi' && source.kind !== 'tableCell') return '只有表格单元格来源支持写回';
+      }
+      if (kind === 'option-source' && value && typeof value === 'object' && !Array.isArray(value)) {
+        const source = value as any;
+        if (source.mode === 'table' && (!source.tableId || !source.sheetName || !source.labelField || !source.valueField)) return '选项数据源配置不完整';
       }
       return null;
     },

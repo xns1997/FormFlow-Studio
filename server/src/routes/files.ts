@@ -5,6 +5,7 @@ import { join, extname } from 'path';
 import XLSX from 'xlsx';
 import initSqlJs, { type Database } from 'sql.js';
 import { serverDataPath } from '../config/paths';
+import type { AuthRequest } from '../middleware/auth';
 
 const router = Router();
 const FILES_DIR = serverDataPath('files');
@@ -23,7 +24,7 @@ function parseExcelFile(filePath: string) {
   return {
     sheets: workbook.SheetNames.map((name: string) => {
       const ws = workbook.Sheets[name];
-      const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: '' });
       return {
         name,
         rowCount: json.length,
@@ -77,7 +78,7 @@ async function parseSqliteFile(filePath: string) {
 }
 
 // POST /api/files/upload - 上传文件并解析
-router.post('/upload', upload.single('file'), async (req, res) => {
+router.post('/upload', upload.single('file'), async (req: AuthRequest, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: '没有文件', detail: '请确保表单字段名为 file' });
     const filePath = req.file.path;
@@ -87,7 +88,9 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     let parsed: { sheets: Array<{ name: string; rowCount: number; colCount: number; headers: string[]; data: Record<string, unknown>[] }> };
 
     try {
-      if (ext === 'json') {
+      if (ext === 'zip') {
+        parsed = { sheets: [] };
+      } else if (ext === 'json') {
         parsed = parseJsonFile(filePath);
       } else if (ext === 'db' || ext === 'sqlite' || ext === 'sqlite3') {
         parsed = await parseSqliteFile(filePath);
@@ -107,6 +110,8 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       mimeType: req.file.mimetype,
       fileType,
       uploadedAt: new Date().toISOString(),
+      tenantId: (req as AuthRequest & { tenantId?: string }).tenantId,
+      uploadedBy: req.user?.id,
       sheets: parsed.sheets.map((s) => ({
         name: s.name,
         rowCount: s.rowCount,

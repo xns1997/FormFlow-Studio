@@ -12,6 +12,9 @@ export function extractPropertyReferences(source: string) {
   const references = new Set<string>();
   const pattern = /\bform(?:\.([A-Za-z_$\u4e00-\u9fff][\w$\u4e00-\u9fff]*)(?:\.[A-Za-z_$\u4e00-\u9fff][\w$\u4e00-\u9fff]*)*|\[['"]([^'"]+)['"]\])/g;
   for (const match of source.matchAll(pattern)) references.add(match[1] || match[2]);
+  for (const match of source.matchAll(/\$([\u4e00-\u9fffA-Za-z_][\w$\u4e00-\u9fff]*)/g)) {
+    if (!['form', 'row', 'table', 'flow', 'event', 'user'].includes(match[1])) references.add(match[1]);
+  }
   return [...references];
 }
 

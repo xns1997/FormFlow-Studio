@@ -1,4 +1,5 @@
 import type { AuthUser } from '../middleware/auth';
+import { env } from '../config/env';
 
 export type ProjectAccess = 'view' | 'edit' | 'run' | 'manage';
 type ProjectAcl = { ownerId?: string; members?: Record<string, ProjectAccess[]> };
@@ -9,13 +10,17 @@ const implied: Record<ProjectAccess, ProjectAccess[]> = {
 
 export function projectAcl(project: any): ProjectAcl { return project?.config?.access || project?.access || {}; }
 
-export function canAccessProject(user: AuthUser | undefined, project: any, access: ProjectAccess) {
+export function canAccessProjectAcl(user: AuthUser | undefined, project: any, access: ProjectAccess) {
   const acl = projectAcl(project);
   if (!acl.ownerId && !acl.members) return true; // 兼容升级前的本地项目
   if (!user) return false;
   if (user.role === 'admin' || acl.ownerId === user.id) return true;
   const grants = acl.members?.[user.id] || [];
   return grants.some((grant) => implied[grant].includes(access));
+}
+
+export function canAccessProject(user: AuthUser | undefined, project: any, access: ProjectAccess) {
+  return env.mode === 'local' || canAccessProjectAcl(user, project, access);
 }
 
 export function setProjectMember(project: any, userId: string, grants: ProjectAccess[]) {

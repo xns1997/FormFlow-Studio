@@ -62,12 +62,16 @@ export function writeProjectPackage(project: JsonObject): void {
       name: form.name,
       fileName: `${form.id}.json`,
       behaviorsFileName: `${form.id}.behaviors.json`,
+      createdAt: form.design?.createdAt || form.createdAt || project.config?.createdAt,
+      updatedAt: form.design?.updatedAt || form.updatedAt || project.config?.updatedAt || project.config?.createdAt,
     })),
     defaultFormId: forms[0]?.id,
   });
   for (const form of forms) {
-    formFiles.set(`${form.id}.json`, form.design || form);
-    formFiles.set(`${form.id}.behaviors.json`, { behaviors: form.behaviors || [] });
+    const design = form.design || form; const createdAt = design.createdAt || form.createdAt || project.config?.createdAt || '';
+    const updatedAt = design.updatedAt || form.updatedAt || project.config?.updatedAt || createdAt;
+    formFiles.set(`${form.id}.json`, { ...design, createdAt, updatedAt });
+    formFiles.set(`${form.id}.behaviors.json`, { behaviors: form.behaviors || [], ruleCode: form.ruleCode || '' });
   }
   syncJsonDirectory(join(root, 'forms'), formFiles);
 
@@ -99,6 +103,14 @@ export function writeProjectPackage(project: JsonObject): void {
 
   // 输出
   writeJson(join(root, 'outputs', 'outputs.json'), { outputs: project.outputs || [] });
+
+  // 可复现测试资产。只保存生成配置、隔离用例和有界运行摘要，不复制业务表数据。
+  writeJson(join(root, 'testing', 'testing.json'), {
+    profiles: project.testing?.profiles || [],
+    suites: project.testing?.suites || [],
+    fixtures: project.testing?.fixtures || [],
+    runs: (project.testing?.runs || []).slice(-20),
+  });
 }
 
 export function readProjectPackage(id: string): JsonObject | null {
@@ -121,14 +133,16 @@ export function readProjectPackage(id: string): JsonObject | null {
       const designPath = join(root, 'forms', formMeta.fileName as string);
       const behaviorsPath = formMeta.behaviorsFileName ? join(root, 'forms', formMeta.behaviorsFileName as string) : null;
       const design = existsSync(designPath) ? readJson<JsonObject>(designPath) : {};
-      const behaviors = behaviorsPath && existsSync(behaviorsPath) ? readJson<JsonObject>(behaviorsPath).behaviors || [] : [];
+      const behaviorFile = behaviorsPath && existsSync(behaviorsPath) ? readJson<JsonObject>(behaviorsPath) : {};
+      const behaviors = behaviorFile.behaviors || [];
       return {
         id: formMeta.id,
         name: formMeta.name,
         design,
         behaviors,
-        createdAt: design.createdAt || new Date().toISOString(),
-        updatedAt: design.updatedAt || new Date().toISOString(),
+        ruleCode: typeof behaviorFile.ruleCode === 'string' ? behaviorFile.ruleCode : '',
+        createdAt: design.createdAt || formMeta.createdAt || manifest.config.createdAt || '',
+        updatedAt: design.updatedAt || formMeta.updatedAt || manifest.config.updatedAt || design.createdAt || formMeta.createdAt || manifest.config.createdAt || '',
       };
     });
   }
@@ -161,6 +175,11 @@ export function readProjectPackage(id: string): JsonObject | null {
   const outputPath = join(root, 'outputs', 'outputs.json');
   const outputs = existsSync(outputPath) ? readJson<JsonObject>(outputPath).outputs || [] : [];
 
+  const testingPath = join(root, 'testing', 'testing.json');
+  const testing = existsSync(testingPath)
+    ? readJson<JsonObject>(testingPath)
+    : { profiles: [], suites: [], fixtures: [], runs: [] };
+
   // 兼容旧格式
   const designs = forms.length > 0 ? forms.map((f) => f.design) : [];
   const behaviors = globalBehaviors;
@@ -175,6 +194,12 @@ export function readProjectPackage(id: string): JsonObject | null {
     sheetBehaviors,
     forms,
     outputs,
+    testing: {
+      profiles: testing.profiles || [],
+      suites: testing.suites || [],
+      fixtures: testing.fixtures || [],
+      runs: testing.runs || [],
+    },
     designs,
     behaviors,
   };
@@ -182,36 +207,69 @@ export function readProjectPackage(id: string): JsonObject | null {
 
 export function listProjectPackages(): JsonObject[] {
   if (!existsSync(PROJECTS_DIR)) return [];
-  return readdirSync(PROJECTS_DIR, { withFileTypes: true })
+  const candidates = readdirSync(PROJECTS_DIR, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && entry.name.endsWith(PROJECT_PACKAGE_SUFFIX))
     .flatMap((entry) => {
-      const id = entry.name.slice(0, -PROJECT_PACKAGE_SUFFIX.length);
+      const storageId = entry.name.slice(0, -PROJECT_PACKAGE_SUFFIX.length);
       try {
-        const project = readProjectPackage(id);
-        return project ? [{
-          id: project.config.id,
-          name: project.config.name,
-          updatedAt: project.config.updatedAt,
-          tableCount: project.srcTable.length,
-          access: project.config.access,
-          shared: Boolean(project.config.access?.members && Object.keys(project.config.access.members).length),
-        }] : [];
+        const project = readProjectPackage(storageId);
+        return project ? [{ storageId, project }] : [];
       } catch { return []; }
     });
+  return dedupeProjectPackageCandidates(candidates);
+}
+
+export function dedupeProjectPackageCandidates(candidates: Array<{ storageId: string; project: JsonObject }>): JsonObject[] {
+  const selected = new Map<string, { storageId: string; project: JsonObject }>();
+  for (const candidate of candidates) {
+    const projectId = String(candidate.project.config.id || candidate.storageId);
+    const current = selected.get(projectId);
+    if (!current) {
+      selected.set(projectId, candidate);
+      continue;
+    }
+    const candidateIsCanonical = candidate.storageId === projectId;
+    const currentIsCanonical = current.storageId === projectId;
+    if (candidateIsCanonical !== currentIsCanonical) {
+      if (candidateIsCanonical) selected.set(projectId, candidate);
+      continue;
+    }
+    const candidateUpdatedAt = String(candidate.project.config.updatedAt || '');
+    const currentUpdatedAt = String(current.project.config.updatedAt || '');
+    if (candidateUpdatedAt > currentUpdatedAt || (candidateUpdatedAt === currentUpdatedAt && candidate.storageId < current.storageId)) {
+      selected.set(projectId, candidate);
+    }
+  }
+  return [...selected.entries()]
+    .map(([projectId, { storageId, project }]) => ({
+      id: storageId === projectId ? projectId : storageId,
+      name: project.config.name,
+      updatedAt: project.config.updatedAt,
+      tableCount: project.srcTable.length,
+      access: project.config.access,
+      shared: Boolean(project.config.access?.members && Object.keys(project.config.access.members).length),
+    }))
+    .sort((left, right) => String(right.updatedAt || '').localeCompare(String(left.updatedAt || ''))
+      || String(left.name || '').localeCompare(String(right.name || ''))
+      || String(left.id || '').localeCompare(String(right.id || '')));
 }
 
 export function deleteProjectPackage(id: string): void {
   rmSync(projectPackagePath(id), { recursive: true, force: true });
 }
 
-export function getTableSheetData(projectId: string, tableId: string, sheetName: string): { headers: string[]; data: Record<string, unknown>[] } | null {
+export function getTableSheetData(projectId: string, tableId: string, sheetName: string): { headers: string[]; data: Record<string, unknown>[]; keyFields: string[] } | null {
   const project = readProjectPackage(projectId);
   if (!project) return null;
   const table = (project.srcTable as JsonObject[]).find((t) => t.id === tableId);
   if (!table) return null;
   const sheet = (table.sheets as JsonObject[]).find((s) => s.name === sheetName);
   if (!sheet) return null;
-  return { headers: sheet.headers as string[], data: (sheet.preview as Record<string, unknown>[]) || [] };
+  return {
+    headers: sheet.headers as string[],
+    data: (sheet.preview as Record<string, unknown>[]) || [],
+    keyFields: Array.isArray(sheet.config?.keyFields) ? sheet.config.keyFields : [],
+  };
 }
 
 export function updateTableSheetData(projectId: string, tableId: string, sheetName: string, data: Record<string, unknown>[]): void {

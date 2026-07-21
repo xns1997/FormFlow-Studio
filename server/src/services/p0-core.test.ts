@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { signToken, verifyToken } from '../middleware/auth';
-import { canAccessProject, setProjectMember } from './permission';
+import { canAccessProject, canAccessProjectAcl, setProjectMember } from './permission';
 import { acquireProjectLock, getProjectLock, releaseProjectLock } from './project-lock';
 
 test('JWT signs, verifies and rejects tampering', () => {
@@ -14,9 +14,10 @@ test('JWT signs, verifies and rejects tampering', () => {
 test('project ACL grants only declared capabilities', () => {
   const project: any = { config: { access: { ownerId: 'owner', members: {} } } };
   setProjectMember(project, 'viewer', ['view']);
-  assert.equal(canAccessProject({ id: 'viewer', username: 'v', role: 'viewer' }, project, 'view'), true);
-  assert.equal(canAccessProject({ id: 'viewer', username: 'v', role: 'viewer' }, project, 'edit'), false);
-  assert.equal(canAccessProject({ id: 'owner', username: 'o', role: 'viewer' }, project, 'manage'), true);
+  assert.equal(canAccessProjectAcl({ id: 'viewer', username: 'v', role: 'viewer' }, project, 'view'), true);
+  assert.equal(canAccessProjectAcl({ id: 'viewer', username: 'v', role: 'viewer' }, project, 'edit'), false);
+  assert.equal(canAccessProjectAcl({ id: 'owner', username: 'o', role: 'viewer' }, project, 'manage'), true);
+  assert.equal(canAccessProject(undefined, project, 'manage'), true);
 });
 
 test('project lock excludes another editor and validates release ownership', () => {

@@ -23,7 +23,7 @@
 
 | # | TODO | 涉及文件 | 预估工时 |
 |---|------|---------|---------|
-| 07 | 实现任务调度引擎（`node-cron` + BullMQ），支持 Cron 表达式 | `server/src/services/scheduler.ts`, `package.json` | 4d |
+| 07 | 实现任务调度引擎（`node-cron` + PostgreSQL 队列），支持 Cron 表达式 | `server/src/services/scheduler.ts`, `package.json` | 4d |
 | 08 | 实现异步任务队列，支持后台执行 + 状态轮询 | `server/src/services/task-queue.ts`, `server/src/routes/tasks.ts` | 3d |
 | 09 | 新增 `schedule-trigger` 节点，支持定时触发工作流 | `ui/nodes/behavior-schedule-trigger/` | 2d |
 | 10 | 新增任务执行状态追踪 UI（执行历史、耗时、错误日志） | `ui/src/pages/editor/TaskMonitorPage.tsx`, 新增路由 | 3d |
@@ -108,7 +108,7 @@
 | 04 | ✅ | `ui/nodes/generic-db-write/schema.json`、500 行批量 INSERT/UPSERT |
 | 05 | ✅ | `ui/nodes/generic-rest-api/schema.json`，支持四种方法、API Key、Bearer、OAuth2 与分页 |
 | 06 | ✅ | `ui/nodes/generic-graphql-query/schema.json` |
-| 07 | ✅ | `server/src/services/scheduler.ts`，Cron + BullMQ/Redis |
+| 07 | ✅ | `server/src/services/scheduler.ts`，Cron + PostgreSQL `SKIP LOCKED`/lease 队列 |
 | 08 | ✅ | `server/src/services/task-queue.ts`、`server/src/routes/tasks.ts` |
 | 09 | ✅ | `ui/nodes/behavior-schedule-trigger/schema.json` |
 | 10 | ✅ | `ui/src/pages/editor/TaskMonitorPage.tsx` |
@@ -125,7 +125,7 @@
 | 21 | ✅ | `AdvancedChart.tsx`：桑基、热力、雷达、漏斗、地图、树图 |
 | 22 | ✅ | `dashboardInteractions.ts` 与图表点击联动 |
 | 23 | ✅ | 根目录多阶段 `Dockerfile` |
-| 24 | ✅ | `docker-compose.yml`（应用 + Redis + 持久卷） |
+| 24 | ✅ | `docker-compose.yml`（应用 + PostgreSQL + 持久卷） |
 | 25 | ✅ | `.env.example`、`server/src/config/env.ts` |
 | 26 | ✅ | 项目 ACL 共享与项目列表共享状态 |
 | 27 | ✅ | `server/src/services/project-lock.ts` 与锁 API/写入校验 |

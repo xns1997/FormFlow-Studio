@@ -64,7 +64,7 @@
   border: 1px solid rgba(148, 163, 184, 0.42);
   border-radius: 5px;
   background: rgba(255, 255, 255, 0.88);
-  color: #334155;
+  color: var(--text-secondary);
   font-size: 13px;
   line-height: 1;
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.1);
@@ -72,7 +72,7 @@
 }
 
 .code-editor-expand-btn:hover {
-  background: #eff6ff;
+  background: var(--accent-soft);
   color: var(--accent);
   border-color: rgba(37, 99, 235, 0.35);
 }
@@ -83,7 +83,7 @@
   overflow: visible;
   border: 1px solid rgba(15, 23, 42, 0.18);
   border-radius: 6px;
-  background: #ffffff;
+  background: var(--panel);
 }
 
 .code-editor-shell .monaco-editor {
@@ -106,7 +106,7 @@
 
 .suggest-widget {
   background: #ffffff !important;
-  color: #172033 !important;
+  color: var(--text) !important;
   border: 1px solid #e2e8f0 !important;
   border-radius: 8px !important;
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16) !important;
@@ -121,7 +121,7 @@
 /* 列表行 */
 .suggest-widget .monaco-list-row {
   background: transparent !important;
-  color: #172033 !important;
+  color: var(--text) !important;
   padding: 2px 0 !important;
   border: none !important;
   opacity: 1 !important;
@@ -129,23 +129,23 @@
 
 /* 图标标签容器 */
 .suggest-widget .monaco-icon-label {
-  color: #172033 !important;
+  color: var(--text) !important;
   opacity: 1 !important;
-  -webkit-text-fill-color: #172033 !important;
+  -webkit-text-fill-color: var(--text) !important;
 }
 
 .suggest-widget .monaco-icon-label .label-name {
-  color: #172033 !important;
+  color: var(--text) !important;
   font-size: 13px !important;
   opacity: 1 !important;
-  -webkit-text-fill-color: #172033 !important;
+  -webkit-text-fill-color: var(--text) !important;
 }
 
 .suggest-widget .monaco-icon-label .label-name .highlight {
-  color: #2563eb !important;
+  color: var(--accent) !important;
   font-weight: 600 !important;
   opacity: 1 !important;
-  -webkit-text-fill-color: #2563eb !important;
+  -webkit-text-fill-color: var(--accent) !important;
 }
 
 /* 标签名称 */
@@ -157,55 +157,55 @@
 .suggest-widget .monaco-list-row > .contents > .main,
 .suggest-widget .monaco-list-row > .contents > .main > .left,
 .suggest-widget .monaco-list-row > .contents > .main > .right {
-  color: #172033 !important;
+  color: var(--text) !important;
   opacity: 1 !important;
-  -webkit-text-fill-color: #172033 !important;
+  -webkit-text-fill-color: var(--text) !important;
 }
 
 /* 描述容器 */
 .suggest-widget .monaco-icon-label-description-container {
-  color: #64748b !important;
+  color: var(--text-secondary) !important;
   opacity: 1 !important;
-  -webkit-text-fill-color: #64748b !important;
+  -webkit-text-fill-color: var(--text-secondary) !important;
 }
 
 .suggest-widget .monaco-icon-label-description-container .monaco-icon-label-description {
-  color: #64748b !important;
+  color: var(--text-secondary) !important;
   font-size: 12px !important;
   opacity: 1 !important;
-  -webkit-text-fill-color: #64748b !important;
+  -webkit-text-fill-color: var(--text-secondary) !important;
 }
 
 /* 详情标签 */
 .suggest-widget .details-label {
-  color: #172033 !important;
+  color: var(--text) !important;
   background: transparent !important;
   opacity: 1 !important;
-  -webkit-text-fill-color: #172033 !important;
+  -webkit-text-fill-color: var(--text) !important;
 }
 
 .suggest-widget .details-label .label {
-  color: #172033 !important;
+  color: var(--text) !important;
   opacity: 1 !important;
-  -webkit-text-fill-color: #172033 !important;
+  -webkit-text-fill-color: var(--text) !important;
 }
 
 .suggest-widget .details-label .label-name {
-  color: #172033 !important;
+  color: var(--text) !important;
   opacity: 1 !important;
-  -webkit-text-fill-color: #172033 !important;
+  -webkit-text-fill-color: var(--text) !important;
 }
 
 .suggest-widget .details-label .label-detail {
-  color: #64748b !important;
+  color: var(--text-secondary) !important;
   opacity: 1 !important;
-  -webkit-text-fill-color: #64748b !important;
+  -webkit-text-fill-color: var(--text-secondary) !important;
 }
 
 .suggest-widget .details-label .label-description {
-  color: #64748b !important;
+  color: var(--text-secondary) !important;
   opacity: 1 !important;
-  -webkit-text-fill-color: #64748b !important;
+  -webkit-text-fill-color: var(--text-secondary) !important;
 }
 
 /* 选中/聚焦行 */
@@ -237,54 +237,54 @@
 .suggest-widget .monaco-list-row .monaco-icon-label-description,
 .suggest-widget .monaco-list-row .details-label,
 .suggest-widget .monaco-list-row .readMore {
-  color: #64748b !important;
+  color: var(--text-secondary) !important;
   opacity: 1 !important;
-  -webkit-text-fill-color: #64748b !important;
+  -webkit-text-fill-color: var(--text-secondary) !important;
 }
 
 /* 图标颜色 */
 .suggest-widget .icon,
 .suggest-widget .codicon,
 .suggest-widget .suggest-icon {
-  color: #2563eb !important;
+  color: var(--accent) !important;
   opacity: 1 !important;
 }
 
 .suggest-widget .monaco-highlighted-label .highlight,
 .suggest-widget .monaco-list-row.focused .monaco-highlighted-label .highlight,
 .suggest-widget .monaco-list-row.selected .monaco-highlighted-label .highlight {
-  color: #2563eb !important;
+  color: var(--accent) !important;
   opacity: 1 !important;
-  -webkit-text-fill-color: #2563eb !important;
+  -webkit-text-fill-color: var(--accent) !important;
   font-weight: 600 !important;
 }
 
 /* 状态栏 */
 .suggest-widget .suggest-status-bar {
-  background: #f8fafc !important;
-  border-top: 1px solid #e5e7eb !important;
-  color: #64748b !important;
+  background: var(--panel-soft) !important;
+  border-top: 1px solid var(--line) !important;
+  color: var(--text-secondary) !important;
 }
 
 .suggest-widget .suggest-status-bar .label {
-  color: #64748b !important;
+  color: var(--text-secondary) !important;
 }
 
 /* 消息 */
 .suggest-widget .message {
-  color: #64748b !important;
+  color: var(--text-secondary) !important;
   background: transparent !important;
 }
 
 /* 文档弹出框 */
 .suggest-widget .docs-side {
-  background: #f8fafc !important;
-  border-left: 1px solid #e5e7eb !important;
-  color: #172033 !important;
+  background: var(--panel-soft) !important;
+  border-left: 1px solid var(--line) !important;
+  color: var(--text) !important;
 }
 
 .suggest-widget .docs-side .docs-title {
-  color: #172033 !important;
+  color: var(--text) !important;
 }
 
 .suggest-widget .docs-side .docs {
@@ -305,19 +305,19 @@
 
 .monaco-hover {
   background: #ffffff !important;
-  color: #172033 !important;
+  color: var(--text) !important;
   border: 1px solid #e2e8f0 !important;
   border-radius: 8px !important;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12) !important;
 }
 
 .monaco-hover .hover-contents {
-  color: #172033 !important;
+  color: var(--text) !important;
 }
 
 .monaco-hover .hover-contents .code {
   background: #f1f5f9 !important;
-  color: #172033 !important;
+  color: var(--text) !important;
 }
 
 .page-main .code-editor-shell {
@@ -368,7 +368,7 @@
   min-height: 0;
   min-width: 0;
   padding: 0;
-  background: #ffffff;
+  background: var(--panel);
   display: flex;
 }
 

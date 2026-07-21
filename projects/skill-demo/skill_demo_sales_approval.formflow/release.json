@@ -1,8 +1,0 @@
-{
-  "allowBehaviorEditor": true,
-  "allowDesigner": true,
-  "allowWorkflowEditor": true,
-  "defaultFormId": "sales-order-review",
-  "defaultSheet": "Sheet1",
-  "mode": "design"
-}

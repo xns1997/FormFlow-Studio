@@ -765,7 +765,12 @@ export async function executeFlow(
       const outEdges = edges.filter((e) => e.source === node.id);
       if (outEdges.length === 0) {
         const nodeOut = nodeOutputs.get(node.id);
-        if (nodeOut) Object.assign(finalOutputs, nodeOut);
+        if (nodeOut) {
+          Object.assign(finalOutputs, nodeOut);
+          if (node.specId === 'workflow:export' && nodeOut.result && typeof nodeOut.result === 'object' && !Array.isArray(nodeOut.result)) {
+            Object.assign(finalOutputs, nodeOut.result as Record<string, unknown>);
+          }
+        }
       }
     }
     if (errors.length === 0 && options.checkpointId && !options.keepCheckpointOnSuccess) clearCheckpoint(options.checkpointId);

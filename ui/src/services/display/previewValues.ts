@@ -7,3 +7,14 @@ export function getPreviewInitialValue(component: DesignComponent, tables: SrcTa
   if (resolved.found || resolved.value !== undefined) return resolved.value;
   return getDefaultComponentValue(component);
 }
+
+export function getPreviewInitializationSignature(component: DesignComponent): string {
+  return JSON.stringify({
+    content: component.type === 'text' ? component.props.content : undefined,
+    defaultValue: component.props.defaultValue,
+    value: component.props.value,
+    dataBinding: component.props.dataBinding,
+    tableBinding: component.props.tableBinding,
+    rangeRef: component.props.rangeRef,
+  });
+}

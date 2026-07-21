@@ -1,0 +1,8 @@
+import { AntdTextInput } from '../../components/AntdFormControls';
+import { DesignerIcon } from '../icons';
+import type { PropertySection } from '../types';
+
+export function PropertyPanelHeader({ type, label, icon, query, section, onQuery, onSection, onRemove, onClose }: { type: string; label: string; icon: string; query: string; section: PropertySection; onQuery: (value: string) => void; onSection: (value: PropertySection) => void; onRemove: () => void; onClose?: () => void }) {
+  return <><div className="properties-header" tabIndex={-1} data-panel-focus><div className="properties-heading"><span className="properties-eyebrow">属性配置</span><span className="properties-type"><DesignerIcon name={type} fallback={icon} />{label}</span></div><div className="properties-header-actions">{onClose && <button type="button" className="properties-close" title="收起属性栏" aria-label="收起属性栏" onClick={onClose}><DesignerIcon name="sidebarClose" /></button>}<details className="properties-more"><summary aria-label="更多控件操作"><DesignerIcon name="more" /></summary><div role="menu"><button type="button" role="menuitem" className="properties-delete" onClick={onRemove}><DesignerIcon name="delete" />删除控件</button></div></details></div></div>
+    <div className="properties-filterbar"><AntdTextInput value={query} placeholder="搜索所有功能与样式" onChange={onQuery} /><div className="properties-mode-switch" role="tablist" aria-label="属性分类"><button type="button" role="tab" aria-selected={section === 'function'} className={section === 'function' ? 'active' : ''} onClick={() => onSection('function')}>功能</button><button type="button" role="tab" aria-selected={section === 'style'} className={section === 'style' ? 'active' : ''} onClick={() => onSection('style')}>样式</button></div></div></>;
+}

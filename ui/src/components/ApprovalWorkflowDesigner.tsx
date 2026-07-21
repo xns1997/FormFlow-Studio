@@ -147,12 +147,12 @@ export function ApprovalWorkflowDesigner({ projectId, open, onClose }: {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {instances.map((inst) => (
-                <div key={inst.id} style={{ padding: 12, background: '#fafafa', borderRadius: 8, cursor: 'pointer' }} onClick={() => setSelectedInstance(inst)}>
+                <div key={inst.id} role="button" tabIndex={0} aria-pressed={selectedInstance?.id === inst.id} style={{ padding: 12, background: 'var(--panel-soft)', borderRadius: 8, cursor: 'pointer' }} onClick={() => setSelectedInstance(inst)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedInstance(inst); } }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <strong>{inst.title}</strong>
                     <Tag color={statusColors[inst.status]}>{inst.status}</Tag>
                   </div>
-                  <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
                     发起人: {inst.initiatorName} · {new Date(inst.createdAt).toLocaleString()}
                   </div>
                 </div>

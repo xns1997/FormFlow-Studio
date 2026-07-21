@@ -49,7 +49,7 @@
     },
     {
       "name": "result",
-      "type": "number",
+      "type": "any",
       "description": "计算结果"
     }
   ],
@@ -93,7 +93,7 @@
     {
       "name": "result",
       "label": "结果",
-      "type": "number",
+      "type": "any",
       "direction": "output",
       "description": "计算结果"
     }

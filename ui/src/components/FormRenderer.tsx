@@ -33,6 +33,7 @@ import type { FormControlEventContext } from '../services/engine/formFlowTrigger
 import { getRuntimeComponentType, isEditableComponentType, normalizeDateTimeValue, shouldShowFieldChrome } from '../services/config/controlTypes';
 import { resolveExpressionValues, resolveRuntimeProperties } from '../services/engine/propertyExpression';
 import { compileComponentValidation, validateField } from '../services/engine/validator';
+import { resolveOptionSource } from '../services/data/optionSource';
 
 interface FormRendererProps {
   components: ComponentNode[];
@@ -272,11 +273,10 @@ export default function FormRenderer({
       {isWizard && totalSteps > 1 && (
         <div className="lg-wizard-bar">
           {steps.map((_, i) => (
-            <button
+            <button type="button"
               key={i}
               className={`lg-wizard-step ${i === safeStep ? 'active' : i < safeStep ? 'done' : ''}`}
               onClick={() => setCurrentStep(i)}
-              type="button"
             >
               <span className="lg-wizard-step-num">{i < safeStep ? '✓' : i + 1}</span>
               <span className="lg-wizard-step-label">步骤 {i + 1}</span>
@@ -297,20 +297,18 @@ export default function FormRenderer({
       {/* Wizard navigation */}
       {isWizard && totalSteps > 1 && (
         <div className="lg-wizard-nav">
-          <button
+          <button type="button"
             className="lg-btn"
             onClick={() => setCurrentStep(Math.max(0, safeStep - 1))}
             disabled={safeStep === 0}
-            type="button"
           >
             上一步
           </button>
           <span className="lg-wizard-nav-info">{safeStep + 1} / {totalSteps}</span>
           {safeStep < totalSteps - 1 ? (
-            <button
+            <button type="button"
               className="lg-btn lg-btn-primary"
               onClick={() => setCurrentStep(Math.min(totalSteps - 1, safeStep + 1))}
-              type="button"
             >
               下一步
             </button>
@@ -425,7 +423,7 @@ function FormFieldInput({ type, name, value, originalValue, disabled, props, err
   const runtimeType = getRuntimeComponentType(type);
   const defaultValue = props.defaultValue;
   const effectiveValue = value ?? defaultValue;
-  const optionList = toOptions(props.options);
+  const optionList = toOptions(resolveOptionSource(props.options, props.optionSource, tables).options);
 
   switch (runtimeType) {
     case 'input':

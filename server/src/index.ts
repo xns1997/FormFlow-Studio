@@ -38,6 +38,12 @@ import { tenantRouter } from './routes/tenants';
 import { tenantIsolation } from './middleware/tenant';
 import { initNotificationWs } from './services/notification-ws';
 import { checkpointRouter } from './routes/checkpoints';
+import { ensureDatabase, probeDatabase } from './services/database-bootstrap';
+import { recordDatabaseHealth, recordVectorHealth, runtimeHealth, startRuntimeHealthMonitor } from './services/runtime-health';
+import { llmProviderClient } from './services/llm-provider-client';
+import { initVectorStore, probeVectorStore } from './services/vector-store';
+import { initRuleAgentStore } from './services/rule-agent-store';
+import { mcpRouter } from './mcp-server';
 
 const app = express();
 const PORT = env.port;
@@ -48,7 +54,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(optionalAuth);
 app.use((req: import('./middleware/auth').AuthRequest, res, next) => {
   if (env.mode !== 'cloud' || req.method === 'OPTIONS' || !req.path.startsWith('/api/')) return next();
-  const publicPaths = new Set(['/api/health', '/api/users/login', '/api/users/register']);
+  const publicPaths = new Set(['/api/health', '/api/ready', '/api/users/login', '/api/users/register']);
   if (publicPaths.has(req.path) || req.path.startsWith('/api-docs')) return next();
   return requireAuth(req, res, next);
 });
@@ -72,14 +78,14 @@ app.use((req, res, next) => {
   logDebug('info', 'http', 'request:start', {
     route: req.path,
     requestId,
-    context: { method: req.method, query: req.query },
+    context: { method: req.method, path: req.originalUrl, query: req.query },
   });
   res.on('finish', () => {
     const duration = Date.now() - startedAt;
     logDebug(res.statusCode >= 400 ? 'warn' : 'info', 'http', 'request:finish', {
       route: req.path,
       requestId,
-      context: { method: req.method, statusCode: res.statusCode, duration },
+      context: { method: req.method, path: req.originalUrl, statusCode: res.statusCode, duration },
     });
   });
   next();
@@ -111,9 +117,15 @@ app.use('/api/comments', commentRouter);
 app.use('/api/approvals', approvalRouter);
 app.use('/api/tenants', tenantRouter);
 app.use('/api/checkpoints', checkpointRouter);
+app.use('/mcp', mcpRouter);
 
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json(runtimeHealth());
+});
+
+app.get('/api/ready', (_req, res) => {
+  const health = runtimeHealth();
+  res.status(health.ready ? 200 : 503).json(health);
 });
 
 const frontendDir = join(env.repositoryRoot, 'ui', 'dist');
@@ -134,8 +146,33 @@ app.use((err: unknown, req: express.Request, res: express.Response, _next: expre
   res.status(500).json({ error: message, requestId });
 });
 
-initTaskQueue();
+const database = await ensureDatabase();
+recordDatabaseHealth(database.available, {
+  latencyMs: database.latencyMs,
+  error: database.error,
+  details: { created: database.created, started: database.started, managed: database.managed },
+});
+if (!database.available && env.databaseRequired) throw new Error(`PostgreSQL 启动自检失败：${database.error || '不可用'}`);
+
+const vector = database.available ? await initVectorStore() : { available: false, latencyMs: 0, error: 'PostgreSQL 不可用' };
+recordVectorHealth(vector.available, { latencyMs: vector.latencyMs, error: vector.error, details: vector.details });
+if (!vector.available && env.vectorRequired) throw new Error(`pgvector 启动自检失败：${vector.error || '不可用'}`);
+
+await initRuleAgentStore();
+
+await initTaskQueue();
 initScheduler();
+await startRuntimeHealthMonitor({
+  database: () => probeDatabase(),
+  ai: () => llmProviderClient.health(),
+  vector: async () => {
+    const current = await initVectorStore();
+    if (!current.available) throw new Error(current.error || 'pgvector 不可用');
+    return probeVectorStore();
+  },
+  intervalMs: env.healthIntervalMs,
+});
+
 const server = app.listen(PORT, () => {
   logDebug('info', 'server', `FormFlow Server running on http://localhost:${PORT}`);
 });

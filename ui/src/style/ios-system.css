@@ -1,0 +1,426 @@
+/* Shared iOS 26/27 component language.
+ * Page files own layout; this file owns reusable visual behavior. */
+
+/* Content surfaces — deliberately opaque, never decorative glass. */
+:where(
+  .settings-card,
+  .docs-card,
+  .docs-topic-card,
+  .docs-index-panel,
+  .docs-meta-card,
+  .data-preview-card,
+  .data-preview-inspector-card,
+  .llm-config-card,
+  .llm-runtime-card,
+  .property-array-card,
+  .project-wizard-summary-card,
+  .event-workbench-reference-card,
+  .dashboard-card,
+  .lg-card
+) {
+  border: var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+:where(
+  .settings-card,
+  .docs-card,
+  .docs-topic-card,
+  .data-preview-card,
+  .llm-config-card,
+  .llm-runtime-card,
+  .dashboard-card
+):hover {
+  border-color: var(--line);
+}
+
+/* Functional layers — regular/thick Liquid Glass. */
+:where(
+  .canvas-toolbar,
+  .designer-toolbar,
+  .unified-toolbar,
+  .dashboard-toolbar,
+  .data-preview-toolbar,
+  .settings-toolbar,
+  .output-preview-toolbar,
+  .docs-index-toolbar,
+  .flow-mapping-toolbar,
+  .prop-static-object-toolbar,
+  .prop-event-script-toolbar,
+  .rs-toolbar
+) {
+  border-color: var(--line);
+  background: var(--material-regular);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+  -webkit-backdrop-filter: blur(24px) saturate(165%);
+  backdrop-filter: blur(24px) saturate(165%);
+}
+
+:where(
+  .page-sidebar,
+  .page-inspector,
+  .behavior-sidebar,
+  .behavior-inspector,
+  .canvas-left-sidebar,
+  .canvas-left-panel,
+  .canvas-inspector,
+  .designer-left-panel,
+  .designer-right-panel,
+  .docs-page-sidebar,
+  .event-workbench-sidebar,
+  .data-preview-inspector,
+  .system-settings-sidebar,
+  .canvas-palette
+) {
+  border-color: var(--line);
+  background: var(--material-thick);
+  -webkit-backdrop-filter: blur(28px) saturate(155%);
+  backdrop-filter: blur(28px) saturate(155%);
+}
+
+/* Native-feeling controls. */
+button { min-width: var(--control-height-sm); min-height: var(--control-height-sm); }
+
+:where(
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  select,
+  .ant-input,
+  .ant-input-affix-wrapper,
+  .ant-input-number,
+  .ant-picker,
+  .ant-select,
+  .ant-select-selector
+) {
+  min-height: var(--control-height);
+  border-color: var(--line) !important;
+  border-radius: var(--radius) !important;
+  background: var(--fill-secondary) !important;
+  color: var(--text) !important;
+  box-shadow: none !important;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+:where(input, textarea, select)::placeholder,
+.ant-select-selection-placeholder { color: var(--text-tertiary) !important; opacity: 1; }
+
+/* Ant Design composites contain native inputs. They inherit the outer control's
+   bezel and must not receive a second filled field of their own. */
+:where(.ant-select, .ant-select-selector, .ant-picker, .ant-input-affix-wrapper) input {
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:where(
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  select,
+  .ant-input,
+  .ant-input-affix-wrapper,
+  .ant-input-number,
+  .ant-picker,
+  .ant-select,
+  .ant-select-selector
+):hover {
+  border-color: var(--line-strong) !important;
+  background: var(--fill) !important;
+}
+
+:where(
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  select,
+  .ant-input,
+  .ant-input-affix-wrapper,
+  .ant-input-number,
+  .ant-picker
+):focus,
+:where(.ant-input-affix-wrapper, .ant-input-number, .ant-picker, .ant-select):focus-within {
+  border-color: var(--accent) !important;
+  background: var(--panel) !important;
+  box-shadow: 0 0 0 3px var(--accent-soft) !important;
+  outline: none;
+}
+
+textarea { line-height: 1.55; resize: vertical; }
+
+:where(input, textarea, select):disabled,
+:where(.ant-input, .ant-input-number, .ant-picker, .ant-select).ant-input-disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+:where(input[type='checkbox'], input[type='radio']) {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--accent);
+}
+
+/* Segmented controls and tabs share one selection model. */
+:where(
+  .tabs,
+  .behavior-mode-toggle,
+  .projects-view-toggle,
+  .designer-tabbar,
+  .canvas-left-tabs,
+  .unified-left-tabs,
+  .output-preview-tabs,
+  .project-agent-workbench-tabs,
+  .ant-segmented
+) {
+  padding: 3px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--fill);
+  box-shadow: none;
+}
+
+:where(
+  .tabs .tab,
+  .behavior-mode-btn,
+  .projects-view-toggle button,
+  .designer-tabbar button,
+  .canvas-left-tabs button,
+  .unified-left-tabs button,
+  .output-preview-tabs button,
+  .project-agent-workbench-tabs button
+) {
+  min-height: var(--control-height-sm);
+  border: 0;
+  border-radius: var(--radius-sm);
+}
+
+:where(
+  .tabs .tab.active,
+  .behavior-mode-btn.active,
+  .projects-view-toggle button.active,
+  .designer-tabbar button.active,
+  .canvas-left-tabs button.active,
+  .unified-left-tabs button.active,
+  .output-preview-tabs button.active,
+  .project-agent-workbench-tabs button.active,
+  .ant-segmented-item-selected
+) {
+  border: 0;
+  background: var(--panel-elevated) !important;
+  color: var(--text) !important;
+  box-shadow: 0 2px 7px rgba(24, 24, 28, 0.12) !important;
+}
+
+/* Lists and rows use separators instead of card-per-row decoration. */
+:where(
+  .sidebar-item,
+  .docs-index-item,
+  .behavior-doc-index-item,
+  .notification-item,
+  .task-log,
+  .settings-version-item
+) {
+  border-color: var(--line);
+  border-radius: var(--radius-sm);
+}
+
+:where(.sidebar-item, .docs-index-item, .behavior-doc-index-item):hover {
+  background: var(--fill-secondary);
+}
+
+:where(button.sidebar-item, button.unified-list-item) {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+:where(.sidebar-item, .unified-list-item):focus-within {
+  background: var(--fill-secondary);
+}
+
+:where(.sidebar-item, .unified-list-item):focus-within :is(.sidebar-item-delete, .unified-list-delete, .unified-list-rename) {
+  opacity: 1;
+}
+
+.rs-context-item {
+  display: flex;
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.lineage g[role='button']:focus-visible rect {
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
+:where(.sidebar-item.active, .docs-index-item.active, .behavior-doc-index-item.active) {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Tables and grids. */
+:where(table, .docs-table) { border-color: var(--line); }
+:where(th, .docs-table-header) {
+  background: var(--panel-soft);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 650;
+}
+:where(th, td) { border-color: var(--line); }
+:where(tbody tr):hover { background: var(--fill-tertiary); }
+
+.ag-theme-quartz {
+  --ag-background-color: var(--panel);
+  --ag-foreground-color: var(--text);
+  --ag-secondary-foreground-color: var(--text-secondary);
+  --ag-header-background-color: var(--panel-soft);
+  --ag-odd-row-background-color: var(--fill-tertiary);
+  --ag-border-color: var(--line);
+  --ag-row-hover-color: var(--accent-soft);
+  --ag-selected-row-background-color: var(--accent-soft);
+  --ag-input-focus-border-color: var(--accent);
+  --ag-border-radius: var(--radius-md);
+  --ag-wrapper-border-radius: var(--radius-md);
+  --ag-font-family: inherit;
+  --ag-font-size: 12px;
+  --ag-grid-size: 4px;
+  --ag-row-height: 28px;
+  --ag-header-height: 32px;
+}
+
+/* Menus, popovers and modal sheets are elevated functional surfaces. */
+:where(
+  .ant-dropdown-menu,
+  .ant-popover-inner,
+  .ant-select-dropdown,
+  .ant-picker-dropdown .ant-picker-panel-container,
+  .notification-popover,
+  .project-agent-more-menu > div,
+  .project-agent-session-menu > div,
+  .project-agent-history-panel,
+  .project-agent-floating-card,
+  .property-action-menu > div,
+  .designer-template-menu
+) {
+  border: var(--border-subtle) !important;
+  border-radius: var(--radius-lg) !important;
+  background: var(--panel-elevated) !important;
+  box-shadow: var(--shadow-lg) !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:where(.ant-dropdown-menu-item, .ant-select-item, .ant-picker-cell-inner) { border-radius: var(--radius-sm) !important; }
+:where(.ant-dropdown-menu-item-selected, .ant-select-item-option-selected) { background: var(--accent-soft) !important; color: var(--accent) !important; }
+
+/* Feedback states always pair color with shape/text. */
+:where(.error, .is-error, [aria-invalid='true']) { --state-color: var(--danger); }
+:where(.success, .is-success) { --state-color: var(--success); }
+:where(.warning, .is-warning) { --state-color: var(--warning); }
+
+:where(.data-preview-feedback, .toast, .ant-message-notice-content, .ant-notification-notice) {
+  border: 1px solid color-mix(in srgb, var(--state-color, var(--line)) 38%, var(--line));
+  border-radius: var(--radius-md);
+  background: var(--panel-glass-heavy);
+  color: var(--text);
+  box-shadow: var(--shadow-lg);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
+  backdrop-filter: blur(28px) saturate(170%);
+}
+
+.sr-only {
+  position: fixed !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.app-confirm-body { display: grid; gap: 8px; }
+.app-confirm-body p { color: var(--text); font-size: 13px; line-height: 1.55; }
+.app-confirm-body small { color: var(--text-secondary); font-size: 11px; line-height: 1.5; }
+
+.card-name-button {
+  width: auto;
+  min-width: 0;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.card-name-button:hover { color: var(--accent); }
+
+@media (forced-colors: active) {
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 3px solid Highlight !important;
+  }
+  :where(.active, [aria-selected='true'], [aria-pressed='true']) { outline: 1px solid Highlight; }
+}
+
+/* Code remains a content surface with platform typography. */
+:where(code, pre, .monaco-editor) { font-family: "SFMono-Regular", "SF Mono", Menlo, Consolas, monospace; }
+:where(code:not(pre code)) { border-radius: 6px; background: var(--fill); }
+:where(pre, .docs-code-block) { border-color: var(--line); border-radius: var(--radius-md); }
+
+/* Authentication is a focused, single-sheet experience. */
+.auth-page {
+  background:
+    radial-gradient(circle at 20% 5%, rgba(90, 200, 250, 0.2), transparent 32%),
+    radial-gradient(circle at 82% 10%, rgba(175, 82, 222, 0.13), transparent 30%),
+    var(--bg);
+}
+
+.auth-card.ant-card {
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: var(--radius-xl);
+  background: var(--panel-glass-heavy);
+  box-shadow: var(--shadow-lg);
+  -webkit-backdrop-filter: blur(36px) saturate(180%);
+  backdrop-filter: blur(36px) saturate(180%);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :where(
+    .canvas-toolbar,
+    .designer-toolbar,
+    .unified-toolbar,
+    .dashboard-toolbar,
+    .data-preview-toolbar,
+    .settings-toolbar,
+    .page-sidebar,
+    .page-inspector,
+    .behavior-sidebar,
+    .behavior-inspector,
+    .canvas-left-sidebar,
+    .canvas-inspector,
+    .designer-left-panel,
+    .designer-right-panel,
+    .docs-page-sidebar,
+    .system-settings-sidebar,
+    .canvas-palette,
+    .ant-dropdown-menu,
+    .ant-popover-inner,
+    .ant-select-dropdown,
+    .auth-card.ant-card
+  ) {
+    background: var(--panel) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}

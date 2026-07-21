@@ -10,8 +10,8 @@ registerControl({
   defaultProps: {
     title: '表单标题',
     subtitle: '',
-    background: '#f2f2f7',
-    padding: 20,
+    background: '#ffffff',
+    padding: 24,
     borderRadius: 12,
     submitText: '提交',
     resetText: '重置',
@@ -39,20 +39,20 @@ registerControl({
     return (
       <div style={{
         width: '100%', height: '100%', minWidth: 0, boxSizing: 'border-box',
-        background: p.background || '#f2f2f7',
+        background: p.background || 'var(--panel)',
         borderRadius: p.borderRadius ?? 12,
         padding: spacingToCss(p.padding, 20),
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
       }}>
-        <div style={{ marginBottom: 18, paddingTop: 2, flexShrink: 0, minWidth: 0 }}>
-          <div style={controlText({ fontSize: 30, fontWeight: 750, color: '#1c1c1e', lineHeight: 1.12 })}>{p.title || '表单'}</div>
-          {p.subtitle && <div style={controlText({ fontSize: 14, color: '#8e8e93', marginTop: 5 })}>{p.subtitle}</div>}
+        <div style={{ marginBottom: 20, paddingTop: 2, flexShrink: 0, minWidth: 0 }}>
+          <div style={controlText({ fontSize: 26, fontWeight: 700, color: 'var(--text)', lineHeight: 1.18, letterSpacing: -0.35 })}>{p.title || '表单'}</div>
+          {p.subtitle && <div style={controlText({ fontSize: 13, color: 'var(--text-secondary)', marginTop: 6, lineHeight: 1.4 })}>{p.subtitle}</div>}
         </div>
         <div style={{
-          flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.72)', borderRadius: 10,
-          backdropFilter: 'blur(22px) saturate(180%)',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.04), inset 0 0 0 0.5px rgba(60,60,67,0.10), inset 0 1px 0 rgba(255,255,255,0.65)',
+          flex: 1, minWidth: 0, background: 'var(--panel-soft)', borderRadius: 12,
+          border: '1px solid var(--line)',
+          boxShadow: 'none',
           minHeight: 0,
         }} />
         {p.showFooter !== false && (

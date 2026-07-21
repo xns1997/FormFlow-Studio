@@ -91,7 +91,7 @@ function NodeResultRow({ result, query, favorite, active, compatibilityText, onC
       </div>
       <div className="node-result-actions">
         <span className="node-result-ports">{counts.inputs}入 · {counts.outputs}出</span>
-        <button
+        <button type="button"
           className={`node-favorite ${favorite ? 'active' : ''}`}
           aria-label={favorite ? `取消收藏 ${spec.label}` : `收藏 ${spec.label}`}
           title={favorite ? '取消收藏' : '收藏'}
@@ -222,7 +222,7 @@ export default function NodePalette({ specs, tables, selectedSpec, onAdd, onPoin
 
   return (
     <aside className="canvas-palette">
-      <div className="palette-header"><span>节点面板 <small>{specs.length}</small></span><button onClick={onClose} aria-label="关闭节点面板">×</button></div>
+      <div className="palette-header"><span>节点面板 <small>{specs.length}</small></span><button type="button" onClick={onClose} aria-label="关闭节点面板">×</button></div>
       <div className="palette-search-wrap">
         <span className="palette-search-icon">⌕</span>
         <input
@@ -234,24 +234,24 @@ export default function NodePalette({ specs, tables, selectedSpec, onAdd, onPoin
           placeholder="搜索名称、拼音、关键词…"
           aria-label="搜索节点"
         />
-        {query && <button className="palette-search-clear" onClick={() => setQuery('')} aria-label="清空搜索">×</button>}
+        {query && <button type="button" className="palette-search-clear" onClick={() => setQuery('')} aria-label="清空搜索">×</button>}
         <kbd>⌘K</kbd>
       </div>
       <div className="palette-group-filter" aria-label="节点分组筛选">
-        <button className={group === 'all' ? 'active' : ''} onClick={() => setGroup('all')}>全部</button>
-        {NODE_DISCOVERY_GROUPS.map((item) => <button key={item} className={group === item ? 'active' : ''} onClick={() => setGroup(item)}>{item}</button>)}
+        <button type="button" className={group === 'all' ? 'active' : ''} onClick={() => setGroup('all')}>全部</button>
+        {NODE_DISCOVERY_GROUPS.map((item) => <button type="button" key={item} className={group === item ? 'active' : ''} onClick={() => setGroup(item)}>{item}</button>)}
       </div>
       <div className="palette-compatibility-controls">
         <label><input type="checkbox" checked={compatibleOnly} disabled={!selectedSpec} onChange={(event) => setCompatibleOnly(event.target.checked)} /> 仅看兼容节点</label>
         {compatibleOnly && selectedSpec && <div className="compatibility-direction">
-          <button className={compatibilityDirection === 'downstream' ? 'active' : ''} onClick={() => setCompatibilityDirection('downstream')}>接在后面</button>
-          <button className={compatibilityDirection === 'upstream' ? 'active' : ''} onClick={() => setCompatibilityDirection('upstream')}>接在前面</button>
+          <button type="button" className={compatibilityDirection === 'downstream' ? 'active' : ''} onClick={() => setCompatibilityDirection('downstream')}>接在后面</button>
+          <button type="button" className={compatibilityDirection === 'upstream' ? 'active' : ''} onClick={() => setCompatibilityDirection('upstream')}>接在前面</button>
         </div>}
       </div>
 
       {!isSearching && tables.length > 0 && (
         <div className="palette-data-source">
-          <button className="palette-section-toggle" onClick={() => setDataOpen((value) => !value)}><span>数据源</span><span>{dataOpen ? '−' : '+'}</span></button>
+          <button type="button" className="palette-section-toggle" onClick={() => setDataOpen((value) => !value)}><span>数据源</span><span>{dataOpen ? '−' : '+'}</span></button>
           {dataOpen && tables.map((table) => <div key={table.id} className="palette-data-file">
             <span className="palette-data-file-name">{table.fileName}</span>
             {table.sheets.map((sheet) => <span key={sheet.name} className="palette-data-sheet">{sheet.name} <small>{sheet.rowCount}×{sheet.colCount}</small></span>)}
@@ -262,14 +262,14 @@ export default function NodePalette({ specs, tables, selectedSpec, onAdd, onPoin
       <div className="palette-list" role="listbox" aria-label="节点搜索结果">
         {isSearching ? (
           <>
-            <div className="palette-result-summary"><span>{results.length} 个结果{results.length > 50 ? ' · 显示前 50' : ''}</span>{group !== 'all' && <button onClick={() => setGroup('all')}>搜索全部分组</button>}</div>
+            <div className="palette-result-summary"><span>{results.length} 个结果{results.length > 50 ? ' · 显示前 50' : ''}</span>{group !== 'all' && <button type="button" onClick={() => setGroup('all')}>搜索全部分组</button>}</div>
             {displayedSearchResults.map((result, itemIndex) => renderResult(result, itemIndex))}
           </>
         ) : (
           <>
             {favorites.length > 0 && <section className="palette-virtual-section"><h2>★ 收藏</h2>{favorites.map((result) => renderResult(result))}</section>}
             {recent.length > 0 && <section className="palette-virtual-section">
-              <button className="palette-section-toggle" aria-expanded={recentOpen} onClick={() => setRecentOpen((value) => !value)}>
+              <button type="button" className="palette-section-toggle" aria-expanded={recentOpen} onClick={() => setRecentOpen((value) => !value)}>
                 <span>最近使用 <small>{recent.length}</small></span><span>{recentOpen ? '−' : '+'}</span>
               </button>
               {recentOpen && recent.slice(0, 5).map((result) => renderResult(result))}
@@ -279,7 +279,7 @@ export default function NodePalette({ specs, tables, selectedSpec, onAdd, onPoin
               if (!grouped.length) return null;
               const isCollapsed = collapsed.has(item);
               return <section key={item}>
-                <button className="palette-section-toggle" onClick={() => setCollapsed((current) => {
+                <button type="button" className="palette-section-toggle" onClick={() => setCollapsed((current) => {
                   const next = new Set(current);
                   if (next.has(item)) next.delete(item); else next.add(item);
                   return next;
@@ -292,7 +292,7 @@ export default function NodePalette({ specs, tables, selectedSpec, onAdd, onPoin
         {results.length === 0 && <div className="palette-empty">
           <strong>没有找到节点</strong>
           <span>试试“筛选”“导出”“sheet”或拼音首字母</span>
-          <div><button onClick={() => setQuery('')}>清空搜索</button>{group !== 'all' && <button onClick={() => setGroup('all')}>搜索全部</button>}</div>
+          <div><button type="button" onClick={() => setQuery('')}>清空搜索</button>{group !== 'all' && <button type="button" onClick={() => setGroup('all')}>搜索全部</button>}</div>
         </div>}
       </div>
     </aside>
@@ -341,7 +341,7 @@ export function QuickNodePicker({ specs, context, clientPosition, onChoose, onCl
         }}
       />
       <div className="quick-picker-results" role="listbox">
-        {results.map((result, indexInResults) => <button key={result.document.spec.id} className={indexInResults === active ? 'active' : ''} onClick={() => choose(result)}>
+        {results.map((result, indexInResults) => <button type="button" key={result.document.spec.id} className={indexInResults === active ? 'active' : ''} onClick={() => choose(result)}>
           <span><strong>{result.document.spec.label}</strong><small>{result.document.group}</small></span>
           <em>{context.direction === 'from-output' ? '→' : '←'} {result.compatiblePort?.label}</em>
         </button>)}

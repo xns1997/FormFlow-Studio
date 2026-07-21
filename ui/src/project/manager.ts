@@ -68,6 +68,7 @@ export function createNewProject(name: string = '我的项目'): ProjectStructur
     sheetBehaviors: [],
     forms: [],
     outputs: [],
+    testing: { profiles: [], suites: [], fixtures: [], runs: [] },
   };
 }
 
@@ -81,6 +82,7 @@ export function normalizeProjectStructure(project: ProjectStructure): ProjectStr
       name: design.name,
       design,
       behaviors: project.behaviors || [],
+      ruleCode: '',
       createdAt: design.createdAt || now,
       updatedAt: design.updatedAt || now,
     }));
@@ -88,11 +90,12 @@ export function normalizeProjectStructure(project: ProjectStructure): ProjectStr
 
   return {
     ...project,
+    forms: forms.map((form) => ({ ...form, ruleCode: form.ruleCode || '' })),
     settings: normalizeProjectSettings(project.settings as ProjectSettings | undefined),
     globalBehaviors: project.globalBehaviors || [],
     sheetBehaviors: project.sheetBehaviors || [],
-    forms,
     release: normalizeProjectRelease(project.release as ProjectRelease | undefined, forms, project.srcTable || []),
+    testing: project.testing || { profiles: [], suites: [], fixtures: [], runs: [] },
   };
 }
 

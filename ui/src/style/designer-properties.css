@@ -85,6 +85,16 @@
   background: rgba(255,59,48,0.16);
 }
 
+.properties-header-actions { position: relative; display: flex; align-items: center; gap: 2px; }
+.properties-close,
+.properties-more > summary { display: grid; place-items: center; width: 30px; height: 30px; min-width: 30px; min-height: 30px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--text-secondary); cursor: pointer; list-style: none; }
+.properties-close:hover,
+.properties-more > summary:hover { background: var(--fill); color: var(--accent); }
+.properties-more { position: relative; }
+.properties-more > summary::-webkit-details-marker { display: none; }
+.properties-more > div { position: absolute; z-index: 12; top: calc(100% + 5px); right: 0; width: 154px; padding: 5px; border: var(--border-subtle); border-radius: 10px; background: var(--material-thick); box-shadow: var(--shadow-md); }
+.properties-more .properties-delete { display: flex; align-items: center; justify-content: flex-start; gap: 8px; width: 100%; min-height: 32px; padding: 0 8px; }
+
 .properties-body {
   flex: 1;
   min-width: 0;
@@ -224,11 +234,11 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .property-field-actions button:hover { background: var(--panel-soft); color: var(--accent); }
-.property-field-actions small { max-width: 74px; overflow: hidden; color: var(--muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.property-field-actions small { max-width: 74px; overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 
 .property-toggle-field {
   display: grid;
@@ -254,16 +264,12 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
   background: var(--panel-soft);
   color: var(--muted);
   cursor: help;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .property-toggle-control .property-field-actions { margin-left: 0; }
 .designer-properties .property-toggle-control .ff-antd-switch.ant-switch {
-  flex: 0 0 38px;
-  width: 38px;
-  min-width: 38px;
-  max-width: 38px;
-  height: 22px;
+  flex-shrink: 0;
 }
 
 .property-compact-field {
@@ -290,7 +296,7 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
   background: var(--panel-soft);
   color: var(--muted);
   cursor: help;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .property-compact-control .property-field-actions { margin-left: 0; }
@@ -326,11 +332,24 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
   gap: 10px;
   min-height: 34px;
   padding: 6px 8px 6px 10px;
-  border: var(--border);
+  border: 1px solid rgba(100,116,139,.30);
   border-radius: 9px;
-  background: var(--panel-soft);
+  background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,250,252,.96));
+  box-shadow: 0 2px 6px rgba(15,23,42,.10), inset 0 1px 0 rgba(255,255,255,.92);
   color: var(--text);
   cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+.property-summary-button:hover {
+  border-color: rgba(37,99,235,.42);
+  box-shadow: 0 3px 9px rgba(15,23,42,.13), 0 0 0 2px rgba(37,99,235,.06);
+}
+
+.property-summary-button:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.14), 0 4px 10px rgba(15,23,42,.12);
 }
 
 .property-summary-button > span {
@@ -467,8 +486,6 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
 .property-editor-warning { padding: 8px 10px; border-radius: 8px; background: rgba(245,158,11,.12); color: #a16207; font-size: 11px; }
 .property-impact { display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px; border-radius: 8px; background: rgba(37,99,235,.08); color: var(--muted); font-size: 11px; }
 .property-impact b { flex: 0 0 auto; color: var(--accent); }
-.designer-preview-field-error { position: absolute; right: 4px; bottom: -18px; left: 4px; color: #d70015; font-size: 10px; }
-
 @media (max-width: 700px) {
   .property-composite-grid,
   .property-array-grid { grid-template-columns: 1fr; }
@@ -483,21 +500,26 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
 
 .prop-field input,
 .prop-field select,
+.prop-field .ant-select,
 .prop-field textarea {
   width: 100%;
   min-width: 0;
   font-size: 12px;
   padding: 5px 8px;
-  border: none;
+  border: 1px solid rgba(100,116,139,.28);
   border-radius: 8px;
-  background: rgba(118,118,128,0.09);
+  background: rgba(255,255,255,.96);
+  box-shadow: 0 2px 5px rgba(15,23,42,.08), inset 0 1px 0 rgba(255,255,255,.9);
   outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
 
 .prop-field input:focus,
-.prop-field select:focus {
-  box-shadow: 0 0 0 3px rgba(0,122,255,0.14);
-  background: rgba(255,255,255,0.90);
+.prop-field select:focus,
+.prop-field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,122,255,0.14), 0 4px 10px rgba(15,23,42,.10);
+  background: var(--panel);
 }
 
 .designer-properties .ff-antd-form-scope .ant-input,
@@ -507,8 +529,33 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
 .designer-properties .ff-antd-form-scope .ant-picker-range,
 .designer-properties .ff-antd-form-scope .ant-input-affix-wrapper,
 .designer-properties .ff-antd-form-scope .ant-input-number-affix-wrapper {
+  border-color: rgba(100,116,139,.32);
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+  background: linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+  box-shadow: 0 2px 6px rgba(15,23,42,.10), inset 0 1px 0 rgba(255,255,255,.92);
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+.designer-properties .ff-antd-form-scope .ant-input:hover,
+.designer-properties .ff-antd-form-scope .ant-input-number:hover,
+.designer-properties .ff-antd-form-scope .ant-select:hover .ant-select-selector,
+.designer-properties .ff-antd-form-scope .ant-picker:hover,
+.designer-properties .ff-antd-form-scope .ant-input-affix-wrapper:hover,
+.designer-properties .ff-antd-form-scope .ant-input-number-affix-wrapper:hover {
+  border-color: rgba(37,99,235,.42);
+  box-shadow: 0 3px 9px rgba(15,23,42,.12);
+}
+
+.designer-properties .ff-antd-form-scope .ant-input:focus,
+.designer-properties .ff-antd-form-scope .ant-input-focused,
+.designer-properties .ff-antd-form-scope .ant-input-number-focused,
+.designer-properties .ff-antd-form-scope .ant-select-focused .ant-select-selector,
+.designer-properties .ff-antd-form-scope .ant-picker-focused,
+.designer-properties .ff-antd-form-scope .ant-input-affix-wrapper-focused,
+.designer-properties .ff-antd-form-scope .ant-input-number-affix-wrapper-focused {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,122,255,.14), 0 4px 10px rgba(15,23,42,.11);
+  background: var(--panel);
 }
 
 .designer-properties .ff-antd-form-scope .ant-input,
@@ -584,7 +631,7 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
 
 .prop-layout-grid b {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
 }
 
@@ -629,7 +676,7 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
   border-radius: 999px;
   background: var(--panel-soft);
   color: var(--muted);
-  font-size: 9px;
+  font-size: 10px;
   white-space: nowrap;
 }
 
@@ -670,6 +717,7 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
 .properties-empty svg { width: 22px; height: 22px; color: color-mix(in srgb, var(--muted) 72%, transparent); }
 .properties-empty strong { color: var(--text); font-size: 12px; }
 .properties-empty span { font-size: 11px; }
+.properties-empty button { margin-top: 4px; padding: 0 10px; border: 0; border-radius: 8px; background: var(--fill); color: var(--accent); font-size: 12px; cursor: pointer; }
 
 .prop-event-doc-links {
   display: flex;
@@ -689,7 +737,7 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
   border: 1px solid rgba(37,99,235,0.18);
   border-radius: 10px;
   background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(219,234,254,0.82));
-  color: #1d4ed8;
+  color: var(--accent);
   font-size: 11px;
   font-weight: 700;
   padding: 6px 10px;
@@ -704,7 +752,7 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
   border: 1px solid rgba(59,130,246,0.18);
   border-radius: 999px;
   background: rgba(239,246,255,0.92);
-  color: #2563eb;
+  color: var(--accent);
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
@@ -738,14 +786,14 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
 
 .prop-event-snippet-head strong {
   font-size: 11px;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .prop-event-snippet-head button {
   border: 1px solid rgba(148,163,184,0.18);
   border-radius: 9px;
   background: rgba(255,255,255,0.94);
-  color: #334155;
+  color: var(--text-secondary);
   font-size: 11px;
   padding: 5px 8px;
   cursor: pointer;
@@ -753,7 +801,7 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
 
 .prop-event-snippet-card span {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 
@@ -796,7 +844,7 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
 .prop-linkage-rule-head label,
 .prop-linkage-section-head strong {
   font-size: 11px;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .prop-linkage-rule-head button,
@@ -807,7 +855,7 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
   border: 1px solid rgba(148,163,184,0.18);
   border-radius: 9px;
   background: rgba(255,255,255,0.94);
-  color: #334155;
+  color: var(--text-secondary);
   font-size: 11px;
   padding: 5px 8px;
   cursor: pointer;
@@ -847,7 +895,7 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
 
 .prop-event-impact strong {
   font-size: 11px;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .prop-event-impact > div {
@@ -857,7 +905,7 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
 
 .prop-event-impact span {
   font-size: 10px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 .ff-antd-rate .ant-rate-star-zero .ant-rate-star-first,
 .ff-antd-rate .ant-rate-star-zero .ant-rate-star-second {

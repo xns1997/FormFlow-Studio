@@ -34,7 +34,7 @@
 }
 
 .rs-sheet-count {
-  font-size: 9px;
+  font-size: 10px;
   color: var(--muted);
   margin-left: 4px;
 }
@@ -173,7 +173,7 @@
 
 .rs-mode-tag {
   padding: 1px 6px;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   border-radius: var(--radius-sm);
   background: #dbeafe;
@@ -216,7 +216,7 @@
 .rs-name-box:focus {
   outline: none;
   border-color: var(--accent);
-  background: #fff;
+  background: var(--panel);
 }
 
 /* ── Formula Bar ──────────────────────────────────────── */

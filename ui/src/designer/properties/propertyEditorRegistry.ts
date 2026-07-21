@@ -1,5 +1,5 @@
 import type { ComponentType, LazyExoticComponent } from 'react';
-import type { CompositePropDef, PropCondition, PropDef, PropSchemaEntry, PropertyEditorKind } from '../types';
+import type { CompositePropDef, PropCondition, PropDef, PropSchemaEntry, PropertyEditorKind, PropertyStatus } from '../types';
 import type { DesignComponent } from '../../project/types';
 
 export interface PropertyFieldDescriptor {
@@ -17,6 +17,9 @@ export interface PropertyEditorContext {
   def: PropSchemaEntry;
   value: unknown;
   values: Record<string, unknown>;
+  defaultValue?: unknown;
+  defaultValues?: Record<string, unknown>;
+  status?: PropertyStatus;
   fields: string[];
   fieldCatalog?: PropertyFieldDescriptor[];
   component?: DesignComponent;

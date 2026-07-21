@@ -144,6 +144,7 @@ export interface Props {
   onUpdate: (id: string, patch: Record<string, any>) => void;
   onUpdateGeometry?: (id: string, patch: Partial<Pick<DesignComponent, 'x' | 'y' | 'width' | 'height'>>) => void;
   onRemove: (id: string) => void;
+  onClose?: () => void;
 }
 
 export function getComponentDisplayName(component: DesignComponent) {

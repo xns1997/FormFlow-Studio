@@ -11,16 +11,15 @@
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  border: 1px solid rgba(148,163,184,0.18);
-  border-radius: 18px;
+  border: var(--border-subtle);
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s;
-  background: rgba(255,255,255,0.9);
-  box-shadow: 0 8px 20px rgba(15,23,42,0.04);
+  background: var(--panel-soft);
 }
 
-.lg-checkbox-item:hover { background: #fff; border-color: rgba(37,99,235,0.2); }
-.lg-checkbox-item.selected { border-color: rgba(37,99,235,0.35); background: linear-gradient(180deg, rgba(239,246,255,0.9), rgba(219,234,254,0.66)); }
+.lg-checkbox-item:hover { background: var(--fill); border-color: var(--line-strong); }
+.lg-checkbox-item.selected { border-color: var(--accent-line); background: var(--accent-soft); }
 
 .lg-checkbox-item input { display: none; }
 

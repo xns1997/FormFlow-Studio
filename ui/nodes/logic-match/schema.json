@@ -1,0 +1,13 @@
+{
+  "id": "logic:match", "label": "匹配分支", "description": "用配置表替代多层比较与条件分支", "category": "高阶 · 控制", "kind": "generic", "macro": { "version": 1, "expansion": "runtime-composite", "debugMapping": "node-output", "snapshot": [] },
+  "properties": [
+    { "name": "cases", "label": "匹配表", "type": "json", "default": [] },
+    { "name": "defaultValue", "label": "默认结果", "type": "string", "default": "" }
+  ],
+  "ports": [
+    { "name": "value", "label": "待匹配值", "type": "any", "direction": "input", "required": true },
+    { "name": "cases", "label": "动态匹配表", "type": "array", "direction": "input" },
+    { "name": "result", "label": "匹配结果", "type": "any", "direction": "output" },
+    { "name": "matched", "label": "是否命中", "type": "boolean", "direction": "output" }
+  ], "keywords": ["match", "switch", "分支", "映射"]
+}

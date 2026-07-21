@@ -25,6 +25,8 @@ export interface FormEntry {
   name: string;
   design: DesignFile;
   behaviors: BehaviorFile[];
+  /** 该表单独立的受控规则 DSL 源码。 */
+  ruleCode: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -36,6 +38,7 @@ export function createFormEntry(name: string): FormEntry {
     name,
     design: createDesignFile(name),
     behaviors: [],
+    ruleCode: '',
     createdAt: now,
     updatedAt: now,
   };
@@ -51,9 +54,17 @@ export interface ProjectStructure {
   sheetBehaviors?: SheetBehaviorEntry[]; // 工作表行为（按表/Sheet 分层）
   forms: FormEntry[];                 // 表单实例（含行为）
   outputs: OutputFile[];
+  testing?: ProjectTestingAssets;
   // 兼容旧格式（读取时自动迁移）
   designs?: DesignFile[];
   behaviors?: BehaviorFile[];
+}
+
+export interface ProjectTestingAssets {
+  profiles: Array<Record<string, unknown>>;
+  suites: Array<Record<string, unknown>>;
+  fixtures: Array<Record<string, unknown>>;
+  runs: Array<Record<string, unknown>>;
 }
 
 export interface ProjectConfig {
@@ -525,6 +536,11 @@ export type FormLinkageOperator =
   | 'isEmpty'
   | 'isNotEmpty'
   | 'contains'
+  | 'notContains'
+  | 'startsWith'
+  | 'notStartsWith'
+  | 'endsWith'
+  | 'notEndsWith'
   | 'greaterThan'
   | 'lessThan'
   | 'greaterOrEqual'
@@ -535,6 +551,7 @@ export type FormActionType =
   | 'setVisible'
   | 'setDisabled'
   | 'setRequired'
+  | 'setOptions'
   | 'showMessage'
   | 'runWorkflow';
 
@@ -557,6 +574,8 @@ export interface FormLinkageAction {
   targetField?: string;
   targetComponentId?: string;
   value?: unknown;
+  /** 安全表达式；存在时优先于静态 value。 */
+  expression?: string;
   valueSource?: 'static' | 'event' | 'field';
   sourceField?: string;
   visible?: boolean;
@@ -566,6 +585,7 @@ export interface FormLinkageAction {
   level?: 'info' | 'success' | 'warning' | 'error';
   workflowId?: string;
   parameters?: Record<string, unknown>;
+  optionsConfig?: { table: string; filterField: string; filterValue?: unknown; labelField?: string; valueField?: string };
 }
 
 export interface FormLinkageRule {

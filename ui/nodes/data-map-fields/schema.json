@@ -1,0 +1,17 @@
+{
+  "id": "data:map-fields", "label": "批量字段映射", "description": "在一张映射表中完成重命名、默认值和字段丢弃", "category": "高阶 · 数据", "kind": "generic", "macro": { "version": 1, "expansion": "runtime-composite", "debugMapping": "node-output", "snapshot": [] },
+  "properties": [
+    { "name": "fieldMap", "label": "字段映射", "type": "json", "default": {} },
+    { "name": "defaults", "label": "默认值", "type": "json", "default": {} },
+    { "name": "transforms", "label": "字段转换", "type": "json", "default": {} },
+    { "name": "dropFields", "label": "丢弃字段", "type": "array", "default": [] },
+    { "name": "keepSource", "label": "保留原字段", "type": "boolean", "default": true }
+  ],
+  "ports": [
+    { "name": "record", "label": "输入记录", "type": "object", "direction": "input", "required": true },
+    { "name": "fieldMap", "label": "动态映射", "type": "object", "direction": "input" },
+    { "name": "record", "label": "映射记录", "type": "object", "direction": "output" },
+    { "name": "result", "label": "结果", "type": "object", "direction": "output" },
+    { "name": "fields", "label": "输出字段", "type": "array", "direction": "output" }
+  ], "keywords": ["字段映射", "rename", "transform", "map fields"]
+}

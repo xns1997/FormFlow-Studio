@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { notification } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import {
   createProjectStructure, listProjects,
   cloneProject, deleteProject as deleteProjectFn, loadProjectStructure,
 } from '../../project/manager';
-import { downloadPackageZip, importFromZip, openFilePicker } from '../../project/packageManager';
+import { downloadFormFlowPackage, importFormFlowPackage, openFilePicker } from '../../project/packageManager';
 import { request } from '../../services/io/api';
 import Modal, { ModalFooter, ModalHeader } from '../../components/Modal';
 import {
@@ -21,6 +22,7 @@ import { buildProjectPath, buildWorkspacePath, buildEditorPath, buildUsagePath }
 import type { ProjectStructure } from '../../project/types';
 import { ShareDialog } from '../../components/ShareDialog';
 import { getSession } from '../../services/io/auth';
+import { useAppInteraction } from '../../components/AppInteractionProvider';
 
 function createInitialDraft(): ProjectWizardDraft {
   return {
@@ -79,8 +81,14 @@ function getProjectGradient(name: string): string {
   return `radial-gradient(${layers[0]}), radial-gradient(${layers[1]}), radial-gradient(${layers[2]}), rgb(${br},${bg},${bb})`;
 }
 
+function formatProjectDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '未知时间' : date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
 export default function ProjectsListPage() {
   const navigate = useNavigate();
+  const { confirm, announce } = useAppInteraction();
   const setProject = useProjectStore((s) => s.setProject);
   const [projectList, setProjectList] = useState<Array<{ id: string; name: string; updatedAt: string; tableCount: number; shared?: boolean }>>([]);
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -121,11 +129,23 @@ export default function ProjectsListPage() {
   }, [navigate]);
 
   const deleteProject = useCallback(async (id: string, name: string) => {
-    if (confirm(`确定删除项目 "${name}"？`)) {
-      try { await deleteProjectFn(id); } catch {}
-      try { setProjectList(await listProjects()); } catch {}
+    if (!await confirm({
+      title: '删除项目？',
+      message: `确定删除“${name}”？`,
+      detail: '此操作会永久移除项目及其本地数据，无法撤销。',
+      confirmLabel: '删除项目',
+      destructive: true,
+    })) return;
+    try {
+      await deleteProjectFn(id);
+      setProjectList(await listProjects());
+      announce(`已删除项目“${name}”`);
+    } catch (error) {
+      const description = error instanceof Error ? error.message : String(error);
+      notification.error({ message: '删除项目失败', description });
+      announce('删除项目失败');
     }
-  }, []);
+  }, [announce, confirm]);
 
   const duplicateProject = useCallback(async (id: string, name: string) => {
     await cloneProject(id);
@@ -135,7 +155,7 @@ export default function ProjectsListPage() {
 
   const exportProject = useCallback((id: string) => {
     loadProjectStructure(id)
-      .then((data) => data && downloadPackageZip(data));
+      .then((data) => data && downloadFormFlowPackage(data));
   }, []);
 
   const finishCreate = useCallback(async (projectPromise: Promise<ProjectStructure>) => {
@@ -147,30 +167,34 @@ export default function ProjectsListPage() {
   }, [navigate, setProject]);
 
   const importPackage = useCallback(async () => {
-    const file = await openFilePicker('.zip');
+    const file = await openFilePicker('.formflow');
     if (!file) return;
     try {
       await finishCreate(createProjectFromSource({
-        mode: 'zip',
+        mode: 'package',
         file,
         meta: {
-          name: file.name.replace(/\.zip$/i, '') || `导入项目 ${projectList.length + 1}`,
+          name: file.name.replace(/\.formflow$/i, '') || `导入项目 ${projectList.length + 1}`,
           description: '',
           author: '',
           tags: [],
         },
       }));
-    } catch (err) { alert('导入项目包失败: ' + String(err)); }
-  }, [finishCreate, projectList.length]);
+    } catch (err) {
+      const description = err instanceof Error ? err.message : String(err);
+      notification.error({ message: '导入项目包失败', description });
+      announce('导入项目包失败');
+    }
+  }, [announce, finishCreate, projectList.length]);
 
   const setMode = useCallback((mode: ProjectCreationMode) => {
     setDraft((current) => ({
       ...current,
       mode,
       selectedTemplateId: mode === 'template' ? current.selectedTemplateId : undefined,
-      importedProject: mode === 'zip' ? current.importedProject : undefined,
-      importedFile: mode === 'zip' ? current.importedFile : undefined,
-      fileName: mode === 'zip' ? current.fileName : undefined,
+      importedProject: mode === 'package' ? current.importedProject : undefined,
+      importedFile: mode === 'package' ? current.importedFile : undefined,
+      fileName: mode === 'package' ? current.fileName : undefined,
       error: '',
     }));
   }, []);
@@ -197,16 +221,16 @@ export default function ProjectsListPage() {
     }));
   }, []);
 
-  const chooseZipFile = useCallback(async () => {
-    const file = await openFilePicker('.zip');
+  const choosePackageFile = useCallback(async () => {
+    const file = await openFilePicker('.formflow');
     if (!file) return;
     setDraft((current) => ({ ...current, busy: true, error: '' }));
     try {
-      const importedProject = await importFromZip(file);
+      const importedProject = await importFormFlowPackage(file);
       if (!importedProject) throw new Error('无效的项目包文件');
       setDraft((current) => ({
         ...current,
-        mode: 'zip',
+        mode: 'package',
         busy: false,
         importedProject,
         importedFile: file,
@@ -214,7 +238,7 @@ export default function ProjectsListPage() {
         error: '',
         meta: {
           ...current.meta,
-          name: current.meta.name || importedProject.config.name || file.name.replace(/\.zip$/i, ''),
+          name: current.meta.name || importedProject.config.name || file.name.replace(/\.formflow$/i, ''),
           description: current.meta.description || importedProject.config.description || '',
           author: current.meta.author || importedProject.config.author || '',
           tagsInput: current.meta.tagsInput || importedProject.config.tags.join(', '),
@@ -235,7 +259,7 @@ export default function ProjectsListPage() {
   const canMoveNext = draft.step === 0
     ? (draft.mode === 'blank'
       || (draft.mode === 'template' && !!draft.selectedTemplateId)
-      || (draft.mode === 'zip' && !!draft.importedProject && !draft.error))
+      || (draft.mode === 'package' && !!draft.importedProject && !draft.error))
     : draft.step === 1
       ? !!draft.meta.name.trim()
       : true;
@@ -267,10 +291,10 @@ export default function ProjectsListPage() {
       if (draft.mode === 'blank') {
         projectPromise = createProjectFromSource({ mode: 'blank', meta });
       } else if (draft.mode === 'template') {
-        projectPromise = createProjectFromSource({ mode: 'template', templateId: draft.selectedTemplateId || 'blank_form', meta });
+        projectPromise = createProjectFromSource({ mode: 'template', templateId: draft.selectedTemplateId || 'game_analytics', meta });
       } else {
-        if (!draft.importedFile) throw new Error('请先选择 ZIP 项目包');
-        projectPromise = createProjectFromSource({ mode: 'zip', file: draft.importedFile, meta });
+        if (!draft.importedFile) throw new Error('请先选择 .formflow 项目包');
+        projectPromise = createProjectFromSource({ mode: 'package', file: draft.importedFile, meta });
       }
       await finishCreate(projectPromise);
       closeWizard();
@@ -285,7 +309,7 @@ export default function ProjectsListPage() {
 
   const template = PROJECT_TEMPLATES.find((item) => item.id === draft.selectedTemplateId);
   const summaryLines = [
-    draft.mode === 'blank' ? '从空白项目开始' : draft.mode === 'template' ? `从模板「${template?.name || ''}」开始` : `从 ZIP 项目包「${draft.fileName || ''}」导入`,
+    draft.mode === 'blank' ? '从空白项目开始' : draft.mode === 'template' ? `从模板「${template?.name || ''}」开始` : `从 .formflow 项目包「${draft.fileName || ''}」导入并解包`,
     draft.meta.description.trim() || '未填写项目描述',
     draft.meta.author.trim() ? `作者：${draft.meta.author.trim()}` : '作者未填写',
     parseTagInput(draft.meta.tagsInput).length > 0 ? `标签：${parseTagInput(draft.meta.tagsInput).join('、')}` : '标签未填写',
@@ -312,15 +336,16 @@ export default function ProjectsListPage() {
         </div>
         <div className="projects-toolbar-right">
           <div className="projects-search">
-            <span className="projects-search-icon">⌕</span>
+            <span className="projects-search-icon" aria-hidden="true">⌕</span>
             <input
               type="text"
+              aria-label="搜索项目"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索项目…"
             />
             {searchQuery && (
-              <button type="button" className="projects-search-clear" onClick={() => setSearchQuery('')}>×</button>
+              <button type="button" className="projects-search-clear" aria-label="清除搜索" onClick={() => setSearchQuery('')}>×</button>
             )}
           </div>
           <div className="projects-view-toggle">
@@ -329,6 +354,8 @@ export default function ProjectsListPage() {
               className={viewMode === 'grid' ? 'active' : ''}
               onClick={() => setViewMode('grid')}
               title="网格视图"
+              aria-label="网格视图"
+              aria-pressed={viewMode === 'grid'}
             >
               ⊞
             </button>
@@ -337,6 +364,8 @@ export default function ProjectsListPage() {
               className={viewMode === 'list' ? 'active' : ''}
               onClick={() => setViewMode('list')}
               title="列表视图"
+              aria-label="列表视图"
+              aria-pressed={viewMode === 'list'}
             >
               ☰
             </button>
@@ -345,6 +374,8 @@ export default function ProjectsListPage() {
               className={viewMode === 'compact' ? 'active' : ''}
               onClick={() => setViewMode('compact')}
               title="紧凑视图"
+              aria-label="紧凑视图"
+              aria-pressed={viewMode === 'compact'}
             >
               ⊟
             </button>
@@ -359,33 +390,38 @@ export default function ProjectsListPage() {
             <p className="hint">{searchQuery ? '尝试其他关键词' : '点击「新建项目」开始，或「导入项目」加载已有项目'}</p>
           </div>
         ) : filteredList.map((p) => (
-          <div key={p.id} className={`project-card project-card-${viewMode}`} onClick={() => openProject(p.id)}>
-            <div className="card-cover" style={{ background: getProjectGradient(p.name) }} />
+          <article
+            key={p.id}
+            className={`project-card project-card-${viewMode}`}
+          >
+            <div className="card-cover" style={{ background: getProjectGradient(p.name) }} aria-hidden="true">
+              <span>{p.name.trim().slice(0, 1) || '项'}</span>
+            </div>
             <div className="card-body">
               <div className="card-header">
-                <span className="card-name">{p.name}</span>
+                <button type="button" className="card-name card-name-button" onClick={() => openProject(p.id)}>{p.name}</button>
                 {p.shared && <span className="project-shared-badge">共享</span>}
               </div>
               <div className="card-stats">
                 <span>{p.tableCount} 个数据表</span>
-                <span>更新于 {new Date(p.updatedAt).toLocaleDateString()}</span>
+                <span>更新于 {formatProjectDate(p.updatedAt)}</span>
               </div>
               {viewMode !== 'compact' && (
-                <div className="card-modes" onClick={(e) => e.stopPropagation()}>
-                  <button type="button" className="card-mode-btn" onClick={() => navigate(buildUsagePath(p.id))}>直接使用</button>
-                </div>
-              )}
-              {viewMode !== 'compact' && (
-                <div className="card-actions" onClick={(e) => e.stopPropagation()}>
-                  <button type="button" className="ui-btn ui-btn-xs" onClick={() => openProject(p.id)}>打开</button>
-                  <button type="button" className="ui-btn ui-btn-xs" onClick={() => duplicateProject(p.id, p.name)}>复制</button>
-                  <button type="button" className="ui-btn ui-btn-xs" onClick={() => exportProject(p.id)}>导出</button>
-                  {isCloudMode && <button type="button" className="ui-btn ui-btn-xs" onClick={() => setShareDialogProject({ id: p.id, name: p.name })}>共享</button>}
-                  <button type="button" className="ui-btn ui-btn-danger ui-btn-xs" onClick={() => deleteProject(p.id, p.name)}>删除</button>
+                <div className="card-footer">
+                  <div className="card-modes">
+                    <button type="button" className="card-mode-btn" onClick={() => navigate(buildUsagePath(p.id))}>直接使用</button>
+                  </div>
+                  <div className="card-actions">
+                    <button type="button" className="ui-btn ui-btn-xs" onClick={() => openProject(p.id)}>打开</button>
+                    <button type="button" className="ui-btn ui-btn-xs" onClick={() => duplicateProject(p.id, p.name)}>复制</button>
+                    <button type="button" className="ui-btn ui-btn-xs" onClick={() => exportProject(p.id)}>导出</button>
+                    {isCloudMode && <button type="button" className="ui-btn ui-btn-xs" onClick={() => setShareDialogProject({ id: p.id, name: p.name })}>共享</button>}
+                    <button type="button" className="ui-btn ui-btn-danger ui-btn-xs" onClick={() => deleteProject(p.id, p.name)}>删除</button>
+                  </div>
                 </div>
               )}
             </div>
-          </div>
+          </article>
         ))}
       </div>
 
@@ -407,7 +443,7 @@ export default function ProjectsListPage() {
                 {[
                   { mode: 'blank' as const, title: '空白项目', desc: '快速创建一个最小项目，不预装模板内容。' },
                   { mode: 'template' as const, title: '内置模板', desc: '从轻量模板起步，带基础骨架和示例结构。' },
-                  { mode: 'zip' as const, title: 'ZIP 导入', desc: '从本地项目包继续，系统将读取 project.json 校验格式。' },
+                  { mode: 'package' as const, title: '.formflow 导入', desc: '选择单文件项目包，校验后自动解包到项目存储目录。' },
                 ].map((item) => (
                   <button
                     key={item.mode}
@@ -443,10 +479,10 @@ export default function ProjectsListPage() {
                 </div>
               )}
 
-              {draft.mode === 'zip' && (
+              {draft.mode === 'package' && (
                 <div className="project-wizard-import-box">
-                  <button type="button" className="ui-btn ui-btn-primary" onClick={chooseZipFile} disabled={draft.busy}>
-                    {draft.busy ? '正在校验 ZIP…' : '选择 ZIP 项目包'}
+                  <button type="button" className="ui-btn ui-btn-primary" onClick={choosePackageFile} disabled={draft.busy}>
+                    {draft.busy ? '正在校验 .formflow…' : '选择 .formflow 项目包'}
                   </button>
                   <p>{draft.fileName ? `已选择：${draft.fileName}` : '尚未选择文件'}</p>
                   {draft.importedProject && <p className="project-wizard-valid">已识别项目：{draft.importedProject.config.name}</p>}
@@ -512,7 +548,7 @@ export default function ProjectsListPage() {
                   </div>
                 </div>
               )}
-              {draft.mode === 'zip' && draft.fileName && (
+              {draft.mode === 'package' && draft.fileName && (
                 <div className="project-wizard-summary-card subtle">
                   <strong>导入来源</strong>
                   <p>{draft.fileName}</p>

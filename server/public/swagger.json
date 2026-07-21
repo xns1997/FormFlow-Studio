@@ -1,5 +1,5 @@
 {
-  "openapi":"3.1.0","info":{"title":"FormFlow Studio API","version":"0.5.0","description":"FormFlow projects, data, workflows, tasks, governance and integrations API"},
+  "openapi":"3.1.0","info":{"title":"FormFlow Studio API","version":"0.6.0","description":"FormFlow projects, data, workflows, tasks, governance and integrations API"},
   "servers":[{"url":"/api"}],
   "components":{"securitySchemes":{"bearerAuth":{"type":"http","scheme":"bearer","bearerFormat":"JWT"}},"schemas":{"Error":{"type":"object","properties":{"error":{"type":"string"}}},"Task":{"type":"object","properties":{"id":{"type":"string"},"state":{"enum":["queued","running","completed","failed","cancelled"]},"progress":{"type":"number"}}}}},
   "paths":{
@@ -11,7 +11,17 @@
     "/database/query":{"post":{"summary":"Execute parameterized SQL","responses":{"200":{"description":"Query result"}}}},
     "/tasks":{"get":{"summary":"List background tasks","responses":{"200":{"description":"Tasks"}}},"post":{"summary":"Enqueue task","responses":{"202":{"description":"Queued","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Task"}}}}}}},
     "/notifications":{"get":{"summary":"List notifications","responses":{"200":{"description":"Notifications"}}},"post":{"summary":"Send notification","responses":{"201":{"description":"Sent"}}}},
-    "/ai/chat":{"post":{"summary":"Chat with configured LLM","responses":{"200":{"description":"Completion"}}}},
+    "/ai/chat":{"post":{"summary":"Chat through a configured model profile","responses":{"200":{"description":"Completion"},"503":{"description":"Provider unavailable"},"504":{"description":"Provider timeout"}}}},
+    "/ai/chat/stream":{"post":{"summary":"Stream chat events through SSE","responses":{"200":{"description":"SSE message_delta/tool_call/usage/completed events"}}}},
+    "/ai/embeddings":{"post":{"summary":"Create embeddings through a model profile","responses":{"200":{"description":"Embedding vectors"},"422":{"description":"Capability unavailable"}}}},
+    "/ai/knowledge/index":{"post":{"summary":"Embed and upsert project knowledge chunks into pgvector","responses":{"201":{"description":"Knowledge chunks indexed"},"422":{"description":"Invalid input or embedding capability unavailable"},"503":{"description":"Provider unavailable"}}}},
+    "/ai/knowledge/search":{"post":{"summary":"Search tenant and project scoped knowledge with pgvector","responses":{"200":{"description":"Ranked knowledge chunks"},"422":{"description":"Invalid query or embedding capability unavailable"}}}},
+    "/ai/knowledge":{"delete":{"summary":"Delete a project knowledge source or collection","responses":{"200":{"description":"Deleted row count"}}}},
+    "/ai/providers":{"get":{"summary":"List visible LLM providers","responses":{"200":{"description":"Masked provider configurations"}}},"post":{"summary":"Create encrypted LLM provider configuration","responses":{"201":{"description":"Provider created"}}}},
+    "/ai/profiles":{"get":{"summary":"List model profiles","responses":{"200":{"description":"Model profiles"}}},"post":{"summary":"Create model profile","responses":{"201":{"description":"Profile created"}}}},
+    "/ai/agents":{"get":{"summary":"List declarative agents","responses":{"200":{"description":"Agent definitions"}}},"post":{"summary":"Publish declarative agent","responses":{"201":{"description":"Agent version created"}}}},
+    "/ai/agents/{id}/runs":{"post":{"summary":"Run a managed agent","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}}],"responses":{"200":{"description":"Completed run"},"202":{"description":"Run waiting for tool result"}}}},
+    "/ai/plugins":{"get":{"summary":"List administrator-installed Provider plugins","responses":{"200":{"description":"Plugin registrations"}}}},
     "/export/pdf":{"post":{"summary":"Export rows as PDF","responses":{"200":{"description":"PDF file","content":{"application/pdf":{"schema":{"type":"string","contentEncoding":"binary"}}}}}}},
     "/metadata/{projectId}":{"get":{"summary":"Get project metadata","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"responses":{"200":{"description":"Metadata"}}},"put":{"summary":"Update project metadata","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"responses":{"200":{"description":"Updated"}}}}
   }

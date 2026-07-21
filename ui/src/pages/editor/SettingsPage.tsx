@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { AntdCompatSelect } from '../../components/AntdFormControls';
 import { Link, useParams } from 'react-router-dom';
 import { useProjectStore } from '../../project/store';
 import { normalizeProjectStructure } from '../../project/manager';
 import { createVersion, getVersions, restoreVersion, type ProjectVersion } from '../../services/io/projectVersionHistory';
-import { buildDocsPath, type ProjectSettingsSection } from '../../services/io/routes';
+import { buildDocsPath, buildWorkspacePath, type ProjectSettingsSection } from '../../services/io/routes';
 
 const sectionMeta: Record<ProjectSettingsSection, { title: string; description: string; docSlug?: string }> = {
   general: { title: '常规', description: '维护项目名称、描述、作者和版本信息。', docSlug: 'context-reference' },
@@ -101,6 +102,7 @@ export default function SettingsPage() {
         <div className="page-section-header">
           <span>项目设置 · {sectionMeta[section].title}</span>
           <div className="settings-toolbar-actions">
+            <Link to={buildWorkspacePath(id || project.config.id, 'designer')} className="ui-btn ui-btn-xs ui-btn-subtle">← 返回编辑器</Link>
             <Link to={docLink} className="docs-link-button">查看相关文档</Link>
             <button type="button" onClick={save} className={`ui-btn ui-btn-xs ${saved ? 'ui-btn-success' : 'ui-btn-subtle'}`}>{saved ? '✓ 已保存' : '保存'}</button>
           </div>
@@ -158,7 +160,7 @@ export default function SettingsPage() {
               </div>
               <div className="settings-form settings-grid">
                 <label><span>脚本超时（毫秒）</span><input type="number" value={projectSettings.behavior.scriptTimeout} onChange={(e) => updateBehaviorSettings({ scriptTimeout: Number(e.target.value) || 5000 })} /></label>
-                <label><span>错误策略</span><select value={projectSettings.behavior.errorStrategy} onChange={(e) => updateBehaviorSettings({ errorStrategy: e.target.value as 'show-error' | 'silent' })}><option value="show-error">显示错误</option><option value="silent">静默处理</option></select></label>
+                <label><span>错误策略</span><AntdCompatSelect value={projectSettings.behavior.errorStrategy} onChange={(e) => updateBehaviorSettings({ errorStrategy: e.target.value as 'show-error' | 'silent' })}><option value="show-error">显示错误</option><option value="silent">静默处理</option></AntdCompatSelect></label>
                 <label><span>循环保护上限</span><input type="number" value={projectSettings.behavior.loopProtection} onChange={(e) => updateBehaviorSettings({ loopProtection: Number(e.target.value) || 100 })} /></label>
               </div>
             </section>
@@ -172,7 +174,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div className="settings-form settings-grid" style={{ marginBottom: 14 }}>
-                <label><span>默认导出格式</span><select value={projectSettings.publish.format} onChange={(e) => updatePublishSettings({ format: e.target.value as typeof projectSettings.publish.format })}><option value="json">JSON</option><option value="xlsx">XLSX</option><option value="csv">CSV</option><option value="html">HTML</option></select></label>
+                <label><span>默认导出格式</span><AntdCompatSelect value={projectSettings.publish.format} onChange={(e) => updatePublishSettings({ format: e.target.value as typeof projectSettings.publish.format })}><option value="json">JSON</option><option value="xlsx">XLSX</option><option value="csv">CSV</option><option value="html">HTML</option></AntdCompatSelect></label>
                 <label><span>输出文件名</span><input value={projectSettings.publish.outputFileName} onChange={(e) => updatePublishSettings({ outputFileName: e.target.value })} /></label>
               </div>
               <div className="settings-toggle-list">

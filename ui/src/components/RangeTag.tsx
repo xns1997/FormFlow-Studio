@@ -11,7 +11,7 @@ interface RangeTagProps {
 export default function RangeTag({ range, onConnect, onDisconnect }: RangeTagProps) {
   if (!range) {
     return (
-      <button className="lg-range-connect" onClick={onConnect}>
+      <button type="button" className="lg-range-connect" onClick={onConnect}>
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
@@ -29,7 +29,7 @@ export default function RangeTag({ range, onConnect, onDisconnect }: RangeTagPro
         <path d="M4.5 1.5V8.5C4.5 9.5 5 10.5 6 10.5H9C9.5 10.5 10 10 10 9.5V7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
       <span className="lg-range-address">{address}</span>
-      <button className="lg-range-disconnect" onClick={onDisconnect} title="断开连接">×</button>
+      <button type="button" className="lg-range-disconnect" onClick={onDisconnect} title="断开连接">×</button>
     </div>
   );
 }

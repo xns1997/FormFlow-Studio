@@ -113,10 +113,10 @@ export default function FormDesignerPage() {
   return (
     <div className="designer-layout">
       <div className={`designer-toolbar ${designer.mode === 'preview' ? 'preview-active' : ''}`}>
-        {designer.mode === 'design' && <button onClick={handleSave} className="toolbar-btn">保存</button>}
-        {designer.mode === 'design' && <button onClick={handleAutoLayout} className="toolbar-btn">自动整理表单</button>}
-        {designer.mode === 'design' && <button onClick={handlePreview} className="toolbar-btn">预览/导出</button>}
-        {designer.mode === 'preview' && <button onClick={handleSendToTest} className="toolbar-btn">发送到测试</button>}
+        {designer.mode === 'design' && <button type="button" onClick={handleSave} className="toolbar-btn">保存</button>}
+        {designer.mode === 'design' && <button type="button" onClick={handleAutoLayout} className="toolbar-btn">自动整理表单</button>}
+        {designer.mode === 'design' && <button type="button" onClick={handlePreview} className="toolbar-btn">预览/导出</button>}
+        {designer.mode === 'preview' && <button type="button" onClick={handleSendToTest} className="toolbar-btn">发送到测试</button>}
         <span className="toolbar-sep" />
         <span className="toolbar-info">
           {designs.find((d) => d.id === activeId)?.name || '—'} · {designer.components.length} 个控件

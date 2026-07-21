@@ -16,6 +16,7 @@ test('default component values are structured for complex control types', () => 
   assert.deepEqual(getDefaultComponentValue({ type: 'upload', props: {} }), []);
   assert.deepEqual(getDefaultComponentValue({ type: 'dateRange', props: {} }), { start: '', end: '' });
   assert.equal(getDefaultComponentValue({ type: 'switch', props: {} }), true);
+  assert.equal(getDefaultComponentValue({ type: 'text', props: { content: '默认内容' } }), '默认内容');
 });
 
 test('editable component detection includes the new business control set', () => {

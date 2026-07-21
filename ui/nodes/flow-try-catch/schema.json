@@ -1,0 +1,16 @@
+{
+  "id": "flow:try-catch", "label": "尝试与补偿", "description": "统一承接成功值、错误和失败回退值", "category": "高阶 · 控制", "kind": "generic", "macro": { "version": 1, "expansion": "runtime-composite", "debugMapping": "node-output", "snapshot": [] },
+  "properties": [{ "name": "retryCount", "label": "重试次数", "type": "number", "default": 0 }, { "name": "timeoutMs", "label": "超时毫秒", "type": "number", "default": 10000 }, { "name": "compensationValue", "label": "补偿值", "type": "string", "default": "" }],
+  "ports": [
+    { "name": "value", "label": "正常值", "type": "any", "direction": "input" },
+    { "name": "error", "label": "错误", "type": "any", "direction": "input" },
+    { "name": "fallback", "label": "补偿值", "type": "any", "direction": "input" },
+    { "name": "result", "label": "最终结果", "type": "any", "direction": "output" },
+    { "name": "success", "label": "成功分支", "type": "any", "direction": "output" },
+    { "name": "failure", "label": "失败分支", "type": "any", "direction": "output" },
+    { "name": "failed", "label": "是否失败", "type": "boolean", "direction": "output" },
+    { "name": "attempts", "label": "尝试次数", "type": "number", "direction": "output" },
+    { "name": "timedOut", "label": "是否超时", "type": "boolean", "direction": "output" },
+    { "name": "compensated", "label": "是否补偿", "type": "boolean", "direction": "output" }
+  ], "keywords": ["try catch", "错误处理", "补偿", "fallback"]
+}

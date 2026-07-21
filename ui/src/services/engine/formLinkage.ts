@@ -4,6 +4,7 @@ import type {
   FormLinkageCondition,
   FormLinkageRule,
 } from '../../project/types';
+import { evaluatePropertyExpression } from './propertyExpression';
 
 interface LinkageRuntimeContext {
   eventName: string;
@@ -15,6 +16,7 @@ interface LinkageRuntimeContext {
   setVisible: (componentId: string, visible: boolean) => void | Promise<void>;
   setDisabled: (componentId: string, disabled: boolean) => void | Promise<void>;
   setRequired: (field: string, required: boolean) => void | Promise<void>;
+  setOptions: (field: string, config: NonNullable<FormLinkageAction['optionsConfig']>) => void | Promise<void>;
   showMessage: (message: string, level?: 'info' | 'success' | 'warning' | 'error') => void | Promise<void>;
   runWorkflow: (workflow?: string, parameters?: Record<string, unknown>, options?: { targetNodeId?: string }) => Promise<unknown>;
   runConfiguredWorkflow: (parameters?: Record<string, unknown>) => Promise<unknown>;
@@ -33,6 +35,11 @@ function compareValues(left: unknown, operator: FormLinkageCondition['operator']
     case 'isEmpty': return left == null || left === '' || (Array.isArray(left) && left.length === 0);
     case 'isNotEmpty': return !(left == null || left === '' || (Array.isArray(left) && left.length === 0));
     case 'contains': return String(left ?? '').includes(String(right ?? ''));
+    case 'notContains': return !String(left ?? '').includes(String(right ?? ''));
+    case 'startsWith': return String(left ?? '').startsWith(String(right ?? ''));
+    case 'notStartsWith': return !String(left ?? '').startsWith(String(right ?? ''));
+    case 'endsWith': return String(left ?? '').endsWith(String(right ?? ''));
+    case 'notEndsWith': return !String(left ?? '').endsWith(String(right ?? ''));
     case 'greaterThan': return Number(left) > Number(right);
     case 'lessThan': return Number(left) < Number(right);
     case 'greaterOrEqual': return Number(left) >= Number(right);
@@ -47,9 +54,21 @@ function resolveConditionValue(condition: FormLinkageCondition, ctx: LinkageRunt
 }
 
 function resolveActionValue(action: FormLinkageAction, ctx: LinkageRuntimeContext) {
+  if (action.expression) {
+    const result = evaluatePropertyExpression(action.expression, { form: ctx.values, event: { value: ctx.value, field: ctx.field } });
+    if (!result.ok) throw new Error(result.error);
+    return result.value;
+  }
   if (action.valueSource === 'event') return ctx.value;
   if (action.valueSource === 'field' && action.sourceField) return ctx.getValue(action.sourceField);
   return action.value;
+}
+
+function resolveOptionFilterValue(value: unknown, ctx: LinkageRuntimeContext) {
+  if (value === '$value') return ctx.value;
+  if (typeof value === 'string' && value.startsWith('$form.')) return ctx.getValue(value.slice(6));
+  if (typeof value === 'string' && value.startsWith('$')) return ctx.getValue(value.slice(1));
+  return value;
 }
 
 function describeAction(action: FormLinkageAction) {
@@ -58,6 +77,7 @@ function describeAction(action: FormLinkageAction) {
     case 'setVisible': return `${action.visible === false ? '隐藏' : '显示'} ${action.targetComponentId || '组件'}`;
     case 'setDisabled': return `${action.disabled ? '禁用' : '启用'} ${action.targetComponentId || '组件'}`;
     case 'setRequired': return `${action.required ? '设为必填' : '取消必填'} ${action.targetField || '字段'}`;
+    case 'setOptions': return `刷新 ${action.targetField || '字段'} 的选项`;
     case 'showMessage': return `提示：${action.message || ''}`;
     case 'runWorkflow': return `执行流程 ${action.workflowId || '当前流程'}`;
     default: return action.type;
@@ -86,6 +106,9 @@ async function executeAction(action: FormLinkageAction, ctx: LinkageRuntimeConte
       return;
     case 'setRequired':
       if (action.targetField) await ctx.setRequired(action.targetField, !!action.required);
+      return;
+    case 'setOptions':
+      if (action.targetField && action.optionsConfig) await ctx.setOptions(action.targetField, { ...action.optionsConfig, filterValue: resolveOptionFilterValue(action.optionsConfig.filterValue, ctx) });
       return;
     case 'showMessage':
       if (action.message) await ctx.showMessage(action.message, action.level || 'info');

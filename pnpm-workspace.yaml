@@ -2,5 +2,6 @@ allowBuilds:
   electron: true
   esbuild: true
   msgpackr-extract: true
+  protobufjs: set this to true or false
 minimumReleaseAgeExclude:
   - vite@8.1.3

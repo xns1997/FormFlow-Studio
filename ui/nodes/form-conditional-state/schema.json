@@ -1,0 +1,18 @@
+{
+  "id": "form:conditional-state", "label": "条件字段状态", "description": "按一个条件统一控制字段的显隐、禁用或必填状态", "category": "高阶 · 表单", "kind": "generic", "macro": { "version": 1, "expansion": "runtime-composite", "debugMapping": "node-output", "snapshot": [] },
+  "properties": [
+    { "name": "field", "label": "条件字段", "type": "string", "default": "" },
+    { "name": "operator", "label": "比较方式", "type": "enum", "enum": ["==", "!=", ">", ">=", "<", "<=", "contains", "isEmpty", "isNotEmpty"], "default": "==" },
+    { "name": "compareValue", "label": "比较值", "type": "string", "default": "" },
+    { "name": "target", "label": "目标字段/组件", "type": "string", "default": "" },
+    { "name": "state", "label": "状态", "type": "enum", "enum": ["visible", "disabled", "required"], "default": "visible" },
+    { "name": "whenTrue", "label": "命中时开启", "type": "boolean", "default": true },
+    { "name": "clearWhenInactive", "label": "状态关闭时清空", "type": "boolean", "default": false }
+  ],
+  "ports": [
+    { "name": "formData", "label": "表单数据", "type": "object", "direction": "input" },
+    { "name": "value", "label": "条件值", "type": "any", "direction": "input" },
+    { "name": "matched", "label": "条件命中", "type": "boolean", "direction": "output" },
+    { "name": "active", "label": "最终状态", "type": "boolean", "direction": "output" }
+  ], "keywords": ["显隐", "禁用", "必填", "条件状态"]
+}

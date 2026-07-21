@@ -102,7 +102,7 @@
   padding: 4px 8px;
   cursor: pointer;
   font-size: 12px;
-  color: #1c1c1e;
+  color: var(--text);
   border-left: 2px solid transparent;
   transition: all 0.1s ease;
   min-height: 28px;
@@ -155,7 +155,7 @@
 }
 
 .tree-type {
-  font-size: 9px;
+  font-size: 10px;
   color: #c7c7cc;
   font-family: monospace;
   flex-shrink: 0;

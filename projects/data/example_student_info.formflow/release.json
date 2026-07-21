@@ -1,9 +1,0 @@
-{
-  "mode": "use",
-  "allowDesigner": false,
-  "allowBehaviorEditor": false,
-  "allowWorkflowEditor": false,
-  "defaultFormId": "example_student_info_form_create",
-  "defaultSheet": "学生信息",
-  "lastVerifiedAt": "2026-07-06T18:00:00.000Z"
-}

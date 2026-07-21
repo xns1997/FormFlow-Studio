@@ -40,7 +40,7 @@ function toPlainRows(sheet: SrcSheetInfo) {
   return Array.isArray(sheet.preview) ? sheet.preview.map((row) => ({ ...row })) : [];
 }
 
-function inferColumnInfo(
+export function inferColumnInfo(
   name: string,
   index: number,
   data: Record<string, unknown>[],

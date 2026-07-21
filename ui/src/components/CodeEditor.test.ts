@@ -30,6 +30,11 @@ test('quoted insert text is trimmed only for key and string contexts', () => {
   assert.equal(resolveCompletionInsertText(item, '', 'json-object-value'), '"$value"');
 });
 
+test('dollar-triggered suggestions do not duplicate the typed prefix', () => {
+  const item: CodeEditorSuggestion = { label: '$amount', insertText: '$amount' };
+  assert.equal(resolveCompletionInsertText(item, 'compute total = $', 'top-level'), 'amount');
+});
+
 test('completion context fallback keeps scoped candidates instead of collapsing to empty', () => {
   const fieldName: CodeEditorSuggestion = { label: 'employeeId', scope: 'field-name' };
   const template: CodeEditorSuggestion = { label: 'typed async callback', scope: 'top-level' };

@@ -32,7 +32,7 @@
 | # | TODO | 状态 | 涉及文件 | 预估工时 |
 |---|------|------|---------|---------|
 | 63 | 实现多租户架构（租户隔离 + 资源配额 + 数据隔离） | ✅ 已实现 | `server/src/middleware/tenant.ts`, `server/src/services/tenant-store.ts` | 5d |
-| 64 | 实现水平扩展（无状态服务 + Redis 会话存储） | ⏸️ 暂缓 | `server/src/config/session.ts`, `docker-compose.yml` 改造 | 3d |
+| 64 | 实现水平扩展（无状态服务 + PostgreSQL 会话存储） | ⏸️ 暂缓 | `server/src/config/session.ts`, `docker-compose.yml` 改造 | 3d |
 | 65 | 集成监控（Prometheus metrics + Grafana dashboard） | ⏸️ 暂缓 | `server/src/middleware/metrics.ts`, `monitoring/` 目录 | 4d |
 | 66 | 集成日志聚合（结构化日志 + Loki/ELK 接入） | ⏸️ 暂缓 | `server/src/services/logger.ts`, `logging/` 配置 | 3d |
 

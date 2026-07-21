@@ -18,6 +18,7 @@ import {
   FormAntdProvider,
 } from '../../components/AntdFormControls';
 import { normalizeDateTimeValue } from '../../services/config/controlTypes';
+import { SINGLE_LINE_FIELD_HEIGHT } from './geometry';
 
 const renderLabel = (label: string, required?: boolean) => (
   <>
@@ -48,7 +49,7 @@ function TagInputPreview({ component, mode, runtime }: { component: DesignCompon
       <AntdTagInput
         value={tags}
         placeholder={component.props.placeholder || '输入后回车'}
-        disabled={mode !== 'preview' || !!component.props.disabled}
+        disabled={!!component.props.disabled}
         onChange={(next) => runtime?.emit('onChange', next)}
         onBlur={() => runtime?.emit('onBlur')}
         onFocus={() => runtime?.emit('onFocus')}
@@ -72,7 +73,7 @@ function UploadPreview({ component, mode, runtime, imageOnly = false }: { compon
           minImageWidth: Number(component.props.minImageWidth || 0), maxImageWidth: Number(component.props.maxImageWidth || 0),
           minImageHeight: Number(component.props.minImageHeight || 0), maxImageHeight: Number(component.props.maxImageHeight || 0),
         }}
-        disabled={mode !== 'preview' || !!component.props.disabled}
+        disabled={!!component.props.disabled}
         onChange={(next) => runtime?.emit('onChange', next)}
       />
     </div>
@@ -91,7 +92,7 @@ function DatePickerPreview({ component, mode, runtime }: { component: DesignComp
         showTime={isDateTime}
         format={String(component.props.format || (isDateTime ? 'YYYY-MM-DD HH:mm' : 'YYYY-MM-DD'))}
         readOnly={!!component.props.readonly}
-        disabled={mode !== 'preview' || !!component.props.disabled}
+        disabled={!!component.props.disabled}
         min={normalizeDateTimeValue(component.props.minDate, isDateTime ? 'datetime' : 'date') || undefined}
         max={normalizeDateTimeValue(component.props.maxDate, isDateTime ? 'datetime' : 'date') || undefined}
         onChange={(next) => runtime?.emit('onChange', next)}
@@ -106,9 +107,10 @@ registerControl({
   type: 'input', label: '文本输入', category: 'basic', icon: '✏️',
   defaultProps: {
     label: 'Label', placeholder: '请输入', name: '', required: false, readonly: false, disabled: false,
-    fontSize: 15, fontWeight: '400', color: '#1c1c1e', textAlign: 'left',
-    minLength: 0, maxLength: 0, pattern: '', patternMessage: '',
-    validator: 'none', customMessage: '', validationRules: [],
+    fontFamily: '', fontSize: 15, fontWeight: '400', color: '#1c1c1e', lineHeight: 1.5, letterSpacing: 0, textAlign: 'left',
+    minLength: 0, maxLength: 0, pattern: '', patternMessage: '格式不正确',
+    validator: 'none', customMessage: '输入内容不符合要求', validationRules: [],
+    valueExpression: '', visibleExpression: '', disabledExpression: '', requiredExpression: '',
     rangeRef: null,
   },
   propSchema: [
@@ -136,7 +138,7 @@ registerControl({
     { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
-  defaultSize: { w: 240, h: 72 },
+  defaultSize: { w: 240, h: SINGLE_LINE_FIELD_HEIGHT },
   render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => withAntdField(
     <div style={ios.field}>
       <label style={ios.label}>{renderLabel(component.props.label || 'Label', component.props.required)}</label>
@@ -144,7 +146,7 @@ registerControl({
         value={String(runtime?.value ?? '')}
         placeholder={component.props.placeholder || ''}
         readOnly={!!component.props.readonly}
-        disabled={mode !== 'preview' || !!component.props.disabled}
+        disabled={!!component.props.disabled}
         style={{ fontFamily: component.props.fontFamily || undefined, fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', lineHeight: component.props.lineHeight || undefined, letterSpacing: `${Number(component.props.letterSpacing) || 0}px`, textAlign: component.props.textAlign || 'left' }}
         onChange={(next) => runtime?.emit('onChange', next)}
         onBlur={() => runtime?.emit('onBlur')}
@@ -160,7 +162,7 @@ registerControl({
     label: 'Label', placeholder: '请输入', name: '', rows: 3, required: false, readonly: false, disabled: false,
     maxLength: 0, showCount: false, autoResize: false,
     fontSize: 15, fontWeight: '400', color: '#1c1c1e', lineHeight: 1.5,
-    minLength: 0, pattern: '', patternMessage: '', customMessage: '', validationRules: [],
+    minLength: 0, pattern: '', patternMessage: '格式不正确', customMessage: '输入内容不符合要求', validationRules: [],
     rangeRef: null,
   },
   propSchema: [
@@ -195,7 +197,7 @@ registerControl({
         value={String(runtime?.value ?? '')}
         placeholder={component.props.placeholder || ''}
         readOnly={!!component.props.readonly}
-        disabled={mode !== 'preview' || !!component.props.disabled}
+        disabled={!!component.props.disabled}
         rows={Number(component.props.rows) || 3}
         autoSize={component.props.autoResize ? { minRows: Number(component.props.rows) || 3, maxRows: 8 } : false}
         maxLength={Number(component.props.maxLength) || undefined}
@@ -215,7 +217,7 @@ registerControl({
     label: 'Label', placeholder: '0', name: '', required: false, readonly: false, disabled: false,
     min: 0, max: 100, step: 1, precision: 0, prefix: '', suffix: '',
     fontSize: 15, fontWeight: '400', color: '#1c1c1e', textAlign: 'left',
-    integer: false, positive: false, customMessage: '',
+    integer: false, positive: false, customMessage: '请输入有效数字',
     rangeRef: null,
   },
   propSchema: [
@@ -244,7 +246,7 @@ registerControl({
     { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
-  defaultSize: { w: 220, h: 72 },
+  defaultSize: { w: 220, h: SINGLE_LINE_FIELD_HEIGHT },
   render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => withAntdField(
     <div style={ios.field}>
       <label style={ios.label}>{renderLabel(component.props.label || 'Label', component.props.required)}</label>
@@ -252,7 +254,7 @@ registerControl({
         value={runtime?.value === '' ? '' : Number(runtime?.value ?? '')}
         placeholder={component.props.placeholder || ''}
         readOnly={!!component.props.readonly}
-        disabled={mode !== 'preview' || !!component.props.disabled}
+        disabled={!!component.props.disabled}
         min={component.props.min}
         max={component.props.max}
         step={component.props.step}
@@ -274,7 +276,7 @@ registerControl({
     label: '日期', name: '', placeholder: '选择日期', required: false, readonly: false, disabled: false,
     format: 'YYYY-MM-DD', minDate: '', maxDate: '', showTime: false,
     fontSize: 15, fontWeight: '400', color: '#1c1c1e',
-    customMessage: '',
+    customMessage: '请选择有效日期',
     rangeRef: null,
   },
   propSchema: [
@@ -302,7 +304,7 @@ registerControl({
     { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
-  defaultSize: { w: 220, h: 72 },
+  defaultSize: { w: 220, h: SINGLE_LINE_FIELD_HEIGHT },
   render: DatePickerPreview,
 });
 
@@ -327,7 +329,7 @@ registerControl({
     { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
-  defaultSize: { w: 220, h: 72 },
+  defaultSize: { w: 220, h: SINGLE_LINE_FIELD_HEIGHT },
   render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => withAntdField(
     <div style={ios.field}>
       <label style={ios.label}>{renderLabel(component.props.label || '时间', component.props.required)}</label>
@@ -335,7 +337,7 @@ registerControl({
         value={normalizeDateTimeValue(runtime?.value, 'time')}
         readOnly={!!component.props.readonly}
         placeholder={component.props.placeholder || '选择时间'}
-        disabled={mode !== 'preview' || !!component.props.disabled}
+        disabled={!!component.props.disabled}
         format={component.props.format || (component.props.showSeconds ? 'HH:mm:ss' : 'HH:mm')}
         showSeconds={!!component.props.showSeconds}
         onChange={(next) => runtime?.emit('onChange', next)}
@@ -369,7 +371,7 @@ registerControl({
     { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onChange', label: '值变化', description: '值改变时触发' }, { key: 'onBlur', label: '失焦', description: '失去焦点时触发' }, { key: 'onFocus', label: '聚焦', description: '获得焦点时触发' }],
-  defaultSize: { w: 280, h: 72 },
+  defaultSize: { w: 280, h: SINGLE_LINE_FIELD_HEIGHT },
   render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
     const rangeValue = runtime?.value && typeof runtime.value === 'object' ? runtime.value as Record<string, unknown> : {};
     return withAntdField(
@@ -378,7 +380,7 @@ registerControl({
         <AntdDateRangeInput
           value={{ start: normalizeDateTimeValue(rangeValue.start, 'date'), end: normalizeDateTimeValue(rangeValue.end, 'date') }}
           readOnly={!!component.props.readonly}
-          disabled={mode !== 'preview' || !!component.props.disabled}
+          disabled={!!component.props.disabled}
           placeholder={[String(component.props.startPlaceholder || '开始日期'), String(component.props.endPlaceholder || '结束日期')]}
           format={String(component.props.format || 'YYYY-MM-DD')}
           onChange={(next) => runtime?.emit('onChange', next)}
@@ -418,7 +420,7 @@ registerControl({
         <span style={ios.label}>{component.props.label || '启用'}</span>
         <AntdSwitchInput
           checked={checked}
-          disabled={mode !== 'preview' || !!component.props.disabled}
+          disabled={!!component.props.disabled}
           size={component.props.size || 'default'}
           activeColor={component.props.activeColor}
           inactiveColor={component.props.inactiveColor}
@@ -434,7 +436,7 @@ registerControl({
   defaultProps: {
     label: '评分', name: '', max: 5, defaultValue: 3, disabled: false, required: false,
     size: 'default', activeColor: '#ff9500', inactiveColor: '#e5e5ea', allowHalf: false, showText: false,
-    customMessage: '',
+    customMessage: '请选择评分',
     rangeRef: null,
   },
   propSchema: [
@@ -466,7 +468,7 @@ registerControl({
           <AntdRateInput
             count={max}
             value={val}
-            disabled={mode !== 'preview' || !!component.props.disabled}
+            disabled={!!component.props.disabled}
             size={component.props.size || 'default'}
             color={component.props.activeColor}
             inactiveColor={component.props.inactiveColor}

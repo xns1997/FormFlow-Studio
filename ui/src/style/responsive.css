@@ -63,7 +63,7 @@
   /* Inspector sections */
   .inspector-section { padding: 8px; }
   .schema-fields label { flex-direction: column; align-items: stretch; }
-  .schema-fields input, .schema-fields select { width: 100% !important; }
+  .schema-fields input, .schema-fields select, .schema-fields .ant-select { width: 100% !important; }
 }
 
 /* Tablet breakpoint */

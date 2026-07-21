@@ -22,6 +22,11 @@ function initialValue(context: PropertyEditorContext) {
   return context.value ?? context.def.default ?? (String(context.def.type).includes('[]') || context.def.type === 'array' ? [] : context.def.type === 'object' ? {} : '');
 }
 
+function defaultDraft(context: PropertyEditorContext) {
+  if (isCompositePropDef(context.def)) return Object.fromEntries(context.def.keys.map((key) => [key, context.defaultValues?.[key]]));
+  return context.defaultValue ?? context.def.default ?? (String(context.def.type).includes('[]') || context.def.type === 'array' ? [] : context.def.type === 'object' ? {} : '');
+}
+
 function summarize(value: unknown, kind: string) {
   if (kind === 'regex') return value ? `/${String(value)}/` : '未配置';
   if (kind === 'expression' || kind === 'template') return value ? String(value).slice(0, 36) : '未配置';
@@ -82,7 +87,7 @@ export function ComplexPropertyEditor(context: PropertyEditorContext & { kind: s
           try { setDraft(JSON.parse(next)); setSourceError(''); } catch (error) { setSourceError(error instanceof Error ? error.message : String(error)); }
         }} language={sourceLanguage} title={title} theme="light" height={460} minHeight={320} lineNumbers suggestions={sourceLanguage === 'json' ? jsonSuggestions : undefined} compact fullscreen /></Suspense>{sourceError && <div className="property-editor-error">源码无效：{sourceError}</div>}</div>}{applyError && <div className="property-editor-error">配置无效：{applyError}</div>}
       </div>
-      <ModalFooter><button type="button" className="toolbar-btn" onClick={() => setOpen(false)}>取消</button><button type="button" className="toolbar-btn primary" disabled={!valid} onClick={apply}>应用</button></ModalFooter>
+      <ModalFooter><button type="button" className="toolbar-btn" onClick={() => { const next = cloneValue(defaultDraft(context)); setDraft(next); setSource(JSON.stringify(next, null, 2)); setSourceError(''); setApplyError(''); setVisualValid(true); }}>恢复默认</button><span className="modal-footer-spacer" /><button type="button" className="toolbar-btn" onClick={() => setOpen(false)}>取消</button><button type="button" className="toolbar-btn primary" disabled={!valid} onClick={apply}>应用</button></ModalFooter>
     </Modal>}
   </div>;
 }

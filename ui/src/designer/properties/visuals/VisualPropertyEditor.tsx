@@ -1,12 +1,13 @@
 import React from 'react';
 import type { PropertyEditorContext } from '../propertyEditorRegistry';
-import { ArrayRowsVisual, DataBindingVisual, KeyValueVisual, OptionsVisual, StringListVisual } from './CollectionPropertyEditors';
+import { ArrayRowsVisual, DataBindingVisual, KeyValueVisual, OptionSourceVisual, OptionsVisual, StringListVisual } from './CollectionPropertyEditors';
 import { ExpressionVisual, RegexVisual, ValidationRulesVisual } from './LogicPropertyEditors';
 import { CompositeVisual, ScalarStyleVisual } from './StylePropertyEditors';
 
 export function VisualPropertyEditor({ kind, draft, context, setDraft, setValid }: { kind: string; draft: unknown; context: PropertyEditorContext; setDraft: (value: unknown) => void; setValid: (value: boolean) => void }) {
   if (kind === 'regex') return <RegexVisual value={draft} onChange={setDraft} onValidity={setValid} />;
   if (kind === 'options') return <OptionsVisual value={draft} onChange={setDraft} onValidity={setValid} />;
+  if (kind === 'option-source') return <OptionSourceVisual value={draft} onChange={setDraft} onValidity={setValid} />;
   if (kind === 'validation-rules') return <ValidationRulesVisual value={draft} fields={context.fields} onChange={setDraft} onValidity={setValid} />;
   if (['tabs', 'steps', 'string-list'].includes(kind)) return <StringListVisual value={draft} onChange={setDraft} onValidity={setValid} />;
   if (['table-columns', 'filters', 'sorting'].includes(kind)) return <ArrayRowsVisual kind={kind} value={draft} fields={context.fields} onChange={setDraft as (value: unknown[]) => void} onValidity={setValid} />;

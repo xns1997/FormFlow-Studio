@@ -31,10 +31,10 @@
   border-collapse: separate;
   border-spacing: 0;
   overflow: hidden;
-  border: 1px solid rgba(148,163,184,0.18);
-  border-radius: 18px;
-  background: rgba(255,255,255,0.96);
-  box-shadow: 0 12px 28px rgba(15,23,42,0.05);
+  border: var(--border);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
 }
 
 .lg-render-table th,
@@ -45,14 +45,14 @@
 }
 
 .lg-render-table th {
-  background: rgba(248,250,252,0.96);
-  color: #475569;
+  background: var(--panel-soft);
+  color: var(--text-secondary);
   font-weight: 700;
   border-bottom: 1px solid rgba(148,163,184,0.14);
 }
 
 .lg-render-table td {
-  color: #0f172a;
+  color: var(--text);
   border-bottom: 1px solid rgba(148,163,184,0.1);
 }
 
@@ -64,9 +64,9 @@
   display: flex;
   gap: 8px;
   padding: 8px;
-  border-radius: 20px;
-  background: rgba(248,250,252,0.92);
-  border: 1px solid rgba(148,163,184,0.18);
+  border-radius: var(--radius-md);
+  background: var(--fill);
+  border: 0;
 }
 
 .lg-tabs-render button {
@@ -74,17 +74,17 @@
   min-width: 0;
   padding: 10px 12px;
   border: none;
-  border-radius: 14px;
+  border-radius: var(--radius-sm);
   background: transparent;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 700;
 }
 
 .lg-tabs-render button.active {
-  background: linear-gradient(180deg, rgba(255,255,255,1), rgba(239,246,255,0.92));
-  color: var(--accent);
-  box-shadow: 0 10px 24px rgba(37,99,235,0.1);
+  background: var(--panel-elevated);
+  color: var(--text);
+  box-shadow: 0 2px 7px rgba(24,24,28,0.12);
 }
 
 .lg-steps-render {
@@ -100,16 +100,16 @@
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  border: 1px solid rgba(148,163,184,0.18);
-  border-radius: 18px;
-  background: rgba(255,255,255,0.94);
-  color: #64748b;
+  border: var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--panel-soft);
+  color: var(--text-secondary);
 }
 
 .lg-step-item.active,
 .lg-step-item.done {
-  border-color: rgba(37,99,235,0.2);
-  background: linear-gradient(180deg, rgba(239,246,255,0.9), rgba(219,234,254,0.66));
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
   color: var(--accent);
 }
 

@@ -23,7 +23,7 @@
 .lg-label {
   font-size: 12px;
   font-weight: 700;
-  color: #334155;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -38,13 +38,6 @@
   margin-top: 2px;
   line-height: 1.45;
 }
-
-/* ── Liquid Glass Field States ──────────────────────────── */
-
-.lg-field.disabled { opacity: 0.5; pointer-events: none; }
-.lg-field.has-error .lg-input,
-.lg-field.has-error .lg-textarea,
-.lg-field.has-error .lg-select { border-color: var(--danger); }
 
 @media (max-width: 720px) {
   .lg-form {

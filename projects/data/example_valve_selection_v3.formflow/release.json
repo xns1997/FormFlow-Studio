@@ -1,9 +1,0 @@
-{
-  "mode": "use",
-  "allowDesigner": false,
-  "allowBehaviorEditor": false,
-  "allowWorkflowEditor": false,
-  "defaultFormId": "example_valve_selection_v3_form_intake",
-  "defaultSheet": "需求受理台账",
-  "lastVerifiedAt": "2026-07-06T18:00:00.000Z"
-}

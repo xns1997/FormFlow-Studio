@@ -35,10 +35,10 @@ const edge = (id: string, source: string, target: string, sourcePort: string, ta
 test('auto-discovered registry has the expected executable nodes with unique IDs and ports', async () => {
   const root = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
   const packageDirs = readdirSync(join(root, 'nodes'), { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && /^(func-|behavior-|generic-|ml-)/.test(entry.name))
+    .filter((entry) => entry.isDirectory() && /^(func-|behavior-|generic-|ml-|form-|data-|logic-|flow-)/.test(entry.name))
     .filter((entry) => existsSync(join(root, 'nodes', entry.name, 'schema.json')))
     .map((entry) => entry.name);
-  assert.equal(packageDirs.length, 127);
+  assert.equal(packageDirs.length, 137);
   assert.equal(new Set(packageDirs).size, packageDirs.length);
   assert.equal(CURATED_XLSX_METHODS.size, 14);
 
@@ -55,7 +55,7 @@ test('auto-discovered registry has the expected executable nodes with unique IDs
       if (port.name === 'workbook') assert.equal(port.type, 'workbook', `inaccurate workbook port: ${spec.id}`);
     }
   }
-  const executorSource = ['generic.ts', 'behavior.ts', 'func.ts', 'ml.ts', 'scenario.ts']
+  const executorSource = ['generic.ts', 'behavior.ts', 'func.ts', 'ml.ts', 'scenario.ts', 'macros.ts']
     .map((file) => readFileSync(join(root, 'nodes/executors', file), 'utf8')).join('\n');
   const canonicalIds = new Set<string>();
   for (const dir of packageDirs) {
@@ -455,6 +455,24 @@ test('pick-record sorts by multiple fields and returns first plus topN rows', as
   assert.equal((result.nodeResults.get('pick')?.outputs.first as Record<string, unknown>).型号, 'C');
   assert.deepEqual((result.nodeResults.get('pick')?.outputs.rows as Array<Record<string, unknown>>).map((row) => row.型号), ['C', 'B']);
   assert.equal(result.nodeResults.get('pick')?.outputs.count, 3);
+});
+
+test('behavior calculate exposes string results through its declared result port', async () => {
+  await loadNodeRegistry();
+  const result = await executeFlow([
+    node('trigger', 'generic:value-input', { valueType: 'object', value: { event: 'click' } }),
+    node('sequence', 'generic:value-input', { valueType: 'number', value: 121 }),
+    node('calculate', 'behavior-calculate', {
+      expression: '"PRT-" + String(inputs.a || 0).padStart(4, "0")',
+      targetField: '零件编码',
+    }),
+  ], [
+    edge('calculate-trigger', 'trigger', 'calculate', 'value', 'trigger'),
+    edge('calculate-sequence', 'sequence', 'calculate', 'value', 'a'),
+  ]);
+  assert.equal(result.success, true, result.errors.join('\n'));
+  assert.equal(result.nodeResults.get('calculate')?.outputs.result, 'PRT-0121');
+  assert.equal(result.sideEffects.some((effect) => effect.kind === 'set-form-value' && effect.field === '零件编码' && effect.value === 'PRT-0121'), true);
 });
 
 test('set-values produces multiple form patches and supports empty patch fallback', async () => {

@@ -1,0 +1,29 @@
+{
+  "id": "analytics:game-dashboard",
+  "label": "游戏经营看板刷新",
+  "description": "按表单筛选器计算最新核心指标并返回可直接回写的看板字段",
+  "category": "高阶 · 分析",
+  "kind": "generic",
+  "macro": { "version": 1, "expansion": "runtime-composite", "debugMapping": "node-output", "snapshot": [] },
+  "properties": [
+    { "name": "mode", "label": "运行模式", "type": "select", "default": "analysis", "options": [
+      { "label": "指标分析", "value": "analysis" },
+      { "label": "预测", "value": "forecast" },
+      { "label": "活动分析", "value": "campaign" }
+    ] }
+  ],
+  "ports": [
+    { "name": "formData", "label": "筛选条件", "type": "object", "direction": "input", "required": true },
+    { "name": "kpi_dau", "label": "DAU", "type": "number", "direction": "output" },
+    { "name": "kpi_mau", "label": "MAU", "type": "number", "direction": "output" },
+    { "name": "kpi_d1", "label": "D1留存", "type": "number", "direction": "output" },
+    { "name": "kpi_d7", "label": "D7留存", "type": "number", "direction": "output" },
+    { "name": "kpi_payment_rate", "label": "付费率", "type": "number", "direction": "output" },
+    { "name": "kpi_revenue", "label": "收入", "type": "number", "direction": "output" },
+    { "name": "kpi_arpu", "label": "ARPU", "type": "number", "direction": "output" },
+    { "name": "kpi_arppu", "label": "ARPPU", "type": "number", "direction": "output" },
+    { "name": "dashboard_status", "label": "运行状态", "type": "string", "direction": "output" },
+    { "name": "refreshed_rows", "label": "刷新行数", "type": "number", "direction": "output" }
+  ],
+  "keywords": ["看板刷新", "KPI", "游戏分析", "流程输出回写"]
+}

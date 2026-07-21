@@ -147,8 +147,10 @@ router.delete('/:fileId', (req, res) => {
   try {
     const { fileId } = req.params;
     const projectId = req.query.projectId as string || undefined;
+    const sheetName = req.query.sheet as string || undefined;
+    const exactCacheKey = sheetName ? `${getCacheKey(fileId, sheetName, projectId)}.json` : null;
     const prefix = projectId ? `${projectId}__${fileId}` : fileId;
-    const files = readdirSync(REPORTS_DIR).filter((f) => f.startsWith(prefix));
+    const files = readdirSync(REPORTS_DIR).filter((f) => exactCacheKey ? f === exactCacheKey : f.startsWith(prefix));
     for (const f of files) {
       const path = join(REPORTS_DIR, f);
       if (existsSync(path)) unlinkSync(path);

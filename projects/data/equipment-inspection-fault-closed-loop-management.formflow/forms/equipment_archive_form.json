@@ -1,0 +1,381 @@
+{
+  "id": "equipment_archive_form_design",
+  "name": "equipment_archive_form",
+  "formMode": "create",
+  "viewport": {
+    "zoom": 1,
+    "panX": 0,
+    "panY": 0
+  },
+  "gridSize": 12,
+  "components": [
+    {
+      "id": "equipment_archive_form_root",
+      "type": "form",
+      "x": 40,
+      "y": 20,
+      "width": 900,
+      "height": 970,
+      "zIndex": 0,
+      "props": {
+        "title": "equipment_archive 表单",
+        "subtitle": "",
+        "background": "#ffffff",
+        "padding": 24,
+        "borderRadius": 12,
+        "submitText": "提交",
+        "resetText": "重置",
+        "showFooter": true
+      },
+      "children": [
+        "equipment_archive_form_field_1",
+        "equipment_archive_form_field_2",
+        "equipment_archive_form_field_3",
+        "equipment_archive_form_field_4",
+        "equipment_archive_form_field_5",
+        "equipment_archive_form_field_6",
+        "equipment_archive_form_field_7",
+        "equipment_archive_form_field_8",
+        "equipment_archive_form_field_9"
+      ]
+    },
+    {
+      "id": "equipment_archive_form_field_1",
+      "type": "select",
+      "x": 80,
+      "y": 130,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "equipment_archive_form_root",
+      "fieldBinding": "设备编号",
+      "props": {
+        "label": "设备编号",
+        "placeholder": "请选择",
+        "name": "设备编号",
+        "required": true,
+        "readonly": false,
+        "disabled": false,
+        "multiple": false,
+        "options": [
+          {
+            "label": "选项A",
+            "value": "a"
+          },
+          {
+            "label": "选项B",
+            "value": "b"
+          }
+        ],
+        "optionSource": {
+          "mode": "static",
+          "unique": true,
+          "sortOrder": "none"
+        },
+        "fontSize": 15,
+        "fontWeight": "400",
+        "color": "#1c1c1e",
+        "customMessage": "请选择有效选项",
+        "rangeRef": null
+      }
+    },
+    {
+      "id": "equipment_archive_form_field_2",
+      "type": "select",
+      "x": 470,
+      "y": 130,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "equipment_archive_form_root",
+      "fieldBinding": "设备名称",
+      "props": {
+        "label": "设备名称",
+        "placeholder": "请选择",
+        "name": "设备名称",
+        "required": false,
+        "readonly": false,
+        "disabled": false,
+        "multiple": false,
+        "options": [
+          {
+            "label": "选项A",
+            "value": "a"
+          },
+          {
+            "label": "选项B",
+            "value": "b"
+          }
+        ],
+        "optionSource": {
+          "mode": "static",
+          "unique": true,
+          "sortOrder": "none"
+        },
+        "fontSize": 15,
+        "fontWeight": "400",
+        "color": "#1c1c1e",
+        "customMessage": "请选择有效选项",
+        "rangeRef": null
+      }
+    },
+    {
+      "id": "equipment_archive_form_field_3",
+      "type": "select",
+      "x": 80,
+      "y": 220,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "equipment_archive_form_root",
+      "fieldBinding": "设备类型",
+      "props": {
+        "label": "设备类型",
+        "placeholder": "请选择",
+        "name": "设备类型",
+        "required": false,
+        "readonly": false,
+        "disabled": false,
+        "multiple": false,
+        "options": [
+          {
+            "label": "选项A",
+            "value": "a"
+          },
+          {
+            "label": "选项B",
+            "value": "b"
+          }
+        ],
+        "optionSource": {
+          "mode": "static",
+          "unique": true,
+          "sortOrder": "none"
+        },
+        "fontSize": 15,
+        "fontWeight": "400",
+        "color": "#1c1c1e",
+        "customMessage": "请选择有效选项",
+        "rangeRef": null
+      }
+    },
+    {
+      "id": "equipment_archive_form_field_4",
+      "type": "select",
+      "x": 470,
+      "y": 220,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "equipment_archive_form_root",
+      "fieldBinding": "所属区域",
+      "props": {
+        "label": "所属区域",
+        "placeholder": "请选择",
+        "name": "所属区域",
+        "required": false,
+        "readonly": false,
+        "disabled": false,
+        "multiple": false,
+        "options": [
+          {
+            "label": "选项A",
+            "value": "a"
+          },
+          {
+            "label": "选项B",
+            "value": "b"
+          }
+        ],
+        "optionSource": {
+          "mode": "static",
+          "unique": true,
+          "sortOrder": "none"
+        },
+        "fontSize": 15,
+        "fontWeight": "400",
+        "color": "#1c1c1e",
+        "customMessage": "请选择有效选项",
+        "rangeRef": null
+      }
+    },
+    {
+      "id": "equipment_archive_form_field_5",
+      "type": "select",
+      "x": 80,
+      "y": 310,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "equipment_archive_form_root",
+      "fieldBinding": "责任人",
+      "props": {
+        "label": "责任人",
+        "placeholder": "请选择",
+        "name": "责任人",
+        "required": false,
+        "readonly": false,
+        "disabled": false,
+        "multiple": false,
+        "options": [
+          {
+            "label": "选项A",
+            "value": "a"
+          },
+          {
+            "label": "选项B",
+            "value": "b"
+          }
+        ],
+        "optionSource": {
+          "mode": "static",
+          "unique": true,
+          "sortOrder": "none"
+        },
+        "fontSize": 15,
+        "fontWeight": "400",
+        "color": "#1c1c1e",
+        "customMessage": "请选择有效选项",
+        "rangeRef": null
+      }
+    },
+    {
+      "id": "equipment_archive_form_field_6",
+      "type": "datePicker",
+      "x": 470,
+      "y": 310,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "equipment_archive_form_root",
+      "fieldBinding": "启用日期",
+      "props": {
+        "label": "启用日期",
+        "name": "启用日期",
+        "placeholder": "选择日期",
+        "required": false,
+        "readonly": false,
+        "disabled": false,
+        "format": "YYYY-MM-DD",
+        "minDate": "",
+        "maxDate": "",
+        "showTime": false,
+        "fontSize": 15,
+        "fontWeight": "400",
+        "color": "#1c1c1e",
+        "customMessage": "请选择有效日期",
+        "rangeRef": null
+      }
+    },
+    {
+      "id": "equipment_archive_form_field_7",
+      "type": "select",
+      "x": 80,
+      "y": 400,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "equipment_archive_form_root",
+      "fieldBinding": "运行状态",
+      "props": {
+        "label": "运行状态",
+        "placeholder": "请选择",
+        "name": "运行状态",
+        "required": false,
+        "readonly": false,
+        "disabled": false,
+        "multiple": false,
+        "options": [
+          {
+            "label": "选项A",
+            "value": "a"
+          },
+          {
+            "label": "选项B",
+            "value": "b"
+          }
+        ],
+        "optionSource": {
+          "mode": "static",
+          "unique": true,
+          "sortOrder": "none"
+        },
+        "fontSize": 15,
+        "fontWeight": "400",
+        "color": "#1c1c1e",
+        "customMessage": "请选择有效选项",
+        "rangeRef": null
+      }
+    },
+    {
+      "id": "equipment_archive_form_field_8",
+      "type": "datePicker",
+      "x": 470,
+      "y": 400,
+      "width": 340,
+      "height": 92,
+      "zIndex": 2,
+      "parentId": "equipment_archive_form_root",
+      "fieldBinding": "最近巡检日期",
+      "props": {
+        "label": "最近巡检日期",
+        "name": "最近巡检日期",
+        "placeholder": "选择日期",
+        "required": false,
+        "readonly": false,
+        "disabled": false,
+        "format": "YYYY-MM-DD",
+        "minDate": "",
+        "maxDate": "",
+        "showTime": false,
+        "fontSize": 15,
+        "fontWeight": "400",
+        "color": "#1c1c1e",
+        "customMessage": "请选择有效日期",
+        "rangeRef": null
+      }
+    },
+    {
+      "id": "equipment_archive_form_field_9",
+      "type": "datePicker",
+      "x": 80,
+      "y": 490,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "equipment_archive_form_root",
+      "fieldBinding": "下次巡检日期",
+      "props": {
+        "label": "下次巡检日期",
+        "name": "下次巡检日期",
+        "placeholder": "选择日期",
+        "required": false,
+        "readonly": false,
+        "disabled": false,
+        "format": "YYYY-MM-DD",
+        "minDate": "",
+        "maxDate": "",
+        "showTime": false,
+        "fontSize": 15,
+        "fontWeight": "400",
+        "color": "#1c1c1e",
+        "customMessage": "请选择有效日期",
+        "rangeRef": null
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "id": "equipment_archive_form_binding",
+      "sourceId": "equipment_archive",
+      "targetId": "equipment_archive_form",
+      "type": "table",
+      "config": {
+        "tableId": "equipment_archive",
+        "sheetName": "Sheet1"
+      }
+    }
+  ],
+  "createdAt": "2026-07-20T10:00:09.629Z",
+  "updatedAt": "2026-07-21T05:40:44.476Z"
+}

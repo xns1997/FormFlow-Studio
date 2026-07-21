@@ -4,6 +4,7 @@ import './style/index.css';
 
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import { ConfigProvider, theme } from 'antd';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { Layout, ProjectsListPage, SystemSettingsLayout, SystemSettingsPage } from './pages/home';
 import {
@@ -35,6 +36,7 @@ import {
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoginPage } from './pages/auth';
 import { getSession } from './services/io/auth';
+import { AppInteractionProvider } from './components/AppInteractionProvider';
 
 const isCloudMode = ((import.meta as any).env?.VITE_APP_MODE || 'local') === 'cloud';
 function ModeGate() {
@@ -47,7 +49,8 @@ function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <Routes>
+        <AppInteractionProvider>
+          <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route element={<ModeGate />}>
             <Route index element={<Navigate to="/projects" replace />} />
@@ -94,9 +97,39 @@ function App() {
             <Route path="/project/:id/*" element={<LegacyProjectRedirectPage />} />
             <Route path="*" element={<Navigate to="/projects" replace />} />
           </Route>
-        </Routes>
+          </Routes>
+        </AppInteractionProvider>
       </BrowserRouter>
     </ErrorBoundary>
+  );
+}
+
+function AppThemeRoot() {
+  const [darkMode, setDarkMode] = React.useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+  React.useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const syncAppearance = (event: MediaQueryListEvent) => setDarkMode(event.matches);
+    media.addEventListener('change', syncAppearance);
+    return () => media.removeEventListener('change', syncAppearance);
+  }, []);
+
+  return (
+    <ConfigProvider
+      theme={{
+        algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        token: {
+          colorPrimary: darkMode ? '#0a84ff' : '#007aff',
+          colorBgBase: darkMode ? '#1c1c1e' : '#ffffff',
+          colorTextBase: darkMode ? '#f5f5f7' : '#1c1c1e',
+          borderRadius: 12,
+          controlHeight: 36,
+          fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif',
+        },
+      }}
+    >
+      <App />
+    </ConfigProvider>
   );
 }
 
@@ -110,4 +143,6 @@ function WorkspaceEditorRedirect({ mode }: { mode: 'data' | 'design' | 'behavior
 }
 
 const root = createRoot(document.querySelector('#app') as HTMLElement);
-root.render(<App />);
+root.render(
+  <AppThemeRoot />,
+);

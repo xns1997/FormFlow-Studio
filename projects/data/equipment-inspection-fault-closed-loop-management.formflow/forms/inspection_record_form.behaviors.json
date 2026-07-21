@@ -1,0 +1,65 @@
+{
+  "behaviors": [
+    {
+      "id": "device_auto_fill",
+      "name": "设备编号自动填充规则",
+      "description": "当选择设备编号时，自动填充设备名称、所属区域和责任人字段",
+      "enabled": true,
+      "priority": 20,
+      "trigger": {
+        "type": "fieldChange",
+        "fieldName": "设备编号"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "type": "setValue",
+          "targetField": "设备名称",
+          "expression": "$设备编号"
+        },
+        {
+          "type": "setValue",
+          "targetField": "所属区域",
+          "expression": "\"未知区域\""
+        },
+        {
+          "type": "setValue",
+          "targetField": "责任人",
+          "expression": "\"未知责任人\""
+        }
+      ],
+      "updatedAt": "2026-07-20T10:26:28.984Z"
+    },
+    {
+      "id": "device_info_autofill",
+      "name": "设备信息自动带出规则",
+      "description": "当选择设备编号时，自动从设备档案表中查询并设置设备名称、所属区域和责任人字段",
+      "enabled": true,
+      "priority": 30,
+      "trigger": {
+        "type": "fieldChange",
+        "fieldName": "设备编号"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "type": "setValue",
+          "targetField": "设备名称",
+          "expression": "equipment_archive[设备编号=$设备编号].设备名称"
+        },
+        {
+          "type": "setValue",
+          "targetField": "所属区域",
+          "expression": "equipment_archive[设备编号=$设备编号].所属区域"
+        },
+        {
+          "type": "setValue",
+          "targetField": "责任人",
+          "expression": "equipment_archive[设备编号=$设备编号].责任人"
+        }
+      ],
+      "updatedAt": "2026-07-20T10:28:11.406Z"
+    }
+  ],
+  "ruleCode": ""
+}

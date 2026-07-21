@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import DocModal from '../../components/DocModal';
 import { DesignerIcon } from '../../designer/icons';
 import { useProjectStore } from '../../project/store';
@@ -15,6 +15,7 @@ import {
   type SystemSettingsSection,
 } from '../../services/io/routes';
 import { NotificationCenter } from '../../components/NotificationCenter';
+import ProjectAgentDrawer from '../../components/ProjectAgentDrawer';
 
 const homeNavItems = [
   { to: buildProjectsPath(), label: '项目列表', icon: 'projects', match: '/projects' },
@@ -30,15 +31,9 @@ const projectSettingsTabs: Array<{ section: ProjectSettingsSection; label: strin
   { section: 'publish', label: '发布', icon: 'upload' },
 ];
 
-const systemSettingsTabs: Array<{ section: SystemSettingsSection; label: string; icon: string }> = [
-  { section: 'general', label: '常规', icon: 'settings' },
-  { section: 'storage', label: '存储', icon: 'upload' },
-  { section: 'editor', label: '编辑器', icon: 'design' },
-  { section: 'experiments', label: '实验功能', icon: 'test' },
-];
-
 export default function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const project = useProjectStore((s) => s.project);
   const { settings, initSettings } = useSystemSettingsStore();
   const [docOpen, setDocOpen] = useState(false);
@@ -51,7 +46,6 @@ export default function Layout() {
   const currentProjectName = project && project.config.id === projectId ? project.config.name : '';
   const inUsage = location.pathname.endsWith('/usage');
   const projectSettingsTab = (location.pathname.split('/').pop() || 'general') as ProjectSettingsSection;
-  const systemSettingsTab = (location.pathname.split('/').pop() || 'general') as SystemSettingsSection;
 
   useEffect(() => {
     initSettings();
@@ -62,6 +56,21 @@ export default function Layout() {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, [settings.general.showClock]);
+
+  useEffect(() => {
+    const handleAppShortcuts = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.key !== ',') return;
+      event.preventDefault();
+      let section: SystemSettingsSection = 'general';
+      try {
+        const remembered = localStorage.getItem('formflow.settings.lastSection');
+        if (remembered && ['general', 'storage', 'editor', 'ai', 'experiments'].includes(remembered)) section = remembered as SystemSettingsSection;
+      } catch { /* use default */ }
+      navigate(buildSystemSettingsPath(section));
+    };
+    window.addEventListener('keydown', handleAppShortcuts);
+    return () => window.removeEventListener('keydown', handleAppShortcuts);
+  }, [navigate]);
 
   const clockText = useMemo(() => {
     if (!settings.general.showClock) return '';
@@ -92,14 +101,17 @@ export default function Layout() {
 
   return (
     <div className="app-layout">
-      <nav className="app-nav">
+      <nav className="app-nav" aria-label="主导航">
         <div className="nav-brand">
-          <Link to={buildProjectsPath()} className="nav-logo">FF</Link>
+          <Link to={buildProjectsPath()} className="nav-logo" aria-label="FormFlow 首页">
+            <span aria-hidden="true">F</span>
+          </Link>
           <Link to={buildProjectsPath()} className="nav-title">FormFlow</Link>
         </div>
 
-        <div className="nav-links nav-links-home">
-          {homeNavItems.map((item) => (
+        {projectId && (
+          <div className="nav-links nav-links-home">
+            {homeNavItems.map((item) => (
             <Link
               key={item.to}
               to={item.to}
@@ -108,8 +120,9 @@ export default function Layout() {
               <DesignerIcon name={item.icon} className="nav-icon" />
               <span className="nav-label">{item.label}</span>
             </Link>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {projectId && (
           <div className="nav-context">
@@ -133,6 +146,10 @@ export default function Layout() {
             )}
             {inProjectSettings && (
               <div className="nav-links nav-links-context">
+                <Link to={buildWorkspacePath(projectId, 'designer')} className="nav-link nav-link-subtle">
+                  <DesignerIcon name="designer" className="nav-icon" />
+                  <span className="nav-label">返回编辑器</span>
+                </Link>
                 {projectSettingsTabs.map((item) => (
                   <Link
                     key={item.section}
@@ -143,10 +160,6 @@ export default function Layout() {
                     <span className="nav-label">{item.label}</span>
                   </Link>
                 ))}
-                <Link to={buildWorkspacePath(projectId, 'data')} className="nav-link nav-link-subtle">
-                  <DesignerIcon name="canvas" className="nav-icon" />
-                  <span className="nav-label">工作区</span>
-                </Link>
               </div>
             )}
           </div>
@@ -154,23 +167,21 @@ export default function Layout() {
 
         {!projectId && inSystemSettings && (
           <div className="nav-context">
-            <span className="nav-divider">/</span>
-            <div className="nav-links nav-links-context">
-              {systemSettingsTabs.map((item) => (
-                <Link
-                  key={item.section}
-                  to={buildSystemSettingsPath(item.section)}
-                  className={`nav-link ${systemSettingsTab === item.section ? 'active' : ''}`}
-                >
-                  <DesignerIcon name={item.icon} className="nav-icon" />
-                  <span className="nav-label">{item.label}</span>
-                </Link>
-              ))}
-            </div>
+            <Link to={buildProjectsPath()} className="nav-link nav-back-link">
+              <span aria-hidden="true">‹</span>
+              <span className="nav-label">项目</span>
+            </Link>
+            <span className="nav-section-title">系统设置</span>
           </div>
         )}
 
         <div className="nav-links nav-links-doc">
+          {!projectId && !inSystemSettings && (
+              <Link to={buildSystemSettingsPath('general')} className="nav-link" aria-keyshortcuts="Meta+, Control+,">
+              <DesignerIcon name="settings" className="nav-icon" />
+              <span className="nav-label">设置</span>
+            </Link>
+          )}
           <NotificationCenter />
           {settings.general.showClock && (
             <div className="nav-status-clock" title={settings.general.timezone}>
@@ -198,10 +209,11 @@ export default function Layout() {
           )}
         </div>
       </nav>
-      <main className="app-main">
+      <main className="app-main" id="main-content">
         <Outlet />
       </main>
       {projectId && <DocModal open={docOpen} onClose={() => setDocOpen(false)} />}
+      <ProjectAgentDrawer projectId={projectId || undefined} />
     </div>
   );
 }

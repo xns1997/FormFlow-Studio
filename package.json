@@ -4,12 +4,14 @@
   "version": "1.1.0",
   "type": "module",
   "bin": {
-    "formflow": "bin/formflow"
+    "formflow": "bin/formflow",
+    "formflow-mcp": "bin/formflow-mcp"
   },
   "scripts": {
     "dev": "vite ui",
-    "dev:server": "tsx server/src/index.ts",
-    "dev:all": "concurrently \"cross-env FORMFLOW_MODE=local npm run dev:server\" \"cross-env VITE_APP_MODE=local npm run dev\"",
+    "dev:server": "tsx watch --clear-screen=false server/src/index.ts",
+    "dev:provider": "node scripts/start-llm-provider.mjs",
+    "dev:all": "concurrently --kill-others-on-fail \"npm run dev:provider\" \"cross-env FORMFLOW_MODE=local LLM_PROVIDER_GRPC_URL=127.0.0.1:50051 npm run dev:server\" \"cross-env VITE_APP_MODE=local npm run dev\"",
     "dev:cloud": "concurrently \"cross-env FORMFLOW_MODE=cloud npm run dev:server\" \"cross-env VITE_APP_MODE=cloud npm run dev\"",
     "server": "npx tsx server/src/index.ts",
     "test": "node scripts/run-tests.mjs",
@@ -17,14 +19,15 @@
     "build": "vite build ui",
     "preview": "vite preview ui",
     "test:e2e": "playwright test --config ui/playwright.config.ts",
-    "generate:example": "npx tsx scripts/generate_example_project.ts",
-    "generate:support-example": "npx tsx scripts/generate_support_ops_example.ts",
     "release": "semantic-release"
   },
   "dependencies": {
     "@antv/x6": "^3.1.7",
     "@antv/x6-react-shape": "^3.0.1",
+    "@grpc/grpc-js": "^1.14.4",
+    "@grpc/proto-loader": "^0.8.1",
     "@icon-park/react": "^1.4.2",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@monaco-editor/react": "^4.7.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
@@ -34,13 +37,12 @@
     "ag-grid-enterprise": "^35.3.1",
     "ag-grid-react": "^35.3.1",
     "antd": "^6.5.0",
-    "bullmq": "^5.80.0",
     "chart.js": "^4.5.1",
     "cors": "^2.8.6",
     "dayjs": "^1.11.13",
     "express": "^5.2.1",
-    "ioredis": "^5.11.1",
     "jszip": "^3.10.1",
+    "marked": "^18.0.6",
     "monaco-editor": "^0.55.1",
     "mssql": "^12.7.0",
     "multer": "^2.2.0",
@@ -59,6 +61,7 @@
     "ws": "^8.21.0",
     "xlsx": "^0.18.5",
     "yaml": "^2.9.0",
+    "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

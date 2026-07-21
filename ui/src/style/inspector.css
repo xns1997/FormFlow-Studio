@@ -82,7 +82,7 @@
   display: inline-block;
   width: 24px;
   text-align: center;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--muted);
   padding: 1px 0;
@@ -93,7 +93,7 @@
 .port-direction.out { color: var(--accent); }
 
 .port-name { flex: 1; font-weight: 500; }
-.port-type { font-size: 9px; color: var(--muted); font-family: monospace; }
+.port-type { font-size: 10px; color: var(--muted); font-family: monospace; }
 
 /* ── Schema config (Dify-style) ──────────────────────── */
 
@@ -200,7 +200,7 @@
 .port-badge {
   display: inline-block;
   padding: 1px 6px;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   border-radius: var(--radius-sm);
   background: var(--accent-soft);
@@ -234,7 +234,7 @@
 
 .structured-property-error {
   margin-top: 4px;
-  color: #b42318;
+  color: var(--danger);
   font-size: 10px;
   line-height: 1.35;
 }
@@ -310,7 +310,7 @@
   color: var(--text);
 }
 .output-port-type {
-  font-size: 9px;
+  font-size: 10px;
   color: var(--accent);
   font-family: 'SF Mono', 'Menlo', monospace;
 }

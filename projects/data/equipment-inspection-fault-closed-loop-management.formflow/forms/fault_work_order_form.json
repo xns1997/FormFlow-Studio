@@ -1,0 +1,968 @@
+{
+  "id": "fault_work_order_form_design",
+  "name": "fault_work_order_form",
+  "formMode": "create",
+  "viewport": {
+    "zoom": 1,
+    "panX": 0,
+    "panY": 0
+  },
+  "gridSize": 12,
+  "components": [
+    {
+      "id": "fault_work_order_form_root",
+      "type": "form",
+      "x": 40,
+      "y": 40,
+      "width": 900,
+      "height": 1220,
+      "zIndex": 0,
+      "props": {
+        "title": "fault_work_order 表单",
+        "linkageRules": {
+          "onLoad": [
+            {
+              "id": "dsl_1",
+              "name": "on load",
+              "trigger": {
+                "eventName": "onLoad"
+              },
+              "conditions": [],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "setValue",
+                  "targetField": "状态",
+                  "expression": "\"待分派\""
+                }
+              ],
+              "scope": "current-form",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_5",
+              "name": "on load",
+              "trigger": {
+                "eventName": "onLoad"
+              },
+              "conditions": [],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "setDisabled",
+                  "targetComponentId": "fault_work_order_form_field_11",
+                  "disabled": true
+                },
+                {
+                  "id": "action_1",
+                  "type": "setRequired",
+                  "targetField": "处理结果",
+                  "required": false
+                }
+              ],
+              "scope": "current-form",
+              "enabled": true,
+              "priority": 20
+            }
+          ],
+          "onBeforeSubmit": [
+            {
+              "id": "dsl_8",
+              "name": "before submit",
+              "trigger": {
+                "eventName": "onBeforeSubmit"
+              },
+              "conditions": [],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "showMessage",
+                  "message": "正在验证状态流转规则",
+                  "level": "info"
+                }
+              ],
+              "scope": "current-form",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_19",
+              "name": "before submit",
+              "trigger": {
+                "eventName": "onBeforeSubmit"
+              },
+              "conditions": [],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "showMessage",
+                  "message": "正在验证状态流转规则",
+                  "level": "info"
+                }
+              ],
+              "scope": "current-form",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_13",
+              "name": "before submit",
+              "trigger": {
+                "eventName": "onBeforeSubmit"
+              },
+              "conditions": [],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "showMessage",
+                  "message": "正在验证处理负责人权限...",
+                  "level": "info"
+                }
+              ],
+              "scope": "current-form",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_12",
+              "name": "before submit",
+              "trigger": {
+                "eventName": "onBeforeSubmit"
+              },
+              "conditions": [],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "showMessage",
+                  "message": "正在验证处理负责人权限...",
+                  "level": "info"
+                }
+              ],
+              "scope": "current-form",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_16",
+              "name": "before submit",
+              "trigger": {
+                "eventName": "onBeforeSubmit"
+              },
+              "conditions": [],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "setRequired",
+                  "targetField": "复核意见",
+                  "required": true
+                },
+                {
+                  "id": "action_1",
+                  "type": "showMessage",
+                  "message": "正在验证处理负责人权限...",
+                  "level": "info"
+                }
+              ],
+              "scope": "current-form",
+              "enabled": true,
+              "priority": 20
+            }
+          ]
+        }
+      },
+      "children": [
+        "fault_work_order_form_field_1",
+        "fault_work_order_form_field_2",
+        "fault_work_order_form_field_3",
+        "fault_work_order_form_field_4",
+        "fault_work_order_form_field_5",
+        "fault_work_order_form_field_6",
+        "fault_work_order_form_field_7",
+        "fault_work_order_form_field_8",
+        "fault_work_order_form_field_9",
+        "fault_work_order_form_field_10",
+        "fault_work_order_form_field_11",
+        "fault_work_order_form_field_12"
+      ]
+    },
+    {
+      "id": "fault_work_order_form_field_1",
+      "type": "select",
+      "x": 80,
+      "y": 130,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "fault_work_order_form_root",
+      "fieldBinding": "工单编号",
+      "props": {
+        "name": "工单编号",
+        "label": "工单编号",
+        "required": true,
+        "readonly": false
+      }
+    },
+    {
+      "id": "fault_work_order_form_field_2",
+      "type": "select",
+      "x": 470,
+      "y": 130,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "fault_work_order_form_root",
+      "fieldBinding": "来源巡检单号",
+      "props": {
+        "name": "来源巡检单号",
+        "label": "来源巡检单号",
+        "required": false,
+        "readonly": false
+      }
+    },
+    {
+      "id": "fault_work_order_form_field_3",
+      "type": "select",
+      "x": 80,
+      "y": 220,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "fault_work_order_form_root",
+      "fieldBinding": "设备编号",
+      "props": {
+        "name": "设备编号",
+        "label": "设备编号",
+        "required": false,
+        "readonly": false
+      }
+    },
+    {
+      "id": "fault_work_order_form_field_4",
+      "type": "select",
+      "x": 470,
+      "y": 220,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "fault_work_order_form_root",
+      "fieldBinding": "故障等级",
+      "props": {
+        "name": "故障等级",
+        "label": "故障等级",
+        "required": false,
+        "readonly": false
+      }
+    },
+    {
+      "id": "fault_work_order_form_field_5",
+      "type": "select",
+      "x": 80,
+      "y": 310,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "fault_work_order_form_root",
+      "fieldBinding": "故障描述",
+      "props": {
+        "name": "故障描述",
+        "label": "故障描述",
+        "required": false,
+        "readonly": false
+      }
+    },
+    {
+      "id": "fault_work_order_form_field_6",
+      "type": "select",
+      "x": 470,
+      "y": 310,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "fault_work_order_form_root",
+      "fieldBinding": "处理负责人",
+      "props": {
+        "name": "处理负责人",
+        "label": "处理负责人",
+        "required": false,
+        "readonly": false,
+        "linkageRules": {
+          "onChange": [
+            {
+              "id": "dsl_10",
+              "name": "否则（对应第 9 行）",
+              "trigger": {
+                "eventName": "onChange",
+                "sourceField": "处理负责人"
+              },
+              "conditions": [
+                {
+                  "id": "condition_0",
+                  "field": "处理负责人",
+                  "operator": "isEmpty"
+                }
+              ],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "setDisabled",
+                  "targetComponentId": "fault_work_order_form_field_11",
+                  "disabled": true
+                },
+                {
+                  "id": "action_1",
+                  "type": "setRequired",
+                  "targetField": "处理结果",
+                  "required": false
+                },
+                {
+                  "id": "action_2",
+                  "type": "setValue",
+                  "targetField": "处理结果",
+                  "value": ""
+                }
+              ],
+              "scope": "target-fields",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_14",
+              "name": "当 $处理负责人 is not empty",
+              "trigger": {
+                "eventName": "onChange",
+                "sourceField": "处理负责人"
+              },
+              "conditions": [
+                {
+                  "id": "condition_0",
+                  "field": "处理负责人",
+                  "operator": "isNotEmpty"
+                }
+              ],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "showMessage",
+                  "message": "处理负责人已指定，处理结果必填",
+                  "level": "info"
+                }
+              ],
+              "scope": "target-fields",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_15",
+              "name": "否则（对应第 14 行）",
+              "trigger": {
+                "eventName": "onChange",
+                "sourceField": "处理负责人"
+              },
+              "conditions": [
+                {
+                  "id": "condition_0",
+                  "field": "处理负责人",
+                  "operator": "isEmpty"
+                }
+              ],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "showMessage",
+                  "message": "请指定处理负责人",
+                  "level": "warning"
+                },
+                {
+                  "id": "action_1",
+                  "type": "showMessage",
+                  "message": "未指定处理负责人，处理结果字段将禁用",
+                  "level": "info"
+                }
+              ],
+              "scope": "target-fields",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_8",
+              "name": "当 $处理负责人 is not empty",
+              "trigger": {
+                "eventName": "onChange",
+                "sourceField": "处理负责人"
+              },
+              "conditions": [
+                {
+                  "id": "condition_0",
+                  "field": "处理负责人",
+                  "operator": "isNotEmpty"
+                }
+              ],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "setDisabled",
+                  "targetComponentId": "fault_work_order_form_field_11",
+                  "disabled": false
+                },
+                {
+                  "id": "action_1",
+                  "type": "setRequired",
+                  "targetField": "处理结果",
+                  "required": true
+                }
+              ],
+              "scope": "target-fields",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_9",
+              "name": "否则（对应第 8 行）",
+              "trigger": {
+                "eventName": "onChange",
+                "sourceField": "处理负责人"
+              },
+              "conditions": [
+                {
+                  "id": "condition_0",
+                  "field": "处理负责人",
+                  "operator": "isEmpty"
+                }
+              ],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "setDisabled",
+                  "targetComponentId": "fault_work_order_form_field_11",
+                  "disabled": true
+                },
+                {
+                  "id": "action_1",
+                  "type": "setRequired",
+                  "targetField": "处理结果",
+                  "required": false
+                },
+                {
+                  "id": "action_2",
+                  "type": "setValue",
+                  "targetField": "处理结果",
+                  "value": ""
+                }
+              ],
+              "scope": "target-fields",
+              "enabled": true,
+              "priority": 20
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "fault_work_order_form_field_7",
+      "type": "number",
+      "x": 80,
+      "y": 400,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "fault_work_order_form_root",
+      "fieldBinding": "创建时间",
+      "props": {
+        "name": "创建时间",
+        "label": "创建时间",
+        "required": false,
+        "readonly": false
+      }
+    },
+    {
+      "id": "fault_work_order_form_field_8",
+      "type": "number",
+      "x": 470,
+      "y": 400,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "fault_work_order_form_root",
+      "fieldBinding": "计划完成时间",
+      "props": {
+        "name": "计划完成时间",
+        "label": "计划完成时间",
+        "required": false,
+        "readonly": false
+      }
+    },
+    {
+      "id": "fault_work_order_form_field_9",
+      "type": "number",
+      "x": 80,
+      "y": 490,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "fault_work_order_form_root",
+      "fieldBinding": "实际完成时间",
+      "props": {
+        "name": "实际完成时间",
+        "label": "实际完成时间",
+        "required": false,
+        "readonly": false
+      }
+    },
+    {
+      "id": "fault_work_order_form_field_10",
+      "type": "select",
+      "x": 470,
+      "y": 490,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "fault_work_order_form_root",
+      "fieldBinding": "状态",
+      "props": {
+        "name": "状态",
+        "label": "状态",
+        "required": false,
+        "readonly": false,
+        "linkageRules": {
+          "onChange": [
+            {
+              "id": "dsl_3",
+              "name": "当 $状态 == \"待分派\"",
+              "trigger": {
+                "eventName": "onChange",
+                "sourceField": "状态"
+              },
+              "conditions": [
+                {
+                  "id": "condition_0",
+                  "field": "状态",
+                  "operator": "equals",
+                  "value": "待分派"
+                }
+              ],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "showMessage",
+                  "message": "工单已创建，等待分派处理人",
+                  "level": "info"
+                }
+              ],
+              "scope": "target-fields",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_4",
+              "name": "当 $状态 == \"处理中\"",
+              "trigger": {
+                "eventName": "onChange",
+                "sourceField": "状态"
+              },
+              "conditions": [
+                {
+                  "id": "condition_0",
+                  "field": "状态",
+                  "operator": "equals",
+                  "value": "处理中"
+                }
+              ],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "showMessage",
+                  "message": "工单已转到处理中状态",
+                  "level": "success"
+                }
+              ],
+              "scope": "target-fields",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_5",
+              "name": "当 $状态 == \"待复核\"",
+              "trigger": {
+                "eventName": "onChange",
+                "sourceField": "状态"
+              },
+              "conditions": [
+                {
+                  "id": "condition_0",
+                  "field": "状态",
+                  "operator": "equals",
+                  "value": "待复核"
+                }
+              ],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "showMessage",
+                  "message": "工单已提交复核",
+                  "level": "success"
+                }
+              ],
+              "scope": "target-fields",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_6",
+              "name": "当 $状态 == \"已关闭\"",
+              "trigger": {
+                "eventName": "onChange",
+                "sourceField": "状态"
+              },
+              "conditions": [
+                {
+                  "id": "condition_0",
+                  "field": "状态",
+                  "operator": "equals",
+                  "value": "已关闭"
+                }
+              ],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "showMessage",
+                  "message": "工单已关闭，流程结束",
+                  "level": "success"
+                }
+              ],
+              "scope": "target-fields",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_8",
+              "name": "当 $状态 == \"待分派\"",
+              "trigger": {
+                "eventName": "onChange",
+                "sourceField": "状态"
+              },
+              "conditions": [
+                {
+                  "id": "condition_0",
+                  "field": "状态",
+                  "operator": "equals",
+                  "value": "待分派"
+                }
+              ],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "showMessage",
+                  "message": "工单已创建，等待分派处理人",
+                  "level": "info"
+                }
+              ],
+              "scope": "target-fields",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_9",
+              "name": "当 $状态 == \"处理中\"",
+              "trigger": {
+                "eventName": "onChange",
+                "sourceField": "状态"
+              },
+              "conditions": [
+                {
+                  "id": "condition_0",
+                  "field": "状态",
+                  "operator": "equals",
+                  "value": "处理中"
+                }
+              ],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "showMessage",
+                  "message": "故障正在处理中，完成后请提交复核",
+                  "level": "info"
+                }
+              ],
+              "scope": "target-fields",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_10",
+              "name": "当 $状态 == \"待复核\"",
+              "trigger": {
+                "eventName": "onChange",
+                "sourceField": "状态"
+              },
+              "conditions": [
+                {
+                  "id": "condition_0",
+                  "field": "状态",
+                  "operator": "equals",
+                  "value": "待复核"
+                }
+              ],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "showMessage",
+                  "message": "等待复核确认，通过后工单将关闭",
+                  "level": "info"
+                }
+              ],
+              "scope": "target-fields",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_11",
+              "name": "当 $状态 == \"已关闭\"",
+              "trigger": {
+                "eventName": "onChange",
+                "sourceField": "状态"
+              },
+              "conditions": [
+                {
+                  "id": "condition_0",
+                  "field": "状态",
+                  "operator": "equals",
+                  "value": "已关闭"
+                }
+              ],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "showMessage",
+                  "message": "工单已关闭，流程结束",
+                  "level": "success"
+                }
+              ],
+              "scope": "target-fields",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_14",
+              "name": "当 $状态 == \"处理中\"",
+              "trigger": {
+                "eventName": "onChange",
+                "sourceField": "状态"
+              },
+              "conditions": [
+                {
+                  "id": "condition_0",
+                  "field": "状态",
+                  "operator": "equals",
+                  "value": "处理中"
+                }
+              ],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "setRequired",
+                  "targetField": "处理负责人",
+                  "required": true
+                }
+              ],
+              "scope": "target-fields",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_15",
+              "name": "当 $状态 == \"待复核\"",
+              "trigger": {
+                "eventName": "onChange",
+                "sourceField": "状态"
+              },
+              "conditions": [
+                {
+                  "id": "condition_0",
+                  "field": "状态",
+                  "operator": "equals",
+                  "value": "待复核"
+                }
+              ],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "setRequired",
+                  "targetField": "处理结果",
+                  "required": true
+                }
+              ],
+              "scope": "target-fields",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_16",
+              "name": "当 $状态 == \"已关闭\"",
+              "trigger": {
+                "eventName": "onChange",
+                "sourceField": "状态"
+              },
+              "conditions": [
+                {
+                  "id": "condition_0",
+                  "field": "状态",
+                  "operator": "equals",
+                  "value": "已关闭"
+                }
+              ],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "setRequired",
+                  "targetField": "复核意见",
+                  "required": true
+                }
+              ],
+              "scope": "target-fields",
+              "enabled": true,
+              "priority": 20
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "fault_work_order_form_field_11",
+      "type": "select",
+      "x": 80,
+      "y": 580,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "fault_work_order_form_root",
+      "fieldBinding": "处理结果",
+      "props": {
+        "name": "处理结果",
+        "label": "处理结果",
+        "required": false,
+        "readonly": false
+      }
+    },
+    {
+      "id": "fault_work_order_form_field_12",
+      "type": "select",
+      "x": 470,
+      "y": 580,
+      "width": 340,
+      "height": 68,
+      "zIndex": 2,
+      "parentId": "fault_work_order_form_root",
+      "fieldBinding": "复核意见",
+      "props": {
+        "name": "复核意见",
+        "label": "复核意见",
+        "required": false,
+        "readonly": false,
+        "linkageRules": {
+          "onChange": [
+            {
+              "id": "dsl_12",
+              "name": "当 $复核意见 == \"不通过\"",
+              "trigger": {
+                "eventName": "onChange",
+                "sourceField": "复核意见"
+              },
+              "conditions": [
+                {
+                  "id": "condition_0",
+                  "field": "复核意见",
+                  "operator": "equals",
+                  "value": "不通过"
+                }
+              ],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "setValue",
+                  "targetField": "状态",
+                  "expression": "\"处理中\""
+                },
+                {
+                  "id": "action_1",
+                  "type": "showMessage",
+                  "message": "复核不通过，已退回处理中，请填写复核意见原因",
+                  "level": "warning"
+                }
+              ],
+              "scope": "target-fields",
+              "enabled": true,
+              "priority": 20
+            },
+            {
+              "id": "dsl_13",
+              "name": "否则（对应第 12 行）",
+              "trigger": {
+                "eventName": "onChange",
+                "sourceField": "复核意见"
+              },
+              "conditions": [
+                {
+                  "id": "condition_0",
+                  "field": "复核意见",
+                  "operator": "notEquals",
+                  "value": "不通过"
+                }
+              ],
+              "conditionMode": "all",
+              "actions": [
+                {
+                  "id": "action_0",
+                  "type": "showMessage",
+                  "message": "复核通过",
+                  "level": "success"
+                }
+              ],
+              "scope": "target-fields",
+              "enabled": true,
+              "priority": 20
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "id": "fault_work_order_form_binding",
+      "sourceId": "fault_work_order",
+      "targetId": "fault_work_order_form",
+      "type": "table",
+      "config": {
+        "tableId": "fault_work_order",
+        "sheetName": "Sheet1"
+      }
+    }
+  ],
+  "createdAt": "2026-07-20T10:02:43.566Z",
+  "updatedAt": "2026-07-21T02:04:18.542Z"
+}

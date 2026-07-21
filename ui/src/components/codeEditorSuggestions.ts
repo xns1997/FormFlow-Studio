@@ -250,6 +250,12 @@ export function createEventContextSuggestions(options: {
     { label: 'ctx.fillForm', insertText: "await ctx.fillForm(row, { 姓名: 'customerName' }, { originalFieldMap: { 姓名: '原始姓名' } })", kind: 'Function', detail: '按记录回填表单', sortText: '043', scope: 'ctx-member' },
     { label: 'ctx.requireFields', insertText: "await ctx.requireFields(['姓名', '手机号'])", kind: 'Function', detail: '批量校验必填字段', sortText: '044', scope: 'ctx-member' },
     { label: 'ctx.resetForm', insertText: "await ctx.resetForm({ clearFields: ['姓名', '手机号'], defaults: { 状态: '草稿' } })", kind: 'Function', detail: '按默认值重置表单', sortText: '045', scope: 'ctx-member' },
+    { label: 'ctx.fields', insertText: "await ctx.fields(['字段A', '字段B']).show().required()", kind: 'Snippet', detail: '链式批量更新字段状态', sortText: '0451', scope: 'ctx-member' },
+    { label: 'ctx.form.require', insertText: "const check = await ctx.form.require(['姓名', '手机号']).focusFirstInvalid()", kind: 'Snippet', detail: '链式校验表单必填项', sortText: '0452', scope: 'ctx-member' },
+    { label: 'ctx.table', insertText: "await ctx.table('employees').find({ 员工ID: ctx.getValue('员工ID') }).fillForm()", kind: 'Snippet', detail: '链式查询并回填', sortText: '0453', scope: 'ctx-member' },
+    { label: 'ctx.table.upsert', insertText: "await ctx.table('employees').upsert(ctx.form.values(), { key: '员工ID' })", kind: 'Snippet', detail: '链式按主键新增或更新', sortText: '04535', scope: 'ctx-member' },
+    { label: 'ctx.flow', insertText: "await ctx.flow('流程 ID').run({ formData: ctx.form.values() }).writeBack()", kind: 'Snippet', detail: '链式运行流程并回写', sortText: '0454', scope: 'ctx-member' },
+    { label: 'ctx.evaluate', insertText: "ctx.evaluate('$数量 * $单价')", kind: 'Function', detail: '执行安全字段表达式', sortText: '0455', scope: 'ctx-member' },
     { label: 'ctx.runConfiguredWorkflow', insertText: 'await ctx.runConfiguredWorkflow({ value: ctx.value })', kind: 'Function', detail: '执行本事件已绑定流程；不会再自动重复执行', sortText: '046', scope: 'ctx-member' },
     { label: 'ctx.runWorkflow', insertText: "await ctx.runWorkflow('流程 ID 或名称', { value: ctx.value })", kind: 'Function', detail: '按 ID 或名称执行任意流程', sortText: '047', scope: 'ctx-member' },
     { label: 'ctx.call', insertText: "await ctx.call('回调名称', ctx.value)", kind: 'Function', detail: '调用宿主注册的自定义回调函数', sortText: '048', scope: 'ctx-member' },
@@ -416,4 +422,34 @@ export function createFlowParameterSuggestions(
       scope: ['top-level', 'json-object-key'],
     })),
   ];
+}
+
+export function createChainApiExtraLib(filePath = 'inmemory://formflow-chain-api.d.ts'): CodeEditorExtraLib {
+  return {
+    filePath,
+    content: `
+interface FormFlowFieldChain extends PromiseLike<void> {
+  show(): FormFlowFieldChain; hide(): FormFlowFieldChain;
+  enable(): FormFlowFieldChain; disable(): FormFlowFieldChain;
+  required(): FormFlowFieldChain; optional(): FormFlowFieldChain;
+  clear(): FormFlowFieldChain; set(value: unknown): FormFlowFieldChain;
+}
+interface FormFlowRequireChain extends PromiseLike<FormRequireFieldsResult> { focusFirstInvalid(): FormFlowRequireChain; }
+interface FormFlowTableFindChain extends PromiseLike<Record<string, unknown> | null> {
+  fillForm(fieldMap?: Record<string, string>, options?: FormFillFormOptions): Promise<FormFillFormResult | null>;
+}
+interface FormFlowRunChain extends PromiseLike<EventFlowResult> { writeBack(): Promise<EventFlowResult>; }
+interface FormEventContext {
+  evaluate(expression: string): unknown;
+  fields(fields: string | string[]): FormFlowFieldChain;
+  form: { values(): EventFieldMap & Record<string, unknown>; require(fields: string[]): FormFlowRequireChain };
+  table(sheetId: string): {
+    find(criteria: Record<string, unknown>, options?: FormFindRowOptions): FormFlowTableFindChain;
+    rows(criteria?: Record<string, unknown>, options?: FormFindRowsOptions): Record<string, unknown>[];
+    upsert(record: Record<string, unknown>, options: { key: string }): Promise<{ created: boolean; updated: boolean; key: unknown; record: Record<string, unknown> }>;
+  };
+  flow(workflow?: string): { run(parameters?: Record<string, unknown>, options?: { targetNodeId?: string }): FormFlowRunChain };
+}
+`,
+  };
 }

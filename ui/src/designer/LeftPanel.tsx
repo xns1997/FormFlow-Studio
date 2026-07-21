@@ -24,7 +24,7 @@ export function LeftPanel({ components, selectedId, onSelect, onRemove, onRepare
     <div className="designer-left-panel">
       <div className="left-panel-tabs">
         {TABS.map(tab => (
-          <button
+          <button type="button"
             key={tab.key}
             className={`left-panel-tab ${activeTab === tab.key ? 'active' : ''}`}
             onClick={() => setActiveTab(tab.key)}

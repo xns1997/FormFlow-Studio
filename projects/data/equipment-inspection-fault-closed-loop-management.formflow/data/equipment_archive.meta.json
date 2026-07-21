@@ -1,0 +1,143 @@
+{
+  "id": "equipment_archive",
+  "fileName": "equipment_archive.json",
+  "fileSize": 250,
+  "fileType": "json",
+  "uploadedAt": "2026-07-20T09:52:29.781Z",
+  "dataHash": "34be307df68c0194db00b60c38c794177900556d4f458b45622500454138e0d1",
+  "sheets": [
+    {
+      "name": "Sheet1",
+      "rowCount": 1,
+      "colCount": 9,
+      "headers": [
+        "设备编号",
+        "设备名称",
+        "设备类型",
+        "所属区域",
+        "责任人",
+        "启用日期",
+        "运行状态",
+        "最近巡检日期",
+        "下次巡检日期"
+      ],
+      "columns": [
+        {
+          "name": "设备编号",
+          "index": 0,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "EQ001"
+          ]
+        },
+        {
+          "name": "设备名称",
+          "index": 1,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "测试设备1"
+          ]
+        },
+        {
+          "name": "设备类型",
+          "index": 2,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "发电机"
+          ]
+        },
+        {
+          "name": "所属区域",
+          "index": 3,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "A区"
+          ]
+        },
+        {
+          "name": "责任人",
+          "index": 4,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "张三"
+          ]
+        },
+        {
+          "name": "启用日期",
+          "index": 5,
+          "dataType": "date",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "2023-01-01"
+          ]
+        },
+        {
+          "name": "运行状态",
+          "index": 6,
+          "dataType": "enum",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "运行中"
+          ]
+        },
+        {
+          "name": "最近巡检日期",
+          "index": 7,
+          "dataType": "date",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "2023-11-01"
+          ]
+        },
+        {
+          "name": "下次巡检日期",
+          "index": 8,
+          "dataType": "date",
+          "nullable": false,
+          "uniqueCount": 1,
+          "sampleValues": [
+            "2023-12-01"
+          ]
+        }
+      ],
+      "preview": [
+        {
+          "设备编号": "EQ001",
+          "设备名称": "测试设备1",
+          "设备类型": "发电机",
+          "所属区域": "A区",
+          "责任人": "张三",
+          "启用日期": "2023-01-01",
+          "运行状态": "运行中",
+          "最近巡检日期": "2023-11-01",
+          "下次巡检日期": "2023-12-01"
+        }
+      ],
+      "config": {
+        "id": "Sheet1",
+        "tableName": "Sheet1",
+        "keyFields": [
+          "设备编号"
+        ],
+        "readOnly": false,
+        "frozenRows": 0,
+        "frozenColumns": 0,
+        "filterEnabled": true,
+        "sortEnabled": true
+      }
+    }
+  ]
+}

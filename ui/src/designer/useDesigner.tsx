@@ -3,7 +3,7 @@ import { Graph, type Node, Selection, Snapline, Clipboard, Keyboard, History } f
 import { register } from '@antv/x6-react-shape';
 import React from 'react';
 import type { DesignComponent, DesignFile } from '../project/types';
-import { getControl } from './registry';
+import { getControl, hydrateControlComponent } from './registry';
 import { useDesignerState, type SelectionOverlay, type ResizeHandle } from './hooks/useDesignerState';
 import { useDesignerActions } from './hooks/useDesignerActions';
 import { useDesignerClipboard } from './hooks/useDesignerClipboard';
@@ -232,9 +232,9 @@ export function useDesigner() {
     }
   }, [graphRef, selectedIdRef, setSelectedId, setSelectionOverlay, syncGraphSelectionState, syncSelectionOverlayWhenRendered]);
 
-  const syncComponentsFromGraph = useCallback(() => {
+  const syncComponentsFromGraph = useCallback((expectedGraph?: Graph) => {
     const graph = graphRef.current;
-    if (!graph) return;
+    if (!graph || (expectedGraph && graph !== expectedGraph)) return;
     const next: DesignComponent[] = [];
     graph.getNodes().forEach((node: Node) => {
       const data = node.getData();
@@ -276,7 +276,8 @@ export function useDesigner() {
 
   const drawComponentsOnGraph = useCallback((graph: Graph, source: DesignComponent[]) => {
     graph.clearCells();
-    const normalized = autoResizeContainers(source.map((comp) => {
+    const normalized = autoResizeContainers(source.map((item) => {
+      const comp = hydrateControlComponent(item);
       const size = clampSize(comp.type, comp.width, comp.height);
       return { ...comp, width: size.width, height: size.height };
     }));
@@ -393,7 +394,7 @@ export function useDesigner() {
       selectComponent(null);
     });
     graph.on('node:change:parent', () => {
-      requestAnimationFrame(syncComponentsFromGraph);
+      requestAnimationFrame(() => syncComponentsFromGraph(graph));
     });
     graph.on('scale', ({ sx }) => {
       setZoom(sx);
@@ -410,7 +411,7 @@ export function useDesigner() {
       suppressMoveSyncRef.current = true;
       node.setPosition(snappedX, snappedY, { deep: true });
       requestAnimationFrame(() => {
-        syncComponentsFromGraph();
+        syncComponentsFromGraph(graph);
         suppressMoveSyncRef.current = false;
         syncSelectionOverlay(node.id);
       });
@@ -472,13 +473,13 @@ export function useDesigner() {
     graph.bindKey(['meta+z', 'ctrl+z'], () => {
       graph.undo();
       state.bumpHistoryRevision();
-      requestAnimationFrame(syncComponentsFromGraph);
+      requestAnimationFrame(() => syncComponentsFromGraph(graph));
       return false;
     });
     graph.bindKey(['meta+shift+z', 'ctrl+shift+z'], () => {
       graph.redo();
       state.bumpHistoryRevision();
-      requestAnimationFrame(syncComponentsFromGraph);
+      requestAnimationFrame(() => syncComponentsFromGraph(graph));
       return false;
     });
     const nudge = (dx: number, dy: number) => {
@@ -665,10 +666,29 @@ export function useDesigner() {
     return result.diagnostics;
   }, [graphRef, componentsRef, commitComponents, setNodeComponentData, selectedIdRef, syncComponentsFromGraph]);
 
+  const addComponentAtViewportCenter = useCallback((type: string) => {
+    const graph = graphRef.current;
+    const container = containerRef.current;
+    const control = getControl(type);
+    if (!graph || !container || !control) return null;
+    const bounds = container.getBoundingClientRect();
+    const point = graph.clientToLocal(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
+    return actions.addComponent(
+      type,
+      Math.round(point.x - control.defaultSize.w / 2),
+      Math.round(point.y - control.defaultSize.h / 2),
+    );
+  }, [actions.addComponent, containerRef, graphRef]);
+
+  const canUndo = !!graphRef.current?.canUndo?.();
+  const canRedo = !!graphRef.current?.canRedo?.();
+  const canPaste = !!graphRef.current && !graphRef.current.isClipboardEmpty?.();
+
   return {
     containerRef, graphRef, resizeObserverRef, initGraph,
     selectedId, setSelectedId: selectComponent, selectionOverlay, components, zoom, mode, historyRevision: state.historyRevision,
     addComponent: actions.addComponent,
+    addComponentAtViewportCenter,
     removeComponent: actions.removeComponent,
     updateComponentProps: actions.updateComponentProps,
     updateComponentGeometry: actions.updateComponentGeometry,
@@ -681,6 +701,7 @@ export function useDesigner() {
     refreshCanvasSize,
     undo: history.undo,
     redo: history.redo,
+    canUndo, canRedo, canPaste,
     copy: clipboard.copy,
     paste: clipboard.paste,
     duplicate: clipboard.duplicate,

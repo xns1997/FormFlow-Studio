@@ -8,27 +8,66 @@ services:
       FORMFLOW_MODE: cloud
       PORT: 3001
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
-      REDIS_URL: redis://redis:6379
+      FORMFLOW_DATABASE_URL: postgresql://formflow:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/formflow
+      FORMFLOW_DATABASE_REQUIRED: "true"
+      FORMFLOW_DATABASE_AUTO_START: "false"
+      FORMFLOW_HEALTH_INTERVAL_MS: 10000
+      FORMFLOW_VECTOR_REQUIRED: "true"
+      FORMFLOW_VECTOR_INDEX_DIMENSIONS: ${FORMFLOW_VECTOR_INDEX_DIMENSIONS:-1024,1536}
       FORMFLOW_DATA_DIR: /data/server
       FORMFLOW_PROJECTS_DIR: /data/projects
       PYTHON_EXECUTABLE: /usr/bin/python3
+      LLM_PROVIDER_GRPC_URL: llm-provider:50051
+      LLM_PROVIDER_SERVICE_TOKEN: ${LLM_PROVIDER_SERVICE_TOKEN:-formflow-provider-development-token}
+      LLM_CONFIG_MASTER_KEY: ${LLM_CONFIG_MASTER_KEY:?Set LLM_CONFIG_MASTER_KEY in .env}
     volumes:
       - formflow-data:/data
     depends_on:
-      redis:
+      postgres:
         condition: service_healthy
-    restart: unless-stopped
-  redis:
-    image: redis:7-alpine
-    command: redis-server --appendonly yes
-    volumes:
-      - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/api/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+  llm-provider:
+    build: ./llm-provider
+    environment:
+      LLM_PROVIDER_HTTP_PORT: 5001
+      LLM_PROVIDER_GRPC_PORT: 50051
+      LLM_PROVIDER_DATABASE_URL: postgresql://formflow:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/formflow
+      LLM_PROVIDER_CHECKPOINT_NAMESPACE: formflow:llm-provider
+      LLM_PROVIDER_CHECKPOINT_STORE_REQUIRED: "true"
+      LLM_PROVIDER_SERVICE_TOKEN: ${LLM_PROVIDER_SERVICE_TOKEN:-formflow-provider-development-token}
+      LLM_PROVIDER_PLUGIN_ALLOWLIST: ${LLM_PROVIDER_PLUGIN_ALLOWLIST:-}
+    ports:
+      - "5001:5001"
+      - "50051:50051"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket,urllib.request; urllib.request.urlopen('http://localhost:5001/readyz'); socket.create_connection(('localhost',50051),2).close()"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: formflow
+      POSTGRES_USER: formflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U formflow -d formflow"]
       interval: 5s
       timeout: 3s
       retries: 10
     restart: unless-stopped
 volumes:
   formflow-data:
-  redis-data:
+  postgres-data:

@@ -1,0 +1,8 @@
+{
+  "mode": "design",
+  "allowDesigner": true,
+  "allowBehaviorEditor": true,
+  "allowWorkflowEditor": true,
+  "defaultFormId": "equipment_archive_form",
+  "defaultSheet": "Sheet1"
+}

@@ -25,7 +25,7 @@
   gap: 4px;
   padding: 5px 8px;
   background: rgba(118,118,128,0.06);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   color: #8e8e93;
   text-transform: uppercase;
@@ -59,7 +59,7 @@
   white-space: nowrap;
   font-weight: 500;
   font-size: 11px;
-  color: #1c1c1e;
+  color: var(--text);
 }
 
 .dm-sel {
@@ -69,7 +69,7 @@
   border: 0.5px solid rgba(60,60,67,0.12);
   border-radius: var(--radius-sm);
   background: rgba(255,255,255,0.8);
-  color: #1c1c1e;
+  color: var(--text);
   cursor: pointer;
   text-align: center;
 }
@@ -88,7 +88,7 @@
 
 .dm-type-badge {
   width: 32px;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   padding: 1px 4px;
   border-radius: 3px;
@@ -100,7 +100,7 @@
 .dm-type-string { background: #fef3c7; color: #92400e; }
 .dm-type-date   { background: #fce7f3; color: #9d174d; }
 .dm-type-boolean { background: #e0e7ff; color: #3730a3; }
-.dm-type-mixed  { background: #f3f4f6; color: #6b7280; }
+.dm-type-mixed  { background: #f3f4f6; color: var(--text-secondary); }
 
 .dm-n-input {
   width: 56px;

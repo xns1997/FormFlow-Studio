@@ -10,9 +10,9 @@ import {
   addGlobalBehavior, updateGlobalBehavior, removeGlobalBehavior,
 } from './manager';
 import {
-  downloadPackageZip, openFilePicker,
+  downloadFormFlowPackage, openFilePicker,
 } from './packageManager';
-import { createProjectFromZip } from './creation';
+import { createProjectFromPackage } from './creation';
 import type { ProjectStructure, SrcTableEntry, TableConfig, WorkflowFile, BehaviorFile, DesignFile, FormEntry } from './types';
 
 async function trySave(p: ProjectStructure): Promise<void> {
@@ -193,14 +193,14 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   exportAsPackage: async () => {
     const { project } = get();
     if (!project) return;
-    await downloadPackageZip(project);
+    await downloadFormFlowPackage(project);
   },
 
   importFromPackage: async () => {
     const file = await openFilePicker();
     if (!file) return;
-    const imported = await createProjectFromZip(file, {
-      name: file.name.replace(/\.zip$/i, ''),
+    const imported = await createProjectFromPackage(file, {
+      name: file.name.replace(/\.formflow$/i, ''),
       description: '',
       author: '',
       tags: [],

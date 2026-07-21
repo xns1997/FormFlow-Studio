@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Segmented, Select } from 'antd';
+import { notification, Segmented, Select } from 'antd';
 import '../../designer/controls';
 import { useDesigner } from '../../designer/useDesigner';
 import { DesignCanvas } from '../../designer/DesignCanvas';
@@ -14,17 +14,29 @@ import { useProjectStore } from '../../project/store';
 import type { FormEntry, BehaviorFile, DesignComponent } from '../../project/types';
 import { createFormEntry } from '../../project/types';
 import CodeEditor from '../../components/CodeEditor';
+import BehaviorDslEditor from '../../components/BehaviorDslEditor';
 import {
   createEventContextExtraLib,
+  createChainApiExtraLib,
   createEventContextSuggestions,
   type EventFieldDescriptor,
 } from '../../components/codeEditorSuggestions';
 import { getTemplatesByCategory, type BehaviorTemplate } from '../../services/config/behaviorTemplates';
 import Modal, { ModalHeader } from '../../components/Modal';
+import { AntdCompatSelect } from '../../components/AntdFormControls';
 import { CanvasWithProvider } from './CanvasPage';
 import DataPreviewPage from './DataPreviewPage';
 import SettingsPage from './SettingsPage';
 import { getBehaviorEventDoc } from '../../services/io/behaviorDocs';
+import { diagnoseForm, findUnrepresentedColumns, summarizeFormDiagnostics } from '../../services/formGeneration/formDiagnostics';
+import { generateMissingFieldComponents } from '../../services/formGeneration/formScaffold';
+import { applyBehaviorDslToComponents } from '../../services/engine/behaviorDsl';
+import { buildDevelopmentQuality } from '../../services/formGeneration/formQuality';
+import { createMethodDefaults, METHOD_LIBRARY } from '../../services/engine/methodLibrary';
+import { renameFieldReferences } from '../../services/formGeneration/fieldSynchronization';
+import { useAppInteraction } from '../../components/AppInteractionProvider';
+import { DesignerIcon } from '../../designer/icons';
+import { useWorkbenchPanels } from './useWorkbenchPanels';
 
 // 编辑模式：决定中间/右侧布局
 type EditMode = 'design' | 'behavior' | 'flow' | 'data' | 'settings';
@@ -34,24 +46,38 @@ export default function UnifiedEditorPage() {
   const store = useProjectStore((s) => s) as any;
   const designer = useDesigner();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { confirm, announce } = useAppInteraction();
 
   // 表单相关状态
   const [forms, setForms] = useState<FormEntry[]>([]);
   const [activeFormId, setActiveFormId] = useState<string | null>(null);
-  const [leftPanelTab, setLeftPanelTab] = useState<'controls' | 'forms' | 'behaviors' | 'workflows'>('controls');
+  const [renamingFormId, setRenamingFormId] = useState<string | null>(null);
+  const [formNameDraft, setFormNameDraft] = useState('');
+  const [leftPanelTab, setLeftPanelTab] = useState<'controls' | 'fields' | 'forms' | 'behaviors' | 'workflows'>('controls');
   const initialMode = searchParams.get('mode') as EditMode | null;
   const [editMode, setEditMode] = useState<EditMode>(initialMode && ['design', 'behavior', 'flow', 'data', 'settings'].includes(initialMode) ? initialMode : 'design');
+  const hasWorkbenchPanels = editMode === 'design' || editMode === 'behavior';
+  const panels = useWorkbenchPanels(hasWorkbenchPanels);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   // 行为相关状态
   const [editingBehaviorId, setEditingBehaviorId] = useState<string | null>(searchParams.get('behavior'));
   const [editingBehaviorScope, setEditingBehaviorScope] = useState<'form' | 'global'>('form');
-  const [showTemplates, setShowTemplates] = useState(false);
   const [newBehaviorName, setNewBehaviorName] = useState('');
   const [newBehaviorEvent, setNewBehaviorEvent] = useState('onFieldChange');
   const [createBehaviorTarget, setCreateBehaviorTarget] = useState<{ scope: 'form' | 'global'; formId?: string } | null>(null);
+  const [createBehaviorMode, setCreateBehaviorMode] = useState<'blank' | 'template'>('blank');
   const [behaviorDraft, setBehaviorDraft] = useState('');
   const [behaviorDirty, setBehaviorDirty] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [behaviorAuthoringMode, setBehaviorAuthoringMode] = useState<'script' | 'rules'>('script');
+  const [qualityModal, setQualityModal] = useState<'overview' | 'tests' | 'publish' | null>(null);
+  const [lastTestRunAt, setLastTestRunAt] = useState<string | null>(null);
+  const [showMethodLibrary, setShowMethodLibrary] = useState(false);
+  const [selectedMethodId, setSelectedMethodId] = useState(METHOD_LIBRARY[0].id);
+  const [methodParams, setMethodParams] = useState<Record<string, string>>(() => createMethodDefaults(METHOD_LIBRARY[0]));
+  const [methodSampleResult, setMethodSampleResult] = useState<unknown>(null);
+  const ruleSaveTimersRef = useRef(new Map<string, number>());
   const designHydratedRef = useRef(false);
   const structuredEditPendingRef = useRef(false);
 
@@ -59,7 +85,7 @@ export default function UnifiedEditorPage() {
   useEffect(() => {
     if (!project) return;
     if (project.forms?.length) {
-      setForms(project.forms);
+      setForms(project.forms.map((form) => ({ ...form, ruleCode: form.ruleCode || '' })));
       if (!activeFormId) setActiveFormId(searchParams.get('form') || project.forms[0].id);
     } else if (project.designs?.length) {
       // 兼容旧格式：从 designs 迁移
@@ -69,6 +95,7 @@ export default function UnifiedEditorPage() {
         name: d.name,
         design: d,
         behaviors: project.behaviors || [],
+        ruleCode: '',
         createdAt: d.createdAt || now,
         updatedAt: d.updatedAt || now,
       }));
@@ -98,6 +125,28 @@ export default function UnifiedEditorPage() {
   const activeBehaviors = useMemo(() => activeForm?.behaviors || [], [activeForm]);
   const globalBehaviors = useMemo(() => project?.globalBehaviors || [], [project]);
   const allWorkflows = useMemo(() => project?.workflows || [], [project]);
+  const formDiagnostics = useMemo(
+    () => diagnoseForm(designer.components, project?.srcTable || [], allWorkflows),
+    [designer.components, project?.srcTable, allWorkflows],
+  );
+  const diagnosticSummary = useMemo(() => summarizeFormDiagnostics(formDiagnostics), [formDiagnostics]);
+  const developmentQuality = useMemo(
+    () => buildDevelopmentQuality(designer.components, project?.srcTable || [], allWorkflows),
+    [designer.components, project?.srcTable, allWorkflows],
+  );
+  const unrepresentedColumns = useMemo(
+    () => findUnrepresentedColumns(designer.components, project?.srcTable || []),
+    [designer.components, project?.srcTable],
+  );
+  const missingFieldGroups = useMemo(() => {
+    const groups = new Map<string, typeof unrepresentedColumns>();
+    for (const item of unrepresentedColumns) {
+      const key = `${item.tableId}\u0000${item.sheetName}`;
+      groups.set(key, [...(groups.get(key) || []), item]);
+    }
+    return [...groups.entries()].map(([key, items]) => ({ key, items, tableId: items[0].tableId, tableName: items[0].tableName, sheetName: items[0].sheetName }));
+  }, [unrepresentedColumns]);
+  const selectedMethod = useMemo(() => METHOD_LIBRARY.find((item) => item.id === selectedMethodId) || METHOD_LIBRARY[0], [selectedMethodId]);
 
   useEffect(() => {
     if (editMode !== 'behavior' || !editingBehaviorId || editingBehaviorScope !== 'form') return;
@@ -157,6 +206,7 @@ export default function UnifiedEditorPage() {
     setEditMode('behavior');
     setLeftPanelTab('behaviors');
     if (behaviorId) {
+      setBehaviorAuthoringMode('script');
       setEditingBehaviorId(behaviorId);
       setEditingBehaviorScope(scope);
     }
@@ -228,13 +278,57 @@ export default function UnifiedEditorPage() {
     switchToDesign();
   }, [forms.length, store, switchToDesign]);
 
-  const handleDeleteForm = useCallback((id: string) => {
+  const handleDeleteForm = useCallback(async (id: string) => {
     const target = forms.find((form) => form.id === id);
-    if (!window.confirm(`确定删除表单“${target?.name || '未命名表单'}”？表单中的控件和规则也会一起删除。`)) return;
+    if (!await confirm({
+      title: '删除表单',
+      message: `确定删除“${target?.name || '未命名表单'}”？`,
+      detail: '表单中的控件和规则也会一起删除，此操作无法撤销。',
+      confirmLabel: '删除表单',
+      destructive: true,
+    })) return;
     setForms((prev) => prev.filter((f) => f.id !== id));
     if (activeFormId === id) setActiveFormId(forms.find((f) => f.id !== id)?.id || null);
     store.removeForm?.(id);
-  }, [activeFormId, forms, store]);
+  }, [activeFormId, confirm, forms, store]);
+
+  const beginFormRename = useCallback((form: FormEntry) => {
+    setActiveFormId(form.id);
+    setRenamingFormId(form.id);
+    setFormNameDraft(form.name);
+  }, []);
+
+  const commitFormRename = useCallback((id: string, rawName: string) => {
+    const form = forms.find((item) => item.id === id);
+    const name = rawName.trim();
+    setRenamingFormId(null);
+    setFormNameDraft('');
+    if (!form || !name || name === form.name) return;
+
+    const now = new Date().toISOString();
+    const design = { ...form.design, name, updatedAt: now };
+    setSaveState('saving');
+    setForms((current) => current.map((item) => item.id === id ? { ...item, name, design, updatedAt: now } : item));
+    void Promise.resolve(store.updateForm?.(id, { name, design }))
+      .then(() => setSaveState('saved'))
+      .catch(() => {
+        setForms((current) => current.map((item) => item.id === id ? form : item));
+        setSaveState('error');
+      });
+  }, [forms, store]);
+
+  const handleRuleCodeChange = useCallback((value: string) => {
+    if (!activeFormId) return;
+    const formId = activeFormId;
+    setForms((current) => current.map((form) => form.id === formId ? { ...form, ruleCode: value, updatedAt: new Date().toISOString() } : form));
+    const pending = ruleSaveTimersRef.current.get(formId);
+    if (pending) window.clearTimeout(pending);
+    const timer = window.setTimeout(() => {
+      ruleSaveTimersRef.current.delete(formId);
+      void store.updateForm?.(formId, { ruleCode: value });
+    }, 500);
+    ruleSaveTimersRef.current.set(formId, timer);
+  }, [activeFormId, store]);
 
   const handleSaveDesign = useCallback(() => {
     if (!activeFormId) return;
@@ -272,6 +366,13 @@ export default function UnifiedEditorPage() {
 
   // ── 行为操作 ──────────────────────────────────
 
+  const openBehaviorCreator = useCallback((target: { scope: 'form' | 'global'; formId?: string }) => {
+    setNewBehaviorName('');
+    setNewBehaviorEvent('onFieldChange');
+    setCreateBehaviorMode('blank');
+    setCreateBehaviorTarget(target);
+  }, []);
+
   const handleAddBehavior = useCallback((scope: 'form' | 'global', targetFormId?: string) => {
     if (!newBehaviorName) return;
     const now = new Date().toISOString();
@@ -298,11 +399,17 @@ export default function UnifiedEditorPage() {
     switchToBehavior(bh.id, scope);
   }, [newBehaviorName, newBehaviorEvent, activeFormId, store, switchToBehavior]);
 
-  const handleDeleteBehavior = useCallback((id: string, scope: 'form' | 'global', targetFormId?: string) => {
+  const handleDeleteBehavior = useCallback(async (id: string, scope: 'form' | 'global', targetFormId?: string) => {
     const target = scope === 'global'
       ? globalBehaviors.find((behavior) => behavior.id === id)
       : forms.find((form) => form.id === (targetFormId || activeFormId))?.behaviors.find((behavior) => behavior.id === id);
-    if (!window.confirm(`确定删除规则“${target?.name || '未命名规则'}”？此操作无法撤销。`)) return;
+    if (!await confirm({
+      title: '删除规则',
+      message: `确定删除“${target?.name || '未命名规则'}”？`,
+      detail: '删除后无法撤销。',
+      confirmLabel: '删除规则',
+      destructive: true,
+    })) return;
     const formId = targetFormId || activeFormId;
     if (scope === 'form' && formId) {
       store.removeFormBehavior?.(formId, id);
@@ -311,7 +418,7 @@ export default function UnifiedEditorPage() {
       store.removeGlobalBehavior?.(id);
     }
     if (editingBehaviorId === id) setEditingBehaviorId(null);
-  }, [activeFormId, editingBehaviorId, forms, globalBehaviors, store]);
+  }, [activeFormId, confirm, editingBehaviorId, forms, globalBehaviors, store]);
 
   const handleUpdateBehaviorCode = useCallback((id: string, code: string, scope: 'form' | 'global') => {
     if (scope === 'form' && activeFormId) {
@@ -331,7 +438,7 @@ export default function UnifiedEditorPage() {
     }
   }, [activeFormId, store]);
 
-  const handleAddFromTemplate = useCallback((tpl: BehaviorTemplate, scope: 'form' | 'global') => {
+  const handleAddFromTemplate = useCallback((tpl: BehaviorTemplate, scope: 'form' | 'global', targetFormId?: string) => {
     const now = new Date().toISOString();
     const bh: BehaviorFile = {
       id: `bh_${Date.now()}`,
@@ -343,13 +450,16 @@ export default function UnifiedEditorPage() {
       createdAt: now,
       updatedAt: now,
     };
-    if (scope === 'form' && activeFormId) {
-      store.addFormBehavior?.(activeFormId, bh);
-      setForms((prev) => prev.map((f) => f.id === activeFormId ? { ...f, behaviors: [...f.behaviors, bh] } : f));
+    const formId = targetFormId || activeFormId;
+    if (scope === 'form' && formId) {
+      setActiveFormId(formId);
+      store.addFormBehavior?.(formId, bh);
+      setForms((prev) => prev.map((f) => f.id === formId ? { ...f, behaviors: [...f.behaviors, bh] } : f));
     } else {
       store.addGlobalBehavior?.(bh);
     }
-    setShowTemplates(false);
+    setCreateBehaviorTarget(null);
+    setCreateBehaviorMode('blank');
     switchToBehavior(bh.id, scope);
   }, [activeFormId, store, switchToBehavior]);
 
@@ -390,25 +500,56 @@ export default function UnifiedEditorPage() {
       {/* 工具栏 */}
       <div className="unified-toolbar">
         <div className="unified-toolbar-primary">
+          {hasWorkbenchPanels && <button
+            ref={panels.leftTriggerRef}
+            type="button"
+            className={`workbench-panel-toggle ${panels.leftOpen ? 'active' : ''}`}
+            aria-label={panels.leftOpen ? '收起左侧栏' : '显示左侧栏'}
+            aria-pressed={panels.leftOpen}
+            onClick={panels.toggleLeft}
+          ><DesignerIcon name={panels.leftOpen ? 'sidebarClose' : 'sidebarOpen'} /></button>}
           <div className="unified-mode-switch unified-mode-switch-main">
-            <button className={`unified-mode-btn ${editMode === 'data' ? 'active' : ''}`} onClick={switchToData}>
+            <button type="button" className={`unified-mode-btn ${editMode === 'data' ? 'active' : ''}`} onClick={switchToData}>
               数据预览
             </button>
-            <button className={`unified-mode-btn ${editMode === 'design' ? 'active' : ''}`} onClick={switchToDesign}>
+            <button type="button" className={`unified-mode-btn ${editMode === 'design' ? 'active' : ''}`} onClick={switchToDesign}>
               表单设计
             </button>
-            <button className={`unified-mode-btn ${editMode === 'behavior' ? 'active' : ''}`} onClick={() => switchToBehavior()}>
+            <button type="button" className={`unified-mode-btn ${editMode === 'behavior' ? 'active' : ''}`} onClick={() => switchToBehavior()}>
               行为定义
             </button>
-            <button className={`unified-mode-btn ${editMode === 'flow' ? 'active' : ''}`} onClick={switchToFlow}>
+            <button type="button" className={`unified-mode-btn ${editMode === 'flow' ? 'active' : ''}`} onClick={switchToFlow}>
               流程编排
             </button>
-            <button className={`unified-mode-btn ${editMode === 'settings' ? 'active' : ''}`} onClick={switchToSettings}>
+            <button type="button" className={`unified-mode-btn ${editMode === 'settings' ? 'active' : ''}`} onClick={switchToSettings}>
               项目设置
             </button>
           </div>
         </div>
         <div className="unified-toolbar-secondary">
+          <span className="unified-toolbar-optional">
+            <button type="button" onClick={() => setShowMethodLibrary(true)} className="toolbar-btn">方法库</button>
+            <button type="button" onClick={() => setQualityModal('overview')} className="toolbar-btn">开发总览</button>
+            <button type="button" onClick={() => setQualityModal('tests')} className="toolbar-btn">测试 {developmentQuality.coverage}%</button>
+            <button type="button" onClick={() => setQualityModal('publish')} className={`toolbar-btn ${developmentQuality.readyToPublish ? '' : 'warning'}`}>发布检查 {developmentQuality.blockers.length}</button>
+          </span>
+          <details className="unified-toolbar-overflow">
+            <summary aria-label="更多工作台命令"><DesignerIcon name="more" /></summary>
+            <div role="menu">
+              <button type="button" role="menuitem" onClick={() => setShowMethodLibrary(true)}>方法库</button>
+              <button type="button" role="menuitem" onClick={() => setQualityModal('overview')}>开发总览</button>
+              <button type="button" role="menuitem" onClick={() => setQualityModal('tests')}>测试 {developmentQuality.coverage}%</button>
+              <button type="button" role="menuitem" onClick={() => setQualityModal('publish')}>发布检查 {developmentQuality.blockers.length}</button>
+            </div>
+          </details>
+          {hasWorkbenchPanels && <button
+            ref={panels.rightTriggerRef}
+            type="button"
+            className={`workbench-panel-toggle ${panels.rightOpen ? 'active' : ''}`}
+            aria-label={panels.rightOpen ? '收起属性栏' : '显示属性栏'}
+            aria-pressed={panels.rightOpen}
+            onClick={panels.toggleRight}
+          ><DesignerIcon name={panels.rightOpen ? 'sidebarClose' : 'settings'} /></button>}
           {editMode === 'behavior' && (
             <Segmented
               className="behavior-preview-switch"
@@ -425,7 +566,10 @@ export default function UnifiedEditorPage() {
             />
           )}
           {editMode === 'design' && (
-            <button onClick={handleSaveDesign} className="toolbar-btn">保存</button>
+            <>
+              <button type="button" onClick={() => setShowDiagnostics(true)} className="toolbar-btn">完成度 {diagnosticSummary.score}</button>
+              <button type="button" onClick={handleSaveDesign} className="toolbar-btn">保存</button>
+            </>
           )}
           {editMode !== 'data' && editMode !== 'settings' && (
             <span className={`chain-save-state ${saveState}`}>
@@ -439,17 +583,17 @@ export default function UnifiedEditorPage() {
               </>
             ) : editMode === 'behavior' ? (
               <span className="unified-context-text">
-                全部行为 {globalBehaviors.length + forms.reduce((sum, form) => sum + form.behaviors.length, 0)} 个
+                当前表单：{activeForm?.name || '未选择'} · 全部行为 {globalBehaviors.length + forms.reduce((sum, form) => sum + form.behaviors.length + 1, 0)} 个
               </span>
             ) : (
               <>
-                <select
+                <AntdCompatSelect
                   className="toolbar-form-select"
                   value={activeFormId || ''}
                   onChange={(e) => setActiveFormId(e.target.value)}
                 >
                   {forms.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-                </select>
+                </AntdCompatSelect>
                 <span className="toolbar-info-detail">
                   {editMode === 'design' ? `${designer.components.length} 个控件` : `${activeBehaviors.length + globalBehaviors.length} 个行为`}
                 </span>
@@ -461,27 +605,29 @@ export default function UnifiedEditorPage() {
 
       <div className="unified-body">
         {/* 链路工作台左侧始终保留表单上下文 */}
-        {editMode !== 'flow' && editMode !== 'data' && editMode !== 'settings' && <div className="unified-left">
+        {hasWorkbenchPanels && <div
+          ref={panels.leftPanelRef}
+          className={`unified-left ${panels.leftOpen ? 'is-open' : 'is-closed'} ${panels.leftIsDrawer ? 'is-drawer' : ''}`}
+          aria-hidden={!panels.leftOpen}
+        >
           {editMode === 'behavior' ? (
             <div className="unified-left-context-title">全部行为</div>
-          ) : <div className="unified-left-tabs">
-            {(editMode === 'design' || editMode === 'behavior' || editMode === 'flow') && (
-              <button className={`unified-left-tab ${leftPanelTab === 'controls' ? 'active' : ''}`} onClick={() => setLeftPanelTab('controls')}>控件</button>
-            )}
-            <button className={`unified-left-tab ${leftPanelTab === 'forms' ? 'active' : ''}`} onClick={() => setLeftPanelTab('forms')}>表单</button>
-            <button className={`unified-left-tab ${leftPanelTab === 'behaviors' ? 'active' : ''}`} onClick={() => setLeftPanelTab('behaviors')}>行为</button>
-            <button className={`unified-left-tab ${leftPanelTab === 'workflows' ? 'active' : ''}`} onClick={() => { setLeftPanelTab('workflows'); switchToFlow(); }}>流程</button>
+          ) : <div className="unified-left-tabs" role="tablist" aria-label="左侧工作区">
+            <button data-panel-focus type="button" role="tab" aria-selected={leftPanelTab === 'controls'} className={`unified-left-tab ${leftPanelTab === 'controls' ? 'active' : ''}`} onClick={() => setLeftPanelTab('controls')}>控件</button>
+            <button type="button" role="tab" aria-selected={leftPanelTab === 'fields'} className={`unified-left-tab ${leftPanelTab === 'fields' ? 'active' : ''}`} onClick={() => setLeftPanelTab('fields')}>数据字段</button>
+            <button type="button" role="tab" aria-selected={leftPanelTab === 'forms'} className={`unified-left-tab ${leftPanelTab === 'forms' ? 'active' : ''}`} onClick={() => setLeftPanelTab('forms')}>表单</button>
+            {panels.leftIsDrawer && <button type="button" className="unified-left-close" aria-label="关闭左侧栏" onClick={() => panels.closeDrawer()}><DesignerIcon name="sidebarClose" /></button>}
           </div>}
 
-          <div className={`unified-left-body ${editMode === 'design' && leftPanelTab === 'controls' ? 'toolbox-active' : ''}`}>
+          <div className={`unified-left-body ${editMode === 'design' && (leftPanelTab === 'controls' || leftPanelTab === 'fields') ? 'toolbox-active' : ''}`}>
             {/* 控件工具箱（仅设计模式） */}
-            {editMode !== 'behavior' && leftPanelTab === 'controls' && (
+            {editMode !== 'behavior' && (leftPanelTab === 'controls' || leftPanelTab === 'fields') && (
               <div className="unified-toolbox-slot">
-                {editMode === 'design' ? <Toolbox /> : (
+                {editMode === 'design' ? <Toolbox source={leftPanelTab === 'fields' ? 'fields' : 'controls'} showSourceTabs={false} onAddControl={designer.addComponentAtViewportCenter} /> : (
                   <div className="chain-component-list">
                     <div className="unified-panel-header"><span>当前表单控件</span></div>
                     {designer.components.map((component) => (
-                      <button key={component.id} className={`chain-component-item ${designer.selectedId === component.id ? 'active' : ''}`} onClick={() => designer.setSelectedId(component.id)}>
+                      <button type="button" key={component.id} className={`chain-component-item ${designer.selectedId === component.id ? 'active' : ''}`} onClick={() => designer.setSelectedId(component.id)}>
                         <span>{String(component.props?.label || component.props?.name || component.fieldBinding || component.type)}</span>
                         <small>{component.type}</small>
                       </button>
@@ -496,7 +642,7 @@ export default function UnifiedEditorPage() {
               <div className="unified-panel-content">
                 <div className="unified-panel-header">
                   <span>表单 ({forms.length})</span>
-                  <button onClick={handleCreateForm} className="unified-add-btn">+ 新建</button>
+                  <button type="button" onClick={handleCreateForm} className="unified-add-btn">+ 新建</button>
                 </div>
                 {forms.map((form) => (
                   <div
@@ -506,10 +652,38 @@ export default function UnifiedEditorPage() {
                   >
                     <span className="unified-list-icon">📋</span>
                     <div className="unified-list-info">
-                      <span className="unified-list-name">{form.name}</span>
+                      {renamingFormId === form.id ? (
+                        <input
+                          className="unified-list-name-input"
+                          aria-label={`重命名表单 ${form.name}`}
+                          value={formNameDraft}
+                          autoFocus
+                          onFocus={(event) => event.currentTarget.select()}
+                          onClick={(event) => event.stopPropagation()}
+                          onChange={(event) => setFormNameDraft(event.target.value)}
+                          onBlur={() => commitFormRename(form.id, formNameDraft)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') event.currentTarget.blur();
+                            if (event.key === 'Escape') {
+                              event.preventDefault();
+                              setRenamingFormId(null);
+                              setFormNameDraft('');
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span className="unified-list-name" onDoubleClick={(event) => { event.stopPropagation(); beginFormRename(form); }}>{form.name}</span>
+                      )}
                       <span className="unified-list-meta">{form.behaviors.length} 个行为</span>
                     </div>
-                    <button className="unified-list-delete" onClick={(e) => { e.stopPropagation(); handleDeleteForm(form.id); }}>×</button>
+                    <button
+                      type="button"
+                      className="unified-list-rename"
+                      aria-label={`重命名 ${form.name}`}
+                      title="重命名表单"
+                      onClick={(event) => { event.stopPropagation(); beginFormRename(form); }}
+                    >✎</button>
+                    <button type="button" className="unified-list-delete" onClick={(e) => { e.stopPropagation(); handleDeleteForm(form.id); }}>×</button>
                   </div>
                 ))}
               </div>
@@ -521,7 +695,7 @@ export default function UnifiedEditorPage() {
                 {/* 全局行为 */}
                 <div className="unified-panel-header">
                   <span>全局行为 ({globalBehaviors.length})</span>
-                  <button onClick={() => setCreateBehaviorTarget({ scope: 'global' })} className="unified-add-btn">+ 新建</button>
+                  <button type="button" onClick={() => openBehaviorCreator({ scope: 'global' })} className="unified-add-btn">+ 新建</button>
                 </div>
                 {globalBehaviors.map((bh) => (
                   <div
@@ -534,7 +708,7 @@ export default function UnifiedEditorPage() {
                       <span className="unified-list-name">{bh.name}</span>
                       <span className="unified-list-meta">{bh.event}</span>
                     </div>
-                    <button className="unified-list-delete" onClick={(e) => { e.stopPropagation(); handleDeleteBehavior(bh.id, 'global'); }}>×</button>
+                    <button type="button" className="unified-list-delete" onClick={(e) => { e.stopPropagation(); handleDeleteBehavior(bh.id, 'global'); }}>×</button>
                   </div>
                 ))}
 
@@ -544,28 +718,42 @@ export default function UnifiedEditorPage() {
                 {forms.map((form) => (
                   <React.Fragment key={form.id}>
                     <div className="unified-panel-header behavior-form-group">
-                      <span>{form.name} ({form.behaviors.length})</span>
-                      <button onClick={() => setCreateBehaviorTarget({ scope: 'form', formId: form.id })} className="unified-add-btn">+ 新建</button>
+                      <span>{form.name} ({form.behaviors.length + 1})</span>
+                      <span className="behavior-form-actions">
+                        <button type="button" onClick={() => openBehaviorCreator({ scope: 'form', formId: form.id })} className="unified-add-btn">+ 新建</button>
+                      </span>
                     </div>
+                    <button
+                      type="button"
+                      className={`unified-list-item behavior-rule-code-item ${activeFormId === form.id && behaviorAuthoringMode === 'rules' ? 'active' : ''}`}
+                      onClick={() => { setActiveFormId(form.id); setEditingBehaviorId(null); setBehaviorAuthoringMode('rules'); }}
+                    >
+                      <span className="unified-list-icon">⌘</span>
+                      <span className="unified-list-info">
+                        <span className="unified-list-name">规则代码</span>
+                        <span className="unified-list-meta">规则语法 · {form.ruleCode.trim() ? '已编辑' : '空白'}</span>
+                      </span>
+                    </button>
                     {form.behaviors.map((bh) => (
                       <div
                         key={bh.id}
                         className={`unified-list-item ${editingBehaviorId === bh.id && editingBehaviorScope === 'form' ? 'active' : ''}`}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => { setActiveFormId(form.id); switchToBehavior(bh.id, 'form'); }}
+                        onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setActiveFormId(form.id); switchToBehavior(bh.id, 'form'); } }}
                       >
                         <span className="unified-list-icon">📝</span>
                         <div className="unified-list-info">
                           <span className="unified-list-name">{bh.name}</span>
                           <span className="unified-list-meta">{bh.event}</span>
                         </div>
-                        <button className="unified-list-delete" onClick={(e) => { e.stopPropagation(); handleDeleteBehavior(bh.id, 'form', form.id); }}>×</button>
+                        <button type="button" className="unified-list-delete" aria-label={`删除规则 ${bh.name}`} onClick={(e) => { e.stopPropagation(); void handleDeleteBehavior(bh.id, 'form', form.id); }}>×</button>
                       </div>
                     ))}
                   </React.Fragment>
                 ))}
 
-                <div className="unified-panel-divider" />
-                <button onClick={() => setShowTemplates(true)} className="unified-template-btn">从模板创建</button>
               </div>
             )}
 
@@ -581,7 +769,7 @@ export default function UnifiedEditorPage() {
                     <p style={{ fontSize: 11, marginTop: 4 }}>请在流程编排页创建</p>
                   </div>
                 ) : allWorkflows.map((wf) => (
-                  <div key={wf.id} className={`unified-list-item ${searchParams.get('workflow') === wf.id ? 'active' : ''}`} onClick={() => {
+                  <button type="button" key={wf.id} className={`unified-list-item ${searchParams.get('workflow') === wf.id ? 'active' : ''}`} onClick={() => {
                     const next = new URLSearchParams(searchParams);
                     next.set('workflow', wf.id);
                     setSearchParams(next, { replace: true });
@@ -592,7 +780,7 @@ export default function UnifiedEditorPage() {
                       <span className="unified-list-name">{wf.name}</span>
                       <span className="unified-list-meta">{wf.nodes?.length || 0} 个节点</span>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -601,9 +789,9 @@ export default function UnifiedEditorPage() {
 
         {/* 中间：行为模式保留只读可选择表单；流程模式使用纯流程画布 */}
         <div className="unified-center">
-          {editMode === 'design' && <div className="chain-form-pane"><DesignCanvas designer={designer} /></div>}
+          {editMode === 'design' && <div className="chain-form-pane"><DesignCanvas designer={designer} formId={activeForm?.id} /></div>}
           {editMode === 'behavior' && <div className="chain-form-pane behavior-readonly-pane">
-            <DesignCanvas designer={designer} readOnly hideToolbar />
+            <DesignCanvas designer={designer} formId={activeForm?.id} readOnly hideToolbar />
             {designer.mode === 'design' && <SelectedControlInfo
               component={designer.selectedId ? designer.components.find((component) => component.id === designer.selectedId) || null : null}
             />}
@@ -614,8 +802,43 @@ export default function UnifiedEditorPage() {
         </div>
 
         {/* 右侧：行为代码或属性配置 */}
-        {editMode !== 'flow' && editMode !== 'data' && editMode !== 'settings' && <div className={`unified-right ${isBehaviorMode ? 'unified-right-expanded' : ''}`}>
-          {isBehaviorMode ? (
+        {hasWorkbenchPanels && <div
+          ref={panels.rightPanelRef}
+          className={`unified-right ${isBehaviorMode ? 'unified-right-expanded' : ''} ${panels.rightOpen ? 'is-open' : 'is-closed'} ${panels.rightIsDrawer ? 'is-drawer' : ''}`}
+          aria-hidden={!panels.rightOpen}
+        >
+          {isBehaviorMode ? behaviorAuthoringMode === 'rules' ? (
+            <BehaviorDslEditor
+              projectId={project?.config.id || ''}
+              value={activeForm?.ruleCode || ''}
+              onChange={handleRuleCodeChange}
+              fields={fieldDescriptors.map((field) => field.name)}
+              components={designer.components}
+              tables={project?.srcTable || []}
+              workflows={allWorkflows}
+              formId={activeForm?.id || 'unknown'}
+              formName={activeForm?.name}
+              onProposalApplied={(result) => {
+                if (!activeForm) return;
+                const updatedDesign = { ...activeForm.design, components: result.components, updatedAt: result.updatedAt };
+                setForms((current) => current.map((form) => form.id === activeForm.id ? { ...form, ruleCode: result.ruleCode, design: updatedDesign, updatedAt: result.updatedAt } : form));
+                designer.loadDesign(updatedDesign);
+                void store.refreshProject?.();
+              }}
+              onApply={() => {
+                if (!activeForm) return;
+                const result = applyBehaviorDslToComponents(designer.components, activeForm.ruleCode || '');
+                if (result.unapplied.length) {
+                  const detail = result.unapplied.join('；');
+                  announce(`有 ${result.unapplied.length} 条规则无法应用：${detail}`);
+                  notification.error({ message: '部分规则无法应用', description: detail, duration: 0 });
+                  return;
+                }
+                structuredEditPendingRef.current = true;
+                designer.loadDesign({ ...activeForm.design, components: result.components, updatedAt: new Date().toISOString() });
+              }}
+            />
+          ) : (
             // 行为模式：全屏行为编辑器
             editingBehavior ? (
               <div className="unified-behavior-editor">
@@ -625,7 +848,7 @@ export default function UnifiedEditorPage() {
                     <span>{editingBehavior.behavior.name}</span>
                   </div>
                   <div className="unified-behavior-controls">
-                    <button className="toolbar-btn" disabled={!behaviorDirty} onClick={applyBehaviorDraft}>应用更改</button>
+                    <button type="button" className="toolbar-btn" disabled={!behaviorDirty} onClick={applyBehaviorDraft}>应用更改</button>
                     <Select
                       className="behavior-event-select"
                       value={editingBehavior.behavior.event}
@@ -670,7 +893,7 @@ export default function UnifiedEditorPage() {
                       filePath: `inmemory://behavior-${editingBehavior.behavior.id}.d.ts`,
                       fields: fieldDescriptors,
                       eventName: editingBehavior.behavior.event,
-                    })]}
+                    }), createChainApiExtraLib(`inmemory://behavior-${editingBehavior.behavior.id}-chain.d.ts`)]}
                     suggestions={createEventContextSuggestions({
                       fields: fieldDescriptors,
                       workflows: allWorkflows,
@@ -695,6 +918,15 @@ export default function UnifiedEditorPage() {
             components={designer.components}
             onUpdate={(id, patch) => {
               structuredEditPendingRef.current = true;
+              const target = designer.components.find((component) => component.id === id);
+              const previousField = String(target?.fieldBinding || target?.props?.name || '');
+              const nextField = typeof patch.name === 'string' ? patch.name.trim() : previousField;
+              if (target && previousField && nextField && previousField !== nextField && activeForm) {
+                const synchronized = renameFieldReferences(designer.components, allWorkflows, previousField, nextField);
+                designer.loadDesign({ ...activeForm.design, components: synchronized.components, updatedAt: new Date().toISOString() });
+                synchronized.workflows.forEach((workflow, index) => { if (workflow !== allWorkflows[index]) void store.updateWorkflow?.(workflow.id, { nodes: workflow.nodes, updatedAt: workflow.updatedAt }); });
+                return;
+              }
               designer.updateComponentProps(id, patch);
             }}
             onUpdateGeometry={(id, patch) => {
@@ -702,16 +934,22 @@ export default function UnifiedEditorPage() {
               designer.updateComponentGeometry(id, patch);
             }}
             onRemove={designer.removeComponent}
+            onClose={panels.rightIsDrawer ? () => panels.closeDrawer() : panels.toggleRight}
           />}
         </div>}
+        {panels.activeDrawer && <button type="button" className="workbench-drawer-backdrop" aria-label="关闭侧栏" onClick={() => panels.closeDrawer()} />}
       </div>
 
-      <Modal open={!!createBehaviorTarget} onClose={() => setCreateBehaviorTarget(null)} width="440px" maxWidth="90vw">
+      <Modal open={!!createBehaviorTarget} onClose={() => setCreateBehaviorTarget(null)} width="680px" maxWidth="92vw" maxHeight="82vh">
         <ModalHeader
           title={createBehaviorTarget?.scope === 'global' ? '新建全局行为' : `新建 ${forms.find((form) => form.id === createBehaviorTarget?.formId)?.name || '表单'} 行为`}
           onClose={() => setCreateBehaviorTarget(null)}
         />
-        <div className="behavior-create-form">
+        <div className="behavior-create-tabs" role="tablist">
+          <button type="button" role="tab" aria-selected={createBehaviorMode === 'blank'} className={createBehaviorMode === 'blank' ? 'active' : ''} onClick={() => setCreateBehaviorMode('blank')}>空白行为</button>
+          <button type="button" role="tab" aria-selected={createBehaviorMode === 'template'} className={createBehaviorMode === 'template' ? 'active' : ''} onClick={() => setCreateBehaviorMode('template')}>从模板创建</button>
+        </div>
+        {createBehaviorMode === 'blank' ? <div className="behavior-create-form">
           <label>
             <span>行为名称</span>
             <input autoFocus value={newBehaviorName} placeholder="例如：提交前校验" onChange={(event) => setNewBehaviorName(event.target.value)} onKeyDown={(event) => {
@@ -740,34 +978,123 @@ export default function UnifiedEditorPage() {
             </small>
           </label>
           <div className="behavior-create-actions">
-            <button className="toolbar-btn" onClick={() => setCreateBehaviorTarget(null)}>取消</button>
-            <button className="toolbar-btn primary" disabled={!newBehaviorName.trim()} onClick={() => {
+            <button type="button" className="toolbar-btn" onClick={() => setCreateBehaviorTarget(null)}>取消</button>
+            <button type="button" className="toolbar-btn primary" disabled={!newBehaviorName.trim()} onClick={() => {
               if (createBehaviorTarget) handleAddBehavior(createBehaviorTarget.scope, createBehaviorTarget.formId);
             }}>创建并编辑</button>
           </div>
-        </div>
-      </Modal>
-
-      {/* 模板弹窗 */}
-      <Modal open={showTemplates} onClose={() => setShowTemplates(false)} width="640px" maxWidth="90vw" maxHeight="80vh">
-        <ModalHeader title="行为模板库" onClose={() => setShowTemplates(false)} />
-        <div style={{ padding: '0 0 8px' }}>
+        </div> : <div className="template-modal-body behavior-create-template-list">
           {Object.entries(getTemplatesByCategory()).map(([category, templates]) => (
-            <div key={category} style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', padding: '8px 16px 4px' }}>{category}</div>
+            <div key={category} className="template-category">
+              <div className="template-category-header">{category}</div>
               {templates.map((tpl) => (
-                <div key={tpl.id} onClick={() => handleAddFromTemplate(tpl, 'form')} style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '8px 16px', cursor: 'pointer', borderBottom: '1px solid var(--line)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600 }}>{tpl.name}</span>
-                    <span style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'monospace' }}>{tpl.event}</span>
+                <button key={tpl.id} type="button" className="template-item behavior-template-choice" onClick={() => {
+                  if (createBehaviorTarget) handleAddFromTemplate(tpl, createBehaviorTarget.scope, createBehaviorTarget.formId);
+                }}>
+                  <div className="template-item-header">
+                    <span className="template-item-name">{tpl.name}</span>
+                    <span className="template-item-event">{tpl.event}</span>
                   </div>
-                  <span style={{ fontSize: 11, color: 'var(--muted)' }}>{tpl.description}</span>
-                </div>
+                  <span className="template-item-desc">{tpl.description}</span>
+                </button>
               ))}
             </div>
           ))}
+        </div>}
+      </Modal>
+
+      <Modal open={showMethodLibrary} onClose={() => setShowMethodLibrary(false)} width="780px" maxWidth="94vw" maxHeight="84vh">
+        <ModalHeader title="表单方法库" onClose={() => setShowMethodLibrary(false)} />
+        <div style={{ padding: 16, display: 'grid', gridTemplateColumns: '220px minmax(0, 1fr)', gap: 16, overflow: 'auto' }}>
+          <div>{METHOD_LIBRARY.map((entry) => <button key={entry.id} type="button" className={`unified-list-item ${entry.id === selectedMethod.id ? 'active' : ''}`} style={{ width: '100%', marginBottom: 5, textAlign: 'left' }} onClick={() => { setSelectedMethodId(entry.id); setMethodParams(createMethodDefaults(entry)); setMethodSampleResult(null); }}><div className="unified-list-info"><strong>{entry.name}</strong><span className="unified-list-meta">{entry.description}</span></div></button>)}</div>
+          <div>
+            <h3 style={{ margin: '0 0 4px' }}>{selectedMethod.name}</h3><p style={{ color: 'var(--muted)', marginTop: 0 }}>{selectedMethod.description}</p>
+            <div className="schema-fields">{selectedMethod.parameters.map((parameter) => <label key={parameter.name} className="prop-field"><span>{parameter.label}</span><input value={methodParams[parameter.name] || ''} placeholder={parameter.placeholder} onChange={(event) => { setMethodParams((current) => ({ ...current, [parameter.name]: event.target.value })); setMethodSampleResult(null); }} /></label>)}</div>
+            <div className="project-wizard-summary-card" style={{ marginTop: 12 }}><strong>自然语言预览</strong><div className="project-wizard-summary-list"><p>{selectedMethod.preview(methodParams)}</p></div></div>
+            <label style={{ display: 'block', marginTop: 12 }}><strong style={{ fontSize: 12 }}>生成代码</strong><pre style={{ padding: 10, background: 'var(--surface-subtle)', borderRadius: 6, whiteSpace: 'pre-wrap' }}>{selectedMethod.code(methodParams)}</pre></label>
+            {methodSampleResult !== null && <label style={{ display: 'block', marginTop: 12 }}><strong style={{ fontSize: 12 }}>示例试运行结果</strong><pre style={{ padding: 10, background: 'var(--surface-subtle)', borderRadius: 6, whiteSpace: 'pre-wrap' }}>{JSON.stringify(methodSampleResult, null, 2)}</pre></label>}
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button type="button" className="ui-btn" onClick={() => setMethodSampleResult(selectedMethod.sample(methodParams))}>示例数据试运行</button>
+          <button type="button" className="ui-btn ui-btn-primary" disabled={!editingBehavior} onClick={() => { setBehaviorDraft((current) => `${current}${current.endsWith('\n') || !current ? '' : '\n'}${selectedMethod.code(methodParams)}\n`); setBehaviorDirty(true); setShowMethodLibrary(false); }}>插入当前行为</button>
+          <button type="button" className="ui-btn" onClick={() => setShowMethodLibrary(false)}>关闭</button>
         </div>
       </Modal>
+
+      <Modal open={!!qualityModal} onClose={() => setQualityModal(null)} width="760px" maxWidth="94vw" maxHeight="84vh">
+        <ModalHeader title={qualityModal === 'tests' ? '自动测试样例' : qualityModal === 'publish' ? '发布门禁' : '开发任务总览'} onClose={() => setQualityModal(null)} />
+        <div style={{ padding: 16, overflow: 'auto' }}>
+          {qualityModal === 'overview' && <>
+            <div className="project-wizard-summary-card" style={{ marginBottom: 12 }}><strong>{developmentQuality.tasks.filter((item) => item.ready).length}/{developmentQuality.tasks.length} 个开发任务已就绪</strong><div className="project-wizard-summary-list"><p>点击任务可直接进入对应工作区继续处理。</p></div></div>
+            {developmentQuality.tasks.map((task) => <button key={task.id} type="button" className="unified-list-item" style={{ width: '100%', textAlign: 'left', marginBottom: 6 }} onClick={() => {
+              setQualityModal(null);
+              if (task.id === 'data') switchToData();
+              else if (task.id === 'form') switchToDesign();
+              else if (task.id === 'rules') switchToBehavior();
+              else if (task.id === 'flows') switchToFlow();
+              else setQualityModal('tests');
+            }}><span className={`settings-kpi-chip ${task.ready ? 'success' : 'warning'}`}><strong>{task.ready ? '就绪' : '待处理'}</strong></span><div className="unified-list-info"><strong>{task.label}</strong><span className="unified-list-meta">{task.summary}</span></div></button>)}
+          </>}
+          {qualityModal === 'tests' && <>
+            <div className="project-wizard-summary-card" style={{ marginBottom: 12 }}><strong>覆盖率 {developmentQuality.coverage}% · {developmentQuality.results.filter((item) => item.passed).length}/{developmentQuality.results.length} 通过</strong><div className="project-wizard-summary-list"><p>{lastTestRunAt ? `最近运行：${lastTestRunAt}` : '测试由当前字段规则自动生成，尚未手动运行。'}</p></div></div>
+            {developmentQuality.results.map((result) => <div key={result.id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '9px 0', borderBottom: '1px solid var(--line)' }}><span className={`settings-kpi-chip ${result.passed ? 'success' : 'error'}`}><strong>{result.passed ? '通过' : '失败'}</strong></span><div style={{ flex: 1 }}><strong style={{ display: 'block', fontSize: 12 }}>{result.name}</strong><span style={{ color: 'var(--muted)', fontSize: 11 }}>{result.category} · {result.focusFields.join('、') || '全表单'}{result.errors.length ? ` · ${result.errors.join('；')}` : ''}</span></div></div>)}
+          </>}
+          {qualityModal === 'publish' && <>
+            <div className="project-wizard-summary-card" style={{ marginBottom: 12 }}><strong>{developmentQuality.readyToPublish ? '已通过发布门禁' : `还有 ${developmentQuality.blockers.length} 个阻断项`}</strong><div className="project-wizard-summary-list"><p>门禁统一检查字段、按钮、流程引用、主键和自动测试。</p></div></div>
+            {developmentQuality.blockers.length === 0 ? <div className="unified-empty"><p>当前版本可以发布。</p></div> : developmentQuality.blockers.map((blocker, index) => <div key={`${index}:${blocker}`} className="property-editor-warning" style={{ marginBottom: 8 }}>{blocker}</div>)}
+          </>}
+        </div>
+        <div className="modal-footer">
+          {qualityModal === 'tests' && <button type="button" className="ui-btn ui-btn-primary" onClick={() => setLastTestRunAt(new Date().toLocaleString('zh-CN'))}>一键运行全部</button>}
+          {qualityModal === 'publish' && !developmentQuality.readyToPublish && <button type="button" className="ui-btn" onClick={() => setQualityModal('overview')}>返回任务总览</button>}
+          <button type="button" className="ui-btn" onClick={() => setQualityModal(null)}>关闭</button>
+        </div>
+      </Modal>
+
+      <Modal open={showDiagnostics} onClose={() => setShowDiagnostics(false)} width="720px" maxWidth="92vw" maxHeight="82vh">
+        <ModalHeader title={`表单完成度 · ${diagnosticSummary.score} 分`} onClose={() => setShowDiagnostics(false)} />
+        <div style={{ padding: 16, overflow: 'auto' }}>
+          <div className="project-wizard-summary-card" style={{ marginBottom: 14 }}>
+            <strong>{diagnosticSummary.ready ? '可以进入测试' : '发布前仍需处理'}</strong>
+            <div className="project-wizard-summary-list">
+              <p>{diagnosticSummary.errors} 个错误 · {diagnosticSummary.warnings} 个警告 · {diagnosticSummary.info} 个建议</p>
+              <p>{unrepresentedColumns.length ? `数据源中还有 ${unrepresentedColumns.length} 个字段没有出现在当前表单。` : '当前数据字段已全部覆盖或无需展示。'}</p>
+            </div>
+          </div>
+          {formDiagnostics.length === 0 ? <div className="unified-empty"><p>未发现配置问题</p></div> : formDiagnostics.map((diagnostic) => (
+            <div key={diagnostic.id} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
+              <span className={`settings-kpi-chip ${diagnostic.severity}`}><strong>{diagnostic.severity === 'error' ? '错误' : diagnostic.severity === 'warning' ? '警告' : '建议'}</strong></span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <strong style={{ display: 'block', fontSize: 13 }}>{diagnostic.title}</strong>
+                <span style={{ color: 'var(--muted)', fontSize: 12 }}>{diagnostic.detail}</span>
+              </div>
+              {diagnostic.componentId && <button type="button" className="ui-btn ui-btn-xs" onClick={() => { designer.setSelectedId(diagnostic.componentId!); setShowDiagnostics(false); }}>定位</button>}
+              {diagnostic.componentId && diagnostic.quickFix && <button type="button" className="ui-btn ui-btn-primary ui-btn-xs" onClick={() => {
+                structuredEditPendingRef.current = true;
+                designer.updateComponentProps(diagnostic.componentId!, diagnostic.quickFix!.props);
+              }}>{diagnostic.quickFix.label}</button>}
+            </div>
+          ))}
+          {unrepresentedColumns.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <strong style={{ fontSize: 13 }}>未展示的数据字段</strong>
+              {missingFieldGroups.map((group) => <div key={group.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid var(--line)' }}>
+                <div style={{ flex: 1 }}><strong style={{ display: 'block', fontSize: 12 }}>{group.tableName} / {group.sheetName}</strong><span style={{ color: 'var(--muted)', fontSize: 11 }}>{group.items.map((item) => item.column.name).join('、')}</span></div>
+                <button type="button" className="ui-btn ui-btn-primary ui-btn-xs" onClick={() => {
+                  const table = project?.srcTable.find((item) => item.id === group.tableId);
+                  if (!table || !activeForm) return;
+                  const additions = generateMissingFieldComponents(designer.components, table, group.sheetName);
+                  if (!additions.length) return;
+                  structuredEditPendingRef.current = true;
+                  designer.loadDesign({ ...activeForm.design, components: [...designer.components, ...additions], updatedAt: new Date().toISOString() });
+                }}>补齐 {group.items.length} 个字段</button>
+              </div>)}
+            </div>
+          )}
+        </div>
+      </Modal>
+
     </div>
   );
 }

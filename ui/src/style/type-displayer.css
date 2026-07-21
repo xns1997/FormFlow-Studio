@@ -7,7 +7,7 @@
 .td-badge {
   display: inline-block;
   padding: 1px 6px;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   border-radius: 4px;
   background: var(--accent-soft);
@@ -49,7 +49,7 @@
   height: 6px;
   border-radius: 50%;
 }
-.td-true .td-boolean-dot { background: #16a34a; }
+.td-true .td-boolean-dot { background: var(--success); }
 .td-false .td-boolean-dot { background: #dc2626; }
 
 /* Enum */

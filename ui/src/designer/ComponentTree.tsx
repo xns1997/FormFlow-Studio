@@ -70,7 +70,7 @@ export function ComponentTree({ components, selectedId, onSelect, onRemove, onRe
           <DesignerIcon name={comp.type} fallback={control?.icon || '•'} className="tree-icon" />
           <span className="tree-label">{name}</span>
           <span className="tree-type">{comp.type}</span>
-          <button
+          <button type="button"
             className="tree-delete"
             onClick={(e) => { e.stopPropagation(); onRemove(comp.id); }}
             title="删除"

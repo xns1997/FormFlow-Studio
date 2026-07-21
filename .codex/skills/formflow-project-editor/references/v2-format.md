@@ -26,12 +26,12 @@ project.formflow/
 
 ## Package files
 
-- `project.json`: `{kind:"formflow-project", formatVersion:2, config, settings?, release?}`.
+- `project.json`: `{kind:"formflow-project", formatVersion:2, config, settings?, release?}`. `config.access` may contain the server-managed `{ownerId?, members?}` project ACL.
 - `forms/_index.json`: `{forms:[{id,name,formMode?,fileName,behaviorsFileName}], defaultFormId?}`.
 - A form design contains `id`, `name`, optional `formMode`, `viewport`, `gridSize`, `components`, `bindings`, `createdAt`, and `updatedAt`.
 - `data/_index.json`: `{sources:[{id,fileName,fileType,metaFile,behaviorsFile,uploadedAt}]}`.
 - Data metadata contains `id`, original file facts, `sheets`, and optional record caches. A sheet contains `name`, counts, `headers`, inferred `columns`, `preview`, and `config`.
-- Behavior containers contain `behaviors`; global/workflow/output containers also contain `exportedAt`.
+- Form behavior containers contain `{behaviors, ruleCode}`; `ruleCode` is the form-specific controlled rule DSL source and defaults to `""`. Global behavior containers contain `behaviors`; global/workflow/output containers also contain `exportedAt`.
 - `workflows/workflows.json`: `{workflows:[...], exportedAt}`.
 - `outputs/outputs.json`: `{outputs:[...], exportedAt}`.
 

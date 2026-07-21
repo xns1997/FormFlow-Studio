@@ -17,12 +17,13 @@ export function useDesignerClipboard(ctx: DesignerClipboardCtx) {
     setNodeComponentData,
     finalizeComponents,
     selectComponent,
+    bumpHistoryRevision,
   } = ctx;
 
   const copy = useCallback(() => {
     const graph = graphRef.current;
-    if (graph) graph.copy(graph.getSelectedCells());
-  }, [graphRef]);
+    if (graph) { graph.copy(graph.getSelectedCells()); bumpHistoryRevision(); }
+  }, [graphRef, bumpHistoryRevision]);
 
   const paste = useCallback(() => {
     const graph = graphRef.current;
@@ -58,8 +59,9 @@ export function useDesignerClipboard(ctx: DesignerClipboardCtx) {
         })));
       });
       selectComponent(nextComponents[nextComponents.length - 1].id);
+      bumpHistoryRevision();
     }
-  }, [graphRef, clampSize, commitComponents, setNodeComponentData, finalizeComponents, selectComponent]);
+  }, [graphRef, clampSize, commitComponents, setNodeComponentData, finalizeComponents, selectComponent, bumpHistoryRevision]);
 
   const duplicate = useCallback(() => {
     const graph = graphRef.current;
@@ -96,8 +98,9 @@ export function useDesignerClipboard(ctx: DesignerClipboardCtx) {
         })));
       });
       selectComponent(nextComponents[nextComponents.length - 1].id);
+      bumpHistoryRevision();
     }
-  }, [graphRef, clampSize, commitComponents, setNodeComponentData, finalizeComponents, selectComponent]);
+  }, [graphRef, clampSize, commitComponents, setNodeComponentData, finalizeComponents, selectComponent, bumpHistoryRevision]);
 
   return { copy, paste, duplicate };
 }

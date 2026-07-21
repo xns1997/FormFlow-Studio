@@ -83,7 +83,7 @@
 }
 
 .row-switcher-dirty {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   padding: 1px 5px;
   border-radius: var(--radius-full);
@@ -208,7 +208,7 @@
 }
 
 .row-option-num {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   min-width: 22px;
   height: 18px;

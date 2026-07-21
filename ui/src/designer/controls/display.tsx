@@ -97,7 +97,7 @@ registerControl({
   eventSchema: [{ key: 'onClick', label: '点击', description: '点击图片时触发' }],
   defaultSize: { w: 240, h: 160 },
   render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => (
-    <div role={mode === 'preview' ? 'button' : undefined} tabIndex={mode === 'preview' ? 0 : -1} onClick={() => mode === 'preview' && runtime?.emit('onClick', component.props.src)} style={{ ...ios.glass, cursor: mode === 'preview' ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(118,118,128,0.08)', borderRadius: component.props.borderRadius || 0 }}>
+    <div role={mode === 'preview' ? 'button' : undefined} aria-label={mode === 'preview' ? String(component.props.alt || '图片') : undefined} tabIndex={mode === 'preview' ? 0 : -1} onClick={() => mode === 'preview' && runtime?.emit('onClick', component.props.src)} onKeyDown={(event) => { if (mode === 'preview' && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); runtime?.emit('onClick', component.props.src); } }} style={{ ...ios.glass, cursor: mode === 'preview' ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(118,118,128,0.08)', borderRadius: component.props.borderRadius || 0 }}>
       {component.props.src ? (
         <img src={component.props.src} alt={component.props.alt || ''} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: component.props.fit || 'cover', borderRadius: component.props.borderRadius || 0, opacity: component.props.opacity ?? 1 }} />
       ) : (
@@ -204,7 +204,7 @@ registerControl({
     { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onRowClick', label: '行点击', description: '点击表格行时触发' }],
-  defaultSize: { w: 360, h: 180 },
+  defaultSize: { w: 560, h: 240 },
   render: ({ component, mode, runtime }: { component: DesignComponent; mode?: string; runtime?: PreviewControlRuntime }) => {
     const configuredColumns = (Array.isArray(component.props.columns) ? component.props.columns : ['列A', '列B']).map((column: unknown, index: number) => {
       if (column && typeof column === 'object') {
@@ -365,7 +365,7 @@ function ChartRender({ component, mode, runtime }: { component: DesignComponent;
   }, [hasManualConfig, userMets, inferred]);
 
   return (
-    <div role={mode === 'preview' ? 'button' : undefined} tabIndex={mode === 'preview' ? 0 : -1} onClick={() => mode === 'preview' && runtime?.emit('onClick')} style={{ ...ios.glass, cursor: mode === 'preview' ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div role={mode === 'preview' ? 'button' : undefined} aria-label={mode === 'preview' ? String(component.props.title || '图表') : undefined} tabIndex={mode === 'preview' ? 0 : -1} onClick={() => mode === 'preview' && runtime?.emit('onClick')} onKeyDown={(event) => { if (mode === 'preview' && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); runtime?.emit('onClick'); } }} style={{ ...ios.glass, cursor: mode === 'preview' ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ padding: '10px 14px 0', flexShrink: 0 }}>
         <span style={{ fontSize: 14, fontWeight: 650, color: '#1c1c1e' }}>{component.props.title || '图表'}</span>
         {headers && dimsArr.length > 0 && metsArr.length > 0 && (

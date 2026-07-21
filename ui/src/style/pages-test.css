@@ -130,7 +130,7 @@
 .test-log-time {
   color: var(--muted);
   font-family: monospace;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .test-log-source {

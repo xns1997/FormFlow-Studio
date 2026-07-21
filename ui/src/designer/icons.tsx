@@ -39,6 +39,9 @@ import {
   ZoomIn,
   ZoomOut,
   Search,
+  More,
+  MenuFold,
+  MenuUnfold,
 } from '@icon-park/react';
 
 type IconComponent = React.ComponentType<{
@@ -102,6 +105,9 @@ const ICONS: Record<string, IconComponent> = {
   upload: Upload,
   imageUpload: Upload,
   search: Search,
+  more: More,
+  sidebarClose: MenuFold,
+  sidebarOpen: MenuUnfold,
 };
 
 export function DesignerIcon({

@@ -46,6 +46,7 @@ export async function executeDesignPreviewEvent(
     setVisible?: (componentId: string, visible: boolean) => void;
     setDisabled?: (componentId: string, disabled: boolean) => void;
     setRequired?: (field: string, required: boolean) => void;
+    setOptions?: (field: string, config: { table: string; filterField: string; filterValue?: unknown; labelField?: string; valueField?: string }) => void;
     showMessage?: (message: string, level?: 'info' | 'success' | 'warning' | 'error') => void;
     callbacks?: Record<string, FormEventCallback>;
   },
@@ -69,6 +70,7 @@ export async function executeDesignPreviewEvent(
     setVisible: options.setVisible,
     setDisabled: options.setDisabled,
     setRequired: options.setRequired,
+    setOptions: options.setOptions,
     showMessage: options.showMessage,
     callbacks: options.callbacks,
     components: (options.components || [context.component]).map(asComponentNode),
