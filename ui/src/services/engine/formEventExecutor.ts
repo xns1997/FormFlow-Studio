@@ -40,6 +40,7 @@ import {
   type FormEventEffectSource,
 } from './formEventTransaction';
 import type { FormEventRuntimeContract } from '../../../../shared/formflow-core/formEventContract';
+import { createBrowserDomAdapter, type DomAdapter } from './domAdapter';
 
 export type FormEventCallback = (context: FormEventRuntimeContext, ...args: unknown[]) => unknown | Promise<unknown>;
 
@@ -180,6 +181,8 @@ export interface ExecuteFormEventOptions {
   autoRunConfiguredFlow?: boolean;
   components?: ComponentNode[];
   hostRoot?: HTMLElement | null;
+  /** DOM 操作适配器；默认使用浏览器 DOM。测试环境可注入 noop 适配器。 */
+  domAdapter?: DomAdapter;
   /** 自定义执行顺序，默认 ['linkage', 'script', 'flow'] */
   executionOrder?: ExecutionStageType[];
   /** 流程执行后是否自动将 export 输出回写到表单字段，默认 true */
@@ -257,32 +260,8 @@ function createControlAccessors(
   return controls;
 }
 
-function escapeAttributeValue(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
-
 function findComponentField(component: ComponentNode): string {
   return getFlowComponentField(component);
-}
-
-function findFocusableElement(container: Element | null): HTMLElement | null {
-  if (!container) return null;
-  const maybeElement = container as HTMLElement & { focus?: () => void };
-  if (typeof maybeElement.focus === 'function') return maybeElement;
-  return container.querySelector<HTMLElement>(
-    'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])',
-  );
-}
-
-function getHostDocument(hostRoot?: HTMLElement | null): Document | null {
-  if (hostRoot?.ownerDocument) return hostRoot.ownerDocument;
-  if (typeof document !== 'undefined') return document;
-  return null;
-}
-
-function scrollElementIntoView(target: Element | null) {
-  if (!target || typeof (target as HTMLElement).scrollIntoView !== 'function') return;
-  (target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
 }
 
 async function executeCallbackCode(
@@ -403,27 +382,19 @@ export async function executeFormControlEvent(
     };
   };
 
-  const findComponentElement = (componentId: string) => {
-    const selector = `[data-component-id="${escapeAttributeValue(componentId)}"]`;
-    if (options.hostRoot) return options.hostRoot.querySelector(selector);
-    const hostDocument = getHostDocument(options.hostRoot);
-    if (!hostDocument) return null;
-    return hostDocument.querySelector(selector);
-  };
+  const dom = options.domAdapter || createBrowserDomAdapter(options.hostRoot);
 
   const focusResolvedComponent = async (componentId: string) => {
-    const target = findComponentElement(componentId);
+    const target = dom.findComponentElement(componentId);
     if (!target) throw new Error(`找不到可聚焦的控件节点: ${componentId}`);
-    scrollElementIntoView(target);
-    const focusable = findFocusableElement(target);
-    if (!focusable) throw new Error(`控件不支持聚焦: ${componentId}`);
-    focusable.focus();
+    dom.scrollIntoView(target);
+    dom.focusElement(target);
   };
 
   const scrollResolvedComponent = async (componentId: string) => {
-    const target = findComponentElement(componentId);
+    const target = dom.findComponentElement(componentId);
     if (!target) throw new Error(`找不到可滚动定位的控件节点: ${componentId}`);
-    scrollElementIntoView(target);
+    dom.scrollIntoView(target);
   };
 
   const getAncestorTabs = (componentId: string) => {
