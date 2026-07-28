@@ -37,7 +37,13 @@ test('scaffold creates a bound form and executable upsert workflow', () => {
   assert.equal(result.fields.length, 6);
   assert.ok(result.design.components.some((component) => component.fieldBinding === '姓名' && component.props.dataBinding?.source.path === '姓名'));
   assert.equal(result.design.components.find((component) => component.fieldBinding === '入职日期')?.height, 76);
-  assert.ok(result.design.components.some((component) => component.type === 'button' && component.props.flowTriggers?.onClick?.workflowId === result.workflow?.id));
+  const saveButton = result.design.components.find((component) => component.type === 'button' && component.props.flowTriggers?.onClick?.workflowId === result.workflow?.id);
+  assert.ok(saveButton);
+  assert.equal(saveButton?.props.events, undefined);
+  assert.equal(Array.isArray(saveButton?.props.linkageRules?.onClick), true);
+  assert.match(result.form.ruleCode, /before submit -> require\(\$姓名, \$部门, \$入职日期, \$在职\)/);
+  assert.match(result.form.ruleCode, /before click\("employee_entry_save"\) -> require\(\$姓名, \$部门, \$入职日期, \$在职\)/);
+  assert.doesNotMatch(result.form.ruleCode, /on submit -> run/);
   assert.equal(result.workflow?.nodes.find((node) => node.id === 'submit')?.specId, 'behavior:submit');
   const submitProps = JSON.parse(String(result.workflow?.nodes.find((node) => node.id === 'submit')?.data.propertiesJson));
   assert.equal(submitProps.writeBackMode, 'upsert');
@@ -55,7 +61,7 @@ test('missing field completion preserves existing fields and only returns gaps',
   const generated = generateFormScaffold(table, '员工信息', { idPrefix: 'partial', selectedFields: ['姓名', '部门'], includeSave: false });
   const additions = generateMissingFieldComponents(generated.design.components, table, '员工信息', { prefix: 'completion' });
   assert.deepEqual(additions.map((component) => component.fieldBinding), ['员工ID', '入职日期', '在职', '备注']);
-  assert.ok(additions.every((component) => component.parentId === 'partial_root'));
+  assert.ok(additions.every((component) => component.parentId === undefined));
 });
 
 test('large and read-only purposes add generated groups, pages and purpose-specific controls', () => {
@@ -63,12 +69,16 @@ test('large and read-only purposes add generated groups, pages and purpose-speci
   const largeSheet: SrcSheetInfo = { ...sheet, name: '大表', colCount: 26, headers: columns.map((item) => item.name), columns, preview: [] };
   const largeTable: SrcTableEntry = { ...table, sheets: [largeSheet] };
   const detail = generateFormScaffold(largeTable, '大表', { idPrefix: 'large_detail', purpose: 'detail' });
-  const root = detail.design.components.find((component) => component.type === 'form')!;
-  assert.equal(root.props.generatedSections, 4);
-  assert.equal(root.props.generatedPages, 3);
+  assert.equal(detail.design.formWindow.props.generatedSections, 4);
+  assert.equal(detail.design.formWindow.props.generatedPages, 3);
+  assert.ok(detail.design.components.every((component) => component.type !== 'form'));
   assert.ok(detail.design.components.some((component) => component.type === 'tabs'));
   assert.ok(detail.design.components.filter((component) => component.fieldBinding?.startsWith('字段')).every((component) => component.props.readonly));
   assert.equal(detail.workflow, undefined);
   const lookup = generateFormScaffold(table, '员工信息', { idPrefix: 'lookup', purpose: 'lookup-edit' });
   assert.ok(lookup.design.components.some((component) => component.type === 'button' && component.props.label === '按主键查询'));
+  const lookupButton = lookup.design.components.find((component) => component.props.label === '按主键查询');
+  assert.equal(lookupButton?.props.events, undefined);
+  const saveButton = lookup.design.components.find((component) => component.type === 'button' && component.props.label === '校验并保存');
+  assert.equal(Array.isArray(saveButton?.props.linkageRules?.onClick), true);
 });

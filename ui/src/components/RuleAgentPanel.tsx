@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DiffEditor } from '@monaco-editor/react';
-import type { DesignComponent, SrcTableEntry } from '../project/types';
+import type { DesignComponent, FormWindowConfig, SrcTableEntry } from '../project/types';
 import { llmApi } from '../services/io/api';
 import { createSyntheticRuntimeSnapshot, getFormRuntimeSnapshot, subscribeFormRuntimeSnapshots } from '../services/engine/formRuntimeSnapshot';
 import type { RuleAgentTurnResult, RuleCodeProposal } from '../services/ai/ruleAgentTypes';
@@ -15,7 +15,7 @@ const sections: Array<{ id: Section; label: string; icon: string }> = [
 interface Props {
   projectId: string; formId: string; code: string; components: DesignComponent[]; tables: SrcTableEntry[];
   diagnostics: Array<{ line: number; column: number; severity: string; code: string; message: string; suggestion?: string }>;
-  onApplied: (result: { ruleCode: string; components: DesignComponent[]; updatedAt: string }) => void;
+  onApplied: (result: { ruleCode: string; components: DesignComponent[]; formWindow?: FormWindowConfig; updatedAt: string }) => void;
 }
 
 export default function RuleAgentPanel({ projectId, formId, code, components, tables, diagnostics, onApplied }: Props) {

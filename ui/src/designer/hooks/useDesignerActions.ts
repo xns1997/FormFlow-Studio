@@ -4,6 +4,14 @@ import type { DesignComponent } from '../../project/types';
 import type { DesignerState, SelectionOverlay, ResizeHandle } from './useDesignerState';
 import { getControl } from '../registry';
 import { findContainerAtPoint, findContainerParent, getDescendantIds, CONTAINER_TYPES } from '../utils';
+import { FORM_WINDOW_CELL_ID } from '../formWindowModel';
+import {
+  canvasToLocalPoint,
+  canvasToLocalRect,
+  clampComponentToContent,
+  growFormWindowToFit,
+  localToCanvasPoint,
+} from '../../../../shared/form-window-layout';
 
 interface DesignerActionsCtx extends DesignerState {
   finalizeComponents: (items: DesignComponent[]) => DesignComponent[];
@@ -12,10 +20,21 @@ interface DesignerActionsCtx extends DesignerState {
   syncSelectionOverlay: (id?: string | null) => void;
 }
 
+export function createReadableFieldName(label: string, type: string, existingNames: Iterable<string>) {
+  const readableSeed = String(label || '').trim().replace(/[^\p{L}\p{N}_]+/gu, '_').replace(/^_+|_+$/g, '') || type;
+  const taken = new Set(existingNames);
+  let name = readableSeed;
+  let suffix = 2;
+  while (taken.has(name)) name = `${readableSeed}_${suffix++}`;
+  return name;
+}
+
 export function useDesignerActions(ctx: DesignerActionsCtx) {
   const {
     graphRef,
     componentsRef,
+    formWindowRef,
+    setFormWindow,
     selectedIdRef,
     clampSize,
     commitComponents,
@@ -25,6 +44,28 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
     syncComponentsFromGraph,
     syncSelectionOverlay,
   } = ctx;
+
+  const updateFormWindow = useCallback((patch: {
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    props?: Record<string, any>;
+  }) => {
+    const current = formWindowRef.current;
+    const next = {
+      ...current,
+      ...patch,
+      width: Math.max(320, Number(patch.width ?? current.width)),
+      height: Math.max(240, Number(patch.height ?? current.height)),
+      props: patch.props ? { ...current.props, ...patch.props } : current.props,
+    };
+    const fitted = growFormWindowToFit(next, componentsRef.current);
+    formWindowRef.current = fitted;
+    setFormWindow(fitted);
+    commitComponents((items) => finalizeComponents(items));
+    syncSelectionOverlay(FORM_WINDOW_CELL_ID);
+  }, [commitComponents, componentsRef, finalizeComponents, formWindowRef, setFormWindow, syncSelectionOverlay]);
 
   const addComponent = useCallback((
     type: string,
@@ -42,22 +83,33 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
 
     const id = `comp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     const size = clampSize(type, control.defaultSize.w, control.defaultSize.h);
-    const autoName = control.defaultProps.name === '' ? `${type}_${Date.now().toString(36).slice(-4)}` : control.defaultProps.name;
+    const existingNames = new Set(componentsRef.current.map((item) => String(item.fieldBinding || item.props?.name || '').trim()).filter(Boolean));
+    const labelSeed = String(initialProps?.label || control.defaultProps.label || '').trim();
+    const shouldNameField = (control.category === 'basic' || control.category === 'select') && type !== 'button';
+    let autoName = control.defaultProps.name || '';
+    if (!autoName && shouldNameField) {
+      autoName = createReadableFieldName(labelSeed, type, existingNames);
+    }
+    const localPoint = canvasToLocalPoint(formWindowRef.current, { x, y });
     const comp: DesignComponent = {
-      id, type, x, y,
+      id, type,
+      x: Math.max(0, Math.round(localPoint.x)),
+      y: Math.max(0, Math.round(localPoint.y)),
       width: size.width,
       height: size.height,
       zIndex: graph.getNodes().length + 1,
       props: { ...control.defaultProps, name: autoName, ...initialProps },
     };
 
-    comp.parentId = (dropPoint ? findContainerAtPoint(dropPoint.x, dropPoint.y, componentsRef.current) : undefined)
+    const localDropPoint = dropPoint ? canvasToLocalPoint(formWindowRef.current, dropPoint) : undefined;
+    comp.parentId = (localDropPoint ? findContainerAtPoint(localDropPoint.x, localDropPoint.y, componentsRef.current) : undefined)
       || findContainerParent(comp, componentsRef.current);
+    const canvasPoint = localToCanvasPoint(formWindowRef.current, comp);
 
     let node: Node;
     try {
       node = graph.addNode({
-        id, x, y,
+        id, x: canvasPoint.x, y: canvasPoint.y,
         width: size.width,
         height: size.height,
         zIndex: comp.zIndex,
@@ -82,10 +134,11 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
     commitComponents((prev) => finalizeComponents([...prev, comp]));
     selectComponent(id);
     return id;
-  }, [graphRef, componentsRef, clampSize, commitComponents, finalizeComponents, selectComponent, setNodeComponentData]);
+  }, [graphRef, componentsRef, formWindowRef, clampSize, commitComponents, finalizeComponents, selectComponent, setNodeComponentData]);
 
-  const removeComponent = useCallback((id: string) => {
-    const removeIds = new Set<string>([id]);
+  const removeComponents = useCallback((ids: string[]) => {
+    const removeIds = new Set(ids.filter((id) => id !== FORM_WINDOW_CELL_ID));
+    if (!removeIds.size) return;
     let changed = true;
     while (changed) {
       changed = false;
@@ -101,15 +154,25 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
     commitComponents((prev) => finalizeComponents(prev
       .filter((c) => !removeIds.has(c.id))
       .map((c) => c.children ? { ...c, children: c.children.filter((childId) => !removeIds.has(childId)) } : c)));
-    if (selectedIdRef.current && removeIds.has(selectedIdRef.current)) selectComponent(null);
+    selectComponent(null);
   }, [graphRef, componentsRef, selectedIdRef, commitComponents, finalizeComponents, selectComponent]);
 
+  const removeComponent = useCallback((id: string) => {
+    removeComponents([id]);
+  }, [removeComponents]);
+
   const deleteSelected = useCallback(() => {
-    if (!ctx.selectedId) return;
-    removeComponent(ctx.selectedId);
-  }, [removeComponent, ctx.selectedId]);
+    const selected = graphRef.current?.getSelectedCells()
+      .filter((cell: Node) => cell.isNode() && cell.id !== FORM_WINDOW_CELL_ID)
+      .map((cell: Node) => cell.id) || [];
+    if (selected.length) removeComponents(selected);
+  }, [graphRef, removeComponents]);
 
   const updateComponentProps = useCallback((id: string, patch: Record<string, any>) => {
+    if (id === FORM_WINDOW_CELL_ID) {
+      updateFormWindow({ props: patch });
+      return;
+    }
     const nextComponents = finalizeComponents(componentsRef.current.map((c) => c.id === id
       ? { ...c, props: { ...c.props, ...patch } }
       : c));
@@ -122,26 +185,29 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
     }
     commitComponents(nextComponents);
     syncSelectionOverlay(id);
-  }, [graphRef, componentsRef, commitComponents, finalizeComponents, setNodeComponentData, syncSelectionOverlay]);
+  }, [graphRef, componentsRef, commitComponents, finalizeComponents, setNodeComponentData, syncSelectionOverlay, updateFormWindow]);
 
   const updateComponentGeometry = useCallback((id: string, patch: Partial<Pick<DesignComponent, 'x' | 'y' | 'width' | 'height'>>) => {
+    if (id === FORM_WINDOW_CELL_ID) {
+      updateFormWindow(patch);
+      return;
+    }
     const current = componentsRef.current.find((item) => item.id === id);
     if (!current) return;
     const size = clampSize(current.type, Number(patch.width ?? current.width), Number(patch.height ?? current.height));
-    const next = { ...current, ...patch, width: size.width, height: size.height };
+    const next = clampComponentToContent({ ...current, ...patch, width: size.width, height: size.height });
     const graph = graphRef.current;
     const node = graph?.getCellById(id) as Node | null;
     if (node) {
       graph?.startBatch('geometry-edit');
       try {
-        node.setPosition(Number(next.x), Number(next.y));
         node.setSize(next.width, next.height);
         setNodeComponentData(node, next);
       } finally { graph?.stopBatch('geometry-edit'); }
     }
     commitComponents((items) => finalizeComponents(items.map((item) => item.id === id ? next : item)));
     syncSelectionOverlay(id);
-  }, [clampSize, commitComponents, componentsRef, finalizeComponents, graphRef, setNodeComponentData, syncSelectionOverlay]);
+  }, [clampSize, commitComponents, componentsRef, finalizeComponents, graphRef, setNodeComponentData, syncSelectionOverlay, updateFormWindow]);
 
   const resizeSelected = useCallback((handle: ResizeHandle, clientX: number, clientY: number, start: {
     x: number;
@@ -178,7 +244,9 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
       y = start.y + dy;
     }
 
-    const bounded = clampSize(start.type, width, height);
+    const bounded = id === FORM_WINDOW_CELL_ID
+      ? { width: Math.max(320, width), height: Math.max(240, height) }
+      : clampSize(start.type, width, height);
     if (width < bounded.width) {
       if (handle.includes('w')) x -= bounded.width - width;
       width = bounded.width;
@@ -188,16 +256,21 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
       height = bounded.height;
     }
 
-    const next = {
+    const canvasNext = {
       x: Math.round(x),
       y: Math.round(y),
       width: Math.round(width),
       height: Math.round(height),
     };
-    node.setPosition(next.x, next.y);
-    node.setSize(next.width, next.height);
+    node.setPosition(canvasNext.x, canvasNext.y);
+    node.setSize(canvasNext.width, canvasNext.height);
+    if (id === FORM_WINDOW_CELL_ID) {
+      updateFormWindow(canvasNext);
+      return;
+    }
     const data = node.getData();
-    const changed = { ...data.designComponent, ...next, zIndex: node.getZIndex() ?? data.designComponent.zIndex };
+    const localNext = clampComponentToContent(canvasToLocalRect(formWindowRef.current, canvasNext));
+    const changed = { ...data.designComponent, ...localNext, zIndex: node.getZIndex() ?? data.designComponent.zIndex };
     const current = componentsRef.current.map((item) => item.id === id ? changed : item);
     const component = {
       ...changed,
@@ -206,7 +279,7 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
     setNodeComponentData(node, component, true);
     commitComponents((prev) => finalizeComponents(prev.map((item) => item.id === id ? component : item)));
     syncSelectionOverlay(id);
-  }, [graphRef, selectedIdRef, componentsRef, clampSize, commitComponents, setNodeComponentData, finalizeComponents, syncSelectionOverlay]);
+  }, [formWindowRef, graphRef, selectedIdRef, componentsRef, clampSize, commitComponents, setNodeComponentData, finalizeComponents, syncSelectionOverlay, updateFormWindow]);
 
   const reparentComponent = useCallback((id: string, parentId?: string) => {
     const target = parentId ? componentsRef.current.find((component) => component.id === parentId) : undefined;
@@ -248,7 +321,7 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
       height: size.height,
       pointerX: event.clientX,
       pointerY: event.clientY,
-      type: data.componentType as string,
+      type: (data.componentType || (data.formWindow ? 'formWindow' : '')) as string,
     };
     const move = (moveEvent: PointerEvent) => {
       moveEvent.preventDefault();
@@ -266,7 +339,7 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
     const graph = graphRef.current;
     if (!graph) return;
     const maxZ = Math.max(0, ...graph.getCells().map((cell: any) => cell.getZIndex() ?? 0));
-    graph.getSelectedCells().forEach((cell: any, index: number) => cell.setZIndex(maxZ + index + 1));
+    graph.getSelectedCells().filter((cell: any) => cell.id !== FORM_WINDOW_CELL_ID).forEach((cell: any, index: number) => cell.setZIndex(maxZ + index + 1));
     syncComponentsFromGraph();
   }, [graphRef, syncComponentsFromGraph]);
 
@@ -274,7 +347,7 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
     const graph = graphRef.current;
     if (!graph) return;
     const minZ = Math.min(0, ...graph.getCells().map((cell: any) => cell.getZIndex() ?? 0));
-    graph.getSelectedCells().forEach((cell: any, index: number) => cell.setZIndex(minZ - index - 1));
+    graph.getSelectedCells().filter((cell: any) => cell.id !== FORM_WINDOW_CELL_ID).forEach((cell: any, index: number) => cell.setZIndex(minZ - index - 1));
     syncComponentsFromGraph();
   }, [graphRef, syncComponentsFromGraph]);
 

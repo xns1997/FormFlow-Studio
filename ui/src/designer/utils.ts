@@ -71,7 +71,6 @@ export function isContainerComponent(component?: DesignComponent | null) {
 }
 
 export function getContainerAutoInsets(component: DesignComponent) {
-  if (component.type === 'form') return { top: 110, right: 28, bottom: 28, left: 28 };
   if (component.type === 'card') return { top: component.props.subtitle ? 56 : 40, right: 20, bottom: 20, left: 20 };
   if (component.type === 'tabs') return { top: 48, right: 16, bottom: 16, left: 16 };
   return { top: 24, right: 16, bottom: 16, left: 16 };

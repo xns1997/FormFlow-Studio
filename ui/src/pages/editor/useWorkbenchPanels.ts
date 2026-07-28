@@ -6,7 +6,10 @@ export type WorkbenchDrawer = 'left' | 'right' | null;
 const STORAGE_KEY = 'formflow.editor.panels.v1';
 
 export function resolveWorkbenchLayout(width: number): WorkbenchLayout {
-  if (width >= 1280) return 'wide';
+  // Keep both inspector columns docked for ordinary desktop windows. This
+  // matches the toolbar breakpoint and avoids hiding the property panel on a
+  // 1200px-wide workspace, which is still large enough for the three columns.
+  if (width >= 1180) return 'wide';
   if (width >= 1024) return 'medium';
   return 'compact';
 }

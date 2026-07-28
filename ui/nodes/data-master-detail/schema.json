@@ -1,0 +1,21 @@
+{
+  "id": "data:master-detail",
+  "label": "主从详情组装",
+  "description": "按一对多键把明细记录嵌套到主记录，并可直接回填结果字段",
+  "category": "高阶 · 数据",
+  "kind": "generic",
+  "properties": [
+    { "name": "masterKey", "label": "主表键", "type": "string", "default": "id", "required": true },
+    { "name": "detailKey", "label": "明细外键", "type": "string", "default": "masterId", "required": true },
+    { "name": "detailField", "label": "明细字段名", "type": "string", "default": "明细" },
+    { "name": "resultField", "label": "结果回填字段", "type": "string", "default": "" },
+    { "name": "messageField", "label": "状态回填字段", "type": "string", "default": "" }
+  ],
+  "ports": [
+    { "name": "masters", "label": "主记录", "type": "json-rows", "direction": "input", "required": true },
+    { "name": "details", "label": "明细记录", "type": "json-rows", "direction": "input", "required": true },
+    { "name": "rows", "label": "主从结果", "type": "json-rows", "direction": "output" },
+    { "name": "detailCount", "label": "明细数量", "type": "number", "direction": "output" }
+  ],
+  "keywords": ["主从", "master detail", "一对多", "详情"]
+}

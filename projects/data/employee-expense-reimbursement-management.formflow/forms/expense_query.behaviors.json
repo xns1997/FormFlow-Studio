@@ -1,0 +1,28 @@
+{
+  "behaviors": [
+    {
+      "enabled": true,
+      "priority": 10,
+      "conditions": [],
+      "id": "bh_query_refresh_results",
+      "name": "查询后刷新结果",
+      "trigger": {
+        "type": "buttonClick",
+        "buttonName": "query_search"
+      },
+      "actions": [
+        {
+          "type": "refreshData",
+          "targetComponent": "table_query_results"
+        },
+        {
+          "type": "showMessage",
+          "message": "查询条件已应用",
+          "messageType": "success"
+        }
+      ],
+      "updatedAt": "2026-07-22T07:35:01.906Z"
+    }
+  ],
+  "ruleCode": ""
+}

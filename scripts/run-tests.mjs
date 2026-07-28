@@ -14,5 +14,9 @@ const visit = (directory) => {
 for (const root of roots) visit(resolve(root));
 files.sort();
 const executable = resolve('node_modules/.bin', process.platform === 'win32' ? 'tsx.cmd' : 'tsx');
-const result = spawnSync(executable, ['--test', ...files], { stdio: 'inherit', env: process.env });
+const reporter = resolve('scripts/failure-only-test-reporter.mjs');
+const result = spawnSync(executable, ['--test', `--test-reporter=${reporter}`, ...files], {
+  stdio: ['ignore', 'inherit', 'inherit'],
+  env: process.env,
+});
 process.exit(result.status ?? 1);

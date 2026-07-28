@@ -17,18 +17,20 @@ async function click(source: ProjectStructure, formId: string, componentId: stri
   const form = source.forms.find((item) => item.id === formId)!;
   const components = exportToComponentNodes(form.design.components);
   const component = components.find((item) => item.id === componentId)!;
+  const writes: Record<string, unknown> = {};
   const result = await executeFormControlEvent({ eventName: 'onClick', field: component.name, values, originalValues: {}, component }, {
     workflows: source.workflows, tables: source.srcTable, components,
-    setValue: () => {}, setVisible: () => {}, setDisabled: () => {}, setRequired: () => {}, showMessage: () => {},
+    setValue: (field, value) => { writes[field] = value; }, setVisible: () => {}, setDisabled: () => {}, setRequired: () => {}, showMessage: () => {},
     trigger: component.props.flowTriggers?.onClick,
   });
   const effects = result.flowResults.flatMap((item) => collectFlowSideEffects(item));
-  return { result, project: applyPreviewFlowSideEffects(source, effects).project };
+  return { result, writes, project: applyPreviewFlowSideEffects(source, effects).project };
 }
 
 for (const templateId of templateIds) {
   test(`${templateId} saves a new keyed record and runs productized analysis`, async () => {
     const source = project(templateId);
+    assert.deepEqual(source.testing?.runs || [], [], `${templateId} should require an actual test execution before recording runs`);
     const entry = source.forms.find((item) => item.design.formMode === 'create')!;
     const fields = entry.design.components.filter((item) => item.fieldBinding);
     const values = Object.fromEntries(fields.map((item, index) => {
@@ -48,6 +50,21 @@ for (const templateId of templateIds) {
     assert.equal(analyzed.result.flowResults[0]?.error, undefined);
   });
 }
+
+test('game analytics dashboard fills KPI fields from button click instead of static defaults', async () => {
+  const source = project('game_analytics');
+  const dashboard = source.forms.find((item) => item.id === 'game_analytics_dashboard')!;
+  const kpis = dashboard.design.components.filter((item) => /^kpi_\d+$/.test(item.id));
+  assert.deepEqual(kpis.map((item) => item.props?.defaultValue ?? null), ['', '', '', '']);
+
+  const analyzed = await click(source, dashboard.id, 'dashboard_analyze', { trigger: true });
+  assert.equal(analyzed.writes['玩家数'], 120);
+  assert.equal(analyzed.writes['事件数'], 600);
+  assert.equal(analyzed.writes['付费订单数'], 240);
+  assert.equal(analyzed.writes['付费总额'], 13920);
+  assert.ok(Array.isArray(analyzed.writes['分析明细']));
+  assert.equal((analyzed.writes['分析明细'] as Array<Record<string, unknown>>).length > 0, true);
+});
 
 test('legacy template ids resolve only to the new industry implementation', () => {
   const source = buildProjectTemplate('blank_form', { id: 'legacy', name: 'legacy', now: '2026-07-16T00:00:00.000Z' }) as ProjectStructure;

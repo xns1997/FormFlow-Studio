@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import type { DesignComponent, DesignFile } from '../../project/types';
+import { createDefaultFormWindow, normalizeDesignFile, type DesignComponent, type DesignFile } from '../../project/types';
 import type { DesignerState } from './useDesignerState';
 import { autoResizeContainers } from '../utils';
 import { hydrateControlComponent } from '../registry';
@@ -13,6 +13,7 @@ export function useDesignerIO(ctx: DesignerIOCtx) {
   const {
     graphRef,
     componentsRef,
+    formWindowRef,
     pendingDesignRef,
     viewportRef,
     clampSize,
@@ -20,6 +21,7 @@ export function useDesignerIO(ctx: DesignerIOCtx) {
     renderDesignOnGraph,
     selectComponent,
     setZoom,
+    setFormWindow,
   } = ctx;
 
   const exportDesign = useCallback((): DesignComponent[] => {
@@ -27,11 +29,14 @@ export function useDesignerIO(ctx: DesignerIOCtx) {
   }, [componentsRef]);
 
   const loadDesign = useCallback((design: DesignFile) => {
+    const normalizedDesign = normalizeDesignFile(design, design.name);
+    formWindowRef.current = normalizedDesign.formWindow;
+    setFormWindow(normalizedDesign.formWindow);
     const graph = graphRef.current;
     if (!graph) {
-      viewportRef.current = design.viewport;
-      pendingDesignRef.current = design;
-      const normalized = autoResizeContainers(design.components.map((source) => {
+      viewportRef.current = normalizedDesign.viewport;
+      pendingDesignRef.current = normalizedDesign;
+      const normalized = autoResizeContainers(normalizedDesign.components.map((source) => {
         const comp = hydrateControlComponent(source);
         const size = clampSize(comp.type, comp.width, comp.height);
         return { ...comp, width: size.width, height: size.height };
@@ -40,16 +45,19 @@ export function useDesignerIO(ctx: DesignerIOCtx) {
       selectComponent(null);
       return;
     }
-    renderDesignOnGraph(graph, design);
-  }, [graphRef, pendingDesignRef, viewportRef, clampSize, commitComponents, renderDesignOnGraph, selectComponent]);
+    renderDesignOnGraph(graph, normalizedDesign);
+  }, [graphRef, pendingDesignRef, viewportRef, formWindowRef, clampSize, commitComponents, renderDesignOnGraph, selectComponent, setFormWindow]);
 
   const clearDesign = useCallback(() => {
     const graph = graphRef.current;
     if (graph) graph.clearCells();
     commitComponents([]);
+    const emptyWindow = createDefaultFormWindow();
+    formWindowRef.current = emptyWindow;
+    setFormWindow(emptyWindow);
     selectComponent(null);
     pendingDesignRef.current = null;
-  }, [graphRef, commitComponents, selectComponent, pendingDesignRef]);
+  }, [graphRef, commitComponents, selectComponent, pendingDesignRef, formWindowRef, setFormWindow]);
 
   const toggleMode = useCallback(() => {
     const graph = graphRef.current;

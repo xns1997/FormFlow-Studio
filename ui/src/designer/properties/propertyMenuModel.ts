@@ -76,9 +76,11 @@ export function getPropertyDefaultValue(def: PropSchemaEntry, defaults: Record<s
 function schemaDiagnostic(def: PropSchemaEntry, value: unknown): PropertyDiagnostic | null {
   if (isCompositePropDef(def) || !def.validation) return null;
   const rule = def.validation; const text = String(value ?? ''); let message = '';
+  if (!text && !rule.required) return null;
   if (rule.required && !text) message = rule.message || '此项不能为空';
   else if (rule.minLength !== undefined && text.length < rule.minLength) message = rule.message || `至少 ${rule.minLength} 个字符`;
   else if (rule.maxLength !== undefined && text.length > rule.maxLength) message = rule.message || `最多 ${rule.maxLength} 个字符`;
+  else if ((rule.min !== undefined || rule.max !== undefined) && !Number.isFinite(Number(value))) message = rule.message || '请输入有效数字';
   else if (rule.min !== undefined && Number(value) < rule.min) message = rule.message || `不能小于 ${rule.min}`;
   else if (rule.max !== undefined && Number(value) > rule.max) message = rule.message || `不能大于 ${rule.max}`;
   else if (rule.pattern && text) { try { if (!new RegExp(rule.pattern).test(text)) message = rule.message || '格式不正确'; } catch { message = '校验表达式无效'; } }
@@ -97,6 +99,7 @@ export function getPropertyStatus(args: { def: PropSchemaEntry; values: Record<s
     if (error) diagnostics.push({ severity: 'error', message: error, key: def.key });
   }
   if (!isCompositePropDef(def) && def.editor === 'field-path' && value && !(args.fieldCatalog || []).some((field) => field.path === value)) diagnostics.push({ severity: 'warning', message: `字段“${String(value)}”不在当前字段目录中`, key: def.key });
+  if (!isCompositePropDef(def) && def.key === 'readonly' && values.readonly === true && values.disabled === true) diagnostics.push({ severity: 'warning', message: '只读和禁用效果重复：建议只保留一个，避免用户不清楚字段为何不可编辑', key: def.key });
   if (!isCompositePropDef(def) && (def.editor === 'expression' || def.editor === 'template') && typeof value === 'string' && value.trim()) {
     const expression = def.editor === 'template' ? value.replace(/{{\s*([^}]+)\s*}}/g, '$1') : value;
     const result = evaluatePropertyExpression(expression, { form: Object.fromEntries((args.fields || []).map((field) => [field, 1])) });

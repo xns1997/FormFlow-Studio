@@ -9,15 +9,16 @@ registerControl({
   type: 'container', label: '容器', category: 'container', icon: '📦',
   defaultProps: {
     title: '容器标题', subtitle: '', name: '',
-    background: 'rgba(255,255,255,0.72)', borderRadius: 10, padding: 12,
+    background: 'rgba(255,255,255,0.72)', borderRadius: 10, padding: 12, contentMinHeight: 'comfortable',
   },
   propSchema: [
     { key: 'title', label: '标题', type: 'string', group: '基础' },
     { key: 'subtitle', label: '副标题', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', level: 'advanced', placeholder: 'field_name' },
     { key: 'background', label: '背景色', type: 'color', group: '样式' },
     { key: 'borderRadius', label: '圆角', type: 'number', editor: 'radius', group: '样式', min: 0, max: 50 },
     { key: 'padding', label: '内边距', type: 'number', editor: 'spacing', group: '样式', min: 0, max: 50 },
+    { key: 'contentMinHeight', label: '内容区高度', type: 'select', group: '样式', options: [{ label: '紧凑', value: 'compact' }, { label: '舒适', value: 'comfortable' }, { label: '宽敞', value: 'spacious' }], help: '使用响应式预设，避免手填固定像素。' },
   ],
   eventSchema: [],
   defaultSize: { w: 360, h: 200 },
@@ -29,7 +30,7 @@ registerControl({
         </div>
       )}
       <div style={{
-        flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
+        flex: 1, minHeight: component.props.contentMinHeight === 'spacious' ? 220 : component.props.contentMinHeight === 'compact' ? 80 : 140, display: 'flex', flexDirection: 'column',
         background: component.props.background || 'rgba(255,255,255,0.72)',
         borderRadius: component.props.borderRadius ?? 10,
         padding: spacingToCss(component.props.padding, 12),
@@ -53,18 +54,19 @@ registerControl({
   defaultProps: {
     title: '分组标题', subtitle: '', name: '',
     background: 'rgba(255,255,255,0.72)', borderRadius: 10, padding: 10,
-    shadow: true, borderColor: 'rgba(60,60,67,0.10)',
+    shadow: true, borderColor: 'rgba(60,60,67,0.10)', contentMinHeight: 'comfortable',
     rangeRef: null,
   },
   propSchema: [
     { key: 'title', label: '标题', type: 'string', group: '基础' },
     { key: 'subtitle', label: '副标题', type: 'string', group: '基础' },
-    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', level: 'advanced', placeholder: 'field_name' },
     { key: 'background', label: '背景色', type: 'color', group: '样式' },
     { key: 'borderRadius', label: '圆角', type: 'number', editor: 'radius', group: '样式', min: 0, max: 50 },
     { key: 'padding', label: '内边距', type: 'number', editor: 'spacing', group: '样式', min: 0, max: 50 },
     { key: 'shadow', label: '阴影', type: 'boolean', group: '样式' },
     { key: 'borderColor', label: '边框颜色', type: 'color', group: '样式' },
+    { key: 'contentMinHeight', label: '内容区高度', type: 'select', group: '样式', options: [{ label: '紧凑', value: 'compact' }, { label: '舒适', value: 'comfortable' }, { label: '宽敞', value: 'spacious' }], help: '使用响应式预设，避免手填固定像素。' },
     { key: 'dataBinding', label: '数据绑定', type: 'object', editor: 'data-binding', group: '数据源' },
   ],
   eventSchema: [{ key: 'onDrop', label: '放入控件', description: '控件放入卡片时触发' }],
@@ -78,7 +80,7 @@ registerControl({
         </div>
         )}
         <div style={{
-          ...ios.glass, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
+          ...ios.glass, flex: 1, minHeight: component.props.contentMinHeight === 'spacious' ? 220 : component.props.contentMinHeight === 'compact' ? 80 : 140, display: 'flex', flexDirection: 'column',
           background: component.props.background || 'rgba(255,255,255,0.72)',
           borderRadius: component.props.borderRadius ?? 10,
           padding: spacingToCss(component.props.padding, 10),
@@ -104,8 +106,8 @@ registerControl({
   },
   propSchema: [
     { key: 'tabs', label: '标签页', type: 'json', editor: 'tabs', group: '基础', help: '支持排序、批量编辑和源码模式。' },
-    { key: 'defaultTab', label: '默认选中', type: 'number', group: '基础', min: 0 },
-    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
+    { key: 'defaultTab', label: '默认选中项', type: 'select', group: '基础', options: [{ label: '第一项', value: 0 }, { label: '第二项', value: 1 }, { label: '第三项', value: 2 }, { label: '第四项', value: 3 }, { label: '第五项', value: 4 }], help: '按标签顺序选择；标签不足时自动回退到第一项。' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', level: 'advanced', placeholder: 'field_name' },
     { key: 'style', label: '样式', type: 'select', group: '样式', options: [
       { label: '分段', value: 'segmented' }, { label: '下划线', value: 'underline' }, { label: '胶囊', value: 'pill' },
     ]},
@@ -119,12 +121,13 @@ registerControl({
     const activeColor = component.props.activeColor || '#007aff';
     const inactiveColor = component.props.inactiveColor || '#8e8e93';
     const variant = component.props.style || 'segmented';
-    const active = Number(runtime?.value ?? component.props.defaultTab ?? 0);
+    const requestedActive = Number(runtime?.value ?? component.props.defaultTab ?? 0);
+    const active = Math.min(Math.max(0, Number.isFinite(requestedActive) ? requestedActive : 0), Math.max(0, tabs.length - 1));
     return (
       <div style={{ width: '100%', height: '100%', minWidth: 0, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 6, padding: 6, overflow: 'hidden' }}>
         <div style={{ display: 'flex', minWidth: 0, background: variant === 'segmented' ? 'rgba(118,118,128,0.10)' : 'transparent', borderRadius: variant === 'pill' ? 999 : 9, padding: 2, gap: variant === 'pill' ? 4 : 0, flexShrink: 0 }}>
           {tabs.map((t: string, i: number) => (
-            <button type="button" key={i} onClick={() => mode === 'preview' && runtime?.emit('onTabChange', i, { index: i, label: t })} style={{
+            <button type="button" key={i} onClick={() => { if (mode !== 'preview') return; if (runtime?.value !== undefined && Number(runtime.value) !== active && !window.confirm('当前标签页还有未保存切换，仍要离开吗？')) return; runtime?.emit('onTabChange', i, { index: i, label: t }); }} style={{
               flex: 1, minWidth: 0, padding: '5px 6px', fontSize: 13, fontWeight: 600, textAlign: 'center', borderRadius: variant === 'pill' ? 999 : 7,
               border: 'none', borderBottom: variant === 'underline' ? `2px solid ${i === active ? activeColor : 'transparent'}` : 'none', cursor: mode === 'preview' ? 'pointer' : 'default',
               background: i === active && variant !== 'underline' ? (variant === 'pill' ? activeColor : 'rgba(255,255,255,0.8)') : 'transparent',
@@ -151,8 +154,8 @@ registerControl({
   },
   propSchema: [
     { key: 'steps', label: '步骤', type: 'json', editor: 'steps', group: '基础', help: '支持排序、批量编辑和源码模式。' },
-    { key: 'defaultStep', label: '默认步骤', type: 'number', group: '基础', min: 0 },
-    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', placeholder: 'field_name' },
+    { key: 'defaultStep', label: '默认步骤', type: 'select', group: '基础', options: [{ label: '第一步', value: 0 }, { label: '第二步', value: 1 }, { label: '第三步', value: 2 }, { label: '第四步', value: 3 }, { label: '第五步', value: 4 }], help: '按步骤顺序选择；步骤不足时自动回退到第一步。' },
+    { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', level: 'advanced', placeholder: 'field_name' },
     { key: 'activeColor', label: '激活颜色', type: 'color', group: '样式' },
     { key: 'inactiveColor', label: '未激活颜色', type: 'color', group: '样式' },
   ],
@@ -162,9 +165,11 @@ registerControl({
     const steps = component.props.steps || ['开始', '处理', '完成'];
     const activeColor = component.props.activeColor || '#2563eb';
     const inactiveColor = component.props.inactiveColor || '#94a3b8';
-    const active = Number(runtime?.value ?? component.props.defaultStep ?? 0);
+    const requestedActive = Number(runtime?.value ?? component.props.defaultStep ?? 0);
+    const active = Math.min(Math.max(0, Number.isFinite(requestedActive) ? requestedActive : 0), Math.max(0, steps.length - 1));
     return (
-      <div style={{ width: '100%', height: '100%', minWidth: 0, boxSizing: 'border-box', display: 'flex', gap: 8, padding: 8, overflow: 'hidden' }}>
+      <div style={{ width: '100%', height: '100%', minWidth: 0, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 6, padding: 8, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flex: 1, minHeight: 0, gap: 8 }}>
         {steps.map((step: string, index: number) => {
           const done = index < active;
           const isActive = index === active;
@@ -172,7 +177,7 @@ registerControl({
             <button
               key={index}
               type="button"
-              onClick={() => runtime?.emit('onChange', index, { index, label: step })}
+              onClick={() => { if (runtime?.value !== undefined && Number(runtime.value) !== active && !window.confirm('当前步骤还有未保存内容，仍要切换吗？')) return; runtime?.emit('onChange', index, { index, label: step }); }}
               style={{
                 flex: 1,
                 minWidth: 0,
@@ -193,6 +198,8 @@ registerControl({
             </button>
           );
         })}
+        </div>
+        {mode === 'preview' && <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}><button type="button" disabled={active === 0} onClick={() => runtime?.emit('onChange', active - 1, { action: 'previous' })}>上一步</button><button type="button" onClick={() => runtime?.emit('onChange', Math.min(active + 1, steps.length - 1), { action: active === steps.length - 1 ? 'complete' : 'next' })}>{active === steps.length - 1 ? '完成' : '下一步'}</button></div>}
       </div>
     );
   },
@@ -200,23 +207,28 @@ registerControl({
 
 registerControl({
   type: 'divider', label: '分割线', category: 'container', icon: '➖',
-  defaultProps: { orientation: 'horizontal', color: 'rgba(60,60,67,0.12)', thickness: 0.5, margin: 0 },
+  defaultProps: { orientation: 'horizontal', color: 'rgba(60,60,67,0.12)', thickness: 0.5, margin: 0, spacingPreset: 'normal' },
   propSchema: [
     { key: 'orientation', label: '方向', type: 'select', group: '基础', options: [
       { label: '水平', value: 'horizontal' }, { label: '垂直', value: 'vertical' },
     ]},
     { key: 'color', label: '颜色', type: 'color', group: '样式' },
-    { key: 'thickness', label: '粗细', type: 'number', group: '样式', min: 0.5, max: 5, step: 0.5 },
-    { key: 'margin', label: '间距', type: 'number', group: '样式', min: 0, max: 50 },
+    { key: 'spacingPreset', label: '间距预设', type: 'select', group: '样式', options: [
+      { label: '紧凑', value: 'compact' }, { label: '正常', value: 'normal' }, { label: '宽松', value: 'loose' },
+    ], help: '优先使用预设，避免手填像素；自定义粗细和间距可在高级设置中调整。' },
+    { key: 'thickness', label: '线条粗细（高级）', type: 'number', group: '样式', level: 'advanced', min: 0.5, max: 5, step: 0.5 },
+    { key: 'margin', label: '自定义间距（高级）', type: 'number', group: '样式', level: 'advanced', min: 0, max: 50 },
   ],
   eventSchema: [],
   defaultSize: { w: 240, h: 16 },
   render: ({ component }: { component: DesignComponent }) => {
     const color = component.props.color || 'rgba(60,60,67,0.12)';
     const thickness = component.props.thickness || 0.5;
+    const presetMargin = component.props.spacingPreset === 'compact' ? 4 : component.props.spacingPreset === 'loose' ? 16 : 8;
+    const margin = component.props.margin ? Number(component.props.margin) : presetMargin;
     return (
-      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: Number(component.props.margin) || 0, boxSizing: 'border-box' }}>
-        <div style={component.props.orientation === 'vertical' ? { width: thickness, height: '100%', background: color } : { width: '100%', height: thickness, background: color }} />
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: margin, boxSizing: 'border-box' }}>
+        <div className="designer-divider-line" style={component.props.orientation === 'vertical' ? { width: thickness, height: '100%', background: color } : { width: '100%', height: thickness, background: color }} />
       </div>
     );
   },

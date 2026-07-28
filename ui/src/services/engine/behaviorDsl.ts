@@ -1,5 +1,5 @@
 import type { ActionConfig, BehaviorRule, ConditionConfig, ConditionOperator, TriggerType } from './behaviorEngine';
-import type { DesignComponent, FormLinkageAction, FormLinkageCondition, FormLinkageOperator, FormLinkageRule, SrcTableEntry, WorkflowFile } from '../../project/types';
+import type { DesignComponent, FormLinkageAction, FormLinkageCondition, FormLinkageOperator, FormLinkageRule, FormWindowConfig, SrcTableEntry, WorkflowFile } from '../../project/types';
 
 export type BehaviorDslDiagnosticSeverity = 'error' | 'warning' | 'info';
 
@@ -123,6 +123,10 @@ function normalizeReference(source: string) {
   return String(value ?? '').trim().replace(/^\$form\.|^[\$@]/, '');
 }
 
+function isFieldReference(source: string) {
+  return /^\$(?:form\.)?/.test(String(source || '').trim());
+}
+
 function parseCondition(source: string): ConditionConfig | null {
   for (const [pattern, operator] of OPERATOR_MAP) {
     const match = source.match(pattern);
@@ -130,7 +134,13 @@ function parseCondition(source: string): ConditionConfig | null {
     const fieldName = normalizeReference(source.slice(0, match.index));
     const right = source.slice(match.index + match[0].length).trim();
     if (!fieldName || (!right && operator !== 'isEmpty' && operator !== 'isNotEmpty')) return null;
-    return { fieldName, operator, value: operator === 'isEmpty' || operator === 'isNotEmpty' ? undefined : literal(right), logic: 'AND' };
+    return {
+      fieldName,
+      operator,
+      value: operator === 'isEmpty' || operator === 'isNotEmpty' ? undefined : literal(right),
+      sourceField: operator === 'isEmpty' || operator === 'isNotEmpty' || !isFieldReference(right) ? undefined : normalizeReference(right),
+      logic: 'AND',
+    };
   }
   return null;
 }
@@ -139,11 +149,43 @@ function parseRefs(source: string) { return splitTopLevel(source).map(normalizeR
 
 interface ParsedActions { actions: ActionConfig[]; diagnostics: Array<{ message: string; code: string; severity: BehaviorDslDiagnosticSeverity; suggestion?: string }>; }
 
-function parseCanonicalAction(phrase: string): ActionConfig[] | null {
+function parseCanonicalAction(phrase: string, mode: 'default' | 'guard' = 'default'): ActionConfig[] | null {
   const call = phrase.match(/^([a-z]+)\s*\((.*)\)$/i);
   if (!call) return null;
   const name = call[1].toLowerCase();
   const args = splitTopLevel(call[2]);
+  if (mode === 'guard') {
+    if (name === 'require' && args.length) return [{ type: 'assertRequired', fields: args.map(normalizeReference) }];
+    if (name === 'requireany' && args.length) return [{ type: 'assertAny', fields: args.map(normalizeReference) }];
+    if (name === 'requiredirty' && args.length) return [{ type: 'assertDirty', fields: args.map(normalizeReference) }];
+    if (name === 'keepreadonly' && args.length) return [{ type: 'assertReadonly', fields: args.map(normalizeReference) }];
+    if (name === 'validate' && args.length === 2) {
+      const targetField = normalizeReference(args[0]);
+      const validatorRaw = String(args[1] || '').trim();
+      const pattern = validatorRaw.match(/^pattern\s*\((["'])(.*?)\1\)$/i);
+      return [{ type: 'assertValidator', targetField, validator: pattern ? 'pattern' : normalizeReference(validatorRaw), pattern: pattern?.[2] }];
+    }
+    if (name === 'range' && args.length === 3) return [{
+      type: 'assertRange',
+      targetField: normalizeReference(args[0]),
+      min: literal(args[1]) == null ? null : Number(literal(args[1])),
+      max: literal(args[2]) == null ? null : Number(literal(args[2])),
+    }];
+    if (name === 'length' && args.length === 3) return [{
+      type: 'assertLength',
+      targetField: normalizeReference(args[0]),
+      min: literal(args[1]) == null ? null : Number(literal(args[1])),
+      max: literal(args[2]) == null ? null : Number(literal(args[2])),
+    }];
+    if (name === 'compare' && args.length === 3) return [{
+      type: 'assertCompare',
+      targetField: normalizeReference(args[0]),
+      operator: String(literal(args[1]) ?? args[1]).trim() as ActionConfig['operator'],
+      value: isFieldReference(args[2]) ? undefined : literal(args[2]),
+      valueSource: isFieldReference(args[2]) ? 'field' : 'static',
+      sourceField: isFieldReference(args[2]) ? normalizeReference(args[2]) : undefined,
+    }];
+  }
   if (['show', 'hide', 'enable', 'disable'].includes(name) && args.length) {
     const type = ({ show: 'setVisible', hide: 'setHidden', enable: 'setEnabled', disable: 'setDisabled' } as const)[name as 'show'];
     return args.map((targetComponent) => ({ type, targetComponent: normalizeReference(targetComponent) }));
@@ -159,7 +201,7 @@ function parseCanonicalAction(phrase: string): ActionConfig[] | null {
     return [{ type: 'showMessage', message: String(literal(args[0]) ?? ''), messageType: level as ActionConfig['messageType'] }];
   }
   if (name === 'run' && args.length <= 1) return [{ type: 'runWorkflow', workflowId: args[0] ? normalizeReference(args[0]) : undefined }];
-  if (name === 'options' && args.length === 4) return [{ type: 'setOptions', targetField: normalizeReference(args[0]), optionsConfig: { table: normalizeReference(args[1]), filterField: normalizeReference(args[2]), filterValue: literal(args[3]) } }];
+  if (name === 'options' && args.length === 4) return [{ type: 'setOptions', targetField: normalizeReference(args[0]), optionsConfig: { mode: 'table', table: normalizeReference(args[1]), filterField: normalizeReference(args[2]), filterValue: literal(args[3]), filterValueRef: { source: 'static', value: literal(args[3]) } } }];
   return null;
 }
 
@@ -180,18 +222,18 @@ function parseLegacyAction(phrase: string): { actions: ActionConfig[]; suggestio
   if ((match = phrase.match(/^set\s+([^=]+?)\s*=\s*(.+)$/i))) return { actions: [{ type: 'setValue', targetField: normalizeReference(match[1]), expression: match[2].trim() }], suggestion: `set(${fieldRef(match[1])}, ${match[2].trim()})` };
   if ((match = phrase.match(/^message\s+(["'])(.*?)\1(?:\s+(info|success|warning|error))?$/i))) return { actions: [{ type: 'showMessage', message: match[2], messageType: (match[3] || 'info') as ActionConfig['messageType'] }], suggestion: `message(${JSON.stringify(match[2])}, ${match[3] || 'info'})` };
   if ((match = phrase.match(/^run\s+([\w:.-]+)$/i))) return { actions: [{ type: 'runWorkflow', workflowId: match[1] }], suggestion: `run(${JSON.stringify(match[1])})` };
-  if ((match = phrase.match(/^options\s+(.+?)\s+from\s+([\w:.-]+)\s+where\s+(.+?)\s*=\s*(.+)$/i))) return { actions: [{ type: 'setOptions', targetField: normalizeReference(match[1]), optionsConfig: { table: match[2], filterField: normalizeReference(match[3]), filterValue: literal(match[4]) } }], suggestion: `options(${fieldRef(match[1])}, ${JSON.stringify(match[2])}, ${JSON.stringify(normalizeReference(match[3]))}, ${match[4].trim()})` };
+  if ((match = phrase.match(/^options\s+(.+?)\s+from\s+([\w:.-]+)\s+where\s+(.+?)\s*=\s*(.+)$/i))) return { actions: [{ type: 'setOptions', targetField: normalizeReference(match[1]), optionsConfig: { mode: 'table', table: match[2], filterField: normalizeReference(match[3]), filterValue: literal(match[4]), filterValueRef: { source: 'static', value: literal(match[4]) } } }], suggestion: `options(${fieldRef(match[1])}, ${JSON.stringify(match[2])}, ${JSON.stringify(normalizeReference(match[3]))}, ${match[4].trim()})` };
   if (/^(save|submit)(?:\s+.*)?$/i.test(phrase)) return { actions: [{ type: 'submitData' }], suggestion: 'run()' };
   return null;
 }
 
-function parseActions(source: string): ParsedActions {
+function parseActions(source: string, mode: 'default' | 'guard' = 'default'): ParsedActions {
   const actions: ActionConfig[] = [];
   const diagnostics: ParsedActions['diagnostics'] = [];
   let phrases = splitTopLevel(source, ';');
-  if (phrases.length === 1 && !parseCanonicalAction(phrases[0])) phrases = splitTopLevel(source, ',;');
+  if (phrases.length === 1 && !parseCanonicalAction(phrases[0], mode)) phrases = splitTopLevel(source, ',;');
   for (const phrase of phrases) {
-    const canonical = parseCanonicalAction(phrase);
+    const canonical = parseCanonicalAction(phrase, mode);
     if (canonical) { actions.push(...canonical); continue; }
     const legacy = parseLegacyAction(phrase);
     if (legacy) {
@@ -228,7 +270,7 @@ function lintRules(rules: BehaviorRule[], context: BehaviorDslCompileContext, so
       if (action.targetField) referencedFields.add(action.targetField);
       if (action.expression) for (const match of action.expression.matchAll(/\$(?:form\.)?([\w\u4e00-\u9fff.-]+)/g)) referencedFields.add(match[1]);
       if (action.targetComponent && componentRefs.size && !componentRefs.has(action.targetComponent)) result.push(diagnostic(line, 'FFR203', `找不到控件“${action.targetComponent}”。`, 'error'));
-      if (action.type === 'setOptions' && action.optionsConfig?.table && tableRefs.size && !tableRefs.has(action.optionsConfig.table)) result.push(diagnostic(line, 'FFR204', `找不到数据表“${action.optionsConfig.table}”。`, 'error'));
+      if (action.type === 'setOptions' && action.optionsConfig?.mode === 'table' && action.optionsConfig.table && tableRefs.size && !tableRefs.has(action.optionsConfig.table)) result.push(diagnostic(line, 'FFR204', `找不到数据表“${action.optionsConfig.table}”。`, 'error'));
       if (action.type === 'runWorkflow' && action.workflowId && workflowRefs.size && !workflowRefs.has(action.workflowId)) result.push(diagnostic(line, 'FFR205', `找不到流程“${action.workflowId}”。`, 'error'));
       if (rule.trigger.fieldName && action.targetField === rule.trigger.fieldName) result.push(diagnostic(line, 'FFR302', `动作会写回触发字段“${action.targetField}”，可能形成循环。`, 'warning'));
     }
@@ -285,8 +327,14 @@ export function compileBehaviorDsl(source: string, context: BehaviorDslCompileCo
       if (parsed.actions.length) rules.push(createRule(`dsl_${lineNumber}`, `${field}变化`, { type: 'fieldChange', fieldName: field }, [], parsed.actions));
       previousConditional = null; return;
     }
+    if ((match = line.match(/^before\s+click\s*\((["'])(.*?)\1\)\s*->\s*(.+)$/i))) {
+      const parsed = parseActions(match[3], 'guard');
+      parsed.diagnostics.forEach((item) => diagnostics.push(diagnostic(lineNumber, item.code, item.message, item.severity, 1, item.suggestion)));
+      if (parsed.actions.length) rules.push(createRule(`dsl_${lineNumber}`, `before click(${match[2]})`, { type: 'buttonClick', buttonName: normalizeReference(match[2]) }, [], parsed.actions));
+      previousConditional = null; return;
+    }
     if ((match = line.match(/^(before\s+submit|on\s+load|on\s+submit)\s*->\s*(.+)$/i))) {
-      const event = match[1].toLowerCase() === 'before submit' ? 'beforeSubmit' : match[1].toLowerCase() === 'on load' ? 'formLoad' : 'submit'; const parsed = parseActions(match[2]);
+      const event = match[1].toLowerCase() === 'before submit' ? 'beforeSubmit' : match[1].toLowerCase() === 'on load' ? 'formLoad' : 'submit'; const parsed = parseActions(match[2], event === 'beforeSubmit' ? 'guard' : 'default');
       parsed.diagnostics.forEach((item) => diagnostics.push(diagnostic(lineNumber, item.code, item.message, item.severity, 1, item.suggestion)));
       if (parsed.actions.length) rules.push(createRule(`dsl_${lineNumber}`, match[1], { type: event as TriggerType }, [], parsed.actions));
       previousConditional = null; return;
@@ -320,6 +368,14 @@ function toLinkageAction(action: ActionConfig, index: number): FormLinkageAction
     case 'setDisabled': return { id, type: 'setDisabled', targetComponentId: action.targetComponent, disabled: true };
     case 'setRequired': return { id, type: 'setRequired', targetField: action.targetField, required: true };
     case 'setOptional': return { id, type: 'setRequired', targetField: action.targetField, required: false };
+    case 'assertRequired': return { id, type: 'assertRequired', fields: action.fields || (action.targetField ? [action.targetField] : []) };
+    case 'assertAny': return { id, type: 'assertAny', fields: action.fields || (action.targetField ? [action.targetField] : []) };
+    case 'assertValidator': return { id, type: 'assertValidator', targetField: action.targetField, validator: action.validator, pattern: action.pattern };
+    case 'assertRange': return { id, type: 'assertRange', targetField: action.targetField, min: action.min ?? null, max: action.max ?? null };
+    case 'assertLength': return { id, type: 'assertLength', targetField: action.targetField, min: action.min ?? null, max: action.max ?? null };
+    case 'assertDirty': return { id, type: 'assertDirty', fields: action.fields || (action.targetField ? [action.targetField] : []) };
+    case 'assertReadonly': return { id, type: 'assertReadonly', fields: action.fields || (action.targetField ? [action.targetField] : []) };
+    case 'assertCompare': return { id, type: 'assertCompare', targetField: action.targetField, operator: action.operator, value: action.value, valueSource: action.valueSource, sourceField: action.sourceField };
     case 'showMessage': return { id, type: 'showMessage', message: action.message, level: action.messageType };
     case 'runWorkflow': return { id, type: 'runWorkflow', workflowId: action.workflowId, parameters: action.workflowParameters };
     case 'setOptions': return { id, type: 'setOptions', targetField: action.targetField, optionsConfig: action.optionsConfig };
@@ -331,20 +387,29 @@ function toLinkageAction(action: ActionConfig, index: number): FormLinkageAction
 function triggerEventName(trigger: BehaviorRule['trigger']) { if (trigger.type === 'fieldChange' || trigger.type === 'valueChange') return 'onChange'; if (trigger.type === 'formLoad') return 'onLoad'; if (trigger.type === 'beforeSubmit') return 'onBeforeSubmit'; if (trigger.type === 'submit') return 'onSubmit'; if (trigger.type === 'buttonClick') return 'onClick'; return `on${trigger.type.charAt(0).toUpperCase()}${trigger.type.slice(1)}`; }
 
 export function behaviorRuleToLinkageRule(rule: BehaviorRule): FormLinkageRule {
-  const conditions = rule.conditions.map((condition, index): FormLinkageCondition | null => { const operator = LINKAGE_OPERATOR[condition.operator]; return operator ? { id: `condition_${index}`, field: condition.fieldName, operator, value: condition.value } : null; }).filter(Boolean) as FormLinkageCondition[];
+  const conditions = rule.conditions.map((condition, index): FormLinkageCondition | null => {
+    const operator = LINKAGE_OPERATOR[condition.operator];
+    return operator ? { id: `condition_${index}`, field: condition.fieldName, operator, value: condition.value, valueSource: condition.sourceField ? 'field' : 'static', sourceField: condition.sourceField } : null;
+  }).filter(Boolean) as FormLinkageCondition[];
   const actions = rule.actions.map(toLinkageAction).filter(Boolean) as FormLinkageAction[];
   return { id: rule.id, name: rule.name, trigger: { eventName: triggerEventName(rule.trigger), sourceField: rule.trigger.fieldName }, conditions, conditionMode: rule.conditions.some((condition) => condition.logic === 'OR') ? 'any' : 'all', actions, scope: rule.trigger.fieldName ? 'target-fields' : 'current-form', enabled: rule.enabled, priority: rule.priority };
 }
 
-export function applyBehaviorDslToComponents(components: DesignComponent[], source: string) {
+export function applyBehaviorDslToComponents(components: DesignComponent[], source: string, formWindow?: FormWindowConfig) {
   const fields = components.map((component) => String(component.fieldBinding || component.props?.name || '')).filter(Boolean);
   const compilation = compileBehaviorDsl(source, { fields, components });
   const unapplied: string[] = [];
   const patches = new Map<string, Record<string, FormLinkageRule[]>>();
+  const implicitForm = formWindow ? { id: '__formflow_form_window__', type: 'formWindow', x: formWindow.x, y: formWindow.y, width: formWindow.width, height: formWindow.height, props: formWindow.props } as DesignComponent : undefined;
   for (const rule of compilation.rules) {
     const field = rule.trigger.fieldName;
-    const target = field ? components.find((component) => String(component.fieldBinding || component.props?.name || '') === field) : components.find((component) => component.type === 'form');
-    if (!target) { unapplied.push(field ? `找不到触发字段：${field}` : `找不到表单容器：${rule.name}`); continue; }
+    const buttonName = rule.trigger.buttonName;
+    const target = field
+      ? components.find((component) => String(component.fieldBinding || component.props?.name || '') === field)
+      : buttonName
+        ? components.find((component) => component.id === buttonName || String(component.props?.name || component.fieldBinding || '') === buttonName || String(component.props?.label || '') === buttonName)
+        : implicitForm || components.find((component) => component.type === 'form');
+    if (!target) { unapplied.push(field ? `找不到触发字段：${field}` : buttonName ? `找不到触发按钮：${buttonName}` : `找不到表单容器：${rule.name}`); continue; }
     let missingActionTarget = false;
     const normalizedActions = rule.actions.map((action) => {
       if (!action.targetComponent) return action;
@@ -357,5 +422,11 @@ export function applyBehaviorDslToComponents(components: DesignComponent[], sour
     const current = patches.get(target.id) || { ...((target.props?.linkageRules || {}) as Record<string, FormLinkageRule[]>) };
     const existing = (current[eventName] || []).filter((item) => item.id !== linkage.id); current[eventName] = [...existing, linkage]; patches.set(target.id, current);
   }
-  return { ...compilation, components: components.map((component) => patches.has(component.id) ? { ...component, props: { ...component.props, linkageRules: patches.get(component.id) } } : component), unapplied };
+  const windowRules = patches.get('__formflow_form_window__');
+  return {
+    ...compilation,
+    components: components.map((component) => patches.has(component.id) ? { ...component, props: { ...component.props, linkageRules: patches.get(component.id) } } : component),
+    formWindow: formWindow && windowRules ? { ...formWindow, props: { ...formWindow.props, linkageRules: windowRules } } : formWindow,
+    unapplied,
+  };
 }

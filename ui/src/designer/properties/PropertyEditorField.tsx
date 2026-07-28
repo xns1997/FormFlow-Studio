@@ -4,6 +4,7 @@ import {
   AntdColorInput, AntdDateInput, AntdNumberInput, AntdSelectInput, AntdSwitchInput,
   AntdTextAreaInput, AntdTextInput, AntdTimeInput,
 } from '../../components/AntdFormControls';
+import { rangeToAddress } from '../../services/data/rangeResolver';
 import type { PropDef, PropertyEditorKind } from '../types';
 import {
   getPropertyEditor, getPropertyEditorDescriptor, registerPropertyEditor, resolvePropertyEditorKind,
@@ -60,7 +61,7 @@ const NumberEditor: PropertyEditorComponent = (context) => {
   const def = scalarDef(context);
   const value = context.value as number ?? def.default ?? '';
   const state = useCommittedDraft<number | string>(value, (next) => context.onChange(next === '' ? '' : Number(next)), (next) => validateSchemaValue(def, next));
-  return <FieldShell context={context}><AntdNumberInput value={state.draft} min={def.min} max={def.max} step={def.step} disabled={context.disabled} onFocus={state.focus} onChange={state.setDraft} onBlur={state.commit} />{state.error && <small className="property-inline-error">{state.error}</small>}</FieldShell>;
+  return <FieldShell context={context}><AntdNumberInput value={state.draft} min={def.min} max={def.max} step={def.step && def.step > 0 ? def.step : 1} disabled={context.disabled} onFocus={state.focus} onChange={state.setDraft} onBlur={state.commit} />{state.error && <small className="property-inline-error">{state.error}</small>}</FieldShell>;
 };
 const SwitchEditor: PropertyEditorComponent = (context) => <div className="prop-field property-toggle-field">
   <div className="property-toggle-label"><span>{context.def.label}</span>{context.def.help && <small title={context.def.help}>?</small>}</div>
@@ -81,21 +82,24 @@ const FieldPathEditor: PropertyEditorComponent = (context) => {
 const UrlEditor: PropertyEditorComponent = (context) => {
   const external = String(context.value ?? '');
   const [url, setUrl] = useState(external);
+  const [recentImages, setRecentImages] = useState<string[]>(() => { try { const raw = localStorage.getItem('formflow:image-library'); const parsed = raw ? JSON.parse(raw) : []; return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string').slice(0, 8) : []; } catch { return []; } });
   useEffect(() => setUrl(external), [external]);
-  const valid = !url || /^https?:\/\/[^\s]+$/i.test(url);
+  const valid = !url || /^https?:\/\/[^\s]+$/i.test(url) || /^data:image\//i.test(url);
   const image = /\.(?:png|jpe?g|gif|webp|svg)(?:\?|$)/i.test(url);
-  return <div className="prop-field"><span className="property-field-heading"><span>{context.def.label}</span><PropertyFieldActions context={context} /></span><AntdTextInput value={url} placeholder="https://" disabled={context.disabled} onChange={setUrl} onBlur={() => { if (valid && url !== external) context.onChange(url); }} onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); }} />{!valid && <small className="property-inline-error">请输入 HTTP(S) 地址；无效内容不会覆盖当前配置</small>}{valid && !!url && <>{image && <img className="prop-url-image-preview" src={url} alt="URL 预览" />}<a className="prop-url-preview" href={url} target="_blank" rel="noreferrer">测试链接 ↗</a></>}</div>;
+  const suggestedAlt = /^https?:/i.test(url) ? url.split('/').pop()?.split('?')[0]?.replace(/[-_]+/g, ' ').replace(/\.[a-z0-9]+$/i, '').trim() : '';
+  const rememberImage = (next: string) => { if (!next) return; setRecentImages((current) => { const merged = [next, ...current.filter((item) => item !== next)].slice(0, 8); try { localStorage.setItem('formflow:image-library', JSON.stringify(merged)); } catch { /* ignore storage limits */ } return merged; }); };
+  return <div className="prop-field"><span className="property-field-heading"><span>{context.def.label}</span><PropertyFieldActions context={context} /></span><AntdTextInput value={url} placeholder="https://" disabled={context.disabled} onChange={setUrl} onBlur={() => { if (valid && url !== external) { context.onChange(url); if (context.component?.type === 'image') rememberImage(url); } }} onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); }} />{context.component?.type === 'image' && <label className="property-file-picker">或选择本地图片<input type="file" accept="image/*" disabled={context.disabled} onChange={(event) => { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { const next = String(reader.result || ''); setUrl(next); context.onChange(next); rememberImage(next); }; reader.readAsDataURL(file); event.currentTarget.value = ''; }} /></label>}{context.component?.type === 'image' && recentImages.length > 0 && <div className="prop-image-library"><span>最近使用</span>{recentImages.map((item) => <button key={item} type="button" title="选择最近图片" onClick={() => { setUrl(item); context.onChange(item); }}><img src={item} alt="最近图片" /></button>)}</div>}{context.component?.type === 'image' && suggestedAlt && !String(context.component.props.alt || '').trim() && <button type="button" className="toolbar-btn" onClick={() => context.onPatch({ alt: suggestedAlt })}>使用“{suggestedAlt}”作为图片说明</button>}{!valid && <small className="property-inline-error">请输入 HTTP(S) 地址；无效内容不会覆盖当前配置</small>}{valid && !!url && <>{image && <img className="prop-url-image-preview" src={url} alt="URL 预览" />}<a className="prop-url-preview" href={url} target="_blank" rel="noreferrer">测试链接 ↗</a></>}</div>;
 };
-const IconEditor: PropertyEditorComponent = (context) => { const icons = ['✓', '＋', '✎', '🔍', '📎', '🖼️', '🚀', '⚙️', '📊', '↗']; return <FieldShell context={context}><div className="prop-icon-editor"><span>{String(context.value || '◻︎')}</span><AntdTextInput value={String(context.value ?? '')} placeholder="搜索或输入 emoji" disabled={context.disabled} onChange={context.onChange} /></div><div className="prop-icon-presets">{icons.map((icon) => <button key={icon} type="button" title={`选择 ${icon}`} onClick={() => context.onChange(icon)}>{icon}</button>)}</div></FieldShell>; };
+const IconEditor: PropertyEditorComponent = (context) => { const icons = [['check', '✓', '完成'], ['add', '＋', '新增'], ['edit', '✎', '编辑'], ['search', '🔍', '查询'], ['attach', '📎', '附件'], ['image', '🖼️', '图片'], ['settings', '⚙️', '设置'], ['chart', '📊', '图表'], ['open', '↗', '打开']] as const; return <FieldShell context={context}><div className="prop-icon-editor"><span>{icons.find(([name]) => name === context.value)?.[1] || String(context.value || '◻︎')}</span><AntdTextInput value={String(context.value ?? '')} placeholder="选择图标含义" disabled={context.disabled} onChange={context.onChange} /></div><div className="prop-icon-presets">{icons.map(([name, glyph, meaning]) => <button key={name} type="button" title={`${meaning}（${name}）`} aria-label={`${meaning}图标`} onClick={() => context.onChange(name)}>{glyph}<small>{meaning}</small></button>)}</div></FieldShell>; };
 
 const complexKinds = new Set<PropertyEditorKind>([
   'json', 'regex', 'validation-rules', 'number-range', 'date-range', 'selection-range', 'options',
   'string-list', 'table-columns', 'key-value', 'mapping', 'filters', 'sorting', 'expression', 'template',
   'typography', 'spacing', 'border', 'radius', 'shadow', 'opacity', 'dimension', 'upload-constraints',
-  'tabs', 'steps', 'data-binding', 'option-source',
+  'tabs', 'steps', 'data-binding', 'display-conditions', 'option-source', 'option-content', 'option-advanced', 'date-default-config', 'date-constraint-config', 'date-business-day-config',
 ]);
 
-function summarizeComplex(value: unknown, kind: string) {
+function summarizeComplex(value: unknown, kind: string, context?: PropertyEditorContext) {
   if (value === undefined || value === null || value === '') return '未配置';
   if (kind === 'regex') return `/${String(value)}/`;
   if (kind === 'expression' || kind === 'template') return String(value).slice(0, 36);
@@ -106,9 +110,34 @@ function summarizeComplex(value: unknown, kind: string) {
   }
   if (kind === 'option-source' && value && typeof value === 'object') {
     const source = value as any;
-    return source.mode === 'table'
-      ? `${source.sheetName || '工作表'} · ${source.labelField || '显示字段'} / ${source.valueField || source.labelField || '值字段'}`
-      : '静态选项';
+    if (source.mode === 'table') return `数据表 · ${source.sheetName || '工作表'} / ${source.labelField || '显示字段'}`;
+    if (source.mode === 'range') return `范围 · ${source.rangeRef ? rangeToAddress(source.rangeRef) : '未选择'}`;
+    return '静态选项';
+  }
+  if (kind === 'option-content') {
+    const source = context?.values.optionSource as any;
+    if (source?.mode === 'table') return '由数据表自动生成';
+    if (source?.mode === 'range') return '由数据范围自动生成';
+    return Array.isArray(value) ? `静态 · ${value.length} 项` : '静态 · 未配置';
+  }
+  if (kind === 'option-advanced' && value && typeof value === 'object') {
+    const advanced = value as any;
+    const sync = advanced.optionUpdatePolicy === 'clearInvalid' || !advanced.optionUpdatePolicy ? '联动后：清理失效值' : `联动后：${String(advanced.optionUpdatePolicy)}`;
+    const empty = advanced.emptyOptionsBehavior === 'keepEnabled' || !advanced.emptyOptionsBehavior ? '无候选时：保持可用' : `无候选时：${String(advanced.emptyOptionsBehavior)}`;
+    const customized = advanced.optionEmptyText && advanced.optionEmptyText !== '暂无可选项' || advanced.optionLoadingText && advanced.optionLoadingText !== '加载选项中…';
+    return `${sync} · ${empty}${customized ? ' · 已自定义文案' : ' · 使用默认文案'}`;
+  }
+  if (kind === 'date-default-config' && value && typeof value === 'object') {
+    const config = value as any;
+    return config.mode === 'none' ? '未设置默认值' : `默认：${config.mode}`;
+  }
+  if (kind === 'date-constraint-config' && value && typeof value === 'object') {
+    const config = value as any;
+    const summaries = [config.min?.mode && config.min.mode !== 'none' ? `最小 ${config.min.mode}` : '', config.max?.mode && config.max.mode !== 'none' ? `最大 ${config.max.mode}` : ''].filter(Boolean);
+    return summaries.join(' · ') || '未设置限制';
+  }
+  if (kind === 'date-business-day-config' && value && typeof value === 'object') {
+    return (value as any).mode === 'weekdaysOnly' ? '仅工作日' : '全部日期';
   }
   if (Array.isArray(value)) return value.length ? `${value.length} 项` : '未配置';
   if (typeof value === 'object') return `${Object.values(value).filter((item) => item !== undefined && item !== null && item !== '').length} 项配置`;
@@ -139,11 +168,11 @@ export function registerBuiltinPropertyEditors() {
     supportsSource: true,
     contextNeeds: ['fields', 'samples', 'dependencies', 'component'],
     normalize: (value) => value,
-    summarize: (value) => summarizeComplex(value, kind),
+    summarize: (value, context) => summarizeComplex(value, kind, context),
     validate: (value) => {
       if (kind === 'regex') { try { new RegExp(String(value || '')); } catch (error) { return error instanceof Error ? error.message : String(error); } }
       if (['options', 'string-list', 'table-columns', 'filters', 'sorting', 'tabs', 'steps', 'validation-rules'].includes(kind) && !Array.isArray(value)) return '配置必须是列表';
-      if (['key-value', 'mapping', 'data-binding', 'option-source'].includes(kind) && (!value || typeof value !== 'object' || Array.isArray(value))) return '配置必须是对象';
+      if (['key-value', 'mapping', 'data-binding', 'display-conditions', 'option-source', 'option-advanced', 'date-default-config', 'date-constraint-config', 'date-business-day-config'].includes(kind) && (!value || typeof value !== 'object' || Array.isArray(value))) return '配置必须是对象';
       if (['number-range', 'date-range', 'selection-range'].includes(kind) && value && typeof value === 'object' && !Array.isArray(value)) {
         const range = value as Record<string, unknown>;
         const [startKey, endKey] = kind === 'number-range' ? ['min', 'max'] : kind === 'date-range' ? ['minDate', 'maxDate'] : ['minSelect', 'maxSelect'];

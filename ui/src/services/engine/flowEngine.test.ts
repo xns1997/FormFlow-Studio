@@ -38,7 +38,7 @@ test('auto-discovered registry has the expected executable nodes with unique IDs
     .filter((entry) => entry.isDirectory() && /^(func-|behavior-|generic-|ml-|form-|data-|logic-|flow-)/.test(entry.name))
     .filter((entry) => existsSync(join(root, 'nodes', entry.name, 'schema.json')))
     .map((entry) => entry.name);
-  assert.equal(packageDirs.length, 137);
+  assert.equal(packageDirs.length, 139);
   assert.equal(new Set(packageDirs).size, packageDirs.length);
   assert.equal(CURATED_XLSX_METHODS.size, 14);
 
@@ -1211,4 +1211,19 @@ test('without transactionalSideEffects side effects are not rolled back', async 
   ], [], { onNodeFailure: 'abort' });
   assert.equal(result.success, false);
   assert.equal(result.sideEffects.length, 1);
+});
+
+test('same idempotency key returns cached successful flow without replaying side effects', async () => {
+  await loadNodeRegistry();
+  const nodes = [
+    node('write-once', 'behavior-js-script', {
+      script: 'return { sideEffects: [{ kind: "set-form-value", field: "once", value: 1 }] }',
+    }),
+  ];
+  const key = `flow-engine-idempotency-${Date.now()}-${Math.random()}`;
+  const first = await executeFlow(nodes, [], [], { idempotencyKey: key });
+  const second = await executeFlow(nodes, [], [], { idempotencyKey: key });
+  assert.equal(first.success, true);
+  assert.strictEqual(second, first);
+  assert.equal(second.sideEffects.filter((effect) => effect.kind === 'set-form-value').length, 1);
 });

@@ -1,3 +1,13 @@
+import type { RangeRef } from '../models';
+import {
+  FORM_WINDOW_COORDINATE_SPACE,
+  growFormWindowToFit,
+  migrateCanvasComponentsToWindowLocal,
+  type FormWindowCoordinateSpace,
+} from '../../../shared/form-window-layout';
+
+export { FORM_WINDOW_COORDINATE_SPACE };
+
 // 项目文件结构 - 类似 Xcode Project 管理
 
 // ── 项目根目录结构 ──────────────────────────────────────
@@ -55,9 +65,47 @@ export interface ProjectStructure {
   forms: FormEntry[];                 // 表单实例（含行为）
   outputs: OutputFile[];
   testing?: ProjectTestingAssets;
+  relations?: DataRelation[];
+  templateInstances?: TemplateInstance[];
+  templatePresets?: TemplatePreset[];
+  customOperationTemplates?: Array<Record<string, unknown>>;
+  analysisTasks?: Array<Record<string, unknown>>;
+  modelRuns?: Array<Record<string, unknown>>;
   // 兼容旧格式（读取时自动迁移）
   designs?: DesignFile[];
   behaviors?: BehaviorFile[];
+}
+
+export interface DataRelation {
+  id: string;
+  name: string;
+  left: { tableId: string; sheetName: string; fields: string[] };
+  right: { tableId: string; sheetName: string; fields: string[] };
+  cardinality: 'one-to-one' | 'one-to-many' | 'many-to-one' | 'many-to-many';
+  defaultJoinType: 'inner' | 'left';
+  integrity: 'enforced' | 'checked' | 'informational';
+  onDelete: 'restrict' | 'set-null' | 'cascade';
+}
+
+export interface TemplatePreset {
+  id: string;
+  name: string;
+  templateId: string;
+  parameters: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TemplateInstance {
+  id: string;
+  templateId: string;
+  templateVersion: string;
+  selection: Record<string, unknown>;
+  parameters: Record<string, unknown>;
+  resources: { formIds: string[]; ruleIds?: string[]; behaviorIds?: string[]; workflowIds: string[]; outputIds: string[]; testIds: string[] };
+  status: 'managed' | 'detached';
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ProjectTestingAssets {
@@ -196,6 +244,7 @@ export interface SrcSheetInfo {
   columns: SrcColumnInfo[];
   preview: Record<string, unknown>[];
   config?: TableConfig;
+  dataVersion?: string;
 }
 
 export interface SrcColumnInfo {
@@ -317,6 +366,12 @@ export interface TableConfig {
   filterEnabled: boolean;
   sortEnabled: boolean;
   groupByColumn: number | null;
+  sequenceRules?: Record<string, {
+    start: number;
+    step: number;
+    formatter: string;
+    onlyWhenEmpty?: boolean;
+  }>;
 }
 
 export function createDefaultTableConfig(id: string, tableName: string): TableConfig {
@@ -341,6 +396,7 @@ export function createDefaultTableConfig(id: string, tableName: string): TableCo
     filterEnabled: true,
     sortEnabled: true,
     groupByColumn: null,
+    sequenceRules: {},
   };
 }
 
@@ -508,6 +564,9 @@ export interface BehaviorFile {
   enabled: boolean;
   createdAt: string;
   updatedAt: string;
+  /** Optional UI binding for event code that cannot be expressed declaratively. */
+  trigger?: { componentId: string; eventName: string };
+  eventFallbackReason?: string;
 }
 
 // ── 输出文件 ──────────────────────────────────────
@@ -551,6 +610,14 @@ export type FormActionType =
   | 'setVisible'
   | 'setDisabled'
   | 'setRequired'
+  | 'assertRequired'
+  | 'assertAny'
+  | 'assertValidator'
+  | 'assertRange'
+  | 'assertLength'
+  | 'assertDirty'
+  | 'assertReadonly'
+  | 'assertCompare'
   | 'setOptions'
   | 'showMessage'
   | 'runWorkflow';
@@ -566,6 +633,8 @@ export interface FormLinkageCondition {
   field?: string;
   operator: FormLinkageOperator;
   value?: unknown;
+  valueSource?: 'static' | 'field';
+  sourceField?: string;
 }
 
 export interface FormLinkageAction {
@@ -573,6 +642,7 @@ export interface FormLinkageAction {
   type: FormActionType;
   targetField?: string;
   targetComponentId?: string;
+  fields?: string[];
   value?: unknown;
   /** 安全表达式；存在时优先于静态 value。 */
   expression?: string;
@@ -583,10 +653,91 @@ export interface FormLinkageAction {
   required?: boolean;
   message?: string;
   level?: 'info' | 'success' | 'warning' | 'error';
+  validator?: string;
+  pattern?: string;
+  operator?: '==' | '!=' | '>' | '<' | '>=' | '<=';
+  min?: number | null;
+  max?: number | null;
   workflowId?: string;
   parameters?: Record<string, unknown>;
-  optionsConfig?: { table: string; filterField: string; filterValue?: unknown; labelField?: string; valueField?: string };
+  optionsConfig?: FormLinkageOptionsConfig;
 }
+
+export type DateOffsetUnit = 'minute' | 'hour' | 'day' | 'week' | 'month';
+
+export type DateDefaultValueConfig =
+  | { mode: 'none' }
+  | { mode: 'today' }
+  | { mode: 'now' }
+  | { mode: 'offsetFromNow'; offset?: number; unit?: DateOffsetUnit }
+  | { mode: 'startOfWeek' }
+  | { mode: 'endOfWeek' }
+  | { mode: 'startOfMonth' }
+  | { mode: 'endOfMonth' }
+  | { mode: 'fromField'; field?: string; offset?: number; unit?: DateOffsetUnit }
+  | { mode: 'rangePreset'; preset: 'thisWeek' | 'thisMonth' };
+
+export type DateConstraintBoundaryConfig =
+  | { mode: 'none' }
+  | { mode: 'fixed'; value?: string }
+  | { mode: 'today' }
+  | { mode: 'now' }
+  | { mode: 'field'; field?: string }
+  | { mode: 'fieldOffset'; field?: string; offset?: number; unit?: DateOffsetUnit };
+
+export interface DateConstraintConfig {
+  min?: DateConstraintBoundaryConfig;
+  max?: DateConstraintBoundaryConfig;
+}
+
+export interface DateBusinessDayConfig {
+  mode: 'allDays' | 'weekdaysOnly';
+}
+
+export type DateRangeLinkagePolicy = 'clearInvalid';
+
+export type FormLinkageOptionsValueSource = 'event' | 'field' | 'static';
+
+export interface FormLinkageOptionsValueRef {
+  source: FormLinkageOptionsValueSource;
+  field?: string;
+  value?: unknown;
+}
+
+export interface FormLinkageTableOptionsConfig {
+  mode: 'table';
+  table: string;
+  filterField: string;
+  filterValue?: unknown;
+  filterValueRef?: FormLinkageOptionsValueRef;
+  labelField?: string;
+  valueField?: string;
+  unique?: boolean;
+  sortOrder?: 'none' | 'asc' | 'desc';
+}
+
+export interface FormLinkageRangeOptionsConfig {
+  mode: 'range';
+  rangeRef: RangeRef;
+  labelColumn?: number;
+  valueColumn?: number;
+  filterColumn?: number;
+  filterValue?: unknown;
+  filterValueRef?: FormLinkageOptionsValueRef;
+  unique?: boolean;
+  sortOrder?: 'none' | 'asc' | 'desc';
+}
+
+export interface FormLinkageStaticMapOptionsConfig {
+  mode: 'staticMap';
+  mapping: Record<string, Array<{ label: string; value: unknown }>>;
+  valueRef?: FormLinkageOptionsValueRef;
+}
+
+export type FormLinkageOptionsConfig =
+  | FormLinkageTableOptionsConfig
+  | FormLinkageRangeOptionsConfig
+  | FormLinkageStaticMapOptionsConfig;
 
 export interface FormLinkageRule {
   id: string;
@@ -651,12 +802,93 @@ export interface DesignFile {
   name: string;
   formMode?: FormMode;
   templateKey?: string;
+  templateParameters?: Record<string, unknown>;
+  generatedBy?: { templateId: string; templateVersion: string; instanceId: string; generatedAt: string };
   viewport: { zoom: number; panX: number; panY: number };
   gridSize: number;
+  coordinateSpace: FormWindowCoordinateSpace;
+  /** 表单实例固有的窗体；可选择和配置，但不可添加或删除。 */
+  formWindow: FormWindowConfig;
   components: DesignComponent[];
   bindings: DesignBinding[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface FormWindowConfig {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  props: Record<string, any>;
+}
+
+export function createDefaultFormWindow(title = '表单'): FormWindowConfig {
+  return {
+    x: 40,
+    y: 40,
+    width: 980,
+    height: 720,
+    props: {
+      title,
+      subtitle: '',
+      background: '#ffffff',
+      padding: 24,
+      borderRadius: 12,
+      submitText: '提交',
+      resetText: '重置',
+      showFooter: false,
+    },
+  };
+}
+
+/**
+ * 把旧版可拖拽 form 根控件迁移为表单实例的固有窗体，并将
+ * 旧画布绝对坐标一次性转换成窗体内容区局部坐标。
+ */
+export function normalizeDesignFile(design: DesignFile, fallbackTitle = design.name || '表单'): DesignFile {
+  const sourceComponents = Array.isArray(design.components) ? design.components : [];
+  const legacyForms = sourceComponents.filter((component) => component.type === 'form');
+  const legacyRoot = legacyForms.find((component) => !component.parentId) || legacyForms[0];
+  const legacyIds = new Set(legacyForms.map((component) => component.id));
+  const defaults = createDefaultFormWindow(fallbackTitle);
+  const migratedWindow = legacyRoot ? {
+    x: Number.isFinite(Number(legacyRoot.x)) ? Number(legacyRoot.x) : defaults.x,
+    y: Number.isFinite(Number(legacyRoot.y)) ? Number(legacyRoot.y) : defaults.y,
+    width: Number.isFinite(Number(legacyRoot.width)) && Number(legacyRoot.width) > 0 ? Number(legacyRoot.width) : defaults.width,
+    height: Number.isFinite(Number(legacyRoot.height)) && Number(legacyRoot.height) > 0 ? Number(legacyRoot.height) : defaults.height,
+    props: { ...defaults.props, ...(legacyRoot.props || {}) },
+  } : defaults;
+  const suppliedWindow = design.formWindow;
+  const formWindow: FormWindowConfig = suppliedWindow ? {
+    x: Number.isFinite(Number(suppliedWindow.x)) ? Number(suppliedWindow.x) : migratedWindow.x,
+    y: Number.isFinite(Number(suppliedWindow.y)) ? Number(suppliedWindow.y) : migratedWindow.y,
+    width: Number.isFinite(Number(suppliedWindow.width)) && Number(suppliedWindow.width) > 0 ? Number(suppliedWindow.width) : migratedWindow.width,
+    height: Number.isFinite(Number(suppliedWindow.height)) && Number(suppliedWindow.height) > 0 ? Number(suppliedWindow.height) : migratedWindow.height,
+    props: { ...migratedWindow.props, ...(suppliedWindow.props || {}) },
+  } : migratedWindow;
+  const normalizedComponents = sourceComponents
+    .filter((component) => component.type !== 'form')
+    .map((component) => ({
+      ...component,
+      parentId: component.parentId && legacyIds.has(component.parentId) ? undefined : component.parentId,
+      children: component.children?.filter((id) => !legacyIds.has(id)),
+    }));
+  const migrated = design.coordinateSpace === FORM_WINDOW_COORDINATE_SPACE
+    ? {
+        formWindow: growFormWindowToFit(formWindow, normalizedComponents),
+        components: normalizedComponents,
+      }
+    : migrateCanvasComponentsToWindowLocal(formWindow, normalizedComponents);
+  return {
+    ...design,
+    viewport: design.viewport || { zoom: 1, panX: 0, panY: 0 },
+    gridSize: design.gridSize || 10,
+    coordinateSpace: FORM_WINDOW_COORDINATE_SPACE,
+    formWindow: migrated.formWindow,
+    components: migrated.components,
+    bindings: (design.bindings || []).filter((binding) => !legacyIds.has(binding.sourceId) && !legacyIds.has(binding.targetId)),
+  };
 }
 
 export interface DesignComponent {
@@ -692,6 +924,8 @@ export function createDesignFile(name: string, options: Partial<Pick<DesignFile,
     templateKey: options.templateKey,
     viewport: { zoom: 1, panX: 0, panY: 0 },
     gridSize: 10,
+    coordinateSpace: FORM_WINDOW_COORDINATE_SPACE,
+    formWindow: createDefaultFormWindow(name),
     components: [],
     bindings: [],
     createdAt: new Date().toISOString(),
@@ -724,6 +958,12 @@ export interface ProjectPackage {
   config: ProjectConfig;
   settings?: ProjectSettings;
   release?: ProjectRelease;
+  relations?: DataRelation[];
+  templateInstances?: TemplateInstance[];
+  templatePresets?: TemplatePreset[];
+  customOperationTemplates?: Array<Record<string, unknown>>;
+  analysisTasks?: Array<Record<string, unknown>>;
+  modelRuns?: Array<Record<string, unknown>>;
 }
 
 export interface FormIndex {

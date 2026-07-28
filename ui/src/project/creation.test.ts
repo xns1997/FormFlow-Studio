@@ -36,6 +36,7 @@ test('template creation keeps industry skeleton and rewrites meta', () => {
   assert.equal(project.config.author, 'Bob');
   assert.equal(project.workflows.length, 2);
   assert.equal(project.forms.length, 2);
+  assert.deepEqual(project.testing?.runs || [], []);
   assert.equal(project.srcTable.find((item) => item.id === 'work_records')?.sheets[0]?.config?.keyFields[0], '工作记录ID');
 });
 
@@ -50,6 +51,7 @@ test('all built-in templates produce valid project structures', () => {
     });
     assert.match(project.config.id, /^proj_/);
     assert.ok(project.forms.length >= 1);
+    assert.deepEqual(project.testing?.runs || [], [], `${template.id} should not ship precomputed test runs`);
     assert.ok(project.forms.some((form) => form.design.components.some((item) => item.type === 'chart')));
     assert.ok(project.forms.some((form) => form.design.components.some((item) => item.type === 'table')));
     assert.equal(project.workflows.flatMap((flow) => flow.nodes).some((item) => ['behavior-js-script', 'generic-custom-js'].includes(item.specId || '')), false);

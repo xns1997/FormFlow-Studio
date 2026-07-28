@@ -6,10 +6,10 @@ import { isMcpRole, listFormFlowTools, type McpRole } from './formflow-tool-regi
 import { serverDataPath } from '../config/paths';
 import { env } from '../config/env';
 
-export type AgentPhase = 'grounding' | 'clarifying' | 'planning' | 'awaiting_plan_approval' | 'executing' | 'recovering' | 'awaiting_operation_approval' | 'paused' | 'completed' | 'failed' | 'stopped';
+export type AgentPhase = 'idle' | 'grounding' | 'analyzing_requirements' | 'clarifying' | 'planning' | 'awaiting_plan_approval' | 'executing' | 'recovering' | 'awaiting_operation_approval' | 'paused' | 'completed' | 'failed' | 'stopped';
 export type AgentTaskAccess = 'read' | 'write';
 export type AgentTaskStatus = 'pending' | 'running' | 'passed' | 'failed' | 'paused' | 'blocked' | 'superseded' | 'cancelled';
-export type AgentTaskOrigin = 'planned' | 'recovery' | 'diagnostic' | 'steer';
+export type AgentTaskOrigin = 'planned' | 'recovery' | 'diagnostic' | 'steer' | 'loop' | 'action';
 export type AgentFailureClass = 'transient' | 'revision_conflict' | 'tool_scope' | 'invalid_arguments' | 'validation' | 'permission' | 'user_rejected' | 'specialist_failure';
 export type ProjectAgentSessionScope = 'project' | 'unbound' | 'all';
 export type AgentRequirementStatus = 'supported' | 'capability_gap' | 'needs_user_input' | 'verified' | 'failed';
@@ -28,10 +28,12 @@ export interface AgentRequirement {
   failureReason?: string;
 }
 
-export interface AgentRequirementCoverage { total: number; supported: number; verified: number; failed: number; capabilityGaps: number; needsUserInput: number; complete: boolean; }
+export interface AgentRequirementCoverage { total: number; planned: number; supported: number; verified: number; failed: number; capabilityGaps: number; needsUserInput: number; planComplete: boolean; complete: boolean; }
 
 export interface AgentQuestion {
   id: string;
+  turnId?: string;
+  createdAt?: string;
   header: string;
   question: string;
   kind: 'choice' | 'text';
@@ -73,6 +75,25 @@ export interface AgentTaskNode {
   failureClass?: AgentFailureClass;
   blockedBy?: string[];
   projectId?: string;
+  roundId?: string;
+  stepId?: string;
+  decisionReason?: string;
+  revisionConflictCount?: number;
+  expertRepairCount?: number;
+  policyCorrectionCount?: number;
+  policyCorrectionFingerprint?: string;
+  blockedReason?: string;
+  resumeContext?: string;
+  assistsTaskId?: string;
+  assistance?: {
+    status: 'needed' | 'assigned' | 'resolved';
+    reason: string;
+    depth: number;
+    triedRoles: McpRole[];
+    helperTaskId?: string;
+    helperRole?: McpRole;
+    requestedRole?: McpRole;
+  };
   remediation?: {
     gateTaskId: string;
     diagnosticFingerprints: string[];
@@ -80,8 +101,113 @@ export interface AgentTaskNode {
   };
 }
 
+export interface AgentRoundExpertDecision {
+  role: McpRole;
+  decision: 'run' | 'skip';
+  reason: string;
+  taskId?: string;
+  task?: {
+    title: string;
+    instruction: string;
+    access: AgentTaskAccess;
+    projectId?: string;
+    dependsOn: string[];
+    acceptance: string[];
+    requirementIds: string[];
+    evidenceKinds: AgentEvidenceKind[];
+    verificationScenarioIds: string[];
+    supersedesTaskId?: string;
+  };
+}
+
+export interface AgentAssignment {
+  role: McpRole;
+  title: string;
+  instruction: string;
+  access: AgentTaskAccess;
+  projectId?: string;
+  acceptance: string[];
+  requirementIds: string[];
+  evidenceKinds: AgentEvidenceKind[];
+  verificationScenarioIds: string[];
+  supersedesTaskId?: string;
+  assistsRole?: McpRole;
+  assistsAction?: string;
+}
+
+export interface NextActionDecision {
+  action: 'assign' | 'complete' | 'ask_user' | 'abort';
+  summary: string;
+  assignments: AgentAssignment[];
+  questions?: Array<Omit<AgentQuestion, 'id' | 'turnId' | 'createdAt'>>;
+  finalAnswer?: string;
+  reason?: string;
+}
+
+export interface AgentObservation {
+  id: string;
+  stepId: string;
+  taskId?: string;
+  role?: McpRole;
+  status: 'succeeded' | 'failed' | 'blocked' | 'waiting_confirmation';
+  action: string;
+  summary: string;
+  changes: string[];
+  evidence: string[];
+  unresolved: string[];
+  error?: { category: string; message: string; retryable: boolean; suggestion?: string };
+  createdAt: string;
+}
+
+export interface AgentOrchestrationStep {
+  id: string;
+  turnId?: string;
+  index: number;
+  status: 'deciding' | 'running' | 'completed' | 'waiting' | 'failed';
+  action?: NextActionDecision['action'];
+  summary?: string;
+  inputFingerprint: string;
+  outputFingerprint?: string;
+  progressed?: boolean;
+  taskIds: string[];
+  observationIds: string[];
+  decisionCorrectionCount?: number;
+  startedAt: string;
+  completedAt?: string;
+}
+
+export interface AgentOrchestrationRound {
+  id: string;
+  turnId?: string;
+  index: number;
+  status: 'planning' | 'running' | 'completed' | 'waiting' | 'failed';
+  action?: 'continue' | 'complete' | 'ask_user' | 'abort';
+  summary?: string;
+  inputFingerprint: string;
+  outputFingerprint?: string;
+  progressed?: boolean;
+  decisions: AgentRoundExpertDecision[];
+  taskIds: string[];
+  cancelledTaskIds?: string[];
+  questions?: AgentQuestion[];
+  startedAt: string;
+  completedAt?: string;
+}
+
+export interface AgentOrchestrationState {
+  currentRound: number;
+  maxRounds: number;
+  consecutiveNoProgress: number;
+  maxNoProgressRounds: number;
+  lastProgressFingerprint?: string;
+  status: 'idle' | 'running' | 'waiting' | 'completed' | 'failed' | 'stopped';
+  currentStep?: number;
+  maxDecisionSteps?: number;
+}
+
 export interface AgentPlanRevision {
   id: string;
+  turnId?: string;
   revision: number;
   request: string;
   goal: string;
@@ -97,6 +223,7 @@ export interface AgentPlanRevision {
   revisionReason?: string;
   approvalRequired?: boolean;
   automaticRevision?: boolean;
+  requirementRevision?: number;
 }
 
 export interface AgentEvent {
@@ -116,6 +243,7 @@ export interface PendingApproval {
   role: McpRole;
   routeIndex: number;
   arguments: Record<string, any>;
+  projectRevision?: string;
   confirmation: { token: string; summary?: string; impact?: unknown };
 }
 
@@ -126,6 +254,15 @@ export interface CapabilityAgentConfig {
   instructions: string;
   profileId?: string;
   tools: string[];
+  toolMode?: 'all' | 'selected';
+  knowledge?: CapabilityAgentKnowledge[];
+}
+
+export interface CapabilityAgentKnowledge {
+  id: string;
+  title: string;
+  content: string;
+  enabled: boolean;
 }
 
 export interface CapabilityBundleVersion {
@@ -138,7 +275,7 @@ export interface CapabilityBundleVersion {
   status: 'draft' | 'published';
   agents: CapabilityAgentConfig[];
   context: { recentMessages: number; maxSummaryChars: number };
-  budget: { maxParallelReads: number; maxAttempts: number; maxToolSteps: number; maxRecoveryCycles?: number; maxDynamicTasks?: number };
+  budget: { maxParallelReads: number; maxAttempts: number; maxToolSteps: number; maxRecoveryCycles?: number; maxDynamicTasks?: number; maxLoopRounds?: number; maxDecisionSteps?: number };
   createdAt: string;
   publishedAt?: string;
 }
@@ -161,7 +298,8 @@ export interface AgentSessionV2 {
   questions: AgentQuestion[];
   requirements?: AgentRequirement[];
   requirementCoverage?: AgentRequirementCoverage;
-  messages: Array<{ id: string; role: 'user' | 'assistant'; content: string; createdAt: string }>;
+  requirementRevision?: number;
+  messages: Array<{ id: string; role: 'user' | 'assistant'; content: string; createdAt: string; turnId?: string; kind?: 'user' | 'question' | 'plan_summary' | 'completion' | 'assistant' }>;
   conversationSummary: string;
   artifacts: AgentArtifact[];
   events: AgentEvent[];
@@ -171,10 +309,32 @@ export interface AgentSessionV2 {
   controlSignal?: 'pause' | 'stop' | 'steer';
   pendingSteer?: string;
   recovery?: { cycles: number; maxCycles: number; dynamicTasks: number; maxDynamicTasks: number; strategies: Record<string, number>; lastFailureTaskId?: string; lastFailureClass?: AgentFailureClass };
+  orchestration?: AgentOrchestrationState;
+  rounds?: AgentOrchestrationRound[];
+  steps?: AgentOrchestrationStep[];
+  observations?: AgentObservation[];
+  pinnedAt?: string;
   archived: boolean;
   createdAt: string;
   updatedAt: string;
 }
+
+export type ProjectAgentHistoryStatus = 'active' | 'attention' | 'completed';
+export interface ProjectAgentHistorySummary {
+  id: string;
+  title: string;
+  projectId?: string;
+  projectIds: string[];
+  phase: AgentPhase;
+  status: ProjectAgentHistoryStatus;
+  goal: string;
+  requirementCoverage: { total: number; verified: number; failed: number; complete: boolean };
+  pinnedAt?: string;
+  archived: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface ProjectAgentHistoryPage { items: ProjectAgentHistorySummary[]; nextCursor?: string; }
 
 const STORE_PATH = process.env.PROJECT_AGENT_V2_STORE_PATH || serverDataPath('configs', 'project-agent-v2.json');
 const BUNDLE_PATH = process.env.PROJECT_AGENT_BUNDLE_STORE_PATH || serverDataPath('configs', 'project-agent-capability-bundles.json');
@@ -226,16 +386,34 @@ export function initializeProjectAgentV2Store() {
     }
     const recovered = sessions(); let changed = false;
     for (const session of recovered) {
+      if (!Array.isArray(session.steps)) { session.steps = []; changed = true; }
+      if (!Array.isArray(session.observations)) { session.observations = []; changed = true; }
       if (!Array.isArray(session.requirements)) { session.requirements = []; changed = true; }
-      if (!session.requirementCoverage) { session.requirementCoverage = { total: session.requirements.length, supported: session.requirements.length, verified: 0, failed: 0, capabilityGaps: 0, needsUserInput: 0, complete: false }; changed = true; }
+      if (!session.requirementCoverage || session.requirementCoverage.planned === undefined) {
+        const tasks = session.plans?.find((plan) => plan.id === session.activePlanId)?.tasks || [];
+        const planned = session.requirements.filter((requirement) => tasks.some((task) => task.requirementIds?.includes(requirement.id))).length;
+        const verified = session.requirements.filter((requirement) => requirement.capabilityStatus === 'verified').length;
+        const failed = session.requirements.filter((requirement) => requirement.capabilityStatus === 'failed').length;
+        const capabilityGaps = session.requirements.filter((requirement) => requirement.capabilityStatus === 'capability_gap').length;
+        const needsUserInput = session.requirements.filter((requirement) => requirement.capabilityStatus === 'needs_user_input').length;
+        session.requirementCoverage = { total: session.requirements.length, planned, supported: session.requirements.length - verified - failed - capabilityGaps - needsUserInput, verified, failed, capabilityGaps, needsUserInput, planComplete: session.requirements.length > 0 && planned === session.requirements.length, complete: session.requirements.length > 0 && verified === session.requirements.length }; changed = true;
+      }
+      if (session.requirementRevision === undefined) { session.requirementRevision = 0; changed = true; }
       for (const plan of session.plans || []) for (const task of plan.tasks || []) {
         task.requirementIds ||= []; task.evidenceKinds ||= []; task.verificationScenarioIds ||= [];
         if (task.status === 'passed' && task.failureClass) { task.failureClass = undefined; task.error = undefined; changed = true; }
       }
-      if (session.phase === 'executing' || session.phase === 'recovering') {
+      const isEmptyGroundingSession = session.phase === 'grounding'
+        && !session.turnId
+        && !(session.messages || []).length
+        && !(session.events || []).length
+        && !(session.plans || []).length;
+      if (isEmptyGroundingSession) {
+        session.phase = 'idle'; changed = true;
+      } else if (session.phase === 'executing' || session.phase === 'recovering') {
         session.phase = 'paused'; for (const plan of session.plans) for (const task of plan.tasks) if (task.status === 'running') task.status = 'pending';
         session.events.push({ id: `pae_${randomUUID()}`, seq: (session.events.at(-1)?.seq || 0) + 1, type: 'execution_recovered', data: { checkpointRevision: session.checkpointRevision }, createdAt: new Date().toISOString() }); changed = true;
-      } else if (session.phase === 'grounding' || session.phase === 'planning') {
+      } else if (session.phase === 'grounding' || session.phase === 'analyzing_requirements' || session.phase === 'planning') {
         const error = '上次规划请求因服务重启或连接中断而未完成'; session.phase = 'failed'; session.questions = [];
         session.events.push({ id: `pae_${randomUUID()}`, seq: (session.events.at(-1)?.seq || 0) + 1, type: 'turn_failed', data: { turnId: session.turnId, stage: 'planning', error, retryable: true, recovered: true }, createdAt: new Date().toISOString() });
         session.events.push({ id: `pae_${randomUUID()}`, seq: (session.events.at(-1)?.seq || 0) + 1, type: 'phase_changed', data: { phase: 'failed', stage: 'planning', error, retryable: true, recovered: true }, createdAt: new Date().toISOString() }); changed = true;
@@ -268,13 +446,18 @@ function mirrorBundle(value: CapabilityBundleVersion) {
 
 export function defaultCapabilityBundle(ownerId = 'system'): CapabilityBundleVersion {
   const now = new Date().toISOString();
+  const roleNames: Record<McpRole, string> = { project: '项目专家', data: '数据专家', form: '表单专家', workflow: '流程专家', behavior: '行为规则专家', quality: '质量专家', delivery: '交付专家' };
+  const roleDescriptions: Record<McpRole, string> = {
+    project: '负责项目创建、初始化、导入和元信息。', data: '负责数据源、工作表、主键和业务数据。', form: '负责表单、控件、布局和字段绑定。', workflow: '负责工作流、节点、连线和流程校验。',
+    behavior: '负责事件、联动、规则语法和规则测试。', quality: '负责 Mock 数据、回归测试和质量门禁。', delivery: '负责输出、项目包和交付预检。',
+  };
   return {
     id: 'cap_default_v1', bundleId: 'cap_default', version: 1, ownerId, name: 'FormFlow 标准能力包', description: '按需规划并调用七个领域 MCP。', status: 'published',
     agents: [
-      { role: 'coordinator', name: '项目统筹', description: '负责只读查证、澄清与任务图规划。', instructions: '先查证，再提问；计划必须决策完整。', tools: [] },
-      ...(['project', 'data', 'form', 'workflow', 'behavior', 'quality', 'delivery'] as McpRole[]).map((role) => ({ role, name: `${role} 专家`, description: `处理 ${role} 领域任务。`, instructions: '严格限定领域，完成后提供工具与校验证据。', tools: [] })),
+      { role: 'coordinator', name: '项目统筹', description: '负责理解目标、判断下一步和组织专家协作。', instructions: '先查证，再决策；每次只选择当前真正需要的行动。', tools: [], toolMode: 'selected', knowledge: [] },
+      ...(['project', 'data', 'form', 'workflow', 'behavior', 'quality', 'delivery'] as McpRole[]).map((role) => ({ role, name: roleNames[role], description: roleDescriptions[role], instructions: '严格限定领域，完成后提供工具结果、验收证据和未解决问题。', tools: [], toolMode: 'all' as const, knowledge: [] })),
     ],
-    context: { recentMessages: 8, maxSummaryChars: 6000 }, budget: { maxParallelReads: 4, maxAttempts: 3, maxToolSteps: 32, maxRecoveryCycles: 6, maxDynamicTasks: 24 }, createdAt: now, publishedAt: now,
+    context: { recentMessages: 8, maxSummaryChars: 6000 }, budget: { maxParallelReads: 4, maxAttempts: 3, maxToolSteps: 32, maxRecoveryCycles: 6, maxDynamicTasks: 24, maxLoopRounds: 24, maxDecisionSteps: 24 }, createdAt: now, publishedAt: now,
   };
 }
 
@@ -291,7 +474,7 @@ export function saveCapabilityBundleDraft(input: Partial<CapabilityBundleVersion
   const existing = input.id ? items.find((item) => item.id === input.id && item.ownerId === ownerId && item.status === 'draft') : undefined;
   const value: CapabilityBundleVersion = {
     id: existing?.id || `capv_${randomUUID()}`, bundleId, version: existing?.version || Math.max(0, ...items.filter((item) => item.bundleId === bundleId).map((item) => item.version)) + 1,
-    ownerId, name: input.name.trim(), description: String(input.description || ''), status: 'draft', agents: input.agents || defaultCapabilityBundle(ownerId).agents,
+    ownerId, name: input.name.trim(), description: String(input.description || ''), status: 'draft', agents: input.agents?.length ? input.agents : defaultCapabilityBundle(ownerId).agents,
     context: input.context || { recentMessages: 8, maxSummaryChars: 6000 }, budget: input.budget || { maxParallelReads: 4, maxAttempts: 3, maxToolSteps: 32 }, createdAt: existing?.createdAt || now,
   };
   const next = existing ? items.map((item) => item.id === existing.id ? value : item) : [...items, value]; writeJson(BUNDLE_PATH, next); mirrorBundle(value); return value;
@@ -309,14 +492,28 @@ export function validateCapabilityBundle(bundle: CapabilityBundleVersion) {
   if (bundle.budget.maxAttempts < 1 || bundle.budget.maxAttempts > 3) throw new Error('任务最大尝试次数必须在 1 到 3 之间');
   if ((bundle.budget.maxRecoveryCycles ?? 6) < 1 || (bundle.budget.maxRecoveryCycles ?? 6) > 12) throw new Error('恢复周期必须在 1 到 12 之间');
   if ((bundle.budget.maxDynamicTasks ?? 24) < 1 || (bundle.budget.maxDynamicTasks ?? 24) > 48) throw new Error('动态任务上限必须在 1 到 48 之间');
+  if ((bundle.budget.maxLoopRounds ?? 24) < 1 || (bundle.budget.maxLoopRounds ?? 24) > 64) throw new Error('Loop 最大轮数必须在 1 到 64 之间');
+  if ((bundle.budget.maxDecisionSteps ?? bundle.budget.maxLoopRounds ?? 24) < 1 || (bundle.budget.maxDecisionSteps ?? bundle.budget.maxLoopRounds ?? 24) > 64) throw new Error('最大决策步数必须在 1 到 64 之间');
   for (const agent of bundle.agents) {
     if (agent.tools.includes('release.apply')) throw new Error('能力包不得启用 release.apply');
     if (agent.role === 'coordinator' && agent.tools.length) throw new Error('coordinator 不得配置项目写工具');
+    if (!agent.name?.trim()) throw new Error(`专家 ${agent.role} 名称不能为空`);
+    if (!agent.instructions?.trim()) throw new Error(`专家 ${agent.role} 提示词不能为空`);
+    const knowledgeIds = new Set<string>();
+    for (const item of agent.knowledge || []) {
+      if (!item.id?.trim() || !item.title?.trim() || !item.content?.trim()) throw new Error(`专家 ${agent.role} 的知识条目不完整`);
+      if (knowledgeIds.has(item.id)) throw new Error(`专家 ${agent.role} 存在重复知识 ID：${item.id}`);
+      knowledgeIds.add(item.id);
+    }
+    if (agent.toolMode && !['all', 'selected'].includes(agent.toolMode)) throw new Error(`专家 ${agent.role} 的工具授权模式无效`);
     if (agent.role !== 'coordinator') {
       if (!isMcpRole(agent.role)) throw new Error(`未知智能体角色：${agent.role}`);
       const allowed = new Set(listFormFlowTools(agent.role).map((tool) => tool.name)); const unknown = agent.tools.find((tool) => !allowed.has(tool)); if (unknown) throw new Error(`工具 ${unknown} 不属于 ${agent.role} 角色`);
     }
   }
+  const roles = bundle.agents.map((agent) => agent.role);
+  if (new Set(roles).size !== roles.length) throw new Error('能力包不能重复注册同一专家');
+  for (const role of ['coordinator', 'project', 'data', 'form', 'workflow', 'behavior', 'quality', 'delivery']) if (!roles.includes(role as McpRole | 'coordinator')) throw new Error(`能力包缺少 ${role} 专家`);
   return { valid: true };
 }
 
@@ -339,7 +536,7 @@ export function createAgentSessionV2(input: { tenantId: string; userId: string; 
   if (!bundle || bundle.status !== 'published') throw new Error('请选择已发布且有权使用的能力包版本');
   const now = new Date().toISOString(); const value: AgentSessionV2 = {
     schemaVersion: 2, id: `pas2_${randomUUID()}`, tenantId: input.tenantId, userId: input.userId, projectId: input.projectId, projectIds: [...new Set([...(input.projectIds || []), ...(input.projectId ? [input.projectId] : [])])], projectRevisions: {}, title: input.title || '项目智能体 V2', profileId: input.profileId,
-    capabilityBundleVersionId: bundle.id, phase: 'grounding', plans: [], questions: [], requirements: [], requirementCoverage: { total: 0, supported: 0, verified: 0, failed: 0, capabilityGaps: 0, needsUserInput: 0, complete: false }, messages: [], conversationSummary: '', artifacts: [], events: [], archived: false, createdAt: now, updatedAt: now,
+    capabilityBundleVersionId: bundle.id, phase: 'idle', plans: [], questions: [], requirements: [], requirementRevision: 0, requirementCoverage: { total: 0, planned: 0, supported: 0, verified: 0, failed: 0, capabilityGaps: 0, needsUserInput: 0, planComplete: false, complete: false }, messages: [], conversationSummary: '', artifacts: [], events: [], rounds: [], steps: [], observations: [], archived: false, createdAt: now, updatedAt: now,
   };
   writeJson(STORE_PATH, [...sessions(), value]); liveSessions.set(value.id, value); mirrorSession(value); return value;
 }
@@ -357,12 +554,64 @@ export function listAgentSessionsV2(scope: { tenantId: string; userId: string; p
     })
     .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
 }
+
+export function projectAgentHistoryStatus(phase: AgentPhase): ProjectAgentHistoryStatus {
+  if (['clarifying', 'awaiting_plan_approval', 'awaiting_operation_approval', 'paused', 'failed'].includes(phase)) return 'attention';
+  if (['completed', 'stopped'].includes(phase)) return 'completed';
+  return 'active';
+}
+
+function historySummary(session: AgentSessionV2): ProjectAgentHistorySummary {
+  const plan = session.plans.find((item) => item.id === session.activePlanId) || session.plans.at(-1); const coverage = session.requirementCoverage;
+  return { id: session.id, title: session.title, projectId: session.projectId, projectIds: sessionProjectIds(session), phase: session.phase, status: projectAgentHistoryStatus(session.phase), goal: plan?.goal || '',
+    requirementCoverage: { total: coverage?.total || 0, verified: coverage?.verified || 0, failed: coverage?.failed || 0, complete: coverage?.complete || false },
+    pinnedAt: session.pinnedAt, archived: session.archived, createdAt: session.createdAt, updatedAt: session.updatedAt };
+}
+
+function compareHistory(left: ProjectAgentHistorySummary, right: ProjectAgentHistorySummary) {
+  const leftPinned = left.pinnedAt || ''; const rightPinned = right.pinnedAt || '';
+  if (Boolean(leftPinned) !== Boolean(rightPinned)) return leftPinned ? -1 : 1;
+  if (leftPinned !== rightPinned) return rightPinned.localeCompare(leftPinned);
+  if (left.updatedAt !== right.updatedAt) return right.updatedAt.localeCompare(left.updatedAt);
+  return right.id.localeCompare(left.id);
+}
+
+function historyCursor(item: ProjectAgentHistorySummary) { return Buffer.from(JSON.stringify({ p: item.pinnedAt || '', u: item.updatedAt, i: item.id }), 'utf8').toString('base64url'); }
+function decodeHistoryCursor(value?: string) { if (!value) return undefined; try { const parsed = JSON.parse(Buffer.from(value, 'base64url').toString('utf8')); return { p: String(parsed.p || ''), u: String(parsed.u || ''), i: String(parsed.i || '') }; } catch { throw new Error('历史任务游标无效'); } }
+
+export function listAgentSessionHistory(input: { tenantId: string; userId: string; q?: string; status?: ProjectAgentHistoryStatus; projectId?: string; archived?: boolean; cursor?: string; limit?: number }, canInclude?: (session: AgentSessionV2) => boolean): ProjectAgentHistoryPage {
+  const query = String(input.q || '').trim().toLocaleLowerCase(); const limit = Math.max(1, Math.min(100, Number(input.limit) || 30)); const cursor = decodeHistoryCursor(input.cursor);
+  const items = sessions().map((item) => liveSessions.get(item.id) || (liveSessions.set(item.id, item), item))
+    .filter((item) => item.tenantId === input.tenantId && item.userId === input.userId && item.archived === Boolean(input.archived) && (!canInclude || canInclude(item)))
+    .map(historySummary)
+    .filter((item) => !input.status || item.status === input.status)
+    .filter((item) => !input.projectId || (input.projectId === '__unbound__' ? item.projectIds.length === 0 : item.projectIds.includes(input.projectId)))
+    .filter((item) => !query || `${item.title}\n${item.goal}\n${item.projectIds.join('\n')}`.toLocaleLowerCase().includes(query))
+    .sort(compareHistory);
+  let start = 0;
+  if (cursor) { const exact = items.findIndex((item) => (item.pinnedAt || '') === cursor.p && item.updatedAt === cursor.u && item.id === cursor.i); if (exact >= 0) start = exact + 1; }
+  const page = items.slice(start, start + limit); return { items: page, nextCursor: start + limit < items.length && page.length ? historyCursor(page.at(-1)!) : undefined };
+}
 export function findActiveProjectAgentSession(scope: { tenantId: string; userId: string; projectId: string }, excludeId?: string) {
   return listAgentSessionsV2({ ...scope, sessionScope: 'project' }).find((item) => item.id !== excludeId && ['executing', 'recovering', 'awaiting_operation_approval'].includes(item.phase));
 }
 export function getAgentSessionV2(id: string) { const live = liveSessions.get(id); if (live) return live; const value = sessions().find((item) => item.id === id); if (value) liveSessions.set(id, value); return value; }
 export function saveAgentSessionV2(value: AgentSessionV2) { value.updatedAt = new Date().toISOString(); liveSessions.set(value.id, value); const items = sessions(); const index = items.findIndex((item) => item.id === value.id); if (index >= 0) items[index] = value; else items.push(value); writeJson(STORE_PATH, items); mirrorSession(value); return value; }
 export function archiveAgentSessionV2(value: AgentSessionV2) { value.archived = true; return saveAgentSessionV2(value); }
+export function restoreAgentSessionV2(value: AgentSessionV2) { value.archived = false; return saveAgentSessionV2(value); }
+export async function deleteAgentSessionV2(value: AgentSessionV2) {
+  if (leases.has(value.id)) throw new Error('任务仍在执行，请先等待安全暂停');
+  await mirrorQueues.get(value.id)?.catch(() => undefined);
+  if (pool) await pool.query('DELETE FROM formflow_project_agent_v2_sessions WHERE id=$1', [value.id]);
+  writeJson(STORE_PATH, sessions().filter((item) => item.id !== value.id));
+  liveSessions.delete(value.id); listeners.delete(value.id); leaseOwners.delete(value.id); leases.delete(value.id); mirrorQueues.delete(value.id);
+  return { deleted: true as const, id: value.id };
+}
+export function updateAgentSessionMetadata(value: AgentSessionV2, input: { title?: string; pinned?: boolean }) {
+  if (input.title !== undefined) { const title = input.title.trim(); if (!title || title.length > 80) throw new Error('历史任务名称必须为 1–80 个字符'); value.title = title; }
+  if (input.pinned !== undefined) value.pinnedAt = input.pinned ? new Date().toISOString() : undefined;
+  return saveAgentSessionV2(value);
+}
 
 export function appendAgentEvent(value: AgentSessionV2, type: string, data: any) {
   const event: AgentEvent = { id: `pae_${randomUUID()}`, seq: (value.events.at(-1)?.seq || 0) + 1, type, data, createdAt: new Date().toISOString() };
@@ -391,7 +640,7 @@ export function validateTaskGraph(tasks: AgentTaskNode[]) {
   const visit = (id: string) => { if (visiting.has(id)) throw new Error('任务图存在循环依赖'); if (visited.has(id)) return; visiting.add(id); const task = tasks.find((item) => item.id === id)!; task.dependsOn.forEach(visit); visiting.delete(id); visited.add(id); };
   tasks.forEach((task) => visit(task.id));
   const dependsOn = (task: AgentTaskNode, target: string, seen = new Set<string>()): boolean => task.dependsOn.some((id) => id === target || (!seen.has(id) && (seen.add(id), dependsOn(tasks.find((item) => item.id === id)!, target, seen))));
-  const writes = tasks.filter((task) => task.access === 'write' && !['superseded', 'cancelled'].includes(task.status)); for (let index = 1; index < writes.length; index += 1) if (writes[index - 1].status !== 'passed' && !dependsOn(writes[index], writes[index - 1].id)) throw new Error(`写任务 ${writes[index].id} 必须依赖前一个写任务 ${writes[index - 1].id}`);
+  const writes = tasks.filter((task) => task.access === 'write' && !['superseded', 'cancelled'].includes(task.status)); for (let index = 1; index < writes.length; index += 1) if (writes[index - 1].status !== 'passed' && writes[index].assistsTaskId !== writes[index - 1].id && !dependsOn(writes[index], writes[index - 1].id)) throw new Error(`写任务 ${writes[index].id} 必须依赖或先解决前一个写任务 ${writes[index - 1].id}`);
   return { valid: true };
 }
 

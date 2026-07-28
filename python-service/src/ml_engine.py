@@ -108,6 +108,112 @@ def linear_regression(data, x_field, y_field):
         "predictions": predictions.tolist()
     }
 
+def regression_predict(data, target_field, feature_fields=None, train_ratio=0.8, standardize_features=False):
+    """带固定切分、基线比较和完整指标的数值预测。"""
+    import pandas as pd
+    from sklearn.compose import TransformedTargetRegressor
+    from sklearn.impute import SimpleImputer
+    from sklearn.linear_model import LinearRegression
+    from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+    df = pd.DataFrame(data)
+    fields = feature_fields or [c for c in df.columns if c != target_field and pd.api.types.is_numeric_dtype(df[c])]
+    if target_field not in df or not fields:
+        raise ValueError("目标字段或特征字段无效")
+    clean = df[fields + [target_field]].copy()
+    clean[target_field] = pd.to_numeric(clean[target_field], errors="coerce")
+    clean = clean.dropna(subset=[target_field])
+    if len(clean) < 10:
+        raise ValueError("回归至少需要 10 条有效记录")
+    split = max(1, min(len(clean) - 1, int(len(clean) * float(train_ratio))))
+    train, test = clean.iloc[:split], clean.iloc[split:]
+    steps = [("imputer", SimpleImputer(strategy="median"))]
+    if standardize_features:
+        steps.append(("scaler", StandardScaler()))
+    steps.append(("model", LinearRegression()))
+    model = Pipeline(steps)
+    model.fit(train[fields], train[target_field])
+    predicted = model.predict(test[fields])
+    all_predictions = model.predict(clean[fields])
+    baseline_value = float(train[target_field].mean())
+    baseline = np.full(len(test), baseline_value)
+    metrics = {
+        "r2": float(r2_score(test[target_field], predicted)) if len(test) > 1 else None,
+        "mae": float(mean_absolute_error(test[target_field], predicted)),
+        "rmse": float(mean_squared_error(test[target_field], predicted) ** 0.5),
+    }
+    baseline_metrics = {
+        "mae": float(mean_absolute_error(test[target_field], baseline)),
+        "rmse": float(mean_squared_error(test[target_field], baseline) ** 0.5),
+    }
+    return {"metrics": metrics, "baseline": baseline_metrics, "better_than_baseline": metrics["mae"] < baseline_metrics["mae"], "features": fields, "target": target_field, "train_size": len(train), "test_size": len(test), "predictions": [float(v) for v in all_predictions]}
+
+def classification_predict(data, target_field, feature_fields=None, train_ratio=0.8, threshold=0.5):
+    """带分层切分、混淆矩阵、概率和多数类基线的分类预测。"""
+    import pandas as pd
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.impute import SimpleImputer
+    from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support
+    from sklearn.model_selection import train_test_split
+    from sklearn.pipeline import Pipeline
+    df = pd.DataFrame(data)
+    fields = feature_fields or [c for c in df.columns if c != target_field and pd.api.types.is_numeric_dtype(df[c])]
+    clean = df[fields + [target_field]].dropna(subset=[target_field])
+    if len(clean) < 20 or clean[target_field].nunique() < 2:
+        raise ValueError("分类至少需要 20 条记录和两个类别")
+    X_train, X_test, y_train, y_test = train_test_split(clean[fields], clean[target_field], test_size=1-float(train_ratio), random_state=42, stratify=clean[target_field])
+    model = Pipeline([("imputer", SimpleImputer(strategy="median")), ("model", RandomForestClassifier(n_estimators=100, random_state=42))])
+    model.fit(X_train, y_train)
+    probabilities = model.predict_proba(clean[fields])
+    classes = model.named_steps["model"].classes_
+    if len(classes) == 2:
+        predictions = np.where(probabilities[:, 1] >= float(threshold), classes[1], classes[0])
+        test_probabilities = model.predict_proba(X_test)
+        test_predictions = np.where(test_probabilities[:, 1] >= float(threshold), classes[1], classes[0])
+    else:
+        predictions = classes[np.argmax(probabilities, axis=1)]
+        test_predictions = model.predict(X_test)
+    precision, recall, f1, _ = precision_recall_fscore_support(y_test, test_predictions, average="weighted", zero_division=0)
+    accuracy = float(accuracy_score(y_test, test_predictions))
+    majority_accuracy = float(y_test.value_counts(normalize=True).max())
+    return {"metrics": {"accuracy": accuracy, "precision": float(precision), "recall": float(recall), "f1": float(f1)}, "baseline": {"majority_accuracy": majority_accuracy}, "better_than_baseline": accuracy > majority_accuracy, "classes": classes.tolist(), "confusion_matrix": confusion_matrix(y_test, test_predictions, labels=classes).tolist(), "features": fields, "target": target_field, "train_size": len(X_train), "test_size": len(X_test), "predictions": predictions.tolist(), "probabilities": probabilities.tolist()}
+
+def time_series_forecast(data, time_field, target_field, horizon=6, seasonal_period=1):
+    """时间顺序回测的趋势/季节基线预测，绝不随机打乱时间。"""
+    import pandas as pd
+    from sklearn.linear_model import LinearRegression
+    from sklearn.metrics import mean_absolute_error, mean_squared_error
+    df = pd.DataFrame(data)[[time_field, target_field]].copy()
+    df[time_field] = pd.to_datetime(df[time_field], errors="coerce")
+    df[target_field] = pd.to_numeric(df[target_field], errors="coerce")
+    df = df.dropna().sort_values(time_field)
+    if df[time_field].duplicated().any():
+        raise ValueError("时间字段存在重复时间点")
+    if len(df) < 12:
+        raise ValueError("时间序列至少需要 12 个有效历史点")
+    test_size = max(3, min(int(horizon), len(df) // 3))
+    train, test = df.iloc[:-test_size], df.iloc[-test_size:]
+    model = LinearRegression().fit(np.arange(len(train)).reshape(-1, 1), train[target_field].values)
+    trend_test = model.predict(np.arange(len(train), len(df)).reshape(-1, 1))
+    period = max(1, min(int(seasonal_period), len(train)))
+    seasonal_test = np.resize(train[target_field].values[-period:], test_size)
+    naive_test = np.full(test_size, float(train[target_field].iloc[-1]))
+    def score(values):
+        return {"mae": float(mean_absolute_error(test[target_field], values)), "rmse": float(mean_squared_error(test[target_field], values) ** 0.5)}
+    candidates = {"trend": score(trend_test), "seasonal": score(seasonal_test), "last_value": score(naive_test)}
+    selected = min(candidates, key=lambda name: candidates[name]["mae"])
+    future_x = np.arange(len(df), len(df) + int(horizon)).reshape(-1, 1)
+    if selected == "trend":
+        forecast = model.predict(future_x)
+    elif selected == "seasonal":
+        forecast = np.resize(df[target_field].values[-period:], int(horizon))
+    else:
+        forecast = np.full(int(horizon), float(df[target_field].iloc[-1]))
+    residual_std = float(np.std(test[target_field].values - (trend_test if selected == "trend" else seasonal_test if selected == "seasonal" else naive_test)))
+    intervals = [{"lower": float(value - 1.96 * residual_std), "upper": float(value + 1.96 * residual_std)} for value in forecast]
+    return {"metrics": candidates[selected], "baseline": candidates["last_value"], "better_than_baseline": selected != "last_value" and candidates[selected]["mae"] < candidates["last_value"]["mae"], "selected_model": selected, "candidates": candidates, "train_size": len(train), "test_size": len(test), "horizon": int(horizon), "forecast": [float(v) for v in forecast], "intervals": intervals, "time_start": str(df[time_field].min()), "time_end": str(df[time_field].max())}
+
 def kmeans_cluster(data, n_clusters=3, fields=None):
     """K-Means 聚类"""
     import pandas as pd
@@ -191,7 +297,7 @@ def time_series(data, field, periods=10):
     if len(values) < 3:
         return {"error": "数据量不足"}
     window = min(3, len(values) // 2)
-    ma = pd.Series(values).rolling(window=window).mean().tolist()
+    ma = [None if pd.isna(value) else float(value) for value in pd.Series(values).rolling(window=window).mean().tolist()]
     trend = np.polyfit(range(len(values)), values, 1).tolist()
     return {
         "moving_average": ma,
@@ -310,6 +416,12 @@ if __name__ == "__main__":
             result = correlation(data, args.get("fields"), args.get("method", "pearson"))
         elif cmd == "linear_regression":
             result = linear_regression(data, args.get("x_field", ""), args.get("y_field", ""))
+        elif cmd == "regression_predict":
+            result = regression_predict(data, args.get("target_field", ""), args.get("feature_fields"), args.get("train_ratio", 0.8), args.get("standardize", False))
+        elif cmd == "classification_predict":
+            result = classification_predict(data, args.get("target_field", ""), args.get("feature_fields"), args.get("train_ratio", 0.8), args.get("threshold", 0.5))
+        elif cmd == "time_series_forecast":
+            result = time_series_forecast(data, args.get("time_field", ""), args.get("target_field", ""), args.get("horizon", 6), args.get("seasonal_period", 1))
         elif cmd == "kmeans":
             result = kmeans_cluster(data, args.get("n_clusters", 3), args.get("fields"))
         elif cmd == "knn":

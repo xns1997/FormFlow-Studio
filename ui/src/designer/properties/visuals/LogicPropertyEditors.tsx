@@ -78,3 +78,30 @@ export function ExpressionVisual({ kind, value, context, onChange, onValidity }:
     <p className="property-editor-help">仅支持字段引用、算术/比较/逻辑运算和白名单函数，不执行 JavaScript。</p>
   </div>;
 }
+
+export function DisplayConditionsVisual({ value, context, onChange, onValidity }: { value: unknown; context: PropertyEditorContext; onChange: (value: Record<string, unknown>) => void; onValidity: (valid: boolean) => void }) {
+  const current = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  const entries = [
+    ['visibleExpression', '显示条件', '留空表示始终显示。'],
+    ['disabledExpression', '编辑条件', '留空表示允许编辑。'],
+    ['requiredExpression', '必填条件', '留空表示沿用“必填”开关。'],
+  ] as const;
+  const invalid = entries.some(([key]) => {
+    const expression = String(current[key] || '').trim();
+    if (!expression) return false;
+    return !evaluatePropertyExpression(expression, { form: Object.fromEntries(context.fields.map((field) => [field, context.values[field] ?? '示例值'])), component: context.values }).ok;
+  });
+  useEffect(() => onValidity(!invalid), [invalid, onValidity]);
+  const patch = (key: string, next: string) => onChange({ ...current, [key]: next });
+  return <div className="property-editor-stack">
+    {entries.map(([key, label, help]) => {
+      const expression = String(current[key] || '');
+      return <div className="property-condition-row" key={key}>
+        <label><span>{label}</span><AntdSelectInput value={expression ? 'conditional' : 'always'} options={[{ label: '始终', value: 'always' }, { label: '满足条件时', value: 'conditional' }]} onChange={(next) => patch(key, String(next) === 'always' ? '' : expression || `form.${context.fields[0] || '字段'} == true`)} /></label>
+        {expression && <label><span>条件表达式</span><AntdTextInput value={expression} placeholder={help} onChange={(next) => patch(key, next)} /></label>}
+        <small className="property-editor-help">{expression ? `当前：满足条件时（依赖 ${extractPropertyReferences(expression).join('、') || '待填写字段'}）` : help}</small>
+      </div>;
+    })}
+    {invalid && <div className="property-editor-error">条件表达式无法计算，请检查字段名和运算符。</div>}
+  </div>;
+}

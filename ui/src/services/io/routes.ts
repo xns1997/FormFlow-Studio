@@ -1,6 +1,6 @@
-export type WorkspaceTab = 'data' | 'canvas' | 'designer' | 'behavior' | 'test';
+export type WorkspaceTab = 'data' | 'template' | 'canvas' | 'designer' | 'behavior' | 'test' | 'settings';
 export type ProjectSettingsSection = 'general' | 'versions' | 'behavior' | 'publish';
-export type SystemSettingsSection = 'general' | 'storage' | 'editor' | 'ai' | 'experiments';
+export type SystemSettingsSection = 'general' | 'storage' | 'editor' | 'ai' | 'experts' | 'experiments';
 export type DocSourcePage = 'workspace' | 'settings';
 
 export function buildProjectsPath() {
@@ -18,7 +18,7 @@ export function buildEditorPath(projectId: string) {
 export function buildWorkspacePath(projectId: string, tab?: WorkspaceTab) {
   if (tab === 'test') return `/projects/${projectId}/usage`;
   const modes: Record<Exclude<WorkspaceTab, 'test'>, string> = {
-    data: 'data', canvas: 'flow', designer: 'design', behavior: 'behavior',
+    data: 'data', template: 'template', canvas: 'flow', designer: 'design', behavior: 'behavior', settings: 'settings',
   };
   return `/projects/${projectId}/editor?mode=${modes[tab || 'data']}`;
 }

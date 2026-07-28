@@ -3,26 +3,33 @@ import type { Node } from '@antv/x6';
 import type { DesignComponent } from '../../project/types';
 import type { DesignerState } from './useDesignerState';
 import { findContainerParent } from '../utils';
+import { FORM_WINDOW_CELL_ID } from '../formWindowModel';
+import { canvasToLocalRect, clampComponentToContent } from '../../../../shared/form-window-layout';
 
 interface DesignerClipboardCtx extends DesignerState {
   finalizeComponents: (items: DesignComponent[]) => DesignComponent[];
-  selectComponent: (id: string | null) => void;
 }
 
 export function useDesignerClipboard(ctx: DesignerClipboardCtx) {
   const {
     graphRef,
+    formWindowRef,
     clampSize,
     commitComponents,
     setNodeComponentData,
     finalizeComponents,
-    selectComponent,
     bumpHistoryRevision,
   } = ctx;
 
   const copy = useCallback(() => {
     const graph = graphRef.current;
-    if (graph) { graph.copy(graph.getSelectedCells()); bumpHistoryRevision(); }
+    if (graph) {
+      const cells = graph.getSelectedCells().filter((cell: any) => cell.id !== FORM_WINDOW_CELL_ID);
+      if (cells.length) {
+        graph.copy(cells);
+        bumpHistoryRevision();
+      }
+    }
   }, [graphRef, bumpHistoryRevision]);
 
   const paste = useCallback(() => {
@@ -37,7 +44,7 @@ export function useDesignerClipboard(ctx: DesignerClipboardCtx) {
       const pos = node.getPosition();
       const size = node.getSize();
       const bounded = clampSize(data.componentType, size.width, size.height);
-      const comp: DesignComponent = {
+      const comp = clampComponentToContent(canvasToLocalRect(formWindowRef.current, {
         ...data.designComponent,
         id: node.id,
         x: pos.x,
@@ -45,7 +52,7 @@ export function useDesignerClipboard(ctx: DesignerClipboardCtx) {
         width: bounded.width,
         height: bounded.height,
         zIndex: node.getZIndex() ?? data.designComponent?.zIndex,
-      };
+      })) as DesignComponent;
       node.setSize(bounded.width, bounded.height);
       setNodeComponentData(node, comp, true);
       nextComponents.push(comp);
@@ -58,15 +65,17 @@ export function useDesignerClipboard(ctx: DesignerClipboardCtx) {
           parentId: findContainerParent(component, combined),
         })));
       });
-      selectComponent(nextComponents[nextComponents.length - 1].id);
+      graph.resetSelection(nextComponents.map((component) => component.id));
       bumpHistoryRevision();
     }
-  }, [graphRef, clampSize, commitComponents, setNodeComponentData, finalizeComponents, selectComponent, bumpHistoryRevision]);
+  }, [graphRef, formWindowRef, clampSize, commitComponents, setNodeComponentData, finalizeComponents, bumpHistoryRevision]);
 
   const duplicate = useCallback(() => {
     const graph = graphRef.current;
     if (!graph) return;
-    graph.copy(graph.getSelectedCells());
+    const cells = graph.getSelectedCells().filter((cell: any) => cell.id !== FORM_WINDOW_CELL_ID);
+    if (!cells.length) return;
+    graph.copy(cells);
     const pasted = graph.paste({ offset: 24 });
     const nextComponents: DesignComponent[] = [];
     pasted.forEach((cell: any) => {
@@ -76,7 +85,7 @@ export function useDesignerClipboard(ctx: DesignerClipboardCtx) {
       const pos = node.getPosition();
       const size = node.getSize();
       const bounded = clampSize(data.componentType, size.width, size.height);
-      const comp: DesignComponent = {
+      const comp = clampComponentToContent(canvasToLocalRect(formWindowRef.current, {
         ...data.designComponent,
         id: node.id,
         x: pos.x,
@@ -84,7 +93,7 @@ export function useDesignerClipboard(ctx: DesignerClipboardCtx) {
         width: bounded.width,
         height: bounded.height,
         zIndex: node.getZIndex() ?? data.designComponent?.zIndex,
-      };
+      })) as DesignComponent;
       node.setSize(bounded.width, bounded.height);
       setNodeComponentData(node, comp, true);
       nextComponents.push(comp);
@@ -97,10 +106,10 @@ export function useDesignerClipboard(ctx: DesignerClipboardCtx) {
           parentId: findContainerParent(component, combined),
         })));
       });
-      selectComponent(nextComponents[nextComponents.length - 1].id);
+      graph.resetSelection(nextComponents.map((component) => component.id));
       bumpHistoryRevision();
     }
-  }, [graphRef, clampSize, commitComponents, setNodeComponentData, finalizeComponents, selectComponent, bumpHistoryRevision]);
+  }, [graphRef, formWindowRef, clampSize, commitComponents, setNodeComponentData, finalizeComponents, bumpHistoryRevision]);
 
   return { copy, paste, duplicate };
 }

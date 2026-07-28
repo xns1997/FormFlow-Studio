@@ -1,19 +1,15 @@
 import { Router } from 'express';
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs';
-import { join } from 'path';
 import XLSX from 'xlsx';
-import { serverDataPath } from '../config/paths';
-import { getTableSheetData, readProjectPackage, updateTableSheetData } from '../services/project-package-store';
+import { getTableSheetData, readProjectPackage, updateTableSheetData, updateTableSheetsTransaction } from '../services/project-package-store';
 import { applyBatchChanges, dataVersion, queryRows, validateConfiguredKeys } from '../services/data-preview';
+import { getStagedUpload } from '../services/upload-staging';
 
 const router = Router();
-const DATA_DIR = serverDataPath('data');
-const FILES_DIR = serverDataPath('files');
-if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 
-function getCachePath(fileId: string, sheetName: string, projectId?: string) {
-  const prefix = projectId ? `${projectId}__${fileId}` : fileId;
-  return join(DATA_DIR, `${prefix}_${sheetName}.json`);
+function getStagedSheet(fileId: string, sheetName?: string) {
+  const upload = getStagedUpload(fileId);
+  if (!upload) return null;
+  return upload.sheets.find((sheet) => sheet.name === sheetName) || upload.sheets[0] || null;
 }
 
 function attachmentHeader(fileName: string, extension: string) {
@@ -58,9 +54,9 @@ router.post('/paginated', (req, res) => {
       if (!result) return res.status(404).json({ error: '项目数据不存在' });
       headers = result.headers; data = result.data; keyFields = result.keyFields;
     } else {
-      const path = getCachePath(req.body.fileId, req.body.sheetName);
-      if (!existsSync(path)) return res.status(404).json({ error: '数据不存在' });
-      const cache = JSON.parse(readFileSync(path, 'utf8')); headers = cache.headers || []; data = cache.data || [];
+      const staged = getStagedSheet(req.body.fileId, req.body.sheetName);
+      if (!staged) return res.status(404).json({ error: '临时上传不存在或已过期' });
+      headers = staged.headers; data = staged.data;
     }
     res.json({
       headers,
@@ -104,6 +100,55 @@ router.post('/batch', (req, res) => {
   }
 });
 
+// POST /api/data/transaction - 对一个或多个 Sheet 进行版本保护的原子行写回
+router.post('/transaction', (req, res) => {
+  try {
+    const { projectId, targets } = req.body || {};
+    if (!projectId || !Array.isArray(targets) || targets.length === 0) return res.status(400).json({ error: '缺少项目或事务目标' });
+    const mutationCount = targets.reduce((total: number, target: any) => total + (Array.isArray(target.mutations) ? target.mutations.length : 0), 0);
+    if (mutationCount === 0) return res.json({ success: true, committed: false, applied: 0, message: '暂无需要提交的修改' });
+    if (mutationCount > 1000) return res.status(400).json({ error: '单次事务最多提交 1000 行变更' });
+
+    const prepared = targets.map((target: any) => {
+      const tableId = String(target.tableId || ''); const sheetName = String(target.sheetName || ''); const keyField = String(target.keyField || '');
+      const current = getTableSheetData(projectId, tableId, sheetName);
+      if (!current) throw new Error(`写回目标 ${tableId}/${sheetName} 不存在`);
+      if (!keyField || !current.keyFields.includes(keyField)) throw new Error(`写回目标 ${tableId}/${sheetName} 未配置主键 ${keyField}`);
+      const currentVersion = dataVersion(current.data);
+      if (target.baseVersion && target.baseVersion !== currentVersion) {
+        const conflict = new Error(`数据 ${tableId}/${sheetName} 已被其他操作修改，请重新加载后重试`) as Error & { code?: string; dataVersion?: string };
+        conflict.code = 'DATA_VERSION_CONFLICT'; conflict.dataVersion = currentVersion; throw conflict;
+      }
+      let rows = current.data.map((row) => ({ ...row }));
+      for (const mutation of target.mutations || []) {
+        const keyValue = mutation.keyValue;
+        const index = rows.findIndex((row) => row[keyField] === keyValue);
+        const mode = mutation.mode || 'upsert';
+        if (mode === 'update' && index < 0) throw new Error(`${tableId}/${sheetName} 中不存在 ${keyField}=${String(keyValue)}`);
+        if (mode === 'insert' && index >= 0) throw new Error(`${tableId}/${sheetName} 中已存在 ${keyField}=${String(keyValue)}`);
+        if (mode === 'delete') {
+          if (index < 0) throw new Error(`${tableId}/${sheetName} 中不存在 ${keyField}=${String(keyValue)}`);
+          rows = rows.filter((_row, rowIndex) => rowIndex !== index);
+        } else if (index >= 0) rows[index] = { ...rows[index], ...(mutation.row || {}) };
+        else rows.push({ ...(mutation.row || {}) });
+      }
+      validateConfiguredKeys(rows, current.keyFields);
+      return { tableId, sheetName, data: rows, dataVersion: currentVersion };
+    });
+
+    updateTableSheetsTransaction(projectId, prepared);
+    res.json({
+      success: true,
+      committed: true,
+      applied: mutationCount,
+      targets: prepared.map((target) => ({ tableId: target.tableId, sheetName: target.sheetName, dataVersion: dataVersion(target.data) })),
+    });
+  } catch (error) {
+    const typed = error as Error & { code?: string; dataVersion?: string };
+    res.status(typed.code === 'DATA_VERSION_CONFLICT' ? 409 : 400).json({ error: typed.message, code: typed.code, dataVersion: typed.dataVersion });
+  }
+});
+
 // POST /api/data/export-query - 导出服务端筛选和排序后的完整结果
 router.post('/export-query', (req, res) => {
   try {
@@ -140,41 +185,13 @@ router.post('/parse', (req, res) => {
       if (!source) return res.status(404).json({ error: '项目表不存在', detail: `项目: ${projectId}, 表: ${fileId}, Sheet: ${sheetName || '(默认)'}` });
       const targetSheetName = String(source.sheet.name);
       const headers = Array.isArray(source.sheet.headers) ? source.sheet.headers : [];
-      const data = Array.isArray(source.sheet.preview) ? source.sheet.preview : [];
-      const cache = {
-        projectId,
-        fileId,
-        sheetName: targetSheetName,
-        headers,
-        rowCount: data.length,
-        data,
-        parsedAt: new Date().toISOString(),
-      };
-      writeFileSync(getCachePath(fileId, targetSheetName, projectId), JSON.stringify(cache, null, 2));
-      return res.json({ headers, rowCount: data.length, sheetName: targetSheetName, fileId, projectId });
+      const result = getTableSheetData(projectId, fileId, targetSheetName);
+      return res.json({ headers, rowCount: result?.data.length || 0, sheetName: targetSheetName, fileId, projectId });
     }
 
-    const metaPath = join(FILES_DIR, `${fileId}.meta.json`);
-    if (!existsSync(metaPath)) return res.status(404).json({ error: '文件不存在', detail: `ID: ${fileId}, 期望路径: ${metaPath}` });
-
-    let meta;
-    try { meta = JSON.parse(readFileSync(metaPath, 'utf-8')); } catch { return res.status(500).json({ error: '元数据解析失败', detail: metaPath }); }
-
-    const filePath = join(FILES_DIR, meta.storedName);
-    if (!existsSync(filePath)) return res.status(404).json({ error: '存储文件不存在', detail: `存储名: ${meta.storedName}` });
-
-    let workbook;
-    try { workbook = XLSX.readFile(filePath); } catch { return res.status(500).json({ error: 'Excel 解析失败', detail: filePath }); }
-
-    const targetSheet = sheetName || workbook.SheetNames[0];
-    const ws = workbook.Sheets[targetSheet];
-    if (!ws) return res.status(404).json({ error: 'Sheet 不存在', detail: `Sheet: ${targetSheet}, 可用: ${workbook.SheetNames.join(', ')}` });
-
-    const jsonData = XLSX.utils.sheet_to_json(ws);
-    const headers = jsonData.length > 0 ? Object.keys(jsonData[0]) : [];
-    const cache = { fileId, sheetName: targetSheet, headers, rowCount: jsonData.length, data: jsonData, parsedAt: new Date().toISOString() };
-    writeFileSync(getCachePath(fileId, targetSheet), JSON.stringify(cache, null, 2));
-    res.json({ headers, rowCount: jsonData.length, sheetName: targetSheet, fileId });
+    const staged = getStagedSheet(fileId, sheetName);
+    if (!staged) return res.status(404).json({ error: '临时上传不存在或已过期' });
+    res.json({ headers: staged.headers, rowCount: staged.rowCount, sheetName: staged.name, fileId });
   } catch (e) {
     console.error('[parse]', e);
     res.status(500).json({ error: '解析失败', detail: String(e) });
@@ -198,12 +215,8 @@ router.get('/:fileId/:sheetName/rows', (req, res) => {
       return res.json({ rows, total: result.data.length, page, pageSize, totalPages: Math.ceil(result.data.length / pageSize) });
     }
 
-    const dataPath = getCachePath(fileId, sheetName);
-    if (!existsSync(dataPath)) {
-      const cached = readdirSync(DATA_DIR).filter((f) => f.startsWith(fileId));
-      return res.status(404).json({ error: '数据不存在', detail: `文件: ${fileId}, Sheet: ${sheetName}`, cachedFiles: cached });
-    }
-    const cache = JSON.parse(readFileSync(dataPath, 'utf-8'));
+    const cache = getStagedSheet(fileId, sheetName);
+    if (!cache) return res.status(404).json({ error: '临时上传不存在或已过期' });
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 100;
     const start = (page - 1) * pageSize;
@@ -225,9 +238,8 @@ router.get('/:fileId/:sheetName/columns', (req, res) => {
       return res.json(buildColumns(result.headers, result.data));
     }
 
-    const dataPath = getCachePath(req.params.fileId, req.params.sheetName);
-    if (!existsSync(dataPath)) return res.status(404).json({ error: '数据不存在' });
-    const cache = JSON.parse(readFileSync(dataPath, 'utf-8'));
+    const cache = getStagedSheet(req.params.fileId, req.params.sheetName);
+    if (!cache) return res.status(404).json({ error: '临时上传不存在或已过期' });
     res.json(buildColumns(cache.headers, cache.data));
   } catch (e) { res.status(500).json({ error: String(e) }); }
 });
@@ -248,16 +260,7 @@ router.post('/:fileId/:sheetName/rows', (req, res) => {
       return res.json({ success: true, rowIndex: next.length - 1, total: next.length });
     }
 
-    const dataPath = getCachePath(fileId, sheetName);
-    if (!existsSync(dataPath)) return res.status(404).json({ error: '数据不存在' });
-
-    const cache = JSON.parse(readFileSync(dataPath, 'utf-8'));
-
-    cache.data.push(newRow);
-    cache.rowCount = cache.data.length;
-    writeFileSync(dataPath, JSON.stringify(cache, null, 2));
-
-    res.json({ success: true, rowIndex: cache.data.length - 1, total: cache.data.length });
+    return res.status(400).json({ error: '临时上传只读；请先导入项目后再编辑' });
   } catch (e) {
     console.error('[add-row]', e);
     res.status(500).json({ error: '新增行失败', detail: String(e) });
@@ -283,16 +286,7 @@ router.put('/:fileId/:sheetName/rows/:rowIdx', (req, res) => {
       return res.json({ success: true, rowIndex: idx, row: next[idx] });
     }
 
-    const dataPath = getCachePath(fileId, sheetName);
-    if (!existsSync(dataPath)) return res.status(404).json({ error: '数据不存在' });
-
-    const cache = JSON.parse(readFileSync(dataPath, 'utf-8'));
-    if (isNaN(idx) || idx < 0 || idx >= cache.data.length) return res.status(400).json({ error: '无效的行索引' });
-
-    cache.data[idx] = { ...cache.data[idx], ...patch };
-    writeFileSync(dataPath, JSON.stringify(cache, null, 2));
-
-    res.json({ success: true, rowIndex: idx, row: cache.data[idx] });
+    return res.status(400).json({ error: '临时上传只读；请先导入项目后再编辑' });
   } catch (e) {
     console.error('[update-row]', e);
     res.status(500).json({ error: '更新行失败', detail: String(e) });
@@ -314,17 +308,7 @@ router.delete('/:fileId/:sheetName/rows/:rowIdx', (req, res) => {
       return res.json({ success: true, rowIndex: idx, total: next.length });
     }
 
-    const dataPath = getCachePath(fileId, sheetName);
-    if (!existsSync(dataPath)) return res.status(404).json({ error: '数据不存在' });
-
-    const cache = JSON.parse(readFileSync(dataPath, 'utf-8'));
-    if (isNaN(idx) || idx < 0 || idx >= cache.data.length) return res.status(400).json({ error: '无效的行索引' });
-
-    cache.data.splice(idx, 1);
-    cache.rowCount = cache.data.length;
-    writeFileSync(dataPath, JSON.stringify(cache, null, 2));
-
-    res.json({ success: true, rowIndex: idx, total: cache.data.length });
+    return res.status(400).json({ error: '临时上传只读；请先导入项目后再编辑' });
   } catch (e) {
     console.error('[delete-row]', e);
     res.status(500).json({ error: '删除行失败', detail: String(e) });

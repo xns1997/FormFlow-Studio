@@ -177,17 +177,69 @@ function component(input, index) {
     ...(input.locked !== undefined ? { locked: input.locked } : {}), ...(input.visible !== undefined ? { visible: input.visible } : {}), zIndex: input.zIndex ?? (input.type === 'form' ? 0 : 2),
   };
 }
+const FORM_WINDOW_COORDINATE_SPACE = 'window-content-v1';
+const FORM_WINDOW_HEADER_HEIGHT = 52;
+const FORM_WINDOW_FOOTER_HEIGHT = 64;
+const windowPadding = (value) => {
+  if (typeof value === 'number') return { top: value, right: value, bottom: value, left: value };
+  const record = value && typeof value === 'object' ? value : {};
+  const all = Number(record.all ?? 24);
+  return { top: Number(record.top ?? all), right: Number(record.right ?? all), bottom: Number(record.bottom ?? all), left: Number(record.left ?? all) };
+};
+const growWindow = (formWindow, components) => {
+  const padding = windowPadding(formWindow.props?.padding);
+  const footer = formWindow.props?.showFooter === false ? 0 : FORM_WINDOW_FOOTER_HEIGHT;
+  const maxRight = Math.max(0, ...components.map((entry) => Math.max(0, Number(entry.x) || 0) + Math.max(0, Number(entry.width) || 0)));
+  const maxBottom = Math.max(0, ...components.map((entry) => Math.max(0, Number(entry.y) || 0) + Math.max(0, Number(entry.height) || 0)));
+  return {
+    ...formWindow,
+    width: Math.max(Number(formWindow.width) || 320, 320, padding.left + maxRight + padding.right),
+    height: Math.max(Number(formWindow.height) || 240, 240, FORM_WINDOW_HEADER_HEIGHT + padding.top + maxBottom + padding.bottom + footer),
+  };
+};
+const migrateAbsoluteCoordinates = (formWindow, components) => {
+  const padding = windowPadding(formWindow.props?.padding);
+  const contentX = Number(formWindow.x) + padding.left;
+  const contentY = Number(formWindow.y) + FORM_WINDOW_HEADER_HEIGHT + padding.top;
+  const raw = components.map((entry) => ({ ...entry, x: Number(entry.x) - contentX, y: Number(entry.y) - contentY }));
+  const minX = Math.min(0, ...raw.map((entry) => entry.x));
+  const minY = Math.min(0, ...raw.map((entry) => entry.y));
+  const shiftX = -minX; const shiftY = -minY;
+  const local = raw.map((entry) => ({ ...entry, x: entry.x + shiftX, y: entry.y + shiftY }));
+  const expanded = { ...formWindow, x: Number(formWindow.x) - shiftX, y: Number(formWindow.y) - shiftY, width: Number(formWindow.width) + shiftX, height: Number(formWindow.height) + shiftY };
+  return { formWindow: growWindow(expanded, local), components: local };
+};
+function migrateFormWindow(item) {
+  const legacyForms = arr(item.components).filter((entry) => entry.type === 'form');
+  const legacyRoot = legacyForms.find((entry) => !entry.parentId) || legacyForms[0];
+  const legacyIds = new Set(legacyForms.map((entry) => entry.id));
+  const defaults = { x: 40, y: 40, width: 980, height: 720, props: { title: item.name || '表单', subtitle: '', background: '#ffffff', padding: 24, borderRadius: 12, submitText: '提交', resetText: '重置', showFooter: false } };
+  const migrated = legacyRoot ? { x: legacyRoot.x, y: legacyRoot.y, width: legacyRoot.width, height: legacyRoot.height, props: { ...defaults.props, ...(legacyRoot.props || {}) } } : defaults;
+  const supplied = item.formWindow;
+  const components = arr(item.components).filter((entry) => entry.type !== 'form').map((entry) => ({ ...entry, ...(legacyIds.has(entry.parentId) ? { parentId: undefined } : {}) }));
+  const formWindow = supplied ? { x: supplied.x ?? migrated.x, y: supplied.y ?? migrated.y, width: supplied.width ?? migrated.width, height: supplied.height ?? migrated.height, props: { ...migrated.props, ...(supplied.props || {}) } } : migrated;
+  const coordinates = item.coordinateSpace === FORM_WINDOW_COORDINATE_SPACE && !legacyRoot
+    ? { formWindow: growWindow(formWindow, components), components }
+    : migrateAbsoluteCoordinates(formWindow, components);
+  return {
+    ...item,
+    coordinateSpace: FORM_WINDOW_COORDINATE_SPACE,
+    formWindow: coordinates.formWindow,
+    components: coordinates.components,
+  };
+}
 function form(input, now) {
-  checkKeys(input, ['id', 'name', 'mode', 'formMode', 'templateKey', 'viewport', 'gridSize', 'components', 'bindings', 'behaviors', 'ruleCode', 'createdAt'], '$.forms[]');
+  checkKeys(input, ['id', 'name', 'mode', 'formMode', 'templateKey', 'viewport', 'gridSize', 'coordinateSpace', 'formWindow', 'components', 'bindings', 'behaviors', 'ruleCode', 'createdAt'], '$.forms[]');
   checkId(input.id, '$.forms[].id');
   const mode = input.mode || input.formMode;
   if (mode && !FORM_MODES.has(mode)) fail('INVALID_FORM_MODE', `forms.${input.id}.mode`, 'invalid form mode');
-  return {
+  return migrateFormWindow({
     id: input.id, name: input.name || input.id, formMode: mode, templateKey: input.templateKey,
     viewport: input.viewport || { zoom: 1, panX: 0, panY: 0 }, gridSize: input.gridSize || 10,
-    components: arr(input.components).map(component), bindings: arr(input.bindings),
+    coordinateSpace: input.coordinateSpace || ('mode' in input ? FORM_WINDOW_COORDINATE_SPACE : undefined),
+    formWindow: input.formWindow, components: arr(input.components).map(component), bindings: arr(input.bindings),
     behaviors: arr(input.behaviors).map((item) => behavior(item, now, `forms.${input.id}.behaviors[]`)), ruleCode: typeof input.ruleCode === 'string' ? input.ruleCode : '', createdAt: input.createdAt || now, updatedAt: now,
-  };
+  });
 }
 function workflow(input, now) {
   checkKeys(input, ['id', 'name', 'description', 'nodes', 'edges', 'versions', 'variables', 'createdAt'], '$.workflows[]');
@@ -222,7 +274,7 @@ async function modelFromSpec(spec, specPath) {
     settings: { ...merge(DEFAULT_SETTINGS, spec.settings || {}), updatedAt: now }, release: spec.release ? merge(DEFAULT_RELEASE, spec.release) : undefined,
     data, forms: arr(spec.forms).map((item) => form(item, now)), globalBehaviors: arr(spec.behaviors).map((item) => behavior(item, now, '$.behaviors[]')),
     sheetBehaviors: arr(spec.sheetBehaviors).map((item) => ({ tableId: item.tableId, sheetName: item.sheetName, behaviors: arr(item.behaviors).map((entry) => behavior(entry, now, '$.sheetBehaviors[].behaviors[]')), updatedAt: now })),
-    workflows: arr(spec.workflows).map((item) => workflow(item, now)), outputs: arr(spec.outputs).map((item) => output(item, now)), testing: spec.testing || { profiles: [], suites: [], fixtures: [], runs: [] }, exportedAt: now,
+    workflows: arr(spec.workflows).map((item) => workflow(item, now)), outputs: arr(spec.outputs).map((item) => output(item, now)), testing: spec.testing || { profiles: [], suites: [], fixtures: [], runs: [] }, relations: [], templateInstances: [], templatePresets: [], customOperationTemplates: [], analysisTasks: [], modelRuns: [], exportedAt: now,
   };
 }
 
@@ -232,7 +284,7 @@ async function writeModel(model, output) {
   await mkdir(join(temp, 'workflows'), { recursive: true }); await mkdir(join(temp, 'outputs'), { recursive: true });
   await mkdir(join(temp, 'testing'), { recursive: true });
   try {
-    await writeFile(join(temp, 'project.json'), json({ kind: 'formflow-project', formatVersion: 2, config: model.config, settings: model.settings, release: model.release }));
+    await writeFile(join(temp, 'project.json'), json({ kind: 'formflow-project', formatVersion: 2, config: model.config, settings: model.settings, release: model.release, relations: model.relations || [], templateInstances: model.templateInstances || [], templatePresets: model.templatePresets || [], customOperationTemplates: model.customOperationTemplates || [], analysisTasks: model.analysisTasks || [], modelRuns: model.modelRuns || [] }));
     if (model.release) await writeFile(join(temp, 'release.json'), json(model.release));
     const forms = [...model.forms].sort((a, b) => a.id.localeCompare(b.id));
     await writeFile(join(temp, 'forms', '_index.json'), json({ forms: forms.map((item) => ({ id: item.id, name: item.name, formMode: item.formMode, fileName: `${item.id}.json`, behaviorsFileName: `${item.id}.behaviors.json` })), defaultFormId: model.release?.defaultFormId || forms[0]?.id }));
@@ -285,13 +337,13 @@ async function loadModel(path) {
     const pkg = await readJson(join(root, 'project.json'));
     if (pkg.kind !== 'formflow-project') fail('INVALID_KIND', 'project.json.kind', 'expected formflow-project');
     if (pkg.formatVersion !== 2) fail('UNSUPPORTED_VERSION', 'project.json.formatVersion', 'only frozen FormFlow v2 is supported');
-    checkKeys(pkg, ['kind', 'formatVersion', 'config', 'settings', 'release'], 'project.json');
+    checkKeys(pkg, ['kind', 'formatVersion', 'config', 'settings', 'release', 'relations', 'templateInstances', 'templatePresets', 'customOperationTemplates', 'analysisTasks', 'modelRuns'], 'project.json');
     const formIndex = await readJson(join(root, 'forms', '_index.json')).catch(() => ({ forms: [] }));
     const forms = [];
     for (const entry of arr(formIndex.forms)) {
       const design = await readJson(join(root, 'forms', entry.fileName));
       const behaviorFile = await readJson(join(root, 'forms', entry.behaviorsFileName)).catch(() => ({ behaviors: [] }));
-      forms.push({ ...design, id: entry.id, name: entry.name || design.name, behaviors: arr(behaviorFile.behaviors), ruleCode: typeof behaviorFile.ruleCode === 'string' ? behaviorFile.ruleCode : '' });
+      forms.push(migrateFormWindow({ ...design, id: entry.id, name: entry.name || design.name, behaviors: arr(behaviorFile.behaviors), ruleCode: typeof behaviorFile.ruleCode === 'string' ? behaviorFile.ruleCode : '' }));
     }
     const dataIndex = await readJson(join(root, 'data', '_index.json')).catch(() => ({ sources: [] }));
     const data = []; const sheetBehaviors = [];
@@ -299,13 +351,19 @@ async function loadModel(path) {
       const meta = await readJson(join(root, 'data', entry.metaFile));
       const behaviorFile = await readJson(join(root, 'data', entry.behaviorsFile)).catch(() => ({ sheets: [] }));
       sheetBehaviors.push(...arr(behaviorFile.sheets));
-      data.push({ ...meta, sourcePath: join(root, 'data', entry.fileName) });
+      const sourcePath = join(root, 'data', entry.fileName);
+      if (!existsSync(sourcePath)) fail('MISSING_SOURCE_FILE', `data/${entry.fileName}`, 'indexed source file does not exist');
+      const sourceBuffer = await readFile(sourcePath);
+      const actualHash = createHash('sha256').update(sourceBuffer).digest('hex');
+      if (meta.dataHash && meta.dataHash !== actualHash) fail('SOURCE_HASH_MISMATCH', `data/${entry.fileName}`, 'source SHA-256 does not match metadata');
+      for (const sheet of arr(meta.sheets)) if (arr(sheet.preview).length > 100) fail('PREVIEW_LIMIT_EXCEEDED', `data/${entry.metaFile}.${sheet.name}.preview`, 'persisted preview must contain at most 100 rows');
+      data.push({ ...meta, sourcePath });
     }
     const global = await readJson(join(root, 'global-behaviors.json')).catch(() => ({ behaviors: [], exportedAt: pkg.config?.updatedAt }));
     const workflows = await readJson(join(root, 'workflows', 'workflows.json')).catch(() => ({ workflows: [], exportedAt: global.exportedAt }));
     const outputs = await readJson(join(root, 'outputs', 'outputs.json')).catch(() => ({ outputs: [], exportedAt: global.exportedAt }));
     const testing = await readJson(join(root, 'testing', 'testing.json')).catch(() => ({ profiles: [], suites: [], fixtures: [], runs: [] }));
-    return { model: { config: pkg.config, settings: pkg.settings, release: pkg.release, data, forms, globalBehaviors: arr(global.behaviors), sheetBehaviors, workflows: arr(workflows.workflows), outputs: arr(outputs.outputs), testing, exportedAt: workflows.exportedAt || global.exportedAt }, opened, pkg, indexes: { formIndex, dataIndex } };
+    return { model: { config: pkg.config, settings: pkg.settings, release: pkg.release, data, forms, globalBehaviors: arr(global.behaviors), sheetBehaviors, workflows: arr(workflows.workflows), outputs: arr(outputs.outputs), testing, relations: arr(pkg.relations), templateInstances: arr(pkg.templateInstances), templatePresets: arr(pkg.templatePresets), customOperationTemplates: arr(pkg.customOperationTemplates), analysisTasks: arr(pkg.analysisTasks), modelRuns: arr(pkg.modelRuns), exportedAt: workflows.exportedAt || global.exportedAt }, opened, pkg, indexes: { formIndex, dataIndex } };
   } catch (error) { if (opened.cleanup) await rm(root, { recursive: true, force: true }); throw error; }
 }
 
@@ -370,7 +428,8 @@ function auditFrozenFields(model, errors) {
   examine(model.config, ['id', 'name', 'description', 'version', 'createdAt', 'updatedAt', 'author', 'tags', 'access'], 'project.config');
   examine(model.release, ['mode', 'defaultFormId', 'defaultSheet', 'allowDesigner', 'allowBehaviorEditor', 'allowWorkflowEditor', 'lastVerifiedAt'], 'release');
   for (const item of model.forms) {
-    examine(item, ['id', 'name', 'formMode', 'templateKey', 'viewport', 'gridSize', 'components', 'bindings', 'behaviors', 'ruleCode', 'createdAt', 'updatedAt'], `forms.${item.id}`);
+    examine(item, ['id', 'name', 'formMode', 'templateKey', 'viewport', 'gridSize', 'coordinateSpace', 'formWindow', 'components', 'bindings', 'behaviors', 'ruleCode', 'createdAt', 'updatedAt'], `forms.${item.id}`);
+    examine(item.formWindow, ['x', 'y', 'width', 'height', 'props'], `forms.${item.id}.formWindow`);
     for (const componentItem of arr(item.components)) examine(componentItem, ['id', 'type', 'x', 'y', 'width', 'height', 'props', 'parentId', 'fieldBinding', 'behaviorBindings', 'children', 'locked', 'visible', 'zIndex'], `forms.${item.id}.components.${componentItem.id}`);
     for (const binding of arr(item.bindings)) examine(binding, ['id', 'sourceId', 'targetId', 'type', 'config'], `forms.${item.id}.bindings.${binding.id || '?'}`);
   }

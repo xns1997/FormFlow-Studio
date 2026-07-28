@@ -1,0 +1,660 @@
+{
+  "profiles": [],
+  "suites": [
+    {
+      "id": "suite_20260722",
+      "name": "项目自动回归",
+      "seed": 20260722,
+      "cases": [
+        {
+          "id": "expense_submit:normal",
+          "formId": "expense_submit",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "reimbursement_no": "测试值1",
+            "applicant": "测试值2",
+            "department": "研发部",
+            "expense_type": "交通费",
+            "expense_date": "2026-07-21",
+            "amount": 6,
+            "description": "测试值7",
+            "has_invoice": true,
+            "approval_status": "草稿",
+            "approver": "测试值10",
+            "approval_comment": "测试值11",
+            "application_time": "2026-07-21",
+            "approval_time": "2026-07-21"
+          },
+          "expectValid": true
+        },
+        {
+          "id": "expense_submit:required",
+          "formId": "expense_submit",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "reimbursement_no": "测试值1",
+            "applicant": "",
+            "department": "",
+            "expense_type": "",
+            "expense_date": "",
+            "amount": "",
+            "description": "",
+            "has_invoice": true,
+            "approval_status": "草稿",
+            "approver": "测试值10",
+            "approval_comment": "测试值11",
+            "application_time": "2026-07-21",
+            "approval_time": "2026-07-21"
+          },
+          "expectValid": false
+        },
+        {
+          "id": "expense_query:normal",
+          "formId": "expense_query",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "query_applicant": "测试值1",
+            "query_department": "研发部",
+            "query_expense_type": "交通费",
+            "query_date_range": [
+              "2026-07-01",
+              "2026-07-21"
+            ],
+            "query_approval_status": "草稿"
+          },
+          "expectValid": true
+        },
+        {
+          "id": "expense_approval:normal",
+          "formId": "expense_approval",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "reimbursement_no": "测试值1",
+            "applicant": "测试值2",
+            "department": "研发部",
+            "expense_type": "交通费",
+            "expense_date": "2026-07-21",
+            "amount": 6,
+            "description": "测试值7",
+            "has_invoice": true,
+            "approval_status": "草稿",
+            "approver": "测试值10",
+            "approval_comment": "测试值11",
+            "application_time": "2026-07-21",
+            "approval_time": "2026-07-21"
+          },
+          "expectValid": true
+        },
+        {
+          "id": "expense_approval:required",
+          "formId": "expense_approval",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "reimbursement_no": "测试值1",
+            "applicant": "",
+            "department": "",
+            "expense_type": "",
+            "expense_date": "",
+            "amount": "",
+            "description": "",
+            "has_invoice": true,
+            "approval_status": "草稿",
+            "approver": "测试值10",
+            "approval_comment": "测试值11",
+            "application_time": "2026-07-21",
+            "approval_time": "2026-07-21"
+          },
+          "expectValid": false
+        },
+        {
+          "id": "expense_detail:normal",
+          "formId": "expense_detail",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "reimbursement_no": "测试值1",
+            "applicant": "测试值2",
+            "department": "研发部",
+            "expense_type": "交通费",
+            "expense_date": "2026-07-21",
+            "amount": 6,
+            "description": "测试值7",
+            "has_invoice": true,
+            "approval_status": "草稿",
+            "approver": "测试值10",
+            "approval_comment": "测试值11",
+            "application_time": "2026-07-21",
+            "approval_time": "2026-07-21"
+          },
+          "expectValid": true
+        },
+        {
+          "id": "expense_detail:required",
+          "formId": "expense_detail",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "reimbursement_no": "测试值1",
+            "applicant": "",
+            "department": "",
+            "expense_type": "",
+            "expense_date": "",
+            "amount": "",
+            "description": "",
+            "has_invoice": true,
+            "approval_status": "草稿",
+            "approver": "测试值10",
+            "approval_comment": "测试值11",
+            "application_time": "2026-07-21",
+            "approval_time": "2026-07-21"
+          },
+          "expectValid": false
+        },
+        {
+          "id": "scenario:query-results",
+          "name": "查询结果与统计",
+          "category": "business",
+          "assertion": "query_results",
+          "expectValid": true
+        }
+      ],
+      "createdAt": "2026-07-22T07:36:42.189Z"
+    }
+  ],
+  "fixtures": [],
+  "runs": [
+    {
+      "id": "run_285196c2-b383-4c51-bc95-467585cffd4b",
+      "suiteId": "suite_20260722",
+      "passed": true,
+      "coverage": 100,
+      "validation": {
+        "valid": true,
+        "errors": [],
+        "counts": {
+          "forms": 4,
+          "dataSources": 1,
+          "workflows": 4,
+          "behaviors": 9,
+          "outputs": 1
+        },
+        "structural": {
+          "valid": true,
+          "errors": []
+        },
+        "references": {
+          "valid": true,
+          "errors": []
+        },
+        "semantic": {
+          "valid": true,
+          "errors": []
+        },
+        "requirements": {
+          "valid": true,
+          "errors": []
+        }
+      },
+      "results": [
+        {
+          "id": "expense_submit:normal",
+          "formId": "expense_submit",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "reimbursement_no": "测试值1",
+            "applicant": "测试值2",
+            "department": "研发部",
+            "expense_type": "交通费",
+            "expense_date": "2026-07-21",
+            "amount": 6,
+            "description": "测试值7",
+            "has_invoice": true,
+            "approval_status": "草稿",
+            "approver": "测试值10",
+            "approval_comment": "测试值11",
+            "application_time": "2026-07-21",
+            "approval_time": "2026-07-21"
+          },
+          "expectValid": true,
+          "passed": true,
+          "actualValid": true,
+          "errors": []
+        },
+        {
+          "id": "expense_submit:required",
+          "formId": "expense_submit",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "reimbursement_no": "测试值1",
+            "applicant": "",
+            "department": "",
+            "expense_type": "",
+            "expense_date": "",
+            "amount": "",
+            "description": "",
+            "has_invoice": true,
+            "approval_status": "草稿",
+            "approver": "测试值10",
+            "approval_comment": "测试值11",
+            "application_time": "2026-07-21",
+            "approval_time": "2026-07-21"
+          },
+          "expectValid": false,
+          "passed": true,
+          "actualValid": false,
+          "errors": [
+            "applicant 为必填项",
+            "department 为必填项",
+            "expense_type 为必填项",
+            "expense_date 为必填项",
+            "amount 为必填项",
+            "description 为必填项"
+          ]
+        },
+        {
+          "id": "expense_query:normal",
+          "formId": "expense_query",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "query_applicant": "测试值1",
+            "query_department": "研发部",
+            "query_expense_type": "交通费",
+            "query_date_range": [
+              "2026-07-01",
+              "2026-07-21"
+            ],
+            "query_approval_status": "草稿"
+          },
+          "expectValid": true,
+          "passed": true,
+          "actualValid": true,
+          "errors": []
+        },
+        {
+          "id": "expense_approval:normal",
+          "formId": "expense_approval",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "reimbursement_no": "测试值1",
+            "applicant": "测试值2",
+            "department": "研发部",
+            "expense_type": "交通费",
+            "expense_date": "2026-07-21",
+            "amount": 6,
+            "description": "测试值7",
+            "has_invoice": true,
+            "approval_status": "草稿",
+            "approver": "测试值10",
+            "approval_comment": "测试值11",
+            "application_time": "2026-07-21",
+            "approval_time": "2026-07-21"
+          },
+          "expectValid": true,
+          "passed": true,
+          "actualValid": true,
+          "errors": []
+        },
+        {
+          "id": "expense_approval:required",
+          "formId": "expense_approval",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "reimbursement_no": "测试值1",
+            "applicant": "",
+            "department": "",
+            "expense_type": "",
+            "expense_date": "",
+            "amount": "",
+            "description": "",
+            "has_invoice": true,
+            "approval_status": "草稿",
+            "approver": "测试值10",
+            "approval_comment": "测试值11",
+            "application_time": "2026-07-21",
+            "approval_time": "2026-07-21"
+          },
+          "expectValid": false,
+          "passed": true,
+          "actualValid": false,
+          "errors": [
+            "applicant 为必填项",
+            "department 为必填项",
+            "expense_type 为必填项",
+            "expense_date 为必填项",
+            "amount 为必填项",
+            "description 为必填项"
+          ]
+        },
+        {
+          "id": "expense_detail:normal",
+          "formId": "expense_detail",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "reimbursement_no": "测试值1",
+            "applicant": "测试值2",
+            "department": "研发部",
+            "expense_type": "交通费",
+            "expense_date": "2026-07-21",
+            "amount": 6,
+            "description": "测试值7",
+            "has_invoice": true,
+            "approval_status": "草稿",
+            "approver": "测试值10",
+            "approval_comment": "测试值11",
+            "application_time": "2026-07-21",
+            "approval_time": "2026-07-21"
+          },
+          "expectValid": true,
+          "passed": true,
+          "actualValid": true,
+          "errors": []
+        },
+        {
+          "id": "expense_detail:required",
+          "formId": "expense_detail",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "reimbursement_no": "测试值1",
+            "applicant": "",
+            "department": "",
+            "expense_type": "",
+            "expense_date": "",
+            "amount": "",
+            "description": "",
+            "has_invoice": true,
+            "approval_status": "草稿",
+            "approver": "测试值10",
+            "approval_comment": "测试值11",
+            "application_time": "2026-07-21",
+            "approval_time": "2026-07-21"
+          },
+          "expectValid": false,
+          "passed": true,
+          "actualValid": false,
+          "errors": [
+            "applicant 为必填项",
+            "department 为必填项",
+            "expense_type 为必填项",
+            "expense_date 为必填项",
+            "amount 为必填项",
+            "description 为必填项"
+          ]
+        },
+        {
+          "id": "scenario:query-results",
+          "name": "查询结果与统计",
+          "category": "business",
+          "assertion": "query_results",
+          "expectValid": true,
+          "passed": true,
+          "actualValid": true,
+          "errors": [],
+          "evidenceKind": "scenario_result"
+        }
+      ],
+      "ruleResults": [],
+      "mockedEffects": [
+        "数据写回",
+        "外部 API",
+        "流程副作用"
+      ],
+      "ranAt": "2026-07-22T07:36:42.212Z"
+    },
+    {
+      "id": "run_dc69bad1-f1e7-4965-bde8-547dcfe65fa1",
+      "suiteId": "suite_20260722",
+      "passed": true,
+      "coverage": 100,
+      "validation": {
+        "valid": true,
+        "errors": [],
+        "counts": {
+          "forms": 4,
+          "dataSources": 1,
+          "workflows": 4,
+          "behaviors": 9,
+          "outputs": 1
+        },
+        "structural": {
+          "valid": true,
+          "errors": []
+        },
+        "references": {
+          "valid": true,
+          "errors": []
+        },
+        "semantic": {
+          "valid": true,
+          "errors": []
+        },
+        "requirements": {
+          "valid": true,
+          "errors": []
+        }
+      },
+      "results": [
+        {
+          "id": "expense_submit:normal",
+          "formId": "expense_submit",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "reimbursement_no": "测试值1",
+            "applicant": "测试值2",
+            "department": "研发部",
+            "expense_type": "交通费",
+            "expense_date": "2026-07-21",
+            "amount": 6,
+            "description": "测试值7",
+            "has_invoice": true,
+            "approval_status": "草稿",
+            "approver": "测试值10",
+            "approval_comment": "测试值11",
+            "application_time": "2026-07-21",
+            "approval_time": "2026-07-21"
+          },
+          "expectValid": true,
+          "passed": true,
+          "actualValid": true,
+          "errors": []
+        },
+        {
+          "id": "expense_submit:required",
+          "formId": "expense_submit",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "reimbursement_no": "测试值1",
+            "applicant": "",
+            "department": "",
+            "expense_type": "",
+            "expense_date": "",
+            "amount": "",
+            "description": "",
+            "has_invoice": true,
+            "approval_status": "草稿",
+            "approver": "测试值10",
+            "approval_comment": "测试值11",
+            "application_time": "2026-07-21",
+            "approval_time": "2026-07-21"
+          },
+          "expectValid": false,
+          "passed": true,
+          "actualValid": false,
+          "errors": [
+            "applicant 为必填项",
+            "department 为必填项",
+            "expense_type 为必填项",
+            "expense_date 为必填项",
+            "amount 为必填项",
+            "description 为必填项"
+          ]
+        },
+        {
+          "id": "expense_query:normal",
+          "formId": "expense_query",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "query_applicant": "测试值1",
+            "query_department": "研发部",
+            "query_expense_type": "交通费",
+            "query_date_range": [
+              "2026-07-01",
+              "2026-07-21"
+            ],
+            "query_approval_status": "草稿"
+          },
+          "expectValid": true,
+          "passed": true,
+          "actualValid": true,
+          "errors": []
+        },
+        {
+          "id": "expense_approval:normal",
+          "formId": "expense_approval",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "reimbursement_no": "测试值1",
+            "applicant": "测试值2",
+            "department": "研发部",
+            "expense_type": "交通费",
+            "expense_date": "2026-07-21",
+            "amount": 6,
+            "description": "测试值7",
+            "has_invoice": true,
+            "approval_status": "草稿",
+            "approver": "测试值10",
+            "approval_comment": "测试值11",
+            "application_time": "2026-07-21",
+            "approval_time": "2026-07-21"
+          },
+          "expectValid": true,
+          "passed": true,
+          "actualValid": true,
+          "errors": []
+        },
+        {
+          "id": "expense_approval:required",
+          "formId": "expense_approval",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "reimbursement_no": "测试值1",
+            "applicant": "",
+            "department": "",
+            "expense_type": "",
+            "expense_date": "",
+            "amount": "",
+            "description": "",
+            "has_invoice": true,
+            "approval_status": "草稿",
+            "approver": "测试值10",
+            "approval_comment": "测试值11",
+            "application_time": "2026-07-21",
+            "approval_time": "2026-07-21"
+          },
+          "expectValid": false,
+          "passed": true,
+          "actualValid": false,
+          "errors": [
+            "applicant 为必填项",
+            "department 为必填项",
+            "expense_type 为必填项",
+            "expense_date 为必填项",
+            "amount 为必填项",
+            "description 为必填项"
+          ]
+        },
+        {
+          "id": "expense_detail:normal",
+          "formId": "expense_detail",
+          "name": "主路径",
+          "category": "normal",
+          "values": {
+            "reimbursement_no": "测试值1",
+            "applicant": "测试值2",
+            "department": "研发部",
+            "expense_type": "交通费",
+            "expense_date": "2026-07-21",
+            "amount": 6,
+            "description": "测试值7",
+            "has_invoice": true,
+            "approval_status": "草稿",
+            "approver": "测试值10",
+            "approval_comment": "测试值11",
+            "application_time": "2026-07-21",
+            "approval_time": "2026-07-21"
+          },
+          "expectValid": true,
+          "passed": true,
+          "actualValid": true,
+          "errors": []
+        },
+        {
+          "id": "expense_detail:required",
+          "formId": "expense_detail",
+          "name": "必填缺失",
+          "category": "required",
+          "values": {
+            "reimbursement_no": "测试值1",
+            "applicant": "",
+            "department": "",
+            "expense_type": "",
+            "expense_date": "",
+            "amount": "",
+            "description": "",
+            "has_invoice": true,
+            "approval_status": "草稿",
+            "approver": "测试值10",
+            "approval_comment": "测试值11",
+            "application_time": "2026-07-21",
+            "approval_time": "2026-07-21"
+          },
+          "expectValid": false,
+          "passed": true,
+          "actualValid": false,
+          "errors": [
+            "applicant 为必填项",
+            "department 为必填项",
+            "expense_type 为必填项",
+            "expense_date 为必填项",
+            "amount 为必填项",
+            "description 为必填项"
+          ]
+        },
+        {
+          "id": "scenario:query-results",
+          "name": "查询结果与统计",
+          "category": "business",
+          "assertion": "query_results",
+          "expectValid": true,
+          "passed": true,
+          "actualValid": true,
+          "errors": [],
+          "evidenceKind": "scenario_result"
+        }
+      ],
+      "ruleResults": [],
+      "mockedEffects": [
+        "数据写回",
+        "外部 API",
+        "流程副作用"
+      ],
+      "ranAt": "2026-07-22T07:47:39.804Z"
+    }
+  ]
+}

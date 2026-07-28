@@ -12,6 +12,7 @@ process.env.FORMFLOW_DATABASE_AUTO_START = 'false';
 
 const { executeFormFlowTool, listFormFlowTools, MCP_ROLES, validateMcpToolRegistry } = await import('./formflow-tool-registry');
 const { projectPackagePath } = await import('./project-package-store');
+const { stageUpload } = await import('./upload-staging');
 
 const actor = { userId: 'user-1', user: { id: 'user-1', username: 'tester', role: 'user' as const } };
 
@@ -21,7 +22,7 @@ test('tool registry exposes unique schemas and the complete lifecycle surface', 
   const tools = listFormFlowTools();
   assert.ok(tools.length >= 65);
   assert.equal(new Set(tools.map((item) => item.name)).size, tools.length);
-  for (const name of ['project.initialize', 'project.build_from_data', 'data_source.import', 'form.generate_from_table', 'workflow_node.upsert', 'release.apply', 'project.package.export']) {
+  for (const name of ['project.initialize', 'project.build_from_data', 'data_source.import', 'form.generate_from_table', 'workflow_node.upsert', 'template.recommend', 'release.apply', 'project.package.export']) {
     assert.ok(tools.some((item) => item.name === name), name);
   }
   assert.ok(tools.every((item) => item.inputSchema && item.outputSchema && item.risk));
@@ -32,6 +33,43 @@ test('tool registry exposes unique schemas and the complete lifecycle surface', 
   const propsSchema = (componentUpsert.inputSchema as any).properties.item.properties.props;
   assert.equal(propsSchema.properties.events.additionalProperties.minLength, 1);
   assert.deepEqual(propsSchema.properties.flowTriggers.additionalProperties.required, ['enabled', 'workflowId']);
+});
+
+test('write tools replay the original result for the same idempotency key', async () => {
+  const projectId = `idempotency_e2e_${Date.now()}`;
+  const key = `idempotency-project-${projectId}`;
+  const first = await executeFormFlowTool('project.create', { id: projectId, name: '第一次创建', idempotencyKey: key }, actor);
+  const second = await executeFormFlowTool('project.create', { id: projectId, name: '不应覆盖', idempotencyKey: key }, actor);
+  assert.equal(first.ok, true, JSON.stringify(first));
+  assert.deepEqual(second, first);
+  const loaded = await executeFormFlowTool('project.get', { projectId }, actor);
+  assert.equal(JSON.stringify((loaded as any).data).includes('第一次创建'), true);
+  assert.ok((loaded as any).data.revision);
+});
+
+test('template.recommend is read-only, preserves revision and returns every matching catalog entry', async () => {
+  const projectId = 'template_recommend_tools';
+  assert.equal((await executeFormFlowTool('project.create', { id: projectId, name: '模板推荐', idempotencyKey: 'recommend-project' }, actor)).ok, true);
+  const loaded = await executeFormFlowTool('project.get', { projectId }, actor);
+  let revision = (loaded as any).data.revision;
+  const source = await executeFormFlowTool('data_source.create', {
+    projectId,
+    id: 'sales',
+    rows: [{ id: 'A1', amount: 10, date: '2026-01-01' }],
+    config: { keyFields: ['id'] },
+    baseRevision: revision,
+    idempotencyKey: 'recommend-source',
+  }, actor);
+  assert.equal(source.ok, true, JSON.stringify(source));
+  revision = (source as any).meta.revision;
+  const recommended = await executeFormFlowTool('template.recommend', {
+    projectId,
+    selection: { tableId: 'sales', tableIds: ['sales'], sheetName: 'Sheet1', fields: ['id', 'amount', 'date'] },
+  }, actor);
+  assert.equal(recommended.ok, true, JSON.stringify(recommended));
+  assert.ok((recommended as any).data.length >= 10);
+  const reloaded = await executeFormFlowTool('project.get', { projectId }, actor);
+  assert.equal((reloaded as any).data.revision, revision);
 });
 
 test('data source creation accepts compatible nested config and explicit empty-table columns', async () => {
@@ -63,6 +101,46 @@ test('data source creation accepts compatible nested config and explicit empty-t
   const sheet = await executeFormFlowTool('data_sheet.get', { projectId: 'data_schema_compat', tableId: 'work_orders', sheetName: 'Sheet1' }, actor);
   assert.deepEqual((sheet as any).data.headers, ['order_id', 'created_at']);
   assert.deepEqual((sheet as any).data.config.keyFields, ['order_id']);
+});
+
+test('template parameter presets persist through project tools and remain scoped by template', async () => {
+  const projectId = 'template_preset_tools';
+  assert.equal((await executeFormFlowTool('project.create', { id: projectId, name: '模板预设', idempotencyKey: 'preset-project' }, actor)).ok, true);
+  const loaded = await executeFormFlowTool('project.get', { projectId }, actor); const revision = (loaded as any).data.revision;
+  const saved = await executeFormFlowTool('template.preset.upsert', { projectId, baseRevision: revision, idempotencyKey: 'preset-save', preset: { id: 'sales_monthly', name: '月度销售', templateId: 'kpi-dashboard', parameters: { metrics: ['销售额'], dimensions: ['月份'] } } }, actor);
+  assert.equal(saved.ok, true, JSON.stringify(saved));
+  const listed = await executeFormFlowTool('template.preset.list', { projectId, templateId: 'kpi-dashboard' }, actor);
+  assert.deepEqual((listed as any).data.map((item: any) => item.name), ['月度销售']);
+  const unrelated = await executeFormFlowTool('template.preset.list', { projectId, templateId: 'trend-analysis' }, actor);
+  assert.deepEqual((unrelated as any).data, []);
+  const failed = await executeFormFlowTool('template.plan', { projectId, templateId: 'missing-template', selection: {} }, actor);
+  assert.equal(failed.ok, false);
+  const statistics = await executeFormFlowTool('template.statistics', { projectId }, actor);
+  assert.equal((statistics as any).data.presets, 1);
+  assert.ok((statistics as any).data.failureReasons.some((item: any) => item.code === 'TEMPLATE_NOT_FOUND' && item.count === 1));
+  const reloaded = await executeFormFlowTool('project.get', { projectId }, actor);
+  assert.equal((reloaded as any).data.project.templatePresets[0].parameters.metrics[0], '销售额');
+  const customTemplate = { id: 'custom-entry', version: '1.0.0', kind: 'operation', category: 'entry', name: '自定义录入', description: '用于验证安全导入的纯声明模板。', selectionContract: { accepts: ['table', 'field'], minTables: 1, maxTables: 1, minFields: 1, requiresWritable: true }, parameterSchema: { type: 'object', properties: {}, required: [], additionalProperties: false }, generation: { forms: 1, workflows: 1, behaviors: 0, outputs: 0, tests: 1, modifiesData: false, destructive: false } };
+  const imported = await executeFormFlowTool('template.package.import', { projectId, baseRevision: (reloaded as any).data.revision, idempotencyKey: 'template-package-import', package: { kind: 'formflow-operation-template-package', formatVersion: 1, templates: [customTemplate] } }, actor);
+  assert.equal(imported.ok, true, JSON.stringify(imported));
+  const catalog = await executeFormFlowTool('catalog.operation_templates.list', { projectId }, actor);
+  assert.ok((catalog as any).data.some((item: any) => item.id === 'custom-entry'));
+  const exported = await executeFormFlowTool('template.package.export', { projectId, templateIds: ['custom-entry'] }, actor);
+  assert.equal((exported as any).data.templates[0].name, '自定义录入');
+  assert.match((exported as any).data.checksum, /^[a-f0-9]{64}$/);
+  let packageRevision = (imported as any).meta.revision;
+  const source = await executeFormFlowTool('data_source.create', { projectId, id: 'custom_data', rows: [{ id: 'A1', name: '示例' }], config: { keyFields: ['id'] }, baseRevision: packageRevision, idempotencyKey: 'custom-template-data' }, actor);
+  assert.equal(source.ok, true, JSON.stringify(source)); packageRevision = (source as any).meta.revision;
+  const customPlan = await executeFormFlowTool('template.plan', { projectId, templateId: 'custom-entry', selection: { tableId: 'custom_data', sheetName: 'Sheet1', fields: ['id', 'name'] }, parameters: {} }, actor);
+  assert.equal(customPlan.ok, true, JSON.stringify(customPlan));
+  const applied = await executeFormFlowTool('template.apply', { projectId, baseRevision: packageRevision, idempotencyKey: 'custom-template-apply', plan: (customPlan as any).data.plan }, actor);
+  assert.equal(applied.ok, true, JSON.stringify(applied)); packageRevision = (applied as any).meta.revision;
+  const upgradedPackage = { kind: 'formflow-operation-template-package', formatVersion: 1, templates: [{ ...customTemplate, version: '2.0.0', description: '第二版自定义录入模板。' }] };
+  const importedUpgrade = await executeFormFlowTool('template.package.import', { projectId, baseRevision: packageRevision, idempotencyKey: 'template-package-upgrade', overwrite: true, package: upgradedPackage }, actor);
+  assert.equal(importedUpgrade.ok, true, JSON.stringify(importedUpgrade)); packageRevision = (importedUpgrade as any).meta.revision;
+  const upgraded = await executeFormFlowTool('template.instance.upgrade', { projectId, id: (applied as any).data.instanceId, baseRevision: packageRevision, idempotencyKey: 'custom-instance-upgrade' }, actor);
+  assert.equal(upgraded.ok, true, JSON.stringify(upgraded));
+  assert.deepEqual({ upgraded: (upgraded as any).data.upgraded, from: (upgraded as any).data.fromVersion, to: (upgraded as any).data.toVersion }, { upgraded: true, from: '1.0.0', to: '2.0.0' });
 });
 
 test('behavior.list declares and enforces scope-specific arguments', async () => {
@@ -153,6 +231,8 @@ test('project, data, form and row tools form a revision-protected lifecycle', as
 
   const conflict = await executeFormFlowTool('form.create', { projectId: 'tool_demo', id: 'late_form', name: '冲突', baseRevision: 'stale', idempotencyKey: 'conflict-1' }, actor);
   assert.equal(conflict.ok, false); assert.equal((conflict as any).error.code, 'PROJECT_REVISION_CONFLICT');
+  const recomputed = await executeFormFlowTool('form.create', { projectId: 'tool_demo', id: 'late_form', name: '冲突已重算', baseRevision: revision, idempotencyKey: 'conflict-1' }, actor);
+  assert.equal(recomputed.ok, true, '冲突失败不应写入幂等缓存'); revision = (recomputed as any).meta.revision;
 
   const batch = await executeFormFlowTool('data_rows.batch', { projectId: 'tool_demo', tableId: 'records', sheetName: 'Sheet1', baseRevision: revision, baseVersion: (queried as any).data.dataVersion, updates: [{ rowKey: 'key:R-1', changes: { amount: 999 } }], idempotencyKey: 'batch-1' }, actor);
   assert.equal(batch.ok, true, JSON.stringify(batch));
@@ -317,12 +397,10 @@ test('destructive tools require a bound single-use confirmation token', async ()
 test('deterministic .formflow export can be imported and unpacked through an uploaded fileId', async () => {
   const exported = await executeFormFlowTool('project.package.export', { projectId: 'tool_demo' }, actor);
   assert.equal(exported.ok, true);
-  const files = join(directory, 'server-data', 'files'); mkdirSync(files, { recursive: true });
   assert.equal((exported as any).data.fileName, 'tool_demo.formflow');
   const storedName = 'tool-demo.formflow'; const content = Buffer.from((exported as any).data.content, 'base64');
-  writeFileSync(join(files, storedName), content);
-  writeFileSync(join(files, 'file_package.meta.json'), JSON.stringify({ id: 'file_package', storedName, originalName: storedName, fileType: 'formflow', size: content.length }));
-  const imported = await executeFormFlowTool('project.import', { fileId: 'file_package', projectId: 'tool_imported', idempotencyKey: 'package-import-1' }, actor);
+  const staged = stageUpload({ buffer: content, originalName: storedName });
+  const imported = await executeFormFlowTool('project.import', { fileId: staged.id, projectId: 'tool_imported', idempotencyKey: 'package-import-1' }, actor);
   assert.equal(imported.ok, true, JSON.stringify(imported));
   const validation = await executeFormFlowTool('project.package.validate', { projectId: 'tool_imported' }, actor);
   assert.equal(validation.ok, true); assert.equal((validation as any).data.valid, true);

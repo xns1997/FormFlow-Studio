@@ -33,6 +33,50 @@
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.45);
 }
 
+.ff-antd-form-scope .ant-select,
+.ff-antd-form-scope .ant-select-selector,
+.ff-antd-form-scope .ant-select-selection-item,
+.ff-antd-form-scope .ant-select-selection-placeholder,
+.ff-antd-form-scope .ant-select-selection-search-input,
+.ff-antd-form-scope .ant-select-arrow {
+  color: var(--text) !important;
+  -webkit-text-fill-color: var(--text) !important;
+}
+
+.ff-antd-form-scope .ant-select-selection-placeholder {
+  color: var(--text-tertiary) !important;
+  -webkit-text-fill-color: var(--text-tertiary) !important;
+}
+
+.ff-antd-form-scope .ant-select-single .ant-select-selector {
+  min-height: 36px;
+  padding-inline: 12px 32px !important;
+  align-items: center;
+}
+
+.ff-antd-form-scope .ant-select-single .ant-select-selector .ant-select-selection-wrap,
+.ff-antd-form-scope .ant-select-single .ant-select-selector .ant-select-selection-search,
+.ff-antd-form-scope .ant-select-single .ant-select-selector .ant-select-selection-item,
+.ff-antd-form-scope .ant-select-single .ant-select-selector .ant-select-selection-placeholder {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+}
+
+.ff-antd-form-scope .ant-select-focused .ant-select-selector,
+.ff-antd-form-scope .ant-select-open .ant-select-selector {
+  color: var(--text) !important;
+  background: var(--panel) !important;
+}
+
+.ff-antd-form-scope .ant-select-focused .ant-select-selection-item,
+.ff-antd-form-scope .ant-select-open .ant-select-selection-item,
+.ff-antd-form-scope .ant-select-focused .ant-select-selection-search-input,
+.ff-antd-form-scope .ant-select-open .ant-select-selection-search-input {
+  color: var(--text) !important;
+  -webkit-text-fill-color: var(--text) !important;
+}
+
 .ff-antd-form-scope .ant-input,
 .ff-antd-form-scope .ant-input-number-input,
 .ff-antd-form-scope .ant-select-selection-placeholder,
@@ -88,6 +132,18 @@
 
 .ff-antd-form-scope .ff-antd-upload .ant-upload {
   padding: 16px;
+}
+
+.ff-antd-form-scope .ff-antd-empty-hint {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px dashed var(--line);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--fill-secondary) 72%, var(--panel) 28%);
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 
 .ff-antd-form-scope .ff-antd-button.ant-btn {
@@ -232,3 +288,76 @@
   background: var(--accent-soft);
   color: var(--accent);
 }
+
+/* ── 表单错误提示 ────────────────────────────────────── */
+@keyframes error-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+.form-field-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 12px;
+  line-height: 1.4;
+  animation: error-shake 0.3s ease-out;
+}
+
+.form-field-error::before {
+  content: '⚠';
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.form-field-error-inline {
+  color: var(--danger);
+  font-size: 11px;
+  margin-top: 4px;
+  animation: page-fade-in 0.15s ease-out;
+}
+
+/* 错误状态输入框 */
+.ff-antd-form-scope .ant-input-status-error,
+.ff-antd-form-scope .ant-input-number-status-error,
+.ff-antd-form-scope .ant-select-status-error,
+.ff-antd-form-scope .ant-picker-status-error {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 2px var(--danger-soft) !important;
+}
+
+.ff-antd-form-scope .ant-form-item-explain-error {
+  color: var(--danger);
+  font-size: 12px;
+  margin-top: 4px;
+}
+.lg-field-state { margin-left: 6px; color: var(--muted); font-size: 11px; font-weight: 500; }
+.lg-field-state.warning { color: var(--warning, #a15c00); }
+.lg-required-missing { margin-left: 8px; font-size: 11px; color: var(--muted); }
+.lg-required-missing summary { cursor: pointer; }
+.lg-required-missing div { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.lg-required-missing button { border: 0; background: transparent; color: var(--accent); text-decoration: underline; cursor: pointer; font-size: 11px; }
+.lg-submit-summary { flex: 1 1 100%; font-size: 11px; color: var(--muted); }
+.lg-submit-summary summary { cursor: pointer; }
+.lg-submit-summary div { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 4px; }
+.lg-field-clear-source { margin-top: 3px; border: 0; padding: 0; background: transparent; color: var(--accent); font-size: 11px; cursor: pointer; }
+.lg-format-hint { display: flex; align-items: center; gap: 6px; margin-top: 4px; color: var(--text-secondary, #6e6e73); font-size: 12px; }
+.lg-format-hint code { max-width: min(100%, 360px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lg-format-hint button { min-height: 28px; padding: 2px 8px; border: 1px solid var(--border-subtle, #d2d2d7); border-radius: 6px; background: transparent; color: var(--accent, #007aff); cursor: pointer; }
+.lg-input-with-action { display: flex; align-items: stretch; gap: 6px; }
+.lg-input-with-action > .ff-antd-control { min-width: 0; flex: 1 1 auto; }
+.lg-generate-code { min-height: 32px; padding: 0 10px; border: 1px solid var(--accent, #007aff); border-radius: 8px; background: transparent; color: var(--accent, #007aff); cursor: pointer; white-space: nowrap; }
+.lg-generate-code:disabled { opacity: .5; cursor: not-allowed; }
+.lg-form-action-warning { margin: 0 0 10px; padding: 8px 10px; border-radius: 8px; background: var(--warning-soft, rgba(255,149,0,.12)); color: var(--warning, #a15c00); font-size: 12px; }
+.lg-image-runtime { position: relative; min-height: 32px; }
+.lg-image-runtime img { display: block; }
+.lg-image-state { display: block; padding: 8px; color: var(--text-secondary, #6e6e73); font-size: 12px; }
+.lg-image-state.error { color: var(--danger, #ff3b30); }
+.lg-draft-actions { display: flex; justify-content: flex-end; gap: 6px; margin-bottom: 8px; }
+.lg-draft-actions button { min-height: 28px; padding: 2px 8px; border: 1px solid var(--border-subtle, #d2d2d7); border-radius: 7px; background: transparent; color: var(--accent, #007aff); cursor: pointer; }

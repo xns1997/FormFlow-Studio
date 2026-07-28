@@ -16,6 +16,7 @@ test.after(() => rmSync(root, { recursive: true, force: true }));
 test('V2 store clears only legacy sessions and persists ordered events', () => {
   assert.deepEqual(JSON.parse(readFileSync(process.env.PROJECT_AGENT_STORE_PATH!, 'utf8')), []);
   const session = store.createAgentSessionV2({ tenantId: 't', userId: 'u', profileId: 'p' });
+  assert.equal(session.phase, 'idle');
   store.appendAgentEvent(session, 'phase_changed', { phase: 'planning' }); store.appendAgentEvent(session, 'plan_proposed', { id: 'p1' });
   assert.deepEqual(store.eventsAfter(session, 1).map((event) => event.seq), [2]);
   assert.equal(store.getAgentSessionV2(session.id)?.schemaVersion, 2); assert.ok(existsSync(process.env.PROJECT_AGENT_V2_STORE_PATH!));
@@ -38,6 +39,28 @@ test('session listing isolates project and unbound scopes and sorts by latest up
   assert.equal(store.findActiveProjectAgentSession({ tenantId: 'scope-t', userId: 'scope-u', projectId: 'project-a' }, older.id), undefined);
   store.archiveAgentSessionV2(other);
   assert.equal(store.listAgentSessionsV2({ tenantId: 'scope-t', userId: 'scope-u', sessionScope: 'all' }).some((item) => item.id === other.id), false);
+});
+
+test('history summaries filter, pin, paginate, archive, restore and permanently delete without exposing full payloads', async () => {
+  const first = store.createAgentSessionV2({ tenantId: 'history-t', userId: 'history-u', projectId: 'project-a', profileId: 'p', title: '员工录入任务' });
+  const second = store.createAgentSessionV2({ tenantId: 'history-t', userId: 'history-u', projectId: 'project-b', profileId: 'p', title: '设备巡检任务' });
+  const third = store.createAgentSessionV2({ tenantId: 'history-t', userId: 'history-u', profileId: 'p', title: '新项目任务' });
+  first.phase = 'completed'; first.requirementCoverage = { total: 2, planned: 2, supported: 2, verified: 2, failed: 0, capabilityGaps: 0, needsUserInput: 0, planComplete: true, complete: true };
+  second.phase = 'failed'; second.plans.push({ id: 'plan', revision: 1, request: '', goal: '修复巡检流程', successCriteria: [], summary: '', assumptions: [], risks: [], tasks: [], status: 'confirmed', createdAt: '' }); second.activePlanId = 'plan';
+  store.updateAgentSessionMetadata(first, { pinned: true }); store.saveAgentSessionV2(second); store.saveAgentSessionV2(third);
+  const firstPage = store.listAgentSessionHistory({ tenantId: 'history-t', userId: 'history-u', limit: 2 });
+  assert.equal(firstPage.items[0].id, first.id); assert.equal(firstPage.items.length, 2); assert.ok(firstPage.nextCursor);
+  assert.equal('messages' in firstPage.items[0], false); assert.equal('events' in firstPage.items[0], false); assert.equal('artifacts' in firstPage.items[0], false); assert.equal('projectRevisions' in firstPage.items[0], false);
+  const secondPage = store.listAgentSessionHistory({ tenantId: 'history-t', userId: 'history-u', cursor: firstPage.nextCursor });
+  assert.equal(secondPage.items.length, 1); assert.deepEqual(new Set([...firstPage.items, ...secondPage.items].map((item) => item.id)), new Set([first.id, second.id, third.id]));
+  assert.deepEqual(store.listAgentSessionHistory({ tenantId: 'history-t', userId: 'history-u', status: 'attention' }).items.map((item) => item.id), [second.id]);
+  assert.deepEqual(store.listAgentSessionHistory({ tenantId: 'history-t', userId: 'history-u', q: '巡检流程' }).items.map((item) => item.id), [second.id]);
+  assert.deepEqual(store.listAgentSessionHistory({ tenantId: 'history-t', userId: 'history-u', projectId: 'project-a' }).items.map((item) => item.id), [first.id]);
+  assert.deepEqual(store.listAgentSessionHistory({ tenantId: 'history-t', userId: 'history-u', projectId: '__unbound__' }).items.map((item) => item.id), [third.id]);
+  store.archiveAgentSessionV2(second); assert.deepEqual(store.listAgentSessionHistory({ tenantId: 'history-t', userId: 'history-u', archived: true }).items.map((item) => item.id), [second.id]);
+  store.restoreAgentSessionV2(second); assert.equal(store.listAgentSessionHistory({ tenantId: 'history-t', userId: 'history-u' }).items.some((item) => item.id === second.id), true);
+  assert.deepEqual(await store.deleteAgentSessionV2(second), { deleted: true, id: second.id }); assert.equal(store.getAgentSessionV2(second.id), undefined); assert.equal(store.listAgentSessionHistory({ tenantId: 'history-t', userId: 'history-u' }).items.some((item) => item.id === second.id), false);
+  assert.throws(() => store.updateAgentSessionMetadata(first, { title: '' }), /1–80/);
 });
 
 test('sessions support multiple limited projects with one current project', () => {

@@ -3,10 +3,10 @@ import { notification } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import {
   createProjectStructure, listProjects,
-  cloneProject, deleteProject as deleteProjectFn, loadProjectStructure,
+  cloneProject, deleteProject as deleteProjectFn,
 } from '../../project/manager';
-import { downloadFormFlowPackage, importFormFlowPackage, openFilePicker } from '../../project/packageManager';
-import { request } from '../../services/io/api';
+import { importFormFlowPackage, openFilePicker } from '../../project/packageManager';
+import { projectApi, request } from '../../services/io/api';
 import Modal, { ModalFooter, ModalHeader } from '../../components/Modal';
 import {
   PROJECT_TEMPLATES,
@@ -154,9 +154,9 @@ export default function ProjectsListPage() {
   }, []);
 
   const exportProject = useCallback((id: string) => {
-    loadProjectStructure(id)
-      .then((data) => data && downloadFormFlowPackage(data));
-  }, []);
+    const project = projectList.find((item) => item.id === id);
+    void projectApi.downloadPackage(id, project?.name || id);
+  }, [projectList]);
 
   const finishCreate = useCallback(async (projectPromise: Promise<ProjectStructure>) => {
     const project = await projectPromise;
@@ -170,22 +170,16 @@ export default function ProjectsListPage() {
     const file = await openFilePicker('.formflow');
     if (!file) return;
     try {
-      await finishCreate(createProjectFromSource({
-        mode: 'package',
-        file,
-        meta: {
-          name: file.name.replace(/\.formflow$/i, '') || `导入项目 ${projectList.length + 1}`,
-          description: '',
-          author: '',
-          tags: [],
-        },
-      }));
+      const result = await projectApi.importPackage(file);
+      const project = result.project || result;
+      setProjectList(await listProjects());
+      navigate(buildWorkspacePath(project.config.id));
     } catch (err) {
       const description = err instanceof Error ? err.message : String(err);
       notification.error({ message: '导入项目包失败', description });
       announce('导入项目包失败');
     }
-  }, [announce, finishCreate, projectList.length]);
+  }, [announce, navigate]);
 
   const setMode = useCallback((mode: ProjectCreationMode) => {
     setDraft((current) => ({
@@ -294,7 +288,17 @@ export default function ProjectsListPage() {
         projectPromise = createProjectFromSource({ mode: 'template', templateId: draft.selectedTemplateId || 'game_analytics', meta });
       } else {
         if (!draft.importedFile) throw new Error('请先选择 .formflow 项目包');
-        projectPromise = createProjectFromSource({ mode: 'package', file: draft.importedFile, meta });
+        const result = await projectApi.importPackage(draft.importedFile);
+        const imported = result.project || result;
+        const project = {
+          ...imported,
+          config: { ...imported.config, name: meta.name, description: meta.description, author: meta.author, tags: meta.tags },
+        };
+        await projectApi.update(project.config.id, project);
+        setProjectList(await listProjects());
+        navigate(buildWorkspacePath(project.config.id));
+        closeWizard();
+        return;
       }
       await finishCreate(projectPromise);
       closeWizard();
@@ -305,9 +309,15 @@ export default function ProjectsListPage() {
         error: error instanceof Error ? error.message : '创建项目失败',
       }));
     }
-  }, [closeWizard, draft, finishCreate]);
+  }, [closeWizard, draft, finishCreate, navigate]);
 
   const template = PROJECT_TEMPLATES.find((item) => item.id === draft.selectedTemplateId);
+  const templateKindLabels: Record<string, string> = {
+    analytics: '分析',
+    employment: '就业',
+    forecast: '预测',
+    selection: '选型',
+  };
   const summaryLines = [
     draft.mode === 'blank' ? '从空白项目开始' : draft.mode === 'template' ? `从模板「${template?.name || ''}」开始` : `从 .formflow 项目包「${draft.fileName || ''}」导入并解包`,
     draft.meta.description.trim() || '未填写项目描述',
@@ -430,7 +440,11 @@ export default function ProjectsListPage() {
         <div className="modal-body project-wizard-body">
           <div className="project-wizard-steps">
             {['起始方式', '基础信息', '确认创建'].map((label, index) => (
-              <div key={label} className={`project-wizard-step ${draft.step === index ? 'active' : draft.step > index ? 'done' : ''}`}>
+              <div
+                key={label}
+                className={`project-wizard-step ${draft.step === index ? 'active' : draft.step > index ? 'done' : ''}`}
+                aria-current={draft.step === index ? 'step' : undefined}
+              >
                 <span>{index + 1}</span>
                 <strong>{label}</strong>
               </div>
@@ -449,6 +463,7 @@ export default function ProjectsListPage() {
                     key={item.mode}
                     type="button"
                     className={`project-wizard-mode-card ${draft.mode === item.mode ? 'active' : ''}`}
+                    aria-pressed={draft.mode === item.mode}
                     onClick={() => setMode(item.mode)}
                   >
                     <strong>{item.title}</strong>
@@ -464,11 +479,12 @@ export default function ProjectsListPage() {
                       key={item.id}
                       type="button"
                       className={`project-wizard-template-card ${draft.selectedTemplateId === item.id ? 'active' : ''}`}
+                      aria-pressed={draft.selectedTemplateId === item.id}
                       onClick={() => chooseTemplate(item.id)}
                     >
                       <div className="project-wizard-template-head">
                         <strong>{item.name}</strong>
-                        <span>{item.kind}</span>
+                        <span>{templateKindLabels[item.kind] || item.kind}</span>
                       </div>
                       <p>{item.description}</p>
                       <div className="project-wizard-tags">
@@ -558,6 +574,11 @@ export default function ProjectsListPage() {
           )}
 
           {draft.error && <div className="project-wizard-error">{draft.error}</div>}
+          {draft.step === 0 && !canMoveNext && (
+            <p className="project-wizard-next-hint" role="status">
+              {draft.mode === 'template' ? '请选择一个内置模板后继续。' : draft.mode === 'package' ? '请选择有效的 .formflow 项目包后继续。' : '可以继续填写项目基础信息。'}
+            </p>
+          )}
         </div>
         <ModalFooter>
           <button type="button" className="ui-btn" onClick={closeWizard} disabled={draft.busy}>取消</button>

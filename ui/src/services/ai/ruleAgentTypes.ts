@@ -1,4 +1,4 @@
-import type { DesignComponent } from '../../project/types';
+import type { DesignComponent, FormWindowConfig } from '../../project/types';
 import type { BehaviorDslDiagnostic } from '../engine/behaviorDsl';
 import type { FormRuntimeSnapshot } from '../engine/formRuntimeSnapshot';
 
@@ -33,4 +33,4 @@ export interface RuleAgentTurnResult {
   events: Array<{ type: string; data: unknown; requestId: string }>;
 }
 
-export interface AppliedRuleProposal { ruleCode: string; components: DesignComponent[]; updatedAt: string; }
+export interface AppliedRuleProposal { ruleCode: string; components: DesignComponent[]; formWindow?: FormWindowConfig; updatedAt: string; }

@@ -1,0 +1,241 @@
+{
+  "behaviors": [
+    {
+      "enabled": true,
+      "priority": 10,
+      "conditions": [
+        {
+          "fieldName": "approval_status",
+          "operator": "isEmpty",
+          "logic": "AND",
+          "dataSource": "form"
+        }
+      ],
+      "id": "bh_submit_default_status",
+      "name": "新申请默认草稿状态",
+      "trigger": {
+        "type": "formLoad"
+      },
+      "actions": [
+        {
+          "type": "setValue",
+          "targetField": "approval_status",
+          "value": "草稿"
+        }
+      ],
+      "updatedAt": "2026-07-22T07:35:01.754Z"
+    },
+    {
+      "enabled": true,
+      "priority": 20,
+      "conditions": [
+        {
+          "fieldName": "expense_type",
+          "operator": "==",
+          "value": "其他",
+          "logic": "AND",
+          "dataSource": "form"
+        }
+      ],
+      "id": "bh_submit_other_description",
+      "name": "其他费用说明提示",
+      "trigger": {
+        "type": "fieldChange",
+        "fieldName": "expense_type"
+      },
+      "actions": [
+        {
+          "type": "setRequired",
+          "targetField": "description"
+        },
+        {
+          "type": "showMessage",
+          "message": "费用类型为其他时，费用说明不得少于10个字",
+          "messageType": "warning"
+        }
+      ],
+      "updatedAt": "2026-07-22T07:35:01.775Z"
+    },
+    {
+      "enabled": true,
+      "priority": 20,
+      "conditions": [
+        {
+          "fieldName": "amount",
+          "operator": ">",
+          "value": 500,
+          "logic": "AND",
+          "dataSource": "form"
+        }
+      ],
+      "id": "bh_submit_large_invoice",
+      "name": "大额报销发票必填",
+      "trigger": {
+        "type": "fieldChange",
+        "fieldName": "amount"
+      },
+      "actions": [
+        {
+          "type": "setRequired",
+          "targetField": "has_invoice"
+        },
+        {
+          "type": "showMessage",
+          "message": "报销金额超过500元时必须选择有发票",
+          "messageType": "warning"
+        }
+      ],
+      "updatedAt": "2026-07-22T07:35:01.794Z"
+    },
+    {
+      "enabled": true,
+      "priority": 30,
+      "conditions": [
+        {
+          "fieldName": "approval_status",
+          "operator": "!=",
+          "value": "草稿",
+          "logic": "AND",
+          "dataSource": "form"
+        }
+      ],
+      "id": "bh_submit_lock_on_status_change",
+      "name": "非草稿业务字段锁定",
+      "trigger": {
+        "type": "fieldChange",
+        "fieldName": "approval_status"
+      },
+      "actions": [
+        {
+          "type": "setDisabled",
+          "targetComponent": "ctrl_submit_applicant"
+        },
+        {
+          "type": "setDisabled",
+          "targetComponent": "ctrl_submit_department"
+        },
+        {
+          "type": "setDisabled",
+          "targetComponent": "ctrl_submit_expense_type"
+        },
+        {
+          "type": "setDisabled",
+          "targetComponent": "ctrl_submit_expense_date"
+        },
+        {
+          "type": "setDisabled",
+          "targetComponent": "ctrl_submit_amount"
+        },
+        {
+          "type": "setDisabled",
+          "targetComponent": "ctrl_submit_description"
+        },
+        {
+          "type": "setDisabled",
+          "targetComponent": "ctrl_submit_has_invoice"
+        }
+      ],
+      "updatedAt": "2026-07-22T07:35:01.813Z"
+    },
+    {
+      "enabled": true,
+      "priority": 30,
+      "conditions": [
+        {
+          "fieldName": "approval_status",
+          "operator": "!=",
+          "value": "草稿",
+          "logic": "AND",
+          "dataSource": "form"
+        }
+      ],
+      "id": "bh_submit_lock_on_load",
+      "name": "加载非草稿记录时锁定",
+      "trigger": {
+        "type": "formLoad"
+      },
+      "actions": [
+        {
+          "type": "setDisabled",
+          "targetComponent": "ctrl_submit_applicant"
+        },
+        {
+          "type": "setDisabled",
+          "targetComponent": "ctrl_submit_department"
+        },
+        {
+          "type": "setDisabled",
+          "targetComponent": "ctrl_submit_expense_type"
+        },
+        {
+          "type": "setDisabled",
+          "targetComponent": "ctrl_submit_expense_date"
+        },
+        {
+          "type": "setDisabled",
+          "targetComponent": "ctrl_submit_amount"
+        },
+        {
+          "type": "setDisabled",
+          "targetComponent": "ctrl_submit_description"
+        },
+        {
+          "type": "setDisabled",
+          "targetComponent": "ctrl_submit_has_invoice"
+        }
+      ],
+      "updatedAt": "2026-07-22T07:35:01.832Z"
+    },
+    {
+      "enabled": true,
+      "priority": 31,
+      "conditions": [
+        {
+          "fieldName": "approval_status",
+          "operator": "==",
+          "value": "草稿",
+          "logic": "AND",
+          "dataSource": "form"
+        }
+      ],
+      "id": "bh_submit_unlock_draft",
+      "name": "草稿业务字段可编辑",
+      "trigger": {
+        "type": "fieldChange",
+        "fieldName": "approval_status"
+      },
+      "actions": [
+        {
+          "type": "setEnabled",
+          "targetComponent": "ctrl_submit_applicant"
+        },
+        {
+          "type": "setEnabled",
+          "targetComponent": "ctrl_submit_department"
+        },
+        {
+          "type": "setEnabled",
+          "targetComponent": "ctrl_submit_expense_type"
+        },
+        {
+          "type": "setEnabled",
+          "targetComponent": "ctrl_submit_expense_date"
+        },
+        {
+          "type": "setEnabled",
+          "targetComponent": "ctrl_submit_amount"
+        },
+        {
+          "type": "setEnabled",
+          "targetComponent": "ctrl_submit_description"
+        },
+        {
+          "type": "setEnabled",
+          "targetComponent": "ctrl_submit_has_invoice"
+        }
+      ],
+      "updatedAt": "2026-07-22T07:35:01.852Z"
+    }
+  ],
+  "ruleCode": ""
+}

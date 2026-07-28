@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState } from 'react';
 import type { Node } from '@antv/x6';
-import type { DesignComponent, DesignFile } from '../../project/types';
+import { createDefaultFormWindow, type DesignComponent, type DesignFile, type FormWindowConfig } from '../../project/types';
 import { SINGLE_LINE_FIELD_HEIGHT } from '../controls/geometry';
 
 export type ResizeHandle = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
@@ -30,7 +30,6 @@ export const DESIGNER_MIN_SIZES: Record<string, { w: number; h: number }> = {
   tabs: { w: 240, h: 140 },
   steps: { w: 320, h: 88 },
   divider: { w: 32, h: 8 },
-  form: { w: 360, h: 420 },
 };
 
 export function clampDesignerSize(type: string, width: number, height: number) {
@@ -40,6 +39,7 @@ export function clampDesignerSize(type: string, width: number, height: number) {
 
 export interface SelectionOverlay {
   id: string;
+  ids: string[];
   left: number;
   top: number;
   width: number;
@@ -52,16 +52,20 @@ export function useDesignerState() {
   const graphRef = useRef<any>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const selectedIdRef = useRef<string | null>(null);
+  const selectedIdsRef = useRef<string[]>([]);
   const pendingDesignRef = useRef<DesignFile | null>(null);
   const componentsRef = useRef<DesignComponent[]>([]);
+  const formWindowRef = useRef<FormWindowConfig>(createDefaultFormWindow());
   const suppressMoveSyncRef = useRef(false);
   const viewportRef = useRef<DesignFile['viewport']>({ zoom: 1, panX: 0, panY: 0 });
   const modeRef = useRef<'design' | 'preview'>('design');
 
   // State
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectionOverlay, setSelectionOverlay] = useState<SelectionOverlay | null>(null);
   const [components, setComponents] = useState<DesignComponent[]>([]);
+  const [formWindow, setFormWindow] = useState<FormWindowConfig>(() => createDefaultFormWindow());
   const [zoom, setZoom] = useState(1);
   const [mode, setMode] = useState<'design' | 'preview'>('design');
   const [historyRevision, setHistoryRevision] = useState(0);
@@ -97,17 +101,23 @@ export function useDesignerState() {
     graphRef,
     resizeObserverRef,
     selectedIdRef,
+    selectedIdsRef,
     pendingDesignRef,
     componentsRef,
+    formWindowRef,
     suppressMoveSyncRef,
     viewportRef,
     modeRef,
     // State
     selectedId,
     setSelectedId,
+    selectedIds,
+    setSelectedIds,
     selectionOverlay,
     setSelectionOverlay,
     components,
+    formWindow,
+    setFormWindow,
     setComponents,
     zoom,
     setZoom,

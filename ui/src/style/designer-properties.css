@@ -11,6 +11,28 @@
   overflow: hidden;
 }
 
+/* Keep the inspector independently scrollable at compact desktop sizes and high zoom. */
+@media (max-width: 1024px) {
+  .designer-properties-shell,
+  .designer-properties-shell > .ff-antd-form-scope,
+  .designer-properties { min-height: 0; }
+  .properties-header { position: sticky; top: 0; z-index: 8; }
+  .properties-body { padding-bottom: 28px; overscroll-behavior: contain; }
+}
+
+@media (max-width: 768px) {
+  .properties-header { min-height: 52px; padding: 8px 10px; }
+  .properties-body { padding: 0 10px 32px; }
+  .properties-filterbar { padding-top: 8px; }
+}
+
+@media (min-resolution: 192dpi) {
+  .properties-close,
+  .properties-more > summary,
+  .properties-advanced-toggle { min-height: 32px; }
+  .properties-body { scrollbar-gutter: stable; }
+}
+
 .designer-properties-shell > .ff-antd-form-scope {
   display: flex;
   flex: 1 1 auto;
@@ -480,6 +502,7 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
 .prop-icon-editor > span { display: grid; height: 32px; place-items: center; border-radius: 8px; background: var(--panel-soft); font-size: 18px; }
 .prop-icon-presets { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
 .prop-icon-presets button { height: 28px; border: 0; border-radius: 7px; background: var(--panel-soft); cursor: pointer; }
+.prop-icon-presets button small { margin-left: 3px; font-size: 9px; color: var(--muted); }
 .property-style-range { width: 100%; accent-color: var(--accent); }
 .property-link-toggle { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; }
 .property-link-toggle input { width: auto; }
@@ -911,3 +934,28 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
 .ff-antd-rate .ant-rate-star-zero .ant-rate-star-second {
   color: var(--ff-rate-inactive, #e5e5ea);
 }
+
+.property-condition-row {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--border-subtle, rgba(148, 163, 184, 0.24));
+  border-radius: 10px;
+  background: var(--surface-subtle, rgba(248, 250, 252, 0.72));
+}
+
+.property-condition-row > label {
+  display: grid;
+  gap: 4px;
+}
+
+.property-condition-row > label > span {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.property-wizard-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.property-wizard-steps button { min-height: 30px; padding: 4px 6px; border: 1px solid var(--border-subtle, rgba(148,163,184,.24)); border-radius: 7px; background: transparent; color: var(--text-secondary); font-size: 11px; cursor: pointer; }
+.property-wizard-steps button.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 650; }
+.prop-image-library { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 11px; color: var(--text-secondary); }
+.prop-image-library button { width: 36px; height: 36px; padding: 2px; border: 1px solid var(--border-subtle); border-radius: 6px; background: transparent; cursor: pointer; }
+.prop-image-library img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }

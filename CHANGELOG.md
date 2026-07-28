@@ -1,11 +1,13 @@
-# [1.1.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.0.0...v1.1.0) (2026-07-13)
+# Changelog
+
+## [1.1.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.0.0...v1.1.0) (2026-07-13)
 
 
 ### Features
 
 * unify form configuration and control synchronization ([f7afb4a](https://github.com/xns1997/FormFlow-Studio/commit/f7afb4aa026d175cfc2202f3080418da70e27d2b))
 
-# 1.0.0 (2026-07-13)
+## [1.0.0] (2026-07-13)
 
 
 ### Bug Fixes
@@ -48,9 +50,9 @@
 * v0.7.0 - 工作流I/O节点 + CRUD节点包 + 输入端口增强 + 阀门选型示例 ([4dced51](https://github.com/xns1997/FormFlow-Studio/commit/4dced517460a161ddb97c041e88c06d39c3b9eed))
 * v0.7.1 - 设计器画布修复 + 文档样式优化 + 上海餐饮企业分析示例 ([72067ed](https://github.com/xns1997/FormFlow-Studio/commit/72067ed3a0285a71affe891131ccde0ad47dc329))
 
-# Changelog
+## [1.2.0] - 2026-07-28
 
-## [Unreleased]
+本版本将表单控件、模板运行态、项目智能体和数据工作台收口为可验证的生产流程。
 
 ### LLM Provider 与知识检索
 - 新增独立 Python LLM Provider，提供 HTTP/gRPC、OpenAI 兼容适配、插件加载、运行记录与可选 PostgreSQL checkpoint
@@ -88,6 +90,12 @@
 - 动态必填、行为必填与静态校验规则统一合并；表达式运行失败时保留上次有效值并输出调试诊断
 - 表单宽高和通用尺寸改为几何属性事务，不再写入无效 `props`，支持单步撤销、画布同步和自动保存
 
+### 全量模板与表单 UX 收口
+- 审计并收口设计器、操作模板和行业模板的创建、配置、预览、运行、保存、结果查看与失败恢复链路。
+- 属性 Schema 的技术字段默认折叠到高级参数；可读帮助、示例、默认值、错误提示、恢复默认和影响摘要统一到共享编辑器。
+- 运行态统一空值、校验中、警告、成功、错误、冲突、过期和部分成功状态；失败保留填写值、聚焦首个错误并提供就地重试。
+- 增加控件 Schema lint、26 控件深度矩阵、响应式/主题/缩放 Playwright 用例，以及服务端 HTTP 幂等回归；真实用户走查目标按需求废弃，不作为门禁。
+
 ### 统一数据绑定
 - 新增可序列化 `DataBindingConfig`，统一表单字段、范围和按键定位的表格单元格数据源
 - 支持 `dataToUi`、`uiToData`、`twoWay` 三种方向以及 `auto`、`firstCell`、`firstRow`、`column`、`table` 五种取值模式
@@ -105,7 +113,7 @@
 - 移除历史行业演示项目、生成脚本及大体积 ZIP；保留设备巡检负向项目作为结构、行为、权限和测试覆盖诊断的回归基线
 - 游戏数据产品运行时测试改用仓库内的压缩 Mock 夹具，不再依赖开发机临时项目或上传目录
 - `.gitignore` 排除模型密钥配置、智能体会话、上传文件、报表、工具导入缓存、Playwright 截图、Python 虚拟环境与字节码
-- 截至 2026-07-21，TypeScript 类型检查与生产构建通过；Node 测试 361 通过、2 项 PostgreSQL 环境测试跳过，Python LLM Provider 测试 24 通过、1 项 PostgreSQL 环境测试跳过
+- 截至 2026-07-28，TypeScript 类型检查与生产构建通过；本次相关 Node/UI 单测 68 项、服务端 HTTP 幂等测试 22 项、Playwright 控件与运行态矩阵 15 项通过。
 
 ## [0.9.0] - 2026-07-13
 

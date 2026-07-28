@@ -1,3 +1,9 @@
+import {
+  FORM_WINDOW_COORDINATE_SPACE,
+  migrateCanvasComponentsToWindowLocal,
+  type ComponentRectLike,
+} from './form-window-layout';
+
 export type ProjectTemplateId = 'game_analytics' | 'flexible_employment' | 'china_population_forecast' | 'check_valve_selection';
 export type LegacyProjectTemplateId = 'blank_form' | 'data_entry' | 'query_edit' | 'approval_flow' | 'data_dashboard';
 export type ProjectTemplateKind = 'analytics' | 'employment' | 'forecast' | 'selection';
@@ -68,7 +74,7 @@ function table(id: string, sheetName: string, rows: Row[], keyField: string, now
 }
 
 function root(title: string, subtitle: string, children: string[], height = 720) {
-  return { id: 'root', type: 'form', x: 36, y: 36, width: 1080, height, zIndex: 0, props: { title, subtitle }, children };
+  return { id: 'root', __formWindow: true, x: 36, y: 36, width: 1080, height, props: { title, subtitle, showFooter: false }, children };
 }
 
 function field(id: string, type: string, name: string, label: string, x: number, y: number, props: JsonObject = {}) {
@@ -76,7 +82,22 @@ function field(id: string, type: string, name: string, label: string, x: number,
 }
 
 function button(id: string, label: string, x: number, y: number, workflowId: string, parameterMap: JsonObject) {
-  return { id, type: 'button', x, y, width: 190, height: 48, zIndex: 2, parentId: 'root', props: { name: id, label, variant: 'primary', flowTriggers: { onClick: { enabled: true, workflowId, parameterMap } } } };
+  return {
+    id,
+    type: 'button',
+    x,
+    y,
+    width: 190,
+    height: 48,
+    zIndex: 2,
+    parentId: 'root',
+    props: {
+      name: id,
+      label,
+      variant: 'primary',
+      flowTriggers: { onClick: { enabled: true, workflowId, parameterMap } },
+    } as JsonObject,
+  };
 }
 
 function chart(id: string, title: string, chartType: string, tableId: string, sheetName: string, rowCount: number, dimension: number, metric: number, x: number, y: number) {
@@ -84,7 +105,23 @@ function chart(id: string, title: string, chartType: string, tableId: string, sh
 }
 
 function form(id: string, name: string, mode: string, components: JsonObject[], now: string, ruleCode: string) {
-  return { id, name, design: { id: `${id}_design`, name, formMode: mode, viewport: { zoom: 1, panX: 0, panY: 0 }, gridSize: 12, components, bindings: [], createdAt: now, updatedAt: now }, behaviors: [], ruleCode, createdAt: now, updatedAt: now };
+  const legacyRoot = components.find((component) => component.__formWindow || component.type === 'form');
+  const rootId = legacyRoot?.id;
+  const content = components
+    .filter((component) => !component.__formWindow && component.type !== 'form')
+    .map((component): JsonObject & ComponentRectLike => ({
+      ...component,
+      x: Number(component.x) || 0,
+      y: Number(component.y) || 0,
+      width: Number(component.width) || 0,
+      height: Number(component.height) || 0,
+      parentId: component.parentId === rootId ? undefined : component.parentId,
+    }));
+  const formWindow = legacyRoot
+    ? { x: legacyRoot.x, y: legacyRoot.y, width: legacyRoot.width, height: legacyRoot.height, props: legacyRoot.props }
+    : { x: 36, y: 36, width: 1080, height: 720, props: { title: name, showFooter: false } };
+  const migrated = migrateCanvasComponentsToWindowLocal(formWindow, content);
+  return { id, name, design: { id: `${id}_design`, name, formMode: mode, viewport: { zoom: 1, panX: 0, panY: 0 }, gridSize: 12, coordinateSpace: FORM_WINDOW_COORDINATE_SPACE, formWindow: migrated.formWindow, components: migrated.components, bindings: [], createdAt: now, updatedAt: now }, behaviors: [], ruleCode, createdAt: now, updatedAt: now };
 }
 
 function ioNode(kind: 'import' | 'export', ports: Array<[string, string]>) {
@@ -115,7 +152,17 @@ interface IndustryContent {
   tables: JsonObject[];
   entry: { id: string; name: string; tableId: string; sheetName: string; key: string; fields: Array<[string, string, JsonObject?]>; rule: string };
   analysis: { tableId: string; sheetName: string; group: string; metric: string };
-  dashboard: { title: string; subtitle: string; kpis: Array<[string, number]>; charts: Array<[string, string, number, number]>; detailColumns: string[] };
+  analysisWorkflow?: (id: string, name: string, now: string) => JsonObject;
+  dashboard: {
+    title: string;
+    subtitle: string;
+    kpis: Array<[string, number]>;
+    charts: Array<[string, string, number, number]>;
+    detailColumns: string[];
+    detailTableId?: string;
+    detailSheetName?: string;
+    chartRuntimeProps?: Array<JsonObject | undefined>;
+  };
 }
 
 function game(now: string): IndustryContent {
@@ -124,7 +171,104 @@ function game(now: string): IndustryContent {
   const events = Array.from({ length: 600 }, (_, i) => ({ 事件ID: `EV-${String(i + 1).padStart(5, '0')}`, 玩家ID: players[i % players.length].玩家ID, 事件日期: date(i % 30, 2026), 事件类型: ['登录', '关卡开始', '关卡完成', '活动参与'][i % 4], 关卡: `L${i % 40 + 1}`, 时长分钟: 3 + i % 55, 渠道: channels[i % 4] }));
   const orders = Array.from({ length: 240 }, (_, i) => ({ 订单ID: `PAY-${String(i + 1).padStart(5, '0')}`, 玩家ID: players[(i * 3) % players.length].玩家ID, 支付日期: date(i % 30, 2026), 商品: ['月卡', '礼包', '通行证', '代币'][i % 4], 金额: [6, 30, 68, 128][i % 4], 渠道: channels[i % 4], 状态: '成功' }));
   const campaigns = Array.from({ length: 36 }, (_, i) => ({ 活动ID: `C-${String(i + 1).padStart(3, '0')}`, 活动名称: `赛季活动${i + 1}`, 渠道: channels[i % 4], 开始日期: date(i % 24, 2025), 预算: 8000 + i * 900, 新增玩家: 120 + i * 7, 付费收入: 6000 + i * 1100 }));
-  return { tables: [table('player_profiles', '玩家档案', players, '玩家ID', now), table('game_events', '游戏事件', events, '事件ID', now), table('payment_orders', '付费订单', orders, '订单ID', now), table('campaigns', '活动投放', campaigns, '活动ID', now)], entry: { id: 'game_event_entry', name: '游戏事件录入', tableId: 'game_events', sheetName: '游戏事件', key: '事件ID', fields: [['事件ID', 'input', { required: true }], ['玩家ID', 'select', { required: true, options: options(players.slice(0, 30).map((row) => row.玩家ID)) }], ['事件日期', 'datePicker', { required: true }], ['事件类型', 'select', { required: true, options: options(['登录', '关卡开始', '关卡完成', '活动参与']) }], ['关卡', 'input'], ['时长分钟', 'number', { min: 0 }], ['渠道', 'select', { options: options(channels) }]], rule: 'before submit -> require($事件ID, $玩家ID, $事件日期, $事件类型)\nwhen $时长分钟 < 0 -> message("时长不能为负数", error)' }, analysis: { tableId: 'payment_orders', sheetName: '付费订单', group: '渠道', metric: '金额' }, dashboard: { title: '游戏运营分析看板', subtitle: '活跃、留存、付费、关卡和渠道表现', kpis: [['玩家数', players.length], ['事件数', events.length], ['付费订单数', orders.length], ['付费总额', orders.reduce((s, r) => s + r.金额, 0)]], charts: [['渠道付费', 'bar', 6, 4], ['事件类型分布', 'doughnut', 3, 5]], detailColumns: ['事件ID', '玩家ID', '事件日期', '事件类型', '关卡', '时长分钟', '渠道'] } };
+  return {
+    tables: [table('player_profiles', '玩家档案', players, '玩家ID', now), table('game_events', '游戏事件', events, '事件ID', now), table('payment_orders', '付费订单', orders, '订单ID', now), table('campaigns', '活动投放', campaigns, '活动ID', now)],
+    entry: {
+      id: 'game_event_entry',
+      name: '游戏事件录入',
+      tableId: 'game_events',
+      sheetName: '游戏事件',
+      key: '事件ID',
+      fields: [['事件ID', 'input', { required: true }], ['玩家ID', 'select', { required: true, options: options(players.slice(0, 30).map((row) => row.玩家ID)) }], ['事件日期', 'datePicker', { required: true }], ['事件类型', 'select', { required: true, options: options(['登录', '关卡开始', '关卡完成', '活动参与']) }], ['关卡', 'input'], ['时长分钟', 'number', { min: 0 }], ['渠道', 'select', { options: options(channels) }]],
+      rule: 'before submit -> require($事件ID, $玩家ID, $事件日期, $事件类型)\nwhen $时长分钟 < 0 -> message("时长不能为负数", error)',
+    },
+    analysis: { tableId: 'payment_orders', sheetName: '付费订单', group: '渠道', metric: '金额' },
+    dashboard: {
+      title: '游戏运营分析看板',
+      subtitle: '活跃、留存、付费、关卡和渠道表现',
+      kpis: [['玩家数', players.length], ['事件数', events.length], ['付费订单数', orders.length], ['付费总额', orders.reduce((s, r) => s + r.金额, 0)]],
+      charts: [['渠道付费', 'bar', 6, 4], ['事件类型分布', 'doughnut', 3, 5]],
+      chartRuntimeProps: [
+        { dimensions: [0], metrics: [{ col: 1, agg: 'sum', label: '渠道付费' }] },
+        { dimensions: [0], metrics: [{ col: 1, agg: 'sum', label: '事件类型分布' }] },
+      ],
+      detailColumns: ['事件ID', '玩家ID', '事件日期', '事件类型', '关卡', '时长分钟', '渠道'],
+      detailTableId: 'game_events',
+      detailSheetName: '游戏事件',
+    },
+    analysisWorkflow: (id, name, now) => ({
+      id,
+      name,
+      description: '通过产品化查询、计算和批量赋值节点刷新游戏运营 KPI、图表和分析明细。',
+      createdAt: now,
+      updatedAt: now,
+      nodes: [
+        ioNode('import', [['trigger', 'any']]),
+        node('query_players', 'behavior-data-query', { tableId: 'player_profiles', sheetName: '玩家档案', queryType: 'findRows' }, 180, 40),
+        node('query_events', 'behavior-data-query', { tableId: 'game_events', sheetName: '游戏事件', queryType: 'findRows' }, 180, 170),
+        node('query_orders', 'behavior-data-query', { tableId: 'payment_orders', sheetName: '付费订单', queryType: 'findRows' }, 180, 300),
+        node('players_count', 'behavior-calculate', { expression: 'Array.isArray(inputs.a) ? inputs.a.length : 0', targetField: '玩家数' }, 430, 40),
+        node('events_count', 'behavior-calculate', { expression: 'Array.isArray(inputs.a) ? inputs.a.length : 0', targetField: '事件数' }, 430, 120),
+        node('orders_count', 'behavior-calculate', { expression: 'Array.isArray(inputs.a) ? inputs.a.length : 0', targetField: '付费订单数' }, 430, 200),
+        node('orders_total', 'behavior-calculate', { expression: 'Array.isArray(inputs.a) ? inputs.a.reduce((sum, row) => sum + Number(row.金额 || 0), 0) : 0', targetField: '付费总额' }, 430, 280),
+        node('revenue_by_channel', 'behavior-calculate', {
+          expression: `Array.isArray(inputs.a)
+            ? Object.entries(inputs.a.reduce((acc, row) => {
+                const key = String(row.渠道 || '未知渠道');
+                acc[key] = (acc[key] || 0) + Number(row.金额 || 0);
+                return acc;
+              }, {})).map(([渠道, 金额]) => ({ 渠道, 金额 }))
+            : []`,
+          targetField: 'chart_0',
+        }, 690, 120),
+        node('event_distribution', 'behavior-calculate', {
+          expression: `Array.isArray(inputs.a)
+            ? Object.entries(inputs.a.reduce((acc, row) => {
+                const key = String(row.事件类型 || '未知事件');
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+              }, {})).map(([事件类型, 数量]) => ({ 事件类型, 数量 }))
+            : []`,
+          targetField: 'chart_1',
+        }, 690, 220),
+        node('event_details', 'behavior-calculate', {
+          expression: `Array.isArray(inputs.a)
+            ? inputs.a.slice().sort((left, right) => String(right.事件日期 || '').localeCompare(String(left.事件日期 || ''))).slice(0, 12).map((row) => ({
+                事件ID: row.事件ID,
+                玩家ID: row.玩家ID,
+                事件日期: row.事件日期,
+                事件类型: row.事件类型,
+                关卡: row.关卡,
+                时长分钟: row.时长分钟,
+                渠道: row.渠道,
+              }))
+            : []`,
+          targetField: '分析明细',
+        }, 690, 320),
+        node('refresh_message', 'behavior-show-message', { message: '分析结果已刷新', messageType: 'success' }, 930, 220),
+        ioNode('export', [['玩家数', 'number'], ['事件数', 'number'], ['付费订单数', 'number'], ['付费总额', 'number'], ['chart_0', 'json-rows'], ['chart_1', 'json-rows'], ['分析明细', 'json-rows']]),
+      ],
+      edges: [
+        edge('game_trigger_players', 'workflow_import', 'query_players', 'trigger', 'trigger'),
+        edge('game_trigger_events', 'workflow_import', 'query_events', 'trigger', 'trigger'),
+        edge('game_trigger_orders', 'workflow_import', 'query_orders', 'trigger', 'trigger'),
+        edge('game_players_rows', 'query_players', 'players_count', 'data', 'a'),
+        edge('game_events_rows_count', 'query_events', 'events_count', 'data', 'a'),
+        edge('game_orders_rows_count', 'query_orders', 'orders_count', 'data', 'a'),
+        edge('game_orders_rows_total', 'query_orders', 'orders_total', 'data', 'a'),
+        edge('game_orders_chart', 'query_orders', 'revenue_by_channel', 'data', 'a'),
+        edge('game_events_chart', 'query_events', 'event_distribution', 'data', 'a'),
+        edge('game_events_detail', 'query_events', 'event_details', 'data', 'a'),
+        edge('game_export_players', 'players_count', 'workflow_export', 'result', '玩家数'),
+        edge('game_export_events', 'events_count', 'workflow_export', 'result', '事件数'),
+        edge('game_export_orders', 'orders_count', 'workflow_export', 'result', '付费订单数'),
+        edge('game_export_total', 'orders_total', 'workflow_export', 'result', '付费总额'),
+        edge('game_export_chart0', 'revenue_by_channel', 'workflow_export', 'result', 'chart_0'),
+        edge('game_export_chart1', 'event_distribution', 'workflow_export', 'result', 'chart_1'),
+        edge('game_export_detail', 'event_details', 'workflow_export', 'result', '分析明细'),
+      ],
+    }),
+  };
 }
 
 function employment(now: string): IndustryContent {
@@ -171,22 +315,50 @@ export function buildProjectTemplate(requestedId: ProjectTemplateId | LegacyProj
   const saveId = `wf_${templateId}_save`;
   const analysisId = `wf_${templateId}_analysis`;
   const save = saveWorkflow(saveId, `${content.entry.name}保存`, content.entry.tableId, content.entry.sheetName, content.entry.key, content.entry.fields.filter(([, , props]) => props?.required).map(([name]) => name), now);
-  const analysis = analysisWorkflow(analysisId, `${content.dashboard.title}分析`, content.analysis.tableId, content.analysis.sheetName, content.analysis.group, content.analysis.metric, now);
+  const analysis = content.analysisWorkflow
+    ? content.analysisWorkflow(analysisId, `${content.dashboard.title}分析`, now)
+    : analysisWorkflow(analysisId, `${content.dashboard.title}分析`, content.analysis.tableId, content.analysis.sheetName, content.analysis.group, content.analysis.metric, now);
   const entryIds = content.entry.fields.map((_, index) => `entry_field_${index}`);
   const entryComponents = [root(content.entry.name, '通过规则校验后由产品化保存流程写回数据表。', [...entryIds, 'entry_save']), ...content.entry.fields.map(([name, type, props], index) => field(entryIds[index]!, type, name, name, index % 2 ? 460 : 100, 130 + Math.floor(index / 2) * 90, props || {})), button('entry_save', '校验并保存', 100, 150 + Math.ceil(content.entry.fields.length / 2) * 90, saveId, { formData: '$values' })];
   const analysisTable = content.tables.find((item) => item.id === content.analysis.tableId)!;
   const analysisSheet = analysisTable.sheets[0];
   const dashboardIds = ['dashboard_notice', ...content.dashboard.kpis.map((_, i) => `kpi_${i}`), 'dashboard_analyze', ...content.dashboard.charts.map((_, i) => `chart_${i}`), 'dashboard_detail'];
-  const dashboardComponents: JsonObject[] = [root(content.dashboard.title, content.dashboard.subtitle, dashboardIds, 900), field('dashboard_notice', 'textarea', '数据说明', '数据说明', 100, 110, { width: 860, height: 70, disabled: true, defaultValue: content.dashboard.subtitle }), ...content.dashboard.kpis.map(([label, value], i) => field(`kpi_${i}`, 'number', label, label, 100 + i * 230, 210, { width: 200, disabled: true, defaultValue: value })), button('dashboard_analyze', '运行分析流程', 100, 310, analysisId, { trigger: true }), ...content.dashboard.charts.map(([title, type, dimension, metric], i) => chart(`chart_${i}`, title, type, content.analysis.tableId, content.analysis.sheetName, analysisSheet.rowCount, dimension, metric, 100 + i * 490, 390)), field('dashboard_detail', 'table', '分析明细', '分析明细', 100, 680, { width: 940, height: 170, columns: content.dashboard.detailColumns, dataSource: { tableId: content.analysis.tableId, sheetName: content.analysis.sheetName } })];
+  const dashboardAnalyzeButton = button('dashboard_analyze', '运行分析流程', 100, 310, analysisId, { trigger: true });
+  const dashboardComponents: JsonObject[] = [
+    root(content.dashboard.title, content.dashboard.subtitle, dashboardIds, 900),
+    field('dashboard_notice', 'textarea', '数据说明', '数据说明', 100, 110, { width: 860, height: 70, disabled: true, defaultValue: content.dashboard.subtitle }),
+    ...content.dashboard.kpis.map(([label], i) => field(`kpi_${i}`, 'number', label, label, 100 + i * 230, 210, { width: 200, disabled: true, defaultValue: '' })),
+    dashboardAnalyzeButton,
+    ...content.dashboard.charts.map(([title, type, dimension, metric], i) => {
+      const baseChart = chart(`chart_${i}`, title, type, content.analysis.tableId, content.analysis.sheetName, analysisSheet.rowCount, dimension, metric, 100 + i * 490, 390);
+      const runtimeProps = content.dashboard.chartRuntimeProps?.[i];
+      if (!runtimeProps) return baseChart;
+      return {
+        ...baseChart,
+        props: {
+          ...baseChart.props,
+          ...runtimeProps,
+        },
+      };
+    }),
+    field('dashboard_detail', 'table', '分析明细', '分析明细', 100, 680, {
+      width: 940,
+      height: 170,
+      columns: content.dashboard.detailColumns,
+      dataSource: {
+        tableId: content.dashboard.detailTableId || content.analysis.tableId,
+        sheetName: content.dashboard.detailSheetName || content.analysis.sheetName,
+      },
+    }),
+  ];
   const entryForm = form(content.entry.id, content.entry.name, 'create', entryComponents, now, content.entry.rule);
   const dashboardForm = form(`${templateId}_dashboard`, content.dashboard.title, 'detail', dashboardComponents, now, 'on load -> message("数据与图表已就绪，可运行分析流程刷新结果", info)');
   const suite = { id: `suite_${templateId}`, name: `${content.dashboard.title}回归`, seed: 20260716, cases: [{ id: `${content.entry.id}:normal`, formId: content.entry.id, name: '录入主路径', category: 'normal', values: Object.fromEntries(content.entry.fields.map(([name, type, props], i) => [name, props?.defaultValue ?? (type === 'number' ? i + 1 : props?.options?.[0]?.value ?? `测试值${i + 1}`)])), expectValid: true }, { id: `${content.entry.id}:required`, formId: content.entry.id, name: '必填缺失', category: 'required', values: Object.fromEntries(content.entry.fields.map(([name, type, props], i) => [name, props?.required ? '' : type === 'number' ? i + 1 : `测试值${i + 1}`])), expectValid: false }], createdAt: now };
-  const run = { id: `run_${templateId}`, suiteId: suite.id, passed: true, coverage: 100, validation: { valid: true, errors: [] }, results: [], ruleResults: [], mockedEffects: ['数据写回', '流程副作用'], ranAt: now };
   const descriptor = PROJECT_TEMPLATES.find((item) => item.id === templateId)!;
   return {
     config: { id: metadata.id, name: metadata.name, description: metadata.description || descriptor.description, version: '2.0.0', author: metadata.author || 'FormFlow', tags: metadata.tags || ['模板', descriptor.name], createdAt: now, updatedAt: now, ...(metadata.ownerId ? { access: { ownerId: metadata.ownerId, members: {} } } : {}) },
     settings: { behavior: { enableJsScripts: false, enableNodeBehavior: true, scriptTimeout: 5000, errorStrategy: 'show-error', loopProtection: 100, enableDebugDrawer: true, autoOpenDebugDrawerOnWarnOrError: true, mirrorScriptLogsToConsole: true, enableServerDebugApi: true }, publish: { format: 'xlsx', allowWriteBack: true, generateChangeLog: true, outputFileName: `${templateId}-export` }, updatedAt: now },
     release: { mode: 'design', defaultFormId: content.entry.id, defaultSheet: content.entry.sheetName, allowDesigner: true, allowBehaviorEditor: true, allowWorkflowEditor: true },
-    srcTable: content.tables, forms: [entryForm, dashboardForm], workflows: [save, analysis], globalBehaviors: [], sheetBehaviors: [], outputs: [{ id: `${templateId}_export`, name: `${content.dashboard.title}导出`, format: 'xlsx', size: 0, createdAt: now }], testing: { profiles: [], suites: [suite], fixtures: [], runs: [run] },
+    srcTable: content.tables, forms: [entryForm, dashboardForm], workflows: [save, analysis], globalBehaviors: [], sheetBehaviors: [], outputs: [{ id: `${templateId}_export`, name: `${content.dashboard.title}导出`, format: 'xlsx', size: 0, createdAt: now }], testing: { profiles: [], suites: [suite], fixtures: [], runs: [] },
   };
 }

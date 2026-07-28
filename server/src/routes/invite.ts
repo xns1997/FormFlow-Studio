@@ -4,7 +4,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { serverDataPath } from '../config/paths';
 import type { AuthRequest } from '../middleware/auth';
 import { setProjectMember, type ProjectAccess } from '../services/permission';
-import { readProjectPackage, writeProjectPackage, listProjectPackages } from '../services/project-package-store';
+import { readProjectPackage, listProjectPackages } from '../services/project-package-store';
+import { commitProject } from '../services/project-authoring';
 import { findUserById, listUsers } from '../services/user-store';
 import { createNotification } from '../services/notification';
 
@@ -76,7 +77,7 @@ router.post('/:id/invite', (req: AuthRequest, res) => {
     writeInvites([...readInvites(), invite]);
 
     // 直接将用户添加为成员（无需接受流程，简化协作）
-    writeProjectPackage(setProjectMember(project, userId, grants));
+    commitProject(setProjectMember(project, userId, grants));
 
     // 发送通知给被邀请者
     createNotification({
@@ -104,7 +105,7 @@ router.post('/accept-invite', (req: AuthRequest, res) => {
     const project = readProjectPackage(invite.projectId);
     if (!project) return res.status(404).json({ error: '项目不存在' });
 
-    writeProjectPackage(setProjectMember(project, req.user.id, invite.grants));
+    commitProject(setProjectMember(project, req.user.id, invite.grants));
 
     invite.accepted = true;
     writeInvites(invites);
@@ -161,7 +162,7 @@ router.delete('/:id/members/:userId', (req: AuthRequest, res) => {
     const members = { ...access?.members };
     delete members[req.params.userId];
     project.config.access = { ...access, members };
-    writeProjectPackage(project);
+    commitProject(project);
 
     createNotification({
       userId: req.params.userId,

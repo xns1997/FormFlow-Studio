@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import './controls';
 import { getAllControls, hydrateControlComponent } from './registry';
 import { isCompositePropDef } from './types';
+import { createDesignFile } from '../project/types';
 
 test('每个公开属性都声明运行时消费契约且不再暴露旧绑定入口', () => {
   const controls = getAllControls();
-  assert.equal(controls.length, 27);
+  assert.equal(controls.length, 26);
   for (const control of controls) {
     assert.ok(control.propertyContract, `${control.type} 缺少 propertyContract`);
     for (const def of control.propSchema) {
@@ -18,11 +19,12 @@ test('每个公开属性都声明运行时消费契约且不再暴露旧绑定�
   }
 });
 
-test('表单宽高写入几何而不是 props', () => {
-  const form = getAllControls().find((control) => control.type === 'form');
-  assert.equal(form?.propSchema.find((def) => !isCompositePropDef(def) && def.key === 'width')?.target, 'geometry');
-  assert.equal(form?.propertyContract?.width, 'geometry');
-  assert.equal(form?.propertyContract?.height, 'geometry');
+test('表单窗体是设计文件的固有几何，不是公开控件', () => {
+  assert.equal(getAllControls().some((control) => control.type === 'form'), false);
+  const design = createDesignFile('订单表单');
+  assert.ok(design.formWindow.width > 0);
+  assert.ok(design.formWindow.height > 0);
+  assert.equal(design.components.some((component) => component.type === 'form'), false);
 });
 
 test('历史组件载入时补齐初始属性且保留明确的 false 和空值', () => {

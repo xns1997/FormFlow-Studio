@@ -1,0 +1,57 @@
+{
+  "behaviors": [
+    {
+      "enabled": true,
+      "priority": 10,
+      "conditions": [],
+      "id": "bh_reject_comment_required",
+      "name": "驳回时审批意见必填",
+      "trigger": {
+        "type": "buttonClick",
+        "buttonName": "reject_expense"
+      },
+      "actions": [
+        {
+          "type": "setRequired",
+          "targetField": "approval_comment"
+        },
+        {
+          "type": "showMessage",
+          "message": "驳回前请填写审批意见",
+          "messageType": "info"
+        }
+      ],
+      "updatedAt": "2026-07-22T07:35:01.870Z"
+    },
+    {
+      "enabled": true,
+      "priority": 20,
+      "conditions": [
+        {
+          "fieldName": "approval_status",
+          "operator": "!=",
+          "value": "待审批",
+          "logic": "AND",
+          "dataSource": "form"
+        }
+      ],
+      "id": "bh_approval_disable_completed",
+      "name": "非待审批记录禁止重复审批",
+      "trigger": {
+        "type": "formLoad"
+      },
+      "actions": [
+        {
+          "type": "setDisabled",
+          "targetComponent": "btn_approve_expense"
+        },
+        {
+          "type": "setDisabled",
+          "targetComponent": "btn_reject_expense"
+        }
+      ],
+      "updatedAt": "2026-07-22T07:35:01.888Z"
+    }
+  ],
+  "ruleCode": ""
+}

@@ -25,6 +25,22 @@ test.describe('FormFlow Studio', () => {
     await expect(page.getByRole('button', { name: '导入项目包' })).toBeVisible();
   });
 
+  test('project wizard exposes selection state and explains blocked continuation', async ({ page }) => {
+    await page.goto('/projects');
+    await page.getByRole('button', { name: '新建项目' }).click();
+    const templateMode = page.locator('.project-wizard-mode-card').filter({ hasText: '内置模板' });
+    await expect(templateMode).toHaveAttribute('aria-pressed', 'false');
+    await templateMode.click();
+    await expect(templateMode).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.project-wizard-next-hint')).toContainText('请选择一个内置模板');
+    await expect(page.getByRole('button', { name: '下一步' })).toBeDisabled();
+    const templateCard = page.locator('.project-wizard-template-card').first();
+    await templateCard.click();
+    await expect(templateCard).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: '下一步' })).toBeEnabled();
+    await page.keyboard.press('Escape');
+  });
+
   for (const example of [
     { template: '游戏数据分析', project: 'Wizard 游戏分析', source: 'game_events.json', entry: '游戏事件录入', dashboard: '游戏运营分析看板' },
     { template: '灵活就业分析', project: 'Wizard 灵活就业', source: 'work_records.json', entry: '工作记录录入', dashboard: '灵活就业综合分析' },
@@ -34,9 +50,38 @@ test.describe('FormFlow Studio', () => {
     test(`creates and runs ${example.template} from the wizard`, async ({ page }) => {
       await createFromTemplate(page, example.template, example.project);
       await expect(page.getByText(example.source)).toBeVisible();
-      await page.getByRole('link', { name: '测试运行' }).click();
+      await page.getByRole('button', { name: '测试运行' }).click();
       await page.getByText(example.entry, { exact: true }).click();
       await expect(page.getByRole('button', { name: '校验并保存' })).toBeVisible();
+      await expect(page.locator('.form-runtime-modal')).toBeVisible();
+      await expect(page.locator('.designer-preview-viewport.is-runtime')).toBeVisible();
+      await expect(page.locator('.designer-preview-viewport.is-runtime .designer-preview-option-meta')).toHaveCount(0);
+      await expect(page.locator('.form-runtime-body')).toHaveCSS('overflow', 'hidden');
+      await expect(page.locator('.form-window-frame.is-runtime .form-window-frame-content')).toHaveCSS('overflow', 'auto');
+      const runtimeDebugDrawer = page.locator('body > .debug-drawer[data-debug-portal="true"]');
+      await expect(runtimeDebugDrawer).toBeVisible();
+      await expect.poll(async () => Number.parseInt(await runtimeDebugDrawer.evaluate((element) => getComputedStyle(element).zIndex), 10)).toBeGreaterThan(1400);
+      await expect(page.getByRole('button', { name: '提交', exact: true })).toHaveCount(0);
+      const firstSelect = page.locator('.form-runtime-modal .ant-select').first();
+      await firstSelect.click();
+      const dropdown = page.locator('.ant-select-dropdown:visible');
+      await expect(dropdown).toBeVisible();
+      await expect.poll(async () => Number.parseInt(await dropdown.evaluate((element) => getComputedStyle(element).zIndex), 10)).toBeGreaterThan(1400);
+      const firstOption = dropdown.locator('.ant-select-item-option').first();
+      const selectedLabel = (await firstOption.textContent())?.trim();
+      await firstOption.click();
+      if (selectedLabel) await expect(firstSelect).toContainText(selectedLabel);
+      await page.getByRole('button', { name: '校验并保存' }).click();
+      const runtimeStatus = page.locator('.designer-preview-event-status');
+      await expect(runtimeStatus).toBeVisible();
+      const overlaysDoNotIntersect = await Promise.all([runtimeStatus.boundingBox(), runtimeDebugDrawer.boundingBox()]).then(([statusBox, drawerBox]) => {
+        if (!statusBox || !drawerBox) return false;
+        return statusBox.x + statusBox.width <= drawerBox.x
+          || drawerBox.x + drawerBox.width <= statusBox.x
+          || statusBox.y + statusBox.height <= drawerBox.y
+          || drawerBox.y + drawerBox.height <= statusBox.y;
+      });
+      expect(overlaysDoNotIntersect).toBe(true);
       await page.keyboard.press('Escape');
       await expect(page.locator('.modal-overlay')).toBeHidden();
       await page.getByText(example.dashboard, { exact: true }).click();
@@ -172,7 +217,7 @@ test.describe('FormFlow Studio', () => {
     await expect(page.getByText('链路检查器', { exact: true })).toHaveCount(0);
 
     // Navigate to test
-    await page.getByRole('link', { name: '测试运行' }).click();
+    await page.getByRole('button', { name: '测试运行' }).click();
     await expect(page).toHaveURL(/\/projects\/.*\/usage/);
   });
 
@@ -180,7 +225,7 @@ test.describe('FormFlow Studio', () => {
     await createFromTemplate(page, '止回阀选型', '运行页面测试');
 
     // Navigate to test
-    await page.getByRole('link', { name: '测试运行' }).click();
+    await page.getByRole('button', { name: '测试运行' }).click();
     await expect(page).toHaveURL(/\/projects\/.*\/usage/);
     await page.getByText('止回阀工况录入', { exact: true }).click();
 

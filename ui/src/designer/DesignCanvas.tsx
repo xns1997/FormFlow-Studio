@@ -13,6 +13,7 @@ import {
   type DataFieldDragItem,
 } from '../services/formGeneration/fieldControlRecommendation';
 import { getCanvasToolbarAvailability } from './canvasToolbarModel';
+import { projectApi } from '../services/io/api';
 
 interface Props {
   designer: ReturnType<typeof useDesigner>;
@@ -26,6 +27,8 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
   const lastPlacementRef = useRef<{ type: string; x: number; y: number; at: number } | null>(null);
   const workflows = useProjectStore((state) => state.project?.workflows || []);
   const tables = useProjectStore((state) => state.project?.srcTable || []);
+  const projectId = useProjectStore((state) => state.project?.config.id);
+  const [runtimeTables, setRuntimeTables] = useState(tables);
   const [pendingFieldDrop, setPendingFieldDrop] = useState<{
     fields: DataFieldDragItem[];
     point: { x: number; y: number };
@@ -34,6 +37,27 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
   const [moreOpen, setMoreOpen] = useState(false);
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const toolbarAvailability = getCanvasToolbarAvailability(designer);
+
+  useEffect(() => {
+    if (mode !== 'preview' || !projectId) { setRuntimeTables(tables); return; }
+    let cancelled = false;
+    projectApi.runtimeData(projectId).then((runtime) => {
+      if (cancelled) return;
+      const fullById = new Map((runtime.tables || []).map((table: any) => [table.id, table]));
+      setRuntimeTables(tables.map((table) => {
+        const full = fullById.get(table.id) as any;
+        if (!full) return table;
+        return {
+          ...table,
+          sheets: table.sheets.map((sheet) => {
+            const runtimeSheet = full.sheets?.find((entry: any) => entry.name === sheet.name);
+            return runtimeSheet ? { ...sheet, preview: runtimeSheet.rows, rowCount: runtimeSheet.rowCount } : sheet;
+          }),
+        };
+      }));
+    }).catch(() => { if (!cancelled) setRuntimeTables(tables); });
+    return () => { cancelled = true; };
+  }, [mode, projectId, tables]);
 
   useEffect(() => {
     if (!moreOpen) return;
@@ -74,7 +98,9 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
     const applyInteractionMode = () => {
       const graph = designer.graphRef.current;
       if (!graph) return false;
-      graph.options.interacting = readOnly ? { nodeMovable: false, edgeMovable: false } : { nodeMovable: true, edgeMovable: false };
+      graph.options.interacting = readOnly
+        ? { nodeMovable: false, edgeMovable: false }
+        : { nodeMovable: true, edgeMovable: false };
       if (readOnly) {
         graph.disableKeyboard();
         graph.disableClipboard();
@@ -232,9 +258,9 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
         aria-hidden={mode === 'preview'}
       />
       {mode === 'preview' && (
-        <PreviewCanvas formId={formId} components={designer.components} zoom={designer.zoom} workflows={workflows} tables={tables} />
+        <PreviewCanvas formId={formId} components={designer.components} formWindow={designer.formWindow} zoom={designer.zoom} workflows={workflows} tables={runtimeTables} />
       )}
-      {mode === 'design' && !readOnly && designer.selectionOverlay && (
+      {mode === 'design' && !readOnly && designer.selectedIds.length === 1 && designer.selectionOverlay && (
         <div
           className="designer-selection-overlay"
           style={{

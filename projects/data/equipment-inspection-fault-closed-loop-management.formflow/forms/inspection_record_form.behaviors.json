@@ -2,10 +2,14 @@
   "behaviors": [
     {
       "id": "device_auto_fill",
-      "name": "设备编号自动填充规则",
-      "description": "当选择设备编号时，自动填充设备名称、所属区域和责任人字段",
+      "name": "设备自动带出",
+      "event": "onFieldChange",
+      "code": "",
+      "priority": 10,
       "enabled": true,
-      "priority": 20,
+      "createdAt": "2026-07-26T00:00:00.000Z",
+      "updatedAt": "2026-07-26T00:00:00.000Z",
+      "description": "未知字段，故意用于冻结格式回归",
       "trigger": {
         "type": "fieldChange",
         "fieldName": "设备编号"
@@ -15,27 +19,20 @@
         {
           "type": "setValue",
           "targetField": "设备名称",
-          "expression": "$设备编号"
-        },
-        {
-          "type": "setValue",
-          "targetField": "所属区域",
-          "expression": "\"未知区域\""
-        },
-        {
-          "type": "setValue",
-          "targetField": "责任人",
-          "expression": "\"未知责任人\""
+          "expression": "devices[编号=$设备编号].名称"
         }
-      ],
-      "updatedAt": "2026-07-20T10:26:28.984Z"
+      ]
     },
     {
       "id": "device_info_autofill",
-      "name": "设备信息自动带出规则",
-      "description": "当选择设备编号时，自动从设备档案表中查询并设置设备名称、所属区域和责任人字段",
+      "name": "设备信息带出",
+      "event": "onFieldChange",
+      "code": "",
+      "priority": 20,
       "enabled": true,
-      "priority": 30,
+      "createdAt": "2026-07-26T00:00:00.000Z",
+      "updatedAt": "2026-07-26T00:00:00.000Z",
+      "description": "未知字段，故意用于冻结格式回归",
       "trigger": {
         "type": "fieldChange",
         "fieldName": "设备编号"
@@ -45,21 +42,10 @@
         {
           "type": "setValue",
           "targetField": "设备名称",
-          "expression": "equipment_archive[设备编号=$设备编号].设备名称"
-        },
-        {
-          "type": "setValue",
-          "targetField": "所属区域",
-          "expression": "equipment_archive[设备编号=$设备编号].所属区域"
-        },
-        {
-          "type": "setValue",
-          "targetField": "责任人",
-          "expression": "equipment_archive[设备编号=$设备编号].责任人"
+          "expression": "\"未知设备\""
         }
-      ],
-      "updatedAt": "2026-07-20T10:28:11.406Z"
+      ]
     }
   ],
-  "ruleCode": ""
+  "ruleCode": "before submit -> message(\"只有处理负责人可提交\", warning)"
 }

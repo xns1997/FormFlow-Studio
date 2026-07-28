@@ -1,0 +1,331 @@
+{
+  "id": "expense_detail_design",
+  "name": "expense_detail",
+  "formMode": "detail",
+  "viewport": {
+    "zoom": 1,
+    "panX": 0,
+    "panY": 0
+  },
+  "gridSize": 12,
+  "components": [
+    {
+      "id": "ctrl_detail_reimbursement_no",
+      "type": "input",
+      "x": 16,
+      "y": 14,
+      "width": 340,
+      "height": 76,
+      "zIndex": 2,
+      "fieldBinding": "reimbursement_no",
+      "props": {
+        "name": "reimbursement_no",
+        "label": "报销单号",
+        "required": false,
+        "readonly": true
+      }
+    },
+    {
+      "id": "ctrl_detail_applicant",
+      "type": "input",
+      "x": 406,
+      "y": 14,
+      "width": 340,
+      "height": 76,
+      "zIndex": 2,
+      "fieldBinding": "applicant",
+      "props": {
+        "name": "applicant",
+        "label": "申请人",
+        "required": true,
+        "readonly": true
+      }
+    },
+    {
+      "id": "ctrl_detail_department",
+      "type": "select",
+      "x": 16,
+      "y": 110,
+      "width": 340,
+      "height": 76,
+      "zIndex": 2,
+      "fieldBinding": "department",
+      "props": {
+        "name": "department",
+        "label": "所属部门",
+        "required": true,
+        "readonly": true,
+        "options": [
+          {
+            "label": "研发部",
+            "value": "研发部"
+          },
+          {
+            "label": "市场部",
+            "value": "市场部"
+          },
+          {
+            "label": "销售部",
+            "value": "销售部"
+          },
+          {
+            "label": "财务部",
+            "value": "财务部"
+          },
+          {
+            "label": "人力资源部",
+            "value": "人力资源部"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ctrl_detail_expense_type",
+      "type": "select",
+      "x": 406,
+      "y": 110,
+      "width": 340,
+      "height": 76,
+      "zIndex": 2,
+      "fieldBinding": "expense_type",
+      "props": {
+        "name": "expense_type",
+        "label": "费用类型",
+        "required": true,
+        "readonly": true,
+        "options": [
+          {
+            "label": "交通费",
+            "value": "交通费"
+          },
+          {
+            "label": "住宿费",
+            "value": "住宿费"
+          },
+          {
+            "label": "餐饮费",
+            "value": "餐饮费"
+          },
+          {
+            "label": "办公费",
+            "value": "办公费"
+          },
+          {
+            "label": "其他",
+            "value": "其他"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ctrl_detail_expense_date",
+      "type": "datePicker",
+      "x": 16,
+      "y": 206,
+      "width": 340,
+      "height": 76,
+      "zIndex": 2,
+      "fieldBinding": "expense_date",
+      "props": {
+        "name": "expense_date",
+        "label": "发生日期",
+        "required": true,
+        "readonly": true
+      }
+    },
+    {
+      "id": "ctrl_detail_amount",
+      "type": "number",
+      "x": 406,
+      "y": 206,
+      "width": 340,
+      "height": 76,
+      "zIndex": 2,
+      "fieldBinding": "amount",
+      "props": {
+        "name": "amount",
+        "label": "报销金额",
+        "required": true,
+        "readonly": true,
+        "positive": true,
+        "customMessage": "报销金额必须大于 0",
+        "precision": 2,
+        "prefix": "¥"
+      }
+    },
+    {
+      "id": "ctrl_detail_description",
+      "type": "textarea",
+      "x": 16,
+      "y": 302,
+      "width": 340,
+      "height": 110,
+      "zIndex": 2,
+      "fieldBinding": "description",
+      "props": {
+        "name": "description",
+        "label": "费用说明",
+        "required": true,
+        "readonly": true,
+        "rows": 4,
+        "minLength": 0,
+        "customMessage": "费用类型为其他时，费用说明不得少于10个字"
+      }
+    },
+    {
+      "id": "ctrl_detail_has_invoice",
+      "type": "select",
+      "x": 406,
+      "y": 302,
+      "width": 340,
+      "height": 76,
+      "zIndex": 2,
+      "fieldBinding": "has_invoice",
+      "props": {
+        "name": "has_invoice",
+        "label": "是否有发票",
+        "required": false,
+        "readonly": true,
+        "options": [
+          {
+            "label": "是",
+            "value": true
+          },
+          {
+            "label": "否",
+            "value": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "ctrl_detail_approval_status",
+      "type": "select",
+      "x": 16,
+      "y": 398,
+      "width": 340,
+      "height": 76,
+      "zIndex": 2,
+      "fieldBinding": "approval_status",
+      "props": {
+        "name": "approval_status",
+        "label": "审批状态",
+        "required": false,
+        "readonly": true,
+        "options": [
+          {
+            "label": "草稿",
+            "value": "草稿"
+          },
+          {
+            "label": "待审批",
+            "value": "待审批"
+          },
+          {
+            "label": "已通过",
+            "value": "已通过"
+          },
+          {
+            "label": "已驳回",
+            "value": "已驳回"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ctrl_detail_approver",
+      "type": "input",
+      "x": 406,
+      "y": 398,
+      "width": 340,
+      "height": 76,
+      "zIndex": 2,
+      "fieldBinding": "approver",
+      "props": {
+        "name": "approver",
+        "label": "审批人",
+        "required": false,
+        "readonly": true
+      }
+    },
+    {
+      "id": "ctrl_detail_approval_comment",
+      "type": "textarea",
+      "x": 16,
+      "y": 494,
+      "width": 340,
+      "height": 110,
+      "zIndex": 2,
+      "fieldBinding": "approval_comment",
+      "props": {
+        "name": "approval_comment",
+        "label": "审批意见",
+        "required": false,
+        "readonly": true
+      }
+    },
+    {
+      "id": "ctrl_detail_application_time",
+      "type": "datePicker",
+      "x": 406,
+      "y": 494,
+      "width": 340,
+      "height": 76,
+      "zIndex": 2,
+      "fieldBinding": "application_time",
+      "props": {
+        "name": "application_time",
+        "label": "申请时间",
+        "required": false,
+        "readonly": true
+      }
+    },
+    {
+      "id": "ctrl_detail_approval_time",
+      "type": "datePicker",
+      "x": 16,
+      "y": 590,
+      "width": 340,
+      "height": 76,
+      "zIndex": 2,
+      "fieldBinding": "approval_time",
+      "props": {
+        "name": "approval_time",
+        "label": "审批时间",
+        "required": false,
+        "readonly": true
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "id": "expense_detail_binding",
+      "sourceId": "expense_requests",
+      "targetId": "expense_detail",
+      "type": "table",
+      "config": {
+        "tableId": "expense_requests",
+        "sheetName": "报销申请表"
+      }
+    }
+  ],
+  "createdAt": "2026-07-22T07:28:41.624Z",
+  "updatedAt": "2026-07-22T07:30:04.548Z",
+  "coordinateSpace": "window-content-v1",
+  "formWindow": {
+    "x": 40,
+    "y": 40,
+    "width": 900,
+    "height": 900,
+    "props": {
+      "title": "报销详情",
+      "subtitle": "完整报销信息（只读）",
+      "background": "#ffffff",
+      "padding": 24,
+      "borderRadius": 12,
+      "submitText": "提交",
+      "resetText": "重置",
+      "showFooter": false
+    }
+  }
+}

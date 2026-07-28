@@ -2,7 +2,8 @@ import { createHash, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { env } from '../config/env';
-import { readProjectPackage, writeProjectPackage } from './project-package-store';
+import { readProjectPackage } from './project-package-store';
+import { commitProject } from './project-authoring';
 import { compileBehaviorDsl, applyBehaviorDslToComponents, hasBehaviorDslErrors } from '../../../ui/src/services/engine/behaviorDsl';
 import type { RuleAgentSession } from './rule-agent-store';
 
@@ -72,10 +73,10 @@ export function applyRuleProposal(session: RuleAgentSession, proposal: Record<st
   if (hasBehaviorDslErrors(compilation)) throw new Error('提案仍包含语法错误，不能应用');
   const testResult = runRuleSandbox(session.projectId, session.formId, proposal.proposedCode || '');
   if (!testResult.passed && !confirmFailedTests) throw new Error('沙箱测试失败，需要二次确认');
-  const applied = applyBehaviorDslToComponents(form.design?.components || [], proposal.proposedCode || '');
+  const applied = applyBehaviorDslToComponents(form.design?.components || [], proposal.proposedCode || '', form.design?.formWindow);
   if (applied.unapplied.length) throw new Error(applied.unapplied.join('\n'));
   const updatedAt = new Date().toISOString();
-  project.forms = project.forms.map((item: any) => item.id === form.id ? { ...item, ruleCode: proposal.proposedCode, design: { ...item.design, components: applied.components, updatedAt }, updatedAt } : item);
-  writeProjectPackage(project);
-  return { ruleCode: proposal.proposedCode, components: applied.components, updatedAt, testResult };
+  project.forms = project.forms.map((item: any) => item.id === form.id ? { ...item, ruleCode: proposal.proposedCode, design: { ...item.design, formWindow: applied.formWindow || item.design.formWindow, components: applied.components, updatedAt }, updatedAt } : item);
+  commitProject(project);
+  return { ruleCode: proposal.proposedCode, components: applied.components, formWindow: applied.formWindow || form.design.formWindow, updatedAt, testResult };
 }

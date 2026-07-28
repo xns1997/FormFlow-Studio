@@ -29,6 +29,14 @@ test('project agent V2 hides manual operation approval when local mode auto-appr
   assert.doesNotMatch(html, /删除表单需要确认|确认执行|拒绝/);
 });
 
+test('计划确认区分已规划和已验证并要求显式核对', () => {
+  const coveredTask = { ...task('task-project', 'project', 'pending'), requirementIds: ['req-1'] };
+  const session = baseSession({ phase: 'awaiting_plan_approval', requirementRevision: 2, requirementCoverage: { total: 1, planned: 1, supported: 1, verified: 0, failed: 0, capabilityGaps: 0, needsUserInput: 0, planComplete: true, complete: false }, requirements: [{ id: 'req-1', statement: '创建员工项目', domain: 'project', acceptanceScenarios: ['项目可打开'], risk: 'normal', capabilityStatus: 'supported', taskIds: ['task-project'], evidenceArtifactIds: [] }], plans: [{ id: 'plan-1', revision: 1, requirementRevision: 2, goal: '创建员工中心', successCriteria: ['项目通过校验'], summary: '完成项目', assumptions: ['使用默认版本'], risks: [], status: 'pending', tasks: [coveredTask] }] });
+  const html = renderToStaticMarkup(createElement(ProjectAgentProgressCards, { session, ...handlers }));
+  for (const expected of ['需求与任务映射', '1/1 项已规划', '创建员工项目', '项目可打开', '我已核对需求', '确认需求与计划并执行']) assert.match(html, new RegExp(expected));
+  assert.match(html, /type="checkbox"/); assert.match(html, /<button type="button" disabled="">\u786e认需求与计划并执行/);
+});
+
 test('compact task workbench renders an empty grounding snapshot', () => {
   const html = renderToStaticMarkup(createElement(ProjectAgentProgressCards, { session: baseSession({ projectId: undefined, phase: 'grounding', activePlanId: undefined, plans: [], artifacts: [], events: [] }), ...handlers }));
   assert.match(html, /完成项目检查和计划确认后/); assert.match(html, /暂无任务/);
@@ -54,7 +62,7 @@ test('data preflight events expose bounded arguments and actionable suggestions'
     },
   }] });
   const html = renderToStaticMarkup(createElement(ProjectAgentProgressCards, { session, ...handlers, selectedTaskId: 'task-form' }));
-  for (const expected of ['工具参数预检未通过', 'DATA_ROWS_LOOK_LIKE_SCHEMA', '技术详情', 'originalArguments', 'normalizedArguments', 'normalizations', 'suggestedArguments', 'device_id']) assert.match(html, new RegExp(expected));
+  for (const expected of ['执行参数需要调整', 'DATA_ROWS_LOOK_LIKE_SCHEMA', '技术详情', 'originalArguments', 'normalizedArguments', 'normalizations', 'suggestedArguments', 'device_id']) assert.match(html, new RegExp(expected));
 });
 
 test('quality gate failure offers a new remediation cycle with concrete diagnostics', () => {
@@ -88,6 +96,13 @@ test('automatic recovery renders a collapsed dynamic task lineage', () => {
   assert.equal((html.match(/data-task-lineage="old-task"/g) || []).length, 1);
 });
 
+test('dynamic loop renders the current round and all expert decisions', () => {
+  const decisions = (['project', 'data', 'form', 'workflow', 'behavior', 'quality', 'delivery'] as const).map((role) => ({ role, decision: role === 'form' ? 'run' as const : 'skip' as const, reason: role === 'form' ? '本轮创建表单' : '本轮没有该领域工作', taskId: role === 'form' ? 'task-form' : undefined }));
+  const session = baseSession({ orchestration: { currentRound: 2, maxRounds: 24, consecutiveNoProgress: 0, maxNoProgressRounds: 2, status: 'running' }, rounds: [{ id: 'round-2', index: 2, status: 'running', action: 'continue', summary: '继续完成表单', decisions, taskIds: ['task-form'], startedAt: new Date().toISOString() }] });
+  const html = renderToStaticMarkup(createElement(ProjectAgentProgressCards, { session, ...handlers }));
+  for (const expected of ['动态编排 · 第 2/24 轮', '继续完成表单', '表单专家', '本轮创建表单', '交付专家', '本轮跳过', '连续无进展 0/2']) assert.match(html, new RegExp(expected));
+});
+
 test('semantic activity hides provider noise from the default timeline and keeps it in technical details', () => {
   const session = baseSession({ events: [
     { seq: 1, type: 'node_started', data: { taskId: 'task-form' }, createdAt: new Date().toISOString() },
@@ -96,6 +111,6 @@ test('semantic activity hides provider noise from the default timeline and keeps
     { seq: 4, type: 'tool_completed', data: { taskId: 'task-form', toolName: 'form.create', result: { ok: true } }, createdAt: new Date().toISOString() },
   ] });
   const html = renderToStaticMarkup(createElement(ProjectAgentProgressCards, { session, ...handlers }));
-  assert.match(html, /工具执行完成 · form.create/); assert.match(html, /技术详情/);
+  assert.match(html, /已创建表单/); assert.match(html, /技术详情/);
   assert.doesNotMatch(html, />node_started<|>message_delta</);
 });

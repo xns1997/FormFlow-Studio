@@ -5,8 +5,10 @@ import 'ag-grid-community/styles/ag-theme-quartz.css';
 import { useProjectStore } from '../../project/store';
 import { DesignerIcon } from '../../designer/icons';
 import { PreviewCanvas } from '../../designer/PreviewCanvas';
-import Modal, { ModalHeader } from '../../components/Modal';
+import Modal from '../../components/Modal';
 import type { DesignComponent } from '../../project/types';
+import ProjectWorkspaceTabs from './ProjectWorkspaceTabs';
+import { projectApi } from '../../services/io/api';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -40,14 +42,39 @@ export default function UsagePage() {
   const [previewFormId, setPreviewFormId] = useState<string | null>(null);
   const previewForm = project?.forms?.find((f) => f.id === previewFormId);
   const previewComponents: DesignComponent[] = previewForm?.design?.components || [];
+  const previewModalWidth = Math.max(320, Number(previewForm?.design?.formWindow?.width) || 640);
+  const previewModalHeight = Math.max(240, Number(previewForm?.design?.formWindow?.height) || 480);
 
   const selectedTable = project?.srcTable.find((t) => t.id === selectedTableId);
   const activeSheet = selectedTable?.sheets[activeSheetIdx];
 
   const workflows = useMemo(() => project?.workflows || [], [project?.workflows]);
   const tables = useMemo(() => project?.srcTable || [], [project?.srcTable]);
+  const [runtimeTables, setRuntimeTables] = useState(tables);
+  const [runtimeLoading, setRuntimeLoading] = useState(false);
 
   const changeCount = pendingChanges.size + pendingAdds.length + pendingDeletes.size;
+
+  useEffect(() => {
+    if (!previewFormId || !project?.config.id) { setRuntimeTables(tables); setRuntimeLoading(false); return; }
+    let cancelled = false;
+    setRuntimeLoading(true);
+    projectApi.runtimeData(project.config.id).then((runtime) => {
+      if (cancelled) return;
+      const fullById = new Map((runtime.tables || []).map((table: any) => [table.id, table]));
+      setRuntimeTables(tables.map((table) => {
+        const full = fullById.get(table.id) as any;
+        return full ? {
+          ...table,
+          sheets: table.sheets.map((sheet) => {
+            const runtimeSheet = full.sheets?.find((entry: any) => entry.name === sheet.name);
+            return runtimeSheet ? { ...sheet, preview: runtimeSheet.rows, rowCount: runtimeSheet.rowCount, dataVersion: runtimeSheet.dataVersion } : sheet;
+          }),
+        } : table;
+      }));
+    }).catch(() => { if (!cancelled) setRuntimeTables(tables); }).finally(() => { if (!cancelled) setRuntimeLoading(false); });
+    return () => { cancelled = true; };
+  }, [previewFormId, project?.config.id, tables]);
 
   // AG Grid columns (editable)
   const colDefs = useMemo(() => {
@@ -191,7 +218,18 @@ export default function UsagePage() {
   }, [projectId, selectedTableId, activeSheetIdx, activeSheet?.name]);
 
   return (
-    <div className="page-layout">
+    <div className="unified-editor">
+      <div className="unified-toolbar unified-toolbar-workspace-only">
+        <div className="unified-toolbar-primary">
+          <ProjectWorkspaceTabs
+            projectId={project?.config.id || ''}
+            projectName={project?.config.name}
+            activeMode="test"
+          />
+        </div>
+      </div>
+      <div className="unified-body">
+        <div className="page-layout">
       {/* Sidebar */}
       <div className="page-sidebar">
         <div className="page-section-header"><span>数据表</span></div>
@@ -324,16 +362,16 @@ export default function UsagePage() {
       </div>
 
       {/* Form Preview Modal */}
-      <Modal open={!!previewFormId} onClose={() => setPreviewFormId(null)} maxWidth={1200} maxHeight="90vh">
-        <ModalHeader title={previewForm?.name || '表单预览'} onClose={() => setPreviewFormId(null)} />
-        <div style={{ height: 'calc(90vh - 60px)', overflow: 'auto', position: 'relative' }}>
-          {previewComponents.length > 0 ? (
-            <PreviewCanvas formId={previewForm?.id} components={previewComponents} zoom={1} workflows={workflows} tables={tables} />
-          ) : (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--muted)' }}>该表单没有设计内容</div>
+      <Modal open={!!previewFormId} onClose={() => setPreviewFormId(null)} width={`min(${previewModalWidth}px, 90vw)`} maxWidth="90vw" maxHeight="90vh" overlayClassName="form-runtime-overlay" containerClassName="form-runtime-modal" ariaLabel={previewForm?.name || '表单预览'}>
+        <div className="form-runtime-body" style={{ height: `min(${previewModalHeight}px, calc(90vh - 32px))` }}>
+          {runtimeLoading && <div className="form-runtime-loading" role="status">正在加载最新数据…</div>}
+          {previewForm && !runtimeLoading && (
+            <PreviewCanvas formId={previewForm.id} components={previewComponents} formWindow={previewForm.design.formWindow} zoom={1} workflows={workflows} tables={runtimeTables} presentation="runtime" onClose={() => setPreviewFormId(null)} onTablesChange={setRuntimeTables} />
           )}
         </div>
       </Modal>
+        </div>
+      </div>
     </div>
   );
 }

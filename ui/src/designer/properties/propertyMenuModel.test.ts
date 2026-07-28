@@ -53,3 +53,15 @@ test('问题状态优先于已修改数量', () => {
   assert.equal(propertyStatusLabel([{ changed: true, diagnostics: [] }, { changed: false, diagnostics: [] }]), '已修改 1 项');
   assert.equal(propertyStatusLabel([{ changed: false, diagnostics: [] }]), '');
 });
+
+test('只读与禁用同时开启时给出可修复的配置警告', () => {
+  const status = getPropertyStatus({
+    def: { key: 'readonly', label: '只读', type: 'boolean' },
+    values: { readonly: true, disabled: true },
+    defaults: { readonly: false, disabled: false },
+    component,
+    components: [component],
+    defaultSize: { w: 240, h: 72 },
+  });
+  assert.match(status.diagnostics[0]?.message || '', /重复/);
+});

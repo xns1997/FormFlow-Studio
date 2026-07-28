@@ -31,7 +31,7 @@ const DEFAULT_TIME_FORMAT = 'HH:mm';
 const DEFAULT_TIME_WITH_SECONDS_FORMAT = 'HH:mm:ss';
 
 export type FormOption = { label: string; value: string };
-export type UploadFileValue = { name: string; size: number; type: string; url?: string };
+export type UploadFileValue = { name: string; size: number; type: string; url?: string; status?: 'uploading' | 'done' | 'error'; error?: string };
 
 export function toOptions(options: unknown): FormOption[] {
   if (!Array.isArray(options)) return [];
@@ -100,7 +100,7 @@ function toUploadFileList(files: UploadFileValue[]): UploadFile[] {
   return files.map((file, index) => ({
     uid: `${file.name}-${index}`,
     name: file.name,
-    status: 'done',
+    status: file.status || 'done',
     size: file.size,
     type: file.type,
     url: file.url,
@@ -117,6 +117,8 @@ function fromUploadFileList(fileList: UploadFile[]): UploadFileValue[] {
       : file.originFileObj
         ? URL.createObjectURL(file.originFileObj)
         : undefined,
+    status: file.status === 'error' ? 'error' : file.status === 'uploading' ? 'uploading' : 'done',
+    error: file.error?.message,
   }));
 }
 
@@ -134,6 +136,9 @@ export function FormAntdProvider({ children }: { children: React.ReactNode }) {
           controlHeight: 36,
           fontSize: 14,
           boxShadow: 'none',
+          // Form controls can run inside the application modal layer (z-index 1400).
+          // Keep body-mounted Select/Picker popups above that layer.
+          zIndexPopupBase: 1600,
         },
         components: {
           Input: { activeShadow: '0 0 0 3px rgba(0,122,255,0.15)' },
@@ -153,8 +158,14 @@ export function AntdTextInput(props: {
   placeholder?: string;
   disabled?: boolean;
   readOnly?: boolean;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+  type?: string;
+  maxLength?: number;
+  showCount?: boolean;
   style?: React.CSSProperties;
   autoFocus?: boolean;
+  allowClear?: boolean;
+  onClear?: () => void;
   onChange?: (value: string) => void;
   onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
   onClick?: React.MouseEventHandler<HTMLInputElement>;
@@ -168,8 +179,14 @@ export function AntdTextInput(props: {
       placeholder={props.placeholder}
       disabled={props.disabled}
       readOnly={props.readOnly}
+      inputMode={props.inputMode}
+      type={props.type}
+      maxLength={props.maxLength && props.maxLength > 0 ? props.maxLength : undefined}
+      showCount={props.showCount}
       style={props.style}
       autoFocus={props.autoFocus}
+      allowClear={props.allowClear}
+      onClear={props.onClear}
       onChange={(event) => props.onChange?.(event.target.value)}
       onKeyDown={props.onKeyDown}
       onClick={props.onClick}
@@ -192,6 +209,7 @@ export function AntdTextAreaInput(props: {
   onChange?: (value: string) => void;
   onBlur?: () => void;
   onFocus?: () => void;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
 }) {
   return (
     <TextArea
@@ -208,6 +226,7 @@ export function AntdTextAreaInput(props: {
       onChange={(event) => props.onChange?.(event.target.value)}
       onBlur={props.onBlur}
       onFocus={props.onFocus}
+      onKeyDown={props.onKeyDown}
     />
   );
 }
@@ -283,12 +302,14 @@ export function AntdColorInput(props: {
 export function AntdSelectInput(props: {
   value: string | string[] | undefined;
   placeholder?: string;
+  emptyText?: string;
   disabled?: boolean;
   readOnly?: boolean;
   options: FormOption[];
   multiple?: boolean;
   allowClear?: boolean;
   showSearch?: boolean;
+  maxTagCount?: number | 'responsive';
   style?: React.CSSProperties;
   onChange?: (value: string | string[]) => void;
   onBlur?: () => void;
@@ -304,8 +325,11 @@ export function AntdSelectInput(props: {
       mode={props.multiple ? 'multiple' : undefined}
       allowClear={props.allowClear}
       showSearch={props.showSearch}
+      maxTagCount={props.maxTagCount}
+      getPopupContainer={resolvePopupContainer}
       optionFilterProp="label"
       options={props.options}
+      notFoundContent={props.emptyText || '暂无可选项'}
       style={props.style}
       onChange={(value) => { if (!props.readOnly) props.onChange?.(value as string | string[]); }}
       onBlur={props.onBlur}
@@ -366,9 +390,13 @@ export function AntdSegmentedInput(props: {
   value: string;
   disabled?: boolean;
   options: FormOption[];
+  emptyText?: string;
   block?: boolean;
   onChange?: (value: string) => void;
 }) {
+  if (!props.options.length) {
+    return <div className="ff-antd-empty-hint">{props.emptyText || '暂无可选项'}</div>;
+  }
   return (
     <Segmented
       className="ff-antd-control ff-antd-segmented"
@@ -385,10 +413,14 @@ export function AntdRadioInput(props: {
   value: string;
   disabled?: boolean;
   options: FormOption[];
+  emptyText?: string;
   direction?: 'vertical' | 'horizontal';
   style?: React.CSSProperties;
   onChange?: (value: string) => void;
 }) {
+  if (!props.options.length) {
+    return <div className="ff-antd-empty-hint">{props.emptyText || '暂无可选项'}</div>;
+  }
   return (
     <Radio.Group
       className={`ff-antd-radio-group ${props.direction === 'horizontal' ? 'horizontal' : 'vertical'}`}
@@ -406,10 +438,14 @@ export function AntdCheckboxInput(props: {
   value: string[];
   disabled?: boolean;
   options: FormOption[];
+  emptyText?: string;
   direction?: 'vertical' | 'horizontal';
   style?: React.CSSProperties;
   onChange?: (value: string[]) => void;
 }) {
+  if (!props.options.length) {
+    return <div className="ff-antd-empty-hint">{props.emptyText || '暂无可选项'}</div>;
+  }
   return (
     <Checkbox.Group
       className={`ff-antd-checkbox-group ${props.direction === 'horizontal' ? 'horizontal' : 'vertical'}`}
@@ -431,12 +467,15 @@ export function AntdDateInput(props: {
   format?: string;
   min?: string;
   max?: string;
+  disableWeekends?: boolean;
   onChange?: (value: string) => void;
   onBlur?: () => void;
   onFocus?: () => void;
 }) {
   const format = resolveDateFormat(props.showTime, props.format);
   const timeFormat = format.includes('ss') ? DEFAULT_TIME_WITH_SECONDS_FORMAT : DEFAULT_TIME_FORMAT;
+  const minValue = normalizeDayValue(props.min, props.showTime ? 'datetime' : 'date');
+  const maxValue = normalizeDayValue(props.max, props.showTime ? 'datetime' : 'date');
   return (
     <DatePicker
       className="ff-antd-control ff-antd-picker"
@@ -444,8 +483,15 @@ export function AntdDateInput(props: {
       disabled={props.disabled}
       placeholder={props.placeholder}
       showTime={props.showTime ? { format: timeFormat } : false}
-      minDate={normalizeDayValue(props.min, props.showTime ? 'datetime' : 'date') || undefined}
-      maxDate={normalizeDayValue(props.max, props.showTime ? 'datetime' : 'date') || undefined}
+      minDate={minValue || undefined}
+      maxDate={maxValue || undefined}
+      disabledDate={(current) => {
+        if (!current) return false;
+        if (props.disableWeekends && (current.day() === 0 || current.day() === 6)) return true;
+        if (minValue && current.isBefore(minValue, props.showTime ? 'minute' : 'day')) return true;
+        if (maxValue && current.isAfter(maxValue, props.showTime ? 'minute' : 'day')) return true;
+        return false;
+      }}
       style={{ width: '100%' }}
       inputReadOnly={props.readOnly}
       format={format}
@@ -465,11 +511,15 @@ export function AntdTimeInput(props: {
   placeholder?: string;
   showSeconds?: boolean;
   format?: string;
+  min?: string;
+  max?: string;
   onChange?: (value: string) => void;
   onBlur?: () => void;
   onFocus?: () => void;
 }) {
   const format = resolveTimeFormat(props.showSeconds, props.format);
+  const minValue = normalizeDayValue(props.min, 'time');
+  const maxValue = normalizeDayValue(props.max, 'time');
   return (
     <TimePicker
       className="ff-antd-control ff-antd-picker"
@@ -481,6 +531,30 @@ export function AntdTimeInput(props: {
       format={format}
       allowClear
       needConfirm={false}
+      disabledTime={() => ({
+        disabledHours: () => {
+          const minHour = minValue ? minValue.hour() : null;
+          const maxHour = maxValue ? maxValue.hour() : null;
+          return Array.from({ length: 24 }, (_, hour) => hour).filter((hour) => (minHour != null && hour < minHour) || (maxHour != null && hour > maxHour));
+        },
+        disabledMinutes: (selectedHour) => {
+          const disabled: number[] = [];
+          for (let minute = 0; minute < 60; minute += 1) {
+            if (minValue && selectedHour === minValue.hour() && minute < minValue.minute()) disabled.push(minute);
+            if (maxValue && selectedHour === maxValue.hour() && minute > maxValue.minute()) disabled.push(minute);
+          }
+          return disabled;
+        },
+        disabledSeconds: (selectedHour, selectedMinute) => {
+          const disabled: number[] = [];
+          if (!props.showSeconds) return disabled;
+          for (let second = 0; second < 60; second += 1) {
+            if (minValue && selectedHour === minValue.hour() && selectedMinute === minValue.minute() && second < minValue.second()) disabled.push(second);
+            if (maxValue && selectedHour === maxValue.hour() && selectedMinute === maxValue.minute() && second > maxValue.second()) disabled.push(second);
+          }
+          return disabled;
+        },
+      })}
       getPopupContainer={resolvePopupContainer}
       onChange={(value) => props.onChange?.(formatDayValue(value, 'time', { showSeconds: props.showSeconds, format }))}
       onBlur={props.onBlur}
@@ -495,11 +569,16 @@ export function AntdDateRangeInput(props: {
   readOnly?: boolean;
   placeholder?: [string, string];
   format?: string;
+  min?: string;
+  max?: string;
+  disableWeekends?: boolean;
   onChange?: (value: { start: string; end: string }) => void;
   onBlur?: () => void;
   onFocus?: () => void;
 }) {
   const format = props.format || DEFAULT_DATE_FORMAT;
+  const minValue = normalizeDayValue(props.min, 'date');
+  const maxValue = normalizeDayValue(props.max, 'date');
   return (
     <RangePicker
       className="ff-antd-control ff-antd-picker ff-antd-range"
@@ -513,6 +592,13 @@ export function AntdDateRangeInput(props: {
       format={format}
       style={{ width: '100%' }}
       allowClear
+      disabledDate={(current) => {
+        if (!current) return false;
+        if (props.disableWeekends && (current.day() === 0 || current.day() === 6)) return true;
+        if (minValue && current.isBefore(minValue, 'day')) return true;
+        if (maxValue && current.isAfter(maxValue, 'day')) return true;
+        return false;
+      }}
       getPopupContainer={resolvePopupContainer}
       onChange={(values) => props.onChange?.({
         start: formatDayValue(values?.[0] || null, 'date', { format }),
@@ -573,7 +659,7 @@ export function AntdTagInput(props: {
       disabled={props.disabled}
       placeholder={props.placeholder}
       style={{ width: '100%' }}
-      tokenSeparators={[',']}
+      tokenSeparators={[',', '，', ';', '；', '\n', '\t']}
       open={false}
       onChange={(value) => props.onChange?.(value.map(String))}
       onBlur={props.onBlur}
@@ -586,6 +672,7 @@ export function AntdUploadInput(props: {
   files: UploadFileValue[];
   disabled?: boolean;
   imageOnly?: boolean;
+  imageRotate?: number;
   constraints?: UploadConstraints;
   onChange?: (files: UploadFileValue[]) => void;
 }) {
@@ -596,7 +683,7 @@ export function AntdUploadInput(props: {
     if (props.imageOnly && (constraints.minImageWidth || constraints.maxImageWidth || constraints.minImageHeight || constraints.maxImageHeight)) {
       const dimensionError = await new Promise<string | null>((resolve) => {
         const image = new Image(); const url = URL.createObjectURL(file);
-        image.onload = () => { URL.revokeObjectURL(url); resolve(validateImageDimensions(image.naturalWidth, image.naturalHeight, constraints)); };
+        image.onload = () => { URL.revokeObjectURL(url); const issue = validateImageDimensions(image.naturalWidth, image.naturalHeight, constraints); resolve(issue ? `当前尺寸 ${image.naturalWidth}×${image.naturalHeight}px：${issue}` : null); };
         image.onerror = () => { URL.revokeObjectURL(url); resolve('无法读取图片尺寸'); };
         image.src = url;
       });
@@ -604,7 +691,20 @@ export function AntdUploadInput(props: {
     }
     return false;
   };
+  const handlePaste = async (event: React.ClipboardEvent<HTMLElement>) => {
+    const pastedFiles = Array.from(event.clipboardData.files || []);
+    if (!pastedFiles.length || props.disabled) return;
+    event.preventDefault();
+    const accepted: UploadFileValue[] = [];
+    for (const file of pastedFiles) {
+      const error = validateUploadCandidate(file, props.files.length + accepted.length, constraints);
+      if (error) { accepted.push({ name: file.name, size: file.size, type: file.type, status: 'error', error }); continue; }
+      accepted.push({ name: file.name, size: file.size, type: file.type, status: 'done' });
+    }
+    if (accepted.length) props.onChange?.([...props.files, ...accepted]);
+  };
   return (
+    <div onPaste={handlePaste}>
     <Upload.Dragger
       className="ff-antd-upload"
       disabled={props.disabled}
@@ -614,11 +714,13 @@ export function AntdUploadInput(props: {
       fileList={toUploadFileList(props.files)}
       beforeUpload={beforeUpload}
       listType={props.imageOnly ? 'picture-card' : 'text'}
+      itemRender={props.imageOnly && props.imageRotate ? (originNode) => <div style={{ transform: `rotate(${props.imageRotate}deg)`, transformOrigin: 'center' }}>{originNode}</div> : undefined}
       onChange={({ fileList }) => props.onChange?.(fromUploadFileList(fileList))}
     >
       <p className="ant-upload-text">{props.imageOnly ? '点击或拖拽上传图片' : '点击或拖拽上传文件'}</p>
       <p className="ant-upload-hint">{props.imageOnly ? '支持预览缩略图' : '仅保存前端元信息'}</p>
     </Upload.Dragger>
+    </div>
   );
 }
 

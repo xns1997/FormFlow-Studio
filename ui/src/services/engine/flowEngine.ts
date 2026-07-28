@@ -9,6 +9,7 @@ import type { DebugEntry } from '../../project/types';
 import { clearCheckpoint, loadCheckpoint, saveCheckpoint } from './checkpoint';
 
 let xlsxCache: any = null;
+const completedIdempotentFlows = new Map<string, FlowExecutionResult>();
 async function getXlsxModule(): Promise<any> {
   if (xlsxCache) return xlsxCache;
   xlsxCache = await import('xlsx');
@@ -410,6 +411,8 @@ async function executeXlsxMethod(
 }
 
 export interface ExecuteFlowOptions {
+  /** Stable operation key; a successful execution with the same key is returned without replaying side effects. */
+  idempotencyKey?: string;
   /** Execute this node and all of its transitive upstream dependencies only. */
   targetNodeId?: string;
   /** Values injected into generic:value-input nodes by their configured name. */
@@ -515,6 +518,10 @@ export async function executeFlow(
   tables: SrcTableEntry[] = [],
   options: ExecuteFlowOptions = {},
 ): Promise<FlowExecutionResult> {
+  if (options.idempotencyKey) {
+    const cached = completedIdempotentFlows.get(options.idempotencyKey);
+    if (cached) return cached;
+  }
   const startTime = Date.now();
   const executionGraph = options.targetNodeId ? selectUpstreamFlow(nodes, edges, options.targetNodeId) : { nodes, edges };
   nodes = executionGraph.nodes;
@@ -778,7 +785,7 @@ export async function executeFlow(
     if (options.transactionalSideEffects && success) {
       sideEffects.push(...pendingSideEffects);
     }
-    return {
+    const result: FlowExecutionResult = {
       success,
       nodeResults,
       finalOutputs,
@@ -795,5 +802,7 @@ export async function executeFlow(
         events: debugEvents,
       },
     };
+    if (options.idempotencyKey && result.success) completedIdempotentFlows.set(options.idempotencyKey, result);
+    return result;
   }
 }

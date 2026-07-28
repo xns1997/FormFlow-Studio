@@ -1,21 +1,26 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { DebugEntry, DesignComponent, FormEventExecutionTrace, SrcTableEntry, WorkflowFile } from '../project/types';
+import { createDefaultFormWindow, type DebugEntry, type DesignComponent, type FormEventExecutionTrace, type FormWindowConfig, type SrcTableEntry, type WorkflowFile } from '../project/types';
 import { getControl } from './registry';
 import {
   executeDesignPreviewEvent,
   getDesignComponentField,
   type DesignPreviewEventResult,
 } from '../services/engine/designPreviewRuntime';
-import { applyProjectWriteBacks } from '../services/io/projectWriteBack';
+import { applyProjectWriteBacks, persistProjectTableSideEffects } from '../services/io/projectWriteBack';
 import { collectFlowSideEffects } from '../services/engine/flowSideEffects';
 import { useProjectStore } from '../project/store';
 import { getPreviewInitialValue, getPreviewInitializationSignature } from '../services/display/previewValues';
 import DebugDrawer from '../components/DebugDrawer';
 import { resolveExpressionValues, resolveRuntimeProperties } from '../services/engine/propertyExpression';
 import { compileComponentValidation, validateField } from '../services/engine/validator';
-import { resolveBindingWrite, resolveDataBindingValue } from '../services/data/dataBinding';
+import { canBindingWrite, normalizeDataBinding, resolveBindingWrite, resolveDataBindingValue } from '../services/data/dataBinding';
 import { maskRuntimeValues, publishFormRuntimeSnapshot, removeFormRuntimeSnapshot } from '../services/engine/formRuntimeSnapshot';
-import { resolveOptionSource } from '../services/data/optionSource';
+import { resolveLinkageOptions, resolveOptionSource, syncOptionValue, type OptionItem } from '../services/data/optionSource';
+import { describeDateConstraints, describeDateDefaultSource, isEmptyDateValue, resolveDateConstraintState, syncDateValue } from '../services/data/dateConvenience';
+import { isEditableComponentType } from '../services/config/controlTypes';
+import { FormWindowFrame } from './FormWindowFrame';
+import { validateEditableTableValue } from '../components/EditableTableGrid';
+import { createFormInteractionMetrics, persistFormInteractionMetrics, recordFormMetric, restoreFormInteractionMetrics } from '../services/engine/formMetrics';
 
 interface PreviewCanvasProps {
   formId?: string;
@@ -23,17 +28,40 @@ interface PreviewCanvasProps {
   zoom: number;
   workflows: WorkflowFile[];
   tables: SrcTableEntry[];
+  formWindow?: FormWindowConfig;
+  presentation?: 'designer' | 'runtime';
+  interactionPolicy?: 'full' | 'local-only';
+  onClose?: () => void;
+  onTablesChange?: (tables: SrcTableEntry[]) => void;
 }
 
 interface EventStatus {
   key: number;
   label: string;
-  state: 'running' | 'success' | 'error';
+  state: 'running' | 'success' | 'warning' | 'error' | 'canceled';
+  cancel?: () => void;
   persisted?: boolean;
   details?: string[];
+  retry?: () => void;
 }
 
-export function PreviewCanvas({ formId, components, zoom, workflows, tables }: PreviewCanvasProps) {
+function supportsDynamicOptions(componentType: string) {
+  return componentType === 'select' || componentType === 'radio' || componentType === 'checkbox' || componentType === 'segmented';
+}
+
+function supportsDateConvenience(componentType: string) {
+  return componentType === 'datePicker' || componentType === 'timePicker' || componentType === 'dateRange';
+}
+
+type RuntimeOptionsState = {
+  options: OptionItem[];
+  source: 'linked' | 'table' | 'range' | 'static';
+  clearedCount?: number;
+};
+
+export function PreviewCanvas({ formId, components, zoom, workflows, tables, formWindow: suppliedFormWindow, presentation = 'designer', interactionPolicy = 'full', onClose, onTablesChange }: PreviewCanvasProps) {
+  const formWindow = suppliedFormWindow || createDefaultFormWindow();
+  const viewportRef = useRef<HTMLDivElement>(null);
   const project = useProjectStore((state) => state.project);
   const persistProject = useProjectStore((state) => state.persistProject);
   const [values, setValues] = useState<Record<string, unknown>>({});
@@ -41,9 +69,24 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables }: P
   const [componentVisibility, setComponentVisibility] = useState<Record<string, boolean>>({});
   const [componentDisabled, setComponentDisabled] = useState<Record<string, boolean>>({});
   const [fieldRequired, setFieldRequired] = useState<Record<string, boolean>>({});
-  const [componentOptions, setComponentOptions] = useState<Record<string, Array<{ label: string; value: unknown }>>>({});
+  const [componentOptions, setComponentOptions] = useState<Record<string, RuntimeOptionsState>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<EventStatus | null>(null);
+  const retryEventRef = useRef<(() => void) | null>(null);
+  const canceledEventRef = useRef<number | null>(null);
+  const completedOperationKeysRef = useRef(new Set<string>());
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('formflow:completed-operations') || '[]');
+      if (Array.isArray(saved)) saved.filter((item): item is string => typeof item === 'string').forEach((item) => completedOperationKeysRef.current.add(item));
+    } catch { /* ignore malformed/private storage */ }
+  }, []);
+  const metricsRef = useRef(createFormInteractionMetrics());
+  useEffect(() => { metricsRef.current = (formId ? restoreFormInteractionMetrics(formId) : null) || createFormInteractionMetrics(); }, [formId]);
+  const recordMetric = useCallback((event: Parameters<typeof recordFormMetric>[1], controlType?: string) => {
+    metricsRef.current = recordFormMetric(metricsRef.current, event, Date.now(), controlType);
+    if (formId) persistFormInteractionMetrics(formId, metricsRef.current);
+  }, [formId]);
   const [debugEntries, setDebugEntries] = useState<DebugEntry[]>([]);
   const [debugOpen, setDebugOpen] = useState(false);
   const behaviorSettings = project?.settings?.behavior;
@@ -60,7 +103,7 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables }: P
   const validationSignaturesRef = useRef(new Map<string, string>());
 
   useEffect(() => {
-    if (!formId) return;
+    if (!formId || interactionPolicy === 'local-only') return;
     publishFormRuntimeSnapshot({
       formId,
       capturedAt: new Date().toISOString(),
@@ -79,15 +122,19 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables }: P
       validationErrors: Object.fromEntries(Object.entries(fieldErrors).filter(([, message]) => Boolean(message))),
       recentLogs: debugEntries.slice(-30).map(({ level, title, message, timestamp }) => ({ level, title, message, timestamp })),
     });
-  }, [componentDisabled, componentVisibility, components, debugEntries, expressionValues, fieldErrors, fieldRequired, formId, originalValues]);
+  }, [componentDisabled, componentVisibility, components, debugEntries, expressionValues, fieldErrors, fieldRequired, formId, interactionPolicy, originalValues]);
 
-  useEffect(() => () => { if (formId) removeFormRuntimeSnapshot(formId); }, [formId]);
+  useEffect(() => () => { if (formId && interactionPolicy !== 'local-only') removeFormRuntimeSnapshot(formId); }, [formId, interactionPolicy]);
 
   // ── 表单 → 工作表同步（防抖） ──────────────────────
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingSyncsRef = useRef<Array<{ tableId: string; sheetName: string; keyField: string; keyValue: unknown; column: string; value: unknown }>>([]);
 
   const flushSyncs = useCallback(() => {
+    if (interactionPolicy === 'local-only') {
+      pendingSyncsRef.current.splice(0);
+      return;
+    }
     if (pendingSyncsRef.current.length === 0 || !project) return;
     const syncs = pendingSyncsRef.current.splice(0);
     let nextProject = { ...project, srcTable: project.srcTable.map((t) => ({ ...t, sheets: t.sheets.map((s) => ({ ...s, preview: [...s.preview] })) })) };
@@ -104,21 +151,33 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables }: P
       }
     }
     if (changed) persistProject(nextProject);
-  }, [project, persistProject]);
+  }, [interactionPolicy, project, persistProject]);
 
   const queueTableSync = useCallback((field: string, value: unknown) => {
+    if (interactionPolicy === 'local-only') return;
     const component = components.find((c) => getDesignComponentField(c) === field);
     if (!component) return;
+    const binding = normalizeDataBinding(component);
+    if (!canBindingWrite(binding)) return;
     const nextValues = { ...expressionValues, [field]: value };
     const runtime = resolveRuntimeProperties(component.props, value, { form: nextValues, original: originalValues, component: component.props });
-    const validationError = validateField(value, compileComponentValidation({ ...runtime.props, required: fieldRequired[field] ?? runtime.required }), nextValues);
+    const shouldValidate = (isEditableComponentType(component.type) || (component.type === 'table' && component.props.editable === true))
+      && !runtime.disabled
+      && !runtime.props.disabled
+      && !runtime.props.readonly
+      && !component.props.valueExpression;
+    const validationError = shouldValidate
+      ? component.type === 'table'
+        ? validateEditableTableValue(runtime.props, value)
+        : validateField(value, compileComponentValidation({ ...runtime.props, required: fieldRequired[field] ?? runtime.required }), nextValues)
+      : null;
     if (validationError) { setStatus({ key: Date.now(), label: `未写回：${validationError}`, state: 'error', details: [] }); return; }
     const resolved = resolveBindingWrite(component, tables, value);
     if (!resolved.ok || !resolved.write) { if (resolved.diagnostic) setStatus({ key: Date.now(), label: `未写回：${resolved.diagnostic}`, state: 'error', details: [] }); return; }
     pendingSyncsRef.current.push(resolved.write);
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     syncTimerRef.current = setTimeout(flushSyncs, 500);
-  }, [components, expressionValues, fieldRequired, flushSyncs, originalValues, tables]);
+  }, [components, expressionValues, fieldRequired, flushSyncs, interactionPolicy, originalValues, tables]);
 
   useEffect(() => () => { if (syncTimerRef.current) clearTimeout(syncTimerRef.current); }, []);
 
@@ -142,7 +201,7 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables }: P
         const renamedValue = previousField && previousField !== field && Object.prototype.hasOwnProperty.call(current, previousField) ? current[previousField] : undefined;
         const dirty = dirtyFieldsRef.current.has(field) || (!!previousField && dirtyFieldsRef.current.has(previousField));
         const initializationChanged = initializationSignaturesRef.current.get(component.id) !== nextInitSignatures.get(component.id);
-        next[field] = renamedValue !== undefined ? renamedValue : dirty || (!initializationChanged && Object.prototype.hasOwnProperty.call(current, field)) ? current[field] : getPreviewInitialValue(component, tables);
+        next[field] = renamedValue !== undefined ? renamedValue : dirty || (!initializationChanged && Object.prototype.hasOwnProperty.call(current, field)) ? current[field] : getPreviewInitialValue(component, tables, next);
         if (previousField && previousField !== field && dirtyFieldsRef.current.delete(previousField)) dirtyFieldsRef.current.add(field);
       }
       return next;
@@ -167,6 +226,59 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables }: P
     validationSignaturesRef.current = nextValidationSignatures;
   }, [components, tables]);
 
+  useEffect(() => {
+    const defaultPatch: Record<string, unknown> = {};
+    const clearPatch: Record<string, unknown> = {};
+    const diagnosticEntries: DebugEntry[] = [];
+    for (const component of components) {
+      if (!supportsDateConvenience(component.type)) continue;
+      const field = getDesignComponentField(component);
+      const kind = component.type as 'datePicker' | 'timePicker' | 'dateRange';
+      const currentValue = expressionValues[field];
+      const constraintState = resolveDateConstraintState(
+        component.props.constraintConfig as any,
+        expressionValues,
+        kind === 'timePicker' ? 'time' : component.type === 'datePicker' && component.props.showTime ? 'datetime' : 'date',
+        component.props.businessDayConfig as any,
+        { minDate: component.props.minDate, maxDate: component.props.maxDate },
+      );
+      if (!dirtyFieldsRef.current.has(field) && isEmptyDateValue(currentValue, kind)) {
+        const fallback = getPreviewInitialValue(component, tables, { ...expressionValues, ...defaultPatch });
+        if (!isEmptyDateValue(fallback, kind)) {
+          defaultPatch[field] = fallback;
+        }
+      }
+      const synced = syncDateValue(currentValue, kind, constraintState, component.props.rangeLinkagePolicy || 'clearInvalid');
+      if (synced.changed) {
+        clearPatch[field] = synced.value;
+        diagnosticEntries.push({
+          id: `preview:date-sync:${component.id}:${field}`,
+          timestamp: Date.now(),
+          level: 'info',
+          source: 'ui',
+          channel: 'preview',
+          title: `${field} 日期同步`,
+          message: synced.reason || '日期值已因约束变化被清空',
+          field,
+          componentId: component.id,
+        });
+      }
+    }
+    if (Object.keys(defaultPatch).length > 0) {
+      setValues((current) => ({ ...current, ...defaultPatch }));
+      setOriginalValues((current) => ({ ...current, ...defaultPatch }));
+    }
+    if (Object.keys(clearPatch).length > 0) {
+      setValues((current) => ({ ...current, ...clearPatch }));
+    }
+    if (diagnosticEntries.length > 0) {
+      setDebugEntries((current) => [...current, ...diagnosticEntries]);
+      if (debugEnabled && autoOpenDebug && diagnosticEntries.some((entry) => entry.level === 'warn' || entry.level === 'error')) {
+        setDebugOpen(true);
+      }
+    }
+  }, [autoOpenDebug, components, debugEnabled, expressionValues, tables]);
+
   const setFieldValue = useCallback((field: string, value: unknown) => {
     dirtyFieldsRef.current.add(field);
     setValues((current) => ({ ...current, [field]: value }));
@@ -184,6 +296,14 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables }: P
   const setPreviewRequired = useCallback((field: string, required: boolean) => {
     setFieldRequired((current) => ({ ...current, [field]: required }));
   }, []);
+
+  const appendDebugEntries = useCallback((entries: DebugEntry[], forceOpen = false) => {
+    if (!entries.length) return;
+    setDebugEntries((current) => [...current, ...entries.map((entry) => ({ ...entry, channel: entry.channel || 'preview' }))]);
+    if (debugEnabled && (forceOpen || (autoOpenDebug && entries.some((entry) => entry.level === 'warn' || entry.level === 'error')))) {
+      setDebugOpen(true);
+    }
+  }, [autoOpenDebug, debugEnabled]);
 
   const formatStatusDetails = useCallback((stats: {
     persistedRows?: number;
@@ -214,14 +334,6 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables }: P
     return details;
   }, []);
 
-  const appendDebugEntries = useCallback((entries: DebugEntry[], forceOpen = false) => {
-    if (!entries.length) return;
-    setDebugEntries((current) => [...current, ...entries.map((entry) => ({ ...entry, channel: entry.channel || 'preview' }))]);
-    if (debugEnabled && (forceOpen || (autoOpenDebug && entries.some((entry) => entry.level === 'warn' || entry.level === 'error')))) {
-      setDebugOpen(true);
-    }
-  }, [autoOpenDebug, debugEnabled]);
-
   const expressionDiagnosticKey = JSON.stringify(expressionResolution.diagnostics);
   useEffect(() => {
     const entries = Object.entries(expressionResolution.diagnostics).flatMap(([field, messages]) => messages.map((message, index) => ({
@@ -244,10 +356,26 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables }: P
       : null;
     const nextValue = resetValues ? resetValues : (value === undefined ? expressionValues[field] : value);
     const nextValues = resetValues || (value === undefined ? expressionValues : { ...expressionValues, [field]: value });
+    const operationKey = eventName === 'onClick' && component.type === 'button' && ['submit', 'save', 'delete'].includes(String(component.props.action || '')) ? `${formId || 'preview'}:${component.id}:${component.props.action}:${JSON.stringify(nextValues)}` : '';
+    if (operationKey && completedOperationKeysRef.current.has(operationKey)) {
+      setStatus({ key: Date.now(), label: `${field}.${eventName}`, state: 'success', persisted: true, details: ['该操作已完成，本次不会重复创建。'] });
+      return;
+    }
+    if (eventName === 'onChange') { recordMetric('configure', component.type); recordMetric('change', component.type); }
+    if (eventName === 'onClick' && component.type === 'button' && ['submit', 'save'].includes(String(component.props.action || ''))) recordMetric('configure');
     if (eventName === 'onBlur') {
       const resolved = resolveRuntimeProperties(component.props, nextValues[field], { form: nextValues, original: originalValues, component: component.props });
       const required = fieldRequired[field] ?? resolved.required;
-      const error = validateField(nextValue, compileComponentValidation({ ...resolved.props, required }), nextValues);
+      const shouldValidate = (isEditableComponentType(component.type) || (component.type === 'table' && component.props.editable === true))
+        && !resolved.disabled
+        && !resolved.props.disabled
+        && !resolved.props.readonly
+        && !component.props.valueExpression;
+      const error = shouldValidate
+        ? component.type === 'table'
+          ? validateEditableTableValue(resolved.props, nextValue)
+          : validateField(nextValue, compileComponentValidation({ ...resolved.props, required }), nextValues)
+        : null;
       setFieldErrors((current) => ({ ...current, [field]: error || '' }));
     }
     if (eventName === 'onClick' && component.type === 'button') {
@@ -255,30 +383,64 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables }: P
         const itemField = getDesignComponentField(item);
         const resolved = resolveRuntimeProperties(item.props, nextValues[itemField], { form: nextValues, original: originalValues, component: item.props });
         const required = fieldRequired[itemField] ?? resolved.required;
-        return [itemField, validateField(nextValues[itemField], compileComponentValidation({ ...resolved.props, required }), nextValues) || ''];
+        const shouldValidate = (isEditableComponentType(item.type) || (item.type === 'table' && item.props.editable === true))
+          && !resolved.disabled
+          && !resolved.props.disabled
+          && !resolved.props.readonly
+          && !item.props.valueExpression;
+        return [itemField, shouldValidate
+          ? item.type === 'table'
+            ? validateEditableTableValue(resolved.props, nextValues[itemField])
+            : validateField(nextValues[itemField], compileComponentValidation({ ...resolved.props, required }), nextValues) || ''
+          : ''];
       }));
       setFieldErrors(nextErrors);
       if (Object.values(nextErrors).some(Boolean)) {
+        recordMetric('submit-failure');
+        const firstInvalidField = Object.entries(nextErrors).find(([, message]) => Boolean(message))?.[0];
+        if (firstInvalidField) {
+          const firstInvalidComponent = components.find((item) => getDesignComponentField(item) === firstInvalidField);
+          if (firstInvalidComponent) {
+            window.requestAnimationFrame(() => {
+              const node = viewportRef.current?.querySelector<HTMLElement>(`[data-component-id="${CSS.escape(firstInvalidComponent.id)}"]`);
+              node?.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+              node?.querySelector<HTMLElement>('input, textarea, select, button, [tabindex]:not([tabindex="-1"])')?.focus({ preventScroll: true });
+            });
+          }
+        }
         setStatus({ key: Date.now(), label: '请先修正表单中的校验错误', state: 'error', details: [] });
+        return;
+      }
+      if (interactionPolicy === 'local-only') {
+        setStatus({
+          key: Date.now(),
+          label: '预览模式，不会写入数据',
+          state: 'success',
+          persisted: false,
+          details: ['输入、校验和本地联动可正常体验'],
+        });
         return;
       }
     }
     if (resetValues) { dirtyFieldsRef.current.clear(); setValues(resetValues); setOriginalValues(resetValues); }
     else if (value !== undefined) setFieldValue(field, value);
     const key = Date.now();
-    setStatus({ key, label: `${field}.${eventName}`, state: 'running', details: [] });
+    retryEventRef.current = () => { void emit(component, eventName, value, detail); };
+    canceledEventRef.current = null;
+    setStatus({ key, label: `${field}.${eventName}`, state: 'running', details: [], cancel: () => { canceledEventRef.current = key; setStatus({ key, label: `${field}.${eventName}`, state: 'canceled', details: ['已取消本次执行，当前填写内容已保留。'] }); } });
     const directEffects = {
       formValues: new Set<string>(),
       visible: new Set<string>(),
       disabled: new Set<string>(),
       required: new Set<string>(),
+      optionRefreshes: [] as string[],
       messages: [] as Array<{ message: string; level: 'info' | 'success' | 'warning' | 'error' }>,
     };
     let result: DesignPreviewEventResult = await executeDesignPreviewEvent({
       eventName, field, value: nextValue, detail, values: nextValues, originalValues, component,
-      previousValue: expressionValues[field], timestamp: key,
+      previousValue: expressionValues[field], timestamp: key, idempotencyKey: operationKey || undefined,
     }, {
-      workflows,
+      workflows: interactionPolicy === 'local-only' ? [] : workflows,
       tables,
       components,
       setValue: (nextField, nextFieldValue) => {
@@ -299,17 +461,26 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables }: P
       },
       setOptions: (nextField, config) => {
         const target = components.find((item) => getDesignComponentField(item) === nextField);
-        const source = tables.flatMap((table) => table.sheets.map((sheet) => ({ table, sheet }))).find(({ table, sheet }) => [table.id, table.fileName, sheet.name, `${table.id}:${sheet.name}`].includes(config.table));
-        if (!target || !source) return;
-        const labelField = config.labelField || source.sheet.headers.find((header) => header !== config.filterField) || source.sheet.headers[0];
-        const valueField = config.valueField || labelField;
-        const options = source.sheet.preview.filter((row) => row[config.filterField] == config.filterValue).map((row) => ({ label: String(row[labelField] ?? ''), value: row[valueField] }));
-        setComponentOptions((current) => ({ ...current, [target.id]: options }));
+        if (!target || !supportsDynamicOptions(target.type)) return;
+        const options = resolveLinkageOptions(config, tables);
+        const synced = syncOptionValue(expressionValues[nextField], options, target.type === 'checkbox' || (target.type === 'select' && !!target.props.multiple));
+        const clearedCount = synced.changed
+          ? Array.isArray(expressionValues[nextField]) && Array.isArray(synced.value)
+            ? Math.max(0, expressionValues[nextField].length - synced.value.length)
+            : 1
+          : 0;
+        setComponentOptions((current) => ({ ...current, [target.id]: { options, source: 'linked', clearedCount } }));
+        if (synced.changed) {
+          directEffects.formValues.add(nextField);
+          setFieldValue(nextField, synced.value);
+        }
+        directEffects.optionRefreshes.push(`刷新 ${nextField} 选项（${options.length} 项${clearedCount > 0 ? `，清空 ${clearedCount} 个失效值` : ''}）`);
       },
       showMessage: (message, level = 'info') => {
         directEffects.messages.push({ message, level });
       },
     });
+    if (canceledEventRef.current === key) return;
     appendDebugEntries(result.trace.effects.debugLogs);
     let persisted = false;
     let successLabel = directEffects.messages[directEffects.messages.length - 1]?.message || `${field}.${eventName}`;
@@ -320,11 +491,13 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables }: P
       required: directEffects.required.size,
       messages: directEffects.messages.length,
     });
+    successDetails = [...successDetails, ...directEffects.optionRefreshes];
     successDetails = [...successDetails, ...formatTraceDetails(result.trace)];
-    if (!result.error && result.flowResults?.length && project) {
+    if (interactionPolicy !== 'local-only' && !result.error && result.flowResults?.length && project) {
       try {
-        let nextProject = project;
+        let nextProject = { ...project, srcTable: tables };
         const sideEffects = result.flowResults.flatMap((flowResult) => collectFlowSideEffects(flowResult));
+        const persistedTableResult = await persistProjectTableSideEffects(project.config.id, sideEffects, tables);
         const effectResult = applyProjectWriteBacks(nextProject, {
           success: true,
           errors: [],
@@ -368,7 +541,8 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables }: P
         });
         successDetails = [...successDetails, ...formatTraceDetails(result.trace)];
         if (applied > 0) {
-          await persistProject(nextProject);
+          if (persistedTableResult.applied > 0) onTablesChange?.(effectResult.project.srcTable);
+          else await persistProject(nextProject);
           persisted = true;
         }
       } catch (cause) {
@@ -376,6 +550,7 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables }: P
       }
     }
     if (result.error) {
+      if (eventName === 'onClick' && component.type === 'button') recordMetric('submit-failure');
       appendDebugEntries([{
         id: `preview:error:${key}`,
         timestamp: Date.now(),
@@ -389,26 +564,70 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables }: P
         eventName,
       }], true);
     }
+    const flowPartial = !result.error && !!result.flowResults?.length && result.flowResults.some((flow) => flow.success) && result.flowResults.some((flow) => !flow.success);
+    if (flowPartial) successDetails = [...successDetails, '部分步骤已完成，失败步骤可从调试详情中重新运行。'];
+    const hasWarning = !result.error && (flowPartial || [...directEffects.messages, ...(result.trace.effects.messages || [])].some((message) => message.level === 'warning'));
+    const failureHint = result.error && /冲突|过期|expired|conflict/i.test(result.error.message) ? '数据状态已变化，请刷新实例后再重试；当前填写内容已保留。' : result.error ? '请检查输入或网络后重试；当前填写内容已保留。' : '';
     setStatus((current) => current?.key === key ? {
       key,
       label: result.error ? `${field}.${eventName}: ${result.error.message}` : successLabel,
-      state: result.error ? 'error' : 'success',
+      state: result.error ? 'error' : hasWarning ? 'warning' : 'success',
       persisted,
-      details: result.error ? [] : successDetails,
+      details: result.error ? [failureHint] : successDetails,
+      retry: result.error ? () => { recordMetric('retry'); retryEventRef.current?.(); } : undefined,
     } : current);
-  }, [appendDebugEntries, components, originalValues, persistProject, project, tables, values, expressionValues, workflows, setFieldValue, setPreviewVisible, setPreviewDisabled, setPreviewRequired, formatStatusDetails, formatTraceDetails]);
+    if (!result.error && eventName === 'onClick' && component.type === 'button' && ['submit', 'save'].includes(String(component.props.action || ''))) recordMetric('submit-success', component.type);
+    if (!result.error && operationKey) {
+      completedOperationKeysRef.current.add(operationKey);
+      try { localStorage.setItem('formflow:completed-operations', JSON.stringify([...completedOperationKeysRef.current].slice(-100))); } catch { /* ignore storage limits */ }
+    }
+  }, [appendDebugEntries, components, interactionPolicy, originalValues, persistProject, project, tables, values, expressionValues, workflows, setFieldValue, setPreviewVisible, setPreviewDisabled, setPreviewRequired, formatStatusDetails, formatTraceDetails, onTablesChange, recordMetric]);
 
   const bounds = useMemo(() => {
-    const maxX = Math.max(960, ...components.map((component) => Number(component.x) + Number(component.width) + 80).filter(Number.isFinite));
-    const maxY = Math.max(720, ...components.map((component) => Number(component.y) + Number(component.height) + 80).filter(Number.isFinite));
+    if (presentation === 'runtime') {
+      return {
+        width: Math.max(320, Number(formWindow.width) || 320),
+        height: Math.max(240, Number(formWindow.height) || 240),
+      };
+    }
+    const maxX = Math.max(960, formWindow.x + formWindow.width + 80);
+    const maxY = Math.max(720, formWindow.y + formWindow.height + 80);
     return { width: maxX, height: maxY };
-  }, [components]);
+  }, [formWindow, presentation]);
 
+  const formWindowComponent = useMemo<DesignComponent>(() => ({
+    id: '__formflow_form_window__',
+    type: 'formWindow',
+    x: formWindow.x,
+    y: formWindow.y,
+    width: formWindow.width,
+    height: formWindow.height,
+    props: formWindow.props,
+  }), [formWindow]);
+
+  const effectiveZoom = presentation === 'runtime' ? 1 : zoom;
   return (
-    <div className="designer-preview-viewport" data-testid="designer-preview">
-      <div className="designer-preview-stage-wrap" style={{ width: bounds.width * zoom, height: bounds.height * zoom }}>
-        <div className="designer-preview-stage" style={{ width: bounds.width, height: bounds.height, transform: `scale(${zoom})` }}>
-          {components.map((component) => {
+    <div ref={viewportRef} className={`designer-preview-viewport is-${presentation}${debugOpen ? ' is-debug-open' : ''}`} data-testid="designer-preview">
+      <div className="designer-preview-stage-wrap" style={{ width: bounds.width * effectiveZoom, height: bounds.height * effectiveZoom }}>
+        <div className="designer-preview-stage" style={{ width: bounds.width, height: bounds.height, transform: `scale(${effectiveZoom})` }}>
+          <div
+            className="form-window-placement"
+            style={{
+              position: 'absolute',
+              left: presentation === 'runtime' ? 0 : formWindow.x,
+              top: presentation === 'runtime' ? 0 : formWindow.y,
+              width: formWindow.width,
+              height: formWindow.height,
+            }}
+          >
+            <FormWindowFrame
+              formWindow={formWindow}
+              mode={presentation === 'runtime' ? 'runtime' : 'preview'}
+              onClose={onClose}
+              onReset={() => { void emit(formWindowComponent, 'onReset', {}); }}
+              onSubmit={() => { void emit(formWindowComponent, 'onSubmit', expressionValues); }}
+            >
+              {components.map((component) => {
             const control = getControl(component.type);
             if (!control) return null;
             const Control = control.render;
@@ -419,13 +638,45 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables }: P
             const isHidden = (componentVisibility[component.id] ?? component.visible) === false || !resolved.visible;
             const isDisabled = !!(componentDisabled[component.id] ?? component.props.disabled) || resolved.disabled || !!component.props.valueExpression;
             const isRequired = !!(fieldRequired[field] ?? resolved.required);
-            const sourceOptions = component.type === 'select' ? resolveOptionSource(resolved.props.options, resolved.props.optionSource, tables).options : null;
+            const sourceOptions = supportsDynamicOptions(component.type)
+              ? resolveOptionSource(resolved.props.options, resolved.props.optionSource, tables)
+              : null;
+            const runtimeOptionState = componentOptions[component.id];
+            const runtimeWidth = component.width;
+            const runtimeHeight = component.height;
+            const runtimeOptions = runtimeOptionState?.options || sourceOptions?.options || undefined;
+            const dateConstraintState = supportsDateConvenience(component.type)
+              ? resolveDateConstraintState(
+                  resolved.props.constraintConfig as any,
+                  expressionValues,
+                  component.type === 'timePicker' ? 'time' : component.type === 'datePicker' && resolved.props.showTime ? 'datetime' : 'date',
+                  resolved.props.businessDayConfig as any,
+                  { minDate: resolved.props.minDate, maxDate: resolved.props.maxDate },
+                )
+              : null;
             const patchedComponent = {
               ...component,
+              width: runtimeWidth,
+              height: runtimeHeight,
               props: {
                 ...resolved.props,
-                ...(sourceOptions ? { options: sourceOptions } : {}),
-                ...(componentOptions[component.id] ? { options: componentOptions[component.id] } : {}),
+                ...(component.type === 'table' && resolved.props.dataSource && typeof resolved.props.dataSource === 'object'
+                  ? {
+                      data: tables
+                        .find((table) => table.id === String((resolved.props.dataSource as Record<string, unknown>).tableId || ''))
+                        ?.sheets.find((sheet) => sheet.name === String((resolved.props.dataSource as Record<string, unknown>).sheetName || ''))
+                        ?.preview || resolved.props.data,
+                    }
+                  : {}),
+                ...(runtimeOptions ? { runtimeOptions } : {}),
+                ...(sourceOptions?.dynamic ? { optionSourceState: sourceOptions.mode } : {}),
+                ...(runtimeOptionState ? { runtimeOptionSource: runtimeOptionState.source, runtimeOptionsClearedCount: runtimeOptionState.clearedCount || 0 } : {}),
+                ...(dateConstraintState ? {
+                  dateConvenienceState: {
+                    defaultSource: describeDateDefaultSource(resolved.props.defaultValueConfig as any),
+                    constraints: describeDateConstraints(dateConstraintState),
+                  },
+                } : {}),
                 disabled: isDisabled,
                 required: isRequired,
               },
@@ -443,14 +694,14 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables }: P
                 style={{
                   left: component.x,
                   top: component.y,
-                  width: component.width,
-                  height: component.height,
+                  width: runtimeWidth,
+                  height: runtimeHeight,
                   zIndex: component.zIndex ?? 0,
                 }}
               >
                 <Control
                   component={patchedComponent}
-                  mode="preview"
+            mode={presentation === 'runtime' ? 'runtime' : 'preview'}
                   runtime={{
                     value: resolved.value,
                     values: expressionValues,
@@ -458,6 +709,19 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables }: P
                     emit: (eventName, value, detail) => { void emit(component, eventName, value, detail); },
                   }}
                 />
+                {presentation !== 'runtime' && supportsDynamicOptions(component.type) && (
+                  <div className="designer-preview-option-meta">
+                    <span>{runtimeOptionState ? '联动覆盖' : sourceOptions?.dynamic ? (sourceOptions.mode === 'range' ? '范围来源' : '表来源') : '静态选项'}</span>
+                    <span>{runtimeOptions?.length || 0} 项</span>
+                    {!!runtimeOptionState?.clearedCount && <span>已清理 {runtimeOptionState.clearedCount} 项</span>}
+                  </div>
+                )}
+                {presentation !== 'runtime' && supportsDateConvenience(component.type) && dateConstraintState && (
+                  <div className="designer-preview-option-meta">
+                    <span>{describeDateDefaultSource(resolved.props.defaultValueConfig as any)}</span>
+                    <span>{describeDateConstraints(dateConstraintState).join('；') || '无额外限制'}</span>
+                  </div>
+                )}
                 {!!fieldErrors[field] && <div className="designer-preview-field-error">{fieldErrors[field]}</div>}
                 {(isHidden || isDisabled) && (
                   <div className="designer-preview-control-indicators" aria-hidden="true">
@@ -468,28 +732,33 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables }: P
                 {isDisabled && <div className="designer-preview-control-overlay" aria-hidden="true" />}
               </div>
             );
-          })}
+              })}
+            </FormWindowFrame>
+          </div>
         </div>
       </div>
       {status && (
-        <div className={`designer-preview-event-status ${status.state}`} role="status">
+        <div className={`designer-preview-event-status ${status.state}`} role={status.state === 'error' ? 'alert' : 'status'} aria-live={status.state === 'error' ? 'assertive' : 'polite'}>
           <div className="designer-preview-event-status-title">
-            {status.state === 'running' ? '执行中' : status.state === 'success' ? (status.persisted ? '已保存' : '已执行') : '执行失败'} · {status.label}
+            {status.state === 'running' ? '执行中' : status.state === 'success' ? (status.persisted ? '已保存' : '已执行') : status.state === 'warning' ? '已完成但有提醒' : status.state === 'canceled' ? '已取消' : '执行失败'} · {status.label}
           </div>
           {!!status.details?.length && (
             <div className="designer-preview-event-status-details">
               {status.details.map((detail) => <span key={detail}>{detail}</span>)}
             </div>
           )}
+          {status.state === 'running' && status.cancel && <button type="button" className="ui-btn ui-btn-xs" onClick={status.cancel}>取消</button>}
+          {status.state === 'error' && status.retry && <button type="button" className="ui-btn ui-btn-xs" onClick={status.retry}>重试</button>}
         </div>
       )}
-      {debugEnabled && (
+      {debugEnabled && interactionPolicy !== 'local-only' && (
         <DebugDrawer
           entries={debugEntries}
           open={debugOpen}
           onToggle={setDebugOpen}
           title="预览调试"
           enableServerLogs={enableServerDebugApi}
+          portalToBody={presentation === 'runtime'}
         />
       )}
     </div>

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { AgGridReact } from 'ag-grid-react';
-import { AllCommunityModule, ModuleRegistry, type ColDef } from 'ag-grid-community';
+import { AllCommunityModule, ModuleRegistry, type ColDef, type GridApi } from 'ag-grid-community';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import Modal, { ModalFooter, ModalHeader } from '../../components/Modal';
 import { AntdCompatSelect } from '../../components/AntdFormControls';
@@ -24,7 +24,6 @@ import {
   renameColumnInSheet,
   reorderColumnsInSheet,
 } from '../../services/data/tableEditor';
-import { parseCsvStreaming } from '../../services/data/streamingParser';
 import {
   countCellChanges,
   dataPreviewApi,
@@ -36,18 +35,25 @@ import {
   type PreviewRow,
   type RowChanges,
 } from '../../services/data/dataPreviewClient';
-import { describeApi, fileApi } from '../../services/io/api';
-import { inferFormFields, inferLikelyKey } from '../../services/formGeneration/fieldInference';
-import { generateFormScaffold } from '../../services/formGeneration/formScaffold';
-import { recordAuthoringEvent } from '../../services/formGeneration/authoringTelemetry';
+import {
+  formatSequenceValue,
+  getNextSequenceNumber,
+  normalizeSequenceRule,
+  resolveSequenceDateTokens,
+} from '../../services/data/sequenceRules';
+import { describeApi, projectApi } from '../../services/io/api';
+import DataTemplateRecommendationModal from './DataTemplateRecommendationModal';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
-const prefersDark = typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches;
-const agThemeClass = prefersDark ? 'ag-theme-quartz-dark' : 'ag-theme-quartz';
-
 type DataTab = 'table' | 'describe' | 'config';
 type ColumnType = SrcColumnInfo['dataType'];
+type DataPreviewFeedback = {
+  type: 'success' | 'error' | 'info';
+  message: string;
+  actionLabel?: string;
+  onAction?: () => void;
+};
 type WizardColumnDraft = { id: string; name: string; dataType: ColumnType };
 type CreateTableDraft = {
   step: 0 | 1 | 2;
@@ -56,15 +62,6 @@ type CreateTableDraft = {
   sheetName: string;
   columns: WizardColumnDraft[];
 };
-type GenerateFormDraft = {
-  name: string;
-  purpose: 'entry' | 'lookup-edit' | 'approval' | 'detail' | 'statistics';
-  selectedFields: string[];
-  columns: 1 | 2 | 3;
-  includeSave: boolean;
-  includeReset: boolean;
-};
-
 function withRowIds(data: Record<string, unknown>[], offset = 0): PreviewRow[] {
   return data.map((row, index) => ({
     ...row,
@@ -136,9 +133,20 @@ function savePersonalView(projectId: string | undefined, viewKey: string, query:
   try { localStorage.setItem(`formflow.data-view:${projectId}:${viewKey}`, JSON.stringify({ ...query, page: 1 })); } catch { /* storage unavailable */ }
 }
 
-export default function DataPreviewPage() {
-  const navigate = useNavigate();
-  const { id: routeProjectId } = useParams<{ id: string }>();
+function formatDataPreviewError(error: unknown, fallback: string): string {
+  const message = error instanceof Error ? error.message : String(error || '');
+  const status = message.match(/API Error:\s*(\d{3})/i)?.[1];
+  if (status === '502' || status === '503' || status === '504') return `数据服务暂时不可用（${status}），请稍后重试`;
+  if (status) return `${fallback}（${status}）`;
+  return message || fallback;
+}
+
+export default function DataPreviewPage({
+  onOpenTemplateCenter = () => {},
+}: {
+  onOpenTemplateCenter?: (view?: 'library' | 'results') => void;
+}) {
+  const [searchParams] = useSearchParams();
   const project = useProjectStore((s) => s.project);
   const setProject = useProjectStore((s) => s.setProject);
   const refreshProject = useProjectStore((s) => s.refreshProject);
@@ -160,14 +168,17 @@ export default function DataPreviewPage() {
   const [keyJumpDraft, setKeyJumpDraft] = useState('');
   const [dataVersion, setDataVersion] = useState('');
   const [reloadToken, setReloadToken] = useState(0);
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+  const [feedback, setFeedback] = useState<DataPreviewFeedback | null>(null);
   const [saveState, setSaveState] = useState<'saved' | 'dirty' | 'saving' | 'error'>('saved');
   const [validationErrors, setValidationErrors] = useState<Map<string, string>>(new Map());
   const [describeReport, setDescribeReport] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [describeLoading, setDescribeLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<DataTab>('table');
+  const [inspectorOpen, setInspectorOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 1280);
   const fileRef = useRef<HTMLInputElement>(null);
+  const gridContainerRef = useRef<HTMLDivElement>(null);
+  const gridApiRef = useRef<GridApi | null>(null);
 
   const [pendingChanges, setPendingChanges] = useState<Map<string, RowChanges>>(new Map());
   const [pendingAdds, setPendingAdds] = useState<PreviewRow[]>([]);
@@ -187,14 +198,18 @@ export default function DataPreviewPage() {
   const [columnTypeDraft, setColumnTypeDraft] = useState<ColumnType>('string');
   const [columnDescriptionDraft, setColumnDescriptionDraft] = useState('');
   const [columnTagsDraft, setColumnTagsDraft] = useState('');
+  const [columnSequenceEnabledDraft, setColumnSequenceEnabledDraft] = useState(false);
+  const [columnSequenceStartDraft, setColumnSequenceStartDraft] = useState('1');
+  const [columnSequenceStepDraft, setColumnSequenceStepDraft] = useState('1');
+  const [columnSequenceFormatterDraft, setColumnSequenceFormatterDraft] = useState('{n}');
+  const [columnSequenceOnlyWhenEmptyDraft, setColumnSequenceOnlyWhenEmptyDraft] = useState(true);
   const [showDeleteColumnConfirm, setShowDeleteColumnConfirm] = useState(false);
   const [newColumnName, setNewColumnName] = useState('');
   const [newColumnType, setNewColumnType] = useState<ColumnType>('string');
   const [newColumnDefaultValue, setNewColumnDefaultValue] = useState('');
   const [columnSearch, setColumnSearch] = useState('');
-  const [showFormGenerator, setShowFormGenerator] = useState(false);
-  const [generateFormDraft, setGenerateFormDraft] = useState<GenerateFormDraft>({ name: '', purpose: 'entry', selectedFields: [], columns: 2, includeSave: true, includeReset: true });
-  const [generateFormError, setGenerateFormError] = useState('');
+  const [selectedTemplateFields, setSelectedTemplateFields] = useState<string[]>([]);
+  const [showTemplateRecommendations, setShowTemplateRecommendations] = useState(false);
 
   const projectId = project?.config?.id;
   const selectedTable = project?.srcTable.find((table) => table.id === selectedTableId) || null;
@@ -236,26 +251,48 @@ export default function DataPreviewPage() {
     if (!selectedCol || selectedCol.dataType === columnTypeDraft) return [] as unknown[];
     return rows.map((row) => row[selectedCol.name]).filter((value) => validateCellValue(value, columnTypeDraft)).slice(0, 5);
   }, [selectedCol, columnTypeDraft, rows]);
-  const inferredGeneratorFields = useMemo(
-    () => activeSheetData ? inferFormFields(activeSheetData, generateFormDraft.selectedFields) : [],
-    [activeSheetData, generateFormDraft.selectedFields],
-  );
-
   useEffect(() => {
     if (selectedCol) {
       setColumnNameDraft(selectedCol.name);
       setColumnTypeDraft(selectedCol.dataType);
       setColumnDescriptionDraft(currentConfig?.columnDescriptions[selectedCol.name] || selectedCol.description || '');
       setColumnTagsDraft((currentConfig?.columnTags[selectedCol.name] || selectedCol.tags || []).join(', '));
+      const sequenceRule = currentConfig?.sequenceRules?.[selectedCol.name];
+      const normalizedRule = normalizeSequenceRule(sequenceRule);
+      setColumnSequenceEnabledDraft(!!sequenceRule);
+      setColumnSequenceStartDraft(String(normalizedRule.start));
+      setColumnSequenceStepDraft(String(normalizedRule.step));
+      setColumnSequenceFormatterDraft(normalizedRule.formatter);
+      setColumnSequenceOnlyWhenEmptyDraft(normalizedRule.onlyWhenEmpty !== false);
       setShowDeleteColumnConfirm(false);
     } else {
       setColumnNameDraft('');
       setColumnTypeDraft('string');
       setColumnDescriptionDraft('');
       setColumnTagsDraft('');
+      setColumnSequenceEnabledDraft(false);
+      setColumnSequenceStartDraft('1');
+      setColumnSequenceStepDraft('1');
+      setColumnSequenceFormatterDraft('{n}');
+      setColumnSequenceOnlyWhenEmptyDraft(true);
       setShowDeleteColumnConfirm(false);
     }
-  }, [selectedCol?.name, selectedCol?.dataType, currentConfig?.columnDescriptions, currentConfig?.columnTags]);
+  }, [selectedCol?.name, selectedCol?.dataType, currentConfig?.columnDescriptions, currentConfig?.columnTags, currentConfig?.sequenceRules]);
+
+  const sequenceTemplatePresets = useMemo(
+    () => [
+      { label: '纯数字', value: '{n}' },
+      { label: '四位补零', value: 'P-{n:4}' },
+      { label: '年月流水号', value: 'BX-{yyyyMM}-{n:4}' },
+      { label: '日期流水号', value: 'SN-{yyyyMMdd}-{n:3}' },
+    ],
+    [],
+  );
+
+  const sequenceTokenHints = useMemo(
+    () => ['{n}', '{n:4}', '{yyyyMM}', '{yyyyMMdd}', '{yyyy}', '{yy}', '{MM}', '{dd}'],
+    [],
+  );
 
   const colDefs = useMemo<ColDef[]>(() => {
     if (!activeSheet || !currentConfig) return [];
@@ -283,9 +320,38 @@ export default function DataPreviewPage() {
       ...rowNumberCol,
       ...activeSheet.headers.map((header) => {
         const isKeyField = keyFieldSet.has(header);
+        const isTemplateField = selectedTemplateFields.includes(header);
         return {
           headerName: header,
           field: header,
+          headerComponent: (params: any) => (
+            <div className="data-preview-selectable-header">
+              <input
+                type="checkbox"
+                checked={isTemplateField}
+                aria-label={`选择字段 ${header}`}
+                title={`选择字段 ${header}`}
+                onClick={(event) => event.stopPropagation()}
+                onChange={(event) => {
+                  const checked = event.target.checked;
+                  setSelectedTemplateFields((current) => checked
+                    ? current.includes(header) ? current : [...current, header]
+                    : current.filter((field) => field !== header));
+                }}
+              />
+              <button
+                type="button"
+                className="data-preview-header-sort"
+                aria-label={`按 ${header} 排序`}
+                onClick={(event) => params.progressSort(event.shiftKey)}
+              >
+                <span>{header}</span>
+                <span className="data-preview-sort-indicator" aria-hidden="true">
+                  {params.column?.getSort() === 'asc' ? '↑' : params.column?.getSort() === 'desc' ? '↓' : '↕'}
+                </span>
+              </button>
+            </div>
+          ),
           flex: currentConfig.columnWidths[header] ? undefined : 1,
           width: currentConfig.columnWidths[header],
           minWidth: 160,
@@ -297,16 +363,18 @@ export default function DataPreviewPage() {
           pinned: currentConfig.frozenColumns > activeSheet.headers.indexOf(header) ? 'left' : undefined,
           lockPinned: currentConfig.frozenColumns > activeSheet.headers.indexOf(header),
           sort: currentConfig.defaultSort?.column === header ? (currentConfig.defaultSort.ascending ? 'asc' : 'desc') : undefined,
-          headerClass: isKeyField ? 'ag-col-key' : undefined,
+          headerClass: [isKeyField ? 'ag-col-key' : '', isTemplateField ? 'data-preview-template-header-selected' : ''].filter(Boolean).join(' '),
           cellClass: (params: any) => [
             isKeyField ? 'ag-cell-key' : '',
+            isTemplateField ? 'data-preview-template-field-selected' : '',
+            pendingChanges.has(params.data?.__rowKey) && pendingChanges.get(params.data?.__rowKey)?.[header] ? 'ag-cell-dirty' : '',
             validationErrors.has(`${params.data?.__rowKey}:${header}`) ? 'ag-cell-validation-error' : '',
           ].filter(Boolean).join(' '),
           tooltipValueGetter: (params: any) => validationErrors.get(`${params.data?.__rowKey}:${header}`) || String(params.value ?? ''),
         } satisfies ColDef;
       }),
     ];
-  }, [activeSheet, currentConfig, keyFieldSet, saving, validationErrors]);
+  }, [activeSheet, currentConfig, keyFieldSet, saving, pendingChanges, selectedTemplateFields, validationErrors]);
 
   const updateConfig = useCallback(async (patch: Partial<TableConfig>) => {
     if (!selectedTable || !activeSheet || !currentConfig) return;
@@ -353,13 +421,21 @@ export default function DataPreviewPage() {
   }, [selectedTableId, activeSheet]);
 
   const handleAddRow = useCallback(() => {
-    if (!activeSheet) return;
+    if (!activeSheet || !currentConfig) return;
     const newRow: PreviewRow = { __rowKey: `new:${Date.now()}`, __rowIndex: totalRows + pendingAdds.length, __isNew: true };
     activeSheet.headers.forEach((header) => { newRow[header] = ''; });
+    const referenceRows = rows;
+    for (const header of activeSheet.headers) {
+      const rule = currentConfig.sequenceRules?.[header];
+      if (!rule) continue;
+      if (rule.onlyWhenEmpty !== false && newRow[header] !== '') continue;
+      const nextNumber = getNextSequenceNumber(referenceRows, header, rule);
+      newRow[header] = formatSequenceValue(nextNumber, rule.formatter);
+    }
     setPendingAdds((prev) => [...prev, newRow]);
     setRows((prev) => [...prev, newRow]);
     setSaveState('dirty');
-  }, [activeSheet, totalRows, pendingAdds.length]);
+  }, [activeSheet, currentConfig, totalRows, pendingAdds, rows]);
 
   const handleDeleteRow = useCallback(() => {
     if (!selectedRowKey) return;
@@ -403,6 +479,8 @@ export default function DataPreviewPage() {
       setQuery(nextQuery);
       setSearchDraft(nextQuery.search);
       setSelectedColIdx(null);
+      setSelectedTemplateFields([]);
+      setShowTemplateRecommendations(false);
       setSelectedRowIdx(null);
       setSelectedRowKey(null);
       setActiveTab('table');
@@ -496,97 +574,29 @@ export default function DataPreviewPage() {
     }
   }, [project, selectedTable, activeSheet, changeCount, handleSave, setProject, syncLocalSheet]);
 
-  const handleUpload = useCallback(async (file: File, displayName = file.name) => {
+  const handleUpload = useCallback(async (file: File, displayName = file.name, replaceTableId?: string) => {
     setLoading(true);
     setUploadStage('上传文件');
-    let fileId = `local_${Date.now()}`;
     try {
-      const meta = await fileApi.upload(file);
-      fileId = meta.id;
-    } catch (error) {
-      setFeedback({ type: 'info', message: '服务端上传不可用，将继续在本地解析文件' });
-    }
-
-    try {
-      setUploadStage('解析数据');
+      if (!projectId) throw new Error('项目尚未加载');
       const ext = file.name.split('.').pop()?.toLowerCase() || '';
-      if (!['csv', 'json', 'xlsx', 'xls', 'db', 'sqlite', 'sqlite3'].includes(ext)) throw new Error(`不支持的文件格式：.${ext}`);
-      let sheets: SrcSheetInfo[];
-
-      if (ext === 'csv') {
-        const parsed = await parseCsvStreaming(file);
-        const preview = parsed.rows as Record<string, unknown>[];
-        sheets = [{
-          name: 'Sheet1', rowCount: parsed.rowCount, colCount: parsed.headers.length, headers: parsed.headers,
-          columns: parsed.headers.map((header, index) => inferColumnInfo(header, index, preview.slice(0, 5000))),
-          preview,
-          config: createDefaultTableConfig(`${fileId}:Sheet1`, `${displayName} / Sheet1`),
-        }];
-      } else if (ext === 'json') {
-        const text = await file.text();
-        const parsed = JSON.parse(text);
-        const sheetRows = Array.isArray(parsed) ? parsed : parsed.data || parsed.rows || [parsed];
-        const headers = sheetRows.length > 0 ? Object.keys(sheetRows[0]) : [];
-        const preview = sheetRows as Record<string, unknown>[];
-        sheets = [{
-          name: 'Sheet1',
-          rowCount: preview.length,
-          colCount: headers.length,
-          headers,
-          columns: headers.map((header, index) => inferColumnInfo(header, index, preview)),
-          preview,
-          config: createDefaultTableConfig(`${fileId}:Sheet1`, `${displayName} / Sheet1`),
-        }];
-      } else {
-        const XLSX = await import('xlsx');
-        const data = await file.arrayBuffer();
-        const workbook = XLSX.read(data, { type: 'array' });
-        sheets = workbook.SheetNames.map((name) => {
-          const worksheet = workbook.Sheets[name];
-          const preview = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, { defval: '' });
-          const headers = preview.length > 0 ? Object.keys(preview[0]) : [];
-          return {
-            name,
-            rowCount: preview.length,
-            colCount: headers.length,
-            headers,
-            columns: headers.map((header, index) => inferColumnInfo(header, index, preview)),
-            preview,
-            config: createDefaultTableConfig(`${fileId}:${name}`, `${displayName} / ${name}`),
-          };
-        });
-      }
-
-      const fileType = (
-        ext === 'json'
-          ? 'json'
-          : ext === 'db' || ext === 'sqlite' || ext === 'sqlite3'
-            ? 'sqlite'
-            : ext || 'xlsx'
-      ) as SrcTableEntry['fileType'];
-
-      if (!sheets.length || sheets.every((sheet) => sheet.headers.length === 0)) throw new Error('文件中没有可导入的数据表');
-      setUploadStage('推断字段类型');
-      const table: SrcTableEntry = {
-        id: fileId,
+      if (!['csv', 'json', 'xlsx', 'xls'].includes(ext)) throw new Error(`不支持的文件格式：.${ext}`);
+      const result = await projectApi.importDataSource(projectId, file, {
+        mode: replaceTableId ? 'replace' : 'create',
+        tableId: replaceTableId,
         fileName: displayName,
-        fileSize: file.size,
-        fileType,
-        uploadedAt: new Date().toISOString(),
-        sheets,
-        dataHash: `${file.size}_${file.lastModified}`,
-      };
-      setUploadStage('写入项目');
-      await addTable(table);
-      setRows(withRowIds(sheets[0]?.preview || []));
-      setTotalRows(sheets[0]?.rowCount || 0);
-      setSelectedTableId(fileId);
+      });
+      const table = result.table as SrcTableEntry;
+      await refreshProject();
+      setRows(withRowIds(table.sheets[0]?.preview || []));
+      setTotalRows(table.sheets[0]?.rowCount || 0);
+      setSelectedTableId(table.id);
       setActiveSheetIdx(0);
       setSelectedColIdx(null);
       setSelectedRowIdx(null);
       setSelectedRowKey(null);
       setActiveTab('table');
-      setFeedback({ type: 'success', message: `已导入 ${displayName}，共 ${sheets.reduce((sum, sheet) => sum + sheet.rowCount, 0)} 行` });
+      setFeedback({ type: 'success', message: `已导入 ${displayName}，共 ${table.sheets.reduce((sum, sheet) => sum + sheet.rowCount, 0)} 行` });
     } catch (error) {
       setFeedback({ type: 'error', message: error instanceof Error ? error.message : '文件解析失败' });
     } finally {
@@ -594,7 +604,7 @@ export default function DataPreviewPage() {
       setUploadStage('');
       if (fileRef.current) fileRef.current.value = '';
     }
-  }, [addTable]);
+  }, [projectId, refreshProject]);
 
   const startUpload = useCallback((file: File) => {
     if (project?.srcTable.some((table) => table.fileName === file.name)) setDuplicateUploadFile(file);
@@ -619,14 +629,18 @@ export default function DataPreviewPage() {
 
   useEffect(() => {
     if (!selectedTableId && project?.srcTable.length) {
-      const table = project.srcTable[0];
-      const viewKey = table.sheets[0] ? `${table.id}:${table.sheets[0].name}` : '';
+      const requestedTableId = searchParams.get('table');
+      const table = project.srcTable.find((item) => item.id === requestedTableId) || project.srcTable[0];
+      const requestedSheet = searchParams.get('sheet');
+      const sheetIndex = Math.max(0, table.sheets.findIndex((item) => item.name === requestedSheet));
+      const viewKey = table.sheets[sheetIndex] ? `${table.id}:${table.sheets[sheetIndex].name}` : '';
       const initialQuery = loadPersonalView(projectId, viewKey) || defaultPreviewQuery();
       setSelectedTableId(table.id);
+      setActiveSheetIdx(sheetIndex);
       setQuery(initialQuery);
       setSearchDraft(initialQuery.search);
     }
-  }, [project?.srcTable, selectedTableId, projectId]);
+  }, [project?.srcTable, selectedTableId, projectId, searchParams]);
 
   useEffect(() => {
     if (!currentViewKey) return;
@@ -659,7 +673,12 @@ export default function DataPreviewPage() {
       } catch (error) {
         if (cancelled) return;
         setRows([]);
-        setFeedback({ type: 'error', message: error instanceof Error ? error.message : '数据加载失败' });
+        setFeedback({
+          type: 'error',
+          message: formatDataPreviewError(error, '数据加载失败'),
+          actionLabel: '重试',
+          onAction: () => setReloadToken((value) => value + 1),
+        });
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -695,6 +714,26 @@ export default function DataPreviewPage() {
   }, [searchDraft]);
 
   useEffect(() => {
+    const compactWindow = window.matchMedia('(max-width: 1279px)');
+    const adaptInspector = (event: MediaQueryListEvent | MediaQueryList) => setInspectorOpen(!event.matches);
+    adaptInspector(compactWindow);
+    compactWindow.addEventListener('change', adaptInspector);
+    return () => compactWindow.removeEventListener('change', adaptInspector);
+  }, []);
+
+  useEffect(() => {
+    const container = gridContainerRef.current;
+    if (!container || !currentConfig?.autoFitColumns || Object.keys(currentConfig.columnWidths).length > 0) return;
+    const fitVisibleGrid = () => {
+      if (container.clientWidth > 0 && gridApiRef.current && !gridApiRef.current.isDestroyed()) gridApiRef.current.sizeColumnsToFit();
+    };
+    fitVisibleGrid();
+    const observer = new ResizeObserver(fitVisibleGrid);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [currentConfig?.autoFitColumns, currentConfig?.columnWidths, activeTab]);
+
+  useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
       if (changeCount === 0) return;
       event.preventDefault();
@@ -711,7 +750,7 @@ export default function DataPreviewPage() {
         return;
       }
       if (changeCount === 0) return;
-      const element = (event.target as HTMLElement | null)?.closest<HTMLElement>('.unified-mode-btn, .unified-toolbar a');
+      const element = (event.target as HTMLElement | null)?.closest<HTMLElement>('.unified-mode-btn, .project-workspace-link, .unified-toolbar a');
       if (!element || element.classList.contains('active')) return;
       event.preventDefault();
       event.stopPropagation();
@@ -798,6 +837,18 @@ export default function DataPreviewPage() {
       const nextSheetConfig =
         updatedSheet.config ||
         createDefaultTableConfig(`${updatedTable.id}:${updatedSheet.name}`, `${updatedTable.fileName} / ${updatedSheet.name}`);
+      const sequenceRule = columnSequenceEnabledDraft
+          ? normalizeSequenceRule({
+            start: Number(columnSequenceStartDraft),
+            step: Number(columnSequenceStepDraft),
+            formatter: columnSequenceFormatterDraft,
+            onlyWhenEmpty: columnSequenceOnlyWhenEmptyDraft,
+          })
+        : null;
+      const nextSequenceRules = { ...(nextSheetConfig.sequenceRules || {}) };
+      if (nextName !== currentName) delete nextSequenceRules[currentName];
+      if (sequenceRule) nextSequenceRules[targetName] = sequenceRule;
+      else delete nextSequenceRules[targetName];
       const nextColumns = updatedSheet.columns.map((column) =>
         column.name !== targetName
           ? column
@@ -826,6 +877,7 @@ export default function DataPreviewPage() {
                     ...(nextSheetConfig.columnTags || {}),
                     [targetName]: columnTagsDraft.split(',').map((tag) => tag.trim()).filter(Boolean),
                   },
+                  sequenceRules: nextSequenceRules,
                 },
                 headers: nextHeaders,
               },
@@ -837,7 +889,7 @@ export default function DataPreviewPage() {
       const targetName = nextName !== currentName ? nextName : currentName;
       setSelectedColIdx(updatedSheet.headers.findIndex((header) => header === targetName));
     });
-  }, [selectedTable, activeSheet, selectedCol, columnNameDraft, columnTypeDraft, columnDescriptionDraft, columnTagsDraft, applyTableMutation]);
+  }, [selectedTable, activeSheet, selectedCol, columnNameDraft, columnTypeDraft, columnDescriptionDraft, columnTagsDraft, columnSequenceEnabledDraft, columnSequenceStartDraft, columnSequenceStepDraft, columnSequenceFormatterDraft, columnSequenceOnlyWhenEmptyDraft, applyTableMutation]);
 
   const handleDeleteColumn = useCallback(async () => {
     if (!selectedTable || !activeSheet || !selectedCol) return;
@@ -863,51 +915,19 @@ export default function DataPreviewPage() {
     );
   }, [selectedTable, activeSheet, selectedCol, applyTableMutation]);
 
-  const openFormGenerator = useCallback(() => {
-    if (!activeSheetData) return;
-    setGenerateFormDraft({
-      name: `${activeSheetData.name}录入`,
-      purpose: 'entry',
-      selectedFields: activeSheetData.columns.filter((column) => !column.hidden && column.visible !== false).map((column) => column.name),
-      columns: activeSheetData.columns.length <= 6 ? 2 : 3,
-      includeSave: true,
-      includeReset: true,
-    });
-    setGenerateFormError('');
-    setShowFormGenerator(true);
+  const selectAllVisibleTemplateFields = useCallback(() => {
+    setSelectedTemplateFields(activeSheetData?.columns
+      .filter((column) => !column.hidden && column.visible !== false)
+      .map((column) => column.name) || []);
   }, [activeSheetData]);
 
-  const handleGenerateForm = useCallback(async () => {
-    if (!project || !selectedTable || !activeSheetData || !generateFormDraft.name.trim() || !generateFormDraft.selectedFields.length) return;
-    try {
-      const generationTable = {
-        ...selectedTable,
-        sheets: selectedTable.sheets.map((sheet, index) => index === activeSheetIdx ? activeSheetData : sheet),
-      };
-      const generated = generateFormScaffold(generationTable, activeSheetData.name, {
-        name: generateFormDraft.name,
-        purpose: generateFormDraft.purpose,
-        selectedFields: generateFormDraft.selectedFields,
-        columns: generateFormDraft.columns,
-        includeSave: generateFormDraft.includeSave,
-        includeReset: generateFormDraft.includeReset,
-      });
-      const nextProject: ProjectStructure = {
-        ...project,
-        forms: [...(project.forms || []), generated.form],
-        designs: [...(project.designs || []), generated.design],
-        workflows: generated.workflow ? [...project.workflows, generated.workflow] : project.workflows,
-        config: { ...project.config, updatedAt: new Date().toISOString() },
-      };
-      await setProject(nextProject);
-      recordAuthoringEvent('form_generated', { creationMethod: 'data-wizard', fieldCount: generated.fields.length, manualControls: 0, manualEdges: 0, purpose: generateFormDraft.purpose, hasWorkflow: !!generated.workflow }, project.config.id);
-      setShowFormGenerator(false);
-      const id = routeProjectId || project.config.id;
-      navigate(`/projects/${encodeURIComponent(id)}/editor?mode=design&form=${encodeURIComponent(generated.form.id)}`);
-    } catch (error) {
-      setGenerateFormError(error instanceof Error ? error.message : String(error));
-    }
-  }, [project, selectedTable, activeSheetData, activeSheetIdx, generateFormDraft, setProject, navigate, routeProjectId]);
+  const selectAllAndOpenTemplateRecommendations = useCallback(() => {
+    const fields = activeSheetData?.columns
+      .filter((column) => !column.hidden && column.visible !== false)
+      .map((column) => column.name) || [];
+    setSelectedTemplateFields(fields);
+    if (fields.length) setShowTemplateRecommendations(true);
+  }, [activeSheetData]);
 
   return (
     <div className="page-layout data-preview-layout">
@@ -921,7 +941,7 @@ export default function DataPreviewPage() {
           <input
             ref={fileRef}
             type="file"
-            accept=".xlsx,.xls,.csv,.json,.db,.sqlite,.sqlite3"
+            accept=".xlsx,.xls,.csv,.json"
             style={{ display: 'none' }}
             onChange={(event) => event.target.files?.[0] && startUpload(event.target.files[0])}
           />
@@ -937,24 +957,29 @@ export default function DataPreviewPage() {
               <div
                 key={table.id}
                 className={`sidebar-item ${selectedTableId === table.id ? 'active' : ''}`}
-                onClick={() => switchDataContext(table.id, 0)}
               >
-                <span className="sidebar-item-icon">
-                  <DesignerIcon name={table.fileType === 'json' ? 'text' : table.fileType === 'sqlite' ? 'data' : 'table'} />
-                </span>
-                <div className="sidebar-item-info">
-                  <span className="sidebar-item-name">{table.fileName}</span>
-                  <span className="sidebar-item-meta">{table.sheets.length} sheets · {table.sheets.reduce((sum, sheet) => sum + sheet.rowCount, 0)} 行</span>
-                </div>
+                <button
+                  type="button"
+                  className="data-preview-table-select"
+                  aria-current={selectedTableId === table.id ? 'true' : undefined}
+                  onClick={() => switchDataContext(table.id, 0)}
+                >
+                  <span className="sidebar-item-icon" aria-hidden="true">
+                    <DesignerIcon name={table.fileType === 'json' ? 'text' : 'table'} />
+                  </span>
+                  <span className="sidebar-item-info">
+                    <span className="sidebar-item-name">{table.fileName}</span>
+                    <span className="sidebar-item-meta">{table.sheets.length} 个工作表 · {table.sheets.reduce((sum, sheet) => sum + sheet.rowCount, 0)} 行</span>
+                  </span>
+                </button>
                 <button
                   type="button"
                   className="sidebar-item-delete"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setShowDeleteTableConfirm(table);
-                  }}
+                  aria-label={`删除数据表 ${table.fileName}`}
+                  title="删除数据表"
+                  onClick={() => setShowDeleteTableConfirm(table)}
                 >
-                  ×
+                  <span aria-hidden="true">×</span>
                 </button>
               </div>
             ))
@@ -964,19 +989,28 @@ export default function DataPreviewPage() {
 
       <div className="page-main data-preview-main">
         <div className="page-section-header data-preview-main-header">
-          <div className="data-preview-tabbar">
-            <button type="button" className={activeTab === 'table' ? 'sheet-tab active' : 'sheet-tab'} onClick={() => setActiveTab('table')}>数据表</button>
-            <button type="button" className={activeTab === 'describe' ? 'sheet-tab active' : 'sheet-tab'} onClick={() => setActiveTab('describe')}>数据概览</button>
-            <button type="button" className={activeTab === 'config' ? 'sheet-tab active' : 'sheet-tab'} onClick={() => setActiveTab('config')}>配置</button>
+          <div className="data-preview-viewbar">
+            <div className="data-preview-tabbar" role="tablist" aria-label="数据视图">
+              <button id="data-preview-tab-table" type="button" role="tab" aria-selected={activeTab === 'table'} aria-controls="data-preview-panel" className={activeTab === 'table' ? 'sheet-tab active' : 'sheet-tab'} onClick={() => setActiveTab('table')}>数据表</button>
+              <button id="data-preview-tab-describe" type="button" role="tab" aria-selected={activeTab === 'describe'} aria-controls="data-preview-panel" className={activeTab === 'describe' ? 'sheet-tab active' : 'sheet-tab'} onClick={() => setActiveTab('describe')}>数据概览</button>
+              <button id="data-preview-tab-config" type="button" role="tab" aria-selected={activeTab === 'config'} aria-controls="data-preview-panel" className={activeTab === 'config' ? 'sheet-tab active' : 'sheet-tab'} onClick={() => setActiveTab('config')}>配置</button>
+            </div>
+            {activeSheet && <span className="data-preview-summary">{queryTotal !== totalRows ? `${queryTotal} / ${totalRows}` : totalRows} 行 × {activeSheetData?.colCount || 0} 列</span>}
+            <button
+              type="button"
+              className="ui-btn ui-btn-xs data-preview-inspector-toggle"
+              aria-pressed={inspectorOpen}
+              aria-controls="data-preview-inspector"
+              onClick={() => setInspectorOpen((value) => !value)}
+            >
+              {inspectorOpen ? '隐藏表结构' : '显示表结构'}
+            </button>
           </div>
-          {activeSheet && (
-            <div className="data-preview-toolbar">
-              <span className="data-preview-summary">{queryTotal !== totalRows ? `${queryTotal} / ${totalRows}` : totalRows} 行 × {activeSheetData?.colCount || 0} 列</span>
-              {activeTab === 'table' && (
-                <>
+          {activeSheet && activeTab === 'table' && (
+            <div className="data-preview-toolbar" role="toolbar" aria-label="数据表操作">
                   <div className="data-preview-tool-group">
-                    <span>查找</span>
-                    <input aria-label="全表搜索" value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder="搜索全部字段" />
+                    <label htmlFor="data-preview-search">查找</label>
+                    <input id="data-preview-search" type="search" aria-label="全表搜索" value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder="搜索全部字段" />
                     {(query.search || query.keySearch || Object.keys(query.filterModel).length > 0) && <button type="button" className="ui-btn ui-btn-xs" onClick={() => { setSearchDraft(''); setKeyJumpDraft(''); setQuery((current) => ({ ...current, page: 1, search: '', keySearch: '', filterModel: {} })); }}>清除筛选</button>}
                   </div>
                   <div className="data-preview-tool-group">
@@ -988,7 +1022,14 @@ export default function DataPreviewPage() {
                   </div>
                   <div className="data-preview-tool-group">
                     <span>使用</span>
-                    <button type="button" className="ui-btn ui-btn-primary ui-btn-xs" onClick={openFormGenerator}>生成表单</button>
+                    <button
+                      type="button"
+                      className="ui-btn ui-btn-primary ui-btn-xs"
+                      disabled={!selectedTemplateFields.length}
+                      onClick={() => setShowTemplateRecommendations(true)}
+                    >
+                      {selectedTemplateFields.length ? '选择模板生成表单' : '先选择字段'}
+                    </button>
                     <button type="button" className="ui-btn ui-btn-xs" disabled={!selectedRowKey} onClick={() => {
                       const rowData = rows.find((row) => row.__rowKey === selectedRowKey);
                       if (!rowData) return;
@@ -1004,19 +1045,36 @@ export default function DataPreviewPage() {
                       } catch (error) { setFeedback({ type: 'error', message: error instanceof Error ? error.message : '导出失败' }); }
                     }}>导出结果</button>
                   </div>
-                  <span className={`data-preview-save-state is-${saveState}`}>{saveState === 'saved' ? '已保存' : saveState === 'saving' ? '保存中' : saveState === 'error' ? '保存失败' : `未保存：${changedCellCount} 单元格 / ${pendingAdds.length} 新增 / ${pendingDeletes.size} 删除`}</span>
+                  <span className={`data-preview-save-state is-${saveState}`} role="status" aria-live="polite">
+                    <span className="data-preview-state-icon" aria-hidden="true">{saveState === 'saved' ? '✓' : saveState === 'error' ? '!' : '●'}</span>
+                    {saveState === 'saved' ? '已保存' : saveState === 'saving' ? '保存中' : saveState === 'error' ? '保存失败' : `未保存：${changedCellCount} 单元格 / ${pendingAdds.length} 新增 / ${pendingDeletes.size} 删除`}
+                  </span>
                   {(query.search || query.keySearch || Object.keys(query.filterModel).length > 0) && <div className="data-preview-filter-chips">
                     {query.search && <button type="button" onClick={() => { setSearchDraft(''); setQuery((current) => ({ ...current, page: 1, search: '' })); }}>搜索：{query.search} ×</button>}
                     {query.keySearch && <button type="button" onClick={() => { setKeyJumpDraft(''); setQuery((current) => ({ ...current, page: 1, keySearch: '' })); }}>Key：{query.keySearch} ×</button>}
                     {Object.keys(query.filterModel).map((field) => <button key={field} type="button" onClick={() => setQuery((current) => { const filterModel = { ...current.filterModel }; delete filterModel[field]; return { ...current, page: 1, filterModel }; })}>{field} ×</button>)}
                   </div>}
-                </>
-              )}
+            </div>
+          )}
+          {activeSheet && activeTab === 'table' && selectedTemplateFields.length > 0 && (
+            <div className="data-preview-template-selection" role="status" aria-live="polite">
+              <span><strong>已选 {selectedTemplateFields.length} 个字段</strong><small>{selectedTemplateFields.slice(0, 4).join('、')}{selectedTemplateFields.length > 4 ? '…' : ''}</small></span>
+              <div>
+                <button type="button" className="ui-btn ui-btn-xs" onClick={selectAllVisibleTemplateFields}>全选可见</button>
+                <button type="button" className="ui-btn ui-btn-xs" onClick={() => setSelectedTemplateFields([])}>清空</button>
+                <button type="button" className="ui-btn ui-btn-primary ui-btn-xs" onClick={() => setShowTemplateRecommendations(true)}>选择模板生成表单</button>
+              </div>
             </div>
           )}
         </div>
 
-        <div className="page-section-body data-preview-main-body" style={{ padding: 0 }}>
+        <div
+          id="data-preview-panel"
+          className="page-section-body data-preview-main-body"
+          role="tabpanel"
+          aria-labelledby={`data-preview-tab-${activeTab}`}
+          style={{ padding: 0 }}
+        >
           {!activeSheet ? (
             <div className="data-preview-empty-panel">
               <p>{project?.srcTable.length ? '选择左侧数据表查看预览' : '创建或上传数据表开始工作'}</p>
@@ -1039,7 +1097,11 @@ export default function DataPreviewPage() {
                 </div>
               )}
               {loading ? (
-                <div className="data-preview-loading">{uploadStage || '加载数据'}…</div>
+                <div className="data-preview-loading" role="status" aria-live="polite">
+                  <span className="data-preview-progress" aria-hidden="true" />
+                  <strong>{uploadStage || '正在加载数据'}</strong>
+                  <span>请稍候…</span>
+                </div>
               ) : totalRows === 0 && rows.length === 0 ? (
                 <div className="data-preview-empty-panel">
                   <h3>这张表还没有数据</h3>
@@ -1048,18 +1110,22 @@ export default function DataPreviewPage() {
                     <button type="button" className="ui-btn ui-btn-primary" onClick={handleAddRow}>新增第一行</button>
                     <button type="button" className="ui-btn" onClick={() => fileRef.current?.click()}>导入数据</button>
                     <button type="button" className="ui-btn" onClick={() => setActiveTab('config')}>配置字段</button>
-                    <button type="button" className="ui-btn" onClick={openFormGenerator}>生成表单</button>
+                    <button type="button" className="ui-btn" onClick={selectAllAndOpenTemplateRecommendations}>选择模板生成表单</button>
                   </div>
                 </div>
               ) : (
                 <div
+                  ref={gridContainerRef}
                   className={[
-                    agThemeClass,
+                    'ag-theme-quartz',
                     'data-preview-grid',
                     currentConfig?.alternateRowColor === false ? 'no-zebra' : '',
                     currentConfig?.showGridLines === false ? 'no-grid-lines' : '',
                   ].filter(Boolean).join(' ')}
                   style={{ width: '100%', height: '100%' }}
+                  role="region"
+                  aria-label={`${activeSheet.name} 数据表格`}
+                  aria-busy={loading}
                 >
                   <AgGridReact
                     rowData={rows}
@@ -1071,18 +1137,18 @@ export default function DataPreviewPage() {
                     }}
                     rowHeight={currentConfig?.rowHeight}
                     headerHeight={currentConfig?.headerHeight}
-                    animateRows
                     rowSelection={{ mode: 'singleRow' }}
                     getRowId={(params) => String(params.data.__rowKey)}
+                    onGridReady={(event) => {
+                      gridApiRef.current = event.api;
+                      if (gridContainerRef.current?.clientWidth && currentConfig?.autoFitColumns && Object.keys(currentConfig.columnWidths).length === 0) event.api.sizeColumnsToFit();
+                    }}
                     getRowClass={(params) => {
                       if (params.data.__isNew) return 'ag-row-new';
                       if (pendingDeletes.has(params.data.__rowKey)) return 'ag-row-deleted';
                       return '';
                     }}
                     onColumnResized={onColumnResized}
-                    onFirstDataRendered={(event) => {
-                      if (currentConfig?.autoFitColumns && Object.keys(currentConfig.columnWidths).length === 0) event.api.sizeColumnsToFit();
-                    }}
                     onColumnHeaderClicked={(event) => {
                       const field = event.column && 'getColDef' in event.column ? event.column.getColDef().field : undefined;
                       if (!field || !activeSheetData) {
@@ -1101,6 +1167,11 @@ export default function DataPreviewPage() {
                       if (event.rowIndex != null) setSelectedRowIdx(event.rowIndex);
                       setSelectedRowKey(event.data?.__rowKey || null);
                     }}
+                    onSelectionChanged={(event) => {
+                      const selected = event.api.getSelectedRows()[0] as PreviewRow | undefined;
+                      setSelectedRowIdx(selected?.__rowIndex ?? null);
+                      setSelectedRowKey(selected?.__rowKey || null);
+                    }}
                     onFilterChanged={(event) => {
                       const filterModel = event.api.getFilterModel();
                       setQuery((current) => JSON.stringify(current.filterModel) === JSON.stringify(filterModel) ? current : { ...current, page: 1, filterModel });
@@ -1114,13 +1185,19 @@ export default function DataPreviewPage() {
                 </div>
               )}
               <div className="data-preview-pager">
-                <button type="button" className="ui-btn ui-btn-xs" disabled={query.page <= 1 || loading} onClick={() => setQuery((current) => ({ ...current, page: current.page - 1 }))}>上一页</button>
-                <span>第 {query.page} / {Math.max(1, Math.ceil(queryTotal / query.pageSize))} 页</span>
-                <button type="button" className="ui-btn ui-btn-xs" disabled={query.page >= Math.max(1, Math.ceil(queryTotal / query.pageSize)) || loading} onClick={() => setQuery((current) => ({ ...current, page: current.page + 1 }))}>下一页</button>
-                <AntdCompatSelect aria-label="每页行数" value={String(query.pageSize)} onChange={(event) => setQuery((current) => ({ ...current, page: 1, pageSize: Number(event.target.value) }))}>{[50, 100, 200, 500].map((size) => <option key={size} value={size}>{size} 行/页</option>)}</AntdCompatSelect>
-                <label>跳转 <input aria-label="跳转页码" type="number" min={1} max={Math.max(1, Math.ceil(queryTotal / query.pageSize))} value={query.page} onChange={(event) => setQuery((current) => ({ ...current, page: Math.max(1, Math.min(Number(event.target.value) || 1, Math.max(1, Math.ceil(queryTotal / current.pageSize)))) }))} /></label>
-                <label>Key <input aria-label="跳转到 Key" value={keyJumpDraft} onChange={(event) => setKeyJumpDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') setQuery((current) => ({ ...current, page: 1, keySearch: keyJumpDraft.trim() })); }} /></label>
-                <button type="button" className="ui-btn ui-btn-xs" disabled={!keyJumpDraft.trim()} onClick={() => setQuery((current) => ({ ...current, page: 1, keySearch: keyJumpDraft.trim() }))}>定位</button>
+                <div className="data-preview-pager-group data-preview-pager-group-nav">
+                  <button type="button" className="ui-btn ui-btn-xs" disabled={query.page <= 1 || loading} onClick={() => setQuery((current) => ({ ...current, page: current.page - 1 }))}>上一页</button>
+                  <span className="data-preview-pager-status">第 {query.page} / {Math.max(1, Math.ceil(queryTotal / query.pageSize))} 页</span>
+                  <button type="button" className="ui-btn ui-btn-xs" disabled={query.page >= Math.max(1, Math.ceil(queryTotal / query.pageSize)) || loading} onClick={() => setQuery((current) => ({ ...current, page: current.page + 1 }))}>下一页</button>
+                </div>
+                <div className="data-preview-pager-group data-preview-pager-group-jump">
+                  <AntdCompatSelect aria-label="每页行数" value={String(query.pageSize)} onChange={(event) => setQuery((current) => ({ ...current, page: 1, pageSize: Number(event.target.value) }))}>{[50, 100, 200, 500].map((size) => <option key={size} value={size}>{size} 行/页</option>)}</AntdCompatSelect>
+                  <label><span>跳转</span><input aria-label="跳转页码" type="number" min={1} max={Math.max(1, Math.ceil(queryTotal / query.pageSize))} value={query.page} onChange={(event) => setQuery((current) => ({ ...current, page: Math.max(1, Math.min(Number(event.target.value) || 1, Math.max(1, Math.ceil(queryTotal / current.pageSize)))) }))} /></label>
+                </div>
+                <div className="data-preview-pager-group data-preview-pager-group-key">
+                  <label><span>Key</span><input aria-label="跳转到 Key" value={keyJumpDraft} onChange={(event) => setKeyJumpDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') setQuery((current) => ({ ...current, page: 1, keySearch: keyJumpDraft.trim() })); }} /></label>
+                  <button type="button" className="ui-btn ui-btn-xs" disabled={!keyJumpDraft.trim()} onClick={() => setQuery((current) => ({ ...current, page: 1, keySearch: keyJumpDraft.trim() }))}>定位</button>
+                </div>
               </div>
             </div>
           ) : activeTab === 'describe' ? (
@@ -1259,9 +1336,10 @@ export default function DataPreviewPage() {
         </div>
       </div>
 
-      <div className="page-inspector data-preview-inspector">
+      <div id="data-preview-inspector" className={`page-inspector data-preview-inspector ${inspectorOpen ? 'is-open' : 'is-collapsed'}`} hidden={!inspectorOpen}>
         <div className="page-section-header">
           <span>{selectedCol ? `列：${selectedCol.name}` : '表结构编辑'}</span>
+          <button type="button" className="data-preview-inspector-close" aria-label="关闭表结构编辑器" onClick={() => setInspectorOpen(false)}>×</button>
         </div>
         <div className="page-section-body data-preview-inspector-body">
           {activeSheet ? (
@@ -1361,6 +1439,52 @@ export default function DataPreviewPage() {
                     {typeConversionFailures.length > 0 && <div className="data-preview-conversion-warning">当前页至少有 {typeConversionFailures.length} 个值不能转换为 {columnTypeDraft}，例如：{typeConversionFailures.map(String).join('、')}</div>}
                     <label><span>描述</span><textarea rows={3} value={columnDescriptionDraft} onChange={(event) => setColumnDescriptionDraft(event.target.value)} /></label>
                     <label><span>标签</span><input value={columnTagsDraft} onChange={(event) => setColumnTagsDraft(event.target.value)} placeholder="用逗号分隔" /></label>
+                    <section className="data-preview-sequence-card">
+                      <label className="data-preview-toggle">
+                        <input type="checkbox" checked={columnSequenceEnabledDraft} onChange={(event) => setColumnSequenceEnabledDraft(event.target.checked)} />
+                        <span>新增行时自动生成自增序列</span>
+                      </label>
+                      {columnSequenceEnabledDraft && (
+                        <div className="data-preview-sequence-grid">
+                          <label><span>起始值</span><input type="number" min={0} value={columnSequenceStartDraft} onChange={(event) => setColumnSequenceStartDraft(event.target.value)} /></label>
+                          <label><span>步长</span><input type="number" min={1} value={columnSequenceStepDraft} onChange={(event) => setColumnSequenceStepDraft(event.target.value)} /></label>
+                          <label><span>格式模板</span><input value={columnSequenceFormatterDraft} onChange={(event) => setColumnSequenceFormatterDraft(event.target.value)} placeholder="例如 P-{n:4}" /></label>
+                          <div className="data-preview-sequence-helper">
+                            <span>快速套用</span>
+                            <div className="data-preview-sequence-preset-list">
+                              {sequenceTemplatePresets.map((preset) => (
+                                <button key={preset.value} type="button" className={`data-preview-sequence-preset${columnSequenceFormatterDraft === preset.value ? ' is-active' : ''}`} onClick={() => setColumnSequenceFormatterDraft(preset.value)}>
+                                  {preset.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <label className="data-preview-toggle data-preview-sequence-toggle">
+                            <input type="checkbox" checked={columnSequenceOnlyWhenEmptyDraft} onChange={(event) => setColumnSequenceOnlyWhenEmptyDraft(event.target.checked)} />
+                            <span>仅在目标单元格为空时自动生成</span>
+                          </label>
+                          <div className="data-preview-sequence-hints">
+                            <span>可用 token</span>
+                            <div className="data-preview-sequence-token-list">
+                              {sequenceTokenHints.map((token) => (
+                                <button key={token} type="button" className="data-preview-sequence-token" onClick={() => setColumnSequenceFormatterDraft((prev) => `${prev}${token}`)}>
+                                  {token}
+                                </button>
+                              ))}
+                            </div>
+                            <small>支持数字占位和日期前缀，例如 {`BX-{yyyyMM}-{n:4}`}。</small>
+                          </div>
+                          <div className="data-preview-sequence-preview">
+                            <span>预览</span>
+                            <strong>{formatSequenceValue(Number(columnSequenceStartDraft) || 1, columnSequenceFormatterDraft || '{n}')}</strong>
+                          </div>
+                          <div className="data-preview-sequence-preview data-preview-sequence-preview-subtle">
+                            <span>模板展开</span>
+                            <strong>{resolveSequenceDateTokens(columnSequenceFormatterDraft || '{n}')}</strong>
+                          </div>
+                        </div>
+                      )}
+                    </section>
                     <label className="data-preview-toggle"><input type="checkbox" checked={currentConfig?.hiddenColumns.includes(selectedCol.name) || false} onChange={(event) => void updateConfig({ hiddenColumns: event.target.checked ? [...(currentConfig?.hiddenColumns || []), selectedCol.name] : (currentConfig?.hiddenColumns || []).filter((name) => name !== selectedCol.name) })} /><span>隐藏此列</span></label>
                     <label className="data-preview-toggle"><input type="checkbox" checked={currentConfig?.lockedColumns.includes(selectedCol.name) || false} onChange={(event) => void updateConfig({ lockedColumns: event.target.checked ? [...(currentConfig?.lockedColumns || []), selectedCol.name] : (currentConfig?.lockedColumns || []).filter((name) => name !== selectedCol.name) })} /><span>锁定编辑</span></label>
                     <div className="data-preview-inline-actions">
@@ -1390,7 +1514,16 @@ export default function DataPreviewPage() {
         </div>
       </div>
 
-      {feedback && <div className={`data-preview-feedback is-${feedback.type}`} role="status"><span>{feedback.message}</span><button type="button" onClick={() => setFeedback(null)}>×</button></div>}
+      {feedback && (
+        <div className={`data-preview-feedback is-${feedback.type}`} role={feedback.type === 'error' ? 'alert' : 'status'} aria-live={feedback.type === 'error' ? 'assertive' : 'polite'}>
+          <span className="data-preview-feedback-icon" aria-hidden="true">{feedback.type === 'success' ? '✓' : feedback.type === 'error' ? '!' : 'i'}</span>
+          <span>{feedback.message}</span>
+          {feedback.actionLabel && feedback.onAction && (
+            <button type="button" className="data-preview-feedback-action" onClick={() => { const action = feedback.onAction; setFeedback(null); action?.(); }}>{feedback.actionLabel}</button>
+          )}
+          <button type="button" aria-label="关闭提示" onClick={() => setFeedback(null)}><span aria-hidden="true">×</span></button>
+        </div>
+      )}
 
       <Modal open={!!pendingNavigation} onClose={() => setPendingNavigation(null)} maxWidth={520}>
         <ModalHeader title="有未保存的数据修改" onClose={() => setPendingNavigation(null)} />
@@ -1436,7 +1569,7 @@ export default function DataPreviewPage() {
           <button type="button" className="ui-btn ui-btn-primary" onClick={() => {
             const file = duplicateUploadFile; setDuplicateUploadFile(null); if (!file) return;
             const existing = project?.srcTable.find((table) => table.fileName === file.name);
-            guardAction(() => { void (async () => { if (existing) await removeTable(existing.id); await handleUpload(file); })(); });
+            guardAction(() => { void handleUpload(file, file.name, existing?.id); });
           }}>替换原表</button>
         </ModalFooter>
       </Modal>
@@ -1541,56 +1674,22 @@ export default function DataPreviewPage() {
         </ModalFooter>
       </Modal>
 
-      <Modal open={showFormGenerator} onClose={() => setShowFormGenerator(false)} width="760px" maxWidth="94vw">
-        <ModalHeader title="从数据生成可运行表单" onClose={() => setShowFormGenerator(false)} />
-        <div className="modal-body data-preview-wizard">
-          <div className="project-wizard-summary-card">
-            <strong>{selectedTable?.fileName} / {activeSheetData?.name}</strong>
-            <div className="project-wizard-summary-list">
-              <p>系统会自动创建控件、字段绑定、必填校验、保存按钮{activeSheetData && inferLikelyKey(activeSheetData) ? '和主键写回流程' : '。当前未识别主键，暂不创建写回流程'}。</p>
-            </div>
-          </div>
-          <div className="data-preview-wizard-panel">
-            <label><span>表单名称</span><input value={generateFormDraft.name} onChange={(event) => setGenerateFormDraft((current) => ({ ...current, name: event.target.value }))} /></label>
-            <label><span>用途</span><AntdCompatSelect value={generateFormDraft.purpose} onChange={(event) => {
-              const purpose = event.target.value as GenerateFormDraft['purpose'];
-              const readonly = purpose === 'detail' || purpose === 'statistics';
-              setGenerateFormDraft((current) => ({ ...current, purpose, includeSave: readonly ? false : true, includeReset: readonly ? false : current.includeReset, name: current.name.replace(/(录入|查询修改|审批|详情|统计)$/, '') + ({ entry: '录入', 'lookup-edit': '查询修改', approval: '审批', detail: '详情', statistics: '统计' } as const)[purpose] }));
-            }}><option value="entry">录入</option><option value="lookup-edit">查询修改</option><option value="approval">审批</option><option value="detail">明细查看</option><option value="statistics">统计</option></AntdCompatSelect></label>
-            <label>
-              <span>每行字段数</span>
-              <AntdCompatSelect value={generateFormDraft.columns} onChange={(event) => setGenerateFormDraft((current) => ({ ...current, columns: Number(event.target.value) as 1 | 2 | 3 }))}>
-                <option value={1}>1 列</option><option value={2}>2 列</option><option value={3}>3 列</option>
-              </AntdCompatSelect>
-            </label>
-            <div className="settings-toggle-list">
-              <label className="settings-option-item"><input type="checkbox" disabled={generateFormDraft.purpose === 'detail' || generateFormDraft.purpose === 'statistics'} checked={generateFormDraft.includeSave} onChange={(event) => setGenerateFormDraft((current) => ({ ...current, includeSave: event.target.checked }))} /><span>生成“校验并保存”按钮与流程</span></label>
-              <label className="settings-option-item"><input type="checkbox" disabled={generateFormDraft.purpose === 'detail' || generateFormDraft.purpose === 'statistics'} checked={generateFormDraft.includeReset} onChange={(event) => setGenerateFormDraft((current) => ({ ...current, includeReset: event.target.checked }))} /><span>生成重置按钮</span></label>
-            </div>
-            <div className="data-preview-section-title">
-              <h4>选择字段（{generateFormDraft.selectedFields.length}/{activeSheetData?.columns.length || 0}）</h4>
-              <div className="data-preview-inline-actions">
-                <button type="button" className="ui-btn ui-btn-xs" onClick={() => setGenerateFormDraft((current) => ({ ...current, selectedFields: activeSheetData?.columns.map((column) => column.name) || [] }))}>全选</button>
-                <button type="button" className="ui-btn ui-btn-xs" onClick={() => setGenerateFormDraft((current) => ({ ...current, selectedFields: [] }))}>清空</button>
-              </div>
-            </div>
-            <div className="settings-option-grid">
-              {activeSheetData?.columns.map((column) => {
-                const inferred = inferredGeneratorFields.find((field) => field.name === column.name);
-                return <label key={column.name} className="settings-option-item">
-                  <input type="checkbox" checked={generateFormDraft.selectedFields.includes(column.name)} onChange={(event) => setGenerateFormDraft((current) => ({ ...current, selectedFields: event.target.checked ? [...current.selectedFields, column.name] : current.selectedFields.filter((field) => field !== column.name) }))} />
-                  <span>{column.name}{inferred ? ` · ${inferred.controlType}${inferred.required ? ' · 必填' : ''}${inferred.readonly ? ' · 只读' : ''}` : ''}</span>
-                </label>;
-              })}
-            </div>
-            {generateFormError && <div className="property-editor-warning">{generateFormError}</div>}
-          </div>
-        </div>
-        <ModalFooter>
-          <button type="button" className="ui-btn" onClick={() => setShowFormGenerator(false)}>取消</button>
-          <button type="button" className="ui-btn ui-btn-primary" onClick={() => void handleGenerateForm()} disabled={!generateFormDraft.name.trim() || !generateFormDraft.selectedFields.length}>创建并进入表单设计</button>
-        </ModalFooter>
-      </Modal>
+      {selectedTable && activeSheet && (
+        <DataTemplateRecommendationModal
+          open={showTemplateRecommendations}
+          onClose={() => setShowTemplateRecommendations(false)}
+          tableId={selectedTable.id}
+          tableName={selectedTable.fileName}
+          sheetName={activeSheet.name}
+          fields={selectedTemplateFields}
+          hasUnsavedChanges={changeCount > 0}
+          onSaveData={async () => {
+            const saved = await handleSave();
+            if (!saved) throw new Error('请先修正表格中的类型错误');
+          }}
+          onOpenAdvanced={onOpenTemplateCenter}
+        />
+      )}
     </div>
   );
 }

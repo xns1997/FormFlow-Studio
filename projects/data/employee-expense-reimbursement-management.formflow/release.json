@@ -1,0 +1,7 @@
+{
+  "mode": "design",
+  "allowDesigner": true,
+  "allowBehaviorEditor": true,
+  "allowWorkflowEditor": true,
+  "defaultFormId": "expense_submit"
+}

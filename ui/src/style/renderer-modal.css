@@ -1,5 +1,37 @@
 /* ── 弹窗 ───────────────────────────────────────────────── */
 
+@keyframes modal-overlay-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modal-overlay-exit {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes modal-content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modal-content-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -9,6 +41,11 @@
   justify-content: center;
   background: rgba(0,0,0,0.4);
   backdrop-filter: blur(4px);
+  animation: modal-overlay-enter 0.2s ease-out forwards;
+}
+
+.modal-overlay.modal-exiting {
+  animation: modal-overlay-exit 0.15s ease-in forwards;
 }
 
 .modal-content,
@@ -20,6 +57,12 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  animation: modal-content-enter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.modal-overlay.modal-exiting .modal-content,
+.modal-overlay.modal-exiting .modal-container {
+  animation: modal-content-exit 0.15s ease-in forwards;
 }
 
 .modal-header {
@@ -32,8 +75,16 @@
 
 .modal-header h3 { font-size: 15px; font-weight: 700; }
 
+.modal-header-copy { min-width: 0; }
+.modal-header-copy p { margin: 3px 0 0; color: var(--text-secondary); font-size: 11px; line-height: 1.35; }
+
 .modal-close {
-  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   font-size: 18px;
   border: none;
   background: transparent;
@@ -56,4 +107,119 @@
   gap: 8px;
   padding: 12px 20px;
   border-top: 1px solid var(--line);
+}
+
+/* ── Toast 通知动画 ──────────────────────────────────── */
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateX(100%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes toast-exit {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%) scale(0.95);
+  }
+}
+
+.toast-enter {
+  animation: toast-enter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.toast-exit {
+  animation: toast-exit 0.15s ease-in forwards;
+}
+
+/* ── 通知项动画 ──────────────────────────────────────── */
+@keyframes notification-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.notification-item {
+  animation: notification-enter 0.2s ease-out forwards;
+}
+
+.notification-item:nth-child(2) { animation-delay: 0.03s; }
+.notification-item:nth-child(3) { animation-delay: 0.06s; }
+.notification-item:nth-child(4) { animation-delay: 0.09s; }
+.notification-item:nth-child(5) { animation-delay: 0.12s; }
+
+/* 使用态表单是一个完整任务空间，不继承设计器工具栏的布局占位。 */
+.form-runtime-overlay {
+  padding: 24px;
+  background: rgba(20, 24, 31, 0.46);
+  backdrop-filter: blur(10px) saturate(0.9);
+}
+
+.form-runtime-modal {
+  height: auto;
+  max-height: 90vh;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.form-runtime-body {
+  position: relative;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+@media (max-width: 720px) {
+  .form-runtime-overlay { padding: 12px; }
+}
+
+/* ── 模态框响应式 ────────────────────────────────────── */
+@media (max-height: 700px) {
+  .modal-content,
+  .modal-container {
+    max-height: 95vh;
+    margin: 8px;
+  }
+
+  .modal-header {
+    padding: 12px 16px;
+  }
+
+  .modal-body {
+    padding: 12px;
+  }
+
+  .modal-footer {
+    padding: 8px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-content,
+  .modal-container {
+    max-width: 100%;
+    margin: 0;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    max-height: 90vh;
+  }
+
+  .modal-overlay {
+    align-items: flex-end;
+  }
 }

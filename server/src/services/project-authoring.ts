@@ -5,13 +5,20 @@ import {
 import { basename, extname, join } from 'node:path';
 import JSZip from 'jszip';
 import XLSX from 'xlsx';
-import { PROJECTS_DIR, REPOSITORY_ROOT, serverDataPath } from '../config/paths';
+import { PROJECTS_DIR, REPOSITORY_ROOT } from '../config/paths';
 import {
   PROJECT_PACKAGE_SUFFIX, listProjectPackages, projectPackagePath, readProjectPackage, writeProjectPackage,
 } from './project-package-store';
 import { applyBatchChanges, dataVersion, queryRows, validateConfiguredKeys } from './data-preview';
 import { compileDataToolArguments } from './data-tool-preflight';
 import { inspectProjectSemantics } from './project-semantic-validation';
+import { consumeStagedUpload, getStagedUpload } from './upload-staging';
+import { parseSourceBuffer } from './upload-staging';
+import {
+  FORM_WINDOW_COORDINATE_SPACE,
+  growFormWindowToFit,
+  migrateCanvasComponentsToWindowLocal,
+} from '../../../shared/form-window-layout';
 
 export type JsonObject = Record<string, any>;
 export type ValidationIssue = { code: string; path: string; message: string };
@@ -27,8 +34,6 @@ export type ValidationReport = {
 };
 
 const ID_RE = /^[A-Za-z0-9_-]+$/;
-const FILES_DIR = serverDataPath('files');
-const DATA_DIR = serverDataPath('data');
 const INLINE_BYTES = 5 * 1024 * 1024;
 const INLINE_ROWS = 10_000;
 
@@ -66,7 +71,28 @@ export function normalizeFormComponents(components: any[]): any[] {
 }
 
 export function normalizeFormDesign(design: JsonObject): JsonObject {
-  return { ...design, viewport: { zoom: 1, panX: 0, panY: 0, ...(design?.viewport || {}) }, gridSize: finiteNumber(design?.gridSize, 12, true), components: normalizeFormComponents(Array.isArray(design?.components) ? design.components : []), bindings: Array.isArray(design?.bindings) ? design.bindings : [] };
+  const normalized = normalizeFormComponents(Array.isArray(design?.components) ? design.components : []);
+  const legacyForms = normalized.filter((component) => component.type === 'form');
+  const legacyRoot = legacyForms.find((component) => !component.parentId) || legacyForms[0];
+  const legacyIds = new Set(legacyForms.map((component) => component.id));
+  const defaults = { x: 40, y: 40, width: 980, height: 720, props: { title: design?.name || '表单', subtitle: '', background: '#ffffff', padding: 24, borderRadius: 12, submitText: '提交', resetText: '重置', showFooter: false } };
+  const migrated = legacyRoot ? { x: legacyRoot.x, y: legacyRoot.y, width: legacyRoot.width, height: legacyRoot.height, props: { ...defaults.props, ...(legacyRoot.props || {}) } } : defaults;
+  const supplied = design?.formWindow;
+  const formWindow = supplied ? {
+    x: finiteNumber(supplied.x, migrated.x), y: finiteNumber(supplied.y, migrated.y),
+    width: finiteNumber(supplied.width, migrated.width, true), height: finiteNumber(supplied.height, migrated.height, true),
+    props: { ...migrated.props, ...(supplied.props || {}) },
+  } : migrated;
+  const normalizedComponents = normalized.filter((component) => component.type !== 'form').map((component) => ({
+    ...component,
+    parentId: legacyIds.has(component.parentId) ? undefined : component.parentId,
+    children: Array.isArray(component.children) ? component.children.filter((id: string) => !legacyIds.has(id)) : component.children,
+  }));
+  const migratedCoordinates = design?.coordinateSpace === FORM_WINDOW_COORDINATE_SPACE
+    ? { formWindow: growFormWindowToFit(formWindow, normalizedComponents), components: normalizedComponents }
+    : migrateCanvasComponentsToWindowLocal(formWindow, normalizedComponents);
+  const bindings = (Array.isArray(design?.bindings) ? design.bindings : []).filter((binding: JsonObject) => !legacyIds.has(binding.sourceId) && !legacyIds.has(binding.targetId));
+  return { ...design, viewport: { zoom: 1, panX: 0, panY: 0, ...(design?.viewport || {}) }, gridSize: finiteNumber(design?.gridSize, 12, true), coordinateSpace: FORM_WINDOW_COORDINATE_SPACE, formWindow: migratedCoordinates.formWindow, components: migratedCoordinates.components, bindings };
 }
 
 function stable(value: any): any {
@@ -76,13 +102,18 @@ function stable(value: any): any {
 }
 
 export function projectRevision(project: JsonObject): string {
-  return createHash('sha256').update(JSON.stringify(stable(project))).digest('hex');
+  // `designs` and `behaviors` are read-time compatibility aliases derived from
+  // canonical form/global-behavior resources. Excluding them keeps the revision
+  // returned by a commit identical to the revision after reloading that commit.
+  const { designs: _designs, behaviors: _behaviors, ...canonical } = project;
+  return createHash('sha256').update(JSON.stringify(stable(canonical))).digest('hex');
 }
 
 export function requireProject(projectId: string): JsonObject {
   if (!ID_RE.test(projectId)) throw toolError('INVALID_ID', 'projectId 必须匹配 [A-Za-z0-9_-]+', 'projectId');
   const project = readProjectPackage(projectId);
   if (!project) throw toolError('PROJECT_NOT_FOUND', `项目 ${projectId} 不存在`, 'projectId');
+  project.forms = (project.forms || []).map((form: JsonObject) => ({ ...form, design: normalizeFormDesign(form.design || {}) }));
   return project;
 }
 
@@ -121,22 +152,23 @@ export function auditFrozenProjectFields(project: JsonObject): ValidationIssue[]
   };
   examine(project.config, ['id', 'name', 'description', 'version', 'createdAt', 'updatedAt', 'author', 'tags', 'access'], 'project.config');
   examine(project.release, ['mode', 'defaultFormId', 'defaultSheet', 'allowDesigner', 'allowBehaviorEditor', 'allowWorkflowEditor', 'lastVerifiedAt'], 'release');
-  const inspectBehavior = (item: any, path: string) => examine(item, ['id', 'name', 'event', 'code', 'priority', 'enabled', 'createdAt', 'updatedAt', 'trigger', 'conditions', 'actions'], path);
+  const inspectBehavior = (item: any, path: string) => examine(item, ['id', 'name', 'event', 'code', 'priority', 'enabled', 'createdAt', 'updatedAt', 'trigger', 'conditions', 'actions', 'eventFallbackReason'], path);
   for (const form of project.forms || []) {
-    examine(form, ['id', 'name', 'design', 'behaviors', 'ruleCode', 'createdAt', 'updatedAt'], `forms.${form.id}`);
-    examine(form.design, ['id', 'name', 'formMode', 'templateKey', 'viewport', 'gridSize', 'components', 'bindings', 'createdAt', 'updatedAt'], `forms.${form.id}.design`);
+    examine(form, ['id', 'name', 'design', 'behaviors', 'ruleCode', 'createdAt', 'updatedAt', 'generatedBy'], `forms.${form.id}`);
+    examine(form.design, ['id', 'name', 'formMode', 'templateKey', 'templateParameters', 'generatedBy', 'viewport', 'gridSize', 'coordinateSpace', 'formWindow', 'components', 'bindings', 'createdAt', 'updatedAt'], `forms.${form.id}.design`);
+    examine(form.design?.formWindow, ['x', 'y', 'width', 'height', 'props'], `forms.${form.id}.design.formWindow`);
     for (const component of form.design?.components || []) examine(component, ['id', 'type', 'x', 'y', 'width', 'height', 'props', 'parentId', 'fieldBinding', 'behaviorBindings', 'children', 'locked', 'visible', 'zIndex'], `forms.${form.id}.components.${component.id}`);
     for (const binding of form.design?.bindings || []) examine(binding, ['id', 'sourceId', 'targetId', 'type', 'config'], `forms.${form.id}.bindings.${binding.id || '?'}`);
     for (const behavior of form.behaviors || []) inspectBehavior(behavior, `forms.${form.id}.behaviors.${behavior.id || '?'}`);
   }
   for (const workflow of project.workflows || []) {
-    examine(workflow, ['id', 'name', 'description', 'nodes', 'edges', 'versions', 'variables', 'createdAt', 'updatedAt'], `workflows.${workflow.id}`);
+    examine(workflow, ['id', 'name', 'description', 'nodes', 'edges', 'versions', 'variables', 'createdAt', 'updatedAt', 'generatedBy'], `workflows.${workflow.id}`);
     for (const node of workflow.nodes || []) examine(node, ['id', 'type', 'specId', 'position', 'data'], `workflows.${workflow.id}.nodes.${node.id}`);
     for (const edge of workflow.edges || []) examine(edge, ['id', 'source', 'target', 'sourceHandle', 'targetHandle'], `workflows.${workflow.id}.edges.${edge.id}`);
   }
   for (const behavior of project.globalBehaviors || []) inspectBehavior(behavior, `behaviors.${behavior.id || '?'}`);
   for (const sheet of project.sheetBehaviors || []) for (const behavior of sheet.behaviors || []) inspectBehavior(behavior, `sheetBehaviors.${sheet.tableId}/${sheet.sheetName}.${behavior.id || '?'}`);
-  for (const output of project.outputs || []) examine(output, ['id', 'name', 'format', 'size', 'createdAt', 'downloadUrl'], `outputs.${output.id}`);
+  for (const output of project.outputs || []) examine(output, ['id', 'name', 'format', 'size', 'createdAt', 'downloadUrl', 'generatedBy'], `outputs.${output.id}`);
   return errors;
 }
 
@@ -208,10 +240,44 @@ function copyPreservedData(fromRoot: string, toRoot: string, tables: any[]) {
   if (!existsSync(sourceDir)) return;
   mkdirSync(targetDir, { recursive: true });
   const retained = new Set(tables.map((table) => table.fileName));
-  for (const name of readdirSync(sourceDir)) if (retained.has(name) && !name.endsWith('.json')) copyFileSync(join(sourceDir, name), join(targetDir, name));
+  for (const name of readdirSync(sourceDir)) if (retained.has(name)) copyFileSync(join(sourceDir, name), join(targetDir, name));
 }
 
-export function commitProject(project: JsonObject, sourceFiles: Array<{ source: string; fileName: string }> = []) {
+export function validatePersistedProjectSources(project: JsonObject): void {
+  const root = projectPackagePath(project.config.id);
+  for (const table of project.srcTable || []) {
+    const sourcePath = join(root, 'data', basename(table.fileName));
+    if (!existsSync(sourcePath)) throw toolError('SOURCE_FILE_MISSING', `原表 ${table.fileName} 不存在`, `data.${table.id}`);
+    const buffer = readFileSync(sourcePath);
+    const actualHash = createHash('sha256').update(buffer).digest('hex');
+    if (table.dataHash && table.dataHash !== actualHash) throw toolError('SOURCE_HASH_MISMATCH', `原表 ${table.fileName} 的 SHA-256 不匹配`, `data.${table.id}.dataHash`);
+    if (Number(table.fileSize) !== buffer.length) throw toolError('SOURCE_SIZE_MISMATCH', `原表 ${table.fileName} 的大小不匹配`, `data.${table.id}.fileSize`);
+    for (const sheet of table.sheets || []) {
+      const rows = fullSourceRows(project, table, sheet);
+      if (rows.length !== Number(sheet.rowCount)) throw toolError('SOURCE_ROW_COUNT_MISMATCH', `${table.id}/${sheet.name} 的原表行数与元数据不一致`, `data.${table.id}.${sheet.name}.rowCount`);
+    }
+  }
+}
+
+export type ProjectSourceFile = { fileName: string; source?: string; buffer?: Buffer; consumeFileId?: string };
+
+export function commitProject(project: JsonObject, sourceFiles: ProjectSourceFile[] = []) {
+  const root = projectPackagePath(project.config.id);
+  const existed = existsSync(root);
+  sourceFiles = [...sourceFiles];
+  if (!existed) {
+    const supplied = new Set(sourceFiles.map((item) => basename(item.fileName)));
+    for (const table of project.srcTable || []) {
+      if (supplied.has(basename(table.fileName))) continue;
+      if (String(table.fileType || '').toLowerCase() !== 'json') throw toolError('SOURCE_FILE_MISSING', `新项目数据源 ${table.fileName} 缺少原表`, `data.${table.id}`);
+      for (const sheet of table.sheets || []) if ((sheet.preview || []).length !== Number(sheet.rowCount || 0)) throw toolError('SOURCE_FILE_MISSING', `新项目数据源 ${table.fileName} 没有完整行，不能生成原表`, `data.${table.id}`);
+      const value = (table.sheets || []).length === 1 ? table.sheets[0].preview || [] : Object.fromEntries((table.sheets || []).map((sheet: any) => [sheet.name, sheet.preview || []]));
+      const buffer = Buffer.from(JSON.stringify(value, null, 2));
+      table.fileSize = buffer.length;
+      table.dataHash = createHash('sha256').update(buffer).digest('hex');
+      sourceFiles.push({ fileName: table.fileName, buffer });
+    }
+  }
   // Persisted projects created by older agents may predate geometry validation.
   // Migrate only missing/invalid values before every revision-protected commit so
   // an unrelated valid edit cannot be permanently blocked by legacy NaN layouts.
@@ -222,16 +288,21 @@ export function commitProject(project: JsonObject, sourceFiles: Array<{ source: 
   // quality/release barrier so a form can be built in multiple revision-safe steps.
   const blocking = [...report.structural.errors, ...report.references.errors];
   if (blocking.length) throw toolError('PROJECT_VALIDATION_FAILED', blocking[0].message, blocking[0].path, report);
-  const root = projectPackagePath(project.config.id);
   const backup = `${root}.backup-${randomUUID()}`;
-  const existed = existsSync(root);
   if (existed) renameSync(root, backup);
   try {
     writeProjectPackage(project);
     if (existed) copyPreservedData(backup, root, project.srcTable || []);
     const dataDir = join(root, 'data'); mkdirSync(dataDir, { recursive: true });
-    for (const item of sourceFiles) copyFileSync(item.source, join(dataDir, basename(item.fileName)));
+    for (const item of sourceFiles) {
+      const target = join(dataDir, basename(item.fileName));
+      if (item.buffer) writeFileSync(target, item.buffer);
+      else if (item.source) copyFileSync(item.source, target);
+      else throw new Error(`数据源 ${item.fileName} 缺少内容`);
+    }
+    validatePersistedProjectSources(project);
     if (existed) rmSync(backup, { recursive: true, force: true });
+    for (const item of sourceFiles) if (item.consumeFileId) consumeStagedUpload(item.consumeFileId);
   } catch (error) {
     rmSync(root, { recursive: true, force: true });
     if (existed) renameSync(backup, root);
@@ -273,28 +344,53 @@ function makeSheet(name: string, rows: JsonObject[], config: JsonObject = {}) {
   return { name, rowCount: rows.length, colCount: headers.length, headers, columns: headers.map((header, index) => { const declared = declaredColumns.find((item) => String(item.name || item.id || '') === header); const values = rows.map((row) => row[header]); const present = values.filter((value) => value !== null && value !== undefined && value !== ''); return { name: header, index, dataType: declared?.dataType || declared?.type || inferType(values, header), nullable: declared?.nullable ?? present.length !== values.length, uniqueCount: new Set(present.map((value) => JSON.stringify(value))).size, sampleValues: present.slice(0, 5), ...(declared?.title ? { title: declared.title } : {}), ...(declared?.enum ? { enum: declared.enum } : {}) }; }), preview: rows, config: { id: config.id || name, tableName: name, keyFields: config.keyFields || config.key || [], readOnly: Boolean(config.readOnly), frozenRows: config.frozenRows || 0, frozenColumns: config.frozenColumns || 0, filterEnabled: config.filterEnabled ?? true, sortEnabled: config.sortEnabled ?? true } };
 }
 
+export function tableFromBuffer(input: {
+  id: string;
+  fileName: string;
+  buffer: Buffer;
+  existingTable?: JsonObject;
+}): JsonObject {
+  if (!ID_RE.test(input.id)) throw toolError('INVALID_ID', '数据源 ID 无效', 'id');
+  const parsed = parseSourceBuffer(input.buffer, input.fileName);
+  const existingSheets = new Map((input.existingTable?.sheets || []).map((sheet: JsonObject) => [sheet.name, sheet]));
+  const onlyExistingSheet = input.existingTable?.sheets?.length === 1 ? input.existingTable.sheets[0] : undefined;
+  const sheets = parsed.sheets.map((sheet) => {
+    const existing = (existingSheets.get(sheet.name) || (parsed.sheets.length === 1 ? onlyExistingSheet : undefined)) as JsonObject | undefined;
+    const name = existing?.name || sheet.name;
+    return makeSheet(name, sheet.data, existing?.config || {});
+  });
+  return {
+    ...(input.existingTable || {}),
+    id: input.id,
+    fileName: basename(input.fileName),
+    fileType: parsed.fileType,
+    fileSize: input.buffer.length,
+    uploadedAt: new Date().toISOString(),
+    dataHash: createHash('sha256').update(input.buffer).digest('hex'),
+    sheets,
+  };
+}
+
 function parseCsv(text: string): JsonObject[] {
   const book = XLSX.read(text, { type: 'string' });
   return XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]], { defval: null });
 }
 
-export function tableFromInput(input: JsonObject): { table: JsonObject; sourceFiles: Array<{ source: string; fileName: string }> } {
+export function tableFromInput(input: JsonObject): { table: JsonObject; sourceFiles: ProjectSourceFile[] } {
   const preflight = compileDataToolArguments('data_source.create', input);
   if (!preflight.ok) throw toolError(preflight.error.code, preflight.error.message, preflight.error.path, preflight.error);
   input = preflight.arguments;
   const now = new Date().toISOString(); const id = String(input.id || '');
   if (!ID_RE.test(id)) throw toolError('INVALID_ID', '数据源 ID 无效', 'id');
-  let fileName = `${id}.json`; let fileType = 'json'; let size = 0; let hash = ''; let sheets: JsonObject[] = []; const sourceFiles: Array<{ source: string; fileName: string }> = [];
+  let fileName = `${id}.json`; let fileType = 'json'; let size = 0; let hash = ''; let sheets: JsonObject[] = []; const sourceFiles: ProjectSourceFile[] = [];
   if (input.fileId) {
-    if (!/^file_[A-Za-z0-9_-]+$/.test(String(input.fileId))) throw toolError('INVALID_FILE_ID', 'fileId 无效', 'fileId');
-    const metaPath = join(FILES_DIR, `${input.fileId}.meta.json`);
-    if (!existsSync(metaPath)) throw toolError('FILE_NOT_FOUND', `上传文件 ${input.fileId} 不存在`, 'fileId');
-    const meta = JSON.parse(readFileSync(metaPath, 'utf8')); const source = join(FILES_DIR, basename(meta.storedName));
+    const meta = getStagedUpload(String(input.fileId));
+    if (!meta) throw toolError('FILE_NOT_FOUND', `上传文件 ${input.fileId} 不存在或已过期`, 'fileId');
+    const source = meta.path;
     if (input.tenantId && meta.tenantId !== input.tenantId) throw toolError('FORBIDDEN_FILE', '上传文件不属于当前租户', 'fileId');
-    if (!existsSync(source)) throw toolError('FILE_NOT_FOUND', '上传文件内容不存在', 'fileId');
-    fileName = basename(meta.originalName || meta.storedName); fileType = String(meta.fileType || extname(fileName).slice(1)); if (!['xlsx', 'xls', 'csv', 'json'].includes(fileType)) throw toolError('UNSUPPORTED_DATA', '仅支持 xlsx、xls、csv、json 数据源', 'fileId'); size = Number(meta.size || 0); hash = createHash('sha256').update(readFileSync(source)).digest('hex');
-    sheets = (meta.sheets || []).map((sheet: any) => { const cachePath = join(DATA_DIR, `${input.fileId}_${sheet.name}.json`); if (!existsSync(cachePath)) throw toolError('FILE_CACHE_NOT_FOUND', `Sheet ${sheet.name} 尚未解析`, 'fileId'); const cache = JSON.parse(readFileSync(cachePath, 'utf8')); return makeSheet(sheet.name, cache.data || [], input.sheets?.[sheet.name] || {}); });
-    sourceFiles.push({ source, fileName });
+    fileName = basename(meta.originalName || meta.storedName); fileType = meta.fileType; size = meta.size; hash = meta.sha256;
+    sheets = meta.sheets.map((sheet) => makeSheet(sheet.name, sheet.data, input.sheets?.[sheet.name] || {}));
+    sourceFiles.push({ source, fileName, consumeFileId: meta.id });
   } else {
     const inlineConfig = input.config || {};
     const hasDeclaredColumns = Array.isArray(inlineConfig.columns) && inlineConfig.columns.length > 0;
@@ -303,12 +399,12 @@ export function tableFromInput(input: JsonObject): { table: JsonObject; sourceFi
     if (Buffer.byteLength(raw) > INLINE_BYTES) throw toolError('INLINE_DATA_TOO_LARGE', '内联数据不得超过 5 MB', input.csv ? 'csv' : 'rows');
     const rows = typeof input.csv === 'string' ? parseCsv(input.csv) : inlineRows;
     if (!Array.isArray(rows)) throw toolError('INVALID_DATA', '必须提供 fileId、rows 或 csv', 'rows');
-    sheets = [makeSheet(String(input.sheetName || 'Sheet1'), rows, inlineConfig)]; size = Buffer.byteLength(raw); hash = createHash('sha256').update(raw).digest('hex');
-    const importsDir = serverDataPath('tool-imports'); mkdirSync(importsDir, { recursive: true });
+    sheets = [makeSheet(String(input.sheetName || 'Sheet1'), rows, inlineConfig)];
     if (typeof input.csv === 'string') { fileName = `${id}.csv`; fileType = 'csv'; }
-    const source = join(importsDir, `${randomUUID()}-${fileName}`);
-    writeFileSync(source, typeof input.csv === 'string' ? input.csv : JSON.stringify(rows, null, 2));
-    sourceFiles.push({ source, fileName });
+    const buffer = Buffer.from(typeof input.csv === 'string' ? input.csv : JSON.stringify(rows, null, 2));
+    size = buffer.length;
+    hash = createHash('sha256').update(buffer).digest('hex');
+    sourceFiles.push({ buffer, fileName });
   }
   return { table: { id, fileName, fileSize: size, fileType, uploadedAt: now, dataHash: hash, sheets }, sourceFiles };
 }
@@ -316,21 +412,26 @@ export function tableFromInput(input: JsonObject): { table: JsonObject; sourceFi
 export function serializeTableSource(project: JsonObject, tableId: string, sheetName: string) {
   const table = (project.srcTable || []).find((item: any) => item.id === tableId); if (!table) throw toolError('TABLE_NOT_FOUND', '数据表不存在', 'tableId');
   const target = (table.sheets || []).find((item: any) => item.name === sheetName); if (!target) throw toolError('SHEET_NOT_FOUND', 'Sheet 不存在', 'sheetName');
-  const importsDir = serverDataPath('tool-imports'); mkdirSync(importsDir, { recursive: true });
-  const output = join(importsDir, `${randomUUID()}-${basename(table.fileName)}`); const extension = String(table.fileType || extname(table.fileName).slice(1)).toLowerCase();
+  const extension = String(table.fileType || extname(table.fileName).slice(1)).toLowerCase();
+  let buffer: Buffer;
   if (extension === 'xlsx' || extension === 'xls') {
     const current = join(projectPackagePath(project.config.id), 'data', basename(table.fileName));
     const book = existsSync(current) ? XLSX.readFile(current) : XLSX.utils.book_new();
     book.Sheets[sheetName] = XLSX.utils.json_to_sheet(target.preview || [], { header: target.headers || [] });
     if (!book.SheetNames.includes(sheetName)) book.SheetNames.push(sheetName);
-    XLSX.writeFile(book, output, { bookType: extension === 'xls' ? 'xls' : 'xlsx' });
+    buffer = Buffer.from(XLSX.write(book, { type: 'buffer', bookType: extension === 'xls' ? 'xls' : 'xlsx' }));
   } else if (extension === 'csv') {
-    const worksheet = XLSX.utils.json_to_sheet(target.preview || [], { header: target.headers || [] }); writeFileSync(output, `\ufeff${XLSX.utils.sheet_to_csv(worksheet)}`);
+    const worksheet = XLSX.utils.json_to_sheet(target.preview || [], { header: target.headers || [] });
+    buffer = Buffer.from(`\ufeff${XLSX.utils.sheet_to_csv(worksheet)}`);
   } else {
-    const value = (table.sheets || []).length === 1 ? target.preview || [] : Object.fromEntries((table.sheets || []).map((sheet: any) => [sheet.name, sheet.preview || []])); writeFileSync(output, JSON.stringify(value, null, 2));
+    const value = (table.sheets || []).length === 1
+      ? target.preview || []
+      : Object.fromEntries((table.sheets || []).map((sheet: any) => [sheet.name, sheet.name === sheetName ? target.preview || [] : fullSourceRows(project, table, sheet)]));
+    buffer = Buffer.from(JSON.stringify(value, null, 2));
   }
-  const buffer = readFileSync(output); table.fileSize = statSync(output).size; table.dataHash = createHash('sha256').update(buffer).digest('hex');
-  return [{ source: output, fileName: table.fileName }];
+  table.fileSize = buffer.length; table.dataHash = createHash('sha256').update(buffer).digest('hex');
+  target.preview = (target.preview || []).slice(0, 100);
+  return [{ buffer, fileName: table.fileName }];
 }
 
 export function queryProjectRows(project: JsonObject, input: JsonObject) {
@@ -341,7 +442,7 @@ export function queryProjectRows(project: JsonObject, input: JsonObject) {
   return { headers: sheet.headers, ...queryRows({ rows, headers: sheet.headers || [], keyFields: sheet.config?.keyFields || [], page: input.page, pageSize, search: input.search, keySearch: input.keySearch, sortModel: input.sortModel, filterModel: input.filterModel }) };
 }
 
-function fullSourceRows(project: JsonObject, table: JsonObject, sheet: JsonObject): JsonObject[] {
+export function fullSourceRows(project: JsonObject, table: JsonObject, sheet: JsonObject): JsonObject[] {
   const source = join(projectPackagePath(project.config.id), 'data', basename(table.fileName)); if (!existsSync(source)) return sheet.preview || [];
   try {
     const extension = String(table.fileType || extname(table.fileName).slice(1)).toLowerCase();
@@ -362,18 +463,19 @@ export function batchProjectRows(project: JsonObject, input: JsonObject) {
 
 export function generatedForm(table: JsonObject, sheet: JsonObject, input: JsonObject) {
   const now = new Date().toISOString(); const id = String(input.id || `form_${table.id}`); const mode = input.mode || 'edit';
-  const rootId = `${id}_root`; const components: JsonObject[] = [{ id: rootId, type: 'form', x: 40, y: 40, width: 900, height: Math.max(500, 140 + sheet.headers.length * 90), zIndex: 0, props: { title: input.name || `${table.id} 表单` }, children: [] }];
+  const components: JsonObject[] = [];
   sheet.headers.forEach((header: string, index: number) => {
-    const column = sheet.columns?.find((item: any) => item.name === header); const componentId = `${id}_field_${index + 1}`; components[0].children.push(componentId);
+    const column = sheet.columns?.find((item: any) => item.name === header); const componentId = `${id}_field_${index + 1}`;
     const componentType = /(照片|图片)$/.test(header) ? 'imageUpload' : /(附件|文件)$/.test(header) ? 'upload' : /(描述|说明|备注|意见|结果|原因)$/.test(header) ? 'textarea' : column?.dataType === 'number' ? 'number' : column?.dataType === 'date' ? 'datePicker' : column?.dataType === 'enum' && (column?.enum?.length || column?.sampleValues?.length) ? 'select' : 'input';
     const options = componentType === 'select' ? [...new Set([...(column?.enum || []), ...(column?.sampleValues || [])].map(String))].map((value) => ({ label: value, value })) : undefined;
-    components.push({ id: componentId, type: componentType, x: 80 + (index % 2) * 390, y: 130 + Math.floor(index / 2) * 92, width: 340, height: componentType === 'textarea' || componentType === 'imageUpload' ? 120 : 76, zIndex: 2, parentId: rootId, fieldBinding: header, props: { name: header, label: header, required: (sheet.config?.keyFields || []).includes(header), readonly: mode === 'detail', ...(options ? { options } : {}) } });
+    components.push({ id: componentId, type: componentType, x: 80 + (index % 2) * 390, y: 130 + Math.floor(index / 2) * 92, width: 340, height: componentType === 'textarea' || componentType === 'imageUpload' ? 120 : 76, zIndex: 2, fieldBinding: header, props: { name: header, label: header, required: (sheet.config?.keyFields || []).includes(header), readonly: mode === 'detail', ...(options ? { options } : {}) } });
   });
-  return { id, name: input.name || `${table.id} ${mode}`, design: { id: `${id}_design`, name: input.name || id, formMode: mode, viewport: { zoom: 1, panX: 0, panY: 0 }, gridSize: 12, components, bindings: [{ id: `${id}_binding`, sourceId: table.id, targetId: id, type: 'table', config: { tableId: table.id, sheetName: sheet.name } }], createdAt: now, updatedAt: now }, behaviors: [], ruleCode: '', createdAt: now, updatedAt: now };
+  return { id, name: input.name || `${table.id} ${mode}`, design: { id: `${id}_design`, name: input.name || id, formMode: mode, viewport: { zoom: 1, panX: 0, panY: 0 }, gridSize: 12, coordinateSpace: FORM_WINDOW_COORDINATE_SPACE, formWindow: growFormWindowToFit({ x: 40, y: 40, width: 900, height: Math.max(500, 140 + sheet.headers.length * 90), props: { title: input.name || `${table.id} 表单`, showFooter: false } }, components), components, bindings: [{ id: `${id}_binding`, sourceId: table.id, targetId: id, type: 'table', config: { tableId: table.id, sheetName: sheet.name } }], createdAt: now, updatedAt: now }, behaviors: [], ruleCode: '', createdAt: now, updatedAt: now };
 }
 
 export async function packageProject(projectId: string): Promise<Buffer> {
   const project = requireProject(projectId); const report = validateProjectModel(project); if (!report.valid) throw toolError('PROJECT_VALIDATION_FAILED', report.errors[0].message, report.errors[0].path, report);
+  validatePersistedProjectSources(project);
   const root = projectPackagePath(projectId); const zip = new JSZip();
   const walk = (dir: string, prefix = '') => { for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) { const path = join(dir, entry.name); const name = prefix ? `${prefix}/${entry.name}` : entry.name; if (entry.isDirectory()) walk(path, name); else zip.file(name, readFileSync(path), { date: new Date('2000-01-01T00:00:00.000Z') }); } };
   walk(root); return zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE', compressionOptions: { level: 9 }, platform: 'UNIX' });

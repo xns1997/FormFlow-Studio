@@ -10,9 +10,9 @@ import {
   addGlobalBehavior, updateGlobalBehavior, removeGlobalBehavior,
 } from './manager';
 import {
-  downloadFormFlowPackage, openFilePicker,
+  openFilePicker,
 } from './packageManager';
-import { createProjectFromPackage } from './creation';
+import { projectApi } from '../services/io/api';
 import type { ProjectStructure, SrcTableEntry, TableConfig, WorkflowFile, BehaviorFile, DesignFile, FormEntry } from './types';
 
 async function trySave(p: ProjectStructure): Promise<void> {
@@ -193,20 +193,15 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   exportAsPackage: async () => {
     const { project } = get();
     if (!project) return;
-    await downloadFormFlowPackage(project);
+    await projectApi.downloadPackage(project.config.id, project.config.name);
   },
 
   importFromPackage: async () => {
     const file = await openFilePicker();
     if (!file) return;
-    const imported = await createProjectFromPackage(file, {
-      name: file.name.replace(/\.formflow$/i, ''),
-      description: '',
-      author: '',
-      tags: [],
-    });
+    const result = await projectApi.importPackage(file);
+    const imported = result.project || result;
     set({ project: imported, projectId: imported.config.id });
-    await createProjectStructure(imported);
   },
 
   addForm: async (form: FormEntry) => {

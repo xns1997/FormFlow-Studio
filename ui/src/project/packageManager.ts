@@ -8,6 +8,7 @@ import type {
 import {
   FORMS_DIR, DATA_DIR, WORKFLOWS_DIR, OUTPUTS_DIR,
   FORM_INDEX_FILE, DATA_INDEX_FILE, WORKFLOWS_FILE, OUTPUTS_FILE, PROJECT_CONFIG_FILE, PROJECT_RELEASE_FILE,
+  createDefaultFormWindow, FORM_WINDOW_COORDINATE_SPACE, normalizeDesignFile,
 } from './types';
 
 // ── 工具函数 ──────────────────────────────────────
@@ -58,12 +59,14 @@ function buildImportedForms(
     return {
       id: form.id,
       name: form.name,
-      design: design || {
+      design: design ? normalizeDesignFile(design, form.name) : {
         id: form.id,
         name: form.name,
         formMode: 'create',
         viewport: { zoom: 1, panX: 0, panY: 0 },
         gridSize: 10,
+        coordinateSpace: FORM_WINDOW_COORDINATE_SPACE,
+        formWindow: createDefaultFormWindow(form.name),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         bindings: [],
@@ -90,6 +93,12 @@ export async function exportToPackage(
     config: project.config,
     settings: project.settings,
     release: project.release,
+    relations: project.relations,
+    templateInstances: project.templateInstances,
+    templatePresets: project.templatePresets,
+    customOperationTemplates: project.customOperationTemplates,
+    analysisTasks: project.analysisTasks,
+    modelRuns: project.modelRuns,
   };
   await writeJsonFile(dirHandle, PROJECT_CONFIG_FILE, pkg);
   if (project.release) await writeJsonFile(dirHandle, PROJECT_RELEASE_FILE, project.release);
@@ -109,7 +118,7 @@ export async function exportToPackage(
   await writeJsonFile(formsDir, FORM_INDEX_FILE, formIndex);
 
   for (const form of forms) {
-    await writeJsonFile(formsDir, `${form.id}.json`, form.design);
+    await writeJsonFile(formsDir, `${form.id}.json`, normalizeDesignFile(form.design, form.name));
     await writeJsonFile(formsDir, `${form.id}.behaviors.json`, { behaviors: form.behaviors || [], ruleCode: form.ruleCode || '' });
   }
 
@@ -238,6 +247,12 @@ export async function importFromPackage(
     forms: buildImportedForms(formIndex, designs, behaviorFilesByFormId),
     outputs,
     testing: testing || { profiles: [], suites: [], fixtures: [], runs: [] },
+    relations: pkg.relations || [],
+    templateInstances: pkg.templateInstances || [],
+    templatePresets: pkg.templatePresets || [],
+    customOperationTemplates: pkg.customOperationTemplates || [],
+    analysisTasks: pkg.analysisTasks || [],
+    modelRuns: pkg.modelRuns || [],
     designs,
     behaviors,
   };
@@ -260,6 +275,12 @@ export async function exportFormFlowPackage(project: ProjectStructure): Promise<
     config: project.config,
     settings: project.settings,
     release: project.release,
+    relations: project.relations,
+    templateInstances: project.templateInstances,
+    templatePresets: project.templatePresets,
+    customOperationTemplates: project.customOperationTemplates,
+    analysisTasks: project.analysisTasks,
+    modelRuns: project.modelRuns,
   };
   zip.file(PROJECT_CONFIG_FILE, JSON.stringify(pkg, null, 2));
   if (project.release) zip.file(PROJECT_RELEASE_FILE, JSON.stringify(project.release, null, 2));
@@ -424,6 +445,12 @@ export async function importFormFlowPackage(file: File): Promise<ProjectStructur
     forms: buildImportedForms(formIndex, designs, behaviorFilesByFormId),
     outputs,
     testing: testing || { profiles: [], suites: [], fixtures: [], runs: [] },
+    relations: pkg.relations || [],
+    templateInstances: pkg.templateInstances || [],
+    templatePresets: pkg.templatePresets || [],
+    customOperationTemplates: pkg.customOperationTemplates || [],
+    analysisTasks: pkg.analysisTasks || [],
+    modelRuns: pkg.modelRuns || [],
     designs,
     behaviors,
   };

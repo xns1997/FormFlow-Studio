@@ -10,13 +10,14 @@ import {
   createDefaultProjectRelease,
   normalizeProjectRelease,
   normalizeProjectSettings,
+  normalizeDesignFile,
 } from './types';
 import { projectApi } from '../services/io/api';
 
 // ── 项目 CRUD ──────────────────────────────────────
 
 export async function saveProjectStructure(project: ProjectStructure): Promise<void> {
-  await projectApi.update(project.config.id, project);
+  await projectApi.update(project.config.id, normalizeProjectStructure(project));
 }
 
 export async function createProjectStructure(project: ProjectStructure): Promise<ProjectStructure> {
@@ -69,6 +70,12 @@ export function createNewProject(name: string = '我的项目'): ProjectStructur
     forms: [],
     outputs: [],
     testing: { profiles: [], suites: [], fixtures: [], runs: [] },
+    relations: [],
+    templateInstances: [],
+    templatePresets: [],
+    customOperationTemplates: [],
+    analysisTasks: [],
+    modelRuns: [],
   };
 }
 
@@ -90,12 +97,22 @@ export function normalizeProjectStructure(project: ProjectStructure): ProjectStr
 
   return {
     ...project,
-    forms: forms.map((form) => ({ ...form, ruleCode: form.ruleCode || '' })),
+    forms: forms.map((form) => ({
+      ...form,
+      design: normalizeDesignFile(form.design, form.name),
+      ruleCode: form.ruleCode || '',
+    })),
     settings: normalizeProjectSettings(project.settings as ProjectSettings | undefined),
     globalBehaviors: project.globalBehaviors || [],
     sheetBehaviors: project.sheetBehaviors || [],
     release: normalizeProjectRelease(project.release as ProjectRelease | undefined, forms, project.srcTable || []),
     testing: project.testing || { profiles: [], suites: [], fixtures: [], runs: [] },
+    relations: project.relations || [],
+    templateInstances: project.templateInstances || [],
+    templatePresets: project.templatePresets || [],
+    customOperationTemplates: project.customOperationTemplates || [],
+    analysisTasks: project.analysisTasks || [],
+    modelRuns: project.modelRuns || [],
   };
 }
 

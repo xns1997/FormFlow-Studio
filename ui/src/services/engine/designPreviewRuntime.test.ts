@@ -116,3 +116,79 @@ test('preview runtime executes linkage rules before script and exposes a trace',
   assert.equal(result.trace.stages.some((stage) => stage.type === 'rule' && stage.status === 'success'), true);
   assert.equal(result.trace.stages.some((stage) => stage.type === 'script' && stage.status === 'success'), true);
 });
+
+test('preview runtime blocks submit when guard linkage validation fails', async () => {
+  const target = component('onBeforeSubmit');
+  target.props.linkageRules = {
+    onBeforeSubmit: [{
+      id: 'guard-1',
+      name: '提交前校验',
+      trigger: { eventName: 'onBeforeSubmit' },
+      enabled: true,
+      priority: 10,
+      conditionMode: 'all',
+      conditions: [],
+      actions: [{ id: 'action-1', type: 'assertRequired', fields: ['customer'] }],
+    }],
+  };
+  const messages: string[] = [];
+  const result = await executeDesignPreviewEvent({
+    eventName: 'onBeforeSubmit',
+    field: 'customer',
+    value: '',
+    values: { customer: '' },
+    originalValues: { customer: '' },
+    component: target,
+  }, {
+    workflows: [],
+    setValue: () => {},
+    showMessage: (message) => { messages.push(message); },
+  });
+  assert.equal(messages[0], '请填写以下字段：customer');
+  assert.equal(result.trace.stages.some((stage) => stage.type === 'rule' && stage.status === 'error'), true);
+  assert.equal(result.trace.stages[0]?.details?.[0], '请填写以下字段：customer');
+});
+
+test('preview runtime blocks submit when end date is earlier than start date', async () => {
+  const target = component('onBeforeSubmit');
+  target.props.linkageRules = {
+    onBeforeSubmit: [{
+      id: 'guard-date-order',
+      name: '日期顺序校验',
+      trigger: { eventName: 'onBeforeSubmit' },
+      enabled: true,
+      priority: 10,
+      conditionMode: 'all',
+      conditions: [],
+      actions: [{ id: 'action-1', type: 'assertCompare', targetField: '结束日期', operator: '>=', valueSource: 'field', sourceField: '开始日期', message: '结束日期不得早于开始日期' }],
+    }],
+  };
+  const messages: string[] = [];
+  const invalid = await executeDesignPreviewEvent({
+    eventName: 'onBeforeSubmit',
+    field: '结束日期',
+    value: '2026-07-01',
+    values: { 开始日期: '2026-07-10', 结束日期: '2026-07-01' },
+    originalValues: { 开始日期: '2026-07-10', 结束日期: '2026-07-01' },
+    component: target,
+  }, {
+    workflows: [],
+    setValue: () => {},
+    showMessage: (message) => { messages.push(message); },
+  });
+  assert.equal(messages[0], '结束日期不得早于开始日期');
+  assert.equal(invalid.trace.stages[0]?.status, 'error');
+  const valid = await executeDesignPreviewEvent({
+    eventName: 'onBeforeSubmit',
+    field: '结束日期',
+    value: '2026-07-12',
+    values: { 开始日期: '2026-07-10', 结束日期: '2026-07-12' },
+    originalValues: { 开始日期: '2026-07-10', 结束日期: '2026-07-12' },
+    component: target,
+  }, {
+    workflows: [],
+    setValue: () => {},
+    showMessage: () => {},
+  });
+  assert.equal(valid.trace.stages[0]?.status, 'success');
+});

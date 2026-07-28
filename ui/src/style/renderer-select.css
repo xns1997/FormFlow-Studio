@@ -1,5 +1,27 @@
 /* ── 下拉选择 ───────────────────────────────────────────── */
 
+@keyframes dropdown-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scaleY(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+@keyframes dropdown-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px) scaleY(0.95);
+  }
+}
+
 .lg-select {
   width: 100%;
   min-height: 48px;
@@ -26,4 +48,16 @@
 .lg-select.dirty {
   border-color: #f59e0b;
   background-color: var(--warning-soft);
+}
+
+/* Dropdown popup animation */
+.lg-select-popup,
+.ant-select-dropdown {
+  animation: dropdown-enter 0.15s ease-out forwards;
+  transform-origin: top center;
+}
+
+.lg-select-popup.closing,
+.ant-select-dropdown.closing {
+  animation: dropdown-exit 0.1s ease-in forwards;
 }

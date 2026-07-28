@@ -26,9 +26,9 @@ project.formflow/
 
 ## Package files
 
-- `project.json`: `{kind:"formflow-project", formatVersion:2, config, settings?, release?}`. `config.access` may contain the server-managed `{ownerId?, members?}` project ACL.
+- `project.json`: `{kind:"formflow-project", formatVersion:2, config, settings?, release?, relations?, templateInstances?, templatePresets?, customOperationTemplates?, analysisTasks?, modelRuns?}`. `config.access` may contain the server-managed `{ownerId?, members?}` project ACL.
 - `forms/_index.json`: `{forms:[{id,name,formMode?,fileName,behaviorsFileName}], defaultFormId?}`.
-- A form design contains `id`, `name`, optional `formMode`, `viewport`, `gridSize`, `components`, `bindings`, `createdAt`, and `updatedAt`.
+- A form design contains `id`, `name`, optional `formMode`, `viewport`, `gridSize`, required `coordinateSpace`, `formWindow`, `components`, `bindings`, `createdAt`, and `updatedAt`. v2 writes `coordinateSpace: "window-content-v1"`: component `x` and `y` are local to the content area below the fixed 52 px title bar and configured padding. `formWindow` is the form instance's non-deletable surface (`x`, `y`, `width`, `height`, and extension-bearing `props`); it is never stored as a component.
 - `data/_index.json`: `{sources:[{id,fileName,fileType,metaFile,behaviorsFile,uploadedAt}]}`.
 - Data metadata contains `id`, original file facts, `sheets`, and optional record caches. A sheet contains `name`, counts, `headers`, inferred `columns`, `preview`, and `config`.
 - Form behavior containers contain `{behaviors, ruleCode}`; `ruleCode` is the form-specific controlled rule DSL source and defaults to `""`. Global behavior containers contain `behaviors`; global/workflow/output containers also contain `exportedAt`.

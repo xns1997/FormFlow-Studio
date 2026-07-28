@@ -58,6 +58,7 @@ const VALUE_TYPES: Partial<Record<ExtendedComponentType, string>> = {
   rating: 'number',
   upload: 'array',
   imageUpload: 'array',
+  table: 'array',
 };
 
 const INTERACTIVE_TYPES = new Set<ExtendedComponentType>([
@@ -147,6 +148,12 @@ export function getDefaultComponentValue(component: Pick<DesignComponent, 'type'
     case 'upload':
     case 'imageUpload':
       return [];
+    case 'table':
+      return component.props.changeTracking === 'dirtyRows'
+        ? []
+        : Array.isArray(component.props.data)
+          ? component.props.data
+          : [];
     case 'switch':
       return component.props.defaultValue !== false;
     case 'dateRange':
@@ -184,4 +191,34 @@ export function normalizeDateTimeValue(value: unknown, mode: 'date' | 'datetime'
     return `${date} ${time}${seconds || ''}`;
   }
   return '';
+}
+
+function zoneOffsetMinutes(date: Date, timezone: string) {
+  if (timezone === 'utc') return 0;
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: timezone, timeZoneName: 'longOffset', hour: '2-digit', minute: '2-digit' }).formatToParts(date);
+  const offset = parts.find((part) => part.type === 'timeZoneName')?.value.match(/GMT([+-])(\d{2})(?::(\d{2}))?/i);
+  if (!offset) return 0;
+  return (offset[1] === '-' ? -1 : 1) * (Number(offset[2]) * 60 + Number(offset[3] || 0));
+}
+
+/** Convert a wall-clock datetime in the chosen timezone to a stable UTC storage value. */
+export function encodeDateTimeForStorage(value: unknown, timezone?: string, mode: 'date' | 'datetime' | 'time' = 'datetime') {
+  const normalized = normalizeDateTimeValue(value, mode);
+  if (!normalized || mode !== 'datetime' || !timezone || timezone === 'local') return normalized;
+  const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return normalized;
+  const [, year, month, day, hour, minute, second = '00'] = match;
+  const wall = Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second));
+  const offset = zoneOffsetMinutes(new Date(wall), timezone);
+  return new Date(wall - offset * 60_000).toISOString().replace('.000Z', 'Z');
+}
+
+/** Convert a stored ISO datetime back to the user's wall-clock value. */
+export function decodeDateTimeForDisplay(value: unknown, timezone?: string, mode: 'date' | 'datetime' | 'time' = 'datetime') {
+  const raw = String(value ?? '').trim();
+  if (!raw || mode !== 'datetime' || !timezone || timezone === 'local' || !/[zZ]|[+-]\d{2}:?\d{2}$/.test(raw)) return normalizeDateTimeValue(raw, mode);
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return normalizeDateTimeValue(raw, mode);
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: timezone, hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(date).filter((part) => part.type !== 'literal').map((part) => [part.type, part.value]));
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
 }

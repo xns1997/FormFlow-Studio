@@ -12,6 +12,8 @@ const testRoot = mkdtempSync(join(tmpdir(), 'formflow-mcp-http-'));
 process.env.PROJECT_AGENT_STORE_PATH = join(testRoot, 'project-agent-sessions.json');
 process.env.PROJECT_AGENT_V2_STORE_PATH = join(testRoot, 'project-agent-v2.json');
 process.env.PROJECT_AGENT_BUNDLE_STORE_PATH = join(testRoot, 'project-agent-bundles.json');
+process.env.FORMFLOW_PROJECTS_DIR = join(testRoot, 'projects');
+process.env.FORMFLOW_DATA_DIR = join(testRoot, 'server-data');
 
 const { mcpRouter } = await import('./mcp-server');
 const { aiRouter, listProjectAgentTools, projectAgentToolArguments } = await import('./routes/ai');
@@ -47,11 +49,21 @@ test('MCP transport removes the aggregate endpoint and validates specialist role
     assert.equal(formTools.status, 200); assert.ok(formCatalog.tools.some((tool: any) => tool.name === 'form.create')); assert.equal(formCatalog.tools.some((tool: any) => tool.name === 'data_source.import'), false);
     const denied = await fetch(`${root}/api/ai/mcp-roles/data/tools/form.create/invoke`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
     assert.equal(denied.status, 422); assert.equal((await denied.json() as any).error.code, 'TOOL_NOT_AVAILABLE_IN_ROLE');
+    const projectId = `http_idempotency_${Date.now()}`;
+    const idempotencyKey = `http-create-${projectId}`;
+    const firstCreate = await fetch(`${root}/api/ai/mcp-roles/project/tools/project.create/invoke`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ arguments: { id: projectId, name: 'HTTP 首次创建', idempotencyKey } }) });
+    const firstBody = await firstCreate.json() as any;
+    const replayCreate = await fetch(`${root}/api/ai/mcp-roles/project/tools/project.create/invoke`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ arguments: { id: projectId, name: 'HTTP 不应覆盖', idempotencyKey } }) });
+    const idempotencyReplayBody = await replayCreate.json() as any;
+    assert.equal(firstCreate.status, 200); assert.equal(replayCreate.status, 200);
+    assert.deepEqual(idempotencyReplayBody, firstBody);
+    const loadedProject = await fetch(`${root}/api/ai/mcp-roles/project/tools/project.get/invoke`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ arguments: { projectId } }) });
+    assert.match(JSON.stringify(await loadedProject.json()), /HTTP 首次创建/);
 
     const legacy = await fetch(`${root}/api/ai/project-agent/sessions`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
     assert.equal(legacy.status, 410);
     const created = await fetch(`${root}/api/ai/project-agent/v2/sessions`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }); const v2 = await created.json() as any;
-    assert.equal(created.status, 201); assert.equal(v2.schemaVersion, 2); assert.equal(v2.phase, 'grounding');
+    assert.equal(created.status, 201); assert.equal(v2.schemaVersion, 2); assert.equal(v2.phase, 'idle');
     const snapshot = await fetch(`${root}/api/ai/project-agent/v2/sessions/${v2.id}`); assert.equal(snapshot.status, 200); assert.equal((await snapshot.json() as any).id, v2.id);
     const stored = projectAgentV2Store.getAgentSessionV2(v2.id)!; projectAgentV2Store.appendAgentEvent(stored, 'task_started', { taskId: 'read-1' }); projectAgentV2Store.appendAgentEvent(stored, 'task_completed', { taskId: 'read-1' });
     const replay = await fetch(`${root}/api/ai/project-agent/v2/sessions/${v2.id}/events?afterSeq=1`); const replayBody = await replay.json() as any; assert.deepEqual(replayBody.events.map((event: any) => event.seq), [2]);

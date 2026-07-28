@@ -1,7 +1,7 @@
 // 行为引擎 - Trigger/Condition/Action/SideEffect 四元组
 
 import type { RuntimeState, BehaviorLog } from '../../models';
-import type { SrcTableEntry } from '../../project/types';
+import type { FormLinkageOptionsConfig, SrcTableEntry } from '../../project/types';
 import { createSandboxContext } from '../config/scriptSandbox';
 import { evaluatePropertyExpression } from './propertyExpression';
 
@@ -24,6 +24,7 @@ export type ConditionOperator =
 export type ActionType =
   | 'setValue' | 'clearValue' | 'setVisible' | 'setHidden'
   | 'setEnabled' | 'setDisabled' | 'setRequired' | 'setOptional'
+  | 'assertRequired' | 'assertAny' | 'assertValidator' | 'assertRange' | 'assertLength' | 'assertDirty' | 'assertReadonly' | 'assertCompare'
   | 'showMessage' | 'logMessage' | 'switchTab' | 'executeScript'
   | 'submitData' | 'callApi' | 'refreshData' | 'navigate'
   | 'runWorkflow' | 'setOptions';
@@ -51,6 +52,7 @@ export interface ConditionConfig {
   fieldName: string;
   operator: ConditionOperator;
   value: unknown;
+  sourceField?: string;
   value2?: unknown;
   customExpression?: string;
   logic: 'AND' | 'OR';
@@ -66,10 +68,18 @@ export interface ActionConfig {
   type: ActionType;
   targetField?: string;
   targetComponent?: string;
+  fields?: string[];
   value?: unknown;
+  valueSource?: 'static' | 'event' | 'field';
+  sourceField?: string;
   expression?: string;
   message?: string;
   messageType?: 'info' | 'success' | 'warning' | 'error';
+  validator?: string;
+  pattern?: string;
+  operator?: '==' | '!=' | '>' | '<' | '>=' | '<=';
+  min?: number | null;
+  max?: number | null;
   tabName?: string;
   scriptCode?: string;
   apiUrl?: string;
@@ -92,7 +102,7 @@ export interface ActionConfig {
   workflowId?: string;
   /** runWorkflow：传入流程的参数 */
   workflowParameters?: Record<string, unknown>;
-  optionsConfig?: { table: string; filterField: string; filterValue?: unknown; labelField?: string; valueField?: string };
+  optionsConfig?: FormLinkageOptionsConfig;
 }
 
 export interface SideEffectConfig {

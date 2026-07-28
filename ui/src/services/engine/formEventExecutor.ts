@@ -1,6 +1,6 @@
 import type { ComponentNode } from '../../models';
 import type { DebugEntry, SrcTableEntry, WorkflowFile } from '../../project/types';
-import type { FormEventExecutionStage, FormEventExecutionTrace, FormLinkageRule } from '../../project/types';
+import type { FormEventExecutionStage, FormEventExecutionTrace, FormLinkageOptionsConfig, FormLinkageRule } from '../../project/types';
 import {
   executeFormFlowTrigger,
   type FormControlEventContext,
@@ -84,7 +84,7 @@ export interface FormEventRuntimeContext extends FormControlEventContext {
   setDisabled: (componentId: string, disabled: boolean) => void | Promise<void>;
   toggleDisabled: (componentId: string) => Promise<boolean>;
   setRequired: (field: string, required: boolean) => void | Promise<void>;
-  setOptions: (field: string, config: { table: string; filterField: string; filterValue?: unknown; labelField?: string; valueField?: string }) => void | Promise<void>;
+  setOptions: (field: string, config: FormLinkageOptionsConfig) => void | Promise<void>;
   toggleRequired: (field: string) => Promise<boolean>;
   setFieldState: (
     fieldOrComponentId: string,
@@ -159,7 +159,7 @@ export interface ExecuteFormEventOptions {
   setVisible?: (componentId: string, visible: boolean) => void | Promise<void>;
   setDisabled?: (componentId: string, disabled: boolean) => void | Promise<void>;
   setRequired?: (field: string, required: boolean) => void | Promise<void>;
-  setOptions?: (field: string, config: { table: string; filterField: string; filterValue?: unknown; labelField?: string; valueField?: string }) => void | Promise<void>;
+  setOptions?: (field: string, config: FormLinkageOptionsConfig) => void | Promise<void>;
   showMessage?: (message: string, level?: 'info' | 'success' | 'warning' | 'error') => void | Promise<void>;
   upsertRow?: (sheetId: string, record: Record<string, unknown>, options: { key: string }) => void | Promise<void>;
   code?: string;

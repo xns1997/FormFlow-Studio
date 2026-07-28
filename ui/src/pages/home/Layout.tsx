@@ -6,7 +6,6 @@ import { useProjectStore } from '../../project/store';
 import { useSystemSettingsStore } from '../../project/systemSettingsStore';
 import {
   buildDocsPath,
-  buildEditorPath,
   buildProjectSettingsPath,
   buildProjectsPath,
   buildSystemSettingsPath,
@@ -40,11 +39,9 @@ export default function Layout() {
   const [now, setNow] = useState(() => new Date());
   const match = location.pathname.match(/^\/projects\/([^/]+)/);
   const projectId = match?.[1] || '';
-  const inWorkspace = !!projectId && (location.pathname.endsWith('/editor') || location.pathname.endsWith('/usage') || location.pathname.includes('/workspace/'));
   const inProjectSettings = !!projectId && location.pathname.includes('/settings/');
   const inSystemSettings = !projectId && location.pathname.startsWith('/settings');
   const currentProjectName = project && project.config.id === projectId ? project.config.name : '';
-  const inUsage = location.pathname.endsWith('/usage');
   const projectSettingsTab = (location.pathname.split('/').pop() || 'general') as ProjectSettingsSection;
 
   useEffect(() => {
@@ -64,7 +61,7 @@ export default function Layout() {
       let section: SystemSettingsSection = 'general';
       try {
         const remembered = localStorage.getItem('formflow.settings.lastSection');
-        if (remembered && ['general', 'storage', 'editor', 'ai', 'experiments'].includes(remembered)) section = remembered as SystemSettingsSection;
+        if (remembered && ['general', 'storage', 'editor', 'ai', 'experts', 'experiments'].includes(remembered)) section = remembered as SystemSettingsSection;
       } catch { /* use default */ }
       navigate(buildSystemSettingsPath(section));
     };
@@ -124,26 +121,10 @@ export default function Layout() {
           </div>
         )}
 
-        {projectId && (
+        {projectId && inProjectSettings && (
           <div className="nav-context">
             <span className="nav-divider">/</span>
             <span className="nav-project-badge">{currentProjectName || `项目 ${projectId}`}</span>
-            {inWorkspace && (
-              <div className="nav-links nav-links-context">
-                <Link to={buildEditorPath(projectId)} className={`nav-link ${!inUsage ? 'active' : ''}`}>
-                  <DesignerIcon name="designer" className="nav-icon" />
-                  <span className="nav-label">编辑工作台</span>
-                </Link>
-                <Link to={buildWorkspacePath(projectId, 'test')} className={`nav-link ${inUsage ? 'active' : ''}`}>
-                  <DesignerIcon name="test" className="nav-icon" />
-                  <span className="nav-label">测试运行</span>
-                </Link>
-                <Link to={buildProjectSettingsPath(projectId, 'general')} className="nav-link nav-link-subtle">
-                  <DesignerIcon name="settings" className="nav-icon" />
-                  <span className="nav-label">项目设置</span>
-                </Link>
-              </div>
-            )}
             {inProjectSettings && (
               <div className="nav-links nav-links-context">
                 <Link to={buildWorkspacePath(projectId, 'designer')} className="nav-link nav-link-subtle">
@@ -189,6 +170,9 @@ export default function Layout() {
               <span className="nav-status-clock-text">{clockText}</span>
             </div>
           )}
+          {projectId && (
+            <ProjectAgentDrawer projectId={projectId || undefined} launcherVariant="nav" />
+          )}
           {projectId ? (
             <button
               type="button"
@@ -213,7 +197,6 @@ export default function Layout() {
         <Outlet />
       </main>
       {projectId && <DocModal open={docOpen} onClose={() => setDocOpen(false)} />}
-      <ProjectAgentDrawer projectId={projectId || undefined} />
     </div>
   );
 }

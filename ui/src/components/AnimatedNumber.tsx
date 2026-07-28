@@ -52,7 +52,15 @@ export default function AnimatedNumber({
   className,
   style,
 }: AnimatedNumberProps) {
-  const safeDuration = clampDuration(duration);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (!query) return;
+    const update = () => setReducedMotion(query.matches);
+    update(); query.addEventListener?.('change', update);
+    return () => query.removeEventListener?.('change', update);
+  }, []);
+  const safeDuration = reducedMotion ? 0 : clampDuration(duration);
   const safeDecimals = Math.max(0, Math.min(6, Number(decimals) || 0));
   const target = useMemo(() => toFiniteNumber(value), [value]);
   const [displayValue, setDisplayValue] = useState<number | null>(target);

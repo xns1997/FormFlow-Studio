@@ -1,4 +1,4 @@
-import React, { useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import React, { useEffect, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import MarkdownContent from './MarkdownContent';
 import {
   activeProjectAgentPlan, buildProjectAgentActivity, buildProjectAgentTaskLineages, buildQualityRepairChain, chooseCurrentTaskId,
@@ -27,17 +27,31 @@ function RequirementCoverageCard({ session, plan, onSelectTask }: { session: Pro
   const requirements = session.requirements || []; const coverage = session.requirementCoverage;
   if (!requirements.length) return null;
   const labels: Record<string, string> = { supported: '待验证', verified: '已验证', failed: '失败', capability_gap: '能力缺口', needs_user_input: '待决策' };
+  const planning = plan?.status === 'pending';
   return <details className="project-agent-requirement-coverage" open={session.phase === 'awaiting_plan_approval' || session.phase === 'failed'}>
-    <summary><span><strong>需求覆盖</strong><small>{coverage ? `${coverage.verified}/${coverage.total} 项已验证` : `${requirements.length} 项需求`}</small></span><b>{coverage?.complete ? '完整' : '需处理'}</b></summary>
+    <summary><span><strong>{planning ? '需求与任务映射' : '需求验收'}</strong><small>{coverage ? planning ? `${coverage.planned}/${coverage.total} 项已规划` : `${coverage.verified}/${coverage.total} 项已验证` : `${requirements.length} 项需求`}</small></span><b>{planning ? coverage?.planComplete ? '可确认' : '有缺口' : coverage?.complete ? '完整' : '需处理'}</b></summary>
     <div className="project-agent-requirement-grid">{requirements.map((requirement) => {
       const tasks = (plan?.tasks || []).filter((task) => (task.requirementIds || requirement.taskIds || []).includes(requirement.id));
-      return <article key={requirement.id} className={requirement.capabilityStatus}><header><span>{roleLabels[requirement.domain]}</span><b>{labels[requirement.capabilityStatus]}</b></header><p>{requirement.statement}</p><footer><small>{tasks.length} 个任务 · {requirement.evidenceArtifactIds?.length || 0} 份证据</small>{tasks[0] && <button type="button" onClick={() => onSelectTask?.(tasks[0].id)}>查看任务</button>}</footer></article>;
+      const state = planning ? tasks.length ? '已规划' : '未覆盖' : labels[requirement.capabilityStatus];
+      return <article key={requirement.id} className={planning && !tasks.length ? 'failed' : requirement.capabilityStatus}><header><span>{roleLabels[requirement.domain]}</span><b>{state}</b></header><p>{requirement.statement}</p>{tasks.length > 0 && <div className="project-agent-requirement-task-links">{tasks.map((task) => <button type="button" key={task.id} onClick={() => onSelectTask?.(task.id)}>{task.title}</button>)}</div>}<details><summary>验收依据</summary><ul>{requirement.acceptanceScenarios.map((item) => <li key={item}>{item}</li>)}{tasks.flatMap((task) => task.acceptance || []).map((item, index) => <li key={`task-${index}`}>{item}</li>)}</ul></details><footer><small>{tasks.length} 个实施任务 · {requirement.evidenceArtifactIds?.length || 0} 份验收证据</small></footer></article>;
     })}</div>
   </details>;
 }
 
+function OrchestrationRoundCard({ session, onSelectTask }: { session: ProjectAgentSessionV2; onSelectTask?(taskId: string): void }) {
+  const state = session.orchestration; const rounds = session.rounds || []; const round = rounds[rounds.length - 1]; if (!state || !round) return null;
+  return <article className="project-agent-loop-card" aria-label={`Loop 第 ${round.index} 轮`}>
+    <header><div><strong>动态编排 · 第 {round.index}/{state.maxRounds} 轮</strong><small>{round.summary || (round.status === 'planning' ? '协调器正在判断本轮专家分工' : '本轮专家分工')}</small></div><span className={round.status}>{round.status === 'planning' ? '决策中' : round.status === 'running' ? '执行中' : round.status === 'waiting' ? '等待处理' : round.status === 'failed' ? '失败' : round.progressed === false ? '无进展' : '已完成'}</span></header>
+    <div className="project-agent-loop-experts">{round.decisions.map((decision) => {
+      const taskId = decision.taskId || round.taskIds.find((id) => session.plans.flatMap((plan) => plan.tasks).find((task) => task.id === id)?.role === decision.role);
+      return <button type="button" key={decision.role} className={decision.decision} disabled={!taskId} title={decision.reason} onClick={() => taskId && onSelectTask?.(taskId)}><i>{decision.decision === 'run' ? '●' : '—'}</i><span><strong>{roleLabels[decision.role]}</strong><small>{decision.decision === 'run' ? decision.task?.title || '本轮参与' : '本轮跳过'} · {decision.reason}</small></span></button>;
+    })}</div>
+    <footer><span>连续无进展 {state.consecutiveNoProgress}/{state.maxNoProgressRounds}</span><span>Loop 状态：{state.status}</span></footer>
+  </article>;
+}
+
 function ActivityRow({ item }: { item: ProjectAgentActivityItem }) {
-  const raw = [...item.events, ...item.technicalEvents].sort((left, right) => left.seq - right.seq);
+  const raw = [...item.events, ...item.technicalEvents].filter((event) => !(item.kind === 'recovery' && (event.data?.recoveringRevision || ['tool_call', 'tool_result'].includes(event.type)))).sort((left, right) => left.seq - right.seq);
   return <li className={item.status}>
     <span className="project-agent-activity-glyph" aria-hidden="true">{activityGlyph(item.status)}</span>
     <div className="project-agent-activity-copy"><div><strong>{item.title}</strong><span className={`project-agent-activity-state ${item.status}`}>{activityStatusLabel(item.status)}</span></div>{item.detail && <p>{item.detail}</p>}<small>{eventTime(item.createdAt)}{item.eventSeqs.length ? ` · 事件 #${item.eventSeqs.join('、#')}` : ''}</small>
@@ -105,10 +119,12 @@ function TaskDetail({ session, plan, lineage, busy, manualOperationApproval, onB
 }
 
 export default function ProjectAgentProgressCards({ session, busy, selectedTaskId, onSelectTask, onConfirmPlan, onConfirmOperation, manualOperationApproval = true, onControl, onRetryPlanning }: {
-  session: ProjectAgentSessionV2; busy: boolean; selectedTaskId?: string; onSelectTask?(taskId: string): void; onConfirmPlan(planId: string): void; onConfirmOperation(approvalId: string, approved: boolean): void;
+  session: ProjectAgentSessionV2; busy: boolean; selectedTaskId?: string; onSelectTask?(taskId: string): void; onConfirmPlan(planId: string, requirementRevision: number): void; onConfirmOperation(approvalId: string, approved: boolean): void;
   manualOperationApproval?: boolean; onControl(action: 'pause' | 'continue' | 'stop' | 'retry' | 'repair'): void; onRetryPlanning(): void; onClear?: () => void;
 }) {
   const plan = activeProjectAgentPlan(session); const tasks = plan?.tasks || [];
+  const [requirementsAcknowledged, setRequirementsAcknowledged] = useState(false);
+  useEffect(() => setRequirementsAcknowledged(false), [plan?.id]);
   const lineages = useMemo(() => buildProjectAgentTaskLineages(tasks), [tasks]);
   const automaticTaskId = chooseCurrentTaskId(session); const requestedTaskId = selectedTaskId && tasks.some((task) => task.id === selectedTaskId) ? selectedTaskId : automaticTaskId;
   const currentLineage = lineageForTask(lineages, requestedTaskId) || lineages[0]; const groups = groupProjectAgentTaskLineages(lineages, currentLineage?.id);
@@ -132,10 +148,11 @@ export default function ProjectAgentProgressCards({ session, busy, selectedTaskI
   }
   return <section className={`project-agent-task-workbench mobile-${mobilePane}`} aria-label="项目智能体任务工作台">
     {session.phase === 'recovering' && session.recovery && <article className="project-agent-recovery-banner" role="status"><div><strong>正在调整执行策略</strong><p>系统会在安全工具边界修改任务计划并重新验收。</p></div><div><b>{session.recovery.cycles}/{session.recovery.maxCycles}</b><small>恢复周期</small></div><div><b>{session.recovery.dynamicTasks}</b><small>修复任务</small></div></article>}
+    <OrchestrationRoundCard session={session} onSelectTask={select} />
     <RequirementCoverageCard session={session} plan={plan} onSelectTask={select} />
     {planningFailure && <article className="project-agent-inline-alert failed" role="alert"><div><strong>任务计划生成失败</strong><p>模型内容无法通过结构校验{failedAttempts ? `，已自动尝试 ${failedAttempts} 次` : ''}。项目没有被修改。</p><details><summary>技术详情</summary><p>{String(planningFailure.data?.error || '规划请求失败')}</p></details></div><button type="button" disabled={busy} onClick={onRetryPlanning}>{busy ? '正在重试…' : '再次尝试'}</button></article>}
     {qualityFailure && session.phase === 'failed' && <article className="project-agent-inline-alert failed" role="alert"><div><strong>质量门禁未通过</strong><p>后续交付已暂停，可以继续诊断、修复并复检。</p></div><button type="button" disabled={busy} onClick={() => onControl('repair')}>开始新一轮修复</button></article>}
-    {plan?.status === 'pending' && <article className="project-agent-plan-confirm-card"><header><div><strong>计划 v{plan.revision} · {plan.goal}</strong><small>{plan.summary}</small></div><span>待确认</span></header><div className="project-agent-plan-columns"><div><h4>成功标准</h4>{plan.successCriteria.map((item, index) => <p key={index}>{item}</p>)}</div><div><h4>假设与风险</h4>{plan.assumptions.map((item, index) => <p key={`a-${index}`}>假设：{item}</p>)}{plan.risks.map((item, index) => <p key={`r-${index}`}>风险：{item}</p>)}</div></div><button type="button" disabled={busy} onClick={() => onConfirmPlan(plan.id)}>确认计划并执行</button></article>}
+    {plan?.status === 'pending' && <article className="project-agent-plan-confirm-card"><header><div><strong>需求与计划确认 · v{plan.revision}</strong><small>{plan.goal} · {plan.summary}</small></div><span>{session.requirementCoverage?.planComplete ? '待核对' : '存在覆盖缺口'}</span></header><div className="project-agent-plan-columns"><div><h4>成功标准</h4>{plan.successCriteria.map((item, index) => <p key={index}>{item}</p>)}</div><div><h4>假设与风险</h4>{plan.assumptions.map((item, index) => <p key={`a-${index}`}>假设：{item}</p>)}{plan.risks.map((item, index) => <p key={`r-${index}`}>风险：{item}</p>)}</div></div>{!session.requirementCoverage?.planComplete && <p role="alert">计划未覆盖全部需求，请在底部输入修改意见，不会执行任何写操作。</p>}<label><input type="checkbox" checked={requirementsAcknowledged} disabled={!session.requirementCoverage?.planComplete} onChange={(event) => setRequirementsAcknowledged(event.target.checked)} /> 我已核对需求、假设、风险以及每项需求的实施任务</label><button type="button" disabled={busy || !requirementsAcknowledged || !session.requirementCoverage?.planComplete} onClick={() => onConfirmPlan(plan.id, plan.requirementRevision || 0)}>确认需求与计划并执行</button></article>}
     <div className="project-agent-task-layout">
       <nav className="project-agent-task-list" aria-label="任务列表" onKeyDown={handleListKeys}>
         <div className="project-agent-task-list-heading"><strong>任务</strong><span>{lineages.length}{lineages.length !== tasks.length ? ` · 已合并 ${tasks.length - lineages.length}` : ''}</span></div>

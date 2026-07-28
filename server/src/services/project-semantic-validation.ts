@@ -4,7 +4,7 @@ const textField = /(描述|说明|备注|意见|结果|原因|地址|名称|姓�
 const dateField = /(日期|时间)$/;
 const photoField = /(照片|图片|附件|文件)$/;
 const enumeratedField = /(状态|类型|等级|结论|是否|外观)$/;
-const actionableScript = /(query|fetch|request|submit|navigate|runWorkflow|data_rows|setValue|refreshData)\s*\(/i;
+const actionableScript = /(query|fetch|request|submit|navigate|runWorkflow|data_rows|setValues?|refreshData)\s*\(/i;
 const unsupportedLookup = /[A-Za-z0-9_-]+\s*\[[^\]]+=.*\]\s*\./;
 
 function issue(code: string, path: string, message: string): ValidationIssue { return { code, path, message }; }

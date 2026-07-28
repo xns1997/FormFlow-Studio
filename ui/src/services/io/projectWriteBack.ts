@@ -1,6 +1,7 @@
 import type { FlowExecutionResult } from '../engine/flowEngine';
 import { collectFlowSideEffects, type DeleteTableRowSideEffect, type FlowSideEffect, type InsertTableRowSideEffect, type ShowMessageSideEffect, type TableRowMutationBase, type UpdateTableRowSideEffect, type UpsertTableRowSideEffect } from '../engine/flowSideEffects';
 import type { ProjectStructure, SrcSheetInfo } from '../../project/types';
+import { dataPreviewApi, type DataTransactionTarget } from '../data/dataPreviewClient';
 
 export type TableRowWriteBack = UpsertTableRowSideEffect;
 type TableRowSideEffect = UpsertTableRowSideEffect | UpdateTableRowSideEffect | InsertTableRowSideEffect | DeleteTableRowSideEffect;
@@ -148,4 +149,35 @@ export function applyPreviewFlowSideEffects(project: ProjectStructure, effects: 
 
 export function applyProjectWriteBacks(project: ProjectStructure, result: FlowExecutionResult) {
   return applyPreviewFlowSideEffects(project, collectFlowSideEffects(result));
+}
+
+export async function persistProjectTableSideEffects(
+  projectId: string,
+  effects: FlowSideEffect[],
+  tables: ProjectStructure['srcTable'],
+) {
+  const rowEffects = effects.filter(isTableRowEffect);
+  if (!rowEffects.length) return { applied: 0 };
+  const grouped = new Map<string, DataTransactionTarget>();
+  for (const effect of rowEffects) {
+    const key = `${effect.tableId}::${effect.sheetName}`;
+    const sheet = tables.find((table) => table.id === effect.tableId)?.sheets.find((item) => item.name === effect.sheetName);
+    const target = grouped.get(key) || {
+      tableId: effect.tableId,
+      sheetName: effect.sheetName,
+      keyField: effect.keyField,
+      baseVersion: sheet?.dataVersion,
+      mutations: [],
+    };
+    target.mutations.push({
+      mode: effect.kind === 'insert-table-row' ? 'insert'
+        : effect.kind === 'update-table-row' ? 'update'
+          : effect.kind === 'delete-table-row' ? 'delete'
+            : 'upsert',
+      keyValue: effect.keyValue,
+      ...('row' in effect ? { row: effect.row } : {}),
+    });
+    grouped.set(key, target);
+  }
+  return dataPreviewApi.transaction({ projectId, targets: [...grouped.values()] });
 }

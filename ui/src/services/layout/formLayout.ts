@@ -6,8 +6,6 @@ const GRID_COLUMNS = 12;
 const GRID_GAP_X = 20;
 const GRID_GAP_Y = 18;
 const ROOT_WIDTH = 1120;
-const ROOT_X = 40;
-const ROOT_Y = 40;
 
 function cloneComponent(component: DesignComponent): DesignComponent {
   return {
@@ -56,9 +54,9 @@ function classifyHeight(component: DesignComponent, registry: FormLayoutControlR
   return Math.max(defaultHeight, component.height || 0);
 }
 
-function contentBox(parent: DesignComponent | null) {
+function contentBox(parent: DesignComponent | null, rootWidth: number) {
   if (!parent) {
-    return { x: ROOT_X, y: ROOT_Y, width: ROOT_WIDTH };
+    return { x: 0, y: 0, width: Math.max(240, rootWidth) };
   }
   const topInset = parent.type === 'form' ? 110 : parent.type === 'card' ? (parent.props.subtitle ? 56 : 40) : parent.type === 'tabs' ? 48 : 24;
   const sideInset = parent.type === 'form' ? 28 : parent.type === 'card' ? 20 : 16;
@@ -82,6 +80,7 @@ function sortSiblings(components: DesignComponent[]) {
 export function layoutForm(
   components: DesignComponent[],
   registry: FormLayoutControlRegistry,
+  options: { contentWidth?: number } = {},
 ): FormLayoutResult {
   const source = components.map(cloneComponent);
   const byId = new Map(source.map((component) => [component.id, component] as const));
@@ -96,7 +95,7 @@ export function layoutForm(
   const layoutChildren = (parentId: string | undefined, parent: DesignComponent | null) => {
     const siblings = sortSiblings(childrenByParent.get(parentId) || []);
     if (siblings.length === 0) return;
-    const box = contentBox(parent);
+    const box = contentBox(parent, options.contentWidth || ROOT_WIDTH);
     const columnWidth = Math.floor((box.width - (GRID_COLUMNS - 1) * GRID_GAP_X) / GRID_COLUMNS);
     let row = 0;
     let col = 0;
@@ -152,11 +151,6 @@ export function layoutForm(
     edgeCrossingsAfter: 0,
     warnings: [],
   };
-
-  const rootForms = normalized.filter((component) => component.type === 'form' && !component.parentId);
-  if (rootForms.length === 0 && normalized.length > 0) {
-    diagnostics.warnings.push('当前设计没有根 form 容器，已按页面包围盒自动整理。');
-  }
 
   return {
     components: normalized,

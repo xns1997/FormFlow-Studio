@@ -30,6 +30,25 @@ before submit -> require($姓名, $手机号); message("正在保存", info); ru
   assert.ok(behaviorRulesToNaturalLanguage(result.rules)[0].includes('数量'));
 });
 
+test('rule DSL compiles guard actions, button guards, and field-to-field conditions', () => {
+  const result = compileBehaviorDsl(`
+when $结束日期 >= $开始日期 -> message("日期顺序正确", success)
+before click("lookup") -> requireAny($教师ID, $姓名)
+before submit -> validate($邮箱, email); range($年龄, 18, 60); length($姓名, 2, 20); requireDirty($姓名)
+  `);
+  assert.deepEqual(result.diagnostics, []);
+  assert.equal(result.rules[0].conditions[0].sourceField, '开始日期');
+  assert.equal(result.rules[1].trigger.type, 'buttonClick');
+  assert.equal(result.rules[1].trigger.buttonName, 'lookup');
+  assert.equal(result.rules[1].actions[0].type, 'assertAny');
+  const guardActions = result.rules[2].actions;
+  assert.deepEqual(guardActions.map((action) => action.type), ['assertValidator', 'assertRange', 'assertLength', 'assertDirty']);
+  const compare = compileBehaviorDsl('before submit -> compare($结束日期, \">=\", $开始日期)');
+  assert.deepEqual(compare.diagnostics, []);
+  assert.equal(compare.rules[0].actions[0].type, 'assertCompare');
+  assert.equal(compare.rules[0].actions[0].sourceField, '开始日期');
+});
+
 test('rule DSL returns line diagnostics instead of accepting arbitrary text', () => {
   const result = compileBehaviorDsl('do whatever you want');
   assert.equal(result.rules.length, 0);
@@ -58,6 +77,22 @@ test('DSL action targets resolve field names and labels to executable component 
   assert.equal(result.components[0].props.linkageRules.onChange[0].actions[0].targetComponentId, 'tech-stack-control');
   const missing = applyBehaviorDslToComponents(components, 'when $部门 == "技术部" -> show(@不存在控件)');
   assert.match(missing.unapplied[0], /找不到动作控件/);
+});
+
+test('guard DSL attaches lookup button click and cross-field conditions to executable linkage rules', () => {
+  const components = [
+    { id: 'start', type: 'datePicker', x: 0, y: 0, width: 200, height: 60, fieldBinding: '开始日期', props: { name: '开始日期' } },
+    { id: 'end', type: 'datePicker', x: 0, y: 70, width: 200, height: 60, fieldBinding: '结束日期', props: { name: '结束日期' } },
+    { id: 'lookup_button', type: 'button', x: 0, y: 140, width: 120, height: 48, props: { name: 'lookup', label: '查询' } },
+  ];
+  const result = applyBehaviorDslToComponents(components as any, `
+when $结束日期 >= $开始日期 -> message("ok", success)
+before click("lookup") -> requireAny($开始日期, $结束日期)
+  `);
+  assert.deepEqual(result.unapplied, []);
+  assert.equal(result.components[1].props.linkageRules.onChange[0].conditions[0].valueSource, 'field');
+  assert.equal(result.components[1].props.linkageRules.onChange[0].conditions[0].sourceField, '开始日期');
+  assert.equal(result.components[2].props.linkageRules.onClick[0].actions[0].type, 'assertAny');
 });
 
 test('Chinese business phrases translate to controlled DSL before compilation', () => {

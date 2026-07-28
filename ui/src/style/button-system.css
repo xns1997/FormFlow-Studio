@@ -39,6 +39,23 @@
   opacity: 0.52;
   box-shadow: none;
   transform: none;
+  filter: grayscale(0.3);
+  position: relative;
+}
+
+:where(button:not([class]), .ui-btn):disabled::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
 }
 
 .ui-btn {

@@ -1,7 +1,9 @@
 import {
-  existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync,
+  copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync,
 } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { createHash } from 'node:crypto';
+import { basename, dirname, extname, join } from 'node:path';
+import XLSX from 'xlsx';
 import { PROJECTS_DIR } from '../config/paths';
 
 export const PROJECT_PACKAGE_SUFFIX = '.formflow';
@@ -39,9 +41,28 @@ function syncJsonDirectory(dir: string, files: Map<string, unknown>): void {
   for (const [name, value] of files) writeJson(join(dir, name), value);
 }
 
-export function writeProjectPackage(project: JsonObject): void {
-  const id = safeProjectId(project?.config?.id || '');
-  const root = projectPackagePath(id);
+const PERSISTED_PREVIEW_LIMIT = 100;
+
+function persistedTableMetadata(table: JsonObject): JsonObject {
+  return {
+    ...table,
+    sheets: (Array.isArray(table.sheets) ? table.sheets : []).map((sheet: JsonObject) => ({
+      ...sheet,
+      preview: (Array.isArray(sheet.preview) ? sheet.preview : []).slice(0, PERSISTED_PREVIEW_LIMIT),
+    })),
+  };
+}
+
+function syncDataDirectory(dir: string, files: Map<string, unknown>, sourceFileNames: Set<string>): void {
+  mkdirSync(dir, { recursive: true });
+  const retained = new Set([...files.keys(), ...sourceFileNames]);
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isFile() && !retained.has(entry.name)) rmSync(join(dir, entry.name));
+  }
+  for (const [name, value] of files) writeJson(join(dir, name), value);
+}
+
+function writeProjectPackageContents(project: JsonObject, root: string): void {
   mkdirSync(root, { recursive: true });
 
   writeJson(join(root, 'project.json'), {
@@ -50,6 +71,12 @@ export function writeProjectPackage(project: JsonObject): void {
     config: project.config,
     settings: project.settings,
     release: project.release,
+    relations: project.relations || [],
+    templateInstances: project.templateInstances || [],
+    templatePresets: project.templatePresets || [],
+    customOperationTemplates: project.customOperationTemplates || [],
+    analysisTasks: project.analysisTasks || [],
+    modelRuns: project.modelRuns || [],
   });
   if (project.release) writeJson(join(root, 'release.json'), project.release);
 
@@ -64,6 +91,7 @@ export function writeProjectPackage(project: JsonObject): void {
       behaviorsFileName: `${form.id}.behaviors.json`,
       createdAt: form.design?.createdAt || form.createdAt || project.config?.createdAt,
       updatedAt: form.design?.updatedAt || form.updatedAt || project.config?.updatedAt || project.config?.createdAt,
+      generatedBy: form.generatedBy || form.design?.generatedBy,
     })),
     defaultFormId: forms[0]?.id,
   });
@@ -77,7 +105,13 @@ export function writeProjectPackage(project: JsonObject): void {
 
   // 数据表
   const tables = Array.isArray(project.srcTable) ? project.srcTable : [];
-  syncJsonDirectory(join(root, 'data'), new Map([
+  const sourceFileNames = new Set<string>();
+  for (const table of tables) {
+    const fileName = basename(String(table.fileName || ''));
+    if (!fileName || fileName !== table.fileName) throw new Error(`数据源 ${table.id || '?'} 的 fileName 无效`);
+    sourceFileNames.add(fileName);
+  }
+  syncDataDirectory(join(root, 'data'), new Map([
     ['_index.json', {
       sources: tables.map((table: JsonObject) => ({
         id: table.id, fileName: table.fileName, fileType: table.fileType,
@@ -86,14 +120,14 @@ export function writeProjectPackage(project: JsonObject): void {
         uploadedAt: table.uploadedAt,
       })),
     }],
-    ...tables.map((table: JsonObject) => [`${table.id}.meta.json`, table] as [string, unknown]),
+    ...tables.map((table: JsonObject) => [`${table.id}.meta.json`, persistedTableMetadata(table)] as [string, unknown]),
     ...tables
       .map((table: JsonObject) => {
         const sheetBehaviors = (Array.isArray(project.sheetBehaviors) ? project.sheetBehaviors : [])
           .filter((entry: JsonObject) => entry.tableId === table.id);
         return [`${table.id}.behaviors.json`, { sheets: sheetBehaviors }] as [string, unknown];
       }),
-  ]));
+  ]), sourceFileNames);
 
   // 全局行为
   writeJson(join(root, 'global-behaviors.json'), { behaviors: project.globalBehaviors || [] });
@@ -111,6 +145,40 @@ export function writeProjectPackage(project: JsonObject): void {
     fixtures: project.testing?.fixtures || [],
     runs: (project.testing?.runs || []).slice(-20),
   });
+}
+
+function replaceProjectPackage(project: JsonObject, sourceOverrides: Map<string, Buffer> = new Map()): void {
+  const id = safeProjectId(project?.config?.id || '');
+  const root = projectPackagePath(id);
+  const temporary = `${root}.tmp-${process.pid}-${Date.now()}`;
+  const backup = `${root}.replace-${process.pid}-${Date.now()}`;
+  const existed = existsSync(root);
+  try {
+    mkdirSync(join(temporary, 'data'), { recursive: true });
+    if (existed) {
+      for (const table of Array.isArray(project.srcTable) ? project.srcTable : []) {
+        const fileName = basename(String(table.fileName || ''));
+        const source = join(root, 'data', fileName);
+        if (fileName && existsSync(source)) copyFileSync(source, join(temporary, 'data', fileName));
+      }
+    }
+    for (const [fileName, content] of sourceOverrides) writeFileSync(join(temporary, 'data', basename(fileName)), content);
+    writeProjectPackageContents(project, temporary);
+    if (existed) renameSync(root, backup);
+    renameSync(temporary, root);
+    if (existed) rmSync(backup, { recursive: true, force: true });
+  } catch (error) {
+    rmSync(temporary, { recursive: true, force: true });
+    if (existsSync(backup)) {
+      rmSync(root, { recursive: true, force: true });
+      renameSync(backup, root);
+    }
+    throw error;
+  }
+}
+
+export function writeProjectPackage(project: JsonObject): void {
+  replaceProjectPackage(project);
 }
 
 export function readProjectPackage(id: string): JsonObject | null {
@@ -143,6 +211,7 @@ export function readProjectPackage(id: string): JsonObject | null {
         ruleCode: typeof behaviorFile.ruleCode === 'string' ? behaviorFile.ruleCode : '',
         createdAt: design.createdAt || formMeta.createdAt || manifest.config.createdAt || '',
         updatedAt: design.updatedAt || formMeta.updatedAt || manifest.config.updatedAt || design.createdAt || formMeta.createdAt || manifest.config.createdAt || '',
+        generatedBy: formMeta.generatedBy || design.generatedBy,
       };
     });
   }
@@ -188,6 +257,12 @@ export function readProjectPackage(id: string): JsonObject | null {
     config: manifest.config,
     settings: manifest.settings,
     release,
+    relations: Array.isArray(manifest.relations) ? manifest.relations : [],
+    templateInstances: Array.isArray(manifest.templateInstances) ? manifest.templateInstances : [],
+    templatePresets: Array.isArray(manifest.templatePresets) ? manifest.templatePresets : [],
+    customOperationTemplates: Array.isArray(manifest.customOperationTemplates) ? manifest.customOperationTemplates : [],
+    analysisTasks: Array.isArray(manifest.analysisTasks) ? manifest.analysisTasks : [],
+    modelRuns: Array.isArray(manifest.modelRuns) ? manifest.modelRuns : [],
     srcTable,
     workflows,
     globalBehaviors,
@@ -258,6 +333,49 @@ export function deleteProjectPackage(id: string): void {
   rmSync(projectPackagePath(id), { recursive: true, force: true });
 }
 
+function readRawSheetRows(projectId: string, table: JsonObject, sheet: JsonObject): Record<string, unknown>[] {
+  const source = join(projectPackagePath(projectId), 'data', basename(String(table.fileName)));
+  if (!existsSync(source)) return (sheet.preview as Record<string, unknown>[]) || [];
+  const extension = String(table.fileType || extname(table.fileName).slice(1)).toLowerCase();
+  if (extension === 'json') {
+    const parsed = JSON.parse(readFileSync(source, 'utf8'));
+    const rows = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(parsed?.data) || Array.isArray(parsed?.rows)
+        ? parsed.data || parsed.rows
+        : parsed?.[sheet.name];
+    return Array.isArray(rows) ? rows : [];
+  }
+  const workbook = extension === 'csv'
+    ? XLSX.read(readFileSync(source), { type: 'buffer', cellDates: true })
+    : XLSX.readFile(source, { cellDates: true });
+  const worksheet = workbook.Sheets[extension === 'csv' ? workbook.SheetNames[0] : sheet.name];
+  return worksheet ? XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, { defval: null }) : [];
+}
+
+function serializeRawTable(projectId: string, table: JsonObject, changedSheetName: string, changedRows: Record<string, unknown>[]): Buffer {
+  const extension = String(table.fileType || extname(table.fileName).slice(1)).toLowerCase();
+  if (extension === 'json') {
+    if ((table.sheets || []).length === 1) return Buffer.from(JSON.stringify(changedRows, null, 2));
+    const value = Object.fromEntries((table.sheets || []).map((sheet: JsonObject) => [
+      sheet.name,
+      sheet.name === changedSheetName ? changedRows : readRawSheetRows(projectId, table, sheet),
+    ]));
+    return Buffer.from(JSON.stringify(value, null, 2));
+  }
+  if (extension === 'csv') {
+    const sheet = (table.sheets || []).find((entry: JsonObject) => entry.name === changedSheetName);
+    const worksheet = XLSX.utils.json_to_sheet(changedRows, { header: sheet?.headers || [] });
+    return Buffer.from(`\ufeff${XLSX.utils.sheet_to_csv(worksheet)}`);
+  }
+  const source = join(projectPackagePath(projectId), 'data', basename(String(table.fileName)));
+  const workbook = existsSync(source) ? XLSX.readFile(source) : XLSX.utils.book_new();
+  const sheet = (table.sheets || []).find((entry: JsonObject) => entry.name === changedSheetName);
+  workbook.Sheets[changedSheetName] = XLSX.utils.json_to_sheet(changedRows, { header: sheet?.headers || [] });
+  if (!workbook.SheetNames.includes(changedSheetName)) workbook.SheetNames.push(changedSheetName);
+  return Buffer.from(XLSX.write(workbook, { type: 'buffer', bookType: extension === 'xls' ? 'xls' : 'xlsx' }));
+}
+
 export function getTableSheetData(projectId: string, tableId: string, sheetName: string): { headers: string[]; data: Record<string, unknown>[]; keyFields: string[] } | null {
   const project = readProjectPackage(projectId);
   if (!project) return null;
@@ -267,7 +385,7 @@ export function getTableSheetData(projectId: string, tableId: string, sheetName:
   if (!sheet) return null;
   return {
     headers: sheet.headers as string[],
-    data: (sheet.preview as Record<string, unknown>[]) || [],
+    data: readRawSheetRows(projectId, table, sheet),
     keyFields: Array.isArray(sheet.config?.keyFields) ? sheet.config.keyFields : [],
   };
 }
@@ -279,7 +397,80 @@ export function updateTableSheetData(projectId: string, tableId: string, sheetNa
   if (!table) throw new Error(`表 ${tableId} 不存在`);
   const sheet = (table.sheets as JsonObject[]).find((s) => s.name === sheetName);
   if (!sheet) throw new Error(`Sheet ${sheetName} 不存在`);
-  sheet.preview = data;
+  const sourcePath = join(projectPackagePath(projectId), 'data', basename(String(table.fileName)));
+  const previous = existsSync(sourcePath) ? readFileSync(sourcePath) : null;
+  const next = serializeRawTable(projectId, table, sheetName, data);
+  const temporary = `${sourcePath}.tmp`;
+  writeFileSync(temporary, next);
+  renameSync(temporary, sourcePath);
+  sheet.preview = data.slice(0, PERSISTED_PREVIEW_LIMIT);
   sheet.rowCount = data.length;
-  writeProjectPackage(project);
+  table.fileSize = next.length;
+  table.dataHash = createHash('sha256').update(next).digest('hex');
+  try {
+    writeProjectPackage(project);
+  } catch (error) {
+    if (previous) writeFileSync(sourcePath, previous);
+    else rmSync(sourcePath, { force: true });
+    throw error;
+  }
+}
+
+export function updateTableSheetsTransaction(
+  projectId: string,
+  changes: Array<{ tableId: string; sheetName: string; data: Record<string, unknown>[] }>,
+): void {
+  const project = readProjectPackage(projectId);
+  if (!project) throw new Error(`项目 ${projectId} 不存在`);
+  const cloned = structuredClone(project);
+  const grouped = new Map<string, { table: JsonObject; sheets: Map<string, Record<string, unknown>[]> }>();
+  for (const change of changes) {
+    const table = (cloned.srcTable as JsonObject[]).find((entry) => entry.id === change.tableId);
+    if (!table) throw new Error(`表 ${change.tableId} 不存在`);
+    const sheet = (table.sheets as JsonObject[]).find((entry) => entry.name === change.sheetName);
+    if (!sheet) throw new Error(`Sheet ${change.sheetName} 不存在`);
+    const fileName = basename(String(table.fileName));
+    const group = grouped.get(fileName) || { table, sheets: new Map<string, Record<string, unknown>[]>() };
+    group.sheets.set(change.sheetName, change.data);
+    grouped.set(fileName, group);
+    sheet.preview = change.data.slice(0, PERSISTED_PREVIEW_LIMIT);
+    sheet.rowCount = change.data.length;
+  }
+
+  const overrides = new Map<string, Buffer>();
+  for (const [fileName, group] of grouped) {
+    const table = group.table;
+    const extension = String(table.fileType || extname(table.fileName).slice(1)).toLowerCase();
+    let content: Buffer;
+    if (extension === 'json') {
+      if ((table.sheets || []).length === 1) {
+        const sheetName = String(table.sheets[0].name);
+        content = Buffer.from(JSON.stringify(group.sheets.get(sheetName) || readRawSheetRows(projectId, table, table.sheets[0]), null, 2));
+      } else {
+        content = Buffer.from(JSON.stringify(Object.fromEntries((table.sheets || []).map((sheet: JsonObject) => [
+          sheet.name,
+          group.sheets.get(String(sheet.name)) || readRawSheetRows(projectId, table, sheet),
+        ])), null, 2));
+      }
+    } else if (extension === 'csv') {
+      const sheet = table.sheets[0];
+      const rows = group.sheets.get(String(sheet.name)) || readRawSheetRows(projectId, table, sheet);
+      const worksheet = XLSX.utils.json_to_sheet(rows, { header: sheet.headers || [] });
+      content = Buffer.from(`\ufeff${XLSX.utils.sheet_to_csv(worksheet)}`);
+    } else {
+      const source = join(projectPackagePath(projectId), 'data', fileName);
+      const workbook = existsSync(source) ? XLSX.readFile(source) : XLSX.utils.book_new();
+      for (const [sheetName, rows] of group.sheets) {
+        const sheet = (table.sheets || []).find((entry: JsonObject) => entry.name === sheetName);
+        workbook.Sheets[sheetName] = XLSX.utils.json_to_sheet(rows, { header: sheet?.headers || [] });
+        if (!workbook.SheetNames.includes(sheetName)) workbook.SheetNames.push(sheetName);
+      }
+      content = Buffer.from(XLSX.write(workbook, { type: 'buffer', bookType: extension === 'xls' ? 'xls' : 'xlsx' }));
+    }
+    table.fileSize = content.length;
+    table.dataHash = createHash('sha256').update(content).digest('hex');
+    overrides.set(fileName, content);
+  }
+  cloned.config.updatedAt = new Date().toISOString();
+  replaceProjectPackage(cloned, overrides);
 }

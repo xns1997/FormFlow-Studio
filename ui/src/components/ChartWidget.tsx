@@ -271,6 +271,18 @@ export interface ChartDataConfig {
   }>;
 }
 
+export interface NormalizedChartInput {
+  data?: ChartDataConfig;
+  rawData?: unknown[][];
+  headers?: string[];
+}
+
+export interface SanitizedChartSchema {
+  dimensions?: number[];
+  metrics?: MetricConfig[];
+  valid: boolean;
+}
+
 interface ChartWidgetProps {
   chartType: 'bar' | 'line' | 'pie' | 'doughnut' | 'area';
   title?: string;
@@ -373,6 +385,58 @@ function rawDataToChartData(raw: unknown[][], headers: string[]): ChartDataConfi
   return { labels, datasets: datasets.length ? datasets : [{ label: '数据', data: raw.map(r => Number(r[0]) || 0) }] };
 }
 
+export function sanitizeChartSchema(
+  headers: string[] | undefined,
+  dimensions: number[] | undefined | null,
+  metrics: MetricConfig[] | undefined | null,
+): SanitizedChartSchema {
+  const width = headers?.length || 0;
+  if (!width) return { valid: false };
+  const safeDimensions = (dimensions || []).filter((col) => Number.isInteger(col) && col >= 0 && col < width);
+  const safeMetrics = (metrics || []).filter((metric) => Number.isInteger(metric?.col) && metric.col >= 0 && metric.col < width);
+  const valid = safeDimensions.length > 0 && safeMetrics.length > 0;
+  return {
+    dimensions: safeDimensions,
+    metrics: safeMetrics,
+    valid,
+  };
+}
+
+export function normalizeChartInput(value: unknown): NormalizedChartInput | null {
+  if (value == null || value === '') return null;
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const record = value as Record<string, unknown>;
+    if (Array.isArray(record.labels) && Array.isArray(record.datasets)) {
+      return { data: record as unknown as ChartDataConfig };
+    }
+  }
+  if (!Array.isArray(value)) return null;
+  if (value.length === 0) return { rawData: [], headers: [] };
+
+  if (value.every((row) => Array.isArray(row))) {
+    const rows = value as unknown[][];
+    const width = rows.reduce((max, row) => Math.max(max, row.length), 0);
+    return {
+      rawData: rows,
+      headers: Array.from({ length: width }, (_, index) => `列${index + 1}`),
+    };
+  }
+
+  if (value.every((row) => row && typeof row === 'object' && !Array.isArray(row))) {
+    const rows = value as Array<Record<string, unknown>>;
+    const headers = [...new Set(rows.flatMap((row) => Object.keys(row)))];
+    return {
+      headers,
+      rawData: rows.map((row) => headers.map((header) => row[header])),
+    };
+  }
+
+  return {
+    headers: ['值'],
+    rawData: (value as unknown[]).map((item) => [item]),
+  };
+}
+
 export default function ChartWidget({
   chartType, title, data, rawData, headers, dimensions, metrics,
   barColor = '#007AFF', lineColor = '#FF9500',
@@ -380,17 +444,21 @@ export default function ChartWidget({
 }: ChartWidgetProps) {
   const isArea = chartType === 'area';
   const effectiveType = isArea ? 'line' : chartType;
+  const sanitizedSchema = useMemo(
+    () => sanitizeChartSchema(headers, dimensions, metrics),
+    [headers, dimensions, metrics],
+  );
 
   const chartData = useMemo(() => {
     if (data) return data;
     if (rawData && rawData.length > 0 && headers && headers.length > 0) {
-      if (dimensions && dimensions.length > 0 && metrics && metrics.length > 0) {
-        return dimMetricToChartData(rawData, headers, dimensions, metrics);
+      if (sanitizedSchema.valid && sanitizedSchema.dimensions && sanitizedSchema.metrics) {
+        return dimMetricToChartData(rawData, headers, sanitizedSchema.dimensions, sanitizedSchema.metrics);
       }
       return rawDataToChartData(rawData, headers);
     }
     return DEFAULT_DATA;
-  }, [data, rawData, headers, dimensions, metrics]);
+  }, [data, rawData, headers, sanitizedSchema]);
 
   const enrichedData: ChartDataConfig = useMemo(() => ({
     ...chartData,

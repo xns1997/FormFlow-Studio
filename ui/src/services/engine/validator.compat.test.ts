@@ -21,3 +21,19 @@ test('数字控件的仅整数和仅正数配置进入统一校验器', () => {
   assert.equal(validateField(-1, rules), '请输入正数');
   assert.equal(validateField(2, rules), null);
 });
+
+test('正则校验缺少自定义文案时使用输入示例帮助修复', () => {
+  const rules = compileComponentValidation({ pattern: '^FF-', placeholder: 'FF-2026-001' });
+  assert.equal(validateField('2026-001', rules), '格式应类似：FF-2026-001');
+});
+
+test('输入类型预设自动生成具体错误文案', () => {
+  const rules = compileComponentValidation({ inputKind: 'phone', customMessage: '输入内容不符合要求' });
+  assert.equal(validateField('123', rules), '请输入有效的手机号');
+});
+
+test('评分必填时 0 分视为空值', () => {
+  const rules = compileComponentValidation({ required: true, componentType: 'rating', customMessage: '请选择评分' });
+  assert.equal(validateField(0, rules, { componentType: 'rating' }), '请选择评分');
+  assert.equal(validateField(1, rules, { componentType: 'rating' }), null);
+});

@@ -30,7 +30,9 @@ test('batch changes update and delete by stable keys then append rows', () => {
 });
 
 test('batch rejects stale row keys instead of editing the wrong record', () => {
-  assert.throws(() => applyBatchChanges([{ id: 'A' }], ['id'], { deletes: ['key:missing'] }), /记录已不存在/);
+  const rows = [{ id: 'A' }];
+  assert.throws(() => applyBatchChanges(rows, ['id'], { updates: [{ rowKey: 'key:A', changes: { id: 'changed' } }], deletes: ['key:missing'] }), /记录已不存在/);
+  assert.deepEqual(rows, [{ id: 'A' }], 'failed batches must not partially mutate the input');
 });
 
 test('configured composite keys reject blanks and duplicates', () => {

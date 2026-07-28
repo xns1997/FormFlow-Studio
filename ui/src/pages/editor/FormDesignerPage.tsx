@@ -45,11 +45,11 @@ export default function FormDesignerPage() {
     const comps = designer.exportDesign();
     setDesigns((prev) => prev.map((d) => {
       if (d.id !== activeId) return d;
-      return { ...d, components: comps, updatedAt: new Date().toISOString() };
+      return { ...d, formWindow: designer.formWindow, components: comps, updatedAt: new Date().toISOString() };
     }));
     const updated = designs.find((d) => d.id === activeId);
     if (updated && store.addDesign) {
-      const toSave = { ...updated, components: comps, updatedAt: new Date().toISOString() };
+      const toSave = { ...updated, formWindow: designer.formWindow, components: comps, updatedAt: new Date().toISOString() };
       store.addDesign(toSave).catch(() => {});
     }
   }, [activeId, designer, designs, store]);

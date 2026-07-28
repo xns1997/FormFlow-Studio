@@ -12,6 +12,10 @@ import {
   validateRequiredFields,
 } from '../../src/services/engine/crudHelpers';
 
+function stringList(value: unknown) {
+  return Array.isArray(value) ? value.map(String) : String(value || '').split(',').map((item) => item.trim()).filter(Boolean);
+}
+
 registerExecutor('behavior-schedule-trigger', async ({ properties }) => {
   const response = await fetch('/api/tasks/schedules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: properties.name, cron: properties.cron, timezone: properties.timezone, enabled: properties.enabled !== false, payload: {} }) });
   const schedule = await response.json();
@@ -390,11 +394,18 @@ registerExecutor('behavior:submit', async (ctx) => {
     fileData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
   }
   let writeBack: Record<string, unknown> | undefined;
-  if (ctx.properties.writeBackMode === 'upsert') {
+  if (['insert', 'update', 'upsert'].includes(String(ctx.properties.writeBackMode || ''))) {
     const rawMap = ctx.properties.writeBackFieldMap;
     const fieldMap = typeof rawMap === 'string' ? JSON.parse(rawMap || '{}') : (rawMap || {});
+    const refreshOriginalFieldMapRaw = ctx.properties.refreshOriginalFieldMap;
+    const refreshOriginalFieldMap = typeof refreshOriginalFieldMapRaw === 'string' ? JSON.parse(refreshOriginalFieldMapRaw || '{}') : (refreshOriginalFieldMapRaw || {});
+    const mode = String(ctx.properties.writeBackMode || 'upsert');
+    const dirtyOnly = ctx.properties.dirtyOnly !== false && mode === 'update';
     const row = Object.fromEntries(Object.entries(fieldMap as Record<string, string>)
-      .filter(([, column]) => !!column)
+      .filter(([formField, column]) => {
+        if (!column) return false;
+        return !dirtyOnly || originalData[formField] !== formData[formField];
+      })
       .map(([formField, column]) => [column, formData[formField]]));
     const keyField = String(ctx.properties.writeBackKeyField || '')
       || resolveSingleKeyField(
@@ -408,8 +419,53 @@ registerExecutor('behavior:submit', async (ctx) => {
     if (!ctx.properties.writeBackTableId || !ctx.properties.writeBackSheetName || !keyField || keyValue == null) {
       throw new Error('元数据写回配置不完整');
     }
+    if (!(keyField in row)) row[keyField] = keyValue;
+    const existing = ctx.tables
+      .find((table) => table.id === String(ctx.properties.writeBackTableId))
+      ?.sheets.find((sheet) => sheet.name === String(ctx.properties.writeBackSheetName))
+      ?.preview?.find((candidate) => candidate?.[keyField] === keyValue) as Record<string, unknown> | undefined;
+    const conflictPolicy = String(ctx.properties.conflictPolicy || 'error');
+    const conflictCheckFields = stringList(ctx.properties.conflictCheckFields).length
+      ? stringList(ctx.properties.conflictCheckFields)
+      : Object.keys(fieldMap as Record<string, string>).filter((formField) => formField !== keyFormField);
+    const staleFields = existing && ['update', 'upsert'].includes(mode)
+      ? conflictCheckFields.filter((formField) => {
+          const column = String((fieldMap as Record<string, string>)[formField] || '');
+          if (!column) return false;
+          return originalData[formField] !== undefined && existing[column] !== originalData[formField];
+        })
+      : [];
+    if (staleFields.length) {
+      const latestRecord = Object.fromEntries(Object.entries(fieldMap as Record<string, string>).map(([formField, column]) => [formField, existing?.[String(column)]]));
+      const sideEffects: FlowSideEffect[] = [];
+      if (conflictPolicy === 'refresh-and-retry') {
+        for (const [formField, latestValue] of Object.entries(latestRecord)) {
+          const effect = normalizeFlowSideEffect({ kind: 'set-form-value', field: formField, value: latestValue });
+          if (effect) sideEffects.push(effect);
+          const originalField = String((refreshOriginalFieldMap as Record<string, string>)[formField] || '');
+          if (originalField) {
+            const originalEffect = normalizeFlowSideEffect({ kind: 'set-form-value', field: originalField, value: latestValue });
+            if (originalEffect) sideEffects.push(originalEffect);
+          }
+        }
+      }
+      const message = conflictPolicy === 'refresh-and-retry'
+        ? `检测到并发修改：已回填最新数据，请确认后重试`
+        : `检测到并发修改：${staleFields.join('、')} 已被其他更新改写`;
+      const toast = normalizeFlowSideEffect({ kind: 'show-message', message, level: 'error' });
+      if (toast) sideEffects.push(toast);
+      return {
+        success: undefined,
+        error: { code: 'WRITE_CONFLICT', message, staleFields, latestRecord, conflictPolicy },
+        conflict: true,
+        staleFields,
+        latestRecord,
+        changeLog,
+        sideEffects,
+      };
+    }
     writeBack = {
-      kind: 'upsert-table-row',
+      kind: `${mode}-table-row`,
       tableId: String(ctx.properties.writeBackTableId),
       sheetName: String(ctx.properties.writeBackSheetName),
       keyField,
@@ -418,6 +474,15 @@ registerExecutor('behavior:submit', async (ctx) => {
     };
   }
   const sideEffects = writeBack ? [normalizeFlowSideEffect(writeBack)].filter(Boolean) as FlowSideEffect[] : [];
+  if (ctx.properties.refetchAfterSave && ctx.properties.refreshOriginalFieldMap) {
+    const refreshOriginalFieldMap = typeof ctx.properties.refreshOriginalFieldMap === 'string'
+      ? JSON.parse(String(ctx.properties.refreshOriginalFieldMap || '{}'))
+      : (ctx.properties.refreshOriginalFieldMap || {});
+    for (const [formField, originalField] of Object.entries(refreshOriginalFieldMap as Record<string, string>)) {
+      const effect = normalizeFlowSideEffect({ kind: 'set-form-value', field: String(originalField), value: formData[formField] });
+      if (effect) sideEffects.push(effect);
+    }
+  }
   return {
     success: { event: 'submitSuccess', trigger: ctx.inputs.trigger, timestamp: Date.now() },
     error: undefined,

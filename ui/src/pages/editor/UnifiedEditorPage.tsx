@@ -10,6 +10,7 @@ import { useDesigner } from '../../designer/useDesigner';
 import { DesignCanvas } from '../../designer/DesignCanvas';
 import { Toolbox } from '../../designer/Toolbox';
 import { PropertyPanel } from '../../designer/PropertyPanel';
+import { FORM_WINDOW_CELL_ID, formWindowToComponent } from '../../designer/formWindowModel';
 import { useProjectStore } from '../../project/store';
 import type { FormEntry, BehaviorFile, DesignComponent } from '../../project/types';
 import { createFormEntry } from '../../project/types';
@@ -27,6 +28,7 @@ import { AntdCompatSelect } from '../../components/AntdFormControls';
 import { CanvasWithProvider } from './CanvasPage';
 import DataPreviewPage from './DataPreviewPage';
 import SettingsPage from './SettingsPage';
+import TemplateOperationCenter from './TemplateOperationCenter';
 import { getBehaviorEventDoc } from '../../services/io/behaviorDocs';
 import { diagnoseForm, findUnrepresentedColumns, summarizeFormDiagnostics } from '../../services/formGeneration/formDiagnostics';
 import { generateMissingFieldComponents } from '../../services/formGeneration/formScaffold';
@@ -37,6 +39,7 @@ import { renameFieldReferences } from '../../services/formGeneration/fieldSynchr
 import { useAppInteraction } from '../../components/AppInteractionProvider';
 import { DesignerIcon } from '../../designer/icons';
 import { useWorkbenchPanels } from './useWorkbenchPanels';
+import ProjectWorkspaceTabs, { type ProjectWorkspaceMode } from './ProjectWorkspaceTabs';
 
 // 编辑模式：决定中间/右侧布局
 type EditMode = 'design' | 'behavior' | 'flow' | 'data' | 'settings';
@@ -54,8 +57,8 @@ export default function UnifiedEditorPage() {
   const [renamingFormId, setRenamingFormId] = useState<string | null>(null);
   const [formNameDraft, setFormNameDraft] = useState('');
   const [leftPanelTab, setLeftPanelTab] = useState<'controls' | 'fields' | 'forms' | 'behaviors' | 'workflows'>('controls');
-  const initialMode = searchParams.get('mode') as EditMode | null;
-  const [editMode, setEditMode] = useState<EditMode>(initialMode && ['design', 'behavior', 'flow', 'data', 'settings'].includes(initialMode) ? initialMode : 'design');
+  const initialMode = searchParams.get('mode');
+  const [editMode, setEditMode] = useState<EditMode>(initialMode && ['design', 'behavior', 'flow', 'data', 'settings'].includes(initialMode) ? initialMode as EditMode : 'design');
   const hasWorkbenchPanels = editMode === 'design' || editMode === 'behavior';
   const panels = useWorkbenchPanels(hasWorkbenchPanels);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -74,6 +77,8 @@ export default function UnifiedEditorPage() {
   const [qualityModal, setQualityModal] = useState<'overview' | 'tests' | 'publish' | null>(null);
   const [lastTestRunAt, setLastTestRunAt] = useState<string | null>(null);
   const [showMethodLibrary, setShowMethodLibrary] = useState(false);
+  const [showTemplateCenter, setShowTemplateCenter] = useState(false);
+  const [templateCenterInitialView, setTemplateCenterInitialView] = useState<'library' | 'results'>('library');
   const [selectedMethodId, setSelectedMethodId] = useState(METHOD_LIBRARY[0].id);
   const [methodParams, setMethodParams] = useState<Record<string, string>>(() => createMethodDefaults(METHOD_LIBRARY[0]));
   const [methodSampleResult, setMethodSampleResult] = useState<unknown>(null);
@@ -225,6 +230,39 @@ export default function UnifiedEditorPage() {
     setEditMode('settings');
   }, []);
 
+  const openMethodLibrary = useCallback(() => {
+    setShowMethodLibrary(true);
+  }, []);
+
+  const closeMethodLibrary = useCallback(() => {
+    setShowMethodLibrary(false);
+  }, []);
+
+  const openTemplateCenterView = useCallback((view: 'library' | 'results' = 'library') => {
+    void store.refreshProject?.();
+    setTemplateCenterInitialView(view);
+    setShowTemplateCenter(true);
+  }, [store]);
+  const openTemplateCenter = useCallback(() => openTemplateCenterView('library'), [openTemplateCenterView]);
+
+  const closeTemplateCenter = useCallback(() => {
+    setShowTemplateCenter(false);
+    if (searchParams.get('mode') === 'template') {
+      const next = new URLSearchParams(searchParams);
+      next.set('mode', editMode);
+      setSearchParams(next, { replace: true });
+    }
+  }, [editMode, searchParams, setSearchParams]);
+
+  const switchWorkspaceMode = useCallback((mode: Exclude<ProjectWorkspaceMode, 'test'>) => {
+    if (mode === 'data') switchToData();
+    else if (mode === 'template') openTemplateCenter();
+    else if (mode === 'design') switchToDesign();
+    else if (mode === 'behavior') switchToBehavior();
+    else if (mode === 'flow') switchToFlow();
+    else switchToSettings();
+  }, [openTemplateCenter, switchToBehavior, switchToData, switchToDesign, switchToFlow, switchToSettings]);
+
   useEffect(() => {
     if (editMode !== 'design') return;
     const first = requestAnimationFrame(() => {
@@ -252,14 +290,18 @@ export default function UnifiedEditorPage() {
   }, [editMode, activeFormId, designer.selectedId, editingBehaviorId]);
 
   useEffect(() => {
-    const requestedMode = searchParams.get('mode') as EditMode | null;
+    const requestedMode = searchParams.get('mode');
+    if (requestedMode === 'template') {
+      openTemplateCenter();
+      return;
+    }
     if (requestedMode && ['design', 'behavior', 'flow', 'data', 'settings'].includes(requestedMode) && requestedMode !== editMode) {
-      setEditMode(requestedMode);
+      setEditMode(requestedMode as EditMode);
       if (requestedMode === 'flow') setLeftPanelTab('workflows');
       else if (requestedMode === 'behavior') setLeftPanelTab('behaviors');
       else if (requestedMode === 'design') setLeftPanelTab('controls');
     }
-  }, [searchParams]);
+  }, [searchParams, openTemplateCenter]);
 
   useEffect(() => {
     const componentId = searchParams.get('component');
@@ -335,7 +377,7 @@ export default function UnifiedEditorPage() {
     const comps = designer.exportDesign();
     setForms((prev) => prev.map((f) => {
       if (f.id !== activeFormId) return f;
-      const updated = { ...f, design: { ...f.design, components: comps, updatedAt: new Date().toISOString() }, updatedAt: new Date().toISOString() };
+      const updated = { ...f, design: { ...f.design, formWindow: designer.formWindow, components: comps, updatedAt: new Date().toISOString() }, updatedAt: new Date().toISOString() };
       store.updateForm?.(f.id, { design: updated.design });
       return updated;
     }));
@@ -348,7 +390,7 @@ export default function UnifiedEditorPage() {
       const components = designer.exportDesign();
       const form = forms.find((item) => item.id === activeFormId);
       if (!form) return;
-      const design = { ...form.design, components, updatedAt: new Date().toISOString() };
+      const design = { ...form.design, formWindow: designer.formWindow, components, updatedAt: new Date().toISOString() };
       Promise.resolve(store.updateForm?.(activeFormId, { design }))
         .then(() => {
           structuredEditPendingRef.current = false;
@@ -358,7 +400,7 @@ export default function UnifiedEditorPage() {
         .catch(() => setSaveState('error'));
     }, 700);
     return () => window.clearTimeout(timer);
-  }, [designer.components, activeFormId]);
+  }, [designer.components, designer.formWindow, activeFormId]);
 
   useEffect(() => {
     if (designer.historyRevision > 0 && activeFormId && designHydratedRef.current) structuredEditPendingRef.current = true;
@@ -508,27 +550,17 @@ export default function UnifiedEditorPage() {
             aria-pressed={panels.leftOpen}
             onClick={panels.toggleLeft}
           ><DesignerIcon name={panels.leftOpen ? 'sidebarClose' : 'sidebarOpen'} /></button>}
-          <div className="unified-mode-switch unified-mode-switch-main">
-            <button type="button" className={`unified-mode-btn ${editMode === 'data' ? 'active' : ''}`} onClick={switchToData}>
-              数据预览
-            </button>
-            <button type="button" className={`unified-mode-btn ${editMode === 'design' ? 'active' : ''}`} onClick={switchToDesign}>
-              表单设计
-            </button>
-            <button type="button" className={`unified-mode-btn ${editMode === 'behavior' ? 'active' : ''}`} onClick={() => switchToBehavior()}>
-              行为定义
-            </button>
-            <button type="button" className={`unified-mode-btn ${editMode === 'flow' ? 'active' : ''}`} onClick={switchToFlow}>
-              流程编排
-            </button>
-            <button type="button" className={`unified-mode-btn ${editMode === 'settings' ? 'active' : ''}`} onClick={switchToSettings}>
-              项目设置
-            </button>
-          </div>
+          <ProjectWorkspaceTabs
+            projectId={project?.config.id || ''}
+            projectName={project?.config.name}
+            activeMode={editMode}
+            onModeChange={switchWorkspaceMode}
+          />
         </div>
         <div className="unified-toolbar-secondary">
           <span className="unified-toolbar-optional">
-            <button type="button" onClick={() => setShowMethodLibrary(true)} className="toolbar-btn">方法库</button>
+            <button type="button" onClick={openMethodLibrary} className="toolbar-btn">方法库</button>
+            <button type="button" onClick={openTemplateCenter} className="toolbar-btn">模板中心</button>
             <button type="button" onClick={() => setQualityModal('overview')} className="toolbar-btn">开发总览</button>
             <button type="button" onClick={() => setQualityModal('tests')} className="toolbar-btn">测试 {developmentQuality.coverage}%</button>
             <button type="button" onClick={() => setQualityModal('publish')} className={`toolbar-btn ${developmentQuality.readyToPublish ? '' : 'warning'}`}>发布检查 {developmentQuality.blockers.length}</button>
@@ -536,7 +568,8 @@ export default function UnifiedEditorPage() {
           <details className="unified-toolbar-overflow">
             <summary aria-label="更多工作台命令"><DesignerIcon name="more" /></summary>
             <div role="menu">
-              <button type="button" role="menuitem" onClick={() => setShowMethodLibrary(true)}>方法库</button>
+              <button type="button" role="menuitem" onClick={openMethodLibrary}>方法库</button>
+              <button type="button" role="menuitem" onClick={openTemplateCenter}>模板中心</button>
               <button type="button" role="menuitem" onClick={() => setQualityModal('overview')}>开发总览</button>
               <button type="button" role="menuitem" onClick={() => setQualityModal('tests')}>测试 {developmentQuality.coverage}%</button>
               <button type="button" role="menuitem" onClick={() => setQualityModal('publish')}>发布检查 {developmentQuality.blockers.length}</button>
@@ -547,9 +580,10 @@ export default function UnifiedEditorPage() {
             type="button"
             className={`workbench-panel-toggle ${panels.rightOpen ? 'active' : ''}`}
             aria-label={panels.rightOpen ? '收起属性栏' : '显示属性栏'}
+            title={panels.rightOpen ? '收起属性栏' : '显示属性栏'}
             aria-pressed={panels.rightOpen}
             onClick={panels.toggleRight}
-          ><DesignerIcon name={panels.rightOpen ? 'sidebarClose' : 'settings'} /></button>}
+          ><DesignerIcon name={panels.rightOpen ? 'sidebarClose' : 'sidebarOpen'} /></button>}
           {editMode === 'behavior' && (
             <Segmented
               className="behavior-preview-switch"
@@ -797,8 +831,8 @@ export default function UnifiedEditorPage() {
             />}
           </div>}
           {editMode === 'flow' && <div className="chain-flow-pane"><CanvasWithProvider /></div>}
-          <div style={{ display: editMode === 'data' ? 'flex' : 'none', width: '100%', height: '100%', minWidth: 0, minHeight: 0 }}><DataPreviewPage /></div>
-          <div style={{ display: editMode === 'settings' ? 'flex' : 'none', width: '100%', height: '100%', minWidth: 0, minHeight: 0 }}><SettingsPage /></div>
+          <div className="unified-page-pane" style={{ display: editMode === 'data' ? 'flex' : 'none' }}><DataPreviewPage onOpenTemplateCenter={openTemplateCenterView} /></div>
+          <div className="unified-page-pane" style={{ display: editMode === 'settings' ? 'flex' : 'none' }}><SettingsPage /></div>
         </div>
 
         {/* 右侧：行为代码或属性配置 */}
@@ -820,14 +854,14 @@ export default function UnifiedEditorPage() {
               formName={activeForm?.name}
               onProposalApplied={(result) => {
                 if (!activeForm) return;
-                const updatedDesign = { ...activeForm.design, components: result.components, updatedAt: result.updatedAt };
+                const updatedDesign = { ...activeForm.design, formWindow: result.formWindow || designer.formWindow, components: result.components, updatedAt: result.updatedAt };
                 setForms((current) => current.map((form) => form.id === activeForm.id ? { ...form, ruleCode: result.ruleCode, design: updatedDesign, updatedAt: result.updatedAt } : form));
                 designer.loadDesign(updatedDesign);
                 void store.refreshProject?.();
               }}
               onApply={() => {
                 if (!activeForm) return;
-                const result = applyBehaviorDslToComponents(designer.components, activeForm.ruleCode || '');
+                const result = applyBehaviorDslToComponents(designer.components, activeForm.ruleCode || '', designer.formWindow);
                 if (result.unapplied.length) {
                   const detail = result.unapplied.join('；');
                   announce(`有 ${result.unapplied.length} 条规则无法应用：${detail}`);
@@ -835,7 +869,7 @@ export default function UnifiedEditorPage() {
                   return;
                 }
                 structuredEditPendingRef.current = true;
-                designer.loadDesign({ ...activeForm.design, components: result.components, updatedAt: new Date().toISOString() });
+                designer.loadDesign({ ...activeForm.design, formWindow: result.formWindow || designer.formWindow, components: result.components, updatedAt: new Date().toISOString() });
               }}
             />
           ) : (
@@ -914,7 +948,11 @@ export default function UnifiedEditorPage() {
               </div>
             )
           ) : <PropertyPanel
-            component={designer.selectedId ? designer.components.find((c) => c.id === designer.selectedId) || null : null}
+            component={designer.selectedId === FORM_WINDOW_CELL_ID
+              ? formWindowToComponent(designer.formWindow)
+              : designer.selectedId
+                ? designer.components.find((c) => c.id === designer.selectedId) || null
+                : null}
             components={designer.components}
             onUpdate={(id, patch) => {
               structuredEditPendingRef.current = true;
@@ -1003,23 +1041,37 @@ export default function UnifiedEditorPage() {
         </div>}
       </Modal>
 
-      <Modal open={showMethodLibrary} onClose={() => setShowMethodLibrary(false)} width="780px" maxWidth="94vw" maxHeight="84vh">
-        <ModalHeader title="表单方法库" onClose={() => setShowMethodLibrary(false)} />
-        <div style={{ padding: 16, display: 'grid', gridTemplateColumns: '220px minmax(0, 1fr)', gap: 16, overflow: 'auto' }}>
-          <div>{METHOD_LIBRARY.map((entry) => <button key={entry.id} type="button" className={`unified-list-item ${entry.id === selectedMethod.id ? 'active' : ''}`} style={{ width: '100%', marginBottom: 5, textAlign: 'left' }} onClick={() => { setSelectedMethodId(entry.id); setMethodParams(createMethodDefaults(entry)); setMethodSampleResult(null); }}><div className="unified-list-info"><strong>{entry.name}</strong><span className="unified-list-meta">{entry.description}</span></div></button>)}</div>
-          <div>
-            <h3 style={{ margin: '0 0 4px' }}>{selectedMethod.name}</h3><p style={{ color: 'var(--muted)', marginTop: 0 }}>{selectedMethod.description}</p>
-            <div className="schema-fields">{selectedMethod.parameters.map((parameter) => <label key={parameter.name} className="prop-field"><span>{parameter.label}</span><input value={methodParams[parameter.name] || ''} placeholder={parameter.placeholder} onChange={(event) => { setMethodParams((current) => ({ ...current, [parameter.name]: event.target.value })); setMethodSampleResult(null); }} /></label>)}</div>
-            <div className="project-wizard-summary-card" style={{ marginTop: 12 }}><strong>自然语言预览</strong><div className="project-wizard-summary-list"><p>{selectedMethod.preview(methodParams)}</p></div></div>
-            <label style={{ display: 'block', marginTop: 12 }}><strong style={{ fontSize: 12 }}>生成代码</strong><pre style={{ padding: 10, background: 'var(--surface-subtle)', borderRadius: 6, whiteSpace: 'pre-wrap' }}>{selectedMethod.code(methodParams)}</pre></label>
-            {methodSampleResult !== null && <label style={{ display: 'block', marginTop: 12 }}><strong style={{ fontSize: 12 }}>示例试运行结果</strong><pre style={{ padding: 10, background: 'var(--surface-subtle)', borderRadius: 6, whiteSpace: 'pre-wrap' }}>{JSON.stringify(methodSampleResult, null, 2)}</pre></label>}
+      <Modal open={showMethodLibrary} onClose={closeMethodLibrary} width="min(960px, 94vw)" maxWidth="96vw" maxHeight="88vh" containerClassName="method-library-modal">
+        <div className="method-library-modal-header">
+          <div className="method-library-modal-title">
+            <h3>方法库</h3>
+            <p>挑选常用方法，预览说明后直接插入当前行为。</p>
+          </div>
+          <div className="method-library-modal-actions">
+            <button type="button" className="modal-close" onClick={closeMethodLibrary} aria-label="关闭方法库">×</button>
           </div>
         </div>
-        <div className="modal-footer">
-          <button type="button" className="ui-btn" onClick={() => setMethodSampleResult(selectedMethod.sample(methodParams))}>示例数据试运行</button>
-          <button type="button" className="ui-btn ui-btn-primary" disabled={!editingBehavior} onClick={() => { setBehaviorDraft((current) => `${current}${current.endsWith('\n') || !current ? '' : '\n'}${selectedMethod.code(methodParams)}\n`); setBehaviorDirty(true); setShowMethodLibrary(false); }}>插入当前行为</button>
-          <button type="button" className="ui-btn" onClick={() => setShowMethodLibrary(false)}>关闭</button>
-        </div>
+        <>
+          <div className="method-library-panel">
+            <div>{METHOD_LIBRARY.map((entry) => <button key={entry.id} type="button" className={`unified-list-item ${entry.id === selectedMethod.id ? 'active' : ''}`} style={{ width: '100%', marginBottom: 5, textAlign: 'left' }} onClick={() => { setSelectedMethodId(entry.id); setMethodParams(createMethodDefaults(entry)); setMethodSampleResult(null); }}><div className="unified-list-info"><strong>{entry.name}</strong><span className="unified-list-meta">{entry.description}</span></div></button>)}</div>
+            <div>
+              <h3 style={{ margin: '0 0 4px' }}>{selectedMethod.name}</h3><p style={{ color: 'var(--muted)', marginTop: 0 }}>{selectedMethod.description}</p>
+              <div className="schema-fields">{selectedMethod.parameters.map((parameter) => <label key={parameter.name} className="prop-field"><span>{parameter.label}</span><input value={methodParams[parameter.name] || ''} placeholder={parameter.placeholder} onChange={(event) => { setMethodParams((current) => ({ ...current, [parameter.name]: event.target.value })); setMethodSampleResult(null); }} /></label>)}</div>
+              <div className="project-wizard-summary-card" style={{ marginTop: 12 }}><strong>自然语言预览</strong><div className="project-wizard-summary-list"><p>{selectedMethod.preview(methodParams)}</p></div></div>
+              <label style={{ display: 'block', marginTop: 12 }}><strong style={{ fontSize: 12 }}>生成代码</strong><pre style={{ padding: 10, background: 'var(--surface-subtle)', borderRadius: 6, whiteSpace: 'pre-wrap' }}>{selectedMethod.code(methodParams)}</pre></label>
+              {methodSampleResult !== null && <label style={{ display: 'block', marginTop: 12 }}><strong style={{ fontSize: 12 }}>示例试运行结果</strong><pre style={{ padding: 10, background: 'var(--surface-subtle)', borderRadius: 6, whiteSpace: 'pre-wrap' }}>{JSON.stringify(methodSampleResult, null, 2)}</pre></label>}
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button type="button" className="ui-btn" onClick={() => setMethodSampleResult(selectedMethod.sample(methodParams))}>示例数据试运行</button>
+            <button type="button" className="ui-btn ui-btn-primary" disabled={!editingBehavior} onClick={() => { setBehaviorDraft((current) => `${current}${current.endsWith('\n') || !current ? '' : '\n'}${selectedMethod.code(methodParams)}\n`); setBehaviorDirty(true); closeMethodLibrary(); }}>插入当前行为</button>
+            <button type="button" className="ui-btn" onClick={closeMethodLibrary}>关闭</button>
+          </div>
+        </>
+      </Modal>
+
+      <Modal open={showTemplateCenter} onClose={closeTemplateCenter} width="min(1320px, 96vw)" maxWidth="96vw" maxHeight="88vh" containerClassName="template-center-modal-shell">
+        <TemplateOperationCenter variant="modal" initialView={templateCenterInitialView} />
       </Modal>
 
       <Modal open={!!qualityModal} onClose={() => setQualityModal(null)} width="760px" maxWidth="94vw" maxHeight="84vh">

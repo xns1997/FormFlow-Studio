@@ -38,6 +38,8 @@ export interface FormControlEventContext {
   /** Stable aliases useful to scripts and workflow parameter mappings. */
   componentId?: string;
   componentType?: string;
+  /** Stable key used to prevent replaying successful submit/save side effects. */
+  idempotencyKey?: string;
 }
 
 function resolvePath(source: unknown, path: string[]): unknown {
@@ -150,7 +152,7 @@ export async function executeFormFlowTrigger(
       workflow.nodes.map((node) => ({ id: node.id, specId: node.specId, position: node.position, data: node.data })),
       workflow.edges.map((edge) => ({ ...edge })),
       tables,
-      { targetNodeId: config.targetNodeId, variables, nodeInputs },
+      { targetNodeId: config.targetNodeId, variables, nodeInputs, idempotencyKey: context.idempotencyKey },
     );
     for (const effect of result.sideEffects) {
       if (effect.kind === 'set-form-value') result.finalOutputs[effect.field] = effect.value;
@@ -180,6 +182,7 @@ export async function executeFormFlowTrigger(
     {
       targetNodeId: migrated.exportNodeId,
       variables,
+      idempotencyKey: context.idempotencyKey,
       nodeInputs: {
         ...nodeInputs,
         [importNode.id]: buildImportNodeInputs(importFields.map((field) => field.name), importNodeInputs),

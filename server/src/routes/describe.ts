@@ -5,10 +5,11 @@ import { execSync } from 'child_process';
 import { PYTHON_EXECUTABLE, pythonServicePath, serverDataPath } from '../config/paths';
 import XLSX from 'xlsx';
 import { listProjectPackages, readProjectPackage } from '../services/project-package-store';
+import { fullSourceRows, projectRevision } from '../services/project-authoring';
+import { getStagedUpload } from '../services/upload-staging';
 
 const router = Router();
-const FILES_DIR = serverDataPath('files');
-const REPORTS_DIR = serverDataPath('reports');
+const REPORTS_DIR = serverDataPath('cache', 'reports');
 if (!existsSync(REPORTS_DIR)) mkdirSync(REPORTS_DIR, { recursive: true });
 
 const PYTHON = PYTHON_EXECUTABLE;
@@ -16,6 +17,7 @@ const DESCRIBE_SCRIPT = pythonServicePath('src', 'describe.py');
 
 type ProjectSheetSource = {
   projectId: string;
+  project: Record<string, any>;
   table: Record<string, any>;
   sheet: Record<string, any>;
 };
@@ -24,9 +26,10 @@ function safeFileSegment(value: string) {
   return value.replace(/[^\w\u4e00-\u9fa5.-]+/g, '_');
 }
 
-function getCacheKey(fileId: string, sheetName?: string, projectId?: string) {
+function getCacheKey(fileId: string, sheetName?: string, projectId?: string, revision?: string) {
   const base = projectId ? `${projectId}__${fileId}` : fileId;
-  return sheetName ? `${base}_${sheetName}` : base;
+  const sheet = sheetName ? `${base}_${sheetName}` : base;
+  return revision ? `${sheet}__${revision.slice(0, 16)}` : sheet;
 }
 
 function findProjectSheetSource(tableId: string, sheetName?: string, preferredProjectId?: string): ProjectSheetSource | null {
@@ -43,15 +46,14 @@ function findProjectSheetSource(tableId: string, sheetName?: string, preferredPr
       ? (table.sheets || []).find((entry: Record<string, any>) => entry.name === sheetName)
       : table.sheets?.[0];
     if (!sheet) continue;
-    return { projectId, table, sheet };
+    return { projectId, project, table, sheet };
   }
 
   return null;
 }
 
-function createTempCsvForProjectSheet(cacheKey: string, table: Record<string, any>, sheet: Record<string, any>) {
+function createTempCsvForProjectSheet(cacheKey: string, rows: Record<string, unknown>[], sheet: Record<string, any>) {
   const headers = Array.isArray(sheet.headers) ? sheet.headers : [];
-  const rows = Array.isArray(sheet.preview) ? sheet.preview : [];
   const normalizedRows = rows.map((row: Record<string, unknown>) => {
     const normalized: Record<string, unknown> = {};
     headers.forEach((header) => { normalized[header] = row?.[header] ?? ''; });
@@ -70,7 +72,9 @@ router.get('/:fileId', (req, res) => {
     const { fileId } = req.params;
     const projectId = req.query.projectId as string || undefined;
     const sheetName = req.query.sheet as string || undefined;
-    const cacheKey = getCacheKey(fileId, sheetName, projectId);
+    const projectSheetSource = findProjectSheetSource(fileId, sheetName, projectId);
+    const revision = projectSheetSource ? projectRevision(projectSheetSource.project) : undefined;
+    const cacheKey = getCacheKey(fileId, sheetName, projectId, revision);
     const reportPath = join(REPORTS_DIR, `${cacheKey}.json`);
 
     if (existsSync(reportPath)) {
@@ -78,30 +82,24 @@ router.get('/:fileId', (req, res) => {
       return res.json(cached);
     }
 
-    const metaPath = join(FILES_DIR, `${fileId}.meta.json`);
     let sourceFilePath: string | null = null;
     let cleanupPath: string | null = null;
     let resolvedSheetName = sheetName;
     let displayFileName = fileId;
 
-    if (existsSync(metaPath)) {
-      const meta = JSON.parse(readFileSync(metaPath, 'utf-8'));
-      const filePath = join(FILES_DIR, meta.storedName);
-      if (!existsSync(filePath)) {
-        return res.status(404).json({ error: '存储文件不存在', detail: meta.storedName });
-      }
-      sourceFilePath = filePath;
-      displayFileName = meta.originalName || meta.fileName || fileId;
+    const staged = getStagedUpload(fileId);
+    if (staged) {
+      sourceFilePath = staged.path;
+      displayFileName = staged.originalName;
     } else {
-      const projectSheetSource = findProjectSheetSource(fileId, sheetName, projectId);
       if (!projectSheetSource) {
         return res.status(404).json({ error: '文件不存在', detail: `ID: ${fileId}${projectId ? `, 项目: ${projectId}` : ''}` });
       }
       resolvedSheetName = String(projectSheetSource.sheet.name || sheetName || '');
       displayFileName = String(projectSheetSource.table.fileName || projectSheetSource.table.id || fileId);
       cleanupPath = createTempCsvForProjectSheet(
-        getCacheKey(fileId, resolvedSheetName, projectSheetSource.projectId),
-        projectSheetSource.table,
+        getCacheKey(fileId, resolvedSheetName, projectSheetSource.projectId, revision),
+        fullSourceRows(projectSheetSource.project, projectSheetSource.table, projectSheetSource.sheet),
         projectSheetSource.sheet,
       );
       sourceFilePath = cleanupPath;
@@ -134,7 +132,8 @@ router.get('/:fileId/cache', (req, res) => {
     const { fileId } = req.params;
     const projectId = req.query.projectId as string || undefined;
     const sheetName = req.query.sheet as string || undefined;
-    const cacheKey = getCacheKey(fileId, sheetName, projectId);
+    const source = findProjectSheetSource(fileId, sheetName, projectId);
+    const cacheKey = getCacheKey(fileId, sheetName, projectId, source ? projectRevision(source.project) : undefined);
     const reportPath = join(REPORTS_DIR, `${cacheKey}.json`);
     res.json({ cached: existsSync(reportPath), cacheKey });
   } catch (e) {
@@ -148,9 +147,8 @@ router.delete('/:fileId', (req, res) => {
     const { fileId } = req.params;
     const projectId = req.query.projectId as string || undefined;
     const sheetName = req.query.sheet as string || undefined;
-    const exactCacheKey = sheetName ? `${getCacheKey(fileId, sheetName, projectId)}.json` : null;
-    const prefix = projectId ? `${projectId}__${fileId}` : fileId;
-    const files = readdirSync(REPORTS_DIR).filter((f) => exactCacheKey ? f === exactCacheKey : f.startsWith(prefix));
+    const prefix = getCacheKey(fileId, sheetName, projectId);
+    const files = readdirSync(REPORTS_DIR).filter((f) => f.startsWith(prefix));
     for (const f of files) {
       const path = join(REPORTS_DIR, f);
       if (existsSync(path)) unlinkSync(path);

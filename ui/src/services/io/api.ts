@@ -23,6 +23,15 @@ export async function request(path: string, options?: RequestInit) {
   return res.json();
 }
 
+/** Read a structured API envelope even when the endpoint intentionally returns 409/422. */
+export async function requestResult(path: string, options?: RequestInit): Promise<{ status: number; ok: boolean; body: any }> {
+  const headers = new Headers(options?.headers); headers.set('Content-Type', 'application/json');
+  for (const [key, value] of Object.entries(authorizationHeaders())) headers.set(key, value);
+  const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const body = await response.json().catch(() => ({ error: `API Error: ${response.status}` }));
+  return { status: response.status, ok: response.ok, body };
+}
+
 // ── 项目管理 ──────────────────────────────────────
 
 export const projectApi = {
@@ -32,6 +41,44 @@ export const projectApi = {
   update: (id: string, data: any) => request(`/projects/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(data) }),
   remove: (id: string) => request(`/projects/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   clone: (id: string) => request(`/projects/${encodeURIComponent(id)}/clone`, { method: 'POST' }),
+  runtimeData: (id: string) => request(`/projects/${encodeURIComponent(id)}/runtime-data`),
+  importDataSource: async (id: string, file: File, options?: { mode?: 'create' | 'replace'; tableId?: string; fileName?: string }) => {
+    const formData = new FormData();
+    formData.append('file', file, options?.fileName || file.name);
+    formData.append('mode', options?.mode || 'create');
+    if (options?.tableId) formData.append('tableId', options.tableId);
+    const response = await fetch(`${API_BASE}/projects/${encodeURIComponent(id)}/data-sources/import`, {
+      method: 'POST',
+      headers: authorizationHeaders(),
+      body: formData,
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(body?.detail || body?.error || `导入失败：${response.status}`);
+    return body;
+  },
+  downloadPackage: async (id: string, fileName: string) => {
+    const response = await fetch(`${API_BASE}/projects/${encodeURIComponent(id)}/package`, { headers: authorizationHeaders() });
+    if (!response.ok) throw new Error('项目包导出失败');
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${fileName || id}.formflow`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  },
+  importPackage: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch(`${API_BASE}/projects/package/import`, {
+      method: 'POST',
+      headers: authorizationHeaders(),
+      body: formData,
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(body?.error?.message || body?.error || '项目包导入失败');
+    return body;
+  },
 };
 
 // ── 文件管理 ──────────────────────────────────────
@@ -140,15 +187,19 @@ export const llmApi = {
   },
   projectAgent: {
     sessions: (query: { projectId?: string; scope?: ProjectAgentSessionScope } = {}) => { const params = new URLSearchParams(); if (query.projectId) params.set('projectId', query.projectId); else if (query.scope) params.set('scope', query.scope); const suffix = params.size ? `?${params}` : ''; return request(`/ai/project-agent/v2/sessions${suffix}`); },
+    history: (query: { q?: string; status?: 'active' | 'attention' | 'completed'; projectId?: string; archived?: boolean; cursor?: string; limit?: number } = {}) => { const params = new URLSearchParams(); if (query.q) params.set('q', query.q); if (query.status) params.set('status', query.status); if (query.projectId) params.set('projectId', query.projectId); if (query.archived) params.set('archived', 'true'); if (query.cursor) params.set('cursor', query.cursor); if (query.limit) params.set('limit', String(query.limit)); return request(`/ai/project-agent/v2/sessions/history?${params}`); },
     createSession: (data: { projectId?: string; projectIds?: string[]; title?: string; profileId?: string; capabilityBundleVersionId?: string }) => request('/ai/project-agent/v2/sessions', { method: 'POST', body: JSON.stringify(data) }),
     setProjects: (id: string, data: { projectIds: string[]; currentProjectId?: string }) => request(`/ai/project-agent/v2/sessions/${encodeURIComponent(id)}/projects`, { method: 'PUT', body: JSON.stringify(data) }),
     getSession: (id: string, projectId?: string) => request(`/ai/project-agent/v2/sessions/${encodeURIComponent(id)}${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`),
     turn: (id: string, data: { prompt: string; projectId?: string }) => request(`/ai/project-agent/v2/sessions/${encodeURIComponent(id)}/turns`, { method: 'POST', body: JSON.stringify(data) }),
     retryTurn: (id: string, projectId?: string) => request(`/ai/project-agent/v2/sessions/${encodeURIComponent(id)}/turns/retry`, { method: 'POST', body: JSON.stringify({ projectId }) }),
-    confirmPlan: (sessionId: string, planId: string, projectId?: string) => request(`/ai/project-agent/v2/sessions/${encodeURIComponent(sessionId)}/plans/${encodeURIComponent(planId)}/confirm`, { method: 'POST', body: JSON.stringify({ projectId }) }),
+    confirmPlan: (sessionId: string, planId: string, data: { projectId?: string; requirementsAcknowledged: boolean; requirementRevision: number }) => request(`/ai/project-agent/v2/sessions/${encodeURIComponent(sessionId)}/plans/${encodeURIComponent(planId)}/confirm`, { method: 'POST', body: JSON.stringify(data) }),
     control: (id: string, data: { action: 'pause' | 'continue' | 'stop' | 'retry' | 'repair'; projectId?: string }) => request(`/ai/project-agent/v2/sessions/${encodeURIComponent(id)}/control`, { method: 'POST', body: JSON.stringify(data) }),
     decideOperation: (sessionId: string, operationId: string, data: { approved: boolean; automatic?: boolean; projectId?: string }) => request(`/ai/project-agent/v2/sessions/${encodeURIComponent(sessionId)}/operations/${encodeURIComponent(operationId)}/decision`, { method: 'POST', body: JSON.stringify(data) }),
     archive: (id: string, projectId?: string) => request(`/ai/project-agent/v2/sessions/${encodeURIComponent(id)}${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`, { method: 'DELETE' }),
+    permanentlyDelete: (id: string, projectId?: string) => request(`/ai/project-agent/v2/sessions/${encodeURIComponent(id)}/permanent${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`, { method: 'DELETE', body: JSON.stringify({ confirmed: true }) }),
+    updateMetadata: (id: string, data: { title?: string; pinned?: boolean }, projectId?: string) => request(`/ai/project-agent/v2/sessions/${encodeURIComponent(id)}${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    restore: (id: string, projectId?: string) => request(`/ai/project-agent/v2/sessions/${encodeURIComponent(id)}/restore${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`, { method: 'POST' }),
     events: (id: string, afterSeq = 0, projectId?: string) => request(`/ai/project-agent/v2/sessions/${encodeURIComponent(id)}/events?afterSeq=${afterSeq}${projectId ? `&projectId=${encodeURIComponent(projectId)}` : ''}`),
     streamEvents: async (id: string, afterSeq: number, onEvent: (event: any) => void, signal?: AbortSignal, projectId?: string, lifecycle?: { onOpen?(): void; onClose?(): void }) => {
       const response = await fetch(`${API_BASE}/ai/project-agent/v2/sessions/${encodeURIComponent(id)}/events?afterSeq=${afterSeq}${projectId ? `&projectId=${encodeURIComponent(projectId)}` : ''}`, { headers: { Accept: 'text/event-stream', ...authorizationHeaders() }, signal });
@@ -161,6 +212,7 @@ export const llmApi = {
     },
     capabilityBundles: {
       list: () => request('/ai/project-agent/v2/capability-bundles'),
+      experts: (id: string) => request(`/ai/project-agent/v2/capability-bundles/${encodeURIComponent(id)}/experts`),
       create: (data: any) => request('/ai/project-agent/v2/capability-bundles', { method: 'POST', body: JSON.stringify(data) }),
       update: (id: string, data: any) => request(`/ai/project-agent/v2/capability-bundles/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(data) }),
       validate: (id: string) => request(`/ai/project-agent/v2/capability-bundles/${encodeURIComponent(id)}/validate`, { method: 'POST' }),

@@ -121,17 +121,6 @@ function buildSeed(type: string): PlaygroundSeed {
         },
         values: { checkbox_value: ['dessert', 'coffee'] },
       };
-    case 'form':
-      return {
-        component: {
-          ...base,
-          type: 'form',
-          fieldBinding: undefined,
-          height: 120,
-          props: { title: '订单录入', subtitle: '这是一个顶层表单容器的示意预览' },
-        },
-        values: {},
-      };
     case 'container':
     case 'card':
       return {

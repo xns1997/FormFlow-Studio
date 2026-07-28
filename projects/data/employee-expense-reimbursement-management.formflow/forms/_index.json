@@ -1,0 +1,37 @@
+{
+  "forms": [
+    {
+      "id": "expense_submit",
+      "name": "提交报销申请",
+      "fileName": "expense_submit.json",
+      "behaviorsFileName": "expense_submit.behaviors.json",
+      "createdAt": "2026-07-22T07:28:41.577Z",
+      "updatedAt": "2026-07-22T07:30:04.473Z"
+    },
+    {
+      "id": "expense_query",
+      "name": "报销记录查询",
+      "fileName": "expense_query.json",
+      "behaviorsFileName": "expense_query.behaviors.json",
+      "createdAt": "2026-07-22T07:28:41.592Z",
+      "updatedAt": "2026-07-22T07:30:04.500Z"
+    },
+    {
+      "id": "expense_approval",
+      "name": "报销申请审批",
+      "fileName": "expense_approval.json",
+      "behaviorsFileName": "expense_approval.behaviors.json",
+      "createdAt": "2026-07-22T07:28:41.607Z",
+      "updatedAt": "2026-07-22T07:30:04.525Z"
+    },
+    {
+      "id": "expense_detail",
+      "name": "报销详情",
+      "fileName": "expense_detail.json",
+      "behaviorsFileName": "expense_detail.behaviors.json",
+      "createdAt": "2026-07-22T07:28:41.624Z",
+      "updatedAt": "2026-07-22T07:30:04.548Z"
+    }
+  ],
+  "defaultFormId": "expense_submit"
+}

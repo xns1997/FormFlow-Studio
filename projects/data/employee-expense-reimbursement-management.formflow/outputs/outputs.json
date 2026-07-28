@@ -1,0 +1,11 @@
+{
+  "outputs": [
+    {
+      "id": "expense_records_export",
+      "name": "报销记录 Excel 导出",
+      "format": "xlsx",
+      "size": 0,
+      "createdAt": "2026-07-22T07:35:50.992Z"
+    }
+  ]
+}

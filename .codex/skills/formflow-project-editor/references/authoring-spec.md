@@ -68,24 +68,24 @@ forms:
   - id: employee-edit
     name: 员工编辑
     mode: edit
+    coordinateSpace: window-content-v1
+    formWindow:
+      x: 40
+      y: 40
+      width: 900
+      height: 600
+      props: { title: 员工编辑, showFooter: false }
     components:
-      - id: root
-        type: form
-        props: { title: 员工编辑 }
-        children: [employee-id, employee-name, save]
       - id: employee-id
         type: text
-        parentId: root
         field: 工号
         props: { name: employeeId, label: 工号, required: true }
       - id: employee-name
         type: text
-        parentId: root
         field: 姓名
         props: { name: employeeName, label: 姓名 }
       - id: save
         type: button
-        parentId: root
         props:
           name: save
           label: 保存
@@ -109,7 +109,7 @@ sheetBehaviors:
     behaviors: []
 ```
 
-Coordinates and sizes are optional. The deterministic grid layout uses component order. Explicit values win. Components may contain arbitrary `props`; bindings may contain arbitrary `config`.
+Coordinates and sizes are optional. The deterministic grid layout uses component order. Explicit values win. With `coordinateSpace: window-content-v1`, component `x` and `y` are local to the form content area below the fixed 52 px title bar and configured padding; they are never canvas-absolute coordinates. The form window grows to contain component bounds and does not shrink automatically. Components may contain arbitrary `props`; bindings may contain arbitrary `config`.
 
 Every form receives an independent `ruleCode` string. It defaults to an empty string and is stored in the form's `.behaviors.json` file alongside scripted behaviors. Use it for the controlled rule DSL edited by FormFlow's “行为定义 → 规则语法” workspace.
 

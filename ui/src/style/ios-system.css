@@ -118,6 +118,15 @@ button { min-width: var(--control-height-sm); min-height: var(--control-height-s
   box-shadow: none !important;
 }
 
+.ant-input-number .ant-input-number-input {
+  min-height: 0 !important;
+  height: calc(var(--control-height) - 2px);
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 :where(
   input:not([type='checkbox']):not([type='radio']):not([type='range']),
   textarea,

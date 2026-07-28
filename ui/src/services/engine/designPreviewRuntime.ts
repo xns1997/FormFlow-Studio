@@ -1,4 +1,4 @@
-import type { DesignComponent, SrcTableEntry, WorkflowFile } from '../../project/types';
+import type { DesignComponent, FormLinkageOptionsConfig, SrcTableEntry, WorkflowFile } from '../../project/types';
 import type { FormEventExecutionTrace } from '../../project/types';
 import type { ComponentNode } from '../../models';
 import { exportToComponentNodes } from '../../designer/export';
@@ -16,6 +16,7 @@ export interface DesignPreviewEventContext {
   component: DesignComponent;
   previousValue?: unknown;
   timestamp?: number;
+  idempotencyKey?: string;
 }
 
 export interface DesignPreviewEventResult {
@@ -46,7 +47,7 @@ export async function executeDesignPreviewEvent(
     setVisible?: (componentId: string, visible: boolean) => void;
     setDisabled?: (componentId: string, disabled: boolean) => void;
     setRequired?: (field: string, required: boolean) => void;
-    setOptions?: (field: string, config: { table: string; filterField: string; filterValue?: unknown; labelField?: string; valueField?: string }) => void;
+    setOptions?: (field: string, config: FormLinkageOptionsConfig) => void;
     showMessage?: (message: string, level?: 'info' | 'success' | 'warning' | 'error') => void;
     callbacks?: Record<string, FormEventCallback>;
   },
@@ -63,6 +64,7 @@ export async function executeDesignPreviewEvent(
     component: asComponentNode(context.component),
     previousValue: context.previousValue,
     timestamp: context.timestamp,
+    idempotencyKey: context.idempotencyKey,
   }, {
     workflows: options.workflows,
     tables: options.tables,

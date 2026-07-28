@@ -98,6 +98,7 @@ const ICONS: Record<string, IconComponent> = {
   projects: List,
   data: DataSheet,
   canvas: Connection,
+  workflow: Connection,
   designer: Magic,
   behavior: Lightning,
   test: Experiment,

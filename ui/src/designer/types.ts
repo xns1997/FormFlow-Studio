@@ -11,7 +11,9 @@ export type PropertyEditorKind =
   | 'options' | 'string-list' | 'table-columns' | 'field-path' | 'key-value' | 'mapping'
   | 'filters' | 'sorting' | 'expression' | 'template' | 'typography' | 'spacing' | 'border'
   | 'radius' | 'shadow' | 'opacity' | 'dimension' | 'icon' | 'url' | 'upload-constraints'
-  | 'tabs' | 'steps' | 'dimension-metric' | 'data-binding' | 'option-source' | 'range';
+  | 'tabs' | 'steps' | 'dimension-metric' | 'data-binding' | 'option-source' | 'range'
+  | 'date-default-config' | 'date-constraint-config' | 'date-business-day-config'
+  | 'option-content' | 'option-advanced' | 'display-conditions';
 
 export type PropertySection = 'function' | 'style';
 export type PropertyTaskId = 'content' | 'validation' | 'data' | 'binding' | 'logic' | 'events' | 'appearance' | 'effects' | 'layout' | 'format' | 'other';
@@ -136,7 +138,7 @@ export interface ControlDef {
   render: React.ComponentType<{
     component: DesignComponent;
     selected?: boolean;
-    mode?: 'design' | 'preview';
+    mode?: 'design' | 'preview' | 'runtime';
     runtime?: PreviewControlRuntime;
   }>;
 }

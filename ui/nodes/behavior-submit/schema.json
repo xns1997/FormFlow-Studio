@@ -37,7 +37,7 @@
       "name": "writeBackMode",
       "label": "元数据写回",
       "type": "enum",
-      "enum": ["none", "upsert"],
+      "enum": ["none", "insert", "update", "upsert"],
       "default": "none",
       "description": "按主键更新或新增项目数据表行"
     },

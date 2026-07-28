@@ -3,12 +3,12 @@ import type { Monaco, OnMount } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import CodeEditor from './CodeEditor';
 import { BEHAVIOR_DSL_LANGUAGE_ID, createBehaviorDslSuggestions, registerBehaviorDslLanguage, resolveBehaviorDslCompletionContext } from './behaviorDslSuggestions';
-import type { DesignComponent, SrcTableEntry, WorkflowFile } from '../project/types';
+import type { DesignComponent, FormWindowConfig, SrcTableEntry, WorkflowFile } from '../project/types';
 import { compileBehaviorDsl, hasBehaviorDslErrors, naturalLanguageToBehaviorDsl } from '../services/engine/behaviorDsl';
 import { BEHAVIOR_DSL_TEMPLATES } from '../services/engine/behaviorDslLanguage';
 import RuleAgentPanel from './RuleAgentPanel';
 
-interface Props { projectId: string; value: string; onChange: (value: string) => void; fields: string[]; components: DesignComponent[]; tables: SrcTableEntry[]; workflows: WorkflowFile[]; formId: string; formName?: string; onApply: () => void; onProposalApplied: (result: { ruleCode: string; components: DesignComponent[]; updatedAt: string }) => void; }
+interface Props { projectId: string; value: string; onChange: (value: string) => void; fields: string[]; components: DesignComponent[]; tables: SrcTableEntry[]; workflows: WorkflowFile[]; formId: string; formName?: string; onApply: () => void; onProposalApplied: (result: { ruleCode: string; components: DesignComponent[]; formWindow?: FormWindowConfig; updatedAt: string }) => void; }
 
 export function createBehaviorRuleModelPath(formId: string) {
   return `inmemory://formflow/forms/${encodeURIComponent(formId || 'unknown')}/behavior-rules.ffrule`;

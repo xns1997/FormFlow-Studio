@@ -194,14 +194,20 @@
   border-radius: var(--radius);
   border: var(--border);
   cursor: default;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
 }
 
 .project-card:hover {
   border-color: var(--accent);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  transform: translateY(-3px);
+}
+
+.project-card:active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transition-duration: 0.1s;
 }
 
 .card-cover {
@@ -780,6 +786,13 @@
   background: color-mix(in srgb, var(--danger) 12%, white);
   color: var(--danger);
   font-size: 12px;
+}
+
+.project-wizard-next-hint {
+  margin: 10px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 @media (max-width: 900px) {

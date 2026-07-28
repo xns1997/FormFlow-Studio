@@ -135,6 +135,16 @@
 .rs-cell.selected { background: #dbeafe; }
 .rs-cell.start { background: var(--accent); color: #fff; }
 
+/* 行级 hover 效果 */
+.rs-data-row:hover .rs-cell {
+  background: color-mix(in srgb, var(--accent) 5%, var(--panel));
+}
+
+.rs-data-row:hover .rs-row-num {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 .rs-header-cell {
   font-weight: 600;
   background: var(--panel-soft);

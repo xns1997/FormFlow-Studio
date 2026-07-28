@@ -1,0 +1,51 @@
+{
+  "kind": "formflow-project",
+  "formatVersion": 2,
+  "config": {
+    "id": "employee-expense-reimbursement-management",
+    "name": "员工费用报销管理",
+    "description": "员工费用报销申请、查询与部门负责人审批管理，覆盖草稿、待审批、通过和驳回全生命周期。",
+    "version": "2.0.0",
+    "author": "FormFlow Agent",
+    "tags": [
+      "费用报销",
+      "审批",
+      "员工管理"
+    ],
+    "createdAt": "2026-07-22T07:25:51.297Z",
+    "updatedAt": "2026-07-23T05:48:45.984Z"
+  },
+  "settings": {
+    "behavior": {
+      "enableJsScripts": true,
+      "enableNodeBehavior": true,
+      "scriptTimeout": 5000,
+      "errorStrategy": "show-error",
+      "loopProtection": 100,
+      "enableDebugDrawer": true,
+      "autoOpenDebugDrawerOnWarnOrError": true,
+      "mirrorScriptLogsToConsole": true,
+      "enableServerDebugApi": true
+    },
+    "publish": {
+      "format": "xlsx",
+      "allowWriteBack": true,
+      "generateChangeLog": true,
+      "outputFileName": "员工费用报销记录"
+    },
+    "updatedAt": "2026-07-22T07:25:51.297Z"
+  },
+  "release": {
+    "mode": "design",
+    "allowDesigner": true,
+    "allowBehaviorEditor": true,
+    "allowWorkflowEditor": true,
+    "defaultFormId": "expense_submit"
+  },
+  "relations": [],
+  "templateInstances": [],
+  "templatePresets": [],
+  "customOperationTemplates": [],
+  "analysisTasks": [],
+  "modelRuns": []
+}

@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { runRuleSandbox } from './rule-agent';
-import { validateProjectModel, type JsonObject } from './project-authoring';
+import { fullSourceRows, validateProjectModel, type JsonObject } from './project-authoring';
 import { evaluatePropertyExpression } from '../../../ui/src/services/engine/propertyExpression';
 
 export type MockScenario = 'normal' | 'boundary' | 'empty' | 'wrong_type' | 'enum_outside' | 'duplicate_key' | 'not_found' | 'multiple_matches' | 'workflow_failure';
@@ -119,12 +119,13 @@ export function profileMockData(project: JsonObject, input: MockGenerationInput)
 }
 
 export function generateMockData(project: JsonObject, input: MockGenerationInput) {
-  const { sheet } = findSheet(project, input.tableId, input.sheetName);
+  const { table, sheet } = findSheet(project, input.tableId, input.sheetName);
   const rowCount = Math.min(Math.max(Number(input.rowCount || 20), 1), 1000);
   const seed = seedNumber(input.seed);
   const random = randomSource(seed);
   const keys: string[] = sheet.config?.keyFields || [];
-  const existing = new Set((sheet.preview || []).map((row: any) => JSON.stringify(keys.map((key) => row[key]))));
+  const currentRows = fullSourceRows(project, table, sheet);
+  const existing = new Set(currentRows.map((row: any) => JSON.stringify(keys.map((key) => row[key]))));
   const rows: JsonObject[] = [];
   let offset = Number(sheet.rowCount || sheet.preview?.length || 0);
   while (rows.length < rowCount) {
@@ -143,7 +144,7 @@ export function generateMockData(project: JsonObject, input: MockGenerationInput
     if (scenario === 'empty' && firstColumn) values[firstColumn.name] = '';
     if (scenario === 'wrong_type' && firstColumn) values[firstColumn.name] = { invalid: true };
     if (scenario === 'enum_outside' && enumColumn) values[enumColumn.name] = '__不存在的选项__';
-    if (scenario === 'duplicate_key' && keys.length && sheet.preview?.[0]) keys.forEach((key) => { values[key] = sheet.preview[0][key]; });
+    if (scenario === 'duplicate_key' && keys.length && currentRows[0]) keys.forEach((key) => { values[key] = currentRows[0][key]; });
     if (scenario === 'not_found') keys.forEach((key) => { values[key] = `NOT-FOUND-${seed}`; });
     return { id: `mock-${scenario}`, name: scenario, scenario, values, expectedValid: !['empty', 'wrong_type', 'enum_outside', 'duplicate_key', 'workflow_failure'].includes(scenario) };
   });
@@ -214,11 +215,12 @@ export function inspectProjectQuality(project: JsonObject) {
   const validation = validateProjectModel(project);
   const diagnostics: any[] = [...validation.errors.map((item) => ({ severity: 'error', ...item }))];
   for (const table of project.srcTable || []) for (const sheet of table.sheets || []) {
+    const rows = fullSourceRows(project, table, sheet);
     for (const computed of sheet.config?.computedFields || []) {
       const target = String(computed.target || ''); const expression = String(computed.expression || ''); const tolerance = Math.max(0, Number(computed.tolerance ?? 0.000001));
       if (!target || !expression) { diagnostics.push({ severity: 'error', code: 'INVALID_COMPUTED_FIELD', path: `data.${table.id}.${sheet.name}.config.computedFields`, message: '计算字段必须声明 target 和 expression' }); continue; }
       const mismatches: number[] = []; let expressionError = '';
-      for (const [index, row] of (sheet.preview || []).entries()) {
+      for (const [index, row] of rows.entries()) {
         const evaluated = evaluatePropertyExpression(expression, { form: row, row });
         if (!evaluated.ok) { expressionError = evaluated.error || '表达式无法计算'; break; }
         const expected = Number(evaluated.value); const actual = Number(row[target]);

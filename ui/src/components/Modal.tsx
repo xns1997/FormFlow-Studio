@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useId, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 const modalStack: symbol[] = [];
@@ -36,7 +36,7 @@ export default function Modal({
   maxHeight = '85vh',
   overlayClassName,
   containerClassName,
-  ariaLabel = '对话框',
+  ariaLabel,
   closeOnBackdrop = true,
   dialogRole = 'dialog',
 }: ModalProps) {
@@ -45,10 +45,26 @@ export default function Modal({
   const modalToken = useRef(Symbol('modal'));
   const onCloseRef = useRef(onClose);
   const titleId = useId();
+  const [exiting, setExiting] = useState(false);
+  const [visible, setVisible] = useState(false);
   onCloseRef.current = onClose;
 
   useEffect(() => {
-    if (!open) return;
+    if (open) {
+      setVisible(true);
+      setExiting(false);
+    } else if (visible) {
+      setExiting(true);
+      const timer = setTimeout(() => {
+        setVisible(false);
+        setExiting(false);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [open, visible]);
+
+  useEffect(() => {
+    if (!visible) return;
     const token = modalToken.current;
     const previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const previousOverflow = document.body.style.overflow;
@@ -99,15 +115,15 @@ export default function Modal({
       document.body.style.overflow = modalStack.length ? 'hidden' : previousOverflow;
       if (previousActiveElement?.isConnected) previousActiveElement.focus({ preventScroll: true });
     };
-  }, [open]);
+  }, [visible]);
 
-  if (!open) return null;
+  if (!visible) return null;
 
   return (
     <ModalTitleContext.Provider value={titleId}>
       {createPortal(
         <div
-          className={['modal-overlay', overlayClassName].filter(Boolean).join(' ')}
+          className={['modal-overlay', exiting ? 'modal-exiting' : '', overlayClassName].filter(Boolean).join(' ')}
           ref={backdropRef}
           onClick={(e) => { if (closeOnBackdrop && e.target === backdropRef.current) onClose(); }}
         >
@@ -117,7 +133,7 @@ export default function Modal({
             style={{ width, maxWidth, maxHeight }}
             role={dialogRole}
             aria-modal="true"
-            aria-labelledby={titleId}
+            aria-labelledby={ariaLabel ? undefined : titleId}
             aria-label={ariaLabel}
             tabIndex={-1}
             data-app-modal="true"
@@ -134,14 +150,18 @@ export default function Modal({
 
 interface ModalHeaderProps {
   title: string;
+  description?: string;
   onClose: () => void;
 }
 
-export function ModalHeader({ title, onClose }: ModalHeaderProps) {
+export function ModalHeader({ title, description, onClose }: ModalHeaderProps) {
   const titleId = useContext(ModalTitleContext) || undefined;
   return (
     <div className="modal-header">
-      <h3 id={titleId}>{title}</h3>
+      <div className="modal-header-copy">
+        <h3 id={titleId}>{title}</h3>
+        {description && <p>{description}</p>}
+      </div>
       <button type="button" className="modal-close" onClick={onClose} aria-label={`关闭${title}`}>×</button>
     </div>
   );

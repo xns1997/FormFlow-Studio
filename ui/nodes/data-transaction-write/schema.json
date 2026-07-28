@@ -1,0 +1,21 @@
+{
+  "id": "data:transaction-write",
+  "label": "跨表事务写回",
+  "description": "预检多个表的新增或更新，输出逐表差异并作为一个原子变更组提交",
+  "category": "高阶 · 数据",
+  "kind": "generic",
+  "properties": [
+    { "name": "targets", "label": "写回目标", "type": "json", "default": [] },
+    { "name": "statusField", "label": "状态回填字段", "type": "string", "default": "_事务状态" },
+    { "name": "diffField", "label": "差异回填字段", "type": "string", "default": "_变更差异" },
+    { "name": "clearSourceFieldsOnSuccess", "label": "成功后清空变更集", "type": "boolean", "default": false }
+  ],
+  "ports": [
+    { "name": "formData", "label": "复合表单数据", "type": "object", "direction": "input", "required": true },
+    { "name": "result", "label": "事务结果", "type": "array", "direction": "output" },
+    { "name": "success", "label": "提交成功", "type": "boolean", "direction": "output" },
+    { "name": "diff", "label": "变更差异", "type": "array", "direction": "output" },
+    { "name": "conflicts", "label": "冲突", "type": "array", "direction": "output" }
+  ],
+  "keywords": ["事务", "跨表", "原子", "差异", "冲突", "writeback"]
+}

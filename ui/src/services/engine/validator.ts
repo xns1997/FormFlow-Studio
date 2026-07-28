@@ -17,6 +17,10 @@ function isEmpty(value: unknown) {
   return value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0);
 }
 
+function isEmptyForComponent(value: unknown, props: Record<string, unknown>) {
+  return isEmpty(value) || (props.componentType === 'rating' && Number(value) <= 0);
+}
+
 function isPotentiallyUnsafeRegex(pattern: string) {
   return /\([^)]*[+*][^)]*\)[+*{]/.test(pattern) || /([+*])\1/.test(pattern);
 }
@@ -36,7 +40,7 @@ function applyRule(value: unknown, rule: ValidationRule, values: Record<string, 
   const str = String(value ?? '');
   switch (rule.type) {
     case 'required':
-      if (isEmpty(value)) return rule.message || '此字段为必填项';
+      if (isEmptyForComponent(value, values)) return rule.message || '此字段为必填项';
       break;
     case 'email':
       if (str && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str)) return rule.message || '请输入有效的邮箱地址';
@@ -100,10 +104,16 @@ export function compileComponentValidation(props: Record<string, unknown>): Vali
   const message = String(props.customMessage || '');
   if (props.required && !rules.some((rule) => rule.type === 'required')) rules.unshift({ type: 'required', message: message || '此字段为必填项' });
   const validator = String(props.validator || 'none');
+  const inputKind = String(props.inputKind || 'text');
+  const inferredValidator = inputKind === 'text' || inputKind === 'code' ? '' : inputKind;
+  if (inferredValidator && !rules.some((rule) => rule.type === inferredValidator)) {
+    const inferredMessage = message && message !== '输入内容不符合要求' ? message : ({ email: '请输入有效的邮箱地址', phone: '请输入有效的手机号', idcard: '请输入有效的身份证号', url: '请输入有效的 HTTP(S) 地址' } as Record<string, string>)[inferredValidator] || message;
+    rules.push({ type: inferredValidator as ValidationRule['type'], message: inferredMessage });
+  }
   if (['email', 'phone', 'url', 'idcard', 'number', 'integer'].includes(validator) && !rules.some((rule) => rule.type === validator)) rules.push({ type: validator as ValidationRule['type'], message });
   if (props.integer && !rules.some((rule) => rule.type === 'integer')) rules.push({ type: 'integer', message });
   if (props.positive && !rules.some((rule) => rule.type === 'positive')) rules.push({ type: 'positive', message });
-  if ((validator === 'pattern' || props.pattern) && props.pattern && !rules.some((rule) => rule.type === 'pattern')) rules.push({ type: 'pattern', param: String(props.pattern), message: String(props.patternMessage || message || '格式不正确') });
+  if ((validator === 'pattern' || props.pattern) && props.pattern && !rules.some((rule) => rule.type === 'pattern')) rules.push({ type: 'pattern', param: String(props.pattern), message: String(props.patternMessage || message || (props.placeholder ? `格式应类似：${props.placeholder}` : '格式不正确')) });
   if (Number(props.minLength) > 0 && !rules.some((rule) => rule.type === 'minLength')) rules.push({ type: 'minLength', param: String(props.minLength), message });
   if (Number(props.maxLength) > 0 && !rules.some((rule) => rule.type === 'maxLength')) rules.push({ type: 'maxLength', param: String(props.maxLength), message });
   if (props.min !== undefined && props.min !== '' && !rules.some((rule) => rule.type === 'min')) rules.push({ type: 'min', param: String(props.min), message });
