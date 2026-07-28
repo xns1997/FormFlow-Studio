@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { DataRelation, SrcSheetInfo, SrcTableEntry } from '../project/types';
+import type { DataRelation, SrcSheetInfo, SrcTableEntry, TableConfig } from '../project/types';
 import { createDesignFromTemplate } from './designTemplates';
 
 const masterSheet: SrcSheetInfo = {
@@ -80,7 +80,7 @@ function makeWideTable(fieldCount: number): SrcTableEntry {
       headers,
       columns: headers.map((name, index) => ({ name, index, dataType: index % 4 === 0 ? 'number' : 'string', nullable: index % 2 === 0, uniqueCount: 2, sampleValues: [index % 4 === 0 ? index + 1 : `值${index + 1}`] })),
       preview: [Object.fromEntries(headers.map((name, index) => [name, index % 4 === 0 ? index + 1 : `值${index + 1}`]))],
-      config: { ...masterSheet.config, keyFields: ['字段1'] },
+      config: { ...masterSheet.config, keyFields: ['字段1'] } as TableConfig,
       rowCount: 1,
       colCount: fieldCount,
     }],

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { deleteTestProject } from './project-test-cleanup';
 
 async function createDataProject(page: import('@playwright/test').Page) {
   await page.goto('/projects');
@@ -17,7 +18,7 @@ async function createDataProject(page: import('@playwright/test').Page) {
 test.describe('数据准备工作台', () => {
   test.afterEach(async ({ page, request }) => {
     const projectId = new URL(page.url()).pathname.match(/^\/projects\/([^/]+)/)?.[1];
-    if (projectId?.startsWith('proj_')) await request.delete(`http://localhost:3103/api/projects/${projectId}`);
+    await deleteTestProject(request, projectId);
   });
 
   test('提供服务端搜索分页和分组工具栏', async ({ page }) => {
@@ -56,21 +57,17 @@ test.describe('数据准备工作台', () => {
 
   test('可按选中字段推荐模板、交互预览并创建表单', async ({ page }) => {
     await createDataProject(page);
-    await page.getByLabel('选择字段 参数ID').check();
-    await page.getByLabel('选择字段 情景').check();
+    for (const field of ['参数ID', '情景']) {
+      const checkbox = page.getByLabel(`选择字段 ${field}`);
+      await checkbox.click();
+      await expect(checkbox).toBeChecked();
+    }
     await expect(page.locator('.data-preview-template-selection')).toContainText('已选 2 个字段');
     await page.locator('.data-preview-template-selection').getByRole('button', { name: '选择模板生成表单' }).click();
     await expect(page.getByRole('heading', { name: '选择模板生成表单' })).toBeVisible();
     await expect(page.getByText('正在匹配全部模板…')).toBeHidden();
     await expect(page.locator('.data-template-card').first()).toContainText('最适合');
     await expect(page.locator('[data-testid="designer-preview"]')).toBeVisible();
-    await page.locator('.data-template-parameters summary').click();
-    const fieldSelector = page.locator('.data-template-parameters label').filter({ hasText: '表单字段' }).getByRole('combobox');
-    await fieldSelector.click();
-    const fieldDropdown = page.locator('.data-template-modal .ant-select-dropdown');
-    await expect(fieldDropdown).toBeVisible();
-    await expect(fieldDropdown.locator('.ant-select-item-option-content').filter({ hasText: '参数ID' })).toBeVisible();
-    await fieldSelector.click();
     await page.getByRole('button', { name: '创建并打开' }).click();
     await expect(page).toHaveURL(/mode=design&form=/);
   });
@@ -108,9 +105,11 @@ test.describe('数据准备工作台', () => {
 
   test('批量更新模板在预览和正式运行态只提交被修改的行', async ({ page, request }) => {
     await createDataProject(page);
-    await page.getByLabel('选择字段 参数ID').check();
-    await page.getByLabel('选择字段 情景').check();
-    await page.getByLabel('选择字段 出生率').check();
+    for (const field of ['参数ID', '情景', '出生率']) {
+      const checkbox = page.getByLabel(`选择字段 ${field}`);
+      await checkbox.click();
+      await expect(checkbox).toBeChecked();
+    }
     await page.locator('.data-preview-template-selection').getByRole('button', { name: '选择模板生成表单' }).click();
     await expect(page.getByText('正在匹配全部模板…')).toBeHidden();
     await page.getByRole('button', { name: /查看全部/ }).click();

@@ -3,6 +3,7 @@ import test from 'node:test';
 import type { ComponentNode } from '../../models';
 import type { SrcTableEntry, WorkflowFile } from '../../project/types';
 import { executeFormControlEvent } from './formEventExecutor';
+import { ensureWorkflowIo, getWorkflowExportFields, getWorkflowImportFields } from './workflowIo';
 
 const component: ComponentNode = {
   id: 'field-1',
@@ -219,14 +220,12 @@ test('ctx batch helpers and toggle helpers update runtime values and state consi
     after: { customerName: '最终客户', approvalComment: '' },
   });
   assert.deepEqual(writes, [
-    ['customerName', '批量客户'],
-    ['approvalComment', '已填写'],
-    ['approvalComment', ''],
     ['customerName', '最终客户'],
+    ['approvalComment', ''],
   ]);
-  assert.deepEqual(visibleCalls, [['peer-1', false], ['peer-1', true]]);
-  assert.deepEqual(disabledCalls, [['peer-1', true], ['peer-1', false]]);
-  assert.deepEqual(requiredCalls, [['customerName', true], ['customerName', false]]);
+  assert.deepEqual(visibleCalls, [['peer-1', true]]);
+  assert.deepEqual(disabledCalls, [['peer-1', false]]);
+  assert.deepEqual(requiredCalls, [['customerName', false]]);
 });
 
 test('ctx focus scroll and tab helpers resolve runtime targets', async () => {
@@ -283,7 +282,7 @@ test('ctx focus scroll and tab helpers resolve runtime targets', async () => {
   });
   assert.equal(result.error, undefined);
   assert.deepEqual(hostEvents, ['scroll', 'scroll', 'focus']);
-  assert.deepEqual(writes, [['mainTabs', 1], ['mainTabs', 0]]);
+  assert.deepEqual(writes, [['mainTabs', 0]]);
   assert.equal(result.callbackResult, 0);
 });
 
@@ -425,7 +424,114 @@ test('a callback can run its configured workflow with direct parameters without 
   assert.equal(result.flowResults.length, 1);
 });
 
-test('chain syntax batches field state, expressions, table lookup, and flow write-back', async () => {
+test('V2 output mapping applies only to the configured flow and writes atomically at event end', async () => {
+  const activeWorkflow = ensureWorkflowIo(workflow).workflow;
+  const input = getWorkflowImportFields(activeWorkflow).find((field) => field.name === 'customerName')!;
+  const output = getWorkflowExportFields(activeWorkflow)[0];
+  const resultComponent: ComponentNode = {
+    ...component,
+    id: 'result-field',
+    name: 'resultField',
+    fieldBinding: 'resultField',
+    label: '流程结果',
+  };
+  const writes: Array<[string, unknown]> = [];
+  const result = await executeFormControlEvent(context, {
+    workflows: [activeWorkflow],
+    components: [component, resultComponent],
+    setValue: (field, value) => { writes.push([field, value]); },
+    trigger: {
+      enabled: true,
+      workflowId: activeWorkflow.id,
+      bindings: {
+        version: 2,
+        inputs: {
+          [input.id]: { source: { kind: 'event', value: 'value' } },
+        },
+        outputs: {
+          [output.id]: {
+            target: { componentId: resultComponent.id, field: 'resultField' },
+            transform: { kind: 'direct' },
+          },
+        },
+      },
+    },
+  });
+  assert.equal(result.error, undefined);
+  assert.deepEqual(writes, [['resultField', '新客户']]);
+});
+
+test('V2 configured output mapping does not attach to an unrelated runWorkflow call', async () => {
+  const activeWorkflow = ensureWorkflowIo(workflow).workflow;
+  const input = getWorkflowImportFields(activeWorkflow).find((field) => field.name === 'customerName')!;
+  const output = getWorkflowExportFields(activeWorkflow)[0];
+  const resultComponent: ComponentNode = { ...component, id: 'result-field', name: 'resultField', fieldBinding: 'resultField' };
+  const writes: Array<[string, unknown]> = [];
+  const result = await executeFormControlEvent(context, {
+    workflows: [activeWorkflow],
+    components: [component, resultComponent],
+    setValue: (field, value) => { writes.push([field, value]); },
+    autoRunConfiguredFlow: false,
+    trigger: {
+      enabled: true,
+      workflowId: 'configured-but-not-run',
+      bindings: {
+        version: 2,
+        inputs: { [input.id]: { source: { kind: 'event', value: 'value' } } },
+        outputs: {
+          [output.id]: {
+            target: { componentId: resultComponent.id, field: 'resultField' },
+            transform: { kind: 'direct' },
+          },
+        },
+      },
+    },
+    code: `await ctx.runWorkflow('${activeWorkflow.id}', { customerName: '其他流程' });`,
+  });
+  assert.equal(result.error, undefined);
+  assert.deepEqual(writes, []);
+});
+
+test('explicit linkage flow targets join tail output validation and reject duplicate targets atomically', async () => {
+  const activeWorkflow = ensureWorkflowIo(workflow).workflow;
+  const input = getWorkflowImportFields(activeWorkflow).find((field) => field.name === 'customerName')!;
+  const output = getWorkflowExportFields(activeWorkflow)[0];
+  const resultComponent: ComponentNode = { ...component, id: 'result-field', name: 'resultField', fieldBinding: 'resultField' };
+  const writes: Array<[string, unknown]> = [];
+  const result = await executeFormControlEvent(context, {
+    workflows: [activeWorkflow],
+    components: [component, resultComponent],
+    setValue: (field, value) => { writes.push([field, value]); },
+    linkageRules: [{
+      id: 'flow-rule',
+      name: '显式流程目标',
+      enabled: true,
+      priority: 1,
+      trigger: { eventName: 'onChange', sourceField: 'customerName' },
+      conditionMode: 'all',
+      conditions: [],
+      actions: [{ id: 'run', type: 'runWorkflow', targetField: 'resultField', parameters: { customerName: '显式结果' } }],
+    }],
+    trigger: {
+      enabled: true,
+      workflowId: activeWorkflow.id,
+      bindings: {
+        version: 2,
+        inputs: { [input.id]: { source: { kind: 'event', value: 'value' } } },
+        outputs: {
+          [output.id]: {
+            target: { componentId: resultComponent.id, field: 'resultField' },
+            transform: { kind: 'direct' },
+          },
+        },
+      },
+    },
+  });
+  assert.match(result.error?.message || '', /重复指向表单字段/);
+  assert.deepEqual(writes, []);
+});
+
+test('chain syntax batches field state, expressions, table lookup, and configured flow output handling', async () => {
   const writes: Array<[string, unknown]> = [];
   const visible: Array<[string, boolean]> = [];
   const required: Array<[string, boolean]> = [];
@@ -565,12 +671,10 @@ test('advanced CRUD helpers cover list lookup unique lookup sequence fill valida
   });
   assert.deepEqual(disabledCalls, [['field-1', false]]);
   assert.deepEqual(writes, [
-    ['姓名', '李四'],
-    ['原始姓名', '李四'],
     ['姓名', ''],
+    ['原始姓名', '李四'],
     ['手机号', ''],
     ['员工ID', 1008],
     ['状态', '草稿'],
-    ['原始姓名', '李四'],
   ]);
 });

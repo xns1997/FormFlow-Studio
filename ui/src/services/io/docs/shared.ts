@@ -5,6 +5,7 @@ import type {
   BehaviorReferenceField,
   BehaviorReferenceShortcut,
 } from './types';
+import { FORM_EVENT_CONTRACT } from '../../../../../shared/formflow-core/formEventContract';
 
 export const sharedContextFields: BehaviorReferenceField[] = [
   { name: 'field', type: 'string', description: 'ctx.field 的顶层别名；推荐在脚本里直接使用。' },
@@ -21,17 +22,13 @@ export const sharedContextFields: BehaviorReferenceField[] = [
   { name: 'ctx.detail', type: 'unknown', description: '事件专属附加数据。具体结构取决于事件类型。' },
 ];
 
-export const controlOnlyContextFields: BehaviorReferenceField[] = [
-  { name: 'ctx.eventName', type: 'string', description: '当前控件事件名，例如 onChange、onDrop。' },
-  { name: 'ctx.component', type: 'FormEventComponent', description: '当前控件定义，可读取 id、type、props 等信息。' },
-  { name: 'ctx.componentId', type: 'string', description: '当前控件 ID，便于控制显隐和跳转文档。' },
-  { name: 'ctx.componentType', type: 'string', description: '当前控件类型，例如 input、tabs、table。' },
-  { name: 'ctx.controls', type: 'Record<string, FormEventControlHandle>', description: '按控件 name 或 componentId 暴露的运行时控件句柄，可直接访问 value / visible / disabled / required。' },
-  { name: 'ctx.previousValue', type: 'unknown', description: '事件发生前的字段值。表单级事件通常是旧快照。' },
-  { name: 'ctx.timestamp', type: 'number', description: '事件上下文创建时的毫秒时间戳。' },
-  { name: 'ctx.dirty', type: 'boolean', description: '当前字段值是否相对原始值发生变化。' },
-  { name: 'ctx.changedFields', type: 'string[]', description: '相对原始值发生变化的字段列表。' },
-];
+export const controlOnlyContextFields: BehaviorReferenceField[] = FORM_EVENT_CONTRACT
+  .filter((member) => member.kind === 'value')
+  .map((member) => ({
+    name: `ctx.${member.name}`,
+    type: member.type,
+    description: member.description,
+  }));
 
 export const scriptOnlyContextFields: BehaviorReferenceField[] = [
   { name: 'getValue(fieldId)', type: 'unknown', description: '读取行为脚本当前看到的字段值；推荐优先使用这个顶层 API。' },
@@ -122,13 +119,7 @@ export const scriptApis: BehaviorApiReference[] = [
   { name: 'ctx.submit', signature: 'ctx.submit()', description: '触发表单提交。' },
 ];
 
-export const controlApis: BehaviorApiReference[] = [
-  { name: 'getValue', signature: 'getValue(fieldId)', description: '读取任意字段的当前值；推荐优先使用顶层 API。' },
-  { name: 'getValues', signature: 'getValues(fieldIds)', description: '批量读取多个字段值。' },
-  { name: 'setValue', signature: 'await setValue(fieldId, value)', description: '异步修改字段值。' },
-  { name: 'setValues', signature: 'await setValues({ fieldA: valueA, fieldB: valueB })', description: '异步批量修改字段值。' },
-  { name: 'showMessage', signature: "await showMessage(message, type = 'info')", description: '显示即时提示消息。' },
-  { name: 'runConfiguredWorkflow', signature: 'await runConfiguredWorkflow(parameters?)', description: '执行当前事件已绑定的流程。' },
+const printApis: BehaviorApiReference[] = [
   { name: 'Print', signature: 'Print(...args)', description: '写入调试日志；可在 Console 与调试抽屉中查看。' },
   { name: 'PrintWarn', signature: 'PrintWarn(...args)', description: '写入 warn 级内部调试日志。' },
   { name: 'PrintError', signature: 'PrintError(...args)', description: '写入 error 级内部调试日志。' },
@@ -136,37 +127,24 @@ export const controlApis: BehaviorApiReference[] = [
   { name: 'PrintJson', signature: 'PrintJson(label, data?)', description: '以 JSON 结构输出调试对象。' },
   { name: 'PrintTable', signature: 'PrintTable(label, rows?)', description: '以表格形式输出数组对象。' },
   { name: 'PrintGroup', signature: 'PrintGroup(label, data?)', description: '输出阶段性分组调试日志。' },
-  { name: 'ctx.controls', signature: 'ctx.controls.controlName.value = nextValue', description: '通过控件句柄直接读写其它控件。支持 value / visible / disabled / required。' },
-  { name: 'ctx.getValue', signature: 'ctx.getValue(fieldId)', description: '读取任意字段的当前值。' },
-  { name: 'ctx.getValues', signature: 'ctx.getValues(fieldIds)', description: '批量读取多个字段值。' },
-  { name: 'ctx.setValue', signature: 'await ctx.setValue(fieldId, value)', description: '异步修改字段值。' },
-  { name: 'ctx.setValues', signature: 'await ctx.setValues({ fieldA: valueA, fieldB: valueB })', description: '异步批量修改字段值。' },
-  { name: 'ctx.clearValue', signature: 'await ctx.clearValue(fieldId)', description: '清空单个字段。' },
-  { name: 'ctx.clearValues', signature: 'await ctx.clearValues(fieldIds)', description: '批量清空字段。' },
-  { name: 'ctx.setVisible', signature: 'await ctx.setVisible(componentId, visible)', description: '异步修改控件显隐。' },
-  { name: 'ctx.toggleVisible', signature: 'await ctx.toggleVisible(componentId)', description: '异步切换控件显隐。' },
-  { name: 'ctx.setDisabled', signature: 'await ctx.setDisabled(componentId, disabled)', description: '异步修改控件禁用状态。' },
-  { name: 'ctx.toggleDisabled', signature: 'await ctx.toggleDisabled(componentId)', description: '异步切换控件禁用状态。' },
-  { name: 'ctx.setRequired', signature: 'await ctx.setRequired(fieldId, required)', description: '异步修改字段必填状态。' },
-  { name: 'ctx.toggleRequired', signature: 'await ctx.toggleRequired(fieldId)', description: '异步切换字段必填状态。' },
-  { name: 'ctx.setFieldState', signature: 'await ctx.setFieldState(fieldOrComponentId, patch)', description: '按 value → visible → disabled → required 的顺序统一修改。' },
-  { name: 'ctx.focusField', signature: 'await ctx.focusField(fieldId)', description: '定位并聚焦字段。' },
-  { name: 'ctx.focusControl', signature: 'await ctx.focusControl(componentId)', description: '按组件 ID 聚焦控件。' },
-  { name: 'ctx.scrollToField', signature: 'await ctx.scrollToField(fieldId)', description: '滚动到指定字段。' },
-  { name: 'ctx.scrollToControl', signature: 'await ctx.scrollToControl(componentId)', description: '滚动到指定控件。' },
-  { name: 'ctx.switchTab', signature: 'await ctx.switchTab(tabIdOrIndex)', description: '切换到指定页签。' },
-  { name: 'ctx.openTab', signature: 'await ctx.openTab(tabIdOrIndex)', description: 'switchTab 的业务别名。' },
-  { name: 'ctx.showMessage', signature: "await ctx.showMessage(message, type = 'info')", description: '显示即时提示消息。' },
-  { name: 'ctx.findRows', signature: 'ctx.findRows(sheetId, criteria?, options?)', description: '按条件查询多条记录。' },
-  { name: 'ctx.findRow', signature: 'ctx.findRow(sheetId, criteria, options?)', description: '按条件查询单条记录。' },
-  { name: 'ctx.nextSequence', signature: 'ctx.nextSequence(sheetId, column, options?)', description: '生成下一个顺序编号。' },
-  { name: 'ctx.fillForm', signature: 'await ctx.fillForm(record, fieldMap?, options?)', description: '按记录批量回填表单字段。' },
-  { name: 'ctx.requireFields', signature: 'await ctx.requireFields(fields, options?)', description: '批量校验必填字段。' },
-  { name: 'ctx.resetForm', signature: 'await ctx.resetForm(options?)', description: '按默认值和清空字段统一重置表单。' },
-  { name: 'ctx.runConfiguredWorkflow', signature: 'await ctx.runConfiguredWorkflow(parameters?)', description: '执行当前事件已绑定的流程。' },
-  { name: 'ctx.runWorkflow', signature: 'await ctx.runWorkflow(workflowIdOrName, parameters?, options?)', description: '按 ID 或名称执行任意流程。' },
-  { name: 'ctx.call', signature: 'await ctx.call(name, ...args)', description: '调用宿主注册的回调函数。' },
-  { name: 'ctx.console.log', signature: 'ctx.console.log(...args)', description: '兼容旧脚本的调试入口；新脚本推荐直接用原生 console 或 Print 系列。' },
+];
+
+export const controlApis: BehaviorApiReference[] = [
+  ...FORM_EVENT_CONTRACT
+    .filter((member) => member.kind === 'method' && member.topLevelAlias)
+    .map((member) => ({
+      name: member.name,
+      signature: member.signature || member.name,
+      description: member.description,
+    })),
+  ...printApis,
+  ...FORM_EVENT_CONTRACT
+    .filter((member) => member.kind === 'method')
+    .map((member) => ({
+      name: `ctx.${member.name}`,
+      signature: `ctx.${member.signature || member.name}`,
+      description: member.description,
+    })),
 ];
 
 export function mergeContextFields(scope: BehaviorDocScope) {

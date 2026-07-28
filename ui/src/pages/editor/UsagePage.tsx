@@ -8,14 +8,14 @@ import { PreviewCanvas } from '../../designer/PreviewCanvas';
 import Modal from '../../components/Modal';
 import type { DesignComponent } from '../../project/types';
 import ProjectWorkspaceTabs from './ProjectWorkspaceTabs';
-import { projectApi } from '../../services/io/api';
+import { projectApi, request } from '../../services/io/api';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 const prefersDark = typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches;
 const agThemeClass = prefersDark ? 'ag-theme-quartz-dark' : 'ag-theme-quartz';
 
-type PreviewRow = Record<string, unknown> & { __rowId?: string };
+type PreviewRow = Record<string, unknown> & { __rowId?: string; __rowKey?: string; __rowIndex?: number };
 
 function withRowIds(data: Record<string, unknown>[], offset = 0): PreviewRow[] {
   return data.map((row, index) => ({ ...row, __rowId: String(row.id ?? row.customer_id ?? `${offset + index}`) }));
@@ -23,6 +23,8 @@ function withRowIds(data: Record<string, unknown>[], offset = 0): PreviewRow[] {
 
 export default function UsagePage() {
   const project = useProjectStore((s) => s.project);
+  const revision = useProjectStore((s) => s.revision);
+  const refreshProject = useProjectStore((s) => s.refreshProject);
 
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [activeSheetIdx, setActiveSheetIdx] = useState(0);
@@ -30,6 +32,7 @@ export default function UsagePage() {
   const [selectedRowIdx, setSelectedRowIdx] = useState<number | null>(null);
   const [rows, setRows] = useState<PreviewRow[]>([]);
   const [totalRows, setTotalRows] = useState(0);
+  const [rowDataVersion, setRowDataVersion] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
 
   // CRUD state
@@ -134,38 +137,49 @@ export default function UsagePage() {
   const handleSave = useCallback(async () => {
     if (!projectId || !selectedTableId || !activeSheet) return;
     setSaving(true);
-    const body = (action: string, extra: Record<string, unknown>) =>
-      JSON.stringify({ projectId, tableId: selectedTableId, sheetName: activeSheet.name, ...extra });
     try {
-      for (const addRow of pendingAdds) {
+      if (!revision) throw new Error('缺少项目 revision，请刷新后重试');
+      const adds = pendingAdds.map((addRow) => {
         const row = { ...addRow }; delete row.__rowId;
-        await fetch('/api/projects/data/add', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body('add', { row }) });
-      }
-      for (const [rowId, changes] of pendingChanges.entries()) {
+        delete row.__rowKey; delete row.__rowIndex;
+        return row;
+      });
+      const updates: Array<{ rowKey: string; changes: Record<string, unknown> }> = [];
+      for (const [rowId, changes] of pendingChanges) {
         const rowIndex = parseInt(rowId.split(':')[2]);
         if (isNaN(rowIndex)) continue;
         const patch: Record<string, unknown> = {};
         for (const [field, change] of Object.entries(changes)) { patch[field] = change.newValue; }
-        await fetch('/api/projects/data/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body('update', { rowIndex, patch }) });
+        const rowKey = rows[rowIndex]?.__rowKey;
+        if (rowKey) updates.push({ rowKey, changes: patch });
       }
-      const sortedDeletes = Array.from(pendingDeletes).sort((a, b) => b - a);
-      for (const rowIndex of sortedDeletes) {
-        await fetch('/api/projects/data/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body('delete', { rowIndex }) });
-      }
+      const deletes = [...pendingDeletes].map((rowIndex) => rows[rowIndex]?.__rowKey).filter((value): value is string => !!value);
+      await projectApi.batchRows({
+        projectId,
+        tableId: selectedTableId,
+        sheetName: activeSheet.name,
+        baseRevision: revision,
+        baseVersion: rowDataVersion,
+        adds,
+        updates,
+        deletes,
+      });
       setPendingChanges(new Map());
       setPendingAdds([]);
       setPendingDeletes(new Set());
-      const res = await fetch('/api/projects/data/query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body('query', { page: 1, pageSize: 5000 }) });
-      if (res.ok) {
-        const data = await res.json();
-        setRows(withRowIds(data.rows || []));
-        setTotalRows(data.total || 0);
-      }
+      await refreshProject();
+      const data = await request('/projects/data/query', {
+        method: 'POST',
+        body: JSON.stringify({ projectId, tableId: selectedTableId, sheetName: activeSheet.name, page: 1, pageSize: 500 }),
+      });
+      setRows(withRowIds(data.rows || []));
+      setTotalRows(data.total || 0);
+      setRowDataVersion(data.dataVersion);
     } catch (e) {
       console.error('保存失败', e);
     }
     setSaving(false);
-  }, [projectId, selectedTableId, activeSheet, pendingChanges, pendingAdds, pendingDeletes]);
+  }, [projectId, selectedTableId, activeSheet, pendingChanges, pendingAdds, pendingDeletes, refreshProject, revision, rowDataVersion, rows]);
 
   // Column info for inspector
   const derivedColumns = useMemo(() => {
@@ -196,15 +210,14 @@ export default function UsagePage() {
       setLoading(true);
       const fallbackRows = activeSheet.preview || [];
       try {
-        const res = await fetch('/api/projects/data/query', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+        const data = await request('/projects/data/query', {
+          method: 'POST',
           body: JSON.stringify({ projectId, tableId: selectedTable.id, sheetName: activeSheet.name, page: 1, pageSize: 5000 }),
         });
-        if (!res.ok) throw new Error(`rows api failed: ${res.status}`);
-        const data = await res.json();
         if (cancelled) return;
         setRows(withRowIds(data.rows || []));
         setTotalRows(data.total ?? data.rows?.length ?? fallbackRows.length);
+        setRowDataVersion(data.dataVersion);
       } catch {
         if (cancelled) return;
         const limited = fallbackRows.length > 5000 ? fallbackRows.slice(0, 5000) : fallbackRows;

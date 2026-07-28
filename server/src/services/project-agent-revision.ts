@@ -1,10 +1,13 @@
 export const MAX_REVISION_RECOMPUTES = 2;
 
-export function applyRuntimeRevision<T extends Record<string, any>>(argumentsValue: T, currentRevision?: string) {
+export function applyRuntimeRevision<T extends Record<string, any>>(
+  argumentsValue: T,
+  currentRevision?: string,
+): { arguments: T & { baseRevision?: string }; replaced: boolean; previousRevision?: string } {
   if (!currentRevision) return { arguments: argumentsValue, replaced: false, previousRevision: argumentsValue.baseRevision as string | undefined };
   const previousRevision = argumentsValue.baseRevision as string | undefined;
   return {
-    arguments: { ...argumentsValue, baseRevision: currentRevision } as T,
+    arguments: { ...argumentsValue, baseRevision: currentRevision },
     replaced: previousRevision !== currentRevision,
     previousRevision,
   };

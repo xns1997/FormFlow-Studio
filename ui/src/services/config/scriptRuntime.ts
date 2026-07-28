@@ -1,4 +1,5 @@
 import type { DebugEntry, DebugEntryFormat, DebugEntrySource } from '../../project/types';
+import { FORM_EVENT_SCRIPT_ALIAS_KEYS } from '../../../../shared/formflow-core/formEventContract';
 
 export type ScriptPrintLevel = 'info' | 'warn' | 'error' | 'debug';
 
@@ -23,62 +24,8 @@ export interface ScriptExecutionScope {
 
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor as new (...args: string[]) => (...args: unknown[]) => Promise<unknown>;
 
-const SCRIPT_ALIAS_KEYS = [
-  'getValue',
-  'getValues',
-  'setValue',
-  'setValues',
-  'clearValue',
-  'clearValues',
-  'setField',
-  'setVisible',
-  'toggleVisible',
-  'setDisabled',
-  'toggleDisabled',
-  'setRequired',
-  'toggleRequired',
-  'setFieldState',
-  'focusField',
-  'focusControl',
-  'scrollToField',
-  'scrollToControl',
-  'switchTab',
-  'openTab',
-  'showMessage',
-  'debug',
-  'validateField',
-  'querySheet',
-  'findRows',
-  'findRow',
-  'nextSequence',
-  'fillForm',
-  'requireFields',
-  'resetForm',
-  'runWorkflow',
-  'runConfiguredWorkflow',
-  'call',
-  'updateRow',
-  'submit',
-  'getState',
-  'controls',
-  'formData',
-  'originalData',
-  'originalValues',
-  'value',
-  'values',
-  'field',
-  'detail',
-  'component',
-  'componentId',
-  'componentType',
-  'dirty',
-  'changedFields',
-  'previousValue',
-  'timestamp',
-  'event',
-  'eventName',
-  'callbacks',
-];
+const LEGACY_SCRIPT_ALIAS_KEYS = ['setField', 'validateField', 'updateRow', 'submit', 'getState', 'originalData'];
+export const SCRIPT_ALIAS_KEYS = [...new Set([...FORM_EVENT_SCRIPT_ALIAS_KEYS, ...LEGACY_SCRIPT_ALIAS_KEYS])];
 
 function stringifyDebugValue(value: unknown): string {
   if (typeof value === 'string') return value;

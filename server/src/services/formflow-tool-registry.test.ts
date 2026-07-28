@@ -14,7 +14,7 @@ const { executeFormFlowTool, listFormFlowTools, MCP_ROLES, validateMcpToolRegist
 const { projectPackagePath } = await import('./project-package-store');
 const { stageUpload } = await import('./upload-staging');
 
-const actor = { userId: 'user-1', user: { id: 'user-1', username: 'tester', role: 'user' as const } };
+const actor = { userId: 'user-1', user: { id: 'user-1', username: 'tester', role: 'editor' as const } };
 
 test.after(() => rmSync(directory, { recursive: true, force: true }));
 
@@ -26,6 +26,13 @@ test('tool registry exposes unique schemas and the complete lifecycle surface', 
     assert.ok(tools.some((item) => item.name === name), name);
   }
   assert.ok(tools.every((item) => item.inputSchema && item.outputSchema && item.risk));
+  for (const tool of tools) {
+    assert.equal((tool.inputSchema as any).additionalProperties, false, tool.name);
+    assert.ok((tool.inputSchema as any).description, tool.name);
+    assert.ok(Object.values((tool.inputSchema as any).properties || {}).every((property: any) => property.description), tool.name);
+    assert.deepEqual((tool.outputSchema as any).oneOf.map((branch: any) => branch.properties.ok.const), [true, false, false], tool.name);
+    assert.equal((tool.outputSchema as any).oneOf[2].properties.status.const, 'confirmation_required', tool.name);
+  }
   const dataCreate = tools.find((item) => item.name === 'data_source.create')!;
   assert.deepEqual((dataCreate.inputSchema as any).properties.config.properties.keyFields.items, { type: 'string' });
   assert.ok((dataCreate.inputSchema as any).properties.config.properties.columns.items.properties.name);
@@ -35,13 +42,14 @@ test('tool registry exposes unique schemas and the complete lifecycle surface', 
   assert.deepEqual(propsSchema.properties.flowTriggers.additionalProperties.required, ['enabled', 'workflowId']);
 });
 
-test('write tools replay the original result for the same idempotency key', async () => {
+test('write tools reject reusing an idempotency key with different input', async () => {
   const projectId = `idempotency_e2e_${Date.now()}`;
   const key = `idempotency-project-${projectId}`;
   const first = await executeFormFlowTool('project.create', { id: projectId, name: '第一次创建', idempotencyKey: key }, actor);
   const second = await executeFormFlowTool('project.create', { id: projectId, name: '不应覆盖', idempotencyKey: key }, actor);
   assert.equal(first.ok, true, JSON.stringify(first));
-  assert.deepEqual(second, first);
+  assert.equal(second.ok, false);
+  assert.equal((second as any).error.code, 'IDEMPOTENCY_KEY_REUSED');
   const loaded = await executeFormFlowTool('project.get', { projectId }, actor);
   assert.equal(JSON.stringify((loaded as any).data).includes('第一次创建'), true);
   assert.ok((loaded as any).data.revision);
@@ -150,11 +158,11 @@ test('behavior.list declares and enforces scope-specific arguments', async () =>
   assert.equal(created.ok, true);
   const missingForm = await executeFormFlowTool('behavior.list', { projectId: 'behavior_list_arguments', scope: 'form' }, { ...actor, mcpRole: 'behavior' });
   assert.equal(missingForm.ok, false);
-  assert.equal((missingForm as any).error.code, 'BEHAVIOR_FORM_REQUIRED');
+  assert.equal((missingForm as any).error.code, 'CONDITIONAL_REQUIRED_ARGUMENT');
   assert.equal((missingForm as any).error.path, 'formId');
   const missingSheet = await executeFormFlowTool('behavior.list', { projectId: 'behavior_list_arguments', scope: 'sheet' }, { ...actor, mcpRole: 'behavior' });
   assert.equal(missingSheet.ok, false);
-  assert.equal((missingSheet as any).error.code, 'BEHAVIOR_SHEET_REQUIRED'); assert.equal((missingSheet as any).error.path, 'tableId');
+  assert.equal((missingSheet as any).error.code, 'CONDITIONAL_REQUIRED_ARGUMENT'); assert.equal((missingSheet as any).error.path, 'tableId');
 });
 
 test('behavior tools reject incomplete actions before revision changes', async () => {
@@ -359,7 +367,7 @@ test('project metadata and release drafts are edited by separate MCP owners', as
   assert.equal(created.ok, true);
   const loaded = await executeFormFlowTool('project.get', { projectId: 'release_demo' }, { ...actor, mcpRole: 'project' }); const revision = (loaded as any).data.revision;
   const rejected = await executeFormFlowTool('project.update', { projectId: 'release_demo', release: { defaultFormId: 'x' }, baseRevision: revision, idempotencyKey: 'wrong-owner' }, { ...actor, mcpRole: 'project' });
-  assert.equal(rejected.ok, false); assert.equal((rejected as any).error.code, 'INVALID_ARGUMENT');
+  assert.equal(rejected.ok, false); assert.equal((rejected as any).error.code, 'UNKNOWN_ARGUMENT');
   const updated = await executeFormFlowTool('release.update', { projectId: 'release_demo', patch: { allowDesigner: false }, baseRevision: revision, idempotencyKey: 'release-update' }, { ...actor, mcpRole: 'delivery' });
   assert.equal(updated.ok, true, JSON.stringify(updated));
   const modeRejected = await executeFormFlowTool('release.update', { projectId: 'release_demo', patch: { mode: 'use' }, baseRevision: (updated as any).meta.revision, idempotencyKey: 'release-mode' }, { ...actor, mcpRole: 'delivery' });

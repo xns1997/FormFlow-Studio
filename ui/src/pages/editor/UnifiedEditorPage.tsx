@@ -281,10 +281,13 @@ export default function UnifiedEditorPage() {
 
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
-    next.set('mode', editMode);
-    if (activeFormId) next.set('form', activeFormId); else next.delete('form');
-    if (designer.selectedId) next.set('component', designer.selectedId); else next.delete('component');
-    next.delete('event');
+    const returningToBinding = Boolean(next.get('bindingSession'));
+    if (!returningToBinding) {
+      next.set('mode', editMode);
+      if (activeFormId) next.set('form', activeFormId); else next.delete('form');
+      if (designer.selectedId) next.set('component', designer.selectedId); else next.delete('component');
+      next.delete('event');
+    }
     if (editingBehaviorId) next.set('behavior', editingBehaviorId); else next.delete('behavior');
     setSearchParams(next, { replace: true });
   }, [editMode, activeFormId, designer.selectedId, editingBehaviorId]);
@@ -308,7 +311,7 @@ export default function UnifiedEditorPage() {
     if (componentId && designer.components.some((component) => component.id === componentId)) {
       designer.setSelectedId(componentId);
     }
-  }, [designer.components]);
+  }, [designer.components, searchParams]);
 
   // ── 表单操作 ──────────────────────────────────
 
@@ -973,6 +976,25 @@ export default function UnifiedEditorPage() {
             }}
             onRemove={designer.removeComponent}
             onClose={panels.rightIsDrawer ? () => panels.closeDrawer() : panels.toggleRight}
+            onEditWorkflowContract={({ workflowId, nodeId, eventName, sessionId }) => {
+              const next = new URLSearchParams(searchParams);
+              next.set('mode', 'flow');
+              next.set('workflow', workflowId);
+              next.set('node', nodeId);
+              next.set('event', eventName);
+              next.set('bindingSession', sessionId);
+              if (activeFormId) next.set('form', activeFormId);
+              if (designer.selectedId) next.set('component', designer.selectedId);
+              setSearchParams(next);
+            }}
+            onFinishWorkflowContractSession={(sessionId) => {
+              if (searchParams.get('bindingSession') !== sessionId) return;
+              const next = new URLSearchParams(searchParams);
+              next.delete('bindingSession');
+              next.delete('event');
+              next.delete('node');
+              setSearchParams(next, { replace: true });
+            }}
           />}
         </div>}
         {panels.activeDrawer && <button type="button" className="workbench-drawer-backdrop" aria-label="关闭侧栏" onClick={() => panels.closeDrawer()} />}

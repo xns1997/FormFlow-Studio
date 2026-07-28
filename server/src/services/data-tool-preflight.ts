@@ -45,7 +45,7 @@ function normalizeConfig(original: unknown, sheetName: string, normalizations: D
     if (next.type && TYPE_ALIASES[String(next.type).toLowerCase()]) { const before = String(next.type); next.type = TYPE_ALIASES[before.toLowerCase()]; record(normalizations, `config.columns[${index}].type`, before, next.type, '规范化列类型别名'); }
     delete next.id; delete next.dataType; return next;
   });
-  const next = { ...nested, ...config, ...(keyFields !== undefined ? { keyFields: Array.isArray(keyFields) ? keyFields.map(String) : [String(keyFields)] } : {}), ...(columns.length ? { columns } : {}), readOnly: config.readOnly ?? nested.readOnly ?? (typeof editable === 'boolean' ? !editable : undefined) };
+  const next: Record<string, any> = { ...nested, ...config, ...(keyFields !== undefined ? { keyFields: Array.isArray(keyFields) ? keyFields.map(String) : [String(keyFields)] } : {}), ...(columns.length ? { columns } : {}), readOnly: config.readOnly ?? nested.readOnly ?? (typeof editable === 'boolean' ? !editable : undefined) };
   delete next.sheets; delete next.primaryKey; delete next.key; delete next.editable; delete next.isEditable;
   for (const key of Object.keys(next)) if (next[key] === undefined) delete next[key];
   return next;
@@ -74,6 +74,15 @@ function compileSource(name: 'data_source.create' | 'data_source.import', origin
   const rows = args.rows;
   if (Array.isArray(rows) && looksLikeFieldDefinitions(rows)) return failure(args, normalizations, 'DATA_ROWS_LOOK_LIKE_SCHEMA', 'rows 看起来是字段定义而不是业务记录；请改用 config.columns', 'rows', { rows: [{ columnName: '业务值' }], config: { columns: [{ name: 'columnName', type: 'string' }], keyFields: ['columnName'], readOnly: false } }, fieldDefinitionSuggestion(args, rows));
   const hasFile = typeof args.fileId === 'string' && args.fileId.length > 0; const hasCsv = typeof args.csv === 'string'; const hasRows = Array.isArray(rows); const columns = Array.isArray(args.config.columns) ? args.config.columns : [];
+  const suppliedSources = [hasFile ? 'fileId' : '', hasCsv ? 'csv' : '', hasRows ? 'rows' : ''].filter(Boolean);
+  if (suppliedSources.length > 1) return failure(
+    args,
+    normalizations,
+    'DATA_SOURCE_INPUT_AMBIGUOUS',
+    `fileId、csv、rows 只能提供一种；当前同时提供了 ${suppliedSources.join('、')}`,
+    suppliedSources[1],
+    { exactlyOneOf: ['fileId', 'csv', 'rows', 'config.columns（仅空表）'] },
+  );
   if (!hasFile && !hasCsv && !hasRows && !columns.length) return failure(args, normalizations, 'DATA_SOURCE_INPUT_REQUIRED', '必须提供 fileId、csv、业务 rows 或 config.columns', 'rows', { oneOf: ['fileId', 'csv', 'rows', 'config.columns'] });
   if (hasRows && rows.length === 0 && !columns.length) return failure(args, normalizations, 'DATA_COLUMNS_REQUIRED', '空 rows 必须同时提供 config.columns', 'config.columns', { config: { columns: [{ name: 'id', type: 'string' }], keyFields: ['id'] } });
   const keys: string[] = Array.isArray(args.config.keyFields) ? args.config.keyFields.map(String) : [];

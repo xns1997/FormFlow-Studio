@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { SrcSheetInfo, SrcTableEntry } from '../../project/types';
+import { createDefaultTableConfig, type SrcSheetInfo, type SrcTableEntry } from '../../project/types';
 import { applySheetKeyConfig, computeSheetKeyValidation, resolveSingleKeyField } from './tableKeys';
 
 const sheet: SrcSheetInfo = {
@@ -57,8 +57,8 @@ test('resolveSingleKeyField only returns a value for exactly one configured fiel
     uploadedAt: '',
     dataHash: '',
     sheets: [
-      { ...sheet, config: applySheetKeyConfig(sheet, ['商品编号']) },
-      { ...sheet, name: '组合键', config: applySheetKeyConfig(sheet, ['商品名称', '状态']) },
+      { ...sheet, config: { ...createDefaultTableConfig('product_catalog:商品档案', '商品档案'), ...applySheetKeyConfig(sheet, ['商品编号']) } },
+      { ...sheet, name: '组合键', config: { ...createDefaultTableConfig('product_catalog:组合键', '组合键'), ...applySheetKeyConfig(sheet, ['商品名称', '状态']) } },
     ],
   }];
   assert.equal(resolveSingleKeyField(tables, 'product_catalog', '商品档案'), '商品编号');

@@ -9,6 +9,6 @@ test('field rename synchronizes bindings, linkage targets and workflow field map
   assert.equal(result.components[0].fieldBinding, '新字段');
   assert.equal(result.components[0].props.label, '旧字段说明');
   assert.equal(result.components[0].props.linkageRules.onChange[0].actions[0].targetField, '新字段');
-  const props = JSON.parse(result.workflows[0].nodes[0].data.propertiesJson);
+  const props = JSON.parse(String(result.workflows[0].nodes[0].data.propertiesJson));
   assert.deepEqual(props.fieldMap, { 新字段: '新字段' });
 });

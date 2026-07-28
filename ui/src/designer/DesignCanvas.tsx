@@ -35,6 +35,7 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
     choices: Record<string, string>;
   } | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [layoutNotice, setLayoutNotice] = useState('');
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const toolbarAvailability = getCanvasToolbarAvailability(designer);
 
@@ -188,6 +189,17 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
   };
 
   const resizeHandles: ResizeHandle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+  const autoArrange = () => {
+    const result = designer.applyAutoLayout();
+    const resized = result.resizedCount || 0;
+    const moved = result.movedCount || 0;
+    const strategyLabel = {
+      'single-column': '自适应单列',
+      'strict-two-column': '严格双列',
+      'traditional-two-column': '传统双列',
+    }[result.strategy];
+    setLayoutNotice(`自动排布完成：${strategyLabel}，移动 ${moved} 个控件，调整 ${resized} 个控件尺寸`);
+  };
 
   return (
     <div
@@ -215,6 +227,7 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
             <div className="toolbar-group toolbar-history-actions">
               <button type="button" onClick={designer.undo} disabled={!toolbarAvailability.undo} title="撤销（⌘/Ctrl+Z）" aria-label="撤销"><DesignerIcon name="undo" /></button>
               <button type="button" onClick={designer.redo} disabled={!toolbarAvailability.redo} title="重做（⇧⌘Z / Ctrl+Y）" aria-label="重做"><DesignerIcon name="redo" /></button>
+              <button type="button" className="auto-arrange-button" onClick={autoArrange} disabled={designer.components.length === 0} title="按从左到右、从上到下自动排布"><DesignerIcon name="designer" /><span>自动排布</span></button>
             </div>
             <div className="toolbar-group toolbar-selection-actions">
               <button type="button" onClick={designer.copy} disabled={!toolbarAvailability.copy} title="复制（⌘/Ctrl+C）" aria-label="复制所选控件"><DesignerIcon name="copy" /></button>
@@ -245,6 +258,7 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
               <button type="button" role="menuitem" disabled={!toolbarAvailability.duplicate} onClick={() => { designer.duplicate(); setMoreOpen(false); }}><DesignerIcon name="duplicate" />复制一份</button>
               <button type="button" role="menuitem" disabled={!toolbarAvailability.layer} onClick={() => { designer.bringToFront(); setMoreOpen(false); }}><DesignerIcon name="bringToFront" />移到最前</button>
               <button type="button" role="menuitem" disabled={!toolbarAvailability.layer} onClick={() => { designer.sendToBack(); setMoreOpen(false); }}><DesignerIcon name="sendToBack" />移到最后</button>
+              <button type="button" role="menuitem" disabled={designer.components.length === 0} onClick={() => { autoArrange(); setMoreOpen(false); }}><DesignerIcon name="designer" />自动排布</button>
               <button type="button" role="menuitem" className="is-danger" disabled={!toolbarAvailability.delete} onClick={() => { designer.deleteSelected(); setMoreOpen(false); }}><DesignerIcon name="delete" />删除</button>
             </>}
             <button type="button" role="menuitem" onClick={() => { designer.fitContent(); setMoreOpen(false); }}><DesignerIcon name="fitContent" />适应内容</button>
@@ -252,6 +266,7 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
           </div>}
         </div>
       </div>}
+      <div className="canvas-command-status" role="status" aria-live="polite">{layoutNotice}</div>
       <div
         ref={containerRef}
         className={`designer-canvas ${mode === 'preview' ? 'designer-canvas-hidden' : ''}`}

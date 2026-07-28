@@ -802,7 +802,8 @@ export interface DesignFile {
   name: string;
   formMode?: FormMode;
   templateKey?: string;
-  templateParameters?: Record<string, unknown>;
+  /** Template parameters are plugin-extensible and intentionally retain unknown keys. */
+  templateParameters?: Record<string, any>;
   generatedBy?: { templateId: string; templateVersion: string; instanceId: string; generatedAt: string };
   viewport: { zoom: number; panX: number; panY: number };
   gridSize: number;

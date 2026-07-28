@@ -3,8 +3,8 @@ import {
   batchProjectRows, fullSourceRows, generatedForm, normalizeFormDesign, toolError, validateProjectModel, type JsonObject,
 } from './project-authoring';
 import { queryRows, type FilterRule, type SortRule } from './data-preview';
-import { generateFormScaffold } from '../../../ui/src/services/formGeneration/formScaffold';
-import { applyBehaviorDslToComponents } from '../../../ui/src/services/engine/behaviorDsl';
+import { generateFormScaffold } from '../../../shared/formflow-core/formScaffold';
+import { applyBehaviorDslToComponents } from '../../../shared/formflow-core/behaviorDsl';
 
 export type TemplateKind = 'project' | 'operation' | 'fragment' | 'recipe';
 export type FeasibilityStatus = 'ready' | 'needs-configuration' | 'warning' | 'blocked' | 'not-applicable';
@@ -2684,7 +2684,7 @@ export function planOperationTemplate(project: JsonObject, templateId: string, s
             queryFields,
             displayFields,
             editableFields,
-            internalFields: [...keyFields].filter((field) => !querySet.has(field) && !displaySet.has(field) && !editableSet.has(field)),
+            internalFields: [...keyFields].map(String).filter((field) => !querySet.has(field) && !displaySet.has(field) && !editableSet.has(field)),
           },
           lookupPolicy: {
             requireUniqueMatch: true,
@@ -2759,7 +2759,8 @@ export function planOperationTemplate(project: JsonObject, templateId: string, s
         if (applied.formWindow) form.design.formWindow = applied.formWindow;
       }
     }
-    form.generatedBy = generatedMetadata(template, instanceId, now); form.design.generatedBy = form.generatedBy;
+    const mutableForm = form as JsonObject;
+    mutableForm.generatedBy = generatedMetadata(template, instanceId, now); form.design.generatedBy = mutableForm.generatedBy;
     form.design.templateKey = template.id;
     form.design.templateParameters = template.id === 'single-table-batch-update'
       ? { ...(form.design.templateParameters || {}), ...suppliedParameters, batchEditor: { tableId: table.id, sheetName: sheet.name, maxChanges: Number(suppliedParameters.maxChanges || 100), crossPage: true, atomic: true, versionProtected: true } }
@@ -3155,7 +3156,7 @@ export function planOperationTemplate(project: JsonObject, templateId: string, s
         ...relation.left.fields.map((field: string) => `${leftTable.id}.${field}`),
         ...relation.right.fields.map((field: string) => `${rightTable.id}.${field}`),
       ]);
-      const previewRows = queryRelationRows(project, { relationId, joinType, exportAll: true }).rows
+      const previewRows = queryRelationRows(project, { relationId, joinType: joinType as 'left' | 'inner', exportAll: true }).rows
         .slice(0, configuredPreviewRows(suppliedParameters, 5))
         .map((row: JsonObject) => Object.fromEntries([...visibleFields, ...internalFields].map((field) => [field, row[field]])));
       const fieldByQualified = new Map(refs.map((field) => [field.tableQualifiedName, field]));
@@ -3824,7 +3825,7 @@ export function planOperationTemplate(project: JsonObject, templateId: string, s
 export function applyOperationPlan(project: JsonObject, plan: GenerationPlan): JsonObject {
   if (plan.conflicts.length) throw toolError('GENERATION_CONFLICT', plan.conflicts[0].message, 'plan.conflicts', plan.conflicts);
   const next = structuredClone(project); const now = new Date().toISOString();
-  const normalizedForms = plan.artifacts.forms.map((form) => ({ ...form, behaviors: [], ruleCode: '', design: normalizeFormDesign(form.design || {}) }));
+  const normalizedForms: JsonObject[] = plan.artifacts.forms.map((form) => ({ ...form, behaviors: [], ruleCode: '', design: normalizeFormDesign(form.design || {}) }));
   for (const ruleArtifact of plan.artifacts.rules || []) {
     const owner = normalizedForms.find((form) => form.id === ruleArtifact.ownerFormId);
     if (!owner) throw toolError('BEHAVIOR_OWNER_NOT_FOUND', `规则产物缺少所属表单 ${ruleArtifact.ownerFormId}`, 'plan.artifacts.rules');

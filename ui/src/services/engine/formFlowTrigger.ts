@@ -9,13 +9,28 @@ import {
   getWorkflowImportFields,
   getWorkflowImportNode,
 } from './workflowIo';
+import {
+  resolveV2FlowInputs,
+  type FlowBindingsV2,
+} from './formFlowBindings';
+
+export type {
+  FlowBindingsV2,
+  FlowInputBinding,
+  FlowOutputBinding,
+  FlowOutputPresetStep,
+  FlowValueSource,
+} from './formFlowBindings';
 
 export type FormControlEventName = 'onChange' | 'onBlur' | 'onFocus' | 'onClick' | string;
 
 export interface FormFlowTriggerConfig {
   enabled: boolean;
   workflowId: string;
+  bindings?: FlowBindingsV2;
+  /** 旧版输入映射；读取兼容，V2 配置应用后不再写入。 */
   parameterMap?: Record<string, unknown>;
+  /** 旧版目标节点；读取兼容。 */
   targetNodeId?: string;
 }
 
@@ -79,6 +94,7 @@ export function resolveFormFlowValue(expression: unknown, context: FormControlEv
 }
 
 export function resolveFormFlowParameters(config: FormFlowTriggerConfig, context: FormControlEventContext): Record<string, unknown> {
+  if (config.bindings?.version === 2) return {};
   const defaults: Record<string, unknown> = {
     value: context.value,
     field: context.field,
@@ -170,7 +186,10 @@ export async function executeFormFlowTrigger(
   if (importFields.length === 0) throw new Error('流程导入节点还没有定义字段');
   const exportFields = getWorkflowExportFields(activeWorkflow);
   if (exportFields.length === 0) throw new Error('流程导出节点还没有定义字段');
-  const { variables, nodeInputs } = splitFlowParameterTargets(activeWorkflow, parameters);
+  const activeParameters = config.bindings?.version === 2
+    ? { ...resolveV2FlowInputs(config.bindings, activeWorkflow, context), ...(config.parameterMap || {}) }
+    : parameters;
+  const { variables, nodeInputs } = splitFlowParameterTargets(activeWorkflow, activeParameters);
   const importNodeInputs = {
     ...variables,
     ...(nodeInputs[importNode.id] || {}),

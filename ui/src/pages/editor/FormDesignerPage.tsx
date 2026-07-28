@@ -12,7 +12,7 @@ import type { ComponentNode } from '../../models';
 import { createDesignFile } from '../../project/types';
 import { exportToComponentNodes } from '../../designer/export';
 import Modal, { ModalHeader } from '../../components/Modal';
-import type { LayoutDiagnostics } from '../../services/layout';
+import type { FormLayoutDiagnostics } from '../../services/layout';
 
 export default function FormDesignerPage() {
   const project = useProjectStore((s) => s.project);
@@ -79,11 +79,11 @@ export default function FormDesignerPage() {
     setInterfaceNodes(nodes);
   }, [designer]);
 
-  const formatLayoutNotice = useCallback((diagnostics: LayoutDiagnostics, count: number) => {
+  const formatLayoutNotice = useCallback((diagnostics: FormLayoutDiagnostics, count: number) => {
     const overlapDelta = Math.max(0, diagnostics.overlapCountBefore - diagnostics.overlapCountAfter);
-    const crossingDelta = Math.max(0, diagnostics.edgeCrossingsBefore - diagnostics.edgeCrossingsAfter);
     const warningText = diagnostics.warnings[0] ? ` · ${diagnostics.warnings[0]}` : '';
-    return `已整理 ${count} 个控件，消除 ${overlapDelta} 处重叠，减少 ${crossingDelta} 处交叉${warningText}`;
+    const strategy = diagnostics.strategy === 'single-column' ? '自适应单列' : diagnostics.strategy === 'strict-two-column' ? '严格双列' : '传统双列';
+    return `已用${strategy}排布 ${count} 个控件，移动 ${diagnostics.movedCount || 0} 个，调整 ${diagnostics.resizedCount || 0} 个尺寸，消除 ${overlapDelta} 处重叠${warningText}`;
   }, []);
 
   const handleAutoLayout = useCallback(() => {
@@ -114,7 +114,7 @@ export default function FormDesignerPage() {
     <div className="designer-layout">
       <div className={`designer-toolbar ${designer.mode === 'preview' ? 'preview-active' : ''}`}>
         {designer.mode === 'design' && <button type="button" onClick={handleSave} className="toolbar-btn">保存</button>}
-        {designer.mode === 'design' && <button type="button" onClick={handleAutoLayout} className="toolbar-btn">自动整理表单</button>}
+        {designer.mode === 'design' && <button type="button" onClick={handleAutoLayout} className="toolbar-btn">自动排布</button>}
         {designer.mode === 'design' && <button type="button" onClick={handlePreview} className="toolbar-btn">预览/导出</button>}
         {designer.mode === 'preview' && <button type="button" onClick={handleSendToTest} className="toolbar-btn">发送到测试</button>}
         <span className="toolbar-sep" />

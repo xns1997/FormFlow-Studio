@@ -55,8 +55,8 @@ test('MCP transport removes the aggregate endpoint and validates specialist role
     const firstBody = await firstCreate.json() as any;
     const replayCreate = await fetch(`${root}/api/ai/mcp-roles/project/tools/project.create/invoke`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ arguments: { id: projectId, name: 'HTTP 不应覆盖', idempotencyKey } }) });
     const idempotencyReplayBody = await replayCreate.json() as any;
-    assert.equal(firstCreate.status, 200); assert.equal(replayCreate.status, 200);
-    assert.deepEqual(idempotencyReplayBody, firstBody);
+    assert.equal(firstCreate.status, 200); assert.equal(replayCreate.status, 422);
+    assert.equal(idempotencyReplayBody.error.code, 'IDEMPOTENCY_KEY_REUSED');
     const loadedProject = await fetch(`${root}/api/ai/mcp-roles/project/tools/project.get/invoke`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ arguments: { projectId } }) });
     assert.match(JSON.stringify(await loadedProject.json()), /HTTP 首次创建/);
 

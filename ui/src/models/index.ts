@@ -101,7 +101,7 @@ export interface ComponentNode {
   name: string;
   label: string;
   fieldBinding?: string;
-  props: Record<string, unknown>;
+  props: Record<string, any>;
   layout: LayoutPosition;
   ports: ComponentPort[];
   events: ComponentEvent[];

@@ -214,7 +214,7 @@ registerControl({
           columns={component.props.columns}
           data={component.props.data}
           value={runtime?.value}
-          editable={mode === 'preview' && component.props.editable === true}
+          editable={(mode === 'preview' || mode === 'runtime') && component.props.editable === true}
           disabled={!!component.props.disabled}
           addable={component.props.addable === true}
           removable={component.props.removable === true}

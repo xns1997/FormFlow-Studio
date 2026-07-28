@@ -16,8 +16,14 @@ import { projectApi } from '../services/io/api';
 
 // ── 项目 CRUD ──────────────────────────────────────
 
-export async function saveProjectStructure(project: ProjectStructure): Promise<void> {
-  await projectApi.update(project.config.id, normalizeProjectStructure(project));
+export interface ProjectSnapshot {
+  project: ProjectStructure;
+  revision: string;
+}
+
+export async function saveProjectStructure(project: ProjectStructure, baseRevision: string, idempotencyKey: string): Promise<ProjectSnapshot> {
+  const response = await projectApi.updateWithRevision(project.config.id, normalizeProjectStructure(project), { baseRevision, idempotencyKey });
+  return { project: normalizeProjectStructure(response.data), revision: response.revision || baseRevision };
 }
 
 export async function createProjectStructure(project: ProjectStructure): Promise<ProjectStructure> {
@@ -25,8 +31,13 @@ export async function createProjectStructure(project: ProjectStructure): Promise
 }
 
 export async function loadProjectStructure(projectId: string): Promise<ProjectStructure | null> {
+  return (await loadProjectSnapshot(projectId))?.project || null;
+}
+
+export async function loadProjectSnapshot(projectId: string): Promise<ProjectSnapshot | null> {
   try {
-    return normalizeProjectStructure(await projectApi.get(projectId));
+    const response = await projectApi.getWithRevision(projectId);
+    return { project: normalizeProjectStructure(response.data), revision: response.revision || '' };
   } catch { return null; }
 }
 

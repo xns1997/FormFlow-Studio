@@ -21,3 +21,21 @@ test('generic argument contract returns precise repair feedback without inventin
 test('contract summaries and failure fingerprints are concise and stable by shape', () => {
   assert.match(toolContractSummary(schema), /projectId/); const one = parameterFailureFingerprint('x', { code: 'BAD', path: 'item.id' }, { item: { id: 1 } }); const two = parameterFailureFingerprint('x', { code: 'BAD', path: 'item.id' }, { item: { id: 9 } }); assert.equal(one, two);
 });
+
+test('generic argument contract enforces numeric bounds and conditional requirements', () => {
+  const contract = {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      scope: { type: 'string', enum: ['global', 'form'] },
+      formId: { type: 'string', minLength: 1 },
+      pageSize: { type: 'number', minimum: 1, maximum: 500 },
+    },
+    allOf: [{ if: { properties: { scope: { const: 'form' } } }, then: { required: ['formId'] } }],
+  };
+  const result = compileToolArguments('example.read', { scope: 'form', pageSize: 501 }, contract);
+  assert.equal(result.ok, false);
+  if (result.ok) return;
+  assert.ok(result.error.issues.some((item) => item.code === 'CONDITIONAL_REQUIRED_ARGUMENT' && item.path === 'formId'));
+  assert.ok(result.error.issues.some((item) => item.code === 'NUMBER_TOO_LARGE' && item.path === 'pageSize'));
+});

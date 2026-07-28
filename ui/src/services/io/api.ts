@@ -1,4 +1,5 @@
 // 后端 API 客户端
+import { consumeReconnectingStream, createHttpTransport, HttpTransportError, type ReconnectingStreamState } from './transport';
 
 export const API_BASE = (((import.meta as any).env?.VITE_API_BASE) || '/api').replace(/\/$/, '');
 export type ProjectAgentSessionScope = 'project' | 'unbound' | 'all';
@@ -9,27 +10,35 @@ function authorizationHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export async function request(path: string, options?: RequestInit) {
-  const headers = new Headers(options?.headers); headers.set('Content-Type', 'application/json');
-  for (const [key, value] of Object.entries(authorizationHeaders())) headers.set(key, value);
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers,
-  });
-  if (!res.ok) {
-    const detail = await res.json().catch(() => null);
-    throw new Error(detail?.error || `API Error: ${res.status}`);
+const transport = createHttpTransport({ baseUrl: API_BASE, authorizationHeaders });
+
+async function confirmedRequest(path: string, init: RequestInit) {
+  try {
+    return await transport.json(path, init);
+  } catch (error) {
+    if (!(error instanceof HttpTransportError) || error.status !== 409) throw error;
+    const details = error.details as any;
+    const token = details?.status === 'confirmation_required' ? details?.confirmation?.token : '';
+    if (!token) throw error;
+    return transport.json(path, {
+      ...init,
+      headers: { ...Object.fromEntries(new Headers(init.headers)), 'x-confirmation-token': token },
+    });
   }
-  return res.json();
+}
+
+export async function request<T = any>(path: string, options?: RequestInit): Promise<T> {
+  return transport.json<T>(path, options);
+}
+
+export async function requestRaw(path: string, options?: RequestInit): Promise<Response> {
+  return transport.raw(path, options);
 }
 
 /** Read a structured API envelope even when the endpoint intentionally returns 409/422. */
 export async function requestResult(path: string, options?: RequestInit): Promise<{ status: number; ok: boolean; body: any }> {
-  const headers = new Headers(options?.headers); headers.set('Content-Type', 'application/json');
-  for (const [key, value] of Object.entries(authorizationHeaders())) headers.set(key, value);
-  const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
-  const body = await response.json().catch(() => ({ error: `API Error: ${response.status}` }));
-  return { status: response.status, ok: response.ok, body };
+  const result = await transport.result(path, options);
+  return { status: result.status, ok: result.ok, body: result.body };
 }
 
 // ── 项目管理 ──────────────────────────────────────
@@ -37,28 +46,67 @@ export async function requestResult(path: string, options?: RequestInit): Promis
 export const projectApi = {
   list: () => request('/projects'),
   get: (id: string) => request(`/projects/${encodeURIComponent(id)}`),
-  create: (data: any) => request('/projects', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id: string, data: any) => request(`/projects/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(data) }),
-  remove: (id: string) => request(`/projects/${encodeURIComponent(id)}`, { method: 'DELETE' }),
-  clone: (id: string) => request(`/projects/${encodeURIComponent(id)}/clone`, { method: 'POST' }),
+  getWithRevision: (id: string) => transport.response<any>(`/projects/${encodeURIComponent(id)}`),
+  create: (data: any) => request('/projects', { method: 'POST', headers: { 'x-idempotency-key': crypto.randomUUID() }, body: JSON.stringify(data) }),
+  update: (id: string, data: any, metadata?: { baseRevision?: string; idempotencyKey?: string }) => request(`/projects/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: {
+      ...(metadata?.baseRevision ? { 'if-match': metadata.baseRevision } : {}),
+      ...(metadata?.idempotencyKey ? { 'x-idempotency-key': metadata.idempotencyKey } : {}),
+    },
+    body: JSON.stringify(data),
+  }),
+  updateWithRevision: (id: string, data: any, metadata: { baseRevision: string; idempotencyKey: string }) => transport.response<any>(`/projects/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { 'if-match': metadata.baseRevision, 'x-idempotency-key': metadata.idempotencyKey },
+    body: JSON.stringify(data),
+  }),
+  remove: async (id: string) => {
+    const snapshot = await transport.response<any>(`/projects/${encodeURIComponent(id)}`);
+    return confirmedRequest(`/projects/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: {
+        'if-match': snapshot.revision || '',
+        'x-idempotency-key': crypto.randomUUID(),
+      },
+    });
+  },
+  clone: (id: string) => request(`/projects/${encodeURIComponent(id)}/clone`, { method: 'POST', headers: { 'x-idempotency-key': crypto.randomUUID() } }),
   runtimeData: (id: string) => request(`/projects/${encodeURIComponent(id)}/runtime-data`),
+  batchRows: (input: {
+    projectId: string;
+    tableId: string;
+    sheetName: string;
+    baseRevision: string;
+    baseVersion?: string;
+    adds?: Record<string, unknown>[];
+    updates?: Array<{ rowKey: string; changes: Record<string, unknown> }>;
+    deletes?: string[];
+  }) => confirmedRequest('/projects/data/batch', {
+    method: 'POST',
+    headers: {
+      'if-match': input.baseRevision,
+      'x-idempotency-key': crypto.randomUUID(),
+    },
+    body: JSON.stringify(input),
+  }) as Promise<any>,
   importDataSource: async (id: string, file: File, options?: { mode?: 'create' | 'replace'; tableId?: string; fileName?: string }) => {
+    const snapshot = await transport.response<any>(`/projects/${encodeURIComponent(id)}`);
     const formData = new FormData();
     formData.append('file', file, options?.fileName || file.name);
     formData.append('mode', options?.mode || 'create');
     if (options?.tableId) formData.append('tableId', options.tableId);
-    const response = await fetch(`${API_BASE}/projects/${encodeURIComponent(id)}/data-sources/import`, {
+    return confirmedRequest(`/projects/${encodeURIComponent(id)}/data-sources/import`, {
       method: 'POST',
-      headers: authorizationHeaders(),
+      headers: {
+        'if-match': snapshot.revision || '',
+        'x-idempotency-key': crypto.randomUUID(),
+      },
       body: formData,
-    });
-    const body = await response.json().catch(() => null);
-    if (!response.ok) throw new Error(body?.detail || body?.error || `导入失败：${response.status}`);
-    return body;
+    }) as Promise<any>;
   },
   downloadPackage: async (id: string, fileName: string) => {
-    const response = await fetch(`${API_BASE}/projects/${encodeURIComponent(id)}/package`, { headers: authorizationHeaders() });
-    if (!response.ok) throw new Error('项目包导出失败');
+    const response = await transport.raw(`/projects/${encodeURIComponent(id)}/package`);
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
@@ -70,14 +118,10 @@ export const projectApi = {
   importPackage: async (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await fetch(`${API_BASE}/projects/package/import`, {
+    return transport.json<any>('/projects/package/import', {
       method: 'POST',
-      headers: authorizationHeaders(),
       body: formData,
     });
-    const body = await response.json().catch(() => null);
-    if (!response.ok) throw new Error(body?.error?.message || body?.error || '项目包导入失败');
-    return body;
   },
 };
 
@@ -91,9 +135,7 @@ export const fileApi = {
   upload: async (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await fetch(`${API_BASE}/files/upload`, { method: 'POST', body: formData });
-    if (!res.ok) throw new Error('Upload failed');
-    return res.json();
+    return transport.json<any>('/files/upload', { method: 'POST', body: formData });
   },
 };
 
@@ -104,7 +146,7 @@ export const dataApi = {
   get: (fileId: string, sheetName: string) => request(`/data/${fileId}/${sheetName}`),
   getRows: (fileId: string, sheetName: string, page = 1, pageSize = 50) => request(`/data/${fileId}/${sheetName}/rows?page=${page}&pageSize=${pageSize}`),
   getColumns: (fileId: string, sheetName: string) => request(`/data/${fileId}/${sheetName}/columns`),
-  export: (data: any[], format: string, fileName?: string) => fetch(`${API_BASE}/data/export`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data, format, fileName }) }),
+  export: (data: any[], format: string, fileName?: string) => transport.raw('/data/export', { method: 'POST', body: JSON.stringify({ data, format, fileName }) }),
 };
 
 // ── 历史管理 ──────────────────────────────────────
@@ -122,18 +164,18 @@ export const historyApi = {
 
 export const workflowApi = {
   list: (projectId: string) => request(`/workflows/${projectId}`),
-  create: (projectId: string, data: any) => request(`/workflows/${projectId}`, { method: 'POST', body: JSON.stringify(data) }),
-  update: (projectId: string, workflowId: string, data: any) => request(`/workflows/${projectId}/${workflowId}`, { method: 'PUT', body: JSON.stringify(data) }),
-  remove: (projectId: string, workflowId: string) => request(`/workflows/${projectId}/${workflowId}`, { method: 'DELETE' }),
+  create: (projectId: string, data: any, metadata: { baseRevision: string; idempotencyKey: string }) => request(`/workflows/${projectId}`, { method: 'POST', headers: { 'if-match': metadata.baseRevision, 'x-idempotency-key': metadata.idempotencyKey }, body: JSON.stringify(data) }),
+  update: (projectId: string, workflowId: string, data: any, metadata: { baseRevision: string; idempotencyKey: string }) => request(`/workflows/${projectId}/${workflowId}`, { method: 'PUT', headers: { 'if-match': metadata.baseRevision, 'x-idempotency-key': metadata.idempotencyKey }, body: JSON.stringify(data) }),
+  remove: (projectId: string, workflowId: string, metadata: { baseRevision: string; idempotencyKey: string; confirmed: true }) => request(`/workflows/${projectId}/${workflowId}`, { method: 'DELETE', headers: { 'if-match': metadata.baseRevision, 'x-idempotency-key': metadata.idempotencyKey, 'x-confirm-destructive': String(metadata.confirmed) } }),
 };
 
 // ── 行为管理 ──────────────────────────────────────
 
 export const behaviorApi = {
   list: (projectId: string) => request(`/behaviors/${projectId}`),
-  create: (projectId: string, data: any) => request(`/behaviors/${projectId}`, { method: 'POST', body: JSON.stringify(data) }),
-  update: (projectId: string, behaviorId: string, data: any) => request(`/behaviors/${projectId}/${behaviorId}`, { method: 'PUT', body: JSON.stringify(data) }),
-  remove: (projectId: string, behaviorId: string) => request(`/behaviors/${projectId}/${behaviorId}`, { method: 'DELETE' }),
+  create: (projectId: string, data: any, metadata: { baseRevision: string; idempotencyKey: string }) => request(`/behaviors/${projectId}`, { method: 'POST', headers: { 'if-match': metadata.baseRevision, 'x-idempotency-key': metadata.idempotencyKey }, body: JSON.stringify(data) }),
+  update: (projectId: string, behaviorId: string, data: any, metadata: { baseRevision: string; idempotencyKey: string }) => request(`/behaviors/${projectId}/${behaviorId}`, { method: 'PUT', headers: { 'if-match': metadata.baseRevision, 'x-idempotency-key': metadata.idempotencyKey }, body: JSON.stringify(data) }),
+  remove: (projectId: string, behaviorId: string, metadata: { baseRevision: string; idempotencyKey: string; confirmed: true }) => request(`/behaviors/${projectId}/${behaviorId}`, { method: 'DELETE', headers: { 'if-match': metadata.baseRevision, 'x-idempotency-key': metadata.idempotencyKey, 'x-confirm-destructive': String(metadata.confirmed) } }),
 };
 
 // ── 配置管理 ──────────────────────────────────────
@@ -201,14 +243,44 @@ export const llmApi = {
     updateMetadata: (id: string, data: { title?: string; pinned?: boolean }, projectId?: string) => request(`/ai/project-agent/v2/sessions/${encodeURIComponent(id)}${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`, { method: 'PATCH', body: JSON.stringify(data) }),
     restore: (id: string, projectId?: string) => request(`/ai/project-agent/v2/sessions/${encodeURIComponent(id)}/restore${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`, { method: 'POST' }),
     events: (id: string, afterSeq = 0, projectId?: string) => request(`/ai/project-agent/v2/sessions/${encodeURIComponent(id)}/events?afterSeq=${afterSeq}${projectId ? `&projectId=${encodeURIComponent(projectId)}` : ''}`),
-    streamEvents: async (id: string, afterSeq: number, onEvent: (event: any) => void, signal?: AbortSignal, projectId?: string, lifecycle?: { onOpen?(): void; onClose?(): void }) => {
-      const response = await fetch(`${API_BASE}/ai/project-agent/v2/sessions/${encodeURIComponent(id)}/events?afterSeq=${afterSeq}${projectId ? `&projectId=${encodeURIComponent(projectId)}` : ''}`, { headers: { Accept: 'text/event-stream', ...authorizationHeaders() }, signal });
-      if (!response.ok || !response.body) throw new Error(`事件流连接失败：${response.status}`);
-      lifecycle?.onOpen?.();
-      const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = '';
-      try {
-        while (true) { const { done, value } = await reader.read(); if (done) break; buffer += decoder.decode(value, { stream: true }); const frames = buffer.split('\n\n'); buffer = frames.pop() || ''; for (const frame of frames) { const line = frame.split('\n').find((item) => item.startsWith('data: ')); if (!line) continue; try { onEvent(JSON.parse(line.slice(6))); } catch { /* ignore malformed heartbeat */ } } }
-      } finally { lifecycle?.onClose?.(); }
+    streamEvents: async (id: string, afterSeq: number, onEvent: (event: any) => void, signal?: AbortSignal, projectId?: string, lifecycle?: { onOpen?(): void; onClose?(): void; onState?(state: ReconnectingStreamState): void; reconnect?: boolean }) => {
+      const controller = signal ? undefined : new AbortController();
+      const activeSignal = signal || controller!.signal;
+      const open = async (cursor: number, streamSignal: AbortSignal) => {
+        const stream = await transport.stream(`/ai/project-agent/v2/sessions/${encodeURIComponent(id)}/events?afterSeq=${cursor}${projectId ? `&projectId=${encodeURIComponent(projectId)}` : ''}`, { signal: streamSignal });
+        return stream.frames;
+      };
+      const consumeFrame = (frame: { data: string; id?: string }, cursor: number) => {
+        try {
+          const event = JSON.parse(frame.data);
+          onEvent(event);
+          return Math.max(cursor, Number(event.seq || frame.id || 0));
+        } catch {
+          return cursor;
+        }
+      };
+      if (!lifecycle?.reconnect) {
+        const frames = await open(afterSeq, activeSignal);
+        lifecycle?.onOpen?.();
+        try {
+          let cursor = afterSeq;
+          for await (const frame of frames) cursor = consumeFrame(frame, cursor);
+          return cursor;
+        } finally {
+          lifecycle?.onClose?.();
+        }
+      }
+      return consumeReconnectingStream({
+        signal: activeSignal,
+        cursor: afterSeq,
+        onState: (state) => {
+          lifecycle?.onState?.(state);
+          if (state === 'connected') lifecycle?.onOpen?.();
+          if (state === 'reconnecting' || state === 'disconnected') lifecycle?.onClose?.();
+        },
+        open,
+        onItem: consumeFrame,
+      });
     },
     capabilityBundles: {
       list: () => request('/ai/project-agent/v2/capability-bundles'),

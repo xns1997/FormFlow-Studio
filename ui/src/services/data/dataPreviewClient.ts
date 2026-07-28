@@ -1,4 +1,4 @@
-import { API_BASE, request } from '../io/api';
+import { request, requestRaw } from '../io/api';
 
 export type PreviewRow = Record<string, unknown> & { __rowKey: string; __rowIndex: number; __isNew?: boolean };
 export type PreviewQuery = {
@@ -99,8 +99,7 @@ export const dataPreviewApi = {
   transaction: (input: { projectId: string; targets: DataTransactionTarget[] }) =>
     request('/data/transaction', { method: 'POST', body: JSON.stringify(input) }) as Promise<{ committed: boolean; applied: number; targets?: Array<{ tableId: string; sheetName: string; dataVersion: string }> }>,
   exportQuery: async (input: Record<string, unknown>, fileName: string) => {
-    const response = await fetch(`${API_BASE}/data/export-query`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...input, fileName, format: 'xlsx' }) });
-    if (!response.ok) throw new Error((await response.json().catch(() => null))?.error || '导出失败');
+    const response = await requestRaw('/data/export-query', { method: 'POST', body: JSON.stringify({ ...input, fileName, format: 'xlsx' }) });
     const url = URL.createObjectURL(await response.blob());
     const anchor = document.createElement('a');
     anchor.href = url;

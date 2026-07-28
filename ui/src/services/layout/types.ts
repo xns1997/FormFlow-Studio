@@ -7,12 +7,23 @@ export interface LayoutDiagnostics {
   edgeCrossingsBefore: number;
   edgeCrossingsAfter: number;
   warnings: string[];
+  resizedCount?: number;
+  movedCount?: number;
 }
 
 export interface MeasuredNodeBox {
   id: string;
   width: number;
   height: number;
+}
+
+export type FormLayoutStrategy = 'single-column' | 'strict-two-column' | 'traditional-two-column';
+
+export interface FormLayoutDiagnostics extends LayoutDiagnostics {
+  strategy: FormLayoutStrategy;
+  whitespaceRatio: number;
+  formHeight: number;
+  geometryChange: number;
 }
 
 export interface WorkflowLayoutResult {
@@ -36,11 +47,16 @@ export interface GridPlacement {
 export interface FormLayoutResult {
   components: DesignComponent[];
   placements: GridPlacement[];
-  diagnostics: LayoutDiagnostics;
+  diagnostics: FormLayoutDiagnostics;
 }
 
 export interface FormLayoutControlRegistry {
   getControl: (type: string) => ControlDef | undefined;
+}
+
+export interface FormLayoutOptions {
+  contentWidth?: number;
+  measuredControls?: MeasuredNodeBox[];
 }
 
 export interface WorkflowLayoutOptions {

@@ -331,7 +331,11 @@ export function AntdSelectInput(props: {
       options={props.options}
       notFoundContent={props.emptyText || '暂无可选项'}
       style={props.style}
-      onChange={(value) => { if (!props.readOnly) props.onChange?.(value as string | string[]); }}
+      onChange={(value) => {
+        if (props.readOnly) return;
+        const nextValue = value == null ? (props.multiple ? [] : '') : value;
+        props.onChange?.(nextValue as string | string[]);
+      }}
       onBlur={props.onBlur}
       onFocus={props.onFocus}
     />

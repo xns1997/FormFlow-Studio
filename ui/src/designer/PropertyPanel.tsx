@@ -15,7 +15,7 @@ import { getPropertyStatus, PROPERTY_TASKS, resolvePropertyGroup } from './prope
 import { usePropertyPanelCatalog } from './properties/usePropertyPanelCatalog';
 import type { Props } from './properties/utils';
 
-export function PropertyPanel({ component, components = [], onUpdate, onUpdateGeometry, onRemove, onClose }: Props) {
+export function PropertyPanel({ component, components = [], onUpdate, onUpdateGeometry, onRemove, onClose, onEditWorkflowContract, onFinishWorkflowContractSession }: Props) {
   const projectId = useProjectStore((state) => state.project?.config.id || '');
   const workflows = useProjectStore((state) => state.project?.workflows || []);
   const tables = useProjectStore((state) => state.project?.srcTable || []);
@@ -65,7 +65,7 @@ export function PropertyPanel({ component, components = [], onUpdate, onUpdateGe
     <div className="properties-body"><PropertyTaskNav tasks={tasks} statuses={taskStatuses} active={activeTask} onSelect={selectTask} />
       <PropertySectionList control={control} component={component} components={components} values={values} defaults={control.defaultProps} section={section} query={query} collapsed={collapsed} statuses={statuses} fields={fields} fieldCatalog={fieldCatalog} rangeValue={rangeValue} showAdvanced={showAdvanced} onToggleAdvanced={() => setShowAdvanced((current) => !current)} onToggle={(groupId, isCollapsed) => setCollapsed((current) => ({ ...current, [`${component.type}:${groupId}`]: isCollapsed }))} onUpdate={updateProps} onUpdateGeometry={updateGeometry} />
       {!query.trim() && section === 'style' && <div className="properties-group" id="property-task-layout"><h4>布局</h4><div className="prop-layout-grid"><span><b>X</b>{Math.round(component.x)}</span><span><b>Y</b>{Math.round(component.y)}</span><span><b>宽</b>{Math.round(component.width)}</span><span><b>高</b>{Math.round(component.height)}</span></div></div>}
-      {showEvents && control.eventSchema.length > 0 && <PropertyEventsSection component={component} components={components} events={control.eventSchema} controlLabel={control.label} fields={fields} fieldDescriptors={fieldDescriptors} workflows={workflows} tables={tables} projectId={projectId} onUpdate={updateProps} />}
+      {showEvents && control.eventSchema.length > 0 && <PropertyEventsSection component={component} components={components} events={control.eventSchema} controlLabel={control.label} fields={fields} fieldDescriptors={fieldDescriptors} workflows={workflows} tables={tables} projectId={projectId} onUpdate={updateProps} onEditWorkflowContract={onEditWorkflowContract} onFinishWorkflowContractSession={onFinishWorkflowContractSession} />}
     </div>
   </div></FormAntdProvider></div>;
 }

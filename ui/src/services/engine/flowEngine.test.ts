@@ -269,6 +269,7 @@ test('behavior submit falls back to sheet single-key config when writeBackKeyFie
         rowHeight: 28,
         alternateRowColor: true,
         showGridLines: true,
+        showRowNumbers: true,
         autoFitColumns: true,
         filterEnabled: true,
         sortEnabled: true,
@@ -1037,7 +1038,7 @@ test('for-each iterates over array items', async () => {
     edge('e2', 'loop', 'output', 'currentItem', 'value'),
   ]);
   assert.equal(result.success, true);
-  assert.equal(result.nodeResults.get('loop')?.outputs.items?.length, 3);
+  assert.equal((result.nodeResults.get('loop')?.outputs.items as unknown[])?.length, 3);
 });
 
 test('condition-branch routes to true or false output', async () => {

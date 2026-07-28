@@ -479,6 +479,282 @@
   margin-bottom: 0;
 }
 
+/* ── V2 single-layer flow binding editor ─────────────── */
+
+.flow-binding-editor {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(148,163,184,0.2);
+  border-radius: 16px;
+  background: rgba(248,250,252,0.76);
+}
+
+.flow-binding-editor.enabled {
+  border-color: rgba(37,99,235,0.24);
+  background: linear-gradient(180deg, rgba(239,246,255,0.62), rgba(255,255,255,0.92));
+}
+
+.flow-binding-header,
+.flow-binding-overview-title,
+.flow-binding-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.flow-binding-mode,
+.flow-binding-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.flow-binding-mode button,
+.flow-binding-tabs button,
+.flow-binding-panel-head button,
+.flow-binding-trial button {
+  min-height: 28px;
+  border: 1px solid rgba(148,163,184,0.24);
+  border-radius: 9px;
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.94);
+  color: var(--text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.flow-binding-mode button.active,
+.flow-binding-tabs button.active {
+  border-color: rgba(37,99,235,0.3);
+  background: rgba(219,234,254,0.9);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.flow-binding-workflow-select {
+  margin: 0;
+}
+
+.flow-binding-overview {
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid rgba(148,163,184,0.18);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.88);
+}
+
+.flow-binding-overview-title strong {
+  font-size: 12px;
+}
+
+.flow-binding-overview-title span {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.flow-binding-overview-title .complete {
+  color: #166534;
+}
+
+.flow-binding-overview-title .has-risk {
+  color: #92400e;
+}
+
+.flow-binding-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.flow-binding-metrics span {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(241,245,249,0.95);
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.flow-binding-notice {
+  margin: 0;
+  color: #1e40af;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.flow-binding-risk-list {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flow-binding-risk-list li {
+  color: #92400e;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.flow-binding-risk-list li.error {
+  color: #b91c1c;
+}
+
+.flow-binding-tabs {
+  border-bottom: 1px solid rgba(148,163,184,0.18);
+  padding-bottom: 8px;
+}
+
+.flow-binding-tabs button span {
+  margin-left: 4px;
+  color: inherit;
+  opacity: 0.78;
+}
+
+.flow-binding-panel {
+  display: grid;
+  gap: 8px;
+}
+
+.flow-binding-panel-head {
+  align-items: flex-start;
+  padding: 2px 0 6px;
+}
+
+.flow-binding-panel-head strong {
+  font-size: 12px;
+}
+
+.flow-binding-panel-head p,
+.flow-binding-trial p {
+  margin: 3px 0 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.flow-binding-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.85fr) 24px minmax(260px, 1.6fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid rgba(148,163,184,0.18);
+  border-radius: 13px;
+  background: rgba(255,255,255,0.9);
+}
+
+.flow-binding-row.pending {
+  border-color: rgba(245,158,11,0.3);
+}
+
+.flow-binding-target,
+.flow-binding-source,
+.flow-binding-transform-extra {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.flow-binding-target strong {
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.flow-binding-target small,
+.flow-binding-readonly-value {
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.flow-binding-arrow {
+  color: var(--text-secondary);
+  font-size: 16px;
+  text-align: center;
+}
+
+.flow-binding-auto-badge {
+  justify-self: start;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(219,234,254,0.9);
+  color: #1d4ed8;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.flow-binding-empty {
+  padding: 12px;
+  border: 1px dashed rgba(148,163,184,0.3);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.flow-binding-code {
+  min-height: 280px;
+}
+
+.flow-binding-trial {
+  border-top: 1px solid rgba(148,163,184,0.18);
+  padding-top: 10px;
+}
+
+.flow-binding-trial summary {
+  cursor: pointer;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.flow-binding-trial textarea {
+  width: 100%;
+  margin: 8px 0;
+}
+
+.flow-binding-trial pre {
+  max-height: 240px;
+  overflow: auto;
+  margin: 8px 0 0;
+  padding: 10px;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #e2e8f0;
+  font: 11px/1.5 "SF Mono", Consolas, monospace;
+  white-space: pre-wrap;
+}
+
+.binding-return-button {
+  border-color: rgba(37,99,235,0.32) !important;
+  background: rgba(219,234,254,0.94) !important;
+  color: #1d4ed8 !important;
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .flow-binding-row {
+    grid-template-columns: 1fr;
+  }
+
+  .flow-binding-arrow {
+    transform: rotate(-90deg);
+  }
+
+  .flow-binding-header,
+  .flow-binding-panel-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 /* ── Event Workbench ─────────────────────────────────── */
 
 .event-workbench-modal {

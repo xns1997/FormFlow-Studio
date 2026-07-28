@@ -6,7 +6,7 @@ import {
   type DataRelation,
 } from './template-operation-center';
 
-function project() {
+function project(): any {
   const now = '2026-07-22T00:00:00.000Z';
   return {
     config: { id: 'template_demo', name: '模板演示', description: '', version: '1.0.0', createdAt: now, updatedAt: now, author: 'test', tags: [] },
@@ -607,13 +607,13 @@ test('template protocol reuses the production scaffold for runnable entry and lo
 
   const lookupFullWriteback = planOperationTemplate(value, 'single-table-lookup-edit', { tableId: 'teachers', sheetName: '教师', fields: ['教师ID', '姓名', '工资'] }, { formId: 'teacher_edit_full_row', queryFields: ['教师ID'], editableFields: ['姓名', '工资'], dirtyOnly: false });
   const lookupFullSaveFlow = lookupFullWriteback.artifacts.workflows.find((workflow: any) => workflow.nodes.some((node: any) => node.specId === 'behavior:submit'));
-  const lookupFullSaveProps = JSON.parse(lookupFullSaveFlow.nodes.find((node: any) => node.id === 'submit').data.propertiesJson);
+  const lookupFullSaveProps = JSON.parse(lookupFullSaveFlow!.nodes.find((node: any) => node.id === 'submit').data.propertiesJson);
   assert.equal(lookupFullSaveProps.writeBackMode, 'upsert');
   assert.equal(lookupFullSaveProps.dirtyOnly, false);
 
   const lookupRefreshOnConflict = planOperationTemplate(value, 'single-table-lookup-edit', { tableId: 'teachers', sheetName: '教师', fields: ['教师ID', '姓名', '工资'] }, { formId: 'teacher_edit_refresh_retry', queryFields: ['教师ID'], editableFields: ['姓名', '工资'], conflictPolicy: 'refresh-and-retry', refetchAfterSave: true });
   const lookupRefreshSaveFlow = lookupRefreshOnConflict.artifacts.workflows.find((workflow: any) => workflow.nodes.some((node: any) => node.specId === 'behavior:submit'));
-  const lookupRefreshSaveProps = JSON.parse(lookupRefreshSaveFlow.nodes.find((node: any) => node.id === 'submit').data.propertiesJson);
+  const lookupRefreshSaveProps = JSON.parse(lookupRefreshSaveFlow!.nodes.find((node: any) => node.id === 'submit').data.propertiesJson);
   assert.equal(lookupRefreshSaveProps.conflictPolicy, 'refresh-and-retry');
   assert.equal(lookupRefreshSaveProps.refetchAfterSave, true);
 });
@@ -868,8 +868,8 @@ test('declared relation query preserves source keys and supports left join', () 
   const result = queryRelationRows(value, { relationId: relation.id, pageSize: 10 });
   assert.equal(result.total, 2);
   assert.equal(result.rows[0]['subjects.科目名'], '劳动课');
-  assert.deepEqual(result.rows[0].__sources.teachers, { 教师ID: 'T1' });
-  assert.equal(result.rows[1].__sources.subjects, null);
+  assert.deepEqual((result.rows[0].__sources as any).teachers, { 教师ID: 'T1' });
+  assert.equal((result.rows[1].__sources as any).subjects, null);
 });
 
 test('relation suggestions use names, compatible types, keys and sample overlap without mutating the project', () => {
@@ -914,15 +914,15 @@ test('cross-table query template generates an executable two-source join form', 
   const saveWorkflow = plan.artifacts.workflows.find((item: any) => item.id === 'teacher_subject_query_join_save_flow');
   assert.ok(form.design.components.some((item: any) => item.type === 'table' && item.fieldBinding === '_联合查询结果'));
   assert.ok(form.design.components.some((item: any) => item.fieldBinding === '_联合查询状态'));
-  assert.ok(form.design.components.some((item: any) => item.props?.label === '加载联合数据' && item.props.flowTriggers.onClick.workflowId === queryWorkflow.id));
-  assert.ok(form.design.components.some((item: any) => item.props?.label === '原子提交更新' && item.props.flowTriggers.onClick.workflowId === saveWorkflow.id));
+  assert.ok(form.design.components.some((item: any) => item.props?.label === '加载联合数据' && item.props.flowTriggers.onClick.workflowId === queryWorkflow!.id));
+  assert.ok(form.design.components.some((item: any) => item.props?.label === '原子提交更新' && item.props.flowTriggers.onClick.workflowId === saveWorkflow!.id));
   const resultTable = form.design.components.find((item: any) => item.fieldBinding === '_联合查询结果');
   assert.deepEqual(resultTable.props.columns.map((item: any) => item.dataIndex), ['teachers.教师ID', 'teachers.姓名', 'subjects.科目名']);
   assert.equal(resultTable.props.columns.find((item: any) => item.dataIndex === 'teachers.姓名')?.editable, true);
   assert.equal(resultTable.props.columns.find((item: any) => item.dataIndex === 'subjects.科目名')?.editable, true);
   assert.equal(resultTable.props.columns.find((item: any) => item.dataIndex === 'teachers.教师ID')?.editable, false);
-  assert.deepEqual(queryWorkflow.nodes.map((item: any) => item.specId), ['workflow:import', 'behavior-query-list', 'behavior-query-list', 'data:lookup-join']);
-  assert.deepEqual(saveWorkflow.nodes.map((item: any) => item.specId), ['workflow:import', 'data:transaction-write']);
+  assert.deepEqual(queryWorkflow!.nodes.map((item: any) => item.specId), ['workflow:import', 'behavior-query-list', 'behavior-query-list', 'data:lookup-join']);
+  assert.deepEqual(saveWorkflow!.nodes.map((item: any) => item.specId), ['workflow:import', 'data:transaction-write']);
   assert.deepEqual(plan.preview?.fieldProjection?.queryFields, ['teachers.教师ID']);
   assert.deepEqual(plan.preview?.fieldProjection?.editableFields, ['teachers.姓名', 'subjects.科目名']);
   assert.equal(plan.preview?.exactConfiguration?.policy?.joinPolicy?.joinType, 'left');
@@ -935,7 +935,7 @@ test('cross-table query template generates an executable two-source join form', 
   assert.equal(plan.preview?.exactConfiguration?.resultBindings?.messageField, '_联合查询状态');
   assert.equal(plan.preview?.exactConfiguration?.resultBindings?.changeLogField, '_分表差异');
   assert.equal(plan.preview?.exactConfiguration?.resultBindings?.writeBackField, '_分表状态');
-  const joinProps = JSON.parse(queryWorkflow.nodes.find((item: any) => item.specId === 'data:lookup-join').data.propertiesJson);
+  const joinProps = JSON.parse(queryWorkflow!.nodes.find((item: any) => item.specId === 'data:lookup-join').data.propertiesJson);
   assert.equal(joinProps.messageField, '_联合查询状态');
   assert.equal(joinProps.multipleMessage, '结果歧义，请继续收窄条件');
   assert.doesNotThrow(() => applyOperationPlan(value, plan));
@@ -1133,7 +1133,7 @@ test('single-table batch form exposes exactly the fields selected in data previe
     internalFields: ['教师ID'],
   });
   const workflow = plan.artifacts.workflows.find((item: any) => item.id === 'teacher_selected_fields_batch_batch_flow');
-  const transaction = workflow.nodes.find((node: any) => node.specId === 'data:transaction-write');
+  const transaction = workflow!.nodes.find((node: any) => node.specId === 'data:transaction-write');
   const properties = JSON.parse(transaction.data.propertiesJson);
   assert.deepEqual(Object.keys(properties.targets[0].fieldMap), ['教师ID', '姓名', '工资']);
   assert.doesNotThrow(() => applyOperationPlan(value, plan));
@@ -2308,7 +2308,7 @@ test('master-detail-entry consumes master/detail projection, edit mode and exact
   assert.equal(plan.preview?.exactConfiguration?.resultBindings?.changeLogField, '_主从事务差异');
   assert.equal(plan.preview?.exactConfiguration?.resultBindings?.writeBackField, '_主从事务状态');
   const workflow = plan.artifacts.workflows.find((item: any) => item.id === 'master_detail_projected_transaction_flow');
-  const writeProps = JSON.parse(workflow.nodes.find((node: any) => node.specId === 'data:transaction-write').data.propertiesJson);
+  const writeProps = JSON.parse(workflow!.nodes.find((node: any) => node.specId === 'data:transaction-write').data.propertiesJson);
   assert.equal(writeProps.resultField, '_主从结果快照');
   assert.equal(writeProps.statusField, '_主从事务状态');
   assert.equal(writeProps.diffField, '_主从事务差异');
@@ -2328,7 +2328,7 @@ test('parallel-cross-table-entry propagates existingPolicy into transaction targ
     { atomic: true, existingPolicy: 'skip', formId: 'parallel_entry_skip' },
   );
   const skipWorkflow = skipPlan.artifacts.workflows.find((workflow: any) => workflow.nodes.some((node: any) => node.specId === 'data:transaction-write'));
-  const skipWriteProps = JSON.parse(skipWorkflow.nodes.find((node: any) => node.specId === 'data:transaction-write').data.propertiesJson);
+  const skipWriteProps = JSON.parse(skipWorkflow!.nodes.find((node: any) => node.specId === 'data:transaction-write').data.propertiesJson);
   assert.deepEqual(skipWriteProps.targets.map((target: any) => ({ tableId: target.tableId, mode: target.mode, existingPolicy: target.existingPolicy })), [
     { tableId: 'teachers', mode: 'upsert', existingPolicy: 'skip' },
     { tableId: 'subjects', mode: 'upsert', existingPolicy: 'skip' },
@@ -2342,7 +2342,7 @@ test('parallel-cross-table-entry propagates existingPolicy into transaction targ
     { atomic: true, existingPolicy: 'update', formId: 'parallel_entry_update' },
   );
   const updateWorkflow = updatePlan.artifacts.workflows.find((workflow: any) => workflow.nodes.some((node: any) => node.specId === 'data:transaction-write'));
-  const updateWriteProps = JSON.parse(updateWorkflow.nodes.find((node: any) => node.specId === 'data:transaction-write').data.propertiesJson);
+  const updateWriteProps = JSON.parse(updateWorkflow!.nodes.find((node: any) => node.specId === 'data:transaction-write').data.propertiesJson);
   assert.deepEqual(updateWriteProps.targets.map((target: any) => ({ tableId: target.tableId, mode: target.mode, existingPolicy: target.existingPolicy })), [
     { tableId: 'teachers', mode: 'upsert', existingPolicy: 'update' },
     { tableId: 'subjects', mode: 'upsert', existingPolicy: 'update' },
@@ -2450,7 +2450,7 @@ test('parallel-cross-table-entry consumes table projections, section config, bin
   assert.equal(plan.preview?.exactConfiguration?.resultBindings?.changeLogField, '_并列事务差异');
   assert.equal(plan.preview?.exactConfiguration?.resultBindings?.writeBackField, '_并列事务状态');
   const workflow = plan.artifacts.workflows.find((item: any) => item.id === 'parallel_entry_projected_transaction_flow');
-  const writeProps = JSON.parse(workflow.nodes.find((node: any) => node.specId === 'data:transaction-write').data.propertiesJson);
+  const writeProps = JSON.parse(workflow!.nodes.find((node: any) => node.specId === 'data:transaction-write').data.propertiesJson);
   assert.equal(writeProps.statusField, '_并列事务状态');
   assert.equal(writeProps.diffField, '_并列事务差异');
   assert.equal(writeProps.successMessage, '跨表预检已完成');
@@ -2570,7 +2570,7 @@ test('multi-table-batch-update consumes per-table projections, custom bindings a
   assert.equal(plan.preview?.exactConfiguration?.resultBindings?.writeBackField, '_批量提交状态');
   assert.equal(plan.preview?.exactConfiguration?.buttons?.find((item: any) => item.label === '提交三表批改')?.workflowIds?.[0], 'multi_batch_projected_transaction_flow');
   const workflow = plan.artifacts.workflows.find((item: any) => item.id === 'multi_batch_projected_transaction_flow');
-  const writeProps = JSON.parse(workflow.nodes.find((node: any) => node.specId === 'data:transaction-write').data.propertiesJson);
+  const writeProps = JSON.parse(workflow!.nodes.find((node: any) => node.specId === 'data:transaction-write').data.propertiesJson);
   assert.equal(writeProps.statusField, '_批量提交状态');
   assert.equal(writeProps.diffField, '_批量提交差异');
   assert.equal(writeProps.successMessage, '多表批量预检完成');

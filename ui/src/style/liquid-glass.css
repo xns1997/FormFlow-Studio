@@ -122,6 +122,19 @@ button.nav-link { border-color: transparent; background: transparent; font: inhe
 .nav-context { display: flex; align-items: center; flex: 1; min-width: 0; gap: 12px; }
 .nav-links-context { min-width: 0; overflow-x: auto; }
 .nav-links-doc { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.project-save-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.project-save-status.error { border-color: color-mix(in srgb, var(--danger) 35%, var(--line)); color: var(--danger); }
+.project-save-status button { border: 0; padding: 0; background: transparent; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
 .nav-status-clock-text { letter-spacing: 0.02em; }
 .nav-link-subtle { color: var(--text-secondary); }
 .app-main { flex: 1; overflow: hidden; background: transparent; }

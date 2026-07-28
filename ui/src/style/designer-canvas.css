@@ -78,6 +78,18 @@
    sidebars or window reduce the available canvas width. */
 .designer-canvas-shell { container-type: inline-size; }
 
+.canvas-command-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .toolbar-spacer { flex: 1 1 auto; min-width: 8px; }
 .canvas-toolbar-more { position: relative; display: none; }
 
@@ -112,6 +124,7 @@
 @container (max-width: 720px) {
   .canvas-floating-toolbar .toolbar-selection-actions,
   .canvas-floating-toolbar .toolbar-view-extra { display: none; }
+  .canvas-floating-toolbar .auto-arrange-button span { display: none; }
   .canvas-toolbar-more { display: block; }
 }
 
@@ -170,6 +183,15 @@
   font-size: 14px;
   line-height: 1;
   transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.canvas-floating-toolbar .auto-arrange-button {
+  display: inline-flex;
+  width: auto;
+  padding-inline: 8px;
+  gap: 5px;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .canvas-floating-toolbar button:hover:not(:disabled) {

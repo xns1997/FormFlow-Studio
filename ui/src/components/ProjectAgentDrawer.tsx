@@ -56,22 +56,14 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
     void Promise.all([projectApi.list(), pendingSessionId ? llmApi.projectAgent.getSession(pendingSessionId, projectId) as Promise<Session> : Promise.resolve(null)]).then(([projectItems, next]: [ProjectOption[], Session | null]) => { if (cancelled) return; setProjects(projectItems); activateSession(next); }).catch((cause) => reportError('无法读取智能体会话', cause)); return () => { cancelled = true; }; }, [projectId, activateSession]);
   useEffect(() => {
     if (!session?.id) { setConnection('disconnected'); return; }
-    const controller = new AbortController(); let retryTimer: number | undefined; let failures = 0; let opened = false;
-    const connect = async () => {
-      if (controller.signal.aborted) return;
-      setConnection(failures ? 'reconnecting' : 'connecting'); opened = false;
-      try {
-        await llmApi.projectAgent.streamEvents(session.id, lastSeq.current, (event) => {
-          lastSeq.current = Math.max(lastSeq.current, Number(event.seq || 0));
-          if (event.type === 'session_project_scope_changed') void projectApi.list().then((items) => setProjects(items)).catch(() => undefined);
-          window.clearTimeout(refreshTimer.current); refreshTimer.current = window.setTimeout(() => void loadSession(session.id, session.projectId), 80);
-        }, controller.signal, session.projectId, { onOpen: () => { opened = true; failures = 0; setConnection('connected'); }, onClose: () => { if (!controller.signal.aborted) setConnection('reconnecting'); } });
-        if (!controller.signal.aborted) { failures += 1; setConnection(failures >= 3 ? 'disconnected' : 'reconnecting'); retryTimer = window.setTimeout(() => void connect(), Math.min(5000, 1000 * 2 ** failures)); }
-      } catch {
-        if (!controller.signal.aborted) { failures += 1; setConnection(failures >= 3 ? 'disconnected' : 'reconnecting'); retryTimer = window.setTimeout(() => void connect(), Math.min(5000, opened ? 1200 : 1000 * 2 ** failures)); }
-      }
-    };
-    void connect(); return () => { controller.abort(); if (retryTimer) window.clearTimeout(retryTimer); window.clearTimeout(refreshTimer.current); };
+    const controller = new AbortController();
+    void llmApi.projectAgent.streamEvents(session.id, lastSeq.current, (event) => {
+      lastSeq.current = Math.max(lastSeq.current, Number(event.seq || 0));
+      if (event.type === 'session_project_scope_changed') void projectApi.list().then((items) => setProjects(items)).catch(() => undefined);
+      window.clearTimeout(refreshTimer.current);
+      refreshTimer.current = window.setTimeout(() => void loadSession(session.id, session.projectId), 80);
+    }, controller.signal, session.projectId, { reconnect: true, onState: setConnection });
+    return () => { controller.abort(); window.clearTimeout(refreshTimer.current); };
   }, [session?.id, session?.projectId, projectId, loadSession, reconnectNonce]);
 
   useEffect(() => { const resize = () => setWidth((value) => clampProjectAgentWidth(value, window.innerWidth)); window.addEventListener('resize', resize); return () => window.removeEventListener('resize', resize); }, []);

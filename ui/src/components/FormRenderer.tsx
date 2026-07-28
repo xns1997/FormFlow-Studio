@@ -102,6 +102,8 @@ export default function FormRenderer({
   const expressionValues = useMemo(() => resolveExpressionValues(components.map((component) => ({
     field: resolveComponentFieldName(component), props: normalizeRenderProps(component),
   })), values, originalValues).values, [components, values, originalValues]);
+  const liveValuesRef = useRef(expressionValues);
+  liveValuesRef.current = expressionValues;
 
   useEffect(() => {
     for (const component of components) {
@@ -281,30 +283,35 @@ export default function FormRenderer({
           props={props}
           error={isTouched ? errors[fieldName] : undefined}
           onChange={(val, detail) => {
-            const nextValues = { ...expressionValues, [fieldName]: val };
+            const currentValues = liveValuesRef.current;
+            const previousValue = currentValues[fieldName];
+            const nextValues = { ...currentValues, [fieldName]: val };
+            liveValuesRef.current = nextValues;
             onChange(fieldName, val);
             if (props.rememberLastInput === true && !valueIsSensitive) { try { localStorage.setItem(`formflow:last-input:${fieldName}`, JSON.stringify(val)); } catch { /* ignore storage limits */ } }
             void onControlEvent?.({
               eventName: 'onChange', field: fieldName, value: val,
-              values: nextValues, originalValues, component: comp, previousValue: expressionValues[fieldName], timestamp: Date.now(),
+              values: nextValues, originalValues, component: comp, previousValue, timestamp: Date.now(),
               detail,
             });
           }}
           onBlur={() => {
+            const currentValues = liveValuesRef.current;
             setValidatingFields((current) => new Set(current).add(fieldName));
             window.setTimeout(() => setValidatingFields((current) => { const next = new Set(current); next.delete(fieldName); return next; }), 180);
             handleFieldBlur(fieldName);
             onBlur?.(fieldName);
             void onControlEvent?.({
-              eventName: 'onBlur', field: fieldName, value: expressionValues[fieldName],
-              values: expressionValues, originalValues, component: comp, previousValue: expressionValues[fieldName], timestamp: Date.now(),
+              eventName: 'onBlur', field: fieldName, value: currentValues[fieldName],
+              values: currentValues, originalValues, component: comp, previousValue: currentValues[fieldName], timestamp: Date.now(),
             });
           }}
           onFocus={() => {
+            const currentValues = liveValuesRef.current;
             onFocus?.(fieldName);
             void onControlEvent?.({
-              eventName: 'onFocus', field: fieldName, value: expressionValues[fieldName],
-              values: expressionValues, originalValues, component: comp, previousValue: expressionValues[fieldName], timestamp: Date.now(),
+              eventName: 'onFocus', field: fieldName, value: currentValues[fieldName],
+              values: currentValues, originalValues, component: comp, previousValue: currentValues[fieldName], timestamp: Date.now(),
             });
           }}
           onKeyDown={onKeyDown ? (e) => onKeyDown(fieldName, e) : undefined}

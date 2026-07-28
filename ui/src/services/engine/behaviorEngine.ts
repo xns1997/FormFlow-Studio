@@ -434,16 +434,6 @@ export async function executeAction(action: ActionConfig, state: RuntimeState, s
         }));
         try {
           const result = await context.runWorkflow(action.workflowId, action.workflowParameters);
-          if (result && typeof result === 'object' && 'finalOutputs' in result) {
-            const outputs = (result as { finalOutputs: Record<string, unknown> }).finalOutputs;
-            for (const [key, value] of Object.entries(outputs)) {
-              if (key.startsWith('__')) continue;
-              setState((prev) => ({
-                ...prev,
-                formValues: { ...prev.formValues, [key]: value },
-              }));
-            }
-          }
           setState((prev) => ({
             ...prev,
             behaviorLogs: [...prev.behaviorLogs, {

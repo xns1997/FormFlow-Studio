@@ -37,6 +37,21 @@ test('data preflight validates source, columns and initial key integrity', () =>
   assert.equal(duplicate.ok, false); if (!duplicate.ok) assert.equal(duplicate.error.code, 'DATA_KEY_VALUE_DUPLICATE');
 });
 
+test('data preflight rejects multiple content sources instead of applying hidden precedence', () => {
+  const result = compileDataToolArguments('data_source.import', {
+    projectId: 'p1',
+    id: 'orders',
+    fileId: 'upload-1',
+    rows: [{ id: 'A-1' }],
+    config: { keyFields: ['id'] },
+  });
+  assert.equal(result.ok, false);
+  if (result.ok) return;
+  assert.equal(result.error.code, 'DATA_SOURCE_INPUT_AMBIGUOUS');
+  assert.equal(result.error.path, 'rows');
+  assert.match(result.error.message, /只能提供一种/);
+});
+
 test('historical data-source failure shapes normalize or fail once with actionable guidance', () => {
   const corpus = [
     { rows: [{ device_id: 'D-1' }], config: { sheets: [{ name: 'Sheet1', config: { keyFields: ['device_id'], editable: true } }] } },

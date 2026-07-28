@@ -31,6 +31,7 @@ async function click(source: ProjectStructure, formId: string, componentId: stri
   const result = await executeFormControlEvent({
     eventName: 'onClick',
     field: component.name,
+    value: undefined,
     values,
     originalValues: {},
     component,

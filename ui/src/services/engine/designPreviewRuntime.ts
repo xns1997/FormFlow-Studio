@@ -5,6 +5,7 @@ import { exportToComponentNodes } from '../../designer/export';
 import type { FormFlowTriggerConfig } from './formFlowTrigger';
 import type { FlowExecutionResult } from './flowEngine';
 import { executeFormControlEvent, type FormEventCallback } from './formEventExecutor';
+import type { FormEventEffect } from './formEventTransaction';
 
 export interface DesignPreviewEventContext {
   eventName: string;
@@ -47,6 +48,7 @@ export async function executeDesignPreviewEvent(
     setVisible?: (componentId: string, visible: boolean) => void;
     setDisabled?: (componentId: string, disabled: boolean) => void;
     setRequired?: (field: string, required: boolean) => void;
+    applyEffects?: (effects: FormEventEffect[]) => void | Promise<void>;
     setOptions?: (field: string, config: FormLinkageOptionsConfig) => void;
     showMessage?: (message: string, level?: 'info' | 'success' | 'warning' | 'error') => void;
     callbacks?: Record<string, FormEventCallback>;
@@ -72,6 +74,7 @@ export async function executeDesignPreviewEvent(
     setVisible: options.setVisible,
     setDisabled: options.setDisabled,
     setRequired: options.setRequired,
+    applyEffects: options.applyEffects,
     setOptions: options.setOptions,
     showMessage: options.showMessage,
     callbacks: options.callbacks,

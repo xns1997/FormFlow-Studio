@@ -598,7 +598,11 @@ async function runSpecialist(session: AgentSessionV2, task: AgentTaskNode, run: 
     } else if (referenceBudgetExceeded) {
       result = { ok: false, error: { code: 'RULE_REFERENCE_BUDGET_EXHAUSTED', message: '本任务已读取过权威规则参考，请使用已有参考和 lint 诊断继续，不要换关键词重复搜索', retryable: false }, meta: { requestId: run.requestId } };
       appendAgentEvent(session, 'tool_rejected', { taskId: task.id, role: task.role, toolName: call.name, error: result.error, reason: 'reference_search_budget' });
-    } else if (preflightFailed) { result = { ok: false, error: { code: prepared.preflight.error.code, message: prepared.preflight.error.message, path: prepared.preflight.error.path, details: prepared.preflight.error, retryable: false }, meta: { requestId: run.requestId } }; appendAgentEvent(session, 'tool_preflight_failed', { taskId: task.id, role: task.role, toolName: call.name, originalArguments, normalizedArguments, error: prepared.preflight.error, suggestedArguments: prepared.preflight.error.suggestedArguments, normalizations: prepared.preflight.normalizations }); }
+    } else if (preflightFailed) {
+      const preflightError = prepared.preflight.error || { code: 'TOOL_PREFLIGHT_FAILED', message: '工具参数预检失败', path: undefined, suggestedArguments: undefined };
+      result = { ok: false, error: { code: preflightError.code, message: preflightError.message, path: preflightError.path, details: preflightError, retryable: false }, meta: { requestId: run.requestId } };
+      appendAgentEvent(session, 'tool_preflight_failed', { taskId: task.id, role: task.role, toolName: call.name, originalArguments, normalizedArguments, error: preflightError, suggestedArguments: preflightError.suggestedArguments, normalizations: prepared.preflight.normalizations });
+    }
     else { if (task.role === 'behavior' && call.name === 'rule_reference.search') referenceSearches += 1; appendAgentEvent(session, 'tool_started', { taskId: task.id, role: task.role, toolName: call.name, projectId: args.projectId || task.projectId || session.projectId }); result = await executeLlmTool(call.name, args, { ...run, projectId: args.projectId || task.projectId || session.projectId, mcpRole: task.role }); }
     if (result.status === 'confirmation_required') {
       const policy = evaluateToolPolicy(call.name, activePlan(session)?.request || '', task);
@@ -727,7 +731,7 @@ async function resumeAssistedExperts(session: AgentSessionV2, plan: AgentPlanRev
     const continuation = `原阻断：${originalReason}\n协助专家：${roleTitles[helper.role]}\n协助结果：${helper.output || helper.title}\n可用证据：${evidence.join('、') || '协助任务已通过验收'}\n请从原卡点继续，先读取协助后的最新项目状态，不要重做已完成的部分。`;
     await executeTask(session, blocked, run, { repairContext: continuation, preserveAttempt: true });
     if (session.pendingApproval || session.controlSignal) return false;
-    if (blocked.status === 'passed') { appendAgentEvent(session, 'expert_resumed_completed', { taskId: blocked.id, role: blocked.role, action: blocked.title, helperRole: helper.role, summary: '原专家已基于协助结果完成后续工作' }); if (blocked.assistsTaskId) queue.push(blocked); }
+    if ((blocked.status as string) === 'passed') { appendAgentEvent(session, 'expert_resumed_completed', { taskId: blocked.id, role: blocked.role, action: blocked.title, helperRole: helper.role, summary: '原专家已基于协助结果完成后续工作' }); if (blocked.assistsTaskId) queue.push(blocked); }
   }
   return true;
 }

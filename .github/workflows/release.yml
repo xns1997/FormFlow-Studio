@@ -17,6 +17,18 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
+      - run: pnpm verify
+      - run: docker build -t formflow-release-smoke .
+      - name: Smoke-test production image and catalogs
+        run: |
+          docker run -d --name formflow-release-smoke -p 3001:3001 -e FORMFLOW_MODE=local formflow-release-smoke
+          for attempt in $(seq 1 30); do
+            curl --fail --silent http://127.0.0.1:3001/api/health && break
+            sleep 1
+          done
+          test "$(docker exec formflow-release-smoke sh -c 'find /app/ui/src/designer/controls -name "*.tsx" | wc -l')" -gt 0
+          test "$(docker exec formflow-release-smoke sh -c 'find /app/ui/nodes -name schema.json | wc -l')" -gt 0
+          docker rm -f formflow-release-smoke
       - run: pnpm release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

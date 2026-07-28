@@ -12,8 +12,10 @@ test.describe('表单控件 UX 基础矩阵', () => {
         await page.goto('/projects');
         if (scale === 2) await page.addStyleTag({ content: 'body { zoom: 2; }' });
         await page.getByRole('button', { name: '新建项目' }).click();
+        // Wait for the modal's requestAnimationFrame autofocus before moving
+        // focus again; otherwise it can land between Enter keydown and keyup.
+        await expect(page.getByRole('button', { name: '关闭创建项目向导' })).toBeFocused();
         const templateMode = page.locator('.project-wizard-mode-card').filter({ hasText: '内置模板' });
-        await templateMode.focus();
         await expect(templateMode).toHaveAttribute('aria-pressed', 'false');
         await templateMode.press('Enter');
         await expect(templateMode).toHaveAttribute('aria-pressed', 'true');

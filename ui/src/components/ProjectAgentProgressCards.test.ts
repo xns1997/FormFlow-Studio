@@ -17,7 +17,7 @@ const handlers = { busy: false, onConfirmPlan() {}, onConfirmOperation() {}, onC
 test('compact task workbench renders evidence and destructive confirmation', () => {
   const session = baseSession({ phase: 'awaiting_operation_approval', pendingApproval: { id: 'approval-1', toolName: 'form.delete', taskId: 'task-form', confirmation: { summary: '确认替换旧窗体', impact: { formId: 'old-form' } } } });
   const html = renderToStaticMarkup(createElement(ProjectAgentProgressCards, { session, ...handlers }));
-  for (const expected of ['初始化项目', '创建窗体', '确认替换旧窗体', '查看影响范围', '确认执行', '1 个依赖：初始化项目']) assert.match(html, new RegExp(expected));
+  for (const expected of ['初始化项目', '创建窗体', '确认替换旧窗体', '查看完整影响数据', '确认并执行', '拒绝并保持不变', '1 个依赖：初始化项目']) assert.match(html, new RegExp(expected));
   const evidenceHtml = renderToStaticMarkup(createElement(ProjectAgentProgressCards, { session, ...handlers, selectedTaskId: 'task-project' }));
   for (const expected of ['project.initialize', '验收通过', '验收产物', 'valid']) assert.match(evidenceHtml, new RegExp(expected));
   assert.doesNotMatch(html, /当前关注|执行记录/);

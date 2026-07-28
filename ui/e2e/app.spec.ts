@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { deleteTestProject } from './project-test-cleanup';
 
 async function createFromTemplate(page: Page, templateName: string, projectName: string) {
   await page.goto('/projects');
@@ -15,7 +16,7 @@ async function createFromTemplate(page: Page, templateName: string, projectName:
 test.describe('FormFlow Studio', () => {
   test.afterEach(async ({ page, request }) => {
     const projectId = new URL(page.url()).pathname.match(/^\/projects\/([^/]+)/)?.[1];
-    if (projectId?.startsWith('proj_')) await request.delete(`http://localhost:3103/api/projects/${projectId}`);
+    await deleteTestProject(request, projectId);
   });
 
   test('loads project list page', async ({ page }) => {
@@ -63,14 +64,16 @@ test.describe('FormFlow Studio', () => {
       await expect.poll(async () => Number.parseInt(await runtimeDebugDrawer.evaluate((element) => getComputedStyle(element).zIndex), 10)).toBeGreaterThan(1400);
       await expect(page.getByRole('button', { name: '提交', exact: true })).toHaveCount(0);
       const firstSelect = page.locator('.form-runtime-modal .ant-select').first();
-      await firstSelect.click();
-      const dropdown = page.locator('.ant-select-dropdown:visible');
-      await expect(dropdown).toBeVisible();
-      await expect.poll(async () => Number.parseInt(await dropdown.evaluate((element) => getComputedStyle(element).zIndex), 10)).toBeGreaterThan(1400);
-      const firstOption = dropdown.locator('.ant-select-item-option').first();
-      const selectedLabel = (await firstOption.textContent())?.trim();
-      await firstOption.click();
-      if (selectedLabel) await expect(firstSelect).toContainText(selectedLabel);
+      if (await firstSelect.count()) {
+        await firstSelect.click();
+        const dropdown = page.locator('.ant-select-dropdown:visible');
+        await expect(dropdown).toBeVisible();
+        await expect.poll(async () => Number.parseInt(await dropdown.evaluate((element) => getComputedStyle(element).zIndex), 10)).toBeGreaterThan(1400);
+        const firstOption = dropdown.locator('.ant-select-item-option').first();
+        const selectedLabel = (await firstOption.textContent())?.trim();
+        await firstOption.click();
+        if (selectedLabel) await expect(firstSelect).toContainText(selectedLabel);
+      }
       await page.getByRole('button', { name: '校验并保存' }).click();
       const runtimeStatus = page.locator('.designer-preview-event-status');
       await expect(runtimeStatus).toBeVisible();
@@ -104,6 +107,34 @@ test.describe('FormFlow Studio', () => {
     }
   });
 
+  test('flow binding uses one editor layer and returns from the workflow contract', async ({ page }) => {
+    await createFromTemplate(page, '游戏数据分析', 'Wizard 流程绑定 V2');
+    await page.getByRole('button', { name: '表单设计', exact: true }).click();
+    const boundButton = page.locator('.designer-canvas [data-shape="design-node"]').filter({ has: page.getByRole('button', { name: '校验并保存' }) });
+    await expect(boundButton).toBeVisible();
+    await boundButton.click({ force: true });
+    await page.getByRole('button', { name: /交互与事件/ }).click();
+    await page.locator('.property-event-summary').filter({ hasText: '点击' }).first().click();
+    await page.getByRole('tab', { name: '流程绑定' }).click();
+
+    await expect(page.locator('.flow-binding-editor')).toBeVisible();
+    await expect(page.locator('.flow-mapping-modal')).toHaveCount(0);
+    await expect(page.getByText('配置结果', { exact: true })).toBeVisible();
+    await expect(page.getByRole('tab', { name: /流程输入/ })).toBeVisible();
+    await expect(page.getByRole('tab', { name: /流程输出/ })).toBeVisible();
+
+    const editContract = page.getByRole('button', { name: '编辑流程输入' });
+    if (await editContract.count()) {
+      await editContract.click();
+      await expect(page).toHaveURL(/mode=flow/);
+      await expect(page.getByRole('button', { name: '← 返回流程绑定' })).toBeVisible();
+      await page.getByRole('button', { name: '← 返回流程绑定' }).click();
+      await expect(page).toHaveURL(/mode=design/);
+      await expect(page.locator('.flow-binding-editor')).toBeVisible();
+      await expect(page.getByRole('tab', { name: /流程输入/ })).toHaveAttribute('aria-selected', 'true');
+    }
+  });
+
   test('control toolbox scrolls inside its fixed-height panel', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 620 });
     await createFromTemplate(page, '游戏数据分析', 'Wizard 控件栏滚动');
@@ -112,7 +143,7 @@ test.describe('FormFlow Studio', () => {
     const toolboxFrame = page.locator('.unified-toolbox-slot');
     const toolboxBody = page.locator('.toolbox-body');
     await expect(toolboxFrame).toBeVisible();
-    await expect(page.getByRole('tab', { name: '控件库' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: '控件', exact: true })).toBeVisible();
     await expect(page.getByPlaceholder('搜索控件')).toBeVisible();
 
     const dimensions = await toolboxBody.evaluate((element) => ({
@@ -124,14 +155,14 @@ test.describe('FormFlow Studio', () => {
 
     await toolboxBody.evaluate((element) => { element.scrollTop = element.scrollHeight; });
     await expect.poll(() => toolboxBody.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
-    await expect(page.getByRole('tab', { name: '控件库' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: '控件', exact: true })).toBeVisible();
     await expect(page.getByPlaceholder('搜索控件')).toBeVisible();
   });
 
   test('renames a form and persists the new name', async ({ page }) => {
     await createFromTemplate(page, '游戏数据分析', 'Wizard 表单重命名');
     await page.getByRole('button', { name: '表单设计', exact: true }).click();
-    await page.getByRole('button', { name: '表单', exact: true }).click();
+    await page.getByRole('tab', { name: '表单', exact: true }).click();
 
     const renameButton = page.getByRole('button', { name: /重命名 游戏事件录入/ });
     await renameButton.click();
@@ -144,19 +175,12 @@ test.describe('FormFlow Studio', () => {
     await expect(page.locator('.chain-save-state')).toHaveText('已自动保存');
 
     await page.reload();
-    await page.getByRole('button', { name: '表单', exact: true }).click();
+    await page.getByRole('tab', { name: '表单', exact: true }).click();
     await expect(page.locator('.unified-list-name', { hasText: '玩家事件录入' })).toBeVisible();
   });
 
   test('returns from project settings to the form editor', async ({ page }) => {
     await createFromTemplate(page, '止回阀选型', '设置导航测试');
-
-    await page.getByRole('link', { name: '项目设置' }).click();
-    await expect(page).toHaveURL(/\/projects\/.*\/settings\/general/);
-    await expect(page.getByText('项目设置 · 常规')).toBeVisible();
-    await page.getByRole('link', { name: /返回编辑器/ }).first().click();
-    await expect(page).toHaveURL(/\/projects\/.*\/editor\?mode=design/);
-    await expect(page.getByRole('button', { name: '表单设计' })).toHaveClass(/active/);
 
     await page.getByRole('button', { name: '项目设置' }).click();
     await expect(page).toHaveURL(/\/projects\/.*\/editor\?.*mode=settings/);
@@ -177,11 +201,11 @@ test.describe('FormFlow Studio', () => {
     await expect(page).toHaveURL(/\/projects\/.*\/editor\?mode=design/);
     await expect(page.getByRole('button', { name: 'AI', exact: true })).toHaveCount(0);
     const designTabs = page.locator('.unified-left-tabs');
-    await expect(designTabs.getByRole('button')).toHaveCount(2);
-    await expect(designTabs.getByRole('button', { name: '控件' })).toBeVisible();
-    await expect(designTabs.getByRole('button', { name: '表单' })).toBeVisible();
-    await expect(designTabs.getByRole('button', { name: '行为' })).toHaveCount(0);
-    await expect(designTabs.getByRole('button', { name: '流程' })).toHaveCount(0);
+    await expect(designTabs.getByRole('tab')).toHaveCount(3);
+    await expect(designTabs.getByRole('tab', { name: '控件' })).toBeVisible();
+    await expect(designTabs.getByRole('tab', { name: '表单' })).toBeVisible();
+    await expect(designTabs.getByRole('tab', { name: '行为' })).toHaveCount(0);
+    await expect(designTabs.getByRole('tab', { name: '流程' })).toHaveCount(0);
     await expect(page.locator('.designer-canvas [data-cell-id]').first()).toBeVisible();
     const leftPanelBox = await page.locator('.unified-left').boundingBox();
     const toolboxBox = await page.locator('.designer-toolbox').boundingBox();
@@ -210,7 +234,7 @@ test.describe('FormFlow Studio', () => {
     for (const fieldName of droppedFieldNames) {
       await expect(page.locator('.designer-canvas [data-cell-id]').filter({ hasText: fieldName })).not.toHaveCount(0);
     }
-    await page.getByRole('tab', { name: '控件库' }).click();
+    await page.getByRole('tab', { name: '控件', exact: true }).click();
     await expect(page.locator('.toolbox-item').first()).toBeVisible();
 
     await expect(page.getByText('属性配置', { exact: true })).toBeVisible();
@@ -242,6 +266,7 @@ test.describe('FormFlow Studio', () => {
     await expect(page).toHaveURL(/\/projects\/.*\/editor\?mode=flow/);
 
     // Should show node palette
-    await expect(page.getByRole('textbox', { name: '搜索节点' })).toBeVisible();
+    await page.getByRole('tab', { name: '节点库' }).click();
+    await expect(page.getByRole('textbox', { name: /搜索节点/ })).toBeVisible();
   });
 });

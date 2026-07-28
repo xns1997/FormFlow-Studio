@@ -33,6 +33,13 @@ import {
   type ScriptLogEntry,
 } from '../config/scriptRuntime';
 import { evaluatePropertyExpression } from './propertyExpression';
+import { getFlowComponentField, prepareV2FlowOutputWrites } from './formFlowBindings';
+import {
+  createFormEventTransaction,
+  type FormEventEffect,
+  type FormEventEffectSource,
+} from './formEventTransaction';
+import type { FormEventRuntimeContract } from '../../../../shared/formflow-core/formEventContract';
 
 export type FormEventCallback = (context: FormEventRuntimeContext, ...args: unknown[]) => unknown | Promise<unknown>;
 
@@ -59,7 +66,7 @@ export interface FormFlowChain extends PromiseLike<FlowExecutionResult> {
   writeBack(): Promise<FlowExecutionResult>;
 }
 
-export interface FormEventRuntimeContext extends FormControlEventContext {
+export interface FormEventRuntimeContext extends FormControlEventContext, FormEventRuntimeContract {
   event: string;
   formData: Record<string, unknown>;
   detail?: unknown;
@@ -124,6 +131,8 @@ export interface FormEventRuntimeContext extends FormControlEventContext {
     options?: { targetNodeId?: string },
   ) => Promise<FlowExecutionResult>;
   runConfiguredWorkflow: (parameters?: Record<string, unknown>) => Promise<FlowExecutionResult>;
+  /** Internal output intent used by linkage actions; committed at the event tail. */
+  queueFlowOutput?: (field: string, value: unknown) => void;
   call: (name: string, ...args: unknown[]) => Promise<unknown>;
   callbacks: Record<string, FormEventCallback>;
   debug: (label: string, data?: unknown, options?: Partial<DebugEntry>) => void;
@@ -159,6 +168,8 @@ export interface ExecuteFormEventOptions {
   setVisible?: (componentId: string, visible: boolean) => void | Promise<void>;
   setDisabled?: (componentId: string, disabled: boolean) => void | Promise<void>;
   setRequired?: (field: string, required: boolean) => void | Promise<void>;
+  /** Prefer this adapter when the host can apply all event effects in one state update. */
+  applyEffects?: (effects: FormEventEffect[]) => void | Promise<void>;
   setOptions?: (field: string, config: FormLinkageOptionsConfig) => void | Promise<void>;
   showMessage?: (message: string, level?: 'info' | 'success' | 'warning' | 'error') => void | Promise<void>;
   upsertRow?: (sheetId: string, record: Record<string, unknown>, options: { key: string }) => void | Promise<void>;
@@ -251,7 +262,7 @@ function escapeAttributeValue(value: string): string {
 }
 
 function findComponentField(component: ComponentNode): string {
-  return String(component.name || component.props.name || component.id);
+  return getFlowComponentField(component);
 }
 
 function findFocusableElement(container: Element | null): HTMLElement | null {
@@ -303,6 +314,8 @@ export async function executeFormControlEvent(
     .filter((field) => !sameValue(runtimeValues[field], originalValues[field]));
   const detail = createEventDetail(eventContext, previousValue);
   const flowResults: FlowExecutionResult[] = [];
+  const configuredFlowRuns: Array<{ workflow: WorkflowFile; result: FlowExecutionResult }> = [];
+  const explicitFlowOutputs: Array<{ field: string; value: unknown }> = [];
   const stages: FormEventExecutionStage[] = [];
   let callbackExecuted = false;
   let callbackResult: unknown;
@@ -316,6 +329,24 @@ export async function executeFormControlEvent(
   const visibleByComponent = Object.fromEntries(components.map((component) => [component.id, (component as ComponentNode & { visible?: boolean }).visible ?? true]));
   const disabledByComponent = Object.fromEntries(components.map((component) => [component.id, !!component.props.disabled]));
   const requiredByField = Object.fromEntries(components.map((component) => [findComponentField(component), !!component.props.required]));
+  let currentEffectSource: FormEventEffectSource = 'system';
+  const transaction = createFormEventTransaction({
+    values: runtimeValues,
+    apply: async (effects) => {
+      if (options.applyEffects) {
+        await options.applyEffects(effects);
+        return;
+      }
+      for (const effect of effects) {
+        switch (effect.kind) {
+          case 'value': await options.setValue(effect.field, effect.value); break;
+          case 'visible': await options.setVisible?.(effect.componentId, effect.value); break;
+          case 'disabled': await options.setDisabled?.(effect.componentId, effect.value); break;
+          case 'required': await options.setRequired?.(effect.field, effect.value); break;
+        }
+      }
+    },
+  });
   const componentById = new Map(components.map((component) => [component.id, component] as const));
   const componentByField = new Map<string, ComponentNode>();
   const componentByName = new Map<string, ComponentNode>();
@@ -457,7 +488,10 @@ export async function executeFormControlEvent(
   let runtimeContext!: FormEventRuntimeContext;
   const runWorkflow: FormEventRuntimeContext['runWorkflow'] = async (reference, parameters = {}, runOptions = {}) => {
     const workflow = findWorkflow(reference);
-    if (!reference || reference === trigger?.workflowId || (typeof reference === 'object' && reference.id === trigger?.workflowId)) {
+    const isConfiguredReference = !reference
+      || reference === trigger?.workflowId
+      || (typeof reference === 'object' && reference.id === trigger?.workflowId);
+    if (isConfiguredReference) {
       configuredFlowInvoked = true;
     }
     const config: FormFlowTriggerConfig = {
@@ -465,6 +499,7 @@ export async function executeFormControlEvent(
       workflowId: workflow.id,
       targetNodeId: runOptions.targetNodeId ?? trigger?.targetNodeId,
       parameterMap: { ...(trigger?.parameterMap || {}), ...parameters },
+      ...(isConfiguredReference && trigger?.bindings ? { bindings: trigger.bindings } : {}),
     };
     const result = await executeFormFlowTrigger(workflow, config, runtimeContext, options.tables || []);
     if (result.debug) {
@@ -502,6 +537,7 @@ export async function executeFormControlEvent(
     });
     flowResults.push(result);
     if (!result.success) throw new Error(result.errors.join('\n') || `流程 ${workflow.name} 执行失败`);
+    if (isConfiguredReference) configuredFlowRuns.push({ workflow, result });
     return result;
   };
 
@@ -531,11 +567,11 @@ export async function executeFormControlEvent(
       setValue: async (field, value) => {
         runtimeValues[field] = value;
         updatedFields.add(field);
-        await options.setValue(field, value);
+        transaction.setValue(field, value, currentEffectSource);
       },
-      setVisible: options.setVisible,
-      setDisabled: options.setDisabled,
-      setRequired: options.setRequired,
+      setVisible: (componentId, visible) => transaction.setVisible(componentId, visible, currentEffectSource),
+      setDisabled: (componentId, disabled) => transaction.setDisabled(componentId, disabled, currentEffectSource),
+      setRequired: (field, required) => transaction.setRequired(field, required, currentEffectSource),
     }),
     originalValues,
     previousValue,
@@ -549,7 +585,7 @@ export async function executeFormControlEvent(
     setValue: async (field, value) => {
       runtimeValues[field] = value;
       updatedFields.add(field);
-      await options.setValue(field, value);
+      transaction.setValue(field, value, currentEffectSource);
     },
     setValues: async (patch) => {
       for (const [field, value] of Object.entries(patch)) {
@@ -568,7 +604,7 @@ export async function executeFormControlEvent(
       resolveComponent(componentId);
       visibleByComponent[componentId] = visible;
       updatedComponents.add(componentId);
-      await options.setVisible?.(componentId, visible);
+      transaction.setVisible(componentId, visible, currentEffectSource);
     },
     toggleVisible: async (componentId) => {
       const next = !(visibleByComponent[componentId] ?? true);
@@ -579,7 +615,7 @@ export async function executeFormControlEvent(
       resolveComponent(componentId);
       disabledByComponent[componentId] = disabled;
       updatedComponents.add(componentId);
-      await options.setDisabled?.(componentId, disabled);
+      transaction.setDisabled(componentId, disabled, currentEffectSource);
     },
     toggleDisabled: async (componentId) => {
       const next = !(disabledByComponent[componentId] ?? false);
@@ -589,7 +625,7 @@ export async function executeFormControlEvent(
     setRequired: async (field, required) => {
       requiredByField[field] = required;
       requiredFields.add(field);
-      await options.setRequired?.(field, required);
+      transaction.setRequired(field, required, currentEffectSource);
     },
     setOptions: async (field, config) => {
       await options.setOptions?.(field, config);
@@ -748,12 +784,9 @@ export async function executeFormControlEvent(
         const run = () => runtimeContext.runWorkflow(workflow, parameters, runOptions);
         const chain: FormFlowChain = {
           writeBack: async () => {
-            const result = await run();
-            for (const [field, value] of Object.entries(result.finalOutputs || {})) {
-              if (field.startsWith('__') || (field === 'result' && value && typeof value === 'object')) continue;
-              await runtimeContext.setValue(field, value);
-            }
-            return result;
+            // Kept as a source-compatible alias. Output writes are exclusively
+            // controlled by the configured V2 binding at the event tail.
+            return run();
           },
           then: (onfulfilled, onrejected) => run().then(onfulfilled, onrejected),
         };
@@ -762,6 +795,9 @@ export async function executeFormControlEvent(
     }),
     runWorkflow,
     runConfiguredWorkflow: (parameters) => runWorkflow(undefined, parameters),
+    queueFlowOutput: (field, value) => {
+      explicitFlowOutputs.push({ field, value });
+    },
     call: async (name, ...args) => {
       const callback = callbacks[name];
       if (!callback) throw new Error(`找不到自定义回调函数: ${name}`);
@@ -819,6 +855,7 @@ export async function executeFormControlEvent(
     const order = options.executionOrder || ['linkage', 'script', 'flow'];
 
     for (const stage of order) {
+      currentEffectSource = stage === 'linkage' ? 'linkage' : stage === 'script' ? 'script' : 'flow';
       switch (stage) {
         case 'linkage':
           if (Array.isArray(linkageRules) && linkageRules.length > 0) {
@@ -864,19 +901,93 @@ export async function executeFormControlEvent(
         details: [`执行 ${flowResults.length} 次`],
       });
 
-      // ── 流程输出自动回写表单字段 ──
+      // ── 流程输出回写表单字段 ──
       if (options.autoWriteFlowOutput !== false) {
-        const lastResult = flowResults[flowResults.length - 1];
-        if (lastResult.success) {
-          const exportOutputs = lastResult.finalOutputs;
+        const configuredRun = configuredFlowRuns[configuredFlowRuns.length - 1];
+        if (trigger?.bindings?.version === 2 && configuredRun?.result.success) {
+          const prepared = prepareV2FlowOutputWrites(
+            trigger.bindings,
+            configuredRun.workflow,
+            configuredRun.result.finalOutputs,
+            runtimeContext,
+            components,
+          );
+          const configuredTargets = new Set(prepared.writes.map((write) => write.field));
+          const explicitTargets = new Set<string>();
+          for (const write of explicitFlowOutputs) {
+            if (explicitTargets.has(write.field) || configuredTargets.has(write.field)) {
+              throw new Error(`流程输出重复指向表单字段: ${write.field}`);
+            }
+            if (!componentByField.has(write.field) && !componentByName.has(write.field)) {
+              throw new Error(`流程输出目标字段已失效: ${write.field}`);
+            }
+            explicitTargets.add(write.field);
+          }
+          prepared.writes.unshift(...explicitFlowOutputs.map((write) => {
+            const component = componentByField.get(write.field) || componentByName.get(write.field)!;
+            return { ...write, componentId: component.id, output: 'result' };
+          }));
           const flowModifiedFields: string[] = [];
+          for (const write of prepared.writes) {
+            if (sameValue(runtimeValues[write.field], write.value)) continue;
+            flowModifiedFields.push(write.field);
+            runtimeValues[write.field] = write.value;
+            updatedFields.add(write.field);
+          }
+          for (const write of prepared.writes) {
+            if (flowModifiedFields.includes(write.field)) transaction.setValue(write.field, write.value, 'flow');
+          }
+          if (flowModifiedFields.length > 0 || prepared.skipped.length > 0) {
+            stages.push({
+              id: `flow-post:${trigger.workflowId}`,
+              type: 'flow',
+              label: '流程输出回写',
+              status: 'success',
+              details: [
+                ...(flowModifiedFields.length ? [`回写字段: ${flowModifiedFields.join(', ')}`] : []),
+                ...(prepared.skipped.length ? [`跳过无结果输出: ${prepared.skipped.join(', ')}`] : []),
+              ],
+            });
+          }
+          for (const field of flowModifiedFields) {
+            debugLogs.push({
+              id: `${debugRequestId}:flow-output:${field}`,
+              timestamp: Date.now(),
+              level: 'info',
+              source: 'flow',
+              title: '流程输出回写',
+              message: `字段 "${field}" 已被流程输出更新`,
+              workflowId: trigger.workflowId,
+              requestId: debugRequestId,
+              field,
+              context: { value: runtimeValues[field], atomic: true },
+            });
+          }
+        } else if (!trigger?.bindings) {
+          const configuredRun = configuredFlowRuns[configuredFlowRuns.length - 1];
+          if (!configuredRun?.result.success) {
+            // 旧配置沿用原行为：失败流程不回写。
+          } else {
+          const exportOutputs = configuredRun.result.finalOutputs;
+          const flowModifiedFields: string[] = [];
+          for (const write of explicitFlowOutputs) {
+            if (flowModifiedFields.includes(write.field)) throw new Error(`流程输出重复指向表单字段: ${write.field}`);
+            if (!componentByField.has(write.field) && !componentByName.has(write.field)) throw new Error(`流程输出目标字段已失效: ${write.field}`);
+            if (!sameValue(runtimeValues[write.field], write.value)) {
+              flowModifiedFields.push(write.field);
+              runtimeValues[write.field] = write.value;
+              updatedFields.add(write.field);
+              transaction.setValue(write.field, write.value, 'flow');
+            }
+          }
           for (const [key, value] of Object.entries(exportOutputs)) {
+            if (explicitFlowOutputs.length) continue;
             if (key.startsWith('__') || (key === 'result' && value && typeof value === 'object')) continue;
             if (!sameValue(runtimeValues[key], value)) {
               flowModifiedFields.push(key);
               runtimeValues[key] = value;
               updatedFields.add(key);
-              await options.setValue(key, value);
+              transaction.setValue(key, value, 'flow');
             }
           }
           if (flowModifiedFields.length > 0) {
@@ -902,10 +1013,13 @@ export async function executeFormControlEvent(
               });
             }
           }
+          }
         }
       }
     }
 
+    currentEffectSource = 'system';
+    await transaction.commit();
     return {
       callbackExecuted,
       callbackResult,
@@ -915,6 +1029,7 @@ export async function executeFormControlEvent(
       trace: buildTrace(),
     };
   } catch (cause) {
+    transaction.abort();
     const error = cause instanceof Error ? cause : new Error(String(cause));
     console.error(`[Form Event Error] ${eventContext.field}.${eventContext.eventName}:`, error);
     if (code && !stages.some((stage) => stage.type === 'script')) {

@@ -52,6 +52,7 @@ test('preview initial values can fall back to sheet single-key config when bindi
         rowHeight: 28,
         alternateRowColor: true,
         showGridLines: true,
+        showRowNumbers: true,
         autoFitColumns: true,
         filterEnabled: true,
         sortEnabled: true,

@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { ProjectStructure } from '../../project/types';
-import type { FlowExecutionResult } from './flowEngine';
+import type { FlowExecutionResult } from '../engine/flowEngine';
 import { applyPreviewFlowSideEffects, applyProjectWriteBacks } from './projectWriteBack';
-import type { FlowSideEffect } from './flowSideEffects';
+import type { FlowSideEffect } from '../engine/flowSideEffects';
 
 const project = {
   config: { id: 'p', name: 'p', description: '', version: '1', createdAt: '', updatedAt: '', author: '', tags: [] },
-  workflows: [], behaviors: [], outputs: [], designs: [],
+  workflows: [], behaviors: [], globalBehaviors: [], forms: [], outputs: [], designs: [],
   srcTable: [{
     id: 'meta', fileName: 'meta.json', fileSize: 0, fileType: 'json', uploadedAt: '', dataHash: 'old',
     sheets: [{

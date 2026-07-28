@@ -4,7 +4,16 @@ export const corsOptions: CorsOptions = {
   origin(origin, callback) { if (!origin || origins.includes(origin)) callback(null, true); else callback(new Error(`CORS origin not allowed: ${origin}`)); },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Project-Lock', 'X-Request-Id'],
-  exposedHeaders: ['X-Request-Id'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'If-Match',
+    'X-Project-Lock',
+    'X-Request-Id',
+    'X-Idempotency-Key',
+    'X-Confirmation-Token',
+    'X-Tenant-Id',
+  ],
+  exposedHeaders: ['ETag', 'X-Project-Revision', 'X-Request-Id'],
   maxAge: 86400,
 };

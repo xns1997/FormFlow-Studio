@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { runRuleSandbox } from './rule-agent';
 import { fullSourceRows, validateProjectModel, type JsonObject } from './project-authoring';
-import { evaluatePropertyExpression } from '../../../ui/src/services/engine/propertyExpression';
+import { evaluatePropertyExpression } from '../../../shared/formflow-core/propertyExpression';
 
 export type MockScenario = 'normal' | 'boundary' | 'empty' | 'wrong_type' | 'enum_outside' | 'duplicate_key' | 'not_found' | 'multiple_matches' | 'workflow_failure';
 
@@ -234,7 +234,7 @@ export function inspectProjectQuality(project: JsonObject) {
     const components = form.design?.components || [];
     const interactive = components.filter((component: any) => component.type !== 'form' && component.type !== 'container');
     if (!interactive.length) diagnostics.push({ severity: 'error', code: 'EMPTY_FORM', path: `forms.${form.id}`, message: '表单只有空容器，没有可录入、查询、展示或执行的控件' });
-    const workflowIds = new Set((project.workflows || []).map((item: any) => item.id));
+    const workflowIds = new Set<string>((project.workflows || []).map((item: any) => String(item.id)));
     for (const component of components) {
       const field = component.fieldBinding || component.props?.name;
       if (['input', 'textarea', 'number', 'select', 'datePicker'].includes(component.type) && !field) diagnostics.push({ severity: 'error', code: 'MISSING_FIELD_NAME', path: `forms.${form.id}.${component.id}`, message: '字段控件缺少稳定名称' });

@@ -8,7 +8,7 @@ const visit = (directory) => {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const path = join(directory, entry.name);
     if (entry.isDirectory()) visit(path);
-    else if (entry.name.endsWith('.test.ts')) files.push(path);
+    else if (entry.name.endsWith('.test.ts') || entry.name.endsWith('.test.tsx')) files.push(path);
   }
 };
 for (const root of roots) visit(resolve(root));

@@ -1,0 +1,21 @@
+{
+  "extends": "./ui/tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "allowImportingTsExtensions": true,
+    "strict": true,
+    "noImplicitAny": false,
+    "types": ["node", "vite/client"],
+    "noEmit": true
+  },
+  "include": [
+    "shared/**/*.ts",
+    "server/src/**/*.test.ts",
+    "ui/src/**/*.test.ts",
+    "ui/src/**/*.test.tsx",
+    "ui/nodes/**/*.test.ts",
+    "ui/nodes/**/*.test.tsx"
+  ],
+  "exclude": []
+}

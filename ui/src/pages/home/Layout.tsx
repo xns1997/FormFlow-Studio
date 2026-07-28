@@ -34,6 +34,9 @@ export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const project = useProjectStore((s) => s.project);
+  const saveState = useProjectStore((s) => s.saveState);
+  const saveError = useProjectStore((s) => s.saveError);
+  const retrySave = useProjectStore((s) => s.retrySave);
   const { settings, initSettings } = useSystemSettingsStore();
   const [docOpen, setDocOpen] = useState(false);
   const [now, setNow] = useState(() => new Date());
@@ -157,6 +160,20 @@ export default function Layout() {
         )}
 
         <div className="nav-links nav-links-doc">
+          {projectId && saveState !== 'idle' && (
+            <div
+              className={`project-save-status ${saveState}`}
+              role={saveState === 'error' ? 'alert' : 'status'}
+              aria-live="polite"
+              title={saveError || undefined}
+            >
+              <span aria-hidden="true">{saveState === 'saving' ? '↻' : saveState === 'error' ? '!' : '✓'}</span>
+              <span>{saveState === 'saving' ? '正在保存' : saveState === 'error' ? '保存失败，草稿仍保留' : '已保存'}</span>
+              {saveState === 'error' && (
+                <button type="button" onClick={() => { void retrySave(); }}>重试</button>
+              )}
+            </div>
+          )}
           {!projectId && !inSystemSettings && (
               <Link to={buildSystemSettingsPath('general')} className="nav-link" aria-keyshortcuts="Meta+, Control+,">
               <DesignerIcon name="settings" className="nav-icon" />

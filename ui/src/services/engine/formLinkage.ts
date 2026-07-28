@@ -23,6 +23,7 @@ interface LinkageRuntimeContext {
   showMessage: (message: string, level?: 'info' | 'success' | 'warning' | 'error') => void | Promise<void>;
   runWorkflow: (workflow?: string, parameters?: Record<string, unknown>, options?: { targetNodeId?: string }) => Promise<unknown>;
   runConfiguredWorkflow: (parameters?: Record<string, unknown>) => Promise<unknown>;
+  queueFlowOutput?: (field: string, value: unknown) => void;
 }
 
 function isBlankValue(value: unknown) {
@@ -226,7 +227,7 @@ async function executeAction(action: FormLinkageAction, ctx: LinkageRuntimeConte
       if (!field) return;
       const value = ctx.getValue(field);
       if (isBlankValue(value)) return;
-      const rules = [];
+      const rules: Array<{ type: string; param: string; message: string }> = [];
       if (action.min != null) rules.push({ type: 'min', param: String(action.min), message: action.message || `${field} 不能小于 ${action.min}` });
       if (action.max != null) rules.push({ type: 'max', param: String(action.max), message: action.message || `${field} 不能大于 ${action.max}` });
       for (const rule of rules as any[]) {
@@ -242,7 +243,7 @@ async function executeAction(action: FormLinkageAction, ctx: LinkageRuntimeConte
       if (!field) return;
       const value = ctx.getValue(field);
       if (isBlankValue(value)) return;
-      const rules = [];
+      const rules: Array<{ type: string; param: string; message: string }> = [];
       if (action.min != null) rules.push({ type: 'minLength', param: String(action.min), message: action.message || `${field} 最少 ${action.min} 个字符` });
       if (action.max != null) rules.push({ type: 'maxLength', param: String(action.max), message: action.message || `${field} 最多 ${action.max} 个字符` });
       for (const rule of rules as any[]) {
@@ -293,16 +294,12 @@ async function executeAction(action: FormLinkageAction, ctx: LinkageRuntimeConte
       let result: unknown;
       if (action.workflowId) result = await ctx.runWorkflow(action.workflowId, action.parameters || {});
       else result = await ctx.runConfiguredWorkflow(action.parameters || {});
-      // 流程输出自动回写表单字段
+      // Defer explicit targets to the event tail, where they participate in the
+      // same duplicate-target validation and atomic commit as V2 bindings.
       if (result && typeof result === 'object' && 'finalOutputs' in result) {
         const outputs = (result as { finalOutputs: Record<string, unknown> }).finalOutputs;
-        for (const [key, value] of Object.entries(outputs)) {
-          if (key.startsWith('__')) continue;
-          if (action.targetField && key === 'result') {
-            await ctx.setValue(action.targetField, value);
-          } else if (!action.targetField) {
-            await ctx.setValue(key, value);
-          }
+        if (action.targetField && Object.prototype.hasOwnProperty.call(outputs, 'result')) {
+          ctx.queueFlowOutput?.(action.targetField, outputs.result);
         }
       }
       return;

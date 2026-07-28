@@ -32,6 +32,10 @@ function inspect(value: any, schema: any, path: string, normalizations: ToolArgu
     || (schema.type === 'boolean' && typeof value === 'boolean');
   if (!typeOk) { issues.push({ path: path || '$', code: 'INVALID_ARGUMENT_TYPE', message: `${path || '参数'}类型不正确`, expected: String(schema.type || '符合 Schema'), received: valueShape(value) }); return value; }
   if (schema.enum && !schema.enum.includes(value)) issues.push({ path: path || '$', code: 'INVALID_ARGUMENT_ENUM', message: `${path || '参数'}必须是允许值之一`, expected: schema.enum.join(' | '), received: JSON.stringify(value) });
+  if (schema.const !== undefined && value !== schema.const) issues.push({ path: path || '$', code: 'INVALID_ARGUMENT_CONST', message: `${path || '参数'}必须是固定值`, expected: JSON.stringify(schema.const), received: JSON.stringify(value) });
+  if (typeof value === 'string' && schema.minLength != null && value.length < schema.minLength) issues.push({ path: path || '$', code: 'STRING_TOO_SHORT', message: `${path || '参数'}不能为空或过短`, expected: `minLength=${schema.minLength}`, received: `string(${value.length})` });
+  if (typeof value === 'number' && schema.minimum != null && value < schema.minimum) issues.push({ path: path || '$', code: 'NUMBER_TOO_SMALL', message: `${path || '参数'}不能小于 ${schema.minimum}`, expected: `minimum=${schema.minimum}`, received: String(value) });
+  if (typeof value === 'number' && schema.maximum != null && value > schema.maximum) issues.push({ path: path || '$', code: 'NUMBER_TOO_LARGE', message: `${path || '参数'}不能大于 ${schema.maximum}`, expected: `maximum=${schema.maximum}`, received: String(value) });
   if (schema.type === 'object' && value) {
     const properties = schema.properties || {};
     for (const key of Object.keys(value)) {
@@ -40,6 +44,12 @@ function inspect(value: any, schema: any, path: string, normalizations: ToolArgu
       else if (schema.additionalProperties === false) issues.push({ path: path ? `${path}.${key}` : key, code: 'UNKNOWN_ARGUMENT', message: `不支持参数 ${key}`, expected: `允许字段：${Object.keys(properties).join('、')}`, received: key });
     }
     for (const required of schema.required || []) if (value[required] === undefined || value[required] === '') issues.push({ path: path ? `${path}.${required}` : required, code: 'REQUIRED_ARGUMENT', message: `缺少参数 ${required}`, expected: properties[required]?.type || '必填值', received: 'missing' });
+    for (const conditional of schema.allOf || []) {
+      const conditions = conditional?.if?.properties || {};
+      const matches = Object.entries(conditions).every(([key, rule]: [string, any]) => rule?.const === undefined || value[key] === rule.const);
+      if (!matches) continue;
+      for (const required of conditional?.then?.required || []) if (value[required] === undefined || value[required] === '') issues.push({ path: path ? `${path}.${required}` : required, code: 'CONDITIONAL_REQUIRED_ARGUMENT', message: `当前参数组合要求提供 ${required}`, expected: properties[required]?.type || '必填值', received: 'missing' });
+    }
     for (const [key, child] of Object.entries(properties)) if (value[key] !== undefined) value[key] = inspect(value[key], child, path ? `${path}.${key}` : key, normalizations, issues);
   }
   if (schema.type === 'array' && Array.isArray(value)) {

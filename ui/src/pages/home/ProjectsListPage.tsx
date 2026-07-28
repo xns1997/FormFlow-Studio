@@ -89,7 +89,7 @@ function formatProjectDate(value: string) {
 export default function ProjectsListPage() {
   const navigate = useNavigate();
   const { confirm, announce } = useAppInteraction();
-  const setProject = useProjectStore((s) => s.setProject);
+  const initProject = useProjectStore((s) => s.initProject);
   const [projectList, setProjectList] = useState<Array<{ id: string; name: string; updatedAt: string; tableCount: number; shared?: boolean }>>([]);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [draft, setDraft] = useState<ProjectWizardDraft>(createInitialDraft());
@@ -161,10 +161,13 @@ export default function ProjectsListPage() {
   const finishCreate = useCallback(async (projectPromise: Promise<ProjectStructure>) => {
     const project = await projectPromise;
     await createProjectStructure(project);
-    await setProject(project);
+    // Adopt the server snapshot instead of immediately issuing a second write.
+    // The latter has no base revision after creation and can leave the wizard
+    // stranded even though the project was created successfully.
+    await initProject(project.config.id);
     try { setProjectList(await listProjects()); } catch {}
     navigate(buildWorkspacePath(project.config.id));
-  }, [navigate, setProject]);
+  }, [initProject, navigate]);
 
   const importPackage = useCallback(async () => {
     const file = await openFilePicker('.formflow');
@@ -294,7 +297,12 @@ export default function ProjectsListPage() {
           ...imported,
           config: { ...imported.config, name: meta.name, description: meta.description, author: meta.author, tags: meta.tags },
         };
-        await projectApi.update(project.config.id, project);
+        const baseline = await projectApi.getWithRevision(project.config.id);
+        if (!baseline.revision) throw new Error('导入项目缺少 revision，无法安全更新元信息');
+        await projectApi.updateWithRevision(project.config.id, project, {
+          baseRevision: baseline.revision,
+          idempotencyKey: crypto.randomUUID(),
+        });
         setProjectList(await listProjects());
         navigate(buildWorkspacePath(project.config.id));
         closeWizard();

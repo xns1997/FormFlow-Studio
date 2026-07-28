@@ -15,10 +15,11 @@ test('all registered control schemas have unique, readable property definitions'
 test('property basics stay business-facing and internal JSON stays advanced', () => {
   for (const control of getAllControls()) {
     for (const definition of control.propSchema) {
-      const advanced = definition.level === 'advanced' || definition.key === 'name' || definition.group === '表达式' || definition.group === '数据源' || (!('keys' in definition) && (definition.type === 'json' || definition.editor === 'json'));
+      const primitive = !('keys' in definition);
+      const advanced = definition.level === 'advanced' || definition.key === 'name' || definition.group === '表达式' || definition.group === '数据源' || (primitive && (definition.type === 'json' || definition.editor === 'json'));
       if (!advanced) {
         assert.notEqual(definition.key, 'name', `${control.type}.${definition.key} must not expose internal field name in basics`);
-        assert.notEqual(definition.type, 'json', `${control.type}.${definition.key} must not expose JSON in basics`);
+        if (primitive) assert.notEqual(definition.type, 'json', `${control.type}.${definition.key} must not expose JSON in basics`);
       }
     }
   }

@@ -12,5 +12,5 @@ test('transaction commits successful work and rolls back failures', async () => 
 
 test('manual transaction validates lifecycle', () => {
   const committed = beginTransaction('a', { x: 1 }); commitTransaction(committed.id); assert.throws(() => rollbackTransaction(committed.id, () => {}));
-  const rolled = beginTransaction('b', { x: 2 }); let restored = 0; rollbackTransaction(rolled.id, (snapshot) => { restored = snapshot.x; }); assert.equal(restored, 2);
+  const rolled = beginTransaction('b', { x: 2 }); let restored = 0; rollbackTransaction<{ x: number }>(rolled.id, (snapshot) => { restored = snapshot.x; }); assert.equal(restored, 2);
 });

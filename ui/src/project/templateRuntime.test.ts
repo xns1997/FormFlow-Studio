@@ -18,7 +18,7 @@ async function click(source: ProjectStructure, formId: string, componentId: stri
   const components = exportToComponentNodes(form.design.components);
   const component = components.find((item) => item.id === componentId)!;
   const writes: Record<string, unknown> = {};
-  const result = await executeFormControlEvent({ eventName: 'onClick', field: component.name, values, originalValues: {}, component }, {
+  const result = await executeFormControlEvent({ eventName: 'onClick', field: component.name, value: undefined, values, originalValues: {}, component }, {
     workflows: source.workflows, tables: source.srcTable, components,
     setValue: (field, value) => { writes[field] = value; }, setVisible: () => {}, setDisabled: () => {}, setRequired: () => {}, showMessage: () => {},
     trigger: component.props.flowTriggers?.onClick,
@@ -47,7 +47,7 @@ for (const templateId of templateIds) {
     const dashboard = source.forms.find((item) => item.design.formMode === 'detail')!;
     const analyzed = await click(source, dashboard.id, 'dashboard_analyze', { trigger: true });
     assert.equal(analyzed.result.flowExecuted, true);
-    assert.equal(analyzed.result.flowResults[0]?.error, undefined);
+    assert.deepEqual(analyzed.result.flowResults[0]?.errors, []);
   });
 }
 

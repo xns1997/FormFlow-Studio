@@ -98,7 +98,7 @@ export async function upsertKnowledgeChunks(input: VectorScope & { collection?: 
   const currentScope = scope(input);
   try {
     await client.query('BEGIN');
-    const rows = [];
+  const rows: Array<{ id: string; source_id: string; chunk_index: number; dimensions: number }> = [];
     for (const chunk of input.chunks) {
       if (!chunk.sourceId || !chunk.content.trim()) throw new Error('知识分块必须包含 sourceId 和 content');
       const dimension = dimensions(chunk.embedding);

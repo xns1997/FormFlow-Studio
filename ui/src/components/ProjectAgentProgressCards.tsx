@@ -14,6 +14,25 @@ function eventTime(value?: string) { const date = value ? new Date(value) : null
 function activityGlyph(status: ProjectAgentActivityItem['status']) { return status === 'passed' ? '✓' : status === 'failed' ? '!' : status === 'running' ? '↻' : status === 'warning' ? '‖' : '•'; }
 function activityStatusLabel(status: ProjectAgentActivityItem['status']) { return status === 'passed' ? '完成' : status === 'failed' ? '失败' : status === 'running' ? '进行中' : status === 'warning' ? '需处理' : '记录'; }
 
+const impactLabels: Record<string, string> = {
+  projectId: '项目', formId: '表单', workflowId: '流程', tableId: '数据源', sheetName: 'Sheet',
+  instanceId: '模板实例', behaviorId: '行为', relationId: '数据关系', fieldName: '字段',
+  releaseMode: '发布模式', editorAccess: '编辑入口', overwrite: '覆盖已有内容',
+  overwriteModified: '覆盖手工修改', cascade: '级联处理引用', deletes: '删除数量',
+  resources: '受影响资源', drift: '检测到的手工变化', summary: '生成物摘要', conflicts: '冲突数量',
+};
+
+function approvalImpactLines(impact: unknown) {
+  if (!impact || typeof impact !== 'object' || Array.isArray(impact)) return ['影响范围未能结构化展示；请展开技术详情核对。'];
+  return Object.entries(impact as Record<string, unknown>).map(([key, value]) => {
+    const label = impactLabels[key] || key;
+    if (typeof value === 'boolean') return `${label}：${value ? '是' : '否'}`;
+    if (value == null) return `${label}：无`;
+    if (typeof value === 'object') return `${label}：${Array.isArray(value) ? `${value.length} 项` : `${Object.keys(value as object).length} 项详情`}`;
+    return `${label}：${String(value)}`;
+  });
+}
+
 function TaskListItem({ lineage, active, onSelect }: { lineage: ProjectAgentTaskLineage; active?: boolean; onSelect(): void }) {
   const task = lineage.representative; const status = taskStatus(task.status);
   return <button type="button" data-task-lineage={lineage.id} className={`project-agent-task-list-item ${status} ${active ? 'active' : ''}`} onClick={onSelect} aria-current={active ? 'true' : undefined}>
@@ -108,7 +127,16 @@ function TaskDetail({ session, plan, lineage, busy, manualOperationApproval, onB
     {resultSummary && <section className={`project-agent-task-result ${status}`}><h4>执行结果</h4><p>{resultSummary}</p>{task.endRevision && <small>交接 revision {short(task.endRevision)}</small>}</section>}
     {task.acceptance?.length > 0 && <section className="project-agent-task-detail-section"><h4>验收情况</h4><ul className="project-agent-check-list">{task.acceptance.map((item, index) => <li key={index} className={index < task.evidenceArtifactIds.length ? 'passed' : ''}><i>{index < task.evidenceArtifactIds.length ? '✓' : '○'}</i><span>{item}</span></li>)}</ul></section>}
     {qualityDiagnostics.length > 0 && <section className="project-agent-task-detail-section"><h4>质量诊断</h4><div className="project-agent-quality-diagnostics">{qualityDiagnostics.map((item: any, index: number) => <p key={`${item.code || 'quality'}-${item.path || index}`}><strong>{item.code || 'QUALITY'}</strong><span>{item.path || 'project'}：{item.message || '质量检查未通过'}</span></p>)}</div></section>}
-    {approval && manualOperationApproval && <section className="project-agent-operation-approval" role="alert"><div><strong>{approval.confirmation.summary || approval.toolName}</strong><p>计划确认不替代本次破坏性操作确认。</p></div><details><summary>查看影响范围</summary><pre>{JSON.stringify(approval.confirmation.impact, null, 2)}</pre></details><div className="project-agent-card-actions"><button type="button" className="secondary" disabled={busy} onClick={() => onConfirmOperation(approval.id, false)}>拒绝</button><button type="button" className="danger" disabled={busy} onClick={() => onConfirmOperation(approval.id, true)}>确认执行</button></div></section>}
+    {approval && manualOperationApproval && <section className="project-agent-operation-approval" role="alert" aria-labelledby={`approval-${approval.id}`}>
+      <div><strong id={`approval-${approval.id}`}>{approval.confirmation.summary || approval.toolName}</strong><p>操作目前尚未执行。请核对以下结果后再决定：</p></div>
+      <ul>
+        {approvalImpactLines(approval.confirmation.impact).map((line) => <li key={line}>{line}</li>)}
+        <li>确认：系统尝试执行上述变更；只有成功结果才会写入并生成新 revision。</li>
+        <li>拒绝：本次操作结束，项目保持不变。</li>
+      </ul>
+      <details><summary>查看完整影响数据</summary><pre>{JSON.stringify(approval.confirmation.impact, null, 2)}</pre></details>
+      <div className="project-agent-card-actions"><button type="button" className="secondary" disabled={busy} onClick={() => onConfirmOperation(approval.id, false)}>拒绝并保持不变</button><button type="button" className="danger" disabled={busy} onClick={() => onConfirmOperation(approval.id, true)}>确认并执行</button></div>
+    </section>}
     <section className="project-agent-task-detail-section project-agent-activity-section"><h4>活动</h4><TaskActivity activities={activities} /></section>
     <TaskHistory session={session} plan={plan} lineage={lineage} />
     <details className="project-agent-task-disclosure"><summary><span><strong>任务说明</strong><small>{dependencySummary(task, plan.tasks)} · revision {short(task.startRevision)} → {short(task.endRevision)}</small></span><i aria-hidden="true">›</i></summary><div className="project-agent-disclosure-content"><MarkdownContent content={task.instruction || '暂无说明'} /></div></details>

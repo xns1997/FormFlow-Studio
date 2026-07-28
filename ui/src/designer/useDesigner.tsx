@@ -16,7 +16,7 @@ import {
   getDescendantIds,
   autoResizeContainers,
 } from './utils';
-import { layoutForm } from '../services/layout';
+import { layoutForm, type MeasuredNodeBox } from '../services/layout';
 import { FORM_WINDOW_CELL_ID } from './formWindowModel';
 import { FormWindowFrame } from './FormWindowFrame';
 import {
@@ -27,6 +27,7 @@ import {
   localToCanvasPoint,
   localToCanvasRect,
 } from '../../../shared/form-window-layout';
+import { measureRenderedControls } from './formLayoutMeasurement';
 
 const DesignNodeView = ({ node }: { node: any }) => {
   const data = node.getData();
@@ -120,6 +121,7 @@ export function useDesigner() {
     setZoom,
     mode,
     setMode,
+    bumpHistoryRevision,
     commitComponents,
     setNodeComponentData,
     clampSize,
@@ -775,8 +777,10 @@ export function useDesigner() {
 
   const applyAutoLayout = useCallback(() => {
     const graph = graphRef.current;
+    const measuredControls: MeasuredNodeBox[] = measureRenderedControls(containerRef.current, componentsRef.current);
     const result = layoutForm(componentsRef.current, { getControl }, {
       contentWidth: getFormWindowLayout(formWindowRef.current).content.width,
+      measuredControls,
     });
     if (!graph) {
       commitComponents(finalizeComponents(result.components));
@@ -784,28 +788,16 @@ export function useDesigner() {
     }
 
     graph.startBatch('auto-layout');
-    for (const component of result.components) {
-      const node = graph.getCellById(component.id) as Node | null;
-      if (!node || !node.isNode()) continue;
-      const currentParent = node.getParent() as Node | null;
-      if (currentParent && currentParent.id !== component.parentId) {
-        currentParent.unembed(node, { ui: true });
-      }
-      if (component.parentId && currentParent?.id !== component.parentId) {
-        const parentNode = graph.getCellById(component.parentId) as Node | null;
-        parentNode?.embed(node, { ui: true });
-      }
-      const canvas = localToCanvasPoint(formWindowRef.current, component);
-      node.setPosition(canvas.x, canvas.y);
-      node.setSize(component.width, component.height);
-      node.setZIndex(component.zIndex ?? node.getZIndex() ?? 1);
-      setNodeComponentData(node, component, selectedIdRef.current === component.id);
+    try {
+      const finalized = finalizeComponents(result.components);
+      commitComponents(finalized);
+    } finally {
+      graph.stopBatch('auto-layout');
     }
-    graph.stopBatch('auto-layout');
-    commitComponents(result.components);
-    syncComponentsFromGraph();
+    bumpHistoryRevision();
+    requestAnimationFrame(() => syncSelectionOverlay(selectedIdRef.current));
     return result.diagnostics;
-  }, [formWindowRef, graphRef, componentsRef, commitComponents, finalizeComponents, setNodeComponentData, selectedIdRef, syncComponentsFromGraph]);
+  }, [containerRef, formWindowRef, graphRef, componentsRef, commitComponents, finalizeComponents, selectedIdRef, bumpHistoryRevision, syncSelectionOverlay]);
 
   const addComponentAtViewportCenter = useCallback((type: string) => {
     const graph = graphRef.current;

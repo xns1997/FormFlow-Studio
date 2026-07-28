@@ -16,10 +16,13 @@ const SUPPORTED_PORT_TYPES = new Set([
 ]);
 
 export type PortDefinitionEntry = {
+  id?: string;
   name: string;
   type: PropertyType;
   label?: string;
   description?: string;
+  required?: boolean;
+  defaultValue?: unknown;
 };
 
 function normalizePortType(type: unknown): PropertyType {
@@ -48,10 +51,13 @@ export function parseCustomJsPortDefinitions(raw: unknown): PortDefinitionEntry[
       .map((entry) => entry as Record<string, unknown>)
       .filter((entry) => !!String(entry.name || '').trim())
       .map((entry) => ({
+        id: String(entry.id || '').trim() || undefined,
         name: String(entry.name || '').trim(),
         type: normalizePortType(entry.type),
         label: String(entry.label || entry.name || '').trim() || undefined,
         description: String(entry.description || '').trim() || undefined,
+        required: entry.required === true,
+        ...(Object.prototype.hasOwnProperty.call(entry, 'defaultValue') ? { defaultValue: entry.defaultValue } : {}),
       }));
   }
 
@@ -61,10 +67,13 @@ export function parseCustomJsPortDefinitions(raw: unknown): PortDefinitionEntry[
       if (value && typeof value === 'object' && !Array.isArray(value)) {
         const entry = value as Record<string, unknown>;
         return {
+          id: String(entry.id || '').trim() || undefined,
           name,
           type: normalizePortType(entry.type),
           label: String(entry.label || name).trim() || undefined,
           description: String(entry.description || '').trim() || undefined,
+          required: entry.required === true,
+          ...(Object.prototype.hasOwnProperty.call(entry, 'defaultValue') ? { defaultValue: entry.defaultValue } : {}),
         };
       }
       return {
@@ -112,7 +121,7 @@ export function getNodeEffectivePorts(spec: FlowNodeSpec | undefined, properties
     type: port.type,
     direction: 'input',
     description: port.description || port.name,
-    required: false,
+    required: port.required === true,
   }));
   const outputPorts = parseCustomJsPortDefinitions(properties.outputPorts).map<SchemaPort>((port) => ({
     name: port.name,

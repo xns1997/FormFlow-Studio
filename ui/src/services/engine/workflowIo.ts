@@ -7,6 +7,28 @@ export const WORKFLOW_EXPORT_SPEC_ID = 'workflow:export';
 const WORKFLOW_IMPORT_NODE_ID = 'workflow:import';
 const WORKFLOW_EXPORT_NODE_ID = 'workflow:export';
 
+export interface WorkflowIoField extends PortDefinitionEntry {
+  id: string;
+}
+
+function stableFieldId(nodeId: string, direction: 'input' | 'output', name: string) {
+  let hash = 2166136261;
+  const source = `${nodeId}:${direction}:${name}`;
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `io_${direction}_${(hash >>> 0).toString(36)}`;
+}
+
+function normalizeIoFields(node: WorkflowNode, direction: 'input' | 'output', fields: PortDefinitionEntry[]): WorkflowIoField[] {
+  return fields.map((field) => ({
+    ...field,
+    id: String(field.id || '').trim() || stableFieldId(node.id, direction, field.name),
+    ...(direction === 'output' ? { required: false } : {}),
+  }));
+}
+
 const LEGACY_WORKFLOW_FIXED_FIELDS: Array<{ name: string; type: PortDefinitionEntry['type']; label: string; description: string }> = [
   { name: 'value', type: 'any', label: '值', description: '当前事件值' },
   { name: 'field', type: 'string', label: '字段', description: '当前字段名' },
@@ -76,13 +98,13 @@ function defaultWorkflowExportProperties() {
 export function getWorkflowImportFields(nodeOrWorkflow: WorkflowNode | Pick<WorkflowFile, 'nodes'> | undefined) {
   const node = nodeOrWorkflow && 'nodes' in nodeOrWorkflow ? getWorkflowImportNode(nodeOrWorkflow) : nodeOrWorkflow;
   if (!node) return [];
-  return parseCustomJsPortDefinitions(parseProperties(node as WorkflowNode).outputPorts);
+  return normalizeIoFields(node as WorkflowNode, 'input', parseCustomJsPortDefinitions(parseProperties(node as WorkflowNode).outputPorts));
 }
 
 export function getWorkflowExportFields(nodeOrWorkflow: WorkflowNode | Pick<WorkflowFile, 'nodes'> | undefined) {
   const node = nodeOrWorkflow && 'nodes' in nodeOrWorkflow ? getWorkflowExportNode(nodeOrWorkflow) : nodeOrWorkflow;
   if (!node) return [];
-  return parseCustomJsPortDefinitions(parseProperties(node as WorkflowNode).inputPorts);
+  return normalizeIoFields(node as WorkflowNode, 'output', parseCustomJsPortDefinitions(parseProperties(node as WorkflowNode).inputPorts));
 }
 
 export function createWorkflowImportNode(existingIds: Set<string>, position = { x: 80, y: 140 }): WorkflowNode {
@@ -163,6 +185,28 @@ function mergeUniquePortFields(fields: PortDefinitionEntry[]) {
   });
 }
 
+function persistStableIoFields(node: WorkflowNode, property: 'inputPorts' | 'outputPorts', fields: WorkflowIoField[]) {
+  const properties = parseProperties(node);
+  const raw = parseCustomJsPortDefinitions(properties[property]);
+  const needsUpdate = raw.length !== fields.length || raw.some((field, index) => (
+    !field.id
+    || field.id !== fields[index].id
+    || field.required !== fields[index].required
+    || JSON.stringify(field.defaultValue) !== JSON.stringify(fields[index].defaultValue)
+  ));
+  if (!needsUpdate) return { node, changed: false };
+  return {
+    node: {
+      ...node,
+      data: {
+        ...node.data,
+        propertiesJson: stringifyProperties({ ...properties, [property]: JSON.stringify(fields) }),
+      },
+    },
+    changed: true,
+  };
+}
+
 function hasPortSchemaProperty(node: WorkflowNode, key: 'inputPorts' | 'outputPorts') {
   const properties = parseProperties(node);
   return Object.prototype.hasOwnProperty.call(properties, key);
@@ -232,7 +276,7 @@ function migrateExportFields(exportNode: WorkflowNode, options: { nodeWasAdded: 
   };
 }
 
-export function ensureWorkflowIo(workflow: WorkflowFile, options: { legacyTargetNodeId?: string } = {}) {
+export function ensureWorkflowIo(workflow: WorkflowFile, options: { legacyTargetNodeId?: string; persistFieldIds?: boolean } = {}) {
   const existingIds = new Set(workflow.nodes.map((node) => node.id));
   const edgeIds = new Set(workflow.edges.map((edge) => edge.id));
   const nextNodes = [...workflow.nodes];
@@ -277,6 +321,25 @@ export function ensureWorkflowIo(workflow: WorkflowFile, options: { legacyTarget
     changed = true;
   }
   const exportFields = exportMigration.fields;
+
+  if (options.persistFieldIds) {
+    const stableImports = normalizeIoFields(importNode, 'input', importFields);
+    const persistedImport = persistStableIoFields(importNode, 'outputPorts', stableImports);
+    if (persistedImport.changed) {
+      const index = nextNodes.findIndex((node) => node.id === importNode!.id);
+      if (index >= 0) nextNodes[index] = persistedImport.node;
+      importNode = persistedImport.node;
+      changed = true;
+    }
+    const stableExports = normalizeIoFields(exportNode, 'output', exportFields);
+    const persistedExport = persistStableIoFields(exportNode, 'inputPorts', stableExports);
+    if (persistedExport.changed) {
+      const index = nextNodes.findIndex((node) => node.id === exportNode!.id);
+      if (index >= 0) nextNodes[index] = persistedExport.node;
+      exportNode = persistedExport.node;
+      changed = true;
+    }
+  }
 
   for (const node of nextNodes) {
     if (node.specId !== 'generic:value-input') continue;

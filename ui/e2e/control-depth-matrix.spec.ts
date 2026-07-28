@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { deleteTestProject } from './project-test-cleanup';
 
 async function createDesigner(page: import('@playwright/test').Page) {
   await page.goto('/projects');
@@ -32,7 +33,7 @@ test('all registered controls are keyboard-addable and expose property configura
     await expect(page.locator('.designer-properties-shell')).toBeVisible();
   }
   const projectId = new URL(page.url()).pathname.match(/^\/projects\/([^/]+)/)?.[1];
-  if (projectId?.startsWith('proj_')) await request.delete(`http://localhost:3103/api/projects/${projectId}`);
+  await deleteTestProject(request, projectId);
 });
 
 test('all registered controls remain reachable in preview runtime without viewport overflow', async ({ page, request }) => {
@@ -62,7 +63,7 @@ test('all registered controls remain reachable in preview runtime without viewpo
   const runtimeTypes = await runtimeControls.evaluateAll((items) => items.map((item) => item.getAttribute('data-component-type')));
   expect(new Set(runtimeTypes).size).toBeGreaterThanOrEqual(26);
   const projectId = new URL(page.url()).pathname.match(/^\/projects\/([^/]+)/)?.[1];
-  if (projectId?.startsWith('proj_')) await request.delete(`http://localhost:3103/api/projects/${projectId}`);
+  await deleteTestProject(request, projectId);
 });
 
 test('runtime form modal keeps its primary action reachable', async ({ page, request }) => {
@@ -82,5 +83,5 @@ test('runtime form modal keeps its primary action reachable', async ({ page, req
   expect(bounds?.height || 0).toBeGreaterThan(0);
   const runtimeText = await page.locator('.form-runtime-modal').innerText();
   expect(runtimeText).not.toMatch(/undefined|null/);
-  if (projectId?.startsWith('proj_')) await request.delete(`http://localhost:3103/api/projects/${projectId}`);
+  await deleteTestProject(request, projectId);
 });

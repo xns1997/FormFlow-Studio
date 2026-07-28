@@ -58,13 +58,13 @@ test('all built-in templates produce valid project structures', () => {
     const workflowIds = new Set(project.workflows.map((item) => item.id));
     for (const form of project.forms) for (const component of form.design.components) {
       if (component.type !== 'button') continue;
-      const triggers = Object.values(component.props.flowTriggers || {});
+      const triggers = Object.values(component.props.flowTriggers || {}) as Array<{ enabled?: boolean; workflowId?: string }>;
       assert.equal(Boolean(component.props.events), false, `${template.id}/${component.id} contains inline script`);
       assert.ok(triggers.length > 0, `${template.id}/${component.id} has no workflow`);
-      for (const trigger of triggers) if (trigger?.enabled) assert.ok(workflowIds.has(trigger.workflowId), `${template.id}/${component.id} has a missing workflow`);
+      for (const trigger of triggers) if (trigger?.enabled) assert.ok(workflowIds.has(trigger.workflowId!), `${template.id}/${component.id} has a missing workflow`);
     }
     for (const source of project.srcTable) for (const sheet of source.sheets) {
-      if (sheet.config?.readOnly) continue;
+      if ((sheet.config as any)?.readOnly) continue;
       const keys = sheet.config?.keyFields || [];
       assert.ok(keys.length > 0, `${template.id}/${source.id} has no key`);
       assert.equal(new Set(sheet.preview.map((row) => JSON.stringify(keys.map((key) => row[key])))).size, sheet.preview.length);

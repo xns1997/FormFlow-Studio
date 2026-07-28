@@ -33,7 +33,7 @@ export async function queryDatabase(config: DbConfig, query: string, params: unk
     const mysql = await import('mysql2/promise');
     const connection = await mysql.createConnection(config.connectionString);
     try {
-      const [result, fields] = await connection.execute(query, params);
+      const [result, fields] = await connection.execute(query, params as any);
       const rows = Array.isArray(result) ? result as Record<string, unknown>[] : [];
       const affected = !Array.isArray(result) && 'affectedRows' in result ? Number(result.affectedRows) : rows.length;
       return { rows, rowCount: affected, fields: fields?.map((field) => field.name) };

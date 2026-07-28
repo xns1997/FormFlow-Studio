@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Background,
   Controls,
@@ -230,7 +231,22 @@ function downloadFileData(value: unknown, fileName: string, mimeType: string) {
 
 const PORT_TYPE_OPTIONS = ['string', 'number', 'boolean', 'object', 'array', 'json', 'any', 'trigger'];
 
-function PortTableEditor({ value, onChange, disabled }: { value: unknown; onChange: (val: string) => void; disabled?: boolean }) {
+function parseLiteralValue(value: string) {
+  if (value === '') return undefined;
+  try { return JSON.parse(value); } catch { return value; }
+}
+
+type PortTableRow = {
+  id?: string;
+  name: string;
+  label: string;
+  type: string;
+  description: string;
+  required?: boolean;
+  defaultValue?: unknown;
+};
+
+function PortTableEditor({ value, onChange, disabled, allowInputContract = false }: { value: unknown; onChange: (val: string) => void; disabled?: boolean; allowInputContract?: boolean }) {
   const parseRows = useCallback((source: unknown) => {
     if (typeof source === 'string' && source.trim()) {
       try {
@@ -239,15 +255,18 @@ function PortTableEditor({ value, onChange, disabled }: { value: unknown; onChan
           return arr
             .filter((row: any) => row && typeof row.name === 'string')
             .map((row: any) => ({
+              id: String(row.id || '').trim() || undefined,
               name: String(row.name || ''),
               label: String(row.label || row.name || ''),
               type: String(row.type || 'any'),
               description: String(row.description || ''),
+              required: row.required === true,
+              ...(Object.prototype.hasOwnProperty.call(row, 'defaultValue') ? { defaultValue: row.defaultValue } : {}),
             }));
         }
       } catch {}
     }
-    return [] as Array<{ name: string; label: string; type: string; description: string }>;
+    return [] as PortTableRow[];
   }, []);
 
   const rows = useMemo(() => parseRows(value), [value, parseRows]);
@@ -261,18 +280,18 @@ function PortTableEditor({ value, onChange, disabled }: { value: unknown; onChan
     setRawError(null);
   }, [externalText]);
 
-  const commit = useCallback((next: Array<{ name: string; label: string; type: string; description: string }>) => {
+  const commit = useCallback((next: PortTableRow[]) => {
     onChange(JSON.stringify(next));
   }, [onChange]);
 
-  const updateRow = useCallback((idx: number, field: string, val: string) => {
+  const updateRow = useCallback((idx: number, field: keyof PortTableRow, val: unknown) => {
     const next = rows.map((r, i) => i === idx ? { ...r, [field]: val } : r);
     commit(next);
   }, [rows, commit]);
 
   const addRow = useCallback(() => {
     const n = rows.length + 1;
-    commit([...rows, { name: `port_${n}`, label: `端口${n}`, type: 'any', description: '' }]);
+    commit([...rows, { id: `io_${Date.now().toString(36)}_${n}`, name: `port_${n}`, label: `端口${n}`, type: 'any', description: '', required: false }]);
   }, [rows, commit]);
 
   const removeRow = useCallback((idx: number) => {
@@ -322,8 +341,8 @@ function PortTableEditor({ value, onChange, disabled }: { value: unknown; onChan
       ) : (
         <>
           <table>
-            <colgroup><col className="port-col-name" /><col className="port-col-label" /><col className="port-col-type" /><col className="port-col-description" /><col className="port-col-action" /></colgroup>
-            <thead><tr><th>名称</th><th>标签</th><th>类型</th><th>说明</th><th /></tr></thead>
+            <colgroup><col className="port-col-name" /><col className="port-col-label" /><col className="port-col-type" />{allowInputContract && <><col /><col /></>}<col className="port-col-description" /><col className="port-col-action" /></colgroup>
+            <thead><tr><th>名称</th><th>标签</th><th>类型</th>{allowInputContract && <><th>必填</th><th>默认值</th></>}<th>说明</th><th /></tr></thead>
             <tbody>
               {rows.map((row, i) => (
                 <tr key={i}>
@@ -334,6 +353,10 @@ function PortTableEditor({ value, onChange, disabled }: { value: unknown; onChan
                       {PORT_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
                     </AntdCompatSelect>
                   </td>
+                  {allowInputContract && <>
+                    <td><input type="checkbox" checked={row.required === true} disabled={disabled} aria-label={`${row.label || row.name} 必填`} onChange={(e) => updateRow(i, 'required', e.target.checked)} /></td>
+                    <td><input type="text" value={row.defaultValue === undefined ? '' : typeof row.defaultValue === 'string' ? row.defaultValue : JSON.stringify(row.defaultValue)} disabled={disabled} onChange={(e) => updateRow(i, 'defaultValue', parseLiteralValue(e.target.value))} placeholder="未设置" /></td>
+                  </>}
                   <td><input type="text" value={row.description || ''} disabled={disabled} onChange={(e) => updateRow(i, 'description', e.target.value)} placeholder="说明" /></td>
                   <td>{!disabled && <button type="button" onClick={() => removeRow(i)} className="ui-btn ui-btn-xs ui-btn-ghost port-table-remove" aria-label={`删除端口 ${row.name}`}>×</button>}</td>
                 </tr>
@@ -476,7 +499,7 @@ const SchemaField = React.memo(function SchemaField({ prop, value, onChange, con
           onCommit={(next) => onChange(prop.name, JSON.stringify(next))}
         />
       ) : (
-        <PortTableEditor value={current} onChange={(val) => onChange(prop.name, val)} disabled={disabled} />
+        <PortTableEditor value={current} onChange={(val) => onChange(prop.name, val)} disabled={disabled} allowInputContract={specId === 'workflow:import' && prop.name === 'outputPorts'} />
       )}
       {connectedValueDisplay}
     </div>
@@ -933,6 +956,7 @@ function InspectorPortSection({ ports, connectedPorts }: { ports: SchemaPort[]; 
 
 export default function CanvasPage() {
   const reactFlow = useReactFlow<FlowNode, Edge>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const project = useProjectStore((s) => s.project);
   const addWorkflow = useProjectStore((s) => s.addWorkflow);
   const updateWorkflow = useProjectStore((s) => s.updateWorkflow);
@@ -1303,7 +1327,7 @@ export default function CanvasPage() {
       edges: edges.map((e) => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle || '', targetHandle: e.targetHandle || '' })),
       createdAt: '',
       updatedAt: '',
-    }).workflow;
+    }, { persistFieldIds: true }).workflow;
     if (currentWorkflowId) {
       // Save version history
       const current = project?.workflows.find((w) => w.id === currentWorkflowId);
@@ -1496,6 +1520,22 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
       loadWorkflow(workflows[0].id);
     }
   }, [project, registry, currentWorkflowId, addWorkflow, loadWorkflow]);
+
+  useEffect(() => {
+    if (!registry) return;
+    const requestedWorkflow = searchParams.get('workflow');
+    if (requestedWorkflow && requestedWorkflow !== currentWorkflowId && project?.workflows.some((workflow) => workflow.id === requestedWorkflow)) {
+      loadWorkflow(requestedWorkflow);
+    }
+  }, [currentWorkflowId, loadWorkflow, project?.workflows, registry, searchParams]);
+
+  useEffect(() => {
+    const requestedNode = searchParams.get('node');
+    if (!requestedNode || !nodes.some((node) => node.id === requestedNode)) return;
+    setSelectedNodeId(requestedNode);
+    setNodes((current) => current.map((node) => ({ ...node, selected: node.id === requestedNode })));
+    window.requestAnimationFrame(() => reactFlow.fitView({ nodes: [{ id: requestedNode }], padding: 0.5, duration: 250 }));
+  }, [nodes.some((node) => node.id === searchParams.get('node')), reactFlow, searchParams]);
 
   const runFlow = useCallback(async () => {
     setFlowRunning(true);
@@ -1716,6 +1756,12 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
 
       <section className="canvas-flow">
         <div className="canvas-toolbar">
+          {searchParams.get('bindingSession') && <button type="button" className="binding-return-button" onClick={() => {
+            const next = new URLSearchParams(searchParams);
+            next.set('mode', 'design');
+            next.delete('node');
+            setSearchParams(next);
+          }}>← 返回流程绑定</button>}
           <span>流程: {project?.workflows.length || 0} 个</span>
           {currentWorkflowId && <span className="workflow-id">当前: {project?.workflows.find((w) => w.id === currentWorkflowId)?.name}</span>}
           <button type="button" onClick={saveWorkflow}>保存流程</button>

@@ -4,7 +4,7 @@ import type { DesignComponent, SrcTableEntry, WorkflowFile } from '../project/ty
 import { createBehaviorDslSuggestions, resolveBehaviorDslCompletionContext } from './behaviorDslSuggestions';
 
 test('behavior DSL suggestions combine syntax and project context', () => {
-  const component = { id: 'tech-stack', type: 'input', props: { label: '技术栈' } } as DesignComponent;
+  const component = { id: 'tech-stack', type: 'input', x: 0, y: 0, width: 100, height: 32, props: { label: '技术栈' } } as DesignComponent;
   const table = { id: 'employees', fileName: '员工表.xlsx', sheets: [] } as unknown as SrcTableEntry;
   const workflow = { id: 'approval', name: '审批流程', nodes: [], edges: [] } as unknown as WorkflowFile;
   const suggestions = createBehaviorDslSuggestions({ fields: ['部门', '数量'], components: [component], tables: [table], workflows: [workflow] });

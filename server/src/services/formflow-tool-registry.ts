@@ -1,14 +1,15 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import JSZip from 'jszip';
 import type { AuthUser } from '../middleware/auth';
-import { REPOSITORY_ROOT } from '../config/paths';
+import { REPOSITORY_ROOT, serverDataPath } from '../config/paths';
 import { canAccessProject, type ProjectAccess } from './permission';
 import { addAudit, listAudit } from './audit-store';
 import { formContext, lintRuleCode, readRuleReference, runRuleSandbox } from './rule-agent';
 import {
-  assertRevision, batchProjectRows, commitProject, createEmptyProject, generatedForm, listProjectPackages,
+  assertRevision, batchProjectRows, commitProject as persistProject, createEmptyProject, generatedForm, listProjectPackages,
   fullSourceRows, normalizeFormComponents, normalizeFormDesign, packageProject, projectRevision, projectSummary, queryProjectRows, requireProject, tableFromInput,
   serializeTableSource, toolError, validateProjectModel, type JsonObject,
 } from './project-authoring';
@@ -17,15 +18,19 @@ import {
   generateMockData, generateProjectTestSuite, inspectProjectQuality, profileMockData, runProjectTests,
 } from './project-quality';
 import { buildProjectTemplate, PROJECT_TEMPLATES, resolveProjectTemplateId } from '../../../shared/project-templates';
-import { applyBehaviorDslToComponents, hasBehaviorDslErrors } from '../../../ui/src/services/engine/behaviorDsl';
+import { applyBehaviorDslToComponents, hasBehaviorDslErrors } from '../../../shared/formflow-core/behaviorDsl';
 import { compileDataToolArguments, type DataArgumentNormalization } from './data-tool-preflight';
 import { compileBehaviorToolArguments } from './behavior-tool-preflight';
+import { compileToolArguments } from './tool-argument-contract';
 import {
   OPERATION_TEMPLATES, analyzeOperationTemplate, applyDataRowsTransaction, applyOperationPlan,
   deleteTemplateInstanceResources, exportOperationTemplatePackage, getOperationTemplate, inspectTemplateInstanceDrift, planOperationTemplate, queryRelationRows, recommendOperationTemplates, regenerateTemplateInstance, suggestDataRelations, validateImportedOperationTemplate, validateRelation, type DataRelation,
 } from './template-operation-center';
 import { analysisRunStatus, appendAnalysisRun, applyPredictionWriteback, runAnalysisTemplate } from './analysis-template-runtime';
 import { consumeStagedUpload, getStagedUpload } from './upload-staging';
+import { projectMutation } from './project-mutation';
+import type { ProjectSourceFile } from './project-authoring';
+import { createFileProjectMutationReplayStore } from './project-mutation-replay-store';
 
 export type JsonSchema = Record<string, unknown>;
 export type ToolRisk = 'read' | 'write' | 'destructive';
@@ -56,10 +61,91 @@ export interface FormFlowToolDefinition {
 }
 
 const registry = new Map<string, FormFlowToolDefinition>();
-const idempotency = new Map<string, ToolResult>();
+const toolReplayStore = createFileProjectMutationReplayStore(serverDataPath('tool-mutation-replays.json'));
+type ToolMutationState = {
+  projectId: string;
+  draft: JsonObject;
+  baseRevision: string;
+  sourceFiles: ProjectSourceFile[];
+  committed: boolean;
+};
+const toolMutationState = new AsyncLocalStorage<ToolMutationState>();
+
+/**
+ * Tool handlers keep their compact "mutate then commit" interface, while this
+ * adapter redirects the commit into the shared project mutation seam.
+ */
+function commitProject(project: JsonObject, sourceFiles: ProjectSourceFile[] = []) {
+  const active = toolMutationState.getStore();
+  if (!active) return persistProject(project, sourceFiles);
+  if (project.config?.id !== active.projectId) throw toolError('PROJECT_ID_MISMATCH', '工具提交了错误的项目');
+  const snapshot = structuredClone(project);
+  for (const key of Object.keys(active.draft)) delete active.draft[key];
+  Object.assign(active.draft, snapshot);
+  active.sourceFiles.push(...sourceFiles);
+  active.committed = true;
+  return { revision: active.baseRevision };
+}
 const anyObject: JsonSchema = { type: 'object', additionalProperties: true };
-const resultSchema: JsonSchema = { type: 'object', required: ['ok', 'meta'], properties: { ok: { type: 'boolean' }, data: {}, error: { type: 'object' }, status: { type: 'string' }, confirmation: { type: 'object' }, meta: { type: 'object' } } };
-const schema = (required: string[] = [], properties: Record<string, unknown> = {}): JsonSchema => ({ type: 'object', required, properties, additionalProperties: true });
+const resultMetaSchema: JsonSchema = {
+  type: 'object',
+  required: ['requestId'],
+  additionalProperties: false,
+  description: '本次调用的审计元数据。写操作成功时 revision 是修改后的项目版本；失败或待确认不会产生新 revision。',
+  properties: {
+    requestId: { type: 'string', description: '本次调用的唯一追踪 ID。' },
+    projectId: { type: 'string', description: '本次调用实际作用的项目 ID；无项目上下文时省略。' },
+    revision: { type: 'string', description: '调用完成后项目的最新 revision；仅在项目可读取时返回。' },
+    warnings: { type: 'array', description: '调用成功但仍需注意的非阻断问题。', items: { type: 'object' } },
+    argumentNormalizations: { type: 'array', description: '服务端为消除输入歧义而执行的安全参数规范化。', items: { type: 'object' } },
+  },
+};
+const resultSchema: JsonSchema = {
+  oneOf: [
+    {
+      type: 'object', additionalProperties: false, required: ['ok', 'data', 'meta'],
+      description: '操作成功。读取操作未修改项目；写操作的实际结果在 data 中，修改后的版本在 meta.revision。',
+      properties: { ok: { const: true }, data: { description: '工具成功返回的数据或已完成变更的摘要。' }, meta: resultMetaSchema },
+    },
+    {
+      type: 'object', additionalProperties: false, required: ['ok', 'error', 'meta'],
+      description: '操作失败且未完成。除非错误明确说明部分成功，否则项目保持调用前状态。',
+      properties: {
+        ok: { const: false },
+        error: {
+          type: 'object', additionalProperties: false, required: ['code', 'message', 'retryable'],
+          properties: {
+            code: { type: 'string', description: '稳定的机器可读错误码。' },
+            message: { type: 'string', description: '面向调用方的失败原因。' },
+            path: { type: 'string', description: '出错参数或资源路径；无法定位到单一路径时省略。' },
+            details: { description: '用于修正或诊断失败的结构化详情。' },
+            retryable: { type: 'boolean', description: '是否应在重新读取状态或修正参数后重试。' },
+          },
+        },
+        meta: resultMetaSchema,
+      },
+    },
+    {
+      type: 'object', additionalProperties: false, required: ['ok', 'status', 'confirmation', 'meta'],
+      description: '操作尚未执行，正在等待用户确认。使用完全相同的业务参数并补充 confirmationToken 后才会执行。',
+      properties: {
+        ok: { const: false },
+        status: { const: 'confirmation_required' },
+        confirmation: {
+          type: 'object', additionalProperties: false, required: ['token', 'expiresAt', 'summary', 'impact'],
+          properties: {
+            token: { type: 'string', description: '一次性确认令牌；绑定调用人、工具和原始参数。' },
+            expiresAt: { type: 'string', format: 'date-time', description: '确认令牌过期时间。' },
+            summary: { type: 'string', description: '用户需要确认的操作。' },
+            impact: { description: '执行后将发生的删除、覆盖、级联或发布影响。' },
+          },
+        },
+        meta: resultMetaSchema,
+      },
+    },
+  ],
+};
+const schema = (required: string[] = [], properties: Record<string, unknown> = {}): JsonSchema => ({ type: 'object', required, properties, additionalProperties: false });
 const string = { type: 'string' }; const array = { type: 'array' }; const object = { type: 'object' }; const boolean = { type: 'boolean' };
 const dataColumnSchema: JsonSchema = { type: 'object', required: ['name'], properties: { name: string, title: string, type: { type: 'string', enum: ['string', 'number', 'boolean', 'date', 'enum'] }, nullable: boolean, enum: { type: 'array', items: string } }, additionalProperties: true };
 const dataSourceConfigSchema: JsonSchema = { type: 'object', properties: { name: string, keyFields: { type: 'array', items: string, description: '主键列名，必须与 rows 对象键或 columns.name 完全一致。' }, readOnly: { type: 'boolean', description: '只读表设为 true；可编辑表保持 false 并配置 keyFields。' }, columns: { type: 'array', items: dataColumnSchema, description: '空表的列定义；有 rows 时可以省略并自动推断。' }, frozenRows: { type: 'number' }, frozenColumns: { type: 'number' }, filterEnabled: boolean, sortEnabled: boolean }, additionalProperties: true };
@@ -69,6 +155,111 @@ const behaviorConditionSchema: JsonSchema = { type: 'object', required: ['fieldN
 const behaviorActionSchema: JsonSchema = { type: 'object', required: ['type'], properties: { type: { type: 'string', enum: ['setValue', 'clearValue', 'setVisible', 'setHidden', 'setEnabled', 'setDisabled', 'setRequired', 'setOptional', 'showMessage', 'logMessage', 'switchTab', 'executeScript', 'submitData', 'callApi', 'refreshData', 'navigate', 'runWorkflow', 'setOptions'] }, targetField: string, targetComponent: string, value: {}, expression: string, message: string, messageType: { type: 'string', enum: ['info', 'success', 'warning', 'error'] }, tabName: string, scriptCode: string, workflowId: string, workflowParameters: object, optionsConfig: { type: 'object', required: ['table', 'filterField'], properties: { table: string, filterField: string, filterValue: {}, labelField: string, valueField: string }, additionalProperties: false } }, additionalProperties: true };
 const behaviorRuleSchema: JsonSchema = { type: 'object', required: ['id', 'name', 'trigger', 'conditions', 'actions'], properties: { id: string, name: string, enabled: boolean, priority: { type: 'number' }, trigger: behaviorTriggerSchema, conditions: { type: 'array', items: behaviorConditionSchema }, actions: { type: 'array', minItems: 1, items: behaviorActionSchema } }, additionalProperties: false };
 const allRoles = () => [...MCP_ROLES];
+
+const FIELD_DESCRIPTIONS: Record<string, string> = {
+  projectId: '目标项目的稳定 ID。省略仅在调用上下文已经唯一绑定项目且该字段非必填时有效。',
+  baseRevision: '最近一次 project.get 返回的 revision。服务端仅在它仍是最新版本时执行写入，否则拒绝且不修改项目。',
+  idempotencyKey: '本次写操作的稳定幂等键。重试同一意图必须复用；新的业务操作必须生成新键。',
+  confirmationToken: '仅在首次返回 confirmation_required 后填写；必须保持其他业务参数完全不变。令牌一次性且会过期。',
+  id: '当前工具目标资源的稳定 ID；创建时成为新资源 ID，读取、更新或删除时用于精确定位现有资源。',
+  name: '面向用户显示的名称；不作为稳定引用 ID。',
+  description: '面向用户显示的项目或资源说明。',
+  author: '项目元数据中的作者名称；不改变访问权限或所有者。',
+  tags: '用于项目检索和分类的标签列表。',
+  newId: '克隆后新项目的稳定 ID；不会修改原项目。',
+  type: '目标类型的稳定标识。可用值应先从对应 catalog 工具读取。',
+  category: '可选的目录分类过滤条件；省略时返回全部分类。',
+  templateId: '操作或项目模板的稳定 ID；先从对应模板目录读取，不要猜测。',
+  templateIds: '要处理的模板稳定 ID 列表；只影响明确列出的模板。',
+  tableId: '目标数据源/表的稳定 ID。',
+  tableIds: '参与本次操作的数据源/表稳定 ID 列表。',
+  sheetName: '目标数据源内的 Sheet 名称；必须与现有名称完全一致。',
+  formId: '目标表单的稳定 ID。',
+  workflowId: '目标工作流的稳定 ID。',
+  relationId: '目标数据关系的稳定 ID。',
+  relationIds: '参与本次操作的数据关系稳定 ID 列表。',
+  relation: '完整的数据关系定义；明确指定两端表、Sheet、连接字段与关系类型，校验或保存后按 relation.id 引用。',
+  suiteId: '要运行的已保存回归套件 ID；省略时按工具说明使用默认套件。',
+  fieldName: '目标字段名；必须与目标 Sheet 或结果中的字段名完全一致。',
+  fields: '明确选择的字段名列表；未列出的字段不参与本次操作。',
+  keyFields: '组合主键字段列表；按给定顺序共同标识唯一数据行。',
+  scope: '行为作用域：global 影响整个项目，sheet 仅影响指定 Sheet，form 仅影响指定表单。',
+  mode: '操作模式。仅接受 schema enum 中列出的值；不同值会产生不同运行或编辑结果。',
+  joinType: '数据关系查询的连接方式；决定未匹配记录是否保留。',
+  fileId: '通过上传接口获得的暂存文件 ID；不是服务器文件路径或远程 URL。',
+  csv: '内联 CSV 文本。与 fileId、rows 互斥，作为本次导入的唯一数据内容。',
+  rows: '内联业务记录数组。与 fileId、csv 互斥；每个对象是一条记录。',
+  rowCount: '要生成的数据行数；不会改变现有行，除非调用的是明确的 apply 工具。',
+  adds: '要新增的完整业务记录；成功后追加到目标 Sheet。',
+  updates: '按稳定 rowKey 定位的字段变更；未列出的字段保持不变。',
+  deletes: '要删除的稳定 rowKey 列表；非空时执行前需要确认。',
+  operations: '按顺序原子执行的数据变更列表；任一项失败时整体不提交。',
+  patch: '局部更新对象；仅其中明确出现且允许修改的字段会被覆盖。',
+  config: '目标资源配置。具体允许字段、默认值与限制见此对象的子 schema。',
+  settings: '项目设置的局部更新；未提供的设置保持不变。',
+  design: '完整或新建表单设计对象；不会自动修改行为规则代码。',
+  item: '要创建、替换或局部合并的资源对象；其稳定 ID 决定新增还是更新。',
+  behavior: '完整的结构化行为定义；成功后在指定 scope 内按 behavior.id 保存。',
+  code: '要检查、测试或保存的规则代码；保存前必须通过对应语法检查。',
+  dataSource: '用于一次构建项目的数据源定义；导入规则与 data_source.create 相同。',
+  forms: '从数据源生成的表单定义列表；省略时创建 create、edit 和 detail 三个表单。',
+  selection: '模板或分析明确选中的表、关系和字段；只对列出的资源生成计划。',
+  parameters: '模板或分析参数；允许字段与默认值由所选模板的 parameterSchema 决定。',
+  plan: '由 template.plan 返回且尚未应用的原始计划；不得手工改写，其 baseRevision 必须与提交版本一致。',
+  preset: '要保存的模板参数预设；只保存参数，不保存业务数据选择。',
+  package: '待导入的纯声明模板包；校验通过后才写入项目。',
+  overwrite: '为 true 时允许覆盖同名目标，并在执行前要求确认；false 时遇到冲突会失败且不修改。',
+  overwriteModified: '为 true 时允许覆盖检测到的手工修改，并在执行前要求确认；false 时保留手工修改并阻止覆盖。',
+  cascade: '为 true 时同时处理明确报告的下游引用，并在执行前要求确认；false 时存在引用会拒绝且不修改。',
+  page: '从 1 开始的结果页码。',
+  pageSize: '每页返回数量；服务端会限制到 schema 或能力目录声明的最大值。',
+  baseVersion: '最近一次数据查询返回的 dataVersion。数据已变化时拒绝整批写入，避免覆盖并发修改。',
+  keySearch: '按主键字段精确匹配的键值对象；与全文 search 同时提供时两种条件共同生效。',
+  search: '可选的全文搜索文本；省略或为空时不应用全文过滤。',
+  query: '只读搜索关键词；不会修改项目。',
+  sortModel: '排序规则列表；按数组顺序确定多字段排序优先级。',
+  filterModel: '字段过滤条件对象；只影响本次查询结果。',
+  exportAll: '为 true 时返回全部匹配结果而非当前分页；仍不修改项目。',
+  runtime: '用于只读规则或表单检查的运行时快照；敏感字段会脱敏返回。',
+  seed: '确定性生成随机种子；相同输入与 seed 产生相同候选数据。',
+  scenarios: '要包含的测试或 Mock 场景列表；负向场景不会写入业务数据。',
+};
+
+function clarifyInputSchema(name: string, title: string, risk: ToolRisk, inputSchema: JsonSchema): JsonSchema {
+  const next = structuredClone(inputSchema) as Record<string, any>;
+  next.additionalProperties ??= false;
+  const effect = risk === 'read'
+    ? '这是只读操作，不会修改项目。'
+    : risk === 'destructive'
+      ? '这是破坏性操作：首次调用只返回影响范围，不执行；确认后成功执行才会修改项目。'
+      : '这是写操作：仅成功结果会修改项目；失败或待确认不会提交变更。';
+  next.description = `${title}。${effect}`;
+  for (const [key, property] of Object.entries(next.properties || {}) as Array<[string, Record<string, any>]>) {
+    const described = structuredClone(property);
+    described.description ||= FIELD_DESCRIPTIONS[key] || `${title} 的 ${key} 参数。`;
+    next.properties[key] = described;
+  }
+  if (next.properties?.scope && next.properties?.formId && next.properties?.tableId && next.properties?.sheetName && !next.allOf) {
+    next.allOf = [
+      { if: { properties: { scope: { const: 'form' } } }, then: { required: ['formId'] } },
+      { if: { properties: { scope: { const: 'sheet' } } }, then: { required: ['tableId', 'sheetName'] } },
+    ];
+  }
+  if (['data_source.create', 'data_source.import'].includes(name)) {
+    next['x-formflow-source-selection'] = {
+      rule: 'exactlyOne',
+      choices: ['fileId', 'csv', 'rows', 'config.columns（仅创建空表）'],
+      outcome: '同时提供多个数据内容来源时返回 DATA_SOURCE_INPUT_AMBIGUOUS，项目不修改。',
+    };
+  }
+  next['x-formflow-outcome'] = {
+    risk,
+    onSuccess: risk === 'read' ? '返回读取结果，项目不变。' : '返回已完成变更及最新 revision。',
+    onFailure: '返回结构化 error，操作不提交。',
+    ...(risk === 'destructive' || 'confirmationToken' in (next.properties || {}) ? { confirmation: '可能先返回 confirmation_required；此时操作尚未执行。' } : {}),
+  };
+  return next;
+}
 
 const workflowNodeSchema: JsonSchema = {
   type: 'object', required: ['id'], additionalProperties: true,
@@ -201,11 +392,24 @@ function register(definition: Omit<FormFlowToolDefinition, 'outputSchema' | 'own
   const sharedReadRoles = definition.sharedReadRoles || inferredSharedReadRoles(definition.name, definition.risk, ownerRole);
   if (definition.risk !== 'read' && sharedReadRoles?.length) throw new Error(`写工具不能共享角色：${definition.name}`);
   if (sharedReadRoles?.some((role) => role === ownerRole || !isMcpRole(role))) throw new Error(`工具共享角色无效：${definition.name}`);
-  registry.set(definition.name, { ...definition, ownerRole, sharedReadRoles, outputSchema: definition.outputSchema || resultSchema });
+  registry.set(definition.name, {
+    ...definition,
+    inputSchema: clarifyInputSchema(definition.name, definition.title, definition.risk, definition.inputSchema),
+    ownerRole,
+    sharedReadRoles,
+    outputSchema: definition.outputSchema || resultSchema,
+  });
 }
 
 function projectId(input: JsonObject, context: ToolContext) { return String(input.projectId || context.projectId || ''); }
-function editable(input: JsonObject, context: ToolContext) { const project = requireProject(projectId(input, context)); assertRevision(project, input.baseRevision); return project; }
+function editable(input: JsonObject, context: ToolContext) {
+  const pid = projectId(input, context);
+  const active = toolMutationState.getStore();
+  if (active?.projectId === pid) return active.draft;
+  const project = requireProject(pid);
+  assertRevision(project, input.baseRevision);
+  return project;
+}
 function touch(project: JsonObject) { project.config.updatedAt = new Date().toISOString(); return project; }
 function user(context: ToolContext): AuthUser | undefined { return context.user || (context.userId ? { id: context.userId, username: context.userId, role: 'viewer' } : undefined); }
 function findById(items: any[], id: string, code: string) { const item = items.find((entry) => entry.id === id); if (!item) throw toolError(code, `${id} 不存在`); return item; }
@@ -249,7 +453,7 @@ register({ name: 'project.get', title: '读取项目', description: '读取完�
 register({ name: 'project.inspect', title: '检查项目', description: '返回适合大模型消费的项目摘要。', inputSchema: schema(['projectId'], { projectId: string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => projectSummary(requireProject(projectId(input, context))) });
 register({ name: 'project.validate', title: '校验项目', description: '运行 FormFlow v2 结构、引用和主键校验。', inputSchema: schema(['projectId'], { projectId: string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => validateProjectModel(requireProject(projectId(input, context))) });
 register({ name: 'project.create', title: '创建项目', description: '创建空 FormFlow v2 项目。', inputSchema: schema(['id', 'name', 'idempotencyKey'], { id: string, name: string, idempotencyKey: string }), risk: 'write', handler: (input, context) => commitProject(createEmptyProject({ ...input, ownerId: context.userId })) });
-register({ name: 'project.initialize', title: '初始化项目', description: '创建项目并按模板生成基础表单骨架。', inputSchema: schema(['id', 'name', 'idempotencyKey'], { id: string, name: string, templateId: string, idempotencyKey: string }), risk: 'write', handler: (input, context) => {
+register({ name: 'project.initialize', title: '初始化项目', description: '创建项目并按模板生成基础表单骨架。', inputSchema: schema(['id', 'name', 'idempotencyKey'], { id: string, name: string, description: string, author: string, tags: { type: 'array', items: string }, templateId: string, idempotencyKey: string }), risk: 'write', handler: (input, context) => {
   createEmptyProject({ ...input, ownerId: context.userId });
   const requestedTemplateId = String(input.templateId || 'game_analytics');
   const templateId = resolveProjectTemplateId(requestedTemplateId);
@@ -297,9 +501,9 @@ register({ name: 'project.import', title: '导入项目包', description: '从�
   if (!String(meta.originalName || '').toLowerCase().endsWith('.formflow')) throw toolError('INVALID_PROJECT_PACKAGE_EXTENSION', '仅支持 .formflow 项目包', 'fileId'); if (context.tenantId && meta.tenantId !== context.tenantId) throw toolError('FORBIDDEN_FILE', '上传文件不属于当前租户', 'fileId');
   const zip = await JSZip.loadAsync(readFileSync(meta.path)); const readJson = async (name: string, fallback: any = undefined) => { const entry = zip.file(name); if (!entry) { if (fallback !== undefined) return fallback; throw toolError('INVALID_PROJECT_PACKAGE', `项目包缺少 ${name}`); } return JSON.parse(await entry.async('string')); };
   const manifest = await readJson('project.json'); if (manifest.kind !== 'formflow-project' || manifest.formatVersion !== 2) throw toolError('UNSUPPORTED_PROJECT_PACKAGE', '仅支持 FormFlow v2 项目包');
-  const formIndex = await readJson('forms/_index.json', { forms: [] }); const forms = [];
+  const formIndex = await readJson('forms/_index.json', { forms: [] }); const forms: any[] = [];
   for (const entry of formIndex.forms || []) { const design = normalizeFormDesign(await readJson(`forms/${entry.fileName}`)); const behaviors = await readJson(`forms/${entry.behaviorsFileName}`, { behaviors: [], ruleCode: '' }); forms.push({ id: entry.id, name: entry.name, design, behaviors: behaviors.behaviors || [], ruleCode: behaviors.ruleCode || '', createdAt: design.createdAt, updatedAt: design.updatedAt }); }
-  const dataIndex = await readJson('data/_index.json', { sources: [] }); const srcTable = []; const sheetBehaviors: any[] = []; const sourceFiles: Array<{ buffer: Buffer; fileName: string }> = [];
+  const dataIndex = await readJson('data/_index.json', { sources: [] }); const srcTable: any[] = []; const sheetBehaviors: any[] = []; const sourceFiles: Array<{ buffer: Buffer; fileName: string }> = [];
   for (const entry of dataIndex.sources || []) { srcTable.push(await readJson(`data/${entry.metaFile}`)); const behaviorFile = await readJson(`data/${entry.behaviorsFile}`, { sheets: [] }); sheetBehaviors.push(...(behaviorFile.sheets || [])); const raw = zip.file(`data/${entry.fileName}`); if (!raw) throw toolError('INVALID_PROJECT_PACKAGE', `项目包缺少原表 data/${entry.fileName}`); sourceFiles.push({ buffer: await raw.async('nodebuffer'), fileName: entry.fileName }); }
   const global = await readJson('global-behaviors.json', { behaviors: [] }); const workflows = await readJson('workflows/workflows.json', { workflows: [] }); const outputs = await readJson('outputs/outputs.json', { outputs: [] }); const testing = await readJson('testing/testing.json', { profiles: [], suites: [], fixtures: [], runs: [] }); const id = String(input.projectId || manifest.config.id); const existing = (() => { try { return requireProject(id); } catch { return undefined; } })();
   if (existing && !canAccessProject(user(context), existing, 'manage')) throw toolError('FORBIDDEN', '需要项目 manage 权限'); if (existing && !input.overwrite) throw toolError('PROJECT_EXISTS', `项目 ${id} 已存在`); if (existing) assertRevision(existing, input.baseRevision);
@@ -317,8 +521,16 @@ register({ name: 'data_source.delete', title: '删除数据源', description: '�
 register({ name: 'data_sheet.get', title: '读取 Sheet', description: '读取 Sheet 元数据和行版本。', inputSchema: schema(['projectId', 'tableId', 'sheetName'], { projectId: string, tableId: string, sheetName: string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => { const table = findById(requireProject(projectId(input, context)).srcTable || [], input.tableId, 'TABLE_NOT_FOUND'); const sheet = (table.sheets || []).find((item: any) => item.name === input.sheetName); if (!sheet) throw toolError('SHEET_NOT_FOUND', 'Sheet 不存在'); return sheet; } });
 register({ name: 'data_sheet.configure', title: '配置 Sheet', description: '设置主键、只读、冻结、筛选和排序。', inputSchema: schema(['projectId', 'tableId', 'sheetName', 'baseRevision', 'idempotencyKey', 'config'], { projectId: string, tableId: string, sheetName: string, baseRevision: string, idempotencyKey: string, config: dataSourceConfigSchema }), risk: 'write', requiredAccess: 'edit', handler: (input, context) => { const project = editable(input, context); const table = findById(project.srcTable || [], input.tableId, 'TABLE_NOT_FOUND'); const sheet = (table.sheets || []).find((item: any) => item.name === input.sheetName); if (!sheet) throw toolError('SHEET_NOT_FOUND', 'Sheet 不存在'); sheet.config = { ...sheet.config, ...input.config, id: sheet.config?.id || sheet.name, tableName: sheet.name }; return commitProject(touch(project)); } });
 register({ name: 'data_keys.validate', title: '校验主键', description: '校验指定或已配置的组合主键。', inputSchema: schema(['projectId', 'tableId', 'sheetName'], { projectId: string, tableId: string, sheetName: string, keyFields: array }), risk: 'read', requiredAccess: 'view', handler: (input, context) => { const project = requireProject(projectId(input, context)); const table = findById(project.srcTable || [], input.tableId, 'TABLE_NOT_FOUND'); const sheet = (table.sheets || []).find((item: any) => item.name === input.sheetName); if (!sheet) throw toolError('SHEET_NOT_FOUND', 'Sheet 不存在'); const keys = input.keyFields || sheet.config?.keyFields || []; const seen = new Set(); const errors: any[] = []; fullSourceRows(project, table, sheet).forEach((row: any, index: number) => { const values = keys.map((key: string) => row[key]); const hash = JSON.stringify(values); if (values.some((value: any) => value === '' || value == null)) errors.push({ index, code: 'EMPTY_KEY' }); else if (seen.has(hash)) errors.push({ index, code: 'DUPLICATE_KEY', values }); seen.add(hash); }); return { valid: errors.length === 0, keyFields: keys, errors }; } });
-register({ name: 'data_rows.query', title: '查询数据行', description: '分页搜索、筛选、排序并返回稳定 rowKey。', inputSchema: schema(['projectId', 'tableId', 'sheetName'], { projectId: string, tableId: string, sheetName: string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => queryProjectRows(requireProject(projectId(input, context)), input) });
-register({ name: 'data_rows.batch', title: '批量写回数据', description: '按稳定 rowKey 原子应用新增、更新和删除；单次最多 1000 个变更。', inputSchema: schema(['projectId', 'tableId', 'sheetName', 'baseRevision', 'idempotencyKey'], { projectId: string, tableId: string, sheetName: string, baseRevision: string, idempotencyKey: string, adds: { type: 'array', items: { type: 'object', additionalProperties: true } }, updates: { type: 'array', items: dataRowUpdateSchema }, deletes: { type: 'array', items: string }, confirmationToken: string }), risk: 'write', requiredAccess: 'edit', confirmWhen: (input) => Array.isArray(input.deletes) && input.deletes.length > 0, impact: (input) => ({ deletes: input.deletes?.length || 0, tableId: input.tableId, sheetName: input.sheetName }), handler: (input, context) => { const project = editable(input, context); const result = batchProjectRows(project, input); const committed = commitProject(project, serializeTableSource(project, input.tableId, input.sheetName)); return { ...result, revision: committed.revision }; } });
+register({ name: 'data_rows.query', title: '查询数据行', description: '分页搜索、筛选、排序并返回稳定 rowKey。', inputSchema: schema(['projectId', 'tableId', 'sheetName'], {
+  projectId: string, tableId: string, sheetName: string,
+  page: { type: 'number', minimum: 1 },
+  pageSize: { type: 'number', minimum: 1, maximum: 500 },
+  search: string,
+  keySearch: { type: 'object', additionalProperties: true, description: '按主键字段精确匹配的键值对象；与全文 search 同时提供时两种条件共同生效。' },
+  sortModel: array,
+  filterModel: object,
+}), risk: 'read', requiredAccess: 'view', handler: (input, context) => queryProjectRows(requireProject(projectId(input, context)), input) });
+register({ name: 'data_rows.batch', title: '批量写回数据', description: '按稳定 rowKey 原子应用新增、更新和删除；单次最多 1000 个变更。', inputSchema: schema(['projectId', 'tableId', 'sheetName', 'baseRevision', 'idempotencyKey'], { projectId: string, tableId: string, sheetName: string, baseRevision: string, baseVersion: string, idempotencyKey: string, adds: { type: 'array', items: { type: 'object', additionalProperties: true } }, updates: { type: 'array', items: dataRowUpdateSchema }, deletes: { type: 'array', items: string }, confirmationToken: string }), risk: 'write', requiredAccess: 'edit', confirmWhen: (input) => Array.isArray(input.deletes) && input.deletes.length > 0, impact: (input) => ({ deletes: input.deletes?.length || 0, tableId: input.tableId, sheetName: input.sheetName }), handler: (input, context) => { const project = editable(input, context); const result = batchProjectRows(project, input); const committed = commitProject(project, serializeTableSource(project, input.tableId, input.sheetName)); return { ...result, revision: committed.revision }; } });
 register({ name: 'data_rows.transaction', title: '跨表原子写回', description: '在项目副本中预检并应用多个 Sheet 变更，全部成功后一次提交；支持事务内生成键引用。', inputSchema: schema(['projectId', 'baseRevision', 'idempotencyKey', 'operations'], { projectId: string, baseRevision: string, idempotencyKey: string, operations: { type: 'array', items: { type: 'object', additionalProperties: true } }, confirmationToken: string }), risk: 'write', requiredAccess: 'edit', confirmWhen: (input) => (input.operations || []).some((item: any) => Array.isArray(item.deletes) && item.deletes.length > 0), impact: (input) => ({ tables: (input.operations || []).map((item: any) => `${item.tableId}/${item.sheetName}`), changes: (input.operations || []).reduce((total: number, item: any) => total + (item.adds?.length || 0) + (item.updates?.length || 0) + (item.deletes?.length || 0), 0), deletes: (input.operations || []).reduce((total: number, item: any) => total + (item.deletes?.length || 0), 0) }), handler: (input, context) => { const project = editable(input, context); const result = applyDataRowsTransaction(project, input.operations || []); const sources = (input.operations || []).flatMap((item: any) => serializeTableSource(result.project, item.tableId, item.sheetName)); const committed = commitProject(result.project, sources); return { applied: result.applied, totalChanges: result.totalChanges, revision: committed.revision }; } });
 register({ name: 'data_relation.list', title: '数据关系列表', description: '列出项目中声明的等值数据关系。', inputSchema: schema(['projectId'], { projectId: string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => requireProject(projectId(input, context)).relations || [] });
 register({ name: 'data_relation.suggest', title: '建议数据关系', description: '按字段名称、类型、主键和样本值重合度生成可审计的关系建议，不自动写入。', inputSchema: schema(['projectId'], { projectId: string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => suggestDataRelations(requireProject(projectId(input, context))) });
@@ -329,8 +541,8 @@ register({ name: 'data_relation.query', title: '关联查询', description: '按
 
 register({ name: 'form.list', title: '表单列表', description: '列出项目表单。', inputSchema: schema(['projectId'], { projectId: string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => (requireProject(projectId(input, context)).forms || []).map((form: any) => ({ id: form.id, name: form.name, mode: form.design?.formMode, updatedAt: form.updatedAt })) });
 register({ name: 'form.get', title: '读取表单', description: '读取表单设计、行为和规则。', inputSchema: schema(['projectId', 'id'], { projectId: string, id: string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => findById(requireProject(projectId(input, context)).forms || [], input.id, 'FORM_NOT_FOUND') });
-register({ name: 'form.create', title: '创建表单', description: '创建空表单或保存完整设计；服务端会补齐表单窗体与控件几何。', inputSchema: schema(['projectId', 'id', 'name', 'baseRevision', 'idempotencyKey'], { projectId: string, id: string, name: string, baseRevision: string, idempotencyKey: string, design: object }), risk: 'write', requiredAccess: 'edit', handler: (input, context) => { const project = editable(input, context); if ((project.forms || []).some((item: any) => item.id === input.id)) throw toolError('FORM_EXISTS', '表单已存在'); const now = new Date().toISOString(); const supplied = input.design || { id: `${input.id}_design`, name: input.name, formMode: input.mode || 'create', viewport: { zoom: 1, panX: 0, panY: 0 }, gridSize: 12, formWindow: { x: 40, y: 40, width: 900, height: 600, props: { title: input.name, showFooter: false } }, components: [], bindings: [] }; const design = { ...normalizeFormDesign(supplied), createdAt: supplied.createdAt || now, updatedAt: supplied.updatedAt || now }; project.forms.push({ id: input.id, name: input.name, design, behaviors: [], ruleCode: '', createdAt: design.createdAt, updatedAt: design.updatedAt }); project.release.defaultFormId ||= input.id; return commitProject(touch(project)); } });
-register({ name: 'form.generate_from_table', title: '从数据表生成表单', description: '根据列类型和主键生成 create/edit/detail/lookup-edit 表单。', inputSchema: schema(['projectId', 'tableId', 'sheetName', 'id', 'baseRevision', 'idempotencyKey'], { projectId: string, tableId: string, sheetName: string, id: string, mode: string, baseRevision: string, idempotencyKey: string }), risk: 'write', requiredAccess: 'edit', handler: (input, context) => { const project = editable(input, context); const table = findById(project.srcTable || [], input.tableId, 'TABLE_NOT_FOUND'); const sheet = (table.sheets || []).find((item: any) => item.name === input.sheetName); if (!sheet) throw toolError('SHEET_NOT_FOUND', 'Sheet 不存在'); const form = generatedForm(table, sheet, input); if ((project.forms || []).some((item: any) => item.id === form.id)) throw toolError('FORM_EXISTS', '表单已存在'); project.forms.push(form); project.release.defaultFormId ||= form.id; return commitProject(touch(project)); } });
+register({ name: 'form.create', title: '创建表单', description: '创建空表单或保存完整设计；服务端会补齐表单窗体与控件几何。', inputSchema: schema(['projectId', 'id', 'name', 'baseRevision', 'idempotencyKey'], { projectId: string, id: string, name: string, mode: { type: 'string', enum: ['create', 'edit', 'detail', 'lookup-edit'] }, baseRevision: string, idempotencyKey: string, design: object }), risk: 'write', requiredAccess: 'edit', handler: (input, context) => { const project = editable(input, context); if ((project.forms || []).some((item: any) => item.id === input.id)) throw toolError('FORM_EXISTS', '表单已存在'); const now = new Date().toISOString(); const supplied = input.design || { id: `${input.id}_design`, name: input.name, formMode: input.mode || 'create', viewport: { zoom: 1, panX: 0, panY: 0 }, gridSize: 12, formWindow: { x: 40, y: 40, width: 900, height: 600, props: { title: input.name, showFooter: false } }, components: [], bindings: [] }; const design = { ...normalizeFormDesign(supplied), createdAt: supplied.createdAt || now, updatedAt: supplied.updatedAt || now }; project.forms.push({ id: input.id, name: input.name, design, behaviors: [], ruleCode: '', createdAt: design.createdAt, updatedAt: design.updatedAt }); project.release.defaultFormId ||= input.id; return commitProject(touch(project)); } });
+register({ name: 'form.generate_from_table', title: '从数据表生成表单', description: '根据列类型和主键生成 create/edit/detail/lookup-edit 表单。', inputSchema: schema(['projectId', 'tableId', 'sheetName', 'id', 'baseRevision', 'idempotencyKey'], { projectId: string, tableId: string, sheetName: string, id: string, mode: { type: 'string', enum: ['create', 'edit', 'detail', 'lookup-edit'] }, baseRevision: string, idempotencyKey: string }), risk: 'write', requiredAccess: 'edit', handler: (input, context) => { const project = editable(input, context); const table = findById(project.srcTable || [], input.tableId, 'TABLE_NOT_FOUND'); const sheet = (table.sheets || []).find((item: any) => item.name === input.sheetName); if (!sheet) throw toolError('SHEET_NOT_FOUND', 'Sheet 不存在'); const form = generatedForm(table, sheet, input); if ((project.forms || []).some((item: any) => item.id === form.id)) throw toolError('FORM_EXISTS', '表单已存在'); project.forms.push(form); project.release.defaultFormId ||= form.id; return commitProject(touch(project)); } });
 register({ name: 'form.update', title: '更新表单', description: '更新表单元信息和设计；设计控件会规范化布局，行为与规则由 behavior MCP 管理。', inputSchema: schema(['projectId', 'id', 'baseRevision', 'idempotencyKey', 'patch'], { projectId: string, id: string, baseRevision: string, idempotencyKey: string, patch: object }), risk: 'write', requiredAccess: 'edit', handler: (input, context) => { if (input.patch?.ruleCode !== undefined || input.patch?.behaviors !== undefined) throw toolError('INVALID_ARGUMENT', 'ruleCode 和 behaviors 必须由 behavior MCP 更新', 'patch'); const project = editable(input, context); const form = findById(project.forms || [], input.id, 'FORM_NOT_FOUND'); const now = new Date().toISOString(); const patch = { ...input.patch }; if (patch.design) patch.design = { ...normalizeFormDesign(patch.design), createdAt: patch.design.createdAt || form.design?.createdAt || form.createdAt || now, updatedAt: now }; Object.assign(form, patch, { id: form.id, updatedAt: now }); return commitProject(touch(project)); } });
 register({ name: 'form.delete', title: '删除表单', description: '删除表单并检查 release 默认引用。', inputSchema: schema(['projectId', 'id', 'baseRevision', 'idempotencyKey'], { projectId: string, id: string, baseRevision: string, idempotencyKey: string, confirmationToken: string, cascade: boolean }), risk: 'destructive', requiredAccess: 'edit', impact: (input) => ({ formId: input.id }), handler: (input, context) => { const project = editable(input, context); if (project.release?.defaultFormId === input.id && !input.cascade) throw toolError('RESOURCE_REFERENCED', '表单是 release 默认表单；需 cascade=true'); remove(project.forms, input.id); if (project.release?.defaultFormId === input.id) project.release.defaultFormId = project.forms[0]?.id; return commitProject(touch(project)); } });
 for (const kind of ['component', 'binding'] as const) {
@@ -347,7 +559,7 @@ register({ name: 'behavior.list', title: '行为列表', description: '按 globa
   throw toolError('INVALID_ARGUMENT', 'scope 必须是 global、sheet 或 form', 'scope');
 } });
 register({ name: 'behavior.upsert', title: '保存结构化行为', description: '在 global/sheet/form 作用域保存完整 Trigger/Condition/Action 行为。表单字段联动优先使用 rule_code.update；禁止空 expression 占位。', inputSchema: schema(['projectId', 'scope', 'behavior', 'baseRevision', 'idempotencyKey'], { projectId: string, scope: { type: 'string', enum: ['global', 'sheet', 'form'] }, behavior: behaviorRuleSchema, baseRevision: string, idempotencyKey: string, formId: string, tableId: string, sheetName: string }), risk: 'write', requiredAccess: 'edit', handler: (input, context) => { const project = editable(input, context); let collection: any[]; if (input.scope === 'global') collection = project.globalBehaviors ||= []; else if (input.scope === 'form') collection = findById(project.forms || [], input.formId, 'FORM_NOT_FOUND').behaviors ||= []; else { let entry = (project.sheetBehaviors ||= []).find((item: any) => item.tableId === input.tableId && item.sheetName === input.sheetName); if (!entry) { entry = { tableId: input.tableId, sheetName: input.sheetName, behaviors: [], updatedAt: new Date().toISOString() }; project.sheetBehaviors.push(entry); } collection = entry.behaviors; } upsert(collection, { enabled: true, priority: 20, conditions: [], ...input.behavior, updatedAt: new Date().toISOString() }); return commitProject(touch(project)); } });
-register({ name: 'behavior.delete', title: '删除行为', description: '从指定作用域删除行为。', inputSchema: schema(['projectId', 'scope', 'id', 'baseRevision', 'idempotencyKey'], { projectId: string, scope: string, id: string, baseRevision: string, idempotencyKey: string, formId: string, tableId: string, sheetName: string, confirmationToken: string }), risk: 'destructive', requiredAccess: 'edit', impact: (input) => ({ scope: input.scope, behaviorId: input.id }), handler: (input, context) => { const project = editable(input, context); let collection: any[] = project.globalBehaviors || []; if (input.scope === 'form') collection = findById(project.forms || [], input.formId, 'FORM_NOT_FOUND').behaviors || []; else if (input.scope === 'sheet') collection = (project.sheetBehaviors || []).find((item: any) => item.tableId === input.tableId && item.sheetName === input.sheetName)?.behaviors || []; remove(collection, input.id); return commitProject(touch(project)); } });
+register({ name: 'behavior.delete', title: '删除行为', description: '从指定作用域删除行为。', inputSchema: schema(['projectId', 'scope', 'id', 'baseRevision', 'idempotencyKey'], { projectId: string, scope: { type: 'string', enum: ['global', 'sheet', 'form'] }, id: string, baseRevision: string, idempotencyKey: string, formId: string, tableId: string, sheetName: string, confirmationToken: string }), risk: 'destructive', requiredAccess: 'edit', impact: (input) => ({ scope: input.scope, behaviorId: input.id }), handler: (input, context) => { const project = editable(input, context); let collection: any[] = project.globalBehaviors || []; if (input.scope === 'form') collection = findById(project.forms || [], input.formId, 'FORM_NOT_FOUND').behaviors || []; else if (input.scope === 'sheet') collection = (project.sheetBehaviors || []).find((item: any) => item.tableId === input.tableId && item.sheetName === input.sheetName)?.behaviors || []; remove(collection, input.id); return commitProject(touch(project)); } });
 register({ name: 'rule_code.update', title: '更新表单规则', description: '校验 Behavior Rule DSL，通过后写入表单并编译为可执行的控件联动。', inputSchema: schema(['projectId', 'formId', 'code', 'baseRevision', 'idempotencyKey'], { projectId: string, formId: string, code: string, baseRevision: string, idempotencyKey: string }), risk: 'write', requiredAccess: 'edit', handler: (input, context) => { const project = editable(input, context); const form = findById(project.forms || [], input.formId, 'FORM_NOT_FOUND'); const compilation = lintRuleCode(project.config.id, form.id, String(input.code || '')); if (hasBehaviorDslErrors(compilation)) throw toolError('RULE_SYNTAX_INVALID', '规则语法或引用校验失败', 'code', compilation.diagnostics); const applied = applyBehaviorDslToComponents(form.design?.components || [], String(input.code || ''), form.design?.formWindow); if (applied.unapplied.length) throw toolError('RULE_APPLY_FAILED', applied.unapplied[0], 'code', applied.unapplied); const now = new Date().toISOString(); form.ruleCode = String(input.code || ''); form.design.components = applied.components; form.design.formWindow = applied.formWindow || form.design.formWindow; form.design.updatedAt = now; form.updatedAt = now; return commitProject(touch(project)); } });
 
 function collectionTools(prefix: 'workflow' | 'output', property: 'workflows' | 'outputs') {
@@ -368,7 +580,7 @@ register({ name: 'project.package.validate', title: '校验项目包', descripti
 register({ name: 'release.get', title: '读取发布状态', description: '读取项目 release 配置。', inputSchema: schema(['projectId'], { projectId: string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => requireProject(projectId(input, context)).release });
 register({ name: 'release.update', title: '更新发布草稿', description: '更新默认表单、默认 Sheet 和设计入口权限等发布草稿，不切换发布模式。', inputSchema: schema(['projectId', 'patch', 'baseRevision', 'idempotencyKey'], { projectId: string, patch: object, baseRevision: string, idempotencyKey: string }), risk: 'write', requiredAccess: 'edit', handler: (input, context) => { if (input.patch?.mode !== undefined || input.patch?.lastVerifiedAt !== undefined) throw toolError('INVALID_ARGUMENT', 'mode 和 lastVerifiedAt 只能由 release.apply 更新', 'patch'); const project = editable(input, context); project.release = { ...project.release, ...(input.patch || {}) }; return commitProject(touch(project)); } });
 register({ name: 'release.preview', title: '发布预检', description: '执行结构、绑定、主键和最近回归门禁但不修改项目。', inputSchema: schema(['projectId'], { projectId: string }), risk: 'read', requiredAccess: 'edit', handler: (input, context) => { const project = requireProject(projectId(input, context)); const quality = inspectProjectQuality(project); return { ready: quality.ready, release: project.release, validation: quality.validation, quality, revision: projectRevision(project) }; } });
-register({ name: 'release.apply', title: '应用发布', description: '通过校验后切换 design/test/use 状态。', inputSchema: schema(['projectId', 'mode', 'baseRevision', 'idempotencyKey'], { projectId: string, mode: string, baseRevision: string, idempotencyKey: string, confirmationToken: string }), risk: 'destructive', requiredAccess: 'manage', impact: (input) => ({ projectId: input.projectId, releaseMode: input.mode }), handler: (input, context) => { const project = editable(input, context); const report = validateProjectModel(project); if (!report.valid) throw toolError('RELEASE_VALIDATION_FAILED', '项目未通过发布校验', undefined, report); if (!['design', 'test', 'use'].includes(input.mode)) throw toolError('INVALID_RELEASE_MODE', 'mode 必须为 design、test 或 use'); project.release = { ...project.release, mode: input.mode, lastVerifiedAt: new Date().toISOString(), allowDesigner: input.mode !== 'use', allowBehaviorEditor: input.mode !== 'use', allowWorkflowEditor: input.mode !== 'use' }; return commitProject(touch(project)); } });
+register({ name: 'release.apply', title: '应用发布', description: '通过校验后切换 design/test/use 状态；use 会关闭设计器、行为编辑器和流程编辑器入口，design/test 保持这些入口可用。', inputSchema: schema(['projectId', 'mode', 'baseRevision', 'idempotencyKey'], { projectId: string, mode: { type: 'string', enum: ['design', 'test', 'use'], description: 'design：保留全部编辑入口；test：进入测试状态且保留编辑入口；use：进入使用状态并关闭设计、行为和流程编辑入口。' }, baseRevision: string, idempotencyKey: string, confirmationToken: string }), risk: 'destructive', requiredAccess: 'manage', impact: (input) => ({ projectId: input.projectId, releaseMode: input.mode, editorAccess: input.mode === 'use' ? 'disabled' : 'enabled' }), handler: (input, context) => { const project = editable(input, context); const report = validateProjectModel(project); if (!report.valid) throw toolError('RELEASE_VALIDATION_FAILED', '项目未通过发布校验', undefined, report); if (!['design', 'test', 'use'].includes(input.mode)) throw toolError('INVALID_RELEASE_MODE', 'mode 必须为 design、test 或 use'); project.release = { ...project.release, mode: input.mode, lastVerifiedAt: new Date().toISOString(), allowDesigner: input.mode !== 'use', allowBehaviorEditor: input.mode !== 'use', allowWorkflowEditor: input.mode !== 'use' }; return commitProject(touch(project)); } });
 
 register({ name: 'project.build_from_data', title: '从数据构建项目', description: '一次创建项目、导入数据、配置主键并生成表单。', inputSchema: schema(['id', 'name', 'dataSource', 'idempotencyKey'], { id: string, name: string, dataSource: object, forms: array, idempotencyKey: string }), risk: 'write', handler: (input, context) => { const project = createEmptyProject({ ...input, ownerId: context.userId }); const built = tableFromInput({ ...input.dataSource, tenantId: context.tenantId }); project.srcTable.push(built.table); const sheet = built.table.sheets[0]; const formSpecs = input.forms?.length ? input.forms : [{ id: `${built.table.id}_create`, mode: 'create' }, { id: `${built.table.id}_edit`, mode: 'edit' }, { id: `${built.table.id}_detail`, mode: 'detail' }]; for (const formInput of formSpecs) project.forms.push(generatedForm(built.table, sheet, formInput)); project.release.defaultFormId = project.forms[0]?.id; return commitProject(project, built.sourceFiles); } });
 
@@ -412,6 +624,12 @@ export function validateMcpToolRegistry() {
     const exposedRoles = MCP_ROLES.filter((role) => availableToRole(definition, role));
     if (!exposedRoles.length) throw new Error(`工具未暴露给任何角色：${definition.name}`);
     if (definition.risk !== 'read' && exposedRoles.length !== 1) throw new Error(`写工具必须且只能归属一个角色：${definition.name}`);
+    if ((definition.inputSchema as any).additionalProperties !== false) throw new Error(`工具顶层 Schema 必须拒绝未知参数：${definition.name}`);
+    if (!(definition.inputSchema as any).description) throw new Error(`工具输入 Schema 缺少操作结果说明：${definition.name}`);
+    for (const [key, property] of Object.entries((definition.inputSchema as any).properties || {}) as Array<[string, any]>) {
+      if (!property?.description) throw new Error(`工具参数缺少说明：${definition.name}.${key}`);
+    }
+    if (!Array.isArray((definition.outputSchema as any).oneOf) || (definition.outputSchema as any).oneOf.length !== 3) throw new Error(`工具输出 Schema 必须区分成功、失败和待确认：${definition.name}`);
   }
   if (registry.has('project.apply_patch')) throw new Error('跨领域 project.apply_patch 不得注册');
   return { tools: registry.size, roles: Object.fromEntries(MCP_ROLES.map((role) => [role, [...registry.values()].filter((definition) => availableToRole(definition, role)).length])) };
@@ -430,7 +648,10 @@ export async function executeFormFlowTool(name: string, argumentsValue: unknown,
   if (!definition) return { ok: false, error: { code: 'TOOL_NOT_FOUND', message: `未注册工具：${name}`, retryable: false }, meta: { requestId } };
   if (context.mcpRole && !availableToRole(definition, context.mcpRole)) return { ok: false, error: { code: 'TOOL_NOT_AVAILABLE_IN_ROLE', message: `工具 ${name} 不属于 ${context.mcpRole} MCP`, details: { role: context.mcpRole, ownerRole: definition.ownerRole }, retryable: false }, meta: { requestId } };
   try {
-    validateInput(argumentsValue, definition); const dataPreflight = compileDataToolArguments(name, argumentsValue as JsonObject);
+    validateInput(argumentsValue, definition);
+    const contract = compileToolArguments(name, argumentsValue as JsonObject, definition.inputSchema);
+    if (!contract.ok) throw toolError(contract.error.code, contract.error.message, contract.error.path, contract.error);
+    const dataPreflight = compileDataToolArguments(name, contract.arguments as JsonObject);
     if (!dataPreflight.ok) throw toolError(dataPreflight.error.code, dataPreflight.error.message, dataPreflight.error.path, dataPreflight.error);
     const preflight = compileBehaviorToolArguments(name, dataPreflight.arguments as JsonObject);
     if (!preflight.ok) throw toolError(preflight.error.code, preflight.error.message, preflight.error.path, preflight.error);
@@ -439,15 +660,57 @@ export async function executeFormFlowTool(name: string, argumentsValue: unknown,
     if (definition.risk !== 'read') {
       if (!input.idempotencyKey) throw toolError('IDEMPOTENCY_KEY_REQUIRED', '写操作必须提供 idempotencyKey', 'idempotencyKey');
       const key = createHash('sha256').update(JSON.stringify({ name, idempotencyKey: input.idempotencyKey, userId: context.userId || '', tenantId: context.tenantId || '' })).digest('hex');
-      const previous = idempotency.get(key); if (previous) return previous;
+      const fingerprint = createHash('sha256').update(JSON.stringify({ name, input, userId: context.userId || '', tenantId: context.tenantId || '' })).digest('hex');
+      const previous = toolReplayStore.get<ToolResult>(key);
+      if (previous && previous.fingerprint !== fingerprint) throw toolError('IDEMPOTENCY_KEY_REUSED', '幂等键已绑定到另一项操作', 'idempotencyKey');
+      if (previous) return previous.result;
       if (definition.risk === 'destructive' || definition.confirmWhen?.(input)) {
         const hash = operationHash(name, input, { ...context, projectId: pid }); const expected = { operationHash: hash, userId: context.userId || 'local', tenantId: context.tenantId, projectId: pid, toolName: name };
         if (!await consumeConfirmation(String(input.confirmationToken || ''), expected)) { const confirmation = await issueConfirmation(expected); return { ok: false, status: 'confirmation_required', confirmation: { ...confirmation, summary: `${definition.title}需要确认`, impact: definition.impact?.(input, context) || { projectId: pid } }, meta: { requestId } }; }
       }
       const before = pid && existsSync(join(REPOSITORY_ROOT, 'projects', 'data', `${pid}.formflow`)) ? projectRevision(requireProject(pid)) : undefined;
-      const data = await definition.handler(input, { ...context, projectId: pid, requestId }); const afterProject = pid ? (() => { try { return requireProject(pid); } catch { return undefined; } })() : undefined;
+      const usesSharedMutation = Boolean(
+        pid
+        && input.baseRevision
+        && !['project.clone', 'project.delete', 'project.import'].includes(name),
+      );
+      let data: unknown;
+      if (usesSharedMutation) {
+        const sourceFiles: ProjectSourceFile[] = [];
+        const mutation = await projectMutation.applyAsync({
+          projectId: pid!,
+          operation: `mcp.${name}`,
+          payload: input,
+          baseRevision: String(input.baseRevision),
+          idempotencyKey: String(input.idempotencyKey),
+          user: user(context),
+          access: definition.requiredAccess || 'edit',
+          sourceFiles,
+          change: async (draft) => {
+            const state: ToolMutationState = {
+              projectId: pid!,
+              draft,
+              baseRevision: String(input.baseRevision),
+              sourceFiles,
+              committed: false,
+            };
+            const handlerResult = await toolMutationState.run(
+              state,
+              () => definition.handler(input, { ...context, projectId: pid, requestId }),
+            );
+            if (!state.committed) throw toolError('MUTATION_NOT_COMMITTED', `写工具 ${name} 未提交项目变更`);
+            return handlerResult;
+          },
+        });
+        data = mutation.data && typeof mutation.data === 'object' && !Array.isArray(mutation.data)
+          ? { ...(mutation.data as JsonObject), revision: mutation.revision }
+          : mutation.data;
+      } else {
+        data = await definition.handler(input, { ...context, projectId: pid, requestId });
+      }
+      const afterProject = pid ? (() => { try { return requireProject(pid); } catch { return undefined; } })() : undefined;
       const result: ToolResult = { ok: true, data, meta: { requestId, projectId: pid, revision: afterProject ? projectRevision(afterProject) : undefined, ...(dataPreflight.normalizations.length ? { argumentNormalizations: dataPreflight.normalizations } : {}) } };
-      idempotency.set(key, result); if (idempotency.size > 5000) idempotency.delete(idempotency.keys().next().value!);
+      toolReplayStore.set(key, { fingerprint, result, expiresAt: Date.now() + 24 * 60 * 60 * 1_000 });
       addAudit({ userId: context.userId, username: context.user?.username, action: `llm_tool.${name}`, resource: pid || name, projectId: pid, detail: { requestId, risk: definition.risk, beforeRevision: before, afterRevision: result.meta.revision } });
       return result;
     }

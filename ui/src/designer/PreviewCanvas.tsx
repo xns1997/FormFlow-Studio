@@ -97,6 +97,8 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables, for
     field: getDesignComponentField(component), props: component.props,
   })), values, originalValues), [components, values, originalValues]);
   const expressionValues = expressionResolution.values;
+  const liveValuesRef = useRef(expressionValues);
+  liveValuesRef.current = expressionValues;
   const dirtyFieldsRef = useRef(new Set<string>());
   const componentFieldsRef = useRef(new Map<string, string>());
   const initializationSignaturesRef = useRef(new Map<string, string>());
@@ -281,6 +283,7 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables, for
 
   const setFieldValue = useCallback((field: string, value: unknown) => {
     dirtyFieldsRef.current.add(field);
+    liveValuesRef.current = { ...liveValuesRef.current, [field]: value };
     setValues((current) => ({ ...current, [field]: value }));
     queueTableSync(field, value);
   }, [queueTableSync]);
@@ -351,11 +354,12 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables, for
 
   const emit = useCallback(async (component: DesignComponent, eventName: string, value?: unknown, detail?: unknown) => {
     const field = getDesignComponentField(component);
+    const currentValues = liveValuesRef.current;
     const resetValues = eventName === 'onReset'
       ? Object.fromEntries(components.map((item) => [getDesignComponentField(item), getPreviewInitialValue(item, tables)]))
       : null;
-    const nextValue = resetValues ? resetValues : (value === undefined ? expressionValues[field] : value);
-    const nextValues = resetValues || (value === undefined ? expressionValues : { ...expressionValues, [field]: value });
+    const nextValue = resetValues ? resetValues : (value === undefined ? currentValues[field] : value);
+    const nextValues = resetValues || (value === undefined ? currentValues : { ...currentValues, [field]: value });
     const operationKey = eventName === 'onClick' && component.type === 'button' && ['submit', 'save', 'delete'].includes(String(component.props.action || '')) ? `${formId || 'preview'}:${component.id}:${component.props.action}:${JSON.stringify(nextValues)}` : '';
     if (operationKey && completedOperationKeysRef.current.has(operationKey)) {
       setStatus({ key: Date.now(), label: `${field}.${eventName}`, state: 'success', persisted: true, details: ['该操作已完成，本次不会重复创建。'] });
@@ -422,7 +426,7 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables, for
         return;
       }
     }
-    if (resetValues) { dirtyFieldsRef.current.clear(); setValues(resetValues); setOriginalValues(resetValues); }
+    if (resetValues) { dirtyFieldsRef.current.clear(); liveValuesRef.current = resetValues; setValues(resetValues); setOriginalValues(resetValues); }
     else if (value !== undefined) setFieldValue(field, value);
     const key = Date.now();
     retryEventRef.current = () => { void emit(component, eventName, value, detail); };
@@ -438,11 +442,43 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables, for
     };
     let result: DesignPreviewEventResult = await executeDesignPreviewEvent({
       eventName, field, value: nextValue, detail, values: nextValues, originalValues, component,
-      previousValue: expressionValues[field], timestamp: key, idempotencyKey: operationKey || undefined,
+      previousValue: currentValues[field], timestamp: key, idempotencyKey: operationKey || undefined,
     }, {
       workflows: interactionPolicy === 'local-only' ? [] : workflows,
       tables,
       components,
+      applyEffects: (effects) => {
+        const valuePatch: Record<string, unknown> = {};
+        const visiblePatch: Record<string, boolean> = {};
+        const disabledPatch: Record<string, boolean> = {};
+        const requiredPatch: Record<string, boolean> = {};
+        for (const effect of effects) {
+          if (effect.kind === 'value') {
+            valuePatch[effect.field] = effect.value;
+            directEffects.formValues.add(effect.field);
+          } else if (effect.kind === 'visible') {
+            visiblePatch[effect.componentId] = effect.value;
+            directEffects.visible.add(effect.componentId);
+          } else if (effect.kind === 'disabled') {
+            disabledPatch[effect.componentId] = effect.value;
+            directEffects.disabled.add(effect.componentId);
+          } else {
+            requiredPatch[effect.field] = effect.value;
+            directEffects.required.add(effect.field);
+          }
+        }
+        // The transaction has already calculated and validated every effect.
+        // Apply each state domain once so React exposes one committed snapshot.
+        if (Object.keys(valuePatch).length) {
+          for (const field of Object.keys(valuePatch)) dirtyFieldsRef.current.add(field);
+          liveValuesRef.current = { ...liveValuesRef.current, ...valuePatch };
+          setValues((current) => ({ ...current, ...valuePatch }));
+          for (const [field, next] of Object.entries(valuePatch)) queueTableSync(field, next);
+        }
+        if (Object.keys(visiblePatch).length) setComponentVisibility((current) => ({ ...current, ...visiblePatch }));
+        if (Object.keys(disabledPatch).length) setComponentDisabled((current) => ({ ...current, ...disabledPatch }));
+        if (Object.keys(requiredPatch).length) setFieldRequired((current) => ({ ...current, ...requiredPatch }));
+      },
       setValue: (nextField, nextFieldValue) => {
         directEffects.formValues.add(nextField);
         setFieldValue(nextField, nextFieldValue);
@@ -581,7 +617,7 @@ export function PreviewCanvas({ formId, components, zoom, workflows, tables, for
       completedOperationKeysRef.current.add(operationKey);
       try { localStorage.setItem('formflow:completed-operations', JSON.stringify([...completedOperationKeysRef.current].slice(-100))); } catch { /* ignore storage limits */ }
     }
-  }, [appendDebugEntries, components, interactionPolicy, originalValues, persistProject, project, tables, values, expressionValues, workflows, setFieldValue, setPreviewVisible, setPreviewDisabled, setPreviewRequired, formatStatusDetails, formatTraceDetails, onTablesChange, recordMetric]);
+  }, [appendDebugEntries, components, interactionPolicy, originalValues, persistProject, project, queueTableSync, tables, values, expressionValues, workflows, setFieldValue, setPreviewVisible, setPreviewDisabled, setPreviewRequired, formatStatusDetails, formatTraceDetails, onTablesChange, recordMetric]);
 
   const bounds = useMemo(() => {
     if (presentation === 'runtime') {

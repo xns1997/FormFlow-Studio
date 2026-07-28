@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { env } from '../config/env';
 import { readProjectPackage } from './project-package-store';
 import { commitProject } from './project-authoring';
-import { compileBehaviorDsl, applyBehaviorDslToComponents, hasBehaviorDslErrors } from '../../../ui/src/services/engine/behaviorDsl';
+import { compileBehaviorDsl, applyBehaviorDslToComponents, hasBehaviorDslErrors } from '../../../shared/formflow-core/behaviorDsl';
 import type { RuleAgentSession } from './rule-agent-store';
 
 export const ruleHash = (source: string) => createHash('sha256').update(source).digest('hex');

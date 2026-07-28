@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import * as XLSX from 'xlsx';
-import type { PortType } from '../../nodes/port-types';
+import type { PortType } from '../../../nodes/port-types';
 import {
   formatOutputPreviewText,
   filterPreviewRows,

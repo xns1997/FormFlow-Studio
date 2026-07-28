@@ -145,6 +145,8 @@ export interface Props {
   onUpdateGeometry?: (id: string, patch: Partial<Pick<DesignComponent, 'x' | 'y' | 'width' | 'height'>>) => void;
   onRemove?: (id: string) => void;
   onClose?: () => void;
+  onEditWorkflowContract?: (request: { workflowId: string; nodeId: string; eventName: string; sessionId: string }) => void;
+  onFinishWorkflowContractSession?: (sessionId: string) => void;
 }
 
 export function getComponentDisplayName(component: DesignComponent) {
