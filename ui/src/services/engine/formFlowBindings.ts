@@ -491,3 +491,60 @@ export function describeFlowValueSource(source: FlowValueSource) {
     case 'expression': return `表达式 · ${source.expression}`;
   }
 }
+
+// ─── V1 resolution (legacy string-expression based) ───────────────────────────
+
+export type FormControlEventName = 'onChange' | 'onBlur' | 'onFocus' | 'onClick' | string;
+
+export interface FormControlEventContext {
+  eventName: FormControlEventName;
+  field: string;
+  value: unknown;
+  values: Record<string, unknown>;
+  originalValues?: Record<string, unknown>;
+  detail?: unknown;
+  component: ComponentNode;
+  previousValue?: unknown;
+  timestamp?: number;
+  dirty?: boolean;
+  changedFields?: string[];
+  componentId?: string;
+  componentType?: string;
+  idempotencyKey?: string;
+}
+
+function resolvePathV1(source: unknown, path: string[]): unknown {
+  return path.reduce((value: any, key) => value == null ? undefined : value[key], source as any);
+}
+
+export function resolveFormFlowValue(expression: unknown, context: FormControlEventContext): unknown {
+  if (Array.isArray(expression)) return expression.map((item) => resolveFormFlowValue(item, context));
+  if (expression && typeof expression === 'object') {
+    return Object.fromEntries(Object.entries(expression).map(([key, value]) => [key, resolveFormFlowValue(value, context)]));
+  }
+  if (typeof expression !== 'string') return expression;
+  const exact: Record<string, unknown> = {
+    '$value': context.value,
+    '$field': context.field,
+    '$event': context.eventName,
+    '$values': context.values,
+    '$form': context.values,
+    '$formData': context.values,
+    '$originalValues': context.originalValues || {},
+    '$component': context.component,
+    '$componentId': context.component.id,
+    '$detail': context.detail,
+    '$previousValue': context.previousValue,
+    '$timestamp': context.timestamp,
+    '$dirty': context.dirty,
+    '$changedFields': context.changedFields || [],
+    '$context': context,
+  };
+  if (Object.prototype.hasOwnProperty.call(exact, expression)) return exact[expression];
+  if (expression.startsWith('$form.')) return resolvePathV1(context.values, expression.slice(6).split('.'));
+  if (expression.startsWith('$original.')) return resolvePathV1(context.originalValues || {}, expression.slice(10).split('.'));
+  if (expression.startsWith('$component.')) return resolvePathV1(context.component, expression.slice(11).split('.'));
+  if (expression.startsWith('$detail.')) return resolvePathV1(context.detail, expression.slice(8).split('.'));
+  if (expression.startsWith('$context.')) return resolvePathV1(context, expression.slice(9).split('.'));
+  return expression;
+}
