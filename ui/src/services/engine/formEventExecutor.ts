@@ -40,6 +40,7 @@ import {
   type FormEventEffectSource,
 } from './formEventTransaction';
 import type { FormEventRuntimeContract } from '../../../../shared/formflow-core/formEventContract';
+import { createBrowserDomAdapter, type DomAdapter } from './domAdapter';
 
 export type FormEventCallback = (context: FormEventRuntimeContext, ...args: unknown[]) => unknown | Promise<unknown>;
 
@@ -139,10 +140,7 @@ export interface FormEventRuntimeContext extends FormControlEventContext, FormEv
   console: Pick<Console, 'log' | 'warn' | 'error' | 'debug'>;
 }
 
-function sameValue(left: unknown, right: unknown): boolean {
-  if (Object.is(left, right)) return true;
-  try { return JSON.stringify(left) === JSON.stringify(right); } catch { return false; }
-}
+import { sameValue } from './valueUtils';
 
 function createEventDetail(eventContext: FormControlEventContext, previousValue: unknown): Record<string, unknown> {
   const supplied = eventContext.detail && typeof eventContext.detail === 'object'
@@ -180,6 +178,8 @@ export interface ExecuteFormEventOptions {
   autoRunConfiguredFlow?: boolean;
   components?: ComponentNode[];
   hostRoot?: HTMLElement | null;
+  /** DOM 操作适配器；默认使用浏览器 DOM。测试环境可注入 noop 适配器。 */
+  domAdapter?: DomAdapter;
   /** 自定义执行顺序，默认 ['linkage', 'script', 'flow'] */
   executionOrder?: ExecutionStageType[];
   /** 流程执行后是否自动将 export 输出回写到表单字段，默认 true */
@@ -257,32 +257,8 @@ function createControlAccessors(
   return controls;
 }
 
-function escapeAttributeValue(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
-
 function findComponentField(component: ComponentNode): string {
   return getFlowComponentField(component);
-}
-
-function findFocusableElement(container: Element | null): HTMLElement | null {
-  if (!container) return null;
-  const maybeElement = container as HTMLElement & { focus?: () => void };
-  if (typeof maybeElement.focus === 'function') return maybeElement;
-  return container.querySelector<HTMLElement>(
-    'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])',
-  );
-}
-
-function getHostDocument(hostRoot?: HTMLElement | null): Document | null {
-  if (hostRoot?.ownerDocument) return hostRoot.ownerDocument;
-  if (typeof document !== 'undefined') return document;
-  return null;
-}
-
-function scrollElementIntoView(target: Element | null) {
-  if (!target || typeof (target as HTMLElement).scrollIntoView !== 'function') return;
-  (target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
 }
 
 async function executeCallbackCode(
@@ -403,27 +379,19 @@ export async function executeFormControlEvent(
     };
   };
 
-  const findComponentElement = (componentId: string) => {
-    const selector = `[data-component-id="${escapeAttributeValue(componentId)}"]`;
-    if (options.hostRoot) return options.hostRoot.querySelector(selector);
-    const hostDocument = getHostDocument(options.hostRoot);
-    if (!hostDocument) return null;
-    return hostDocument.querySelector(selector);
-  };
+  const dom = options.domAdapter || createBrowserDomAdapter(options.hostRoot);
 
   const focusResolvedComponent = async (componentId: string) => {
-    const target = findComponentElement(componentId);
+    const target = dom.findComponentElement(componentId);
     if (!target) throw new Error(`找不到可聚焦的控件节点: ${componentId}`);
-    scrollElementIntoView(target);
-    const focusable = findFocusableElement(target);
-    if (!focusable) throw new Error(`控件不支持聚焦: ${componentId}`);
-    focusable.focus();
+    dom.scrollIntoView(target);
+    dom.focusElement(target);
   };
 
   const scrollResolvedComponent = async (componentId: string) => {
-    const target = findComponentElement(componentId);
+    const target = dom.findComponentElement(componentId);
     if (!target) throw new Error(`找不到可滚动定位的控件节点: ${componentId}`);
-    scrollElementIntoView(target);
+    dom.scrollIntoView(target);
   };
 
   const getAncestorTabs = (componentId: string) => {
@@ -462,7 +430,8 @@ export async function executeFormControlEvent(
   const switchTabInternal = async (tabIdOrIndex: string | number) => {
     const tabsComponents = components.filter((component) => component.type === 'tabs');
     if (tabsComponents.length === 0) throw new Error('当前表单中没有可切换的 tabs 控件');
-    const preferredTabs = [...getAncestorTabs(eventContext.component.id), ...tabsComponents.filter((item) => !getAncestorTabs(eventContext.component.id).some((tab) => tab.id === item.id))];
+    const ancestorTabs = getAncestorTabs(eventContext.component.id);
+    const preferredTabs = [...ancestorTabs, ...tabsComponents.filter((item) => !ancestorTabs.some((tab) => tab.id === item.id))];
     if (typeof tabIdOrIndex === 'number') {
       const targetTabs = preferredTabs[0];
       if (!targetTabs) throw new Error('找不到可作用的 tabs 控件');
@@ -672,9 +641,7 @@ export async function executeFormControlEvent(
     switchTab: async (tabIdOrIndex) => {
       await switchTabInternal(tabIdOrIndex);
     },
-    openTab: async (tabIdOrIndex) => {
-      await switchTabInternal(tabIdOrIndex);
-    },
+    openTab: async (tabIdOrIndex) => runtimeContext.switchTab(tabIdOrIndex),
     showMessage: async (message, level = 'info') => {
       messages.push({ message, level });
       await options.showMessage?.(message, level);
@@ -726,15 +693,17 @@ export async function executeFormControlEvent(
     fields: (fieldOrFields) => {
       const fields = Array.isArray(fieldOrFields) ? fieldOrFields : [fieldOrFields];
       let pending = Promise.resolve();
+      const chainOp = (fn: (field: string) => Promise<void> | void) => { pending = pending.then(async () => { for (const field of fields) await fn(field); }); return chain; };
+      const resolveAnd = (fn: (componentId: string) => Promise<void> | void) => chainOp((field) => { const target = resolveFieldStateTarget(field); if (!target.component) throw new Error(`找不到控件: ${field}`); return fn(target.component.id); });
       const chain: FormFieldChain = {
-        show: () => { pending = pending.then(async () => { for (const field of fields) { const target = resolveFieldStateTarget(field); if (!target.component) throw new Error(`找不到控件: ${field}`); await runtimeContext.setVisible(target.component.id, true); } }); return chain; },
-        hide: () => { pending = pending.then(async () => { for (const field of fields) { const target = resolveFieldStateTarget(field); if (!target.component) throw new Error(`找不到控件: ${field}`); await runtimeContext.setVisible(target.component.id, false); } }); return chain; },
-        enable: () => { pending = pending.then(async () => { for (const field of fields) { const target = resolveFieldStateTarget(field); if (!target.component) throw new Error(`找不到控件: ${field}`); await runtimeContext.setDisabled(target.component.id, false); } }); return chain; },
-        disable: () => { pending = pending.then(async () => { for (const field of fields) { const target = resolveFieldStateTarget(field); if (!target.component) throw new Error(`找不到控件: ${field}`); await runtimeContext.setDisabled(target.component.id, true); } }); return chain; },
-        required: () => { pending = pending.then(async () => { for (const field of fields) await runtimeContext.setRequired(field, true); }); return chain; },
-        optional: () => { pending = pending.then(async () => { for (const field of fields) await runtimeContext.setRequired(field, false); }); return chain; },
-        clear: () => { pending = pending.then(async () => { for (const field of fields) await runtimeContext.clearValue(field); }); return chain; },
-        set: (value) => { pending = pending.then(async () => { for (const field of fields) await runtimeContext.setValue(field, value); }); return chain; },
+        show: () => resolveAnd((id) => runtimeContext.setVisible(id, true)),
+        hide: () => resolveAnd((id) => runtimeContext.setVisible(id, false)),
+        enable: () => resolveAnd((id) => runtimeContext.setDisabled(id, false)),
+        disable: () => resolveAnd((id) => runtimeContext.setDisabled(id, true)),
+        required: () => chainOp((field) => runtimeContext.setRequired(field, true)),
+        optional: () => chainOp((field) => runtimeContext.setRequired(field, false)),
+        clear: () => chainOp((field) => runtimeContext.clearValue(field)),
+        set: (value) => chainOp((field) => runtimeContext.setValue(field, value)),
         then: (onfulfilled, onrejected) => pending.then(onfulfilled, onrejected),
       };
       return chain;

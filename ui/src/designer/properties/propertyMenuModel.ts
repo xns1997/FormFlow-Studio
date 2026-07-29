@@ -1,5 +1,5 @@
 import type { DesignComponent } from '../../project/types';
-import { buildPropertyDependencyGraph, findPropertyDependencyCycles } from '../../services/engine/propertyDependencies';
+import { buildPropertyDependencyGraph, findPropertyDependencyCycles } from '../../services/engine/propertyExpression';
 import { evaluatePropertyExpression } from '../../services/engine/propertyExpression';
 import { isCompositePropDef, type PropertyDiagnostic, type PropertyGroupDescriptor, type PropertySection, type PropertyStatus, type PropertyTaskId, type PropSchemaEntry } from '../types';
 import { getPropertyEditorDescriptor, resolvePropertyEditorKind, type PropertyEditorContext, type PropertyFieldDescriptor } from './propertyEditorRegistry';

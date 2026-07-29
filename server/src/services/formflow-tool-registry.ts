@@ -32,7 +32,6 @@ import { projectMutation } from './project-mutation';
 import type { ProjectSourceFile } from './project-authoring';
 import { createFileProjectMutationReplayStore } from './project-mutation-replay-store';
 
-export type JsonSchema = Record<string, unknown>;
 export type ToolRisk = 'read' | 'write' | 'destructive';
 export const MCP_ROLES = ['project', 'data', 'form', 'workflow', 'behavior', 'quality', 'delivery'] as const;
 export type McpRole = typeof MCP_ROLES[number];
@@ -60,6 +59,15 @@ export interface FormFlowToolDefinition {
   confirmWhen?: (input: JsonObject) => boolean;
 }
 
+import {
+  anyObject, resultMetaSchema, resultSchema, schema, string, array, object, boolean,
+  dataColumnSchema, dataSourceConfigSchema, dataRowUpdateSchema,
+  behaviorTriggerSchema, behaviorConditionSchema, behaviorActionSchema, behaviorRuleSchema,
+  workflowNodeSchema, workflowEdgeSchema, workflowItemSchema, formComponentItemSchema,
+  type JsonSchema,
+} from './tool-schemas';
+export type { JsonSchema } from './tool-schemas';
+
 const registry = new Map<string, FormFlowToolDefinition>();
 const toolReplayStore = createFileProjectMutationReplayStore(serverDataPath('tool-mutation-replays.json'));
 type ToolMutationState = {
@@ -86,144 +94,9 @@ function commitProject(project: JsonObject, sourceFiles: ProjectSourceFile[] = [
   active.committed = true;
   return { revision: active.baseRevision };
 }
-const anyObject: JsonSchema = { type: 'object', additionalProperties: true };
-const resultMetaSchema: JsonSchema = {
-  type: 'object',
-  required: ['requestId'],
-  additionalProperties: false,
-  description: '本次调用的审计元数据。写操作成功时 revision 是修改后的项目版本；失败或待确认不会产生新 revision。',
-  properties: {
-    requestId: { type: 'string', description: '本次调用的唯一追踪 ID。' },
-    projectId: { type: 'string', description: '本次调用实际作用的项目 ID；无项目上下文时省略。' },
-    revision: { type: 'string', description: '调用完成后项目的最新 revision；仅在项目可读取时返回。' },
-    warnings: { type: 'array', description: '调用成功但仍需注意的非阻断问题。', items: { type: 'object' } },
-    argumentNormalizations: { type: 'array', description: '服务端为消除输入歧义而执行的安全参数规范化。', items: { type: 'object' } },
-  },
-};
-const resultSchema: JsonSchema = {
-  oneOf: [
-    {
-      type: 'object', additionalProperties: false, required: ['ok', 'data', 'meta'],
-      description: '操作成功。读取操作未修改项目；写操作的实际结果在 data 中，修改后的版本在 meta.revision。',
-      properties: { ok: { const: true }, data: { description: '工具成功返回的数据或已完成变更的摘要。' }, meta: resultMetaSchema },
-    },
-    {
-      type: 'object', additionalProperties: false, required: ['ok', 'error', 'meta'],
-      description: '操作失败且未完成。除非错误明确说明部分成功，否则项目保持调用前状态。',
-      properties: {
-        ok: { const: false },
-        error: {
-          type: 'object', additionalProperties: false, required: ['code', 'message', 'retryable'],
-          properties: {
-            code: { type: 'string', description: '稳定的机器可读错误码。' },
-            message: { type: 'string', description: '面向调用方的失败原因。' },
-            path: { type: 'string', description: '出错参数或资源路径；无法定位到单一路径时省略。' },
-            details: { description: '用于修正或诊断失败的结构化详情。' },
-            retryable: { type: 'boolean', description: '是否应在重新读取状态或修正参数后重试。' },
-          },
-        },
-        meta: resultMetaSchema,
-      },
-    },
-    {
-      type: 'object', additionalProperties: false, required: ['ok', 'status', 'confirmation', 'meta'],
-      description: '操作尚未执行，正在等待用户确认。使用完全相同的业务参数并补充 confirmationToken 后才会执行。',
-      properties: {
-        ok: { const: false },
-        status: { const: 'confirmation_required' },
-        confirmation: {
-          type: 'object', additionalProperties: false, required: ['token', 'expiresAt', 'summary', 'impact'],
-          properties: {
-            token: { type: 'string', description: '一次性确认令牌；绑定调用人、工具和原始参数。' },
-            expiresAt: { type: 'string', format: 'date-time', description: '确认令牌过期时间。' },
-            summary: { type: 'string', description: '用户需要确认的操作。' },
-            impact: { description: '执行后将发生的删除、覆盖、级联或发布影响。' },
-          },
-        },
-        meta: resultMetaSchema,
-      },
-    },
-  ],
-};
-const schema = (required: string[] = [], properties: Record<string, unknown> = {}): JsonSchema => ({ type: 'object', required, properties, additionalProperties: false });
-const string = { type: 'string' }; const array = { type: 'array' }; const object = { type: 'object' }; const boolean = { type: 'boolean' };
-const dataColumnSchema: JsonSchema = { type: 'object', required: ['name'], properties: { name: string, title: string, type: { type: 'string', enum: ['string', 'number', 'boolean', 'date', 'enum'] }, nullable: boolean, enum: { type: 'array', items: string } }, additionalProperties: true };
-const dataSourceConfigSchema: JsonSchema = { type: 'object', properties: { name: string, keyFields: { type: 'array', items: string, description: '主键列名，必须与 rows 对象键或 columns.name 完全一致。' }, readOnly: { type: 'boolean', description: '只读表设为 true；可编辑表保持 false 并配置 keyFields。' }, columns: { type: 'array', items: dataColumnSchema, description: '空表的列定义；有 rows 时可以省略并自动推断。' }, frozenRows: { type: 'number' }, frozenColumns: { type: 'number' }, filterEnabled: boolean, sortEnabled: boolean }, additionalProperties: true };
-const dataRowUpdateSchema: JsonSchema = { type: 'object', required: ['rowKey', 'changes'], properties: { rowKey: string, changes: { type: 'object', additionalProperties: true } }, additionalProperties: false };
-const behaviorTriggerSchema: JsonSchema = { type: 'object', required: ['type'], properties: { type: { type: 'string', enum: ['formLoad', 'rowLoad', 'fieldChange', 'fieldBlur', 'fieldFocus', 'buttonClick', 'validate', 'submit', 'submitSuccess', 'submitError', 'dataSourceChange', 'tabChange', 'formReady', 'formReset', 'beforeSubmit', 'fieldKeyDown', 'fieldPaste', 'fieldClear', 'rowAdd', 'rowDelete', 'rowSelect', 'dataImport', 'dataExport', 'valueChange'] }, fieldName: string, componentName: string, buttonName: string, debounce: { type: 'number' } }, additionalProperties: false };
-const behaviorConditionSchema: JsonSchema = { type: 'object', required: ['fieldName', 'operator', 'logic'], properties: { fieldName: string, operator: { type: 'string', enum: ['==', '!=', '>', '<', '>=', '<=', 'contains', 'notContains', 'startsWith', 'notStartsWith', 'endsWith', 'notEndsWith', 'isEmpty', 'isNotEmpty', 'regex', 'custom'] }, value: {}, value2: {}, customExpression: string, logic: { type: 'string', enum: ['AND', 'OR'] }, dataSource: { type: 'string', enum: ['form', 'flow', 'behavior'] }, flowOutputField: string, behaviorName: string }, additionalProperties: false };
-const behaviorActionSchema: JsonSchema = { type: 'object', required: ['type'], properties: { type: { type: 'string', enum: ['setValue', 'clearValue', 'setVisible', 'setHidden', 'setEnabled', 'setDisabled', 'setRequired', 'setOptional', 'showMessage', 'logMessage', 'switchTab', 'executeScript', 'submitData', 'callApi', 'refreshData', 'navigate', 'runWorkflow', 'setOptions'] }, targetField: string, targetComponent: string, value: {}, expression: string, message: string, messageType: { type: 'string', enum: ['info', 'success', 'warning', 'error'] }, tabName: string, scriptCode: string, workflowId: string, workflowParameters: object, optionsConfig: { type: 'object', required: ['table', 'filterField'], properties: { table: string, filterField: string, filterValue: {}, labelField: string, valueField: string }, additionalProperties: false } }, additionalProperties: true };
-const behaviorRuleSchema: JsonSchema = { type: 'object', required: ['id', 'name', 'trigger', 'conditions', 'actions'], properties: { id: string, name: string, enabled: boolean, priority: { type: 'number' }, trigger: behaviorTriggerSchema, conditions: { type: 'array', items: behaviorConditionSchema }, actions: { type: 'array', minItems: 1, items: behaviorActionSchema } }, additionalProperties: false };
-const allRoles = () => [...MCP_ROLES];
+import { FIELD_DESCRIPTIONS } from './field-descriptions';
 
-const FIELD_DESCRIPTIONS: Record<string, string> = {
-  projectId: '目标项目的稳定 ID。省略仅在调用上下文已经唯一绑定项目且该字段非必填时有效。',
-  baseRevision: '最近一次 project.get 返回的 revision。服务端仅在它仍是最新版本时执行写入，否则拒绝且不修改项目。',
-  idempotencyKey: '本次写操作的稳定幂等键。重试同一意图必须复用；新的业务操作必须生成新键。',
-  confirmationToken: '仅在首次返回 confirmation_required 后填写；必须保持其他业务参数完全不变。令牌一次性且会过期。',
-  id: '当前工具目标资源的稳定 ID；创建时成为新资源 ID，读取、更新或删除时用于精确定位现有资源。',
-  name: '面向用户显示的名称；不作为稳定引用 ID。',
-  description: '面向用户显示的项目或资源说明。',
-  author: '项目元数据中的作者名称；不改变访问权限或所有者。',
-  tags: '用于项目检索和分类的标签列表。',
-  newId: '克隆后新项目的稳定 ID；不会修改原项目。',
-  type: '目标类型的稳定标识。可用值应先从对应 catalog 工具读取。',
-  category: '可选的目录分类过滤条件；省略时返回全部分类。',
-  templateId: '操作或项目模板的稳定 ID；先从对应模板目录读取，不要猜测。',
-  templateIds: '要处理的模板稳定 ID 列表；只影响明确列出的模板。',
-  tableId: '目标数据源/表的稳定 ID。',
-  tableIds: '参与本次操作的数据源/表稳定 ID 列表。',
-  sheetName: '目标数据源内的 Sheet 名称；必须与现有名称完全一致。',
-  formId: '目标表单的稳定 ID。',
-  workflowId: '目标工作流的稳定 ID。',
-  relationId: '目标数据关系的稳定 ID。',
-  relationIds: '参与本次操作的数据关系稳定 ID 列表。',
-  relation: '完整的数据关系定义；明确指定两端表、Sheet、连接字段与关系类型，校验或保存后按 relation.id 引用。',
-  suiteId: '要运行的已保存回归套件 ID；省略时按工具说明使用默认套件。',
-  fieldName: '目标字段名；必须与目标 Sheet 或结果中的字段名完全一致。',
-  fields: '明确选择的字段名列表；未列出的字段不参与本次操作。',
-  keyFields: '组合主键字段列表；按给定顺序共同标识唯一数据行。',
-  scope: '行为作用域：global 影响整个项目，sheet 仅影响指定 Sheet，form 仅影响指定表单。',
-  mode: '操作模式。仅接受 schema enum 中列出的值；不同值会产生不同运行或编辑结果。',
-  joinType: '数据关系查询的连接方式；决定未匹配记录是否保留。',
-  fileId: '通过上传接口获得的暂存文件 ID；不是服务器文件路径或远程 URL。',
-  csv: '内联 CSV 文本。与 fileId、rows 互斥，作为本次导入的唯一数据内容。',
-  rows: '内联业务记录数组。与 fileId、csv 互斥；每个对象是一条记录。',
-  rowCount: '要生成的数据行数；不会改变现有行，除非调用的是明确的 apply 工具。',
-  adds: '要新增的完整业务记录；成功后追加到目标 Sheet。',
-  updates: '按稳定 rowKey 定位的字段变更；未列出的字段保持不变。',
-  deletes: '要删除的稳定 rowKey 列表；非空时执行前需要确认。',
-  operations: '按顺序原子执行的数据变更列表；任一项失败时整体不提交。',
-  patch: '局部更新对象；仅其中明确出现且允许修改的字段会被覆盖。',
-  config: '目标资源配置。具体允许字段、默认值与限制见此对象的子 schema。',
-  settings: '项目设置的局部更新；未提供的设置保持不变。',
-  design: '完整或新建表单设计对象；不会自动修改行为规则代码。',
-  item: '要创建、替换或局部合并的资源对象；其稳定 ID 决定新增还是更新。',
-  behavior: '完整的结构化行为定义；成功后在指定 scope 内按 behavior.id 保存。',
-  code: '要检查、测试或保存的规则代码；保存前必须通过对应语法检查。',
-  dataSource: '用于一次构建项目的数据源定义；导入规则与 data_source.create 相同。',
-  forms: '从数据源生成的表单定义列表；省略时创建 create、edit 和 detail 三个表单。',
-  selection: '模板或分析明确选中的表、关系和字段；只对列出的资源生成计划。',
-  parameters: '模板或分析参数；允许字段与默认值由所选模板的 parameterSchema 决定。',
-  plan: '由 template.plan 返回且尚未应用的原始计划；不得手工改写，其 baseRevision 必须与提交版本一致。',
-  preset: '要保存的模板参数预设；只保存参数，不保存业务数据选择。',
-  package: '待导入的纯声明模板包；校验通过后才写入项目。',
-  overwrite: '为 true 时允许覆盖同名目标，并在执行前要求确认；false 时遇到冲突会失败且不修改。',
-  overwriteModified: '为 true 时允许覆盖检测到的手工修改，并在执行前要求确认；false 时保留手工修改并阻止覆盖。',
-  cascade: '为 true 时同时处理明确报告的下游引用，并在执行前要求确认；false 时存在引用会拒绝且不修改。',
-  page: '从 1 开始的结果页码。',
-  pageSize: '每页返回数量；服务端会限制到 schema 或能力目录声明的最大值。',
-  baseVersion: '最近一次数据查询返回的 dataVersion。数据已变化时拒绝整批写入，避免覆盖并发修改。',
-  keySearch: '按主键字段精确匹配的键值对象；与全文 search 同时提供时两种条件共同生效。',
-  search: '可选的全文搜索文本；省略或为空时不应用全文过滤。',
-  query: '只读搜索关键词；不会修改项目。',
-  sortModel: '排序规则列表；按数组顺序确定多字段排序优先级。',
-  filterModel: '字段过滤条件对象；只影响本次查询结果。',
-  exportAll: '为 true 时返回全部匹配结果而非当前分页；仍不修改项目。',
-  runtime: '用于只读规则或表单检查的运行时快照；敏感字段会脱敏返回。',
-  seed: '确定性生成随机种子；相同输入与 seed 产生相同候选数据。',
-  scenarios: '要包含的测试或 Mock 场景列表；负向场景不会写入业务数据。',
-};
+const allRoles = () => [...MCP_ROLES];
 
 function clarifyInputSchema(name: string, title: string, risk: ToolRisk, inputSchema: JsonSchema): JsonSchema {
   const next = structuredClone(inputSchema) as Record<string, any>;
@@ -260,42 +133,6 @@ function clarifyInputSchema(name: string, title: string, risk: ToolRisk, inputSc
   };
   return next;
 }
-
-const workflowNodeSchema: JsonSchema = {
-  type: 'object', required: ['id'], additionalProperties: true,
-  properties: {
-    id: string, specId: string, type: string,
-    position: { type: 'object', properties: { x: { type: 'number' }, y: { type: 'number' } } },
-    data: { type: 'object', properties: { propertiesJson: string, connectedPortsJson: string } },
-    x: { type: 'number' }, y: { type: 'number' }, config: object, props: object,
-  },
-};
-const workflowEdgeSchema: JsonSchema = {
-  type: 'object', required: ['id', 'source', 'target'], additionalProperties: true,
-  properties: {
-    id: string,
-    source: { oneOf: [string, { type: 'object', required: ['nodeId'], properties: { nodeId: string, portId: string } }] },
-    target: { oneOf: [string, { type: 'object', required: ['nodeId'], properties: { nodeId: string, portId: string } }] },
-    sourceHandle: string, targetHandle: string,
-  },
-};
-const workflowItemSchema: JsonSchema = {
-  type: 'object', required: ['name', 'nodes', 'edges'], additionalProperties: true,
-  properties: { id: string, name: string, description: string, nodes: { type: 'array', items: workflowNodeSchema }, edges: { type: 'array', items: workflowEdgeSchema } },
-};
-const formComponentItemSchema: JsonSchema = {
-  type: 'object', required: ['id'], additionalProperties: true,
-  properties: {
-    id: string, type: string, x: { type: 'number' }, y: { type: 'number' }, width: { type: 'number', exclusiveMinimum: 0 }, height: { type: 'number', exclusiveMinimum: 0 }, zIndex: { type: 'number' }, parentId: string, fieldBinding: string,
-    props: {
-      type: 'object', additionalProperties: true, properties: {
-        events: { type: 'object', description: '事件名到非空 JavaScript 处理代码的映射，例如 {onClick:"return true;"}。', additionalProperties: { type: 'string', minLength: 1 } },
-        flowTriggers: { type: 'object', description: '事件名到流程触发配置的映射；启用时 workflowId 必须引用已有流程。', additionalProperties: { type: 'object', required: ['enabled', 'workflowId'], properties: { enabled: { type: 'boolean' }, workflowId: { type: 'string', minLength: 1 }, parameterMap: object, targetNodeId: string } } },
-      },
-    },
-    children: array,
-  },
-};
 
 const behaviorListInputSchema: JsonSchema = {
   ...schema(['projectId', 'scope'], {
@@ -415,11 +252,18 @@ function user(context: ToolContext): AuthUser | undefined { return context.user 
 function findById(items: any[], id: string, code: string) { const item = items.find((entry) => entry.id === id); if (!item) throw toolError(code, `${id} 不存在`); return item; }
 function upsert(items: any[], item: any) { const index = items.findIndex((entry) => entry.id === item.id); if (index >= 0) items[index] = item; else items.push(item); return item; }
 function remove(items: any[], id: string) { const index = items.findIndex((entry) => entry.id === id); if (index < 0) return false; items.splice(index, 1); return true; }
+/** Check if a form references the given ID anywhere in its structure (bindings, behaviors, flow triggers). */
+function formReferencesId(form: any, id: string): boolean {
+  const str = JSON.stringify(form);
+  return str.includes(id);
+}
 
+let _componentCatalog: Array<{ type: string; label: string; category: string; allowedProps: string[]; defaultSize?: { width: number; height: number }; source: string }> | undefined;
 function componentCatalog() {
+  if (_componentCatalog) return _componentCatalog;
   const directory = join(REPOSITORY_ROOT, 'ui', 'src', 'designer', 'controls');
   if (!existsSync(directory)) return [];
-  return readdirSync(directory).filter((name) => name.endsWith('.tsx')).flatMap((name) => {
+  _componentCatalog = readdirSync(directory).filter((name) => name.endsWith('.tsx')).flatMap((name) => {
     const source = readFileSync(join(directory, name), 'utf8');
     return source.split('registerControl({').slice(1).flatMap((block) => {
       const match = block.match(/^\s*\n?\s*type:\s*'([^']+)',\s*label:\s*'([^']+)',\s*category:\s*'([^']+)'/);
@@ -429,13 +273,17 @@ function componentCatalog() {
       return [{ type: match[1], label: match[2], category: match[3], allowedProps, defaultSize: size ? { width: Number(size[1]), height: Number(size[2]) } : undefined, source: name }];
     });
   });
+  return _componentCatalog;
 }
 
+let _workflowCatalog: JsonObject[] | undefined;
 function workflowCatalog() {
+  if (_workflowCatalog) return _workflowCatalog;
   const root = join(REPOSITORY_ROOT, 'ui', 'nodes'); const result: JsonObject[] = [];
-  if (!existsSync(root)) return result;
+  if (!existsSync(root)) return _workflowCatalog = result;
   const walk = (directory: string) => { for (const entry of readdirSync(directory, { withFileTypes: true })) { const path = join(directory, entry.name); if (entry.isDirectory()) walk(path); else if (entry.name === 'schema.json') { try { result.push(JSON.parse(readFileSync(path, 'utf8'))); } catch { /* invalid plugin schema stays undiscoverable */ } } } };
-  walk(root); return result.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  walk(root); _workflowCatalog = result.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  return _workflowCatalog;
 }
 
 register({ name: 'system.capabilities.get', title: '获取能力', description: '返回当前专职 MCP 的能力、限制和版本。', inputSchema: schema(), risk: 'read', handler: (_input, context) => ({ formatVersion: 2, role: context.mcpRole, tools: context.mcpRole ? listFormFlowTools(context.mcpRole).length : registry.size, roles: MCP_ROLE_CATALOG, limits: { uploadBytes: 50 * 1024 * 1024, inlineBytes: 5 * 1024 * 1024, inlineRows: 10_000, queryPageSize: 500, batchChanges: 1000 }, transports: ['agent', 'mcp-http', 'mcp-stdio'] }) });
@@ -443,9 +291,9 @@ register({ name: 'catalog.templates.list', title: '项目模板目录', descript
 register({ name: 'catalog.operation_templates.list', title: '操作模板目录', description: '列出内置与当前项目导入的操作模板及其选择契约。', inputSchema: schema([], { projectId: string, category: string }), risk: 'read', handler: (input, context) => { const custom = input.projectId ? requireProject(projectId(input, context)).customOperationTemplates || [] : []; const templates = [...OPERATION_TEMPLATES, ...custom]; return input.category ? templates.filter((item: any) => item.category === input.category) : templates; } });
 register({ name: 'catalog.operation_templates.get', title: '操作模板详情', description: '读取内置或当前项目导入模板的定义、参数 Schema 和生成物摘要。', inputSchema: schema(['templateId'], { projectId: string, templateId: string }), risk: 'read', handler: (input, context) => getOperationTemplate(input.templateId, input.projectId ? requireProject(projectId(input, context)) : undefined) });
 register({ name: 'catalog.components.list', title: '控件目录', description: '列出当前 UI 注册的表单控件。', inputSchema: schema(), risk: 'read', handler: componentCatalog });
-register({ name: 'catalog.components.get', title: '控件详情', description: '读取指定表单控件。', inputSchema: schema(['type'], { type: string }), risk: 'read', handler: (input) => componentCatalog().find((item) => item.type === input.type) || (() => { throw toolError('COMPONENT_TYPE_NOT_FOUND', `控件 ${input.type} 不存在`); })() });
+register({ name: 'catalog.components.get', title: '控件详情', description: '读取指定表单控件。', inputSchema: schema(['type'], { type: string }), risk: 'read', handler: (input) => { const found = componentCatalog().find((item) => item.type === input.type); if (!found) throw toolError('COMPONENT_TYPE_NOT_FOUND', `控件 ${input.type} 不存在`); return found; } });
 register({ name: 'catalog.workflow_nodes.list', title: '流程节点目录', description: '列出全部工作流节点 Schema。', inputSchema: schema(), risk: 'read', handler: () => workflowCatalog().map(({ id, label, description, category, kind, ports }) => ({ id, label, description, category, kind, ports })) });
-register({ name: 'catalog.workflow_nodes.get', title: '流程节点详情', description: '读取工作流节点完整 Schema。', inputSchema: schema(['id'], { id: string }), risk: 'read', handler: (input) => workflowCatalog().find((item) => item.id === input.id) || (() => { throw toolError('WORKFLOW_NODE_NOT_FOUND', `节点 ${input.id} 不存在`); })() });
+register({ name: 'catalog.workflow_nodes.get', title: '流程节点详情', description: '读取工作流节点完整 Schema。', inputSchema: schema(['id'], { id: string }), risk: 'read', handler: (input) => { const found = workflowCatalog().find((item) => item.id === input.id); if (!found) throw toolError('WORKFLOW_NODE_NOT_FOUND', `节点 ${input.id} 不存在`); return found; } });
 register({ name: 'catalog.events.list', title: '事件目录', description: '列出表单、字段、控件和工作表行为事件。', inputSchema: schema(), risk: 'read', handler: () => ['formLoad', 'formSubmit', 'fieldChange', 'fieldFocus', 'fieldBlur', 'onClick', 'onChange', 'onFocus', 'onBlur', 'onSubmit', 'onTabChange', 'sheetLoad', 'rowChange'] });
 
 register({ name: 'project.list', title: '项目列表', description: '列出可见 FormFlow 项目。', inputSchema: schema(), risk: 'read', handler: (_input, context) => listProjectPackages().filter((item) => { try { return canAccessProject(user(context), requireProject(item.id), 'view'); } catch { return false; } }) });
@@ -517,7 +365,7 @@ register({ name: 'data_source.list', title: '数据源列表', description: '列
 register({ name: 'data_source.get', title: '读取数据源', description: '读取数据源及 Sheet 元数据。', inputSchema: schema(['projectId', 'id'], { projectId: string, id: string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => findById(requireProject(projectId(input, context)).srcTable || [], input.id, 'TABLE_NOT_FOUND') });
 for (const [name, title] of [['data_source.create', '创建数据表'], ['data_source.import', '导入数据源']] as const) register({ name, title, description: '从上传 fileId、业务数据行 rows、CSV 或 config.columns 创建数据源。rows 中每个对象代表一条业务记录，不是字段定义；空表使用 config.columns。config.keyFields 必须位于 config 顶层并匹配 rows 键或 columns.name。', inputSchema: schema(['projectId', 'id', 'baseRevision', 'idempotencyKey'], { projectId: string, id: string, baseRevision: string, idempotencyKey: string, fileId: string, rows: { type: 'array', items: { type: 'object', additionalProperties: true }, description: '业务记录数组；字段名作为列名。不要传 fieldId/title/type 字段定义。' }, csv: string, sheetName: string, config: dataSourceConfigSchema }), risk: 'write', requiredAccess: 'edit', handler: (input, context) => { const project = editable(input, context); if ((project.srcTable || []).some((item: any) => item.id === input.id)) throw toolError('TABLE_EXISTS', `数据表 ${input.id} 已存在`); const built = tableFromInput({ ...input, tenantId: context.tenantId }); project.srcTable.push(built.table); return commitProject(touch(project), built.sourceFiles); } });
 register({ name: 'data_source.update', title: '更新数据源', description: '更新数据源显示元信息；原表和 Sheet 结构只能由专用数据接口修改。', inputSchema: schema(['projectId', 'id', 'baseRevision', 'idempotencyKey', 'patch'], { projectId: string, id: string, baseRevision: string, idempotencyKey: string, patch: object }), risk: 'write', requiredAccess: 'edit', handler: (input, context) => { const project = editable(input, context); const table = findById(project.srcTable || [], input.id, 'TABLE_NOT_FOUND'); const protectedFields = ['fileName', 'fileType', 'fileSize', 'dataHash', 'uploadedAt', 'sheets', 'preview', 'rows']; const invalid = protectedFields.find((field) => input.patch?.[field] !== undefined); if (invalid) throw toolError('PROTECTED_DATA_FIELD', `${invalid} 只能由项目数据接口修改`, `patch.${invalid}`); Object.assign(table, input.patch, { id: table.id }); return commitProject(touch(project)); } });
-register({ name: 'data_source.delete', title: '删除数据源', description: '删除数据源；有引用时必须显式 cascade。', inputSchema: schema(['projectId', 'id', 'baseRevision', 'idempotencyKey'], { projectId: string, id: string, baseRevision: string, idempotencyKey: string, cascade: boolean, confirmationToken: string }), risk: 'destructive', requiredAccess: 'edit', impact: (input) => ({ dataSourceId: input.id, cascade: !!input.cascade }), handler: (input, context) => { const project = editable(input, context); const refs = (project.forms || []).filter((form: any) => JSON.stringify(form).includes(input.id)); if (refs.length && !input.cascade) throw toolError('RESOURCE_REFERENCED', '数据源仍被表单引用', 'id', { forms: refs.map((item: any) => item.id) }); remove(project.srcTable, input.id); if (input.cascade) project.forms = (project.forms || []).filter((form: any) => !JSON.stringify(form).includes(input.id)); project.sheetBehaviors = (project.sheetBehaviors || []).filter((item: any) => item.tableId !== input.id); return commitProject(touch(project)); } });
+register({ name: 'data_source.delete', title: '删除数据源', description: '删除数据源；有引用时必须显式 cascade。', inputSchema: schema(['projectId', 'id', 'baseRevision', 'idempotencyKey'], { projectId: string, id: string, baseRevision: string, idempotencyKey: string, cascade: boolean, confirmationToken: string }), risk: 'destructive', requiredAccess: 'edit', impact: (input) => ({ dataSourceId: input.id, cascade: !!input.cascade }), handler: (input, context) => { const project = editable(input, context); const refs = (project.forms || []).filter((form: any) => formReferencesId(form, input.id)); if (refs.length && !input.cascade) throw toolError('RESOURCE_REFERENCED', '数据源仍被表单引用', 'id', { forms: refs.map((item: any) => item.id) }); remove(project.srcTable, input.id); if (input.cascade) project.forms = (project.forms || []).filter((form: any) => !formReferencesId(form, input.id)); project.sheetBehaviors = (project.sheetBehaviors || []).filter((item: any) => item.tableId !== input.id); return commitProject(touch(project)); } });
 register({ name: 'data_sheet.get', title: '读取 Sheet', description: '读取 Sheet 元数据和行版本。', inputSchema: schema(['projectId', 'tableId', 'sheetName'], { projectId: string, tableId: string, sheetName: string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => { const table = findById(requireProject(projectId(input, context)).srcTable || [], input.tableId, 'TABLE_NOT_FOUND'); const sheet = (table.sheets || []).find((item: any) => item.name === input.sheetName); if (!sheet) throw toolError('SHEET_NOT_FOUND', 'Sheet 不存在'); return sheet; } });
 register({ name: 'data_sheet.configure', title: '配置 Sheet', description: '设置主键、只读、冻结、筛选和排序。', inputSchema: schema(['projectId', 'tableId', 'sheetName', 'baseRevision', 'idempotencyKey', 'config'], { projectId: string, tableId: string, sheetName: string, baseRevision: string, idempotencyKey: string, config: dataSourceConfigSchema }), risk: 'write', requiredAccess: 'edit', handler: (input, context) => { const project = editable(input, context); const table = findById(project.srcTable || [], input.tableId, 'TABLE_NOT_FOUND'); const sheet = (table.sheets || []).find((item: any) => item.name === input.sheetName); if (!sheet) throw toolError('SHEET_NOT_FOUND', 'Sheet 不存在'); sheet.config = { ...sheet.config, ...input.config, id: sheet.config?.id || sheet.name, tableName: sheet.name }; return commitProject(touch(project)); } });
 register({ name: 'data_keys.validate', title: '校验主键', description: '校验指定或已配置的组合主键。', inputSchema: schema(['projectId', 'tableId', 'sheetName'], { projectId: string, tableId: string, sheetName: string, keyFields: array }), risk: 'read', requiredAccess: 'view', handler: (input, context) => { const project = requireProject(projectId(input, context)); const table = findById(project.srcTable || [], input.tableId, 'TABLE_NOT_FOUND'); const sheet = (table.sheets || []).find((item: any) => item.name === input.sheetName); if (!sheet) throw toolError('SHEET_NOT_FOUND', 'Sheet 不存在'); const keys = input.keyFields || sheet.config?.keyFields || []; const seen = new Set(); const errors: any[] = []; fullSourceRows(project, table, sheet).forEach((row: any, index: number) => { const values = keys.map((key: string) => row[key]); const hash = JSON.stringify(values); if (values.some((value: any) => value === '' || value == null)) errors.push({ index, code: 'EMPTY_KEY' }); else if (seen.has(hash)) errors.push({ index, code: 'DUPLICATE_KEY', values }); seen.add(hash); }); return { valid: errors.length === 0, keyFields: keys, errors }; } });
@@ -566,7 +414,7 @@ function collectionTools(prefix: 'workflow' | 'output', property: 'workflows' | 
   register({ name: `${prefix}.list`, title: `${prefix} 列表`, description: `列出项目 ${prefix}。`, inputSchema: schema(['projectId'], { projectId: string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => requireProject(projectId(input, context))[property] || [] });
   register({ name: `${prefix}.get`, title: `读取 ${prefix}`, description: `读取指定 ${prefix}。`, inputSchema: schema(['projectId', 'id'], { projectId: string, id: string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => findById(requireProject(projectId(input, context))[property] || [], input.id, `${prefix.toUpperCase()}_NOT_FOUND`) });
   for (const action of ['create', 'update'] as const) register({ name: `${prefix}.${action}`, title: `${action === 'create' ? '创建' : '更新'} ${prefix}`, description: prefix === 'workflow' ? `按稳定 ID ${action === 'create' ? '创建' : '替换'}工作流；节点使用 specId/position/data，连线使用 source/target 节点 ID 和 out:/in: 端口。` : `按稳定 ID ${action === 'create' ? '创建' : '替换'} ${prefix}。`, inputSchema: schema(['projectId', 'item', 'baseRevision', 'idempotencyKey'], { projectId: string, id: string, item: prefix === 'workflow' ? workflowItemSchema : object, baseRevision: string, idempotencyKey: string }), risk: 'write', requiredAccess: 'edit', handler: (input, context) => { const project = editable(input, context); project[property] ||= []; const item = prefix === 'workflow' ? normalizeWorkflowItem(input.item, input.id) : input.item; if (!item.id) throw toolError('INVALID_ID', 'item.id 不能为空', 'item.id'); if (action === 'create' && project[property].some((entry: any) => entry.id === item.id)) throw toolError('RESOURCE_EXISTS', `${prefix} 已存在`); upsert(project[property], item); return commitProject(touch(project)); } });
-  register({ name: `${prefix}.delete`, title: `删除 ${prefix}`, description: `删除指定 ${prefix}。`, inputSchema: schema(['projectId', 'id', 'baseRevision', 'idempotencyKey'], { projectId: string, id: string, baseRevision: string, idempotencyKey: string, confirmationToken: string, cascade: boolean }), risk: 'destructive', requiredAccess: 'edit', impact: (input) => ({ type: prefix, id: input.id }), handler: (input, context) => { const project = editable(input, context); const refs = prefix === 'workflow' ? (project.forms || []).filter((form: any) => JSON.stringify(form).includes(input.id)) : []; if (refs.length && !input.cascade) throw toolError('RESOURCE_REFERENCED', '流程仍被表单引用', 'id', { forms: refs.map((item: any) => item.id) }); remove(project[property] || [], input.id); return commitProject(touch(project)); } });
+  register({ name: `${prefix}.delete`, title: `删除 ${prefix}`, description: `删除指定 ${prefix}。`, inputSchema: schema(['projectId', 'id', 'baseRevision', 'idempotencyKey'], { projectId: string, id: string, baseRevision: string, idempotencyKey: string, confirmationToken: string, cascade: boolean }), risk: 'destructive', requiredAccess: 'edit', impact: (input) => ({ type: prefix, id: input.id }), handler: (input, context) => { const project = editable(input, context); const refs = prefix === 'workflow' ? (project.forms || []).filter((form: any) => formReferencesId(form, input.id)) : []; if (refs.length && !input.cascade) throw toolError('RESOURCE_REFERENCED', '流程仍被表单引用', 'id', { forms: refs.map((item: any) => item.id) }); remove(project[property] || [], input.id); return commitProject(touch(project)); } });
 }
 collectionTools('workflow', 'workflows'); collectionTools('output', 'outputs');
 register({ name: 'output.upsert', title: '保存输出定义', description: '按稳定 ID 新增或替换输出定义。', inputSchema: schema(['projectId', 'item', 'baseRevision', 'idempotencyKey'], { projectId: string, item: object, baseRevision: string, idempotencyKey: string }), risk: 'write', requiredAccess: 'edit', handler: (input, context) => { const project = editable(input, context); upsert(project.outputs ||= [], input.item); return commitProject(touch(project)); } });
@@ -575,7 +423,7 @@ for (const kind of ['node', 'edge'] as const) for (const action of ['upsert', 'd
 
 register({ name: 'output.generate', title: '生成输出', description: '按输出定义导出项目数据或项目包。', inputSchema: schema(['projectId', 'id'], { projectId: string, id: string }), risk: 'read', requiredAccess: 'run', handler: async (input, context) => { const project = requireProject(projectId(input, context)); const output = findById(project.outputs || [], input.id, 'OUTPUT_NOT_FOUND'); if (output.format === 'json') return { format: 'json', content: projectSummary(project) }; const buffer = await packageProject(project.config.id); return { format: 'formflow', fileName: `${project.config.id}.formflow`, encoding: 'base64', content: buffer.toString('base64'), bytes: buffer.length }; } });
 register({ name: 'project.export', title: '导出项目', description: '生成确定性的单文件 .formflow 项目包。', inputSchema: schema(['projectId'], { projectId: string }), risk: 'read', requiredAccess: 'view', handler: async (input, context) => { const buffer = await packageProject(projectId(input, context)); return { fileName: `${projectId(input, context)}.formflow`, encoding: 'base64', content: buffer.toString('base64'), bytes: buffer.length }; } });
-register({ name: 'project.package.export', title: '导出项目包', description: 'project.export 的 .formflow 项目包别名。', inputSchema: schema(['projectId'], { projectId: string }), risk: 'read', requiredAccess: 'view', handler: async (input, context) => { const buffer = await packageProject(projectId(input, context)); return { fileName: `${projectId(input, context)}.formflow`, encoding: 'base64', content: buffer.toString('base64'), bytes: buffer.length }; } });
+register({ name: 'project.package.export', title: '导出项目包', description: 'project.export 的 .formflow 项目包别名。', inputSchema: schema(['projectId'], { projectId: string }), risk: 'read', requiredAccess: 'view', handler: async (input, context) => registry.get('project.export')!.handler!(input, context) });
 register({ name: 'project.package.validate', title: '校验项目包', description: '校验当前项目包。', inputSchema: schema(['projectId'], { projectId: string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => validateProjectModel(requireProject(projectId(input, context))) });
 register({ name: 'release.get', title: '读取发布状态', description: '读取项目 release 配置。', inputSchema: schema(['projectId'], { projectId: string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => requireProject(projectId(input, context)).release });
 register({ name: 'release.update', title: '更新发布草稿', description: '更新默认表单、默认 Sheet 和设计入口权限等发布草稿，不切换发布模式。', inputSchema: schema(['projectId', 'patch', 'baseRevision', 'idempotencyKey'], { projectId: string, patch: object, baseRevision: string, idempotencyKey: string }), risk: 'write', requiredAccess: 'edit', handler: (input, context) => { if (input.patch?.mode !== undefined || input.patch?.lastVerifiedAt !== undefined) throw toolError('INVALID_ARGUMENT', 'mode 和 lastVerifiedAt 只能由 release.apply 更新', 'patch'); const project = editable(input, context); project.release = { ...project.release, ...(input.patch || {}) }; return commitProject(touch(project)); } });
