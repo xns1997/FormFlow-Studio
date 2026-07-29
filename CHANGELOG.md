@@ -21,6 +21,7 @@
 
 - 增加 FlowBindings V1→V2、稳定 ID、迁移分类、必填/默认值、转换语义、输出原子性和非配置流程隔离测试。
 - 增加项目变更幂等、架构边界、传输层、事件事务、属性依赖和生产构建回归；提交前统一执行 `pnpm verify`。
+- 显式批准 `protobufjs` 安装脚本，修复 pnpm 11 在 CI 与 Docker 冻结安装阶段触发的 `ERR_PNPM_IGNORED_BUILDS`。
 
 ## [1.1.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.0.0...v1.1.0) (2026-07-13)
 
