@@ -27,14 +27,36 @@ jobs:
       - run: docker build -t formflow-release-smoke .
       - name: Smoke-test production image and catalogs
         run: |
-          docker run -d --name formflow-release-smoke -p 3001:3001 -e FORMFLOW_MODE=local formflow-release-smoke
+          set -euo pipefail
+          container_name=formflow-release-smoke
+          cleanup() {
+            status=$?
+            if [ "$status" -ne 0 ]; then
+              docker logs "$container_name" || true
+            fi
+            docker rm -f "$container_name" >/dev/null 2>&1 || true
+            exit "$status"
+          }
+          trap cleanup EXIT
+          docker run -d \
+            --name "$container_name" \
+            -p 3001:3001 \
+            -e FORMFLOW_MODE=local \
+            -e FORMFLOW_DATABASE_REQUIRED=false \
+            -e FORMFLOW_DATABASE_AUTO_START=false \
+            -e JWT_SECRET=formflow-release-smoke-only \
+            formflow-release-smoke
+          healthy=false
           for attempt in $(seq 1 30); do
-            curl --fail --silent http://127.0.0.1:3001/api/health && break
+            if curl --fail --silent http://127.0.0.1:3001/api/health; then
+              healthy=true
+              break
+            fi
             sleep 1
           done
-          test "$(docker exec formflow-release-smoke sh -c 'find /app/ui/src/designer/controls -name "*.tsx" | wc -l')" -gt 0
-          test "$(docker exec formflow-release-smoke sh -c 'find /app/ui/nodes -name schema.json | wc -l')" -gt 0
-          docker rm -f formflow-release-smoke
+          test "$healthy" = true
+          test "$(docker exec "$container_name" sh -c 'find /app/ui/src/designer/controls -name "*.tsx" | wc -l')" -gt 0
+          test "$(docker exec "$container_name" sh -c 'find /app/ui/nodes -name schema.json | wc -l')" -gt 0
       - run: pnpm release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
