@@ -30,10 +30,7 @@ function isBlankValue(value: unknown) {
   return value == null || value === '' || (Array.isArray(value) && value.length === 0);
 }
 
-function sameValue(left: unknown, right: unknown) {
-  if (Object.is(left, right)) return true;
-  try { return JSON.stringify(left) === JSON.stringify(right); } catch { return false; }
-}
+import { sameValue } from './valueUtils';
 
 function comparableValue(value: unknown): number | string | unknown {
   if (typeof value === 'number') return value;
