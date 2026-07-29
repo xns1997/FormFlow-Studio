@@ -1,8 +1,11 @@
-import React, { useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { DesignerIcon } from '../../designer/icons';
 import ComponentDocPlayground from '../../components/ComponentDocPlayground';
 import { DocSidebar } from '../../components/DocSidebar';
+import MarkdownRenderer from '../../components/MarkdownRenderer';
+import DocPrevNextNav from '../../components/DocPrevNextNav';
+import { useMarkdown } from '../../hooks/useMarkdown';
 import type {
   BehaviorApiReference,
   BehaviorDocExample,
@@ -85,6 +88,18 @@ function ExampleList({ examples }: { examples: BehaviorDocExample[] }) {
   );
 }
 
+function DocSectionBody({ body, markdownBody }: { body?: string; markdownBody?: string }) {
+  const mdContent = useMarkdown(markdownBody);
+
+  if (markdownBody) {
+    if (!mdContent) return <div className="docs-empty-inline">加载中...</div>;
+    return <MarkdownRenderer content={mdContent} />;
+  }
+
+  if (body) return <p className="docs-lead">{body}</p>;
+  return null;
+}
+
 function inferCategory(doc: BehaviorTopicDocEntry, categories: string[]) {
   if (doc.category) return doc.category;
   for (const category of categories) {
@@ -95,6 +110,7 @@ function inferCategory(doc: BehaviorTopicDocEntry, categories: string[]) {
 
 export default function SectionPage({ sectionId, sectionTitle, docs, categories = [], basePath }: SectionPageProps) {
   const { slug } = useParams<{ slug?: string }>();
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('全部');
 
@@ -236,6 +252,17 @@ export default function SectionPage({ sectionId, sectionTitle, docs, categories 
             <p>{currentDoc.summary}</p>
           </div>
           <div className="header-actions">
+            {sectionId === 'flow-nodes' && (
+              <button
+                type="button"
+                className="docs-designer-open-btn"
+                onClick={() => {
+                  window.location.href = '/';
+                }}
+              >
+                🎨 在设计器中打开
+              </button>
+            )}
             <Link to={basePath} className="docs-link-button">返回{sectionTitle}</Link>
           </div>
         </div>
@@ -247,13 +274,27 @@ export default function SectionPage({ sectionId, sectionTitle, docs, categories 
         {currentDoc.sections.map((section, index) => (
           <section key={`${currentDoc.id}:${section.title}`} id={`section-${index}`} className="docs-section">
             <h3>{section.title}</h3>
-            {section.body && <p className="docs-lead">{section.body}</p>}
+            <DocSectionBody body={section.body} markdownBody={section.markdownBody} />
             {section.fields && section.fields.length > 0 && <ReferenceFieldTable fields={section.fields} />}
             {section.apis && section.apis.length > 0 && <ApiReferenceList apis={section.apis} />}
             {section.shortcuts && section.shortcuts.length > 0 && <ShortcutList shortcuts={section.shortcuts} />}
             {section.examples && section.examples.length > 0 && <ExampleList examples={section.examples} />}
           </section>
         ))}
+
+        <DocPrevNextNav
+          prev={(() => {
+            const idx = docs.findIndex((d) => d.slug === currentDoc.slug);
+            const p = idx > 0 ? docs[idx - 1] : null;
+            return p ? { slug: p.slug, title: p.title, section: sectionTitle } : null;
+          })()}
+          next={(() => {
+            const idx = docs.findIndex((d) => d.slug === currentDoc.slug);
+            const n = idx < docs.length - 1 ? docs[idx + 1] : null;
+            return n ? { slug: n.slug, title: n.title, section: sectionTitle } : null;
+          })()}
+          onNavigate={(s) => navigate(`${basePath}/${s}`)}
+        />
       </div>
 
       <aside className="docs-page-sidebar">

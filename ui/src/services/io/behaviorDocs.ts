@@ -6,6 +6,8 @@ export type {
   BehaviorReferenceShortcut,
   BehaviorEventDocEntry,
   BehaviorTopicDocEntry,
+  FlowNodePortDoc,
+  FlowNodePropertyDoc,
 } from './docs/types';
 
 export {

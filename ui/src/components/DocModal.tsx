@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Modal from './Modal';
 import { DesignerIcon } from '../designer/icons';
 import {
@@ -24,6 +25,11 @@ import {
 } from '../services/io/behaviorDocs';
 import { DocSidebar } from './DocSidebar';
 import ComponentDocPlayground from './ComponentDocPlayground';
+import MarkdownRenderer from './MarkdownRenderer';
+import HighlightText from './HighlightText';
+import DocPrevNextNav from './DocPrevNextNav';
+import DocRecommendations from './DocRecommendations';
+import { useMarkdown } from '../hooks/useMarkdown';
 
 interface DocModalProps {
   open: boolean;
@@ -109,6 +115,22 @@ function ExampleList({ examples }: { examples: BehaviorDocExample[] }) {
       ))}
     </div>
   );
+}
+
+/**
+ * 文档段落内容渲染组件
+ * 优先渲染 markdownBody（通过 MarkdownRenderer），否则渲染 body 纯文本
+ */
+function DocSectionBody({ body, markdownBody }: { body?: string; markdownBody?: string }) {
+  const mdContent = useMarkdown(markdownBody);
+
+  if (markdownBody) {
+    if (!mdContent) return <div className="docs-empty-inline">加载中...</div>;
+    return <MarkdownRenderer content={mdContent} />;
+  }
+
+  if (body) return <p className="docs-lead">{body}</p>;
+  return null;
 }
 
 function SearchIcon() {
@@ -248,33 +270,69 @@ function TagFilter({
 }
 
 export default function DocModal({ open, onClose, initialSlug }: DocModalProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [route, setRoute] = useState<ModalRouteState>(() => resolveRouteFromSlug(initialSlug));
   const [homeQuery, setHomeQuery] = useState('');
   const [behaviorQuery, setBehaviorQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [genericQuery, setGenericQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('全部');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('formflow.doc.recentSearches') || '[]');
+    } catch { return []; }
+  });
 
+  // 从 URL 参数恢复状态
   useEffect(() => {
     if (!open) return;
-    setRoute(resolveRouteFromSlug(initialSlug));
-  }, [initialSlug, open]);
+    const docParam = searchParams.get('doc');
+    const slugParam = searchParams.get('slug');
+    if (docParam) {
+      const sectionId = docParam as DocSectionId;
+      setRoute({ sectionId, slug: slugParam || undefined });
+    } else {
+      setRoute(resolveRouteFromSlug(initialSlug));
+    }
+  }, [initialSlug, open, searchParams]);
+
+  // 同步路由状态到 URL
+  const syncUrl = useCallback((newRoute: ModalRouteState) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (newRoute.sectionId) {
+        next.set('doc', newRoute.sectionId);
+      } else {
+        next.delete('doc');
+      }
+      if (newRoute.slug) {
+        next.set('slug', newRoute.slug);
+      } else {
+        next.delete('slug');
+      }
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
 
   const handleNavigateHome = useCallback(() => {
     setRoute({});
     setGenericQuery('');
     setActiveCategory('全部');
-  }, []);
+    syncUrl({});
+  }, [syncUrl]);
 
   const handleNavigateSection = useCallback((sectionId: DocSectionId) => {
     setRoute({ sectionId });
     setGenericQuery('');
     setActiveCategory('全部');
-  }, []);
+    syncUrl({ sectionId });
+  }, [syncUrl]);
 
   const handleNavigateDoc = useCallback((sectionId: DocSectionId, slug: string) => {
     setRoute({ sectionId, slug });
-  }, []);
+    syncUrl({ sectionId, slug });
+  }, [syncUrl]);
 
   const handleClose = useCallback(() => {
     setRoute(resolveRouteFromSlug(initialSlug));
@@ -283,8 +341,36 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
     setSelectedTags(new Set());
     setGenericQuery('');
     setActiveCategory('全部');
+    // 清除 URL 参数
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('doc');
+      next.delete('slug');
+      return next;
+    }, { replace: true });
     onClose();
-  }, [initialSlug, onClose]);
+  }, [initialSlug, onClose, setSearchParams]);
+
+  // Cmd+K 快捷键聚焦搜索框
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        // 回到首页并聚焦搜索
+        if (route.sectionId) {
+          handleNavigateHome();
+        }
+        // 延迟聚焦，等待 DOM 更新
+        requestAnimationFrame(() => {
+          searchInputRef.current?.focus();
+        });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, route.sectionId, handleNavigateHome]);
 
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();
@@ -297,6 +383,16 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
   const hotDocs = useMemo(() => getAllHotDocs(), []);
   const scriptDocs = useMemo(() => getBehaviorDocsByScope('script'), []);
   const controlDocs = useMemo(() => getBehaviorDocsByScope('control'), []);
+
+  // 保存最近搜索
+  const saveRecentSearch = useCallback((query: string) => {
+    if (!query.trim()) return;
+    setRecentSearches((prev) => {
+      const next = [query, ...prev.filter((s) => s !== query)].slice(0, 5);
+      try { localStorage.setItem('formflow.doc.recentSearches', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
 
   const filteredSections = useMemo(() => {
     if (!homeQuery.trim()) return docSections;
@@ -362,11 +458,63 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
           <div className="docs-home-search">
             <DesignerIcon name="search" className="docs-search-icon" />
             <input
+              ref={searchInputRef}
               type="search"
               value={homeQuery}
               onChange={(event) => setHomeQuery(event.target.value)}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && homeQuery.trim()) {
+                  saveRecentSearch(homeQuery);
+                  setShowSuggestions(false);
+                }
+              }}
               placeholder="搜索文档..."
             />
+            <span className="docs-search-kbd">⌘K</span>
+            {showSuggestions && !homeQuery.trim() && (recentSearches.length > 0 || hotDocs.length > 0) && (
+              <div className="docs-search-suggestions">
+                {recentSearches.length > 0 && (
+                  <div className="docs-search-suggestions-group">
+                    <div className="docs-search-suggestions-label">最近搜索</div>
+                    {recentSearches.map((search) => (
+                      <button
+                        key={search}
+                        type="button"
+                        className="docs-search-suggestion-item"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setHomeQuery(search);
+                          saveRecentSearch(search);
+                        }}
+                      >
+                        <DesignerIcon name="timePicker" size={12} />
+                        <span>{search}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="docs-search-suggestions-group">
+                  <div className="docs-search-suggestions-label">热门文档</div>
+                  {hotDocs.slice(0, 5).map((doc) => (
+                    <button
+                      key={`${doc.sectionId}:${doc.slug}`}
+                      type="button"
+                      className="docs-search-suggestion-item"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        handleNavigateDoc(doc.sectionId, doc.slug);
+                        setShowSuggestions(false);
+                      }}
+                    >
+                      <span className="docs-search-suggestion-section">{doc.section}</span>
+                      <span>{doc.title}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -383,8 +531,8 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
                 <DesignerIcon name={section.icon} />
               </div>
               <div className="docs-home-section-info">
-                <h3>{section.title}</h3>
-                <p>{section.summary}</p>
+                <h3><HighlightText text={section.title} query={homeQuery} /></h3>
+                <p><HighlightText text={section.summary} query={homeQuery} /></p>
                 <div className="docs-home-section-tags">
                   {section.tags.slice(0, 3).map((tag) => (
                     <span key={tag} className="docs-home-tag">{tag}</span>
@@ -395,6 +543,10 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
             </button>
           ))}
         </section>
+
+        {!homeQuery.trim() && (
+          <DocRecommendations onNavigate={handleNavigateDoc} />
+        )}
 
         {filteredHotDocs.length > 0 && (
           <section className="docs-home-hot">
@@ -408,7 +560,7 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
                   onClick={() => handleNavigateDoc(doc.sectionId, doc.slug)}
                 >
                   <span className="docs-home-hot-section">{doc.section}</span>
-                  <span className="docs-home-hot-title">{doc.title}</span>
+                  <span className="docs-home-hot-title"><HighlightText text={doc.title} query={homeQuery} /></span>
                 </button>
               ))}
             </div>
@@ -538,7 +690,7 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
           {currentEventDoc.sections.map((section, index) => (
             <section key={`${currentEventDoc.id}:${section.title}`} id={`section-${index}`} className="docs-section">
               <h3>{section.title}</h3>
-              {section.body && <p className="docs-lead">{section.body}</p>}
+              <DocSectionBody body={section.body} markdownBody={section.markdownBody} />
               {section.fields && section.fields.length > 0 && <ReferenceFieldTable fields={section.fields} />}
               {section.apis && section.apis.length > 0 && <ApiReferenceList apis={section.apis} />}
               {section.shortcuts && section.shortcuts.length > 0 && <ShortcutList shortcuts={section.shortcuts} />}
@@ -673,6 +825,20 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
               ))}
             </div>
           </section>
+
+          <DocPrevNextNav
+            prev={(() => {
+              const idx = siblingDocs.findIndex((d) => d.id === currentEventDoc.id);
+              const p = idx > 0 ? siblingDocs[idx - 1] : null;
+              return p ? { slug: p.slug, title: p.title, section: '行为' } : null;
+            })()}
+            next={(() => {
+              const idx = siblingDocs.findIndex((d) => d.id === currentEventDoc.id);
+              const n = idx < siblingDocs.length - 1 ? siblingDocs[idx + 1] : null;
+              return n ? { slug: n.slug, title: n.title, section: '行为' } : null;
+            })()}
+            onNavigate={(slug) => handleNavigateDoc('behavior', slug)}
+          />
         </div>
 
         <aside className="docs-page-sidebar">
@@ -832,13 +998,27 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
           {genericCurrentDoc.sections.map((section, index) => (
             <section key={`${genericCurrentDoc.id}:${section.title}`} id={`section-${index}`} className="docs-section">
               <h3>{section.title}</h3>
-              {section.body && <p className="docs-lead">{section.body}</p>}
+              <DocSectionBody body={section.body} markdownBody={section.markdownBody} />
               {section.fields && section.fields.length > 0 && <ReferenceFieldTable fields={section.fields} />}
               {section.apis && section.apis.length > 0 && <ApiReferenceList apis={section.apis} />}
               {section.shortcuts && section.shortcuts.length > 0 && <ShortcutList shortcuts={section.shortcuts} />}
               {section.examples && section.examples.length > 0 && <ExampleList examples={section.examples} />}
             </section>
           ))}
+
+          <DocPrevNextNav
+            prev={(() => {
+              const idx = currentSection.docs.findIndex((d) => d.slug === genericCurrentDoc.slug);
+              const p = idx > 0 ? currentSection.docs[idx - 1] : null;
+              return p ? { slug: p.slug, title: p.title, section: currentSection.section!.title } : null;
+            })()}
+            next={(() => {
+              const idx = currentSection.docs.findIndex((d) => d.slug === genericCurrentDoc.slug);
+              const n = idx < currentSection.docs.length - 1 ? currentSection.docs[idx + 1] : null;
+              return n ? { slug: n.slug, title: n.title, section: currentSection.section!.title } : null;
+            })()}
+            onNavigate={(slug) => handleNavigateDoc(route.sectionId as DocSectionId, slug)}
+          />
         </div>
 
         <aside className="docs-page-sidebar">
