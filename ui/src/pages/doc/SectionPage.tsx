@@ -250,6 +250,17 @@ export default function SectionPage({ sectionId, sectionTitle, docs, categories 
             <p>{currentDoc.summary}</p>
           </div>
           <div className="header-actions">
+            {sectionId === 'flow-nodes' && (
+              <button
+                type="button"
+                className="docs-designer-open-btn"
+                onClick={() => {
+                  window.location.href = '/';
+                }}
+              >
+                🎨 在设计器中打开
+              </button>
+            )}
             <Link to={basePath} className="docs-link-button">返回{sectionTitle}</Link>
           </div>
         </div>

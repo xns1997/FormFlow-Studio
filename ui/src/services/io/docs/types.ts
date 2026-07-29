@@ -57,5 +57,34 @@ export interface BehaviorTopicDocEntry {
     apis?: BehaviorApiReference[];
     shortcuts?: BehaviorReferenceShortcut[];
     examples?: BehaviorDocExample[];
+    /** 自动生成的端口定义（流程节点文档专用） */
+    ports?: { inputs: FlowNodePortDoc[]; outputs: FlowNodePortDoc[] };
+    /** 自动生成的参数表（流程节点文档专用） */
+    properties?: FlowNodePropertyDoc[];
   }>;
+}
+
+/** 流程节点端口文档 */
+export interface FlowNodePortDoc {
+  name: string;
+  label: string;
+  type: string;
+  direction: 'input' | 'output' | 'both';
+  required?: boolean;
+  description: string;
+  defaultValue?: unknown;
+  enum?: string[];
+}
+
+/** 流程节点参数文档 */
+export interface FlowNodePropertyDoc {
+  name: string;
+  label: string;
+  type: string;
+  defaultValue?: unknown;
+  required?: boolean;
+  description: string;
+  enum?: string[];
+  min?: number;
+  max?: number;
 }

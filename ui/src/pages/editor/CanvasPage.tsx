@@ -1911,7 +1911,35 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
 
         return (
           <aside className="canvas-inspector">
-            <div className="inspector-head"><h3>{selectedNode.data.label}</h3><p>{selectedNode.data.description}</p></div>
+            <div className="inspector-head">
+              <div className="inspector-head-top">
+                <h3>{selectedNode.data.label}</h3>
+                <button
+                  type="button"
+                  className="inspector-doc-link"
+                  title="查看文档"
+                  onClick={() => {
+                    const specId = selectedNode.data.specId;
+                    const kind = selectedNode.data.kind;
+                    // 根据 kind 确定文档板块
+                    const sectionMap: Record<string, string> = {
+                      scenario: 'flow-nodes',
+                      generic: 'flow-nodes',
+                      behavior: 'flow-nodes',
+                      'xlsx-method': 'flow-nodes',
+                    };
+                    const section = sectionMap[kind] || 'flow-nodes';
+                    // 打开 DocModal 并定位到对应文档
+                    window.dispatchEvent(new CustomEvent('formflow:open-doc', {
+                      detail: { section, slug: `group-${kind === 'scenario' ? 'scenario' : kind === 'behavior' ? 'behavior' : kind === 'xlsx-method' ? 'xlsx' : 'data-processing'}` },
+                    }));
+                  }}
+                >
+                  📖
+                </button>
+              </div>
+              <p>{selectedNode.data.description}</p>
+            </div>
             <div className="inspector-scroll">
               {inspectorProps.length > 0 && (
                 <section className="inspector-section schema-config">

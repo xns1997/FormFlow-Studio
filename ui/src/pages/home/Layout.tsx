@@ -33,7 +33,7 @@ const projectSettingsTabs: Array<{ section: ProjectSettingsSection; label: strin
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const project = useProjectStore((s) => s.project);
   const saveState = useProjectStore((s) => s.saveState);
   const saveError = useProjectStore((s) => s.saveError);
@@ -58,6 +58,24 @@ export default function Layout() {
       setDocOpen(true);
     }
   }, [projectId, searchParams]);
+
+  // 监听自定义事件打开 DocModal
+  useEffect(() => {
+    const handleOpenDoc = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.section) {
+        setSearchParams((prev) => {
+          const next = new URLSearchParams(prev);
+          next.set('doc', detail.section);
+          if (detail.slug) next.set('slug', detail.slug);
+          return next;
+        }, { replace: true });
+        setDocOpen(true);
+      }
+    };
+    window.addEventListener('formflow:open-doc', handleOpenDoc);
+    return () => window.removeEventListener('formflow:open-doc', handleOpenDoc);
+  }, [setSearchParams]);
 
   useEffect(() => {
     if (!settings.general.showClock) return undefined;

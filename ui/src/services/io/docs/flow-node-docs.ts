@@ -38,6 +38,7 @@ export const flowNodeDocs: BehaviorTopicDocEntry[] = [
     sections: [
       {
         title: '节点列表',
+        markdownBody: 'flow-nodes-data-processing.md',
         fields: [
           { name: '值输入', type: 'generic', description: '统一承接常量、变量和基础值输入，支持 string、number、boolean、array、object 类型。' },
           { name: '选项输入', type: 'generic', description: '统一承接单选、多选与下拉类选项输入，支持静态或动态选项来源。' },
@@ -51,10 +52,6 @@ export const flowNodeDocs: BehaviorTopicDocEntry[] = [
           { name: '记录评分', type: 'generic', description: '按规则对记录数组打分并排序，适合推荐和优选场景。' },
         ],
       },
-      {
-        title: '使用场景',
-        body: '1. 数据筛选：按条件过滤出符合要求的数据\n2. 数据排序：按指定字段对数据进行升序/降序排列\n3. 数据转换：将原始数据转换为目标格式\n4. 数据聚合：对数据进行分组统计和汇总\n5. 数据清洗：处理缺失值、重复值和异常值',
-      },
     ],
   },
   {
@@ -65,6 +62,7 @@ export const flowNodeDocs: BehaviorTopicDocEntry[] = [
     sections: [
       {
         title: '节点列表',
+        markdownBody: 'flow-nodes-excel-edit.md',
         fields: [
           { name: '文件来源', type: 'generic', description: '统一承接文件选择与文件数据来源，输出文件对象、原始数据和文件名。' },
           { name: '表与区域来源', type: 'generic', description: '统一选择工作表或区域，支持按名称、索引、活动表和多种范围模式输出 worksheet 与 range 信息。' },
@@ -91,6 +89,7 @@ export const flowNodeDocs: BehaviorTopicDocEntry[] = [
     sections: [
       {
         title: '节点列表',
+        markdownBody: 'flow-nodes-behavior.md',
         fields: [
           { name: '行为脚本执行', type: 'behavior', description: '在流程中执行自定义 JavaScript 脚本，可读写上下文数据。' },
           { name: '条件分支', type: 'behavior', description: '根据条件表达式决定流程走向，支持多分支路由。' },
@@ -120,6 +119,7 @@ export const flowNodeDocs: BehaviorTopicDocEntry[] = [
     sections: [
       {
         title: '节点列表',
+        markdownBody: 'flow-nodes-output.md',
         fields: [
           { name: '数据导出', type: 'generic', description: '将 JSON 行、工作表或普通数据导出为 Excel、CSV、JSON 或 HTML 格式。' },
           { name: '输出/显示', type: 'generic', description: '接收输入值并显示，支持 auto、json、text 三种显示格式。' },
@@ -139,6 +139,7 @@ export const flowNodeDocs: BehaviorTopicDocEntry[] = [
     sections: [
       {
         title: '节点列表',
+        markdownBody: 'flow-nodes-ml.md',
         fields: [
           { name: 'K-Means 聚类', type: 'ml', description: '使用 K-Means 算法对数据进行聚类分析。' },
           { name: '线性回归', type: 'ml', description: '使用线性回归模型进行数值预测。' },
@@ -162,6 +163,7 @@ export const flowNodeDocs: BehaviorTopicDocEntry[] = [
     sections: [
       {
         title: '节点列表',
+        markdownBody: 'flow-nodes-xlsx.md',
         fields: [
           { name: '读取工作簿 (XLSX.read)', type: 'xlsx-method', description: '从 ArrayBuffer、二进制字符串或文本中读取工作簿。' },
           { name: 'JSON 转 Sheet', type: 'xlsx-method', description: '把 JSON 行数组转成 Sheet。' },
