@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { Pool } from 'pg';
-import { isMcpRole, listFormFlowTools, type McpRole } from './formflow-tool-registry';
+import { isMcpRole, listFormFlowTools, MCP_ROLE_CATALOG, type McpRole } from './formflow-tool-registry';
 import { serverDataPath } from '../config/paths';
 import { env } from '../config/env';
 
@@ -17,14 +17,14 @@ export type {
   AgentSessionV2, ProjectAgentHistoryStatus, ProjectAgentHistorySummary, ProjectAgentHistoryPage,
 } from './project-agent-v2-types';
 import type {
-  AgentPhase, AgentTaskAccess, AgentTaskStatus, AgentFailureClass,
-  ProjectAgentSessionScope, ProjectAgentHistoryStatus,
-  AgentRequirement, AgentQuestion, AgentArtifact, AgentTaskNode,
+  AgentPhase, AgentTaskAccess, AgentTaskStatus, AgentTaskOrigin, AgentFailureClass,
+  ProjectAgentSessionScope, AgentRequirementStatus, AgentEvidenceKind,
+  AgentRequirement, AgentRequirementCoverage, AgentQuestion, AgentArtifact, AgentTaskNode,
   AgentRoundExpertDecision, AgentAssignment, NextActionDecision, AgentObservation,
   AgentOrchestrationStep, AgentOrchestrationRound, AgentOrchestrationState,
   AgentPlanRevision, AgentEvent, PendingApproval,
-  CapabilityAgentConfig, CapabilityBundleVersion, AgentSessionV2,
-  ProjectAgentHistorySummary, ProjectAgentHistoryPage,
+  CapabilityAgentConfig, CapabilityAgentKnowledge, CapabilityBundleVersion,
+  AgentSessionV2, ProjectAgentHistoryStatus, ProjectAgentHistorySummary, ProjectAgentHistoryPage,
 } from './project-agent-v2-types';
 
 const STORE_PATH = process.env.PROJECT_AGENT_V2_STORE_PATH || serverDataPath('configs', 'project-agent-v2.json');
@@ -118,7 +118,7 @@ export function initializeProjectAgentV2Store() {
 
 function mirrorSession(value: AgentSessionV2) {
   if (!pool) return;
-  const snapshot = structuredClone(value); const job = async () => {
+  const snapshot = JSON.parse(JSON.stringify(value)) as AgentSessionV2; const job = async () => {
     const client = await pool!.connect(); try { await client.query('BEGIN');
       await client.query(`INSERT INTO formflow_project_agent_v2_sessions(id,tenant_id,user_id,project_id,phase,payload,archived,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT(id) DO UPDATE SET project_id=EXCLUDED.project_id,phase=EXCLUDED.phase,payload=EXCLUDED.payload,archived=EXCLUDED.archived,updated_at=EXCLUDED.updated_at`, [snapshot.id, snapshot.tenantId, snapshot.userId, snapshot.projectId || null, snapshot.phase, JSON.stringify(snapshot), snapshot.archived, snapshot.createdAt, snapshot.updatedAt]);
       for (const plan of snapshot.plans) { await client.query(`INSERT INTO formflow_project_agent_v2_plans(session_id,id,revision,status,payload) VALUES($1,$2,$3,$4,$5) ON CONFLICT(session_id,id) DO UPDATE SET status=EXCLUDED.status,payload=EXCLUDED.payload`, [snapshot.id, plan.id, plan.revision, plan.status, JSON.stringify(plan)]); for (const task of plan.tasks) { const storageTaskId = `${plan.id}:${task.id}`; await client.query(`INSERT INTO formflow_project_agent_v2_tasks(session_id,plan_id,id,status,access,payload) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(session_id,id) DO UPDATE SET plan_id=EXCLUDED.plan_id,status=EXCLUDED.status,access=EXCLUDED.access,payload=EXCLUDED.payload`, [snapshot.id, plan.id, storageTaskId, task.status, task.access, JSON.stringify(task)]); } }
@@ -137,16 +137,11 @@ function mirrorBundle(value: CapabilityBundleVersion) {
 
 export function defaultCapabilityBundle(ownerId = 'system'): CapabilityBundleVersion {
   const now = new Date().toISOString();
-  const roleNames: Record<McpRole, string> = { project: '项目专家', data: '数据专家', form: '表单专家', workflow: '流程专家', behavior: '行为规则专家', quality: '质量专家', delivery: '交付专家' };
-  const roleDescriptions: Record<McpRole, string> = {
-    project: '负责项目创建、初始化、导入和元信息。', data: '负责数据源、工作表、主键和业务数据。', form: '负责表单、控件、布局和字段绑定。', workflow: '负责工作流、节点、连线和流程校验。',
-    behavior: '负责事件、联动、规则语法和规则测试。', quality: '负责 Mock 数据、回归测试和质量门禁。', delivery: '负责输出、项目包和交付预检。',
-  };
   return {
     id: 'cap_default_v1', bundleId: 'cap_default', version: 1, ownerId, name: 'FormFlow 标准能力包', description: '按需规划并调用七个领域 MCP。', status: 'published',
     agents: [
       { role: 'coordinator', name: '项目统筹', description: '负责理解目标、判断下一步和组织专家协作。', instructions: '先查证，再决策；每次只选择当前真正需要的行动。', tools: [], toolMode: 'selected', knowledge: [] },
-      ...(['project', 'data', 'form', 'workflow', 'behavior', 'quality', 'delivery'] as McpRole[]).map((role) => ({ role, name: roleNames[role], description: roleDescriptions[role], instructions: '严格限定领域，完成后提供工具结果、验收证据和未解决问题。', tools: [], toolMode: 'all' as const, knowledge: [] })),
+      ...MCP_ROLE_CATALOG.map((entry) => ({ role: entry.id, name: entry.title, description: `负责${entry.description}。`, instructions: '严格限定领域，完成后提供工具结果、验收证据和未解决问题。', tools: [], toolMode: 'all' as const, knowledge: [] })),
     ],
     context: { recentMessages: 8, maxSummaryChars: 6000 }, budget: { maxParallelReads: 4, maxAttempts: 3, maxToolSteps: 32, maxRecoveryCycles: 6, maxDynamicTasks: 24, maxLoopRounds: 24, maxDecisionSteps: 24 }, createdAt: now, publishedAt: now,
   };
@@ -327,16 +322,18 @@ export function hasAgentLease(id: string) { return leases.has(id); }
 export function validateTaskGraph(tasks: AgentTaskNode[]) {
   const ids = new Set(tasks.map((task) => task.id)); if (ids.size !== tasks.length) throw new Error('任务 ID 必须唯一');
   for (const task of tasks) { if (task.dependsOn.some((id) => !ids.has(id))) throw new Error(`任务 ${task.id} 引用了不存在的依赖`); if (task.dependsOn.includes(task.id)) throw new Error(`任务 ${task.id} 不能依赖自身`); }
+  const byId = new Map(tasks.map((task) => [task.id, task]));
   const visiting = new Set<string>(); const visited = new Set<string>();
-  const visit = (id: string) => { if (visiting.has(id)) throw new Error('任务图存在循环依赖'); if (visited.has(id)) return; visiting.add(id); const task = tasks.find((item) => item.id === id)!; task.dependsOn.forEach(visit); visiting.delete(id); visited.add(id); };
+  const visit = (id: string) => { if (visiting.has(id)) throw new Error('任务图存在循环依赖'); if (visited.has(id)) return; visiting.add(id); byId.get(id)!.dependsOn.forEach(visit); visiting.delete(id); visited.add(id); };
   tasks.forEach((task) => visit(task.id));
-  const dependsOn = (task: AgentTaskNode, target: string, seen = new Set<string>()): boolean => task.dependsOn.some((id) => id === target || (!seen.has(id) && (seen.add(id), dependsOn(tasks.find((item) => item.id === id)!, target, seen))));
+  const dependsOn = (task: AgentTaskNode, target: string, seen = new Set<string>()): boolean => task.dependsOn.some((id) => id === target || (!seen.has(id) && (seen.add(id), dependsOn(byId.get(id)!, target, seen))));
   const writes = tasks.filter((task) => task.access === 'write' && !['superseded', 'cancelled'].includes(task.status)); for (let index = 1; index < writes.length; index += 1) if (writes[index - 1].status !== 'passed' && writes[index].assistsTaskId !== writes[index - 1].id && !dependsOn(writes[index], writes[index - 1].id)) throw new Error(`写任务 ${writes[index].id} 必须依赖或先解决前一个写任务 ${writes[index - 1].id}`);
   return { valid: true };
 }
 
 export function selectRunnableTaskBatch(tasks: AgentTaskNode[], maxParallelReads: number) {
-  const ready = tasks.filter((task) => task.status === 'pending' && task.dependsOn.every((id) => tasks.find((item) => item.id === id)?.status === 'passed'));
+  const byId = new Map(tasks.map((task) => [task.id, task]));
+  const ready = tasks.filter((task) => task.status === 'pending' && task.dependsOn.every((id) => byId.get(id)?.status === 'passed'));
   const reads = ready.filter((task) => task.access === 'read').slice(0, Math.max(1, Math.min(4, maxParallelReads)));
   return reads.length ? reads : ready.find((task) => task.access === 'write') ? [ready.find((task) => task.access === 'write')!] : [];
 }

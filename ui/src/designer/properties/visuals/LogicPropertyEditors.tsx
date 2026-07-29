@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AntdSelectInput, AntdTextAreaInput, AntdTextInput } from '../../../components/AntdFormControls';
 import type { ValidationRule } from '../../../models';
-import { buildPropertyDependencyGraph, extractPropertyReferences, findPropertyDependencyCycles } from '../../../services/engine/propertyDependencies';
+import { buildPropertyDependencyGraph, extractPropertyReferences, findPropertyDependencyCycles } from '../../../services/engine/propertyExpression';
 import { evaluatePropertyExpression, interpolatePropertyTemplate, PROPERTY_EXPRESSION_FUNCTIONS, PROPERTY_EXPRESSION_FUNCTION_DETAILS } from '../../../services/engine/propertyExpression';
 import { compileRegex, REGEX_EXAMPLES, testRegex, type RegexSampleResult } from '../../../services/engine/regexTester';
 import { validateField } from '../../../services/engine/validator';

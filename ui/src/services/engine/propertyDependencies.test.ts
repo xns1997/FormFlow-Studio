@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { extractPropertyReferences, findPropertyDependencyCycles } from './propertyDependencies';
+import { extractPropertyReferences, findPropertyDependencyCycles } from './propertyExpression';
 import { resolveExpressionValues } from './propertyExpression';
 
 test('依赖分析支持点路径与方括号路径', () => {

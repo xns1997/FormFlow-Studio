@@ -140,10 +140,7 @@ export interface FormEventRuntimeContext extends FormControlEventContext, FormEv
   console: Pick<Console, 'log' | 'warn' | 'error' | 'debug'>;
 }
 
-function sameValue(left: unknown, right: unknown): boolean {
-  if (Object.is(left, right)) return true;
-  try { return JSON.stringify(left) === JSON.stringify(right); } catch { return false; }
-}
+import { sameValue } from './valueUtils';
 
 function createEventDetail(eventContext: FormControlEventContext, previousValue: unknown): Record<string, unknown> {
   const supplied = eventContext.detail && typeof eventContext.detail === 'object'
@@ -433,7 +430,8 @@ export async function executeFormControlEvent(
   const switchTabInternal = async (tabIdOrIndex: string | number) => {
     const tabsComponents = components.filter((component) => component.type === 'tabs');
     if (tabsComponents.length === 0) throw new Error('当前表单中没有可切换的 tabs 控件');
-    const preferredTabs = [...getAncestorTabs(eventContext.component.id), ...tabsComponents.filter((item) => !getAncestorTabs(eventContext.component.id).some((tab) => tab.id === item.id))];
+    const ancestorTabs = getAncestorTabs(eventContext.component.id);
+    const preferredTabs = [...ancestorTabs, ...tabsComponents.filter((item) => !ancestorTabs.some((tab) => tab.id === item.id))];
     if (typeof tabIdOrIndex === 'number') {
       const targetTabs = preferredTabs[0];
       if (!targetTabs) throw new Error('找不到可作用的 tabs 控件');
@@ -643,9 +641,7 @@ export async function executeFormControlEvent(
     switchTab: async (tabIdOrIndex) => {
       await switchTabInternal(tabIdOrIndex);
     },
-    openTab: async (tabIdOrIndex) => {
-      await switchTabInternal(tabIdOrIndex);
-    },
+    openTab: async (tabIdOrIndex) => runtimeContext.switchTab(tabIdOrIndex),
     showMessage: async (message, level = 'info') => {
       messages.push({ message, level });
       await options.showMessage?.(message, level);
@@ -697,15 +693,17 @@ export async function executeFormControlEvent(
     fields: (fieldOrFields) => {
       const fields = Array.isArray(fieldOrFields) ? fieldOrFields : [fieldOrFields];
       let pending = Promise.resolve();
+      const chainOp = (fn: (field: string) => Promise<void> | void) => { pending = pending.then(async () => { for (const field of fields) await fn(field); }); return chain; };
+      const resolveAnd = (fn: (componentId: string) => Promise<void> | void) => chainOp((field) => { const target = resolveFieldStateTarget(field); if (!target.component) throw new Error(`找不到控件: ${field}`); return fn(target.component.id); });
       const chain: FormFieldChain = {
-        show: () => { pending = pending.then(async () => { for (const field of fields) { const target = resolveFieldStateTarget(field); if (!target.component) throw new Error(`找不到控件: ${field}`); await runtimeContext.setVisible(target.component.id, true); } }); return chain; },
-        hide: () => { pending = pending.then(async () => { for (const field of fields) { const target = resolveFieldStateTarget(field); if (!target.component) throw new Error(`找不到控件: ${field}`); await runtimeContext.setVisible(target.component.id, false); } }); return chain; },
-        enable: () => { pending = pending.then(async () => { for (const field of fields) { const target = resolveFieldStateTarget(field); if (!target.component) throw new Error(`找不到控件: ${field}`); await runtimeContext.setDisabled(target.component.id, false); } }); return chain; },
-        disable: () => { pending = pending.then(async () => { for (const field of fields) { const target = resolveFieldStateTarget(field); if (!target.component) throw new Error(`找不到控件: ${field}`); await runtimeContext.setDisabled(target.component.id, true); } }); return chain; },
-        required: () => { pending = pending.then(async () => { for (const field of fields) await runtimeContext.setRequired(field, true); }); return chain; },
-        optional: () => { pending = pending.then(async () => { for (const field of fields) await runtimeContext.setRequired(field, false); }); return chain; },
-        clear: () => { pending = pending.then(async () => { for (const field of fields) await runtimeContext.clearValue(field); }); return chain; },
-        set: (value) => { pending = pending.then(async () => { for (const field of fields) await runtimeContext.setValue(field, value); }); return chain; },
+        show: () => resolveAnd((id) => runtimeContext.setVisible(id, true)),
+        hide: () => resolveAnd((id) => runtimeContext.setVisible(id, false)),
+        enable: () => resolveAnd((id) => runtimeContext.setDisabled(id, false)),
+        disable: () => resolveAnd((id) => runtimeContext.setDisabled(id, true)),
+        required: () => chainOp((field) => runtimeContext.setRequired(field, true)),
+        optional: () => chainOp((field) => runtimeContext.setRequired(field, false)),
+        clear: () => chainOp((field) => runtimeContext.clearValue(field)),
+        set: (value) => chainOp((field) => runtimeContext.setValue(field, value)),
         then: (onfulfilled, onrejected) => pending.then(onfulfilled, onrejected),
       };
       return chain;

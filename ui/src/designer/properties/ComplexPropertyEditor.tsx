@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useState } from 'react';
 import Modal, { ModalFooter, ModalHeader } from '../../components/Modal';
 import { jsonSuggestions } from '../../components/codeEditorSuggestions';
-import { extractPropertyReferences } from '../../services/engine/propertyDependencies';
+import { extractPropertyReferences } from '../../services/engine/propertyExpression';
 import { compileRegex } from '../../services/engine/regexTester';
 import { isCompositePropDef } from '../types';
 import { PropertyFieldActions } from './PropertyFieldActions';

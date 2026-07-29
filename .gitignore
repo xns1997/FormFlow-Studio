@@ -32,6 +32,7 @@ output/
 .mimocode/
 docs/compose/
 .playwright-cli/
+.claude/
 projects/data/proj_*.formflow/
 llm-provider/.venv/
 __pycache__/
