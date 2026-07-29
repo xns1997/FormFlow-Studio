@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 import { marked } from 'marked';
 import hljs from 'highlight.js/lib/core';
+import FlowPreviewCanvas from './FlowPreviewCanvas';
+import { flowPreviews } from '../services/io/docs/flow-previews';
 import javascript from 'highlight.js/lib/languages/javascript';
 import typescript from 'highlight.js/lib/languages/typescript';
 import json from 'highlight.js/lib/languages/json';
@@ -52,12 +55,27 @@ function transformCallouts(html: string): string {
 /**
  * 为代码块添加语言标签和复制按钮
  * 支持 editable 标记：````typescript editable` 渲染为可编辑代码沙盒
+ * 支持 flow-preview 标记：````flow-preview id` 渲染为流程预览
+ * 支持 flow-diagram 标记：````flow-diagram` 渲染为连线图
  */
 function enhanceCodeBlocks(html: string): string {
   return html.replace(
     /<pre><code class="language-(\w+)(\s+editable)?">([\s\S]*?)<\/code><\/pre>/g,
     (_match, lang: string, editable: string | undefined, code: string) => {
       const isEditable = !!editable;
+      const decodedCode = code.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+
+      // 流程预览占位符
+      if (lang === 'flow-preview') {
+        const previewId = decodedCode.trim();
+        return `<div class="flow-preview-placeholder" data-preview-id="${previewId}"></div>`;
+      }
+
+      // 连线图占位符
+      if (lang === 'flow-diagram') {
+        return `<div class="flow-diagram-placeholder" data-diagram-spec="${encodeURIComponent(decodedCode.trim())}"></div>`;
+      }
+
       let highlighted: string;
       try {
         highlighted = hljs.highlight(code, { language: lang }).value;
@@ -103,6 +121,18 @@ function enhanceTables(html: string): string {
   );
 }
 
+/**
+ * 将 [insert-node:specId] 语法转换为插入按钮
+ */
+function enhanceInsertButtons(html: string): string {
+  return html.replace(
+    /\[insert-node:([\w:-]+)\]/g,
+    (_match, specId: string) => {
+      return `<button type="button" class="docs-insert-node-btn" data-spec-id="${specId}" onclick="window.dispatchEvent(new CustomEvent('formflow:add-node',{detail:{specId:'${specId}'}}));this.textContent='已插入';this.disabled=true;setTimeout(()=>{this.textContent='插入到流程';this.disabled=false},2000)">📥 插入到流程</button>`;
+    },
+  );
+}
+
 // 配置 marked
 const renderer = new marked.Renderer();
 
@@ -127,6 +157,7 @@ export default function MarkdownRenderer({ content, className }: MarkdownRendere
     result = enhanceCodeBlocks(result);
     result = enhanceDetails(result);
     result = enhanceTables(result);
+    result = enhanceInsertButtons(result);
     return result;
   }, [content]);
 
@@ -293,9 +324,52 @@ export default function MarkdownRenderer({ content, className }: MarkdownRendere
       }
     };
 
+    // 挂载流程预览组件
+    const flowRoots: Root[] = [];
+    const placeholders = containerRef.current.querySelectorAll('.flow-preview-placeholder');
+    placeholders.forEach((placeholder) => {
+      const previewId = placeholder.getAttribute('data-preview-id');
+      const preview = previewId ? flowPreviews[previewId] : null;
+      if (preview) {
+        const root = createRoot(placeholder);
+        root.render(React.createElement(FlowPreviewCanvas, { preview }));
+        flowRoots.push(root);
+      }
+    });
+
+    // 挂载连线图组件（从文本规范解析）
+    const diagramPlaceholders = containerRef.current.querySelectorAll('.flow-diagram-placeholder');
+    diagramPlaceholders.forEach((placeholder) => {
+      const spec = decodeURIComponent(placeholder.getAttribute('data-diagram-spec') || '');
+      if (!spec) return;
+
+      // 解析 "A → B → C" 格式
+      const nodeNames = spec.split('→').map((s) => s.trim()).filter(Boolean);
+      if (nodeNames.length < 2) return;
+
+      const nodes = nodeNames.map((name, i) => ({
+        id: `n${i}`,
+        label: name,
+        kind: 'generic' as const,
+        x: 50 + i * 200,
+        y: 60,
+      }));
+
+      const edges = nodeNames.slice(0, -1).map((_, i) => ({
+        from: `n${i}`,
+        to: `n${i + 1}`,
+      }));
+
+      const preview = { id: 'diagram', title: '', nodes, edges };
+      const root = createRoot(placeholder);
+      root.render(React.createElement(FlowPreviewCanvas, { preview }));
+      flowRoots.push(root);
+    });
+
     return () => {
       delete (window as any).__runCodeSandbox;
       delete (window as any).__resetCodeSandbox;
+      flowRoots.forEach((root) => root.unmount());
     };
   }, [html]);
 

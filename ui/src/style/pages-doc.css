@@ -584,7 +584,8 @@ button.docs-breadcrumb-link {
   border-top: 1px solid var(--line);
 }
 
-.docs-prev-next a {
+.docs-prev-next a,
+.docs-prev-next-item {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -598,21 +599,32 @@ button.docs-breadcrumb-link {
   font-weight: 600;
   transition: border-color 0.15s;
   max-width: 48%;
+  cursor: pointer;
+  text-align: left;
 }
 
-.docs-prev-next a:hover {
+.docs-prev-next a:hover,
+.docs-prev-next-item:hover {
   border-color: var(--accent);
 }
 
-.docs-prev-next a:last-child {
+.docs-prev-next a:last-child,
+.docs-prev-next-item--next {
   text-align: right;
   margin-left: auto;
+  align-items: flex-end;
 }
 
 .docs-prev-next-label {
   font-size: 10px;
   font-weight: 400;
   color: var(--muted);
+}
+
+.docs-prev-next-section {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 400;
 }
 
 /* ── Code Block Enhancements ───────────────────────────── */
@@ -1838,6 +1850,121 @@ mark.docs-search-highlight {
 }
 
 .code-sandbox-output--success {
+  color: var(--text);
+}
+
+/* ── Flow Preview Canvas ────────────────────────────────── */
+
+.flow-preview-canvas {
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-soft);
+  overflow-x: auto;
+}
+
+.flow-preview-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.flow-preview-canvas svg {
+  display: block;
+  margin: 0 auto;
+}
+
+.flow-preview-placeholder {
+  margin: 16px 0;
+}
+
+/* ── Insert Node Button ─────────────────────────────────── */
+
+.docs-insert-node-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.docs-insert-node-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+
+.docs-insert-node-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ── Doc Recommendations ────────────────────────────────── */
+
+.docs-recommendations {
+  margin: 20px 0;
+}
+
+.docs-recommendations h2 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+.docs-recommendations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.docs-recommendation-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-soft);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s;
+}
+
+.docs-recommendation-card:hover {
+  border-color: var(--accent);
+}
+
+.docs-recommendation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.docs-recommendation-section {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.docs-recommendation-reason {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.docs-recommendation-title {
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text);
 }
 

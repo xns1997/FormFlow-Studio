@@ -73,10 +73,7 @@ console.log(scenario.outputs.rows.slice(0, 5));
 
 ## 连接模式
 
-```
-[文件来源] → [读取Excel并生成字段模型] → [数据筛选] → [数据排序] → [导出Excel]
-                                                        ↓
-                                                  [输出/显示]
+```flow-preview scenario-read-excel
 ```
 
 ## 注意事项

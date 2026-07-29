@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { DesignerIcon } from '../../designer/icons';
 import ComponentDocPlayground from '../../components/ComponentDocPlayground';
 import { DocSidebar } from '../../components/DocSidebar';
 import MarkdownRenderer from '../../components/MarkdownRenderer';
+import DocPrevNextNav from '../../components/DocPrevNextNav';
 import { useMarkdown } from '../../hooks/useMarkdown';
 import type {
   BehaviorApiReference,
@@ -109,6 +110,7 @@ function inferCategory(doc: BehaviorTopicDocEntry, categories: string[]) {
 
 export default function SectionPage({ sectionId, sectionTitle, docs, categories = [], basePath }: SectionPageProps) {
   const { slug } = useParams<{ slug?: string }>();
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('全部');
 
@@ -279,6 +281,20 @@ export default function SectionPage({ sectionId, sectionTitle, docs, categories 
             {section.examples && section.examples.length > 0 && <ExampleList examples={section.examples} />}
           </section>
         ))}
+
+        <DocPrevNextNav
+          prev={(() => {
+            const idx = docs.findIndex((d) => d.slug === currentDoc.slug);
+            const p = idx > 0 ? docs[idx - 1] : null;
+            return p ? { slug: p.slug, title: p.title, section: sectionTitle } : null;
+          })()}
+          next={(() => {
+            const idx = docs.findIndex((d) => d.slug === currentDoc.slug);
+            const n = idx < docs.length - 1 ? docs[idx + 1] : null;
+            return n ? { slug: n.slug, title: n.title, section: sectionTitle } : null;
+          })()}
+          onNavigate={(s) => navigate(`${basePath}/${s}`)}
+        />
       </div>
 
       <aside className="docs-page-sidebar">

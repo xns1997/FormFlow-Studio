@@ -27,6 +27,8 @@ import { DocSidebar } from './DocSidebar';
 import ComponentDocPlayground from './ComponentDocPlayground';
 import MarkdownRenderer from './MarkdownRenderer';
 import HighlightText from './HighlightText';
+import DocPrevNextNav from './DocPrevNextNav';
+import DocRecommendations from './DocRecommendations';
 import { useMarkdown } from '../hooks/useMarkdown';
 
 interface DocModalProps {
@@ -476,6 +478,10 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
           ))}
         </section>
 
+        {!homeQuery.trim() && (
+          <DocRecommendations onNavigate={handleNavigateDoc} />
+        )}
+
         {filteredHotDocs.length > 0 && (
           <section className="docs-home-hot">
             <h2>热门文档</h2>
@@ -753,6 +759,20 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
               ))}
             </div>
           </section>
+
+          <DocPrevNextNav
+            prev={(() => {
+              const idx = siblingDocs.findIndex((d) => d.id === currentEventDoc.id);
+              const p = idx > 0 ? siblingDocs[idx - 1] : null;
+              return p ? { slug: p.slug, title: p.title, section: '行为' } : null;
+            })()}
+            next={(() => {
+              const idx = siblingDocs.findIndex((d) => d.id === currentEventDoc.id);
+              const n = idx < siblingDocs.length - 1 ? siblingDocs[idx + 1] : null;
+              return n ? { slug: n.slug, title: n.title, section: '行为' } : null;
+            })()}
+            onNavigate={(slug) => handleNavigateDoc('behavior', slug)}
+          />
         </div>
 
         <aside className="docs-page-sidebar">
@@ -919,6 +939,20 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
               {section.examples && section.examples.length > 0 && <ExampleList examples={section.examples} />}
             </section>
           ))}
+
+          <DocPrevNextNav
+            prev={(() => {
+              const idx = currentSection.docs.findIndex((d) => d.slug === genericCurrentDoc.slug);
+              const p = idx > 0 ? currentSection.docs[idx - 1] : null;
+              return p ? { slug: p.slug, title: p.title, section: currentSection.section!.title } : null;
+            })()}
+            next={(() => {
+              const idx = currentSection.docs.findIndex((d) => d.slug === genericCurrentDoc.slug);
+              const n = idx < currentSection.docs.length - 1 ? currentSection.docs[idx + 1] : null;
+              return n ? { slug: n.slug, title: n.title, section: currentSection.section!.title } : null;
+            })()}
+            onNavigate={(slug) => handleNavigateDoc(route.sectionId as DocSectionId, slug)}
+          />
         </div>
 
         <aside className="docs-page-sidebar">

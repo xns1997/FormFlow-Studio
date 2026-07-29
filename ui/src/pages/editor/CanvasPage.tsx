@@ -1092,6 +1092,18 @@ export default function CanvasPage() {
     return node;
   }, [nodes.length, reactFlow, project?.config.id]);
 
+  // 监听文档页面的节点插入请求
+  useEffect(() => {
+    const handleAddNode = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!registry || !detail?.specId) return;
+      const spec = registry.byId.get(detail.specId);
+      if (spec) addSpecNode(spec);
+    };
+    window.addEventListener('formflow:add-node', handleAddNode);
+    return () => window.removeEventListener('formflow:add-node', handleAddNode);
+  }, [registry, addSpecNode]);
+
   const onConnectStart = useCallback((_event: MouseEvent | TouchEvent, params: { nodeId: string | null; handleId: string | null; handleType: 'source' | 'target' | null }) => {
     if (!params.nodeId || !params.handleId || !params.handleType || !registry) return;
     const node = nodes.find((item) => item.id === params.nodeId);
