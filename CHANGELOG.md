@@ -22,6 +22,8 @@
 - 增加 FlowBindings V1→V2、稳定 ID、迁移分类、必填/默认值、转换语义、输出原子性和非配置流程隔离测试。
 - 增加项目变更幂等、架构边界、传输层、事件事务、属性依赖和生产构建回归；提交前统一执行 `pnpm verify`。
 - 显式批准 `protobufjs` 安装脚本，修复 pnpm 11 在 CI 与 Docker 冻结安装阶段触发的 `ERR_PNPM_IGNORED_BUILDS`。
+- Python 运行器按“显式配置、本地虚拟环境、系统命令”降级解析，避免干净 CI runner 因缺少仓库内 `venv/` 而失败。
+- CI 与 Release 显式安装 Python 3.12 和分析服务依赖，并升级到 Node 24 运行时兼容的官方 Actions。
 
 ## [1.1.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.0.0...v1.1.0) (2026-07-13)
 
