@@ -51,6 +51,8 @@ export interface BehaviorTopicDocEntry {
   sections: Array<{
     title: string;
     body?: string;
+    /** 指向 markdown 文件名（相对于 docs/markdown/），运行时通过 marked 渲染 */
+    markdownBody?: string;
     fields?: BehaviorReferenceField[];
     apis?: BehaviorApiReference[];
     shortcuts?: BehaviorReferenceShortcut[];

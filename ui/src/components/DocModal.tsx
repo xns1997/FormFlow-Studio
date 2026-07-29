@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Modal from './Modal';
 import { DesignerIcon } from '../designer/icons';
 import {
@@ -24,6 +25,9 @@ import {
 } from '../services/io/behaviorDocs';
 import { DocSidebar } from './DocSidebar';
 import ComponentDocPlayground from './ComponentDocPlayground';
+import MarkdownRenderer from './MarkdownRenderer';
+import HighlightText from './HighlightText';
+import { useMarkdown } from '../hooks/useMarkdown';
 
 interface DocModalProps {
   open: boolean;
@@ -109,6 +113,22 @@ function ExampleList({ examples }: { examples: BehaviorDocExample[] }) {
       ))}
     </div>
   );
+}
+
+/**
+ * 文档段落内容渲染组件
+ * 优先渲染 markdownBody（通过 MarkdownRenderer），否则渲染 body 纯文本
+ */
+function DocSectionBody({ body, markdownBody }: { body?: string; markdownBody?: string }) {
+  const mdContent = useMarkdown(markdownBody);
+
+  if (markdownBody) {
+    if (!mdContent) return <div className="docs-empty-inline">加载中...</div>;
+    return <MarkdownRenderer content={mdContent} />;
+  }
+
+  if (body) return <p className="docs-lead">{body}</p>;
+  return null;
 }
 
 function SearchIcon() {
@@ -248,6 +268,7 @@ function TagFilter({
 }
 
 export default function DocModal({ open, onClose, initialSlug }: DocModalProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [route, setRoute] = useState<ModalRouteState>(() => resolveRouteFromSlug(initialSlug));
   const [homeQuery, setHomeQuery] = useState('');
   const [behaviorQuery, setBehaviorQuery] = useState('');
@@ -255,26 +276,55 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
   const [genericQuery, setGenericQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('全部');
 
+  // 从 URL 参数恢复状态
   useEffect(() => {
     if (!open) return;
-    setRoute(resolveRouteFromSlug(initialSlug));
-  }, [initialSlug, open]);
+    const docParam = searchParams.get('doc');
+    const slugParam = searchParams.get('slug');
+    if (docParam) {
+      const sectionId = docParam as DocSectionId;
+      setRoute({ sectionId, slug: slugParam || undefined });
+    } else {
+      setRoute(resolveRouteFromSlug(initialSlug));
+    }
+  }, [initialSlug, open, searchParams]);
+
+  // 同步路由状态到 URL
+  const syncUrl = useCallback((newRoute: ModalRouteState) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (newRoute.sectionId) {
+        next.set('doc', newRoute.sectionId);
+      } else {
+        next.delete('doc');
+      }
+      if (newRoute.slug) {
+        next.set('slug', newRoute.slug);
+      } else {
+        next.delete('slug');
+      }
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
 
   const handleNavigateHome = useCallback(() => {
     setRoute({});
     setGenericQuery('');
     setActiveCategory('全部');
-  }, []);
+    syncUrl({});
+  }, [syncUrl]);
 
   const handleNavigateSection = useCallback((sectionId: DocSectionId) => {
     setRoute({ sectionId });
     setGenericQuery('');
     setActiveCategory('全部');
-  }, []);
+    syncUrl({ sectionId });
+  }, [syncUrl]);
 
   const handleNavigateDoc = useCallback((sectionId: DocSectionId, slug: string) => {
     setRoute({ sectionId, slug });
-  }, []);
+    syncUrl({ sectionId, slug });
+  }, [syncUrl]);
 
   const handleClose = useCallback(() => {
     setRoute(resolveRouteFromSlug(initialSlug));
@@ -283,8 +333,36 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
     setSelectedTags(new Set());
     setGenericQuery('');
     setActiveCategory('全部');
+    // 清除 URL 参数
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('doc');
+      next.delete('slug');
+      return next;
+    }, { replace: true });
     onClose();
-  }, [initialSlug, onClose]);
+  }, [initialSlug, onClose, setSearchParams]);
+
+  // Cmd+K 快捷键聚焦搜索框
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        // 回到首页并聚焦搜索
+        if (route.sectionId) {
+          handleNavigateHome();
+        }
+        // 延迟聚焦，等待 DOM 更新
+        requestAnimationFrame(() => {
+          searchInputRef.current?.focus();
+        });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, route.sectionId, handleNavigateHome]);
 
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();
@@ -362,11 +440,13 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
           <div className="docs-home-search">
             <DesignerIcon name="search" className="docs-search-icon" />
             <input
+              ref={searchInputRef}
               type="search"
               value={homeQuery}
               onChange={(event) => setHomeQuery(event.target.value)}
               placeholder="搜索文档..."
             />
+            <span className="docs-search-kbd">⌘K</span>
           </div>
         </div>
 
@@ -383,8 +463,8 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
                 <DesignerIcon name={section.icon} />
               </div>
               <div className="docs-home-section-info">
-                <h3>{section.title}</h3>
-                <p>{section.summary}</p>
+                <h3><HighlightText text={section.title} query={homeQuery} /></h3>
+                <p><HighlightText text={section.summary} query={homeQuery} /></p>
                 <div className="docs-home-section-tags">
                   {section.tags.slice(0, 3).map((tag) => (
                     <span key={tag} className="docs-home-tag">{tag}</span>
@@ -408,7 +488,7 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
                   onClick={() => handleNavigateDoc(doc.sectionId, doc.slug)}
                 >
                   <span className="docs-home-hot-section">{doc.section}</span>
-                  <span className="docs-home-hot-title">{doc.title}</span>
+                  <span className="docs-home-hot-title"><HighlightText text={doc.title} query={homeQuery} /></span>
                 </button>
               ))}
             </div>
@@ -538,7 +618,7 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
           {currentEventDoc.sections.map((section, index) => (
             <section key={`${currentEventDoc.id}:${section.title}`} id={`section-${index}`} className="docs-section">
               <h3>{section.title}</h3>
-              {section.body && <p className="docs-lead">{section.body}</p>}
+              <DocSectionBody body={section.body} markdownBody={section.markdownBody} />
               {section.fields && section.fields.length > 0 && <ReferenceFieldTable fields={section.fields} />}
               {section.apis && section.apis.length > 0 && <ApiReferenceList apis={section.apis} />}
               {section.shortcuts && section.shortcuts.length > 0 && <ShortcutList shortcuts={section.shortcuts} />}
@@ -832,7 +912,7 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
           {genericCurrentDoc.sections.map((section, index) => (
             <section key={`${genericCurrentDoc.id}:${section.title}`} id={`section-${index}`} className="docs-section">
               <h3>{section.title}</h3>
-              {section.body && <p className="docs-lead">{section.body}</p>}
+              <DocSectionBody body={section.body} markdownBody={section.markdownBody} />
               {section.fields && section.fields.length > 0 && <ReferenceFieldTable fields={section.fields} />}
               {section.apis && section.apis.length > 0 && <ApiReferenceList apis={section.apis} />}
               {section.shortcuts && section.shortcuts.length > 0 && <ShortcutList shortcuts={section.shortcuts} />}

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import DocModal from '../../components/DocModal';
 import { DesignerIcon } from '../../designer/icons';
 import { useProjectStore } from '../../project/store';
@@ -33,6 +33,7 @@ const projectSettingsTabs: Array<{ section: ProjectSettingsSection; label: strin
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const project = useProjectStore((s) => s.project);
   const saveState = useProjectStore((s) => s.saveState);
   const saveError = useProjectStore((s) => s.saveError);
@@ -50,6 +51,13 @@ export default function Layout() {
   useEffect(() => {
     initSettings();
   }, [initSettings]);
+
+  // 当 URL 带有 ?doc= 参数且有项目打开时，自动打开 DocModal
+  useEffect(() => {
+    if (projectId && searchParams.has('doc')) {
+      setDocOpen(true);
+    }
+  }, [projectId, searchParams]);
 
   useEffect(() => {
     if (!settings.general.showClock) return undefined;

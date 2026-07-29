@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router-dom';
 import { DesignerIcon } from '../../designer/icons';
 import ComponentDocPlayground from '../../components/ComponentDocPlayground';
 import { DocSidebar } from '../../components/DocSidebar';
+import MarkdownRenderer from '../../components/MarkdownRenderer';
+import { useMarkdown } from '../../hooks/useMarkdown';
 import type {
   BehaviorApiReference,
   BehaviorDocExample,
@@ -83,6 +85,18 @@ function ExampleList({ examples }: { examples: BehaviorDocExample[] }) {
       ))}
     </div>
   );
+}
+
+function DocSectionBody({ body, markdownBody }: { body?: string; markdownBody?: string }) {
+  const mdContent = useMarkdown(markdownBody);
+
+  if (markdownBody) {
+    if (!mdContent) return <div className="docs-empty-inline">加载中...</div>;
+    return <MarkdownRenderer content={mdContent} />;
+  }
+
+  if (body) return <p className="docs-lead">{body}</p>;
+  return null;
 }
 
 function inferCategory(doc: BehaviorTopicDocEntry, categories: string[]) {
@@ -247,7 +261,7 @@ export default function SectionPage({ sectionId, sectionTitle, docs, categories 
         {currentDoc.sections.map((section, index) => (
           <section key={`${currentDoc.id}:${section.title}`} id={`section-${index}`} className="docs-section">
             <h3>{section.title}</h3>
-            {section.body && <p className="docs-lead">{section.body}</p>}
+            <DocSectionBody body={section.body} markdownBody={section.markdownBody} />
             {section.fields && section.fields.length > 0 && <ReferenceFieldTable fields={section.fields} />}
             {section.apis && section.apis.length > 0 && <ApiReferenceList apis={section.apis} />}
             {section.shortcuts && section.shortcuts.length > 0 && <ShortcutList shortcuts={section.shortcuts} />}

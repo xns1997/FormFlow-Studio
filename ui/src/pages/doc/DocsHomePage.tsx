@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DesignerIcon } from '../../designer/icons';
+import HighlightText from '../../components/HighlightText';
 import {
   docSections,
   behaviorEventDocs,
@@ -39,7 +40,20 @@ function getAllDocs(): HotDoc[] {
 
 export default function DocsHomePage() {
   const [query, setQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const allHotDocs = useMemo(() => getAllDocs(), []);
+
+  // Cmd+K 快捷键聚焦搜索框
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const filteredSections = useMemo(() => {
     if (!query.trim()) return docSections;
@@ -67,11 +81,13 @@ export default function DocsHomePage() {
         <div className="docs-home-search">
           <DesignerIcon name="search" className="docs-search-icon" />
           <input
+            ref={searchInputRef}
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="搜索文档..."
           />
+          <span className="docs-search-kbd">⌘K</span>
         </div>
       </div>
 
@@ -87,8 +103,8 @@ export default function DocsHomePage() {
               <DesignerIcon name={section.icon} />
             </div>
             <div className="docs-home-section-info">
-              <h3>{section.title}</h3>
-              <p>{section.summary}</p>
+              <h3><HighlightText text={section.title} query={query} /></h3>
+              <p><HighlightText text={section.summary} query={query} /></p>
               <div className="docs-home-section-tags">
                 {section.tags.slice(0, 3).map((tag) => (
                   <span key={tag} className="docs-home-tag">{tag}</span>
@@ -109,7 +125,7 @@ export default function DocsHomePage() {
             {filteredHotDocs.slice(0, 10).map((doc) => (
               <Link key={doc.path} to={doc.path} className="docs-home-hot-item">
                 <span className="docs-home-hot-section">{doc.section}</span>
-                <span className="docs-home-hot-title">{doc.title}</span>
+                <span className="docs-home-hot-title"><HighlightText text={doc.title} query={query} /></span>
               </Link>
             ))}
           </div>

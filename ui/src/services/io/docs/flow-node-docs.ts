@@ -19,6 +19,7 @@ export const flowNodeDocs: BehaviorTopicDocEntry[] = [
     sections: [
       {
         title: '节点列表',
+        markdownBody: 'flow-nodes-scenario.md',
         fields: [
           { name: '读取 Excel 并生成字段模型', type: 'scenario', description: '封装读取工作簿、取 Sheet、转换 JSON、推断字段类型的常用数据接入链路。' },
           { name: 'JSON 表单结果导出 Excel', type: 'scenario', description: '封装 JSON 行数据生成 Sheet、创建工作簿、追加 Sheet、写出文件的导出链路。' },
@@ -26,10 +27,6 @@ export const flowNodeDocs: BehaviorTopicDocEntry[] = [
           { name: 'Sheet 多格式预览', type: 'scenario', description: '封装 Sheet 到 JSON、CSV、HTML 的预览输出方法。' },
           { name: '单元格地址工具包', type: 'scenario', description: '封装单元格、列、行、范围的编码和解码操作。' },
         ],
-      },
-      {
-        title: '使用场景',
-        body: '1. 数据导入：快速读取 Excel 文件并生成字段模型\n2. 数据导出：将表单数据导出为 Excel 文件\n3. 数据预览：将工作表数据转换为 JSON/CSV 格式查看\n4. 批量操作：向现有 Excel 文件追加新数据',
       },
     ],
   },
