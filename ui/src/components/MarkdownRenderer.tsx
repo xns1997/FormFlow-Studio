@@ -54,8 +54,7 @@ function transformCallouts(html: string): string {
 function enhanceCodeBlocks(html: string): string {
   return html.replace(
     /<pre><code class="language-(\w+)(\s+editable)?">([\s\S]*?)<\/code><\/pre>/g,
-    (_match, lang: string, editable: string | undefined, code: string) => {
-      const isEditable = !!editable;
+    (_match, lang: string, _editable: string | undefined, code: string) => {
       const decodedCode = code.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
 
       // 流程预览占位符
@@ -76,13 +75,7 @@ function enhanceCodeBlocks(html: string): string {
         highlighted = hljs.highlightAuto(code).value;
       }
 
-      if (isEditable) {
-        // 可编辑代码块：渲染为 CodeSandbox 容器
-        const id = `sandbox-${Math.random().toString(36).slice(2, 8)}`;
-        return `<div class="code-sandbox" id="${id}" data-lang="${lang}" data-code="${encodeURIComponent(code)}"><div class="code-sandbox-editor"><pre><code class="hljs language-${lang}">${highlighted}</code></pre></div><div class="code-sandbox-toolbar"><button type="button" class="code-sandbox-btn code-sandbox-btn--run" onclick="window.__runCodeSandbox && window.__runCodeSandbox('${id}')">▶ 运行</button><button type="button" class="code-sandbox-btn" onclick="window.__resetCodeSandbox && window.__resetCodeSandbox('${id}')">↺ 重置</button></div><div class="code-sandbox-output" id="${id}-output"></div></div>`;
-      }
-
-      return `<div class="doc-code-block-enhanced"><div class="doc-code-header"><span class="doc-code-lang">${lang}</span><button type="button" class="doc-code-copy" data-code="${encodeURIComponent(code)}" onclick="navigator.clipboard.writeText(decodeURIComponent(this.dataset.code));this.textContent='已复制';setTimeout(()=>this.textContent='复制',1500)">复制</button></div><pre><code class="hljs language-${lang}">${highlighted}</code></pre></div>`;
+      return `<div class="doc-code-block-enhanced"><div class="doc-code-header"><span class="doc-code-lang">${lang}</span><button type="button" class="doc-code-copy" data-code="${encodeURIComponent(code)}">复制</button></div><pre><code class="hljs language-${lang}">${highlighted}</code></pre></div>`;
     },
   );
 }
@@ -121,7 +114,7 @@ function enhanceInsertButtons(html: string): string {
   return html.replace(
     /\[insert-node:([\w:-]+)\]/g,
     (_match, specId: string) => {
-      return `<button type="button" class="docs-insert-node-btn" data-spec-id="${specId}" onclick="window.dispatchEvent(new CustomEvent('formflow:add-node',{detail:{specId:'${specId}'}}));this.textContent='已插入';this.disabled=true;setTimeout(()=>{this.textContent='插入到流程';this.disabled=false},2000)">📥 插入到流程</button>`;
+      return `<a class="docs-insert-node-btn" href="/?node=${encodeURIComponent(specId)}">在流程设计器中查找</a>`;
     },
   );
 }
@@ -141,6 +134,18 @@ marked.setOptions({
   gfm: true,
 });
 
+function sanitizeHtml(html: string) {
+  const parsed = new DOMParser().parseFromString(html, 'text/html');
+  parsed.querySelectorAll('script,style,iframe,object,embed,form').forEach((node) => node.remove());
+  parsed.querySelectorAll('*').forEach((node) => {
+    for (const attribute of [...node.attributes]) {
+      if (/^on/i.test(attribute.name) || attribute.name === 'srcdoc') node.removeAttribute(attribute.name);
+      if ((attribute.name === 'href' || attribute.name === 'src') && /^\s*javascript:/i.test(attribute.value)) node.removeAttribute(attribute.name);
+    }
+  });
+  return parsed.body.innerHTML;
+}
+
 export default function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -151,7 +156,7 @@ export default function MarkdownRenderer({ content, className }: MarkdownRendere
     result = enhanceDetails(result);
     result = enhanceTables(result);
     result = enhanceInsertButtons(result);
-    return result;
+    return sanitizeHtml(result);
   }, [content]);
 
   // 初始化可编辑代码块和折叠块
@@ -288,8 +293,8 @@ export default function MarkdownRenderer({ content, className }: MarkdownRendere
           error: (...args: any[]) => logs.push('[ERROR] ' + args.map(String).join(' ')),
         };
 
-        const fn = new Function('nodes', 'console', code);
-        const result = fn(mockNodes, mockConsole);
+        const result = undefined;
+        logs.push('为保证安全，文档中的任意 JavaScript 执行已停用；请复制代码到受控测试环境。');
 
         if (logs.length > 0) {
           output.textContent = logs.join('\n');
@@ -318,6 +323,14 @@ export default function MarkdownRenderer({ content, className }: MarkdownRendere
     };
 
     // 挂载流程预览组件
+    const copyHandler = (event: Event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>('.doc-code-copy');
+      if (!button) return;
+      void navigator.clipboard.writeText(decodeURIComponent(button.dataset.code || ''));
+      button.textContent = '已复制';
+      window.setTimeout(() => { button.textContent = '复制'; }, 1500);
+    };
+    containerRef.current.addEventListener('click', copyHandler);
     const flowRoots: Root[] = [];
     const placeholders = containerRef.current.querySelectorAll('.flow-preview-placeholder');
     placeholders.forEach((placeholder) => {
@@ -362,6 +375,7 @@ export default function MarkdownRenderer({ content, className }: MarkdownRendere
     return () => {
       delete (window as any).__runCodeSandbox;
       delete (window as any).__resetCodeSandbox;
+      containerRef.current?.removeEventListener('click', copyHandler);
       flowRoots.forEach((root) => root.unmount());
     };
   }, [html]);

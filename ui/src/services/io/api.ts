@@ -6,8 +6,16 @@ export type ProjectAgentSessionScope = 'project' | 'unbound' | 'all';
 
 function authorizationHeaders(): Record<string, string> {
   let token = '';
-  try { token = JSON.parse(localStorage.getItem('formflow.session') || 'null')?.token || ''; } catch { /* ignore */ }
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  let tenantId = String((import.meta as any).env?.VITE_TENANT_ID || '');
+  try {
+    const session = JSON.parse(localStorage.getItem('formflow.session') || 'null');
+    token = session?.token || '';
+    tenantId = session?.tenantId || localStorage.getItem('formflow.tenant-id') || tenantId;
+  } catch { /* ignore */ }
+  return {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(tenantId ? { 'x-tenant-id': tenantId } : {}),
+  };
 }
 
 const transport = createHttpTransport({ baseUrl: API_BASE, authorizationHeaders });

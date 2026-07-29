@@ -39,6 +39,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
   background: rgba(0,0,0,0.4);
   backdrop-filter: blur(4px);
   animation: modal-overlay-enter 0.2s ease-out forwards;
@@ -53,7 +54,8 @@
   background: var(--panel);
   border-radius: var(--radius-xl);
   box-shadow: 0 24px 80px rgba(0,0,0,0.2);
-  max-height: 90vh;
+  max-height: 90dvh;
+  min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -71,6 +73,7 @@
   justify-content: space-between;
   padding: 16px 20px;
   border-bottom: 1px solid var(--line);
+  flex: 0 0 auto;
 }
 
 .modal-header h3 { font-size: 15px; font-weight: 700; }
@@ -95,8 +98,13 @@
 .modal-close:hover { background: var(--panel-soft); }
 
 .modal-body {
-  flex: 1;
-  overflow-y: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
   padding: 20px;
 }
 
@@ -107,6 +115,8 @@
   gap: 8px;
   padding: 12px 20px;
   border-top: 1px solid var(--line);
+  flex: 0 0 auto;
+  flex-wrap: wrap;
 }
 
 /* ── Toast 通知动画 ──────────────────────────────────── */
@@ -170,7 +180,7 @@
 
 .form-runtime-modal {
   height: auto;
-  max-height: 90vh;
+  max-height: 90dvh;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -181,7 +191,7 @@
   position: relative;
   flex: 0 1 auto;
   min-height: 0;
-  max-height: 90vh;
+  max-height: 90dvh;
   overflow: hidden;
 }
 
@@ -193,7 +203,7 @@
 @media (max-height: 700px) {
   .modal-content,
   .modal-container {
-    max-height: 95vh;
+    max-height: 95dvh;
     margin: 8px;
   }
 
@@ -216,7 +226,7 @@
     max-width: 100%;
     margin: 0;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    max-height: 90vh;
+    max-height: 90dvh;
   }
 
   .modal-overlay {

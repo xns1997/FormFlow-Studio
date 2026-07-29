@@ -26,6 +26,73 @@ test.describe('FormFlow Studio', () => {
     await expect(page.getByRole('button', { name: '导入项目包' })).toBeVisible();
   });
 
+  test('documentation, settings, and command results really scroll in a compact window', async ({ page }) => {
+    await page.setViewportSize({ width: 640, height: 600 });
+
+    await page.goto('/docs');
+    const docsRoot = page.locator('.docs-v2-scroll-root');
+    await expect(docsRoot).toBeVisible();
+    await expect(page.locator('.docs-v2-task-grid')).toBeVisible();
+    const homeGeometry = await docsRoot.evaluate((element) => ({
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight,
+    }));
+    expect(homeGeometry.scrollHeight).toBeGreaterThan(homeGeometry.clientHeight);
+    await docsRoot.hover();
+    await page.mouse.wheel(0, 600);
+    await expect.poll(() => docsRoot.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+
+    await page.goto('/docs/tasks/import-model');
+    await expect(page.locator('.docs-v2-article')).toBeVisible();
+    await docsRoot.focus();
+    await page.keyboard.press('PageDown');
+    await expect.poll(() => docsRoot.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+
+    await page.keyboard.press('Control+k');
+    const commandResults = page.locator('.docs-command-results');
+    await expect(commandResults).toBeVisible();
+    await page.locator('.docs-command-search input').fill('节点');
+    await expect.poll(() => commandResults.evaluate((element) => element.scrollHeight))
+      .toBeGreaterThan(await commandResults.evaluate((element) => element.clientHeight));
+    await commandResults.hover();
+    await page.mouse.wheel(0, 500);
+    await expect.poll(() => commandResults.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    await page.keyboard.press('Escape');
+
+    await page.goto('/settings/general');
+    const settingsBody = page.locator('.page-section-body');
+    await expect(settingsBody).toBeVisible();
+    await settingsBody.hover();
+    await page.mouse.wheel(0, 500);
+    await expect.poll(() => settingsBody.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  });
+
+  test('project wizard body remains wheel-scrollable while its header and footer stay visible', async ({ page }) => {
+    await page.setViewportSize({ width: 640, height: 420 });
+    await page.goto('/projects');
+    await page.getByRole('button', { name: '新建项目' }).click();
+
+    const modal = page.locator('[data-app-modal="true"]');
+    const body = modal.locator('.modal-body');
+    await expect(modal).toBeVisible();
+    await expect(modal.locator('.modal-header')).toBeVisible();
+    await expect(modal.locator('.modal-footer')).toBeVisible();
+    const geometry = await body.evaluate((element) => ({
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight,
+      overflowY: getComputedStyle(element).overflowY,
+    }));
+    expect(geometry.clientHeight).toBeGreaterThan(0);
+    expect(geometry.scrollHeight).toBeGreaterThan(geometry.clientHeight);
+    expect(geometry.overflowY).toMatch(/auto|scroll/);
+    await body.hover();
+    await page.mouse.wheel(0, 500);
+    await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    await expect(modal.locator('.modal-header')).toBeVisible();
+    await expect(modal.locator('.modal-footer')).toBeVisible();
+    await page.keyboard.press('Escape');
+  });
+
   test('project wizard exposes selection state and explains blocked continuation', async ({ page }) => {
     await page.goto('/projects');
     await page.getByRole('button', { name: '新建项目' }).click();
@@ -157,6 +224,54 @@ test.describe('FormFlow Studio', () => {
     await expect.poll(() => toolboxBody.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
     await expect(page.getByRole('tab', { name: '控件', exact: true })).toBeVisible();
     await expect(page.getByPlaceholder('搜索控件')).toBeVisible();
+  });
+
+  test('flow canvas reserves space for its toolbar instead of clipping the graph', async ({ page }) => {
+    await page.setViewportSize({ width: 640, height: 600 });
+    await createFromTemplate(page, '游戏数据分析', 'Wizard 流程画布滚动链');
+    await page.getByRole('button', { name: '流程编排', exact: true }).click();
+
+    const canvasFlow = page.locator('.canvas-flow');
+    const graph = canvasFlow.locator(':scope > .react-flow');
+    await expect(graph).toBeVisible();
+    const geometry = await canvasFlow.evaluate((element) => {
+      const graphElement = element.querySelector<HTMLElement>(':scope > .react-flow');
+      const toolbar = element.querySelector<HTMLElement>(':scope > .canvas-toolbar');
+      return {
+        clientHeight: element.clientHeight,
+        scrollHeight: element.scrollHeight,
+        graphHeight: graphElement?.clientHeight || 0,
+        toolbarHeight: toolbar?.offsetHeight || 0,
+      };
+    });
+    expect(geometry.scrollHeight).toBe(geometry.clientHeight);
+    expect(geometry.graphHeight).toBeGreaterThan(0);
+    expect(Math.abs(geometry.graphHeight + geometry.toolbarHeight - geometry.clientHeight)).toBeLessThanOrEqual(1);
+  });
+
+  test('method library modal keeps its custom content as the active scroll region', async ({ page }) => {
+    await page.setViewportSize({ width: 640, height: 420 });
+    await createFromTemplate(page, '游戏数据分析', 'Wizard 方法库滚动链');
+    await page.getByRole('button', { name: '行为定义', exact: true }).click();
+    await page.locator('.unified-toolbar-overflow > summary[aria-label="更多工作台命令"]').click();
+    await page.getByRole('menuitem', { name: '方法库' }).click();
+
+    const modal = page.locator('.method-library-modal');
+    const panel = modal.locator('.method-library-panel');
+    await expect(panel).toBeVisible();
+    const geometry = await panel.evaluate((element) => ({
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight,
+      overflowY: getComputedStyle(element).overflowY,
+    }));
+    expect(geometry.clientHeight).toBeGreaterThan(0);
+    expect(geometry.scrollHeight).toBeGreaterThan(geometry.clientHeight);
+    expect(geometry.overflowY).toMatch(/auto|scroll/);
+    await panel.hover();
+    await page.mouse.wheel(0, 500);
+    await expect.poll(() => panel.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    await expect(modal.locator('.method-library-modal-header')).toBeVisible();
+    await expect(modal.locator('.modal-footer')).toBeVisible();
   });
 
   test('renames a form and persists the new name', async ({ page }) => {

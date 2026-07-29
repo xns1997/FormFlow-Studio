@@ -27,6 +27,8 @@
 .three-col-layout {
   display: flex;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -96,6 +98,7 @@
   grid-template-columns: 280px 1fr var(--right-panel-width);
   gap: 0;
   height: 100vh;
+  height: 100dvh;
 }
 
 .sidebar, .inspector, .canvas-shell { min-height: 0; }
@@ -148,6 +151,9 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
+  min-width: 0;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -163,7 +169,7 @@
   width: 16px;
   font-size: 12px;
 }
-.project-agent-drawer { position: fixed; z-index: 1199; right: 18px; bottom: 76px; width: min(540px, calc(100vw - 32px)); height: min(800px, calc(100vh - 110px)); border: 1px solid var(--line-strong); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden; }
+.project-agent-drawer { position: fixed; z-index: 1199; right: 18px; bottom: 76px; width: min(540px, calc(100vw - 32px)); height: min(800px, calc(100dvh - 110px)); min-height: 0; border: 1px solid var(--line-strong); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden; }
 .project-agent-drawer > header { padding: 14px 16px; display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--line); background: linear-gradient(135deg, var(--accent-soft), var(--panel)); }
 .project-agent-drawer > header div { display: flex; flex-direction: column; gap: 3px; }
 .project-agent-drawer > header small { color: var(--text-secondary); }
@@ -1208,7 +1214,7 @@
   align-items: center;
   min-height: 184px;
   padding: 28px 32px;
-  overflow: hidden;
+  overflow: visible;
   border-color: var(--accent-line);
   background:
     radial-gradient(circle at 0 0, var(--accent-soft), transparent 38%),
@@ -1336,6 +1342,10 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  flex: 0 0 auto;
+}
+
+.page-main > .page-section-body > .settings-page-body {
   flex: 0 0 auto;
 }
 

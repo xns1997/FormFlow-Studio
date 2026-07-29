@@ -4,3 +4,4 @@ export { default as OverviewPage } from './OverviewPage';
 export { default as FormDesignSectionPage } from './FormDesignSectionPage';
 export { default as FlowNodeSectionPage } from './FlowNodeSectionPage';
 export { default as BackendSectionPage } from './BackendSectionPage';
+export { default as DocsPlatformPage } from './DocsPlatformPage';

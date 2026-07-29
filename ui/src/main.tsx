@@ -25,14 +25,7 @@ import {
   DataLineagePage,
   MetadataPage,
 } from './pages/editor';
-import {
-  BehaviorDocsPage,
-  DocsHomePage,
-  OverviewPage,
-  FormDesignSectionPage,
-  FlowNodeSectionPage,
-  BackendSectionPage,
-} from './pages/doc';
+import { DocsPlatformPage } from './pages/doc';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoginPage } from './pages/auth';
 import { getSession } from './services/io/auth';
@@ -56,17 +49,21 @@ function App() {
             <Route index element={<Navigate to="/projects" replace />} />
             <Route path="/projects" element={<ProjectsListPage />} />
             <Route path="/docs">
-              <Route index element={<DocsHomePage />} />
-              <Route path="overview" element={<OverviewPage />} />
-              <Route path="overview/:slug" element={<OverviewPage />} />
-              <Route path="behavior" element={<BehaviorDocsPage />} />
-              <Route path="behavior/:slug" element={<BehaviorDocsPage />} />
-              <Route path="form-design" element={<FormDesignSectionPage />} />
-              <Route path="form-design/:slug" element={<FormDesignSectionPage />} />
-              <Route path="flow-nodes" element={<FlowNodeSectionPage />} />
-              <Route path="flow-nodes/:slug" element={<FlowNodeSectionPage />} />
-              <Route path="backend" element={<BackendSectionPage />} />
-              <Route path="backend/:slug" element={<BackendSectionPage />} />
+              <Route index element={<DocsPlatformPage home />} />
+              <Route path="tasks/:slug" element={<DocsPlatformPage />} />
+              <Route path="troubleshooting/:slug" element={<DocsPlatformPage />} />
+              <Route path="cases/:slug" element={<DocsPlatformPage />} />
+              <Route path="reference/:domain/:slug" element={<DocsPlatformPage />} />
+              <Route path="overview" element={<LegacyDocsRedirect section="overview" />} />
+              <Route path="overview/:slug" element={<LegacyDocsRedirect section="overview" />} />
+              <Route path="behavior" element={<LegacyDocsRedirect section="behavior" />} />
+              <Route path="behavior/:slug" element={<LegacyDocsRedirect section="behavior" />} />
+              <Route path="form-design" element={<LegacyDocsRedirect section="form-design" />} />
+              <Route path="form-design/:slug" element={<LegacyDocsRedirect section="form-design" />} />
+              <Route path="flow-nodes" element={<LegacyDocsRedirect section="flow-nodes" />} />
+              <Route path="flow-nodes/:slug" element={<LegacyDocsRedirect section="flow-nodes" />} />
+              <Route path="backend" element={<LegacyDocsRedirect section="backend" />} />
+              <Route path="backend/:slug" element={<LegacyDocsRedirect section="backend" />} />
             </Route>
             <Route path="/settings" element={<SystemSettingsLayout />}>
               <Route index element={<Navigate to="general" replace />} />
@@ -140,6 +137,21 @@ function WorkspaceEditorRedirect({ mode }: { mode: 'data' | 'design' | 'behavior
   if (mode === 'test') return <Navigate to={`/projects/${id}/usage?${query.toString()}`} replace />;
   query.set('mode', mode);
   return <Navigate to={`/projects/${id}/editor?${query.toString()}`} replace />;
+}
+
+function LegacyDocsRedirect({ section }: { section: 'overview' | 'behavior' | 'form-design' | 'flow-nodes' | 'backend' }) {
+  const { slug } = useParams<{ slug?: string }>();
+  const location = useLocation();
+  const domain = section === 'overview' ? 'getting-started'
+    : section === 'form-design' ? 'controls'
+      : section === 'flow-nodes' ? 'nodes'
+        : section === 'backend' ? 'api'
+          : 'events';
+  if (slug && section !== 'flow-nodes') return <Navigate to={`/docs/reference/${domain}/${encodeURIComponent(slug)}${location.search}`} replace />;
+  const query = new URLSearchParams(location.search);
+  query.set('domain', domain);
+  if (slug) query.set('q', slug.replace(/^group-/, ''));
+  return <Navigate to={`/docs?${query.toString()}`} replace />;
 }
 
 const root = createRoot(document.querySelector('#app') as HTMLElement);

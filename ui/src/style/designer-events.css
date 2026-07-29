@@ -759,8 +759,8 @@
 
 .event-workbench-modal {
   width: min(1440px, 96vw);
-  height: 92vh;
-  min-height: 720px;
+  height: 92dvh;
+  min-height: 0;
 }
 
 .event-workbench-modal .modal-header,
@@ -1023,7 +1023,7 @@
 
 .event-doc-frame {
   width: 100%;
-  height: min(72vh, 920px);
+  height: min(72dvh, 920px);
   border: 0;
   display: block;
   background: var(--panel);
