@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.2.0...v1.3.0) (2026-07-29)
+
+
+### Features
+
+* update docs platform and split repository docs ([ae9d05d](https://github.com/xns1997/FormFlow-Studio/commit/ae9d05d2565c1cd3bbaec45c8fcb9c4ab9ddec1c))
+
 # [1.2.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.1.0...v1.2.0) (2026-07-29)
 
 
