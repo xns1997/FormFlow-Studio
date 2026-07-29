@@ -277,6 +277,12 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [genericQuery, setGenericQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('全部');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('formflow.doc.recentSearches') || '[]');
+    } catch { return []; }
+  });
 
   // 从 URL 参数恢复状态
   useEffect(() => {
@@ -378,6 +384,16 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
   const scriptDocs = useMemo(() => getBehaviorDocsByScope('script'), []);
   const controlDocs = useMemo(() => getBehaviorDocsByScope('control'), []);
 
+  // 保存最近搜索
+  const saveRecentSearch = useCallback((query: string) => {
+    if (!query.trim()) return;
+    setRecentSearches((prev) => {
+      const next = [query, ...prev.filter((s) => s !== query)].slice(0, 5);
+      try { localStorage.setItem('formflow.doc.recentSearches', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+
   const filteredSections = useMemo(() => {
     if (!homeQuery.trim()) return docSections;
     const q = homeQuery.toLowerCase();
@@ -446,9 +462,59 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
               type="search"
               value={homeQuery}
               onChange={(event) => setHomeQuery(event.target.value)}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && homeQuery.trim()) {
+                  saveRecentSearch(homeQuery);
+                  setShowSuggestions(false);
+                }
+              }}
               placeholder="搜索文档..."
             />
             <span className="docs-search-kbd">⌘K</span>
+            {showSuggestions && !homeQuery.trim() && (recentSearches.length > 0 || hotDocs.length > 0) && (
+              <div className="docs-search-suggestions">
+                {recentSearches.length > 0 && (
+                  <div className="docs-search-suggestions-group">
+                    <div className="docs-search-suggestions-label">最近搜索</div>
+                    {recentSearches.map((search) => (
+                      <button
+                        key={search}
+                        type="button"
+                        className="docs-search-suggestion-item"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setHomeQuery(search);
+                          saveRecentSearch(search);
+                        }}
+                      >
+                        <DesignerIcon name="timePicker" size={12} />
+                        <span>{search}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="docs-search-suggestions-group">
+                  <div className="docs-search-suggestions-label">热门文档</div>
+                  {hotDocs.slice(0, 5).map((doc) => (
+                    <button
+                      key={`${doc.sectionId}:${doc.slug}`}
+                      type="button"
+                      className="docs-search-suggestion-item"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        handleNavigateDoc(doc.sectionId, doc.slug);
+                        setShowSuggestions(false);
+                      }}
+                    >
+                      <span className="docs-search-suggestion-section">{doc.section}</span>
+                      <span>{doc.title}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

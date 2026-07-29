@@ -37,14 +37,7 @@ function transformCallouts(html: string): string {
     /<blockquote>\s*<p>\s*\[!(NOTE|TIP|WARNING|IMPORTANT|CAUTION)\]\s*/gi,
     (_match, type: string) => {
       const lower = type.toLowerCase();
-      const icons: Record<string, string> = {
-        note: '📝',
-        tip: '💡',
-        warning: '⚠️',
-        important: '❗',
-        caution: '🔴',
-      };
-      return `<div class="docs-callout docs-callout--${lower}"><div class="docs-callout-header"><span class="docs-callout-icon">${icons[lower] || '📌'}</span><span class="docs-callout-type">${type}</span></div><div class="docs-callout-body">`;
+      return `<div class="docs-callout docs-callout--${lower}"><div class="docs-callout-header"><span class="docs-callout-icon docs-callout-icon--${lower}"></span><span class="docs-callout-type">${type}</span></div><div class="docs-callout-body">`;
     },
   ).replace(
     /<\/p>\s*<\/blockquote>/gi,

@@ -80,11 +80,25 @@ function PortBadge({ type }: { type: string }) {
 
 function PortItem({ port, side }: { port: Port; side: 'left' | 'right' }) {
   const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const itemRef = React.useRef<HTMLDivElement>(null);
+
+  const handleMouseEnter = () => {
+    if (itemRef.current) {
+      const rect = itemRef.current.getBoundingClientRect();
+      setTooltipPos({
+        x: side === 'left' ? rect.left : rect.right - 240,
+        y: rect.bottom + 4,
+      });
+    }
+    setShowTooltip(true);
+  };
 
   return (
     <div
+      ref={itemRef}
       className={`port-viz-item port-viz-item--${side}`}
-      onMouseEnter={() => setShowTooltip(true)}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setShowTooltip(false)}
     >
       <div className="port-viz-item-main">
@@ -101,7 +115,10 @@ function PortItem({ port, side }: { port: Port; side: 'left' | 'right' }) {
         )}
       </div>
       {showTooltip && (
-        <div className="port-viz-tooltip">
+        <div
+          className="port-viz-tooltip"
+          style={{ left: tooltipPos.x, top: tooltipPos.y }}
+        >
           <div className="port-viz-tooltip-name">{port.name}</div>
           <div className="port-viz-tooltip-desc">{port.description}</div>
           <div className="port-viz-tooltip-meta">
