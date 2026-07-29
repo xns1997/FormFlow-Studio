@@ -1,4 +1,9 @@
-import type { ComponentNode } from '../../models';
+/**
+ * Form flow trigger — orchestrates form event to workflow execution.
+ *
+ * This module is a thin orchestrator that imports resolution logic from
+ * formFlowBindings and coordinates workflow execution.
+ */
 import type { SrcTableEntry, WorkflowFile } from '../../project/types';
 import { loadNodeRegistry } from '../../flowRegistry';
 import { executeFlow, type FlowExecutionResult } from './flowEngine';
@@ -11,18 +16,22 @@ import {
 } from './workflowIo';
 import {
   resolveV2FlowInputs,
+  resolveFormFlowValue,
   type FlowBindingsV2,
+  type FormControlEventContext,
 } from './formFlowBindings';
 
+// Re-export types for backward compatibility
 export type {
   FlowBindingsV2,
   FlowInputBinding,
   FlowOutputBinding,
   FlowOutputPresetStep,
   FlowValueSource,
+  FormControlEventName,
+  FormControlEventContext,
 } from './formFlowBindings';
-
-export type FormControlEventName = 'onChange' | 'onBlur' | 'onFocus' | 'onClick' | string;
+export { resolveFormFlowValue } from './formFlowBindings';
 
 export interface FormFlowTriggerConfig {
   enabled: boolean;
@@ -32,65 +41,6 @@ export interface FormFlowTriggerConfig {
   parameterMap?: Record<string, unknown>;
   /** 旧版目标节点；读取兼容。 */
   targetNodeId?: string;
-}
-
-export interface FormControlEventContext {
-  eventName: FormControlEventName;
-  field: string;
-  value: unknown;
-  values: Record<string, unknown>;
-  originalValues?: Record<string, unknown>;
-  detail?: unknown;
-  component: ComponentNode;
-  /** Value before this interaction. For form-level events this is the original form snapshot. */
-  previousValue?: unknown;
-  /** Milliseconds since Unix epoch when the event context was created. */
-  timestamp?: number;
-  /** Whether the current field differs from its original value. */
-  dirty?: boolean;
-  /** Form fields whose current values differ from the original snapshot. */
-  changedFields?: string[];
-  /** Stable aliases useful to scripts and workflow parameter mappings. */
-  componentId?: string;
-  componentType?: string;
-  /** Stable key used to prevent replaying successful submit/save side effects. */
-  idempotencyKey?: string;
-}
-
-function resolvePath(source: unknown, path: string[]): unknown {
-  return path.reduce((value: any, key) => value == null ? undefined : value[key], source as any);
-}
-
-export function resolveFormFlowValue(expression: unknown, context: FormControlEventContext): unknown {
-  if (Array.isArray(expression)) return expression.map((item) => resolveFormFlowValue(item, context));
-  if (expression && typeof expression === 'object') {
-    return Object.fromEntries(Object.entries(expression).map(([key, value]) => [key, resolveFormFlowValue(value, context)]));
-  }
-  if (typeof expression !== 'string') return expression;
-  const exact: Record<string, unknown> = {
-    '$value': context.value,
-    '$field': context.field,
-    '$event': context.eventName,
-    '$values': context.values,
-    '$form': context.values,
-    '$formData': context.values,
-    '$originalValues': context.originalValues || {},
-    '$component': context.component,
-    '$componentId': context.component.id,
-    '$detail': context.detail,
-    '$previousValue': context.previousValue,
-    '$timestamp': context.timestamp,
-    '$dirty': context.dirty,
-    '$changedFields': context.changedFields || [],
-    '$context': context,
-  };
-  if (Object.prototype.hasOwnProperty.call(exact, expression)) return exact[expression];
-  if (expression.startsWith('$form.')) return resolvePath(context.values, expression.slice(6).split('.'));
-  if (expression.startsWith('$original.')) return resolvePath(context.originalValues || {}, expression.slice(10).split('.'));
-  if (expression.startsWith('$component.')) return resolvePath(context.component, expression.slice(11).split('.'));
-  if (expression.startsWith('$detail.')) return resolvePath(context.detail, expression.slice(8).split('.'));
-  if (expression.startsWith('$context.')) return resolvePath(context, expression.slice(9).split('.'));
-  return expression;
 }
 
 export function resolveFormFlowParameters(config: FormFlowTriggerConfig, context: FormControlEventContext): Record<string, unknown> {

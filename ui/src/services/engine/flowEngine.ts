@@ -1,3 +1,9 @@
+/**
+ * Flow engine — orchestrates workflow execution.
+ *
+ * Public interface: executeFlow, topologicalSort, selectUpstreamFlow.
+ * Internal modules handle graph operations, input resolution, and XLSX dispatch.
+ */
 import { getRegistrySync, resolveMethod, type FlowNodeSpec } from '../../flowRegistry';
 import { getExecutor, hasExecutor, type NodeExecContext } from '../../../nodes/executor-registry';
 import { checkPortType, assertPortType } from '../../../nodes/port-types';
@@ -7,6 +13,13 @@ import { extractNodeSideEffects, type FlowSideEffect } from './flowSideEffects';
 import { isRemovedWorkflowNode } from './removedWorkflowNodes';
 import type { DebugEntry } from '../../project/types';
 import { clearCheckpoint, loadCheckpoint, saveCheckpoint } from './checkpoint';
+import { topologicalSort, selectUpstreamFlow, groupByTopologicalLevel } from './flowEngine/graphOps';
+import { collectInputs, buildScopeMap, extractPortName, resolveInputSelections } from './flowEngine/inputResolver';
+import type { FlowNodeDef, FlowEdgeDef, NodeExecutionResult, FlowExecutionResult, ExecuteFlowOptions } from './flowEngine/types';
+
+// Re-export types for backward compatibility
+export type { FlowNodeDef, FlowEdgeDef, NodeExecutionResult, FlowExecutionResult, ExecuteFlowOptions } from './flowEngine/types';
+export { topologicalSort, selectUpstreamFlow } from './flowEngine/graphOps';
 
 let xlsxCache: any = null;
 const completedIdempotentFlows = new Map<string, FlowExecutionResult>();
@@ -16,178 +29,47 @@ async function getXlsxModule(): Promise<any> {
   return xlsxCache;
 }
 
-export interface FlowNodeDef {
-  id: string;
-  specId: string;
-  position: { x: number; y: number };
-  data?: Record<string, unknown>;
-}
-
-export interface FlowEdgeDef {
-  id: string;
-  source: string;
-  target: string;
-  sourceHandle?: string;
-  targetHandle?: string;
-}
-
-export interface NodeExecutionResult {
-  nodeId: string;
-  specId: string;
-  label: string;
-  success: boolean;
-  outputs: Record<string, unknown>;
-  sideEffects: FlowSideEffect[];
-  error?: string;
-  duration: number;
-  inputKeys?: string[];
-  outputKeys?: string[];
-}
-
-export interface FlowExecutionResult {
-  success: boolean;
-  nodeResults: Map<string, NodeExecutionResult>;
-  finalOutputs: Record<string, unknown>;
-  sideEffects: FlowSideEffect[];
-  errors: string[];
-  totalDuration: number;
-  debug?: {
-    requestId?: string;
-    workflowId?: string;
-    executedNodeCount: number;
-    exportKeys: string[];
-    duration: number;
-    errors: string[];
-    events: DebugEntry[];
-  };
-}
-
-export function topologicalSort(nodes: FlowNodeDef[], edges: FlowEdgeDef[]): FlowNodeDef[] {
-  const inDegree = new Map<string, number>();
-  const adjacency = new Map<string, string[]>();
-
-  for (const n of nodes) {
-    inDegree.set(n.id, 0);
-    adjacency.set(n.id, []);
-  }
-  for (const e of edges) {
-    adjacency.get(e.source)?.push(e.target);
-    inDegree.set(e.target, (inDegree.get(e.target) || 0) + 1);
-  }
-
-  const queue: string[] = [];
-  for (const [id, deg] of inDegree) {
-    if (deg === 0) queue.push(id);
-  }
-
-  const sorted: string[] = [];
-  while (queue.length > 0) {
-    const cur = queue.shift()!;
-    sorted.push(cur);
-    for (const next of adjacency.get(cur) || []) {
-      const newDeg = (inDegree.get(next) || 1) - 1;
-      inDegree.set(next, newDeg);
-      if (newDeg === 0) queue.push(next);
-    }
-  }
-
-  if (sorted.length !== nodes.length) {
-    const sortedIds = new Set(sorted);
-    const cycleNodes = nodes.filter((node) => !sortedIds.has(node.id)).map((node) => node.id);
-    throw new Error(`流程存在环路，无法确定执行顺序: ${cycleNodes.join(' -> ')}`);
-  }
-  return sorted.map((id) => nodes.find((n) => n.id === id)!);
-}
-
-/** Return the target and every transitive predecessor, preserving the original graph. */
-export function selectUpstreamFlow(
-  nodes: FlowNodeDef[],
-  edges: FlowEdgeDef[],
-  targetNodeId: string,
-): { nodes: FlowNodeDef[]; edges: FlowEdgeDef[] } {
-  if (!nodes.some((node) => node.id === targetNodeId)) {
-    throw new Error(`目标节点不存在: ${targetNodeId}`);
-  }
-  const selected = new Set<string>([targetNodeId]);
-  const stack = [targetNodeId];
-  while (stack.length > 0) {
-    const current = stack.pop()!;
-    for (const edge of edges) {
-      if (edge.target === current && !selected.has(edge.source)) {
-        selected.add(edge.source);
-        stack.push(edge.source);
-      }
-    }
-  }
-  return {
-    nodes: nodes.filter((node) => selected.has(node.id)),
-    edges: edges.filter((edge) => selected.has(edge.source) && selected.has(edge.target)),
-  };
-}
-
-function extractPortName(handle: string | undefined, direction: 'in' | 'out'): string {
-  if (!handle) return direction === 'in' ? '_args' : 'result';
-  return handle.replace(/^(in:|out:)/, '');
-}
-
-function buildScopeMap(
-  nodeId: string,
-  edges: FlowEdgeDef[],
-  nodeOutputs: Map<string, Record<string, unknown>>,
-): Map<string, Record<string, unknown>> {
-  const scope = new Map<string, Record<string, unknown>>();
-  const sourceIds = new Set(
-    edges.filter((edge) => edge.target === nodeId).map((edge) => edge.source),
-  );
-  for (const sourceId of sourceIds) {
-    const output = nodeOutputs.get(sourceId);
-    if (output) scope.set(sourceId, output);
-  }
-  return scope;
-}
-
-function collectInputs(
-  nodeId: string,
-  edges: FlowEdgeDef[],
-  nodeOutputs: Map<string, Record<string, unknown>>,
-  selectedEdgeIdsByPort: Record<string, string> = {},
-  scopeMap?: Map<string, Record<string, unknown>>,
-): Record<string, unknown> {
-  const inputs: Record<string, unknown> = {};
-  const targetEdges = edges.filter((edge) => edge.target === nodeId);
-  const grouped = new Map<string, FlowEdgeDef[]>();
-  for (const edge of targetEdges) {
-    const portName = extractPortName(edge.targetHandle, 'in');
-    const list = grouped.get(portName) || [];
-    list.push(edge);
-    grouped.set(portName, list);
-  }
-
-  for (const [portName, portEdges] of grouped) {
-    const selected = selectedEdgeIdsByPort[portName];
-    const edge = portEdges.find((item) => item.id === selected) || portEdges[portEdges.length - 1];
-    if (!edge) continue;
-    const srcOutput = scopeMap ? scopeMap.get(edge.source) : nodeOutputs.get(edge.source);
-    if (!srcOutput) throw new Error(`上游节点 ${edge.source} 尚未执行`);
-    const srcPortName = extractPortName(edge.sourceHandle, 'out');
-    if (edge.sourceHandle) {
-      if (!Object.prototype.hasOwnProperty.call(srcOutput, srcPortName)) {
-        throw new Error(`上游节点 ${edge.source} 没有输出端口 "${srcPortName}"`);
-      }
-      inputs[portName] = srcOutput[srcPortName];
-    } else {
-      const keys = Object.keys(srcOutput).filter((key) => !key.startsWith('__'));
-      const fallbackKey = keys.length === 1 ? keys[0] : (Object.prototype.hasOwnProperty.call(srcOutput, 'result') ? 'result' : 'value');
-      inputs[portName] = srcOutput[fallbackKey];
-    }
-  }
-  return inputs;
-}
-
-function resolveInputSelections(properties: Record<string, unknown>) {
-  const raw = properties.__inputSelections;
+function resolvePropertyInputOverrides(
+  ports: Array<{ name: string; direction: string }>,
+  properties: Record<string, unknown>,
+) {
+  const raw = properties.__inputOverrides;
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
-  return raw as Record<string, string>;
+  const overrides = raw as Record<string, unknown>;
+  if (ports.length === 0) return overrides;
+  const allowed = new Set(
+    ports
+      .filter((port) => port.direction === 'input' || port.direction === 'both')
+      .map((port) => port.name),
+  );
+  return Object.fromEntries(
+    Object.entries(overrides).filter(([name]) => allowed.has(name)),
+  );
+}
+
+function validateConnectedInputs(spec: FlowNodeSpec | undefined, inputs: Record<string, unknown>) {
+  if (!spec) return inputs;
+  const normalized = { ...inputs };
+  for (const port of (spec.ports || []).filter((item) => item.direction === 'input' || item.direction === 'both')) {
+    if (!Object.prototype.hasOwnProperty.call(inputs, port.name)) continue;
+    normalized[port.name] = assertPortType(port.type, inputs[port.name], port.name);
+  }
+  return normalized;
+}
+
+function validateOutputs(ports: FlowNodeSpec['ports'], outputs: Record<string, unknown>) {
+  const normalized = { ...outputs };
+  for (const port of ports.filter((item) => item.direction === 'output' || item.direction === 'both')) {
+    if (!Object.prototype.hasOwnProperty.call(outputs, port.name)) continue;
+    normalized[port.name] = assertPortType(port.type, outputs[port.name], port.name);
+  }
+  return normalized;
+}
+
+function createTimeoutPromise(ms: number, label: string): Promise<never> {
+  return new Promise((_, reject) => {
+    setTimeout(() => reject(new Error(`${label}执行超时（${ms}ms）`)), ms);
+  });
 }
 
 async function executeXlsxMethod(
@@ -207,11 +89,10 @@ async function executeXlsxMethod(
       .map((property) => [property.name, merged[property.name]]),
   );
 
-  // 特殊处理常用方法，带类型校验
+  // Special handling for common XLSX methods
   if (methodName === 'XLSX.utils.sheet_to_json') {
     const ws = inputs.worksheet ?? merged.worksheet;
     if (!ws) throw new Error('缺少 worksheet 输入');
-    // 类型校验
     const wsCheck = checkPortType('worksheet', ws);
     if (!wsCheck.valid) throw new Error(`worksheet 类型错误: ${wsCheck.error}`);
     const validWs = wsCheck.normalized!;
@@ -232,7 +113,6 @@ async function executeXlsxMethod(
     if (Object.keys(opts).length > 0) args.push(opts);
     let result = method(...args) as any[];
     if (typeof merged.sheetRows === 'number' && merged.sheetRows > 0) result = result.slice(0, merged.sheetRows);
-    // 输出校验
     const rowsCheck = checkPortType('json-rows', result);
     const validRows = rowsCheck.valid ? rowsCheck.normalized! : result;
     const autoHeader = Array.isArray(validRows) && validRows.length > 0 ? Object.keys(validRows[0]) : [];
@@ -320,7 +200,7 @@ async function executeXlsxMethod(
         headers.map((h: string, ci: number) => {
           const col = String.fromCharCode(65 + ci);
           return `${col}${ri + 1}=${String(r[h] ?? '')}`;
-        })
+        }),
       );
       return { formulae };
     }
@@ -346,7 +226,6 @@ async function executeXlsxMethod(
   if (methodName === 'XLSX.utils.aoa_to_sheet') {
     const data = inputs.data ?? merged.data ?? merged._args;
     if (!data) throw new Error('缺少数据输入');
-    // 如果是 json-rows，转换为 aoa
     if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && !Array.isArray(data[0])) {
       const headers = Object.keys(data[0]);
       const aoa = [headers, ...data.map((row: any) => headers.map(h => row[h]))];
@@ -366,7 +245,6 @@ async function executeXlsxMethod(
     args.push(wb);
     const wsAny = ws as any;
     if (wsAny.__fromProject) {
-      // 从项目数据创建真实 worksheet
       const XLSX = await getXlsxModule();
       const realWs = XLSX.utils.json_to_sheet(wsAny.preview || []);
       args.push(realWs);
@@ -387,7 +265,7 @@ async function executeXlsxMethod(
     return { data: method(...args) };
   }
 
-  // 通用处理：严格按照 Schema 中输入 Port 的顺序组装参数。
+  // Generic method execution
   if (merged._args !== undefined) {
     args.push(...(Array.isArray(merged._args) ? merged._args : [merged._args]));
   } else {
@@ -408,108 +286,6 @@ async function executeXlsxMethod(
   }
   if (result && typeof result === 'object' && !Array.isArray(result)) return result as Record<string, unknown>;
   return { [outputPorts[0].name]: result };
-}
-
-export interface ExecuteFlowOptions {
-  /** Stable operation key; a successful execution with the same key is returned without replaying side effects. */
-  idempotencyKey?: string;
-  /** Execute this node and all of its transitive upstream dependencies only. */
-  targetNodeId?: string;
-  /** Values injected into generic:value-input nodes by their configured name. */
-  variables?: Record<string, unknown>;
-  /** Values injected into concrete node input ports. Connected edges take precedence. */
-  nodeInputs?: Record<string, Record<string, unknown>>;
-  workflowId?: string;
-  checkpointId?: string;
-  resumeFromCheckpoint?: boolean;
-  keepCheckpointOnSuccess?: boolean;
-  /** Strategy when a node fails. 'abort' stops the flow (default), 'skip' continues with empty output, 'continue' behaves like 'skip'. */
-  onNodeFailure?: 'abort' | 'skip' | 'continue';
-  /** Global timeout in ms. If the flow doesn't complete within this duration, it is aborted. */
-  timeoutMs?: number;
-  /** Per-node timeout in ms. If a single node doesn't complete within this duration, it is aborted. */
-  nodeTimeoutMs?: number;
-  /** When true, independent nodes at the same topological level execute concurrently via Promise.all. */
-  parallel?: boolean;
-  /** When true, each node gets its own scope map for variable lookups, preventing variable name collisions between nodes. */
-  isolatedScopes?: boolean;
-  /** When true, debug events include variable snapshots (actual input/output values) at each step. */
-  debug?: boolean;
-  /** When true, side effects are buffered and only committed on success. On failure, pending side effects are discarded. */
-  transactionalSideEffects?: boolean;
-}
-
-function resolvePropertyInputOverrides(
-  ports: Array<{ name: string; direction: string }>,
-  properties: Record<string, unknown>,
-) {
-  const raw = properties.__inputOverrides;
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
-  const overrides = raw as Record<string, unknown>;
-  if (ports.length === 0) return overrides;
-  const allowed = new Set(
-    ports
-      .filter((port) => port.direction === 'input' || port.direction === 'both')
-      .map((port) => port.name),
-  );
-  return Object.fromEntries(
-    Object.entries(overrides).filter(([name]) => allowed.has(name)),
-  );
-}
-
-function validateConnectedInputs(spec: FlowNodeSpec | undefined, inputs: Record<string, unknown>) {
-  if (!spec) return inputs;
-  const normalized = { ...inputs };
-  for (const port of (spec.ports || []).filter((item) => item.direction === 'input' || item.direction === 'both')) {
-    if (!Object.prototype.hasOwnProperty.call(inputs, port.name)) continue;
-    normalized[port.name] = assertPortType(port.type, inputs[port.name], port.name);
-  }
-  return normalized;
-}
-
-function validateOutputs(ports: FlowNodeSpec['ports'], outputs: Record<string, unknown>) {
-  const normalized = { ...outputs };
-  for (const port of ports.filter((item) => item.direction === 'output' || item.direction === 'both')) {
-    if (!Object.prototype.hasOwnProperty.call(outputs, port.name)) continue;
-    normalized[port.name] = assertPortType(port.type, outputs[port.name], port.name);
-  }
-  return normalized;
-}
-
-function createTimeoutPromise(ms: number, label: string): Promise<never> {
-  return new Promise((_, reject) => {
-    setTimeout(() => reject(new Error(`${label}执行超时（${ms}ms）`)), ms);
-  });
-}
-
-function groupByTopologicalLevel(sorted: FlowNodeDef[], edges: FlowEdgeDef[]): FlowNodeDef[][] {
-  const levels: FlowNodeDef[][] = [];
-  const inDegree = new Map<string, number>();
-  for (const n of sorted) inDegree.set(n.id, 0);
-  for (const e of edges) {
-    if (inDegree.has(e.target)) inDegree.set(e.target, (inDegree.get(e.target) || 0) + 1);
-  }
-  const visited = new Set<string>();
-  let remaining = sorted.length;
-  while (remaining > 0) {
-    const level: FlowNodeDef[] = [];
-    for (const n of sorted) {
-      if (visited.has(n.id)) continue;
-      const allPredecessorsVisited = edges
-        .filter(e => e.target === n.id)
-        .every(e => visited.has(e.source));
-      if (allPredecessorsVisited) {
-        level.push(n);
-      }
-    }
-    if (level.length === 0) break;
-    for (const n of level) {
-      visited.add(n.id);
-      remaining--;
-    }
-    levels.push(level);
-  }
-  return levels;
 }
 
 export async function executeFlow(
@@ -551,7 +327,6 @@ export async function executeFlow(
     const globalTimeoutPromise = new Promise<never>((_, reject) => {
       globalTimeoutHandle = setTimeout(() => reject(new Error(`流程执行超时（${options.timeoutMs}ms）`)), options.timeoutMs);
     });
-    // Race the flow loop against the global timeout
     try {
       await Promise.race([runFlowLoop(), globalTimeoutPromise]);
     } catch (e) {
