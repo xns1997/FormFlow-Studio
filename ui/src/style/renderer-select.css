@@ -53,11 +53,11 @@
 /* Dropdown popup animation */
 .lg-select-popup,
 .ant-select-dropdown {
-  animation: dropdown-enter 0.15s ease-out forwards;
+  animation: dropdown-enter 0.2s ease-out forwards;
   transform-origin: top center;
 }
 
 .lg-select-popup.closing,
 .ant-select-dropdown.closing {
-  animation: dropdown-exit 0.1s ease-in forwards;
+  animation: dropdown-exit 0.15s ease-in forwards;
 }

@@ -220,7 +220,7 @@ textarea { line-height: 1.55; resize: vertical; }
   border: 0;
   background: var(--panel-elevated) !important;
   color: var(--text) !important;
-  box-shadow: 0 2px 7px rgba(24, 24, 28, 0.12) !important;
+  box-shadow: 0 1px 3px rgba(24, 24, 28, 0.08) !important;
 }
 
 /* Lists and rows use separators instead of card-per-row decoration. */
@@ -384,7 +384,7 @@ textarea { line-height: 1.55; resize: vertical; }
 
 /* Code remains a content surface with platform typography. */
 :where(code, pre, .monaco-editor) { font-family: "SFMono-Regular", "SF Mono", Menlo, Consolas, monospace; }
-:where(code:not(pre code)) { border-radius: 6px; background: var(--fill); }
+:where(code:not(pre code)) { border-radius: var(--radius-sm); background: var(--fill); }
 :where(pre, .docs-code-block) { border-color: var(--line); border-radius: var(--radius-md); }
 
 /* Authentication is a focused, single-sheet experience. */

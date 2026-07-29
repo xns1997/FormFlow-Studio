@@ -34,7 +34,7 @@
 }
 
 .rs-sheet-count {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted);
   margin-left: 4px;
 }
@@ -65,7 +65,7 @@
 }
 
 .rs-header-check-hint {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted);
 }
 
@@ -111,7 +111,7 @@
 }
 
 .rs-col-header:hover { background: var(--accent-soft); }
-.rs-col-header.in-range { background: #dbeafe; }
+.rs-col-header.in-range { background: var(--accent-soft); }
 .rs-col-header.selected-direct { background: var(--accent); color: #fff; }
 
 .rs-row-num {
@@ -123,7 +123,7 @@
 }
 
 .rs-row-num:hover { background: var(--accent-soft); }
-.rs-row-num.in-range { background: #dbeafe; }
+.rs-row-num.in-range { background: var(--accent-soft); }
 .rs-row-num.selected-direct { background: var(--accent); color: #fff; }
 
 .rs-cell {
@@ -132,7 +132,7 @@
 }
 
 .rs-cell:hover { background: var(--panel-soft); }
-.rs-cell.selected { background: #dbeafe; }
+.rs-cell.selected { background: var(--accent-soft); }
 .rs-cell.start { background: var(--accent); color: #fff; }
 
 /* 行级 hover 效果 */
@@ -151,7 +151,7 @@
 }
 
 .rs-data-header-row .rs-cell {
-  background: #fef3c7;
+  background: var(--warning-soft);
   font-weight: 600;
 }
 
@@ -183,15 +183,15 @@
 
 .rs-mode-tag {
   padding: 1px 6px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   border-radius: var(--radius-sm);
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .rs-hint {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted);
 }
 
@@ -224,7 +224,8 @@
 }
 
 .rs-name-box:focus {
-  outline: none;
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
   border-color: var(--accent);
   background: var(--panel);
 }
@@ -386,7 +387,7 @@
 .rs-range-strip-label {
   flex: 0 0 auto;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: .04em;
@@ -436,7 +437,7 @@
   flex: 0 0 auto;
   margin-left: auto;
   color: var(--accent);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
 }
 

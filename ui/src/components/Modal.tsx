@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useModal } from '../services/animation';
 
 const modalStack: symbol[] = [];
 const ModalTitleContext = createContext<string | null>(null);
@@ -40,8 +41,7 @@ export default function Modal({
   closeOnBackdrop = true,
   dialogRole = 'dialog',
 }: ModalProps) {
-  const backdropRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const { overlayRef: backdropRef, contentRef: containerRef, animateExit } = useModal(open);
   const modalToken = useRef(Symbol('modal'));
   const onCloseRef = useRef(onClose);
   const titleId = useId();
@@ -55,13 +55,12 @@ export default function Modal({
       setExiting(false);
     } else if (visible) {
       setExiting(true);
-      const timer = setTimeout(() => {
+      animateExit(() => {
         setVisible(false);
         setExiting(false);
-      }, 200);
-      return () => clearTimeout(timer);
+      });
     }
-  }, [open, visible]);
+  }, [open, visible, animateExit]);
 
   useEffect(() => {
     if (!visible) return;

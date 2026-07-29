@@ -6,14 +6,14 @@
   min-height: var(--control-height);
   padding: 7px 14px;
   border: 1px solid var(--line);
-  border-radius: 11px;
+  border-radius: var(--radius);
   background: var(--panel-glass-heavy);
   color: var(--text);
   font-size: 12px;
   font-weight: 600;
   line-height: 1;
   box-shadow: 0 4px 14px rgba(24,24,28,0.06), inset 0 1px 0 rgba(255,255,255,0.68);
-  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
 :where(button:not([class]), .ui-btn):hover:not(:disabled) {
@@ -130,7 +130,7 @@
 .ui-btn-xs {
   min-height: 26px;
   padding: 4px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 11px;
 }
 

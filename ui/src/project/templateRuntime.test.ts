@@ -69,5 +69,5 @@ test('game analytics dashboard fills KPI fields from button click instead of sta
 test('legacy template ids resolve only to the new industry implementation', () => {
   const source = buildProjectTemplate('blank_form', { id: 'legacy', name: 'legacy', now: '2026-07-16T00:00:00.000Z' }) as ProjectStructure;
   assert.ok(source.forms.some((item) => item.id === 'game_event_entry'));
-  assert.deepEqual(source.forms.map((item) => item.id).sort(), ['game_analytics_dashboard', 'game_event_entry']);
+  assert.deepEqual(source.forms.map((item) => item.id).sort(), ['campaign_create', 'game_analytics_dashboard', 'game_event_entry', 'payment_query', 'player_profile_edit']);
 });

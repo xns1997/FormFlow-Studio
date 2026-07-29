@@ -34,8 +34,8 @@ test('template creation keeps industry skeleton and rewrites meta', () => {
   });
   assert.equal(project.config.name, '就业观察');
   assert.equal(project.config.author, 'Bob');
-  assert.equal(project.workflows.length, 2);
-  assert.equal(project.forms.length, 2);
+  assert.equal(project.workflows.length, 5);
+  assert.equal(project.forms.length, 5);
   assert.deepEqual(project.testing?.runs || [], []);
   assert.equal(project.srcTable.find((item) => item.id === 'work_records')?.sheets[0]?.config?.keyFields[0], '工作记录ID');
 });
