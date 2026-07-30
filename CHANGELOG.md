@@ -3,8 +3,14 @@
 
 ### Features
 
-* **data-preview:** 增强数据预览功能 ([de1213b](https://github.com/xns1997/FormFlow-Studio/commit/de1213b4718ca6be89d05fddb430092576540ca3))
-* **data-preview:** 增强数据预览功能 ([763ba4b](https://github.com/xns1997/FormFlow-Studio/commit/763ba4bbdd9f96740d1862756a95e5e1ff661bc0))
+* **data-preview:** 增强数据预览功能 ([de1213b](https://github.com/xns1997/FormFlow-Studio/commit/de1213b4))
+  - 新增 TSV、XML、Parquet 文件解析支持
+  - 新增外部数据源服务（MySQL/PostgreSQL/API 直连），加密存储连接配置
+  - AG Grid 切换到 Server-Side Row Model + 虚拟滚动，新增服务端索引/缓存
+  - 新增 FilterBar 筛选条组件，筛选类型纯中文显示，按数据类型分组
+  - 概览页自动生成洞察式摘要，新增 7 种图表可视化
+  - 配置面板重组，新增列宽变更追踪和重置功能
+
 
 # [1.6.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.5.0...v1.6.0) (2026-07-30)
 
@@ -34,6 +40,7 @@
 
 * **agent:** extract orchestration into modular agent subsystem ([42faf53](https://github.com/xns1997/FormFlow-Studio/commit/42faf53e988d0236b32c1091391a0d736688f062))
 
+>>>>>>> origin/main
 # [1.4.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.3.0...v1.4.0) (2026-07-30)
 
 
