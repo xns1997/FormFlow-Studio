@@ -1,3 +1,10 @@
+## [1.7.3](https://github.com/xns1997/FormFlow-Studio/compare/v1.7.2...v1.7.3) (2026-07-30)
+
+
+### Bug Fixes
+
+* **data-preview:** revert to client-side row model for reliable data display ([6d1785d](https://github.com/xns1997/FormFlow-Studio/commit/6d1785daad7de2efab4a156e2411555484252e01))
+
 ## [1.7.2](https://github.com/xns1997/FormFlow-Studio/compare/v1.7.1...v1.7.2) (2026-07-30)
 
 
