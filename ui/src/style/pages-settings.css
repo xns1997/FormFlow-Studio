@@ -318,3 +318,36 @@
   .theme-preview-row { grid-template-columns: 1fr; }
   .notification-type-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Settings Switch Styling ───────────────────────────── */
+
+.settings-card .ant-switch {
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  height: 26px;
+  min-height: 26px;
+  background: rgba(120, 120, 128, 0.24);
+}
+
+.settings-card .ant-switch .ant-switch-handle {
+  top: 3px;
+  inset-inline-start: 3px;
+  width: 20px;
+  height: 20px;
+}
+
+.settings-card .ant-switch .ant-switch-handle::before {
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.settings-card .ant-switch.ant-switch-checked {
+  background: var(--accent);
+}
+
+.settings-card .ant-switch.ant-switch-checked .ant-switch-handle {
+  inset-inline-start: calc(100% - 23px);
+}
