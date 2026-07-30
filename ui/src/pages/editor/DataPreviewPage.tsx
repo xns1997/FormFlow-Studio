@@ -245,6 +245,14 @@ export default function DataPreviewPage({
       onDataLoaded: (total) => setQueryTotal(total),
     });
   }, [projectId, selectedTableId, activeSheet?.name]);
+
+  // Update datasource when it changes
+  useEffect(() => {
+    if (gridApiRef.current && serverSideDatasource) {
+      gridApiRef.current.setGridOption('serverSideDatasource', serverSideDatasource);
+    }
+  }, [serverSideDatasource]);
+
   const currentConfig = useMemo(() => {
     if (!selectedTable || !activeSheet) return null;
     const defaults = createDefaultTableConfig(
@@ -1191,6 +1199,9 @@ export default function DataPreviewPage({
                     maxBlocksInCache={10}
                     onGridReady={(event) => {
                       gridApiRef.current = event.api;
+                      if (serverSideDatasource) {
+                        event.api.setGridOption('serverSideDatasource', serverSideDatasource);
+                      }
                       if (gridContainerRef.current?.clientWidth && currentConfig?.autoFitColumns && Object.keys(currentConfig.columnWidths).length === 0) event.api.sizeColumnsToFit();
                     }}
                     getRowClass={(params) => {
