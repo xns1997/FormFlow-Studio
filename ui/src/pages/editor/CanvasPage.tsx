@@ -965,7 +965,7 @@ export default function CanvasPage() {
   const [edges, setEdges] = useState<Edge[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(true);
-  const [leftSidebarTab, setLeftSidebarTab] = useState<'workflows' | 'nodes'>('workflows');
+  const [leftSidebarTab, setLeftSidebarTab] = useState<'workflows' | 'nodes' | 'fields'>('workflows');
   const [currentWorkflowId, setCurrentWorkflowId] = useState<string | null>(null);
   const [flowRunning, setFlowRunning] = useState(false);
   const [flowResult, setFlowResult] = useState<FlowExecutionResult | null>(null);
@@ -1717,6 +1717,7 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
           <div className="canvas-left-tabs" role="tablist" aria-label="流程编排左侧栏视图">
             <button type="button" role="tab" aria-selected={leftSidebarTab === 'workflows'} className={leftSidebarTab === 'workflows' ? 'active' : ''} onClick={() => setLeftSidebarTab('workflows')}>流程实例</button>
             <button type="button" role="tab" aria-selected={leftSidebarTab === 'nodes'} className={leftSidebarTab === 'nodes' ? 'active' : ''} onClick={() => setLeftSidebarTab('nodes')}>节点库</button>
+            <button type="button" role="tab" aria-selected={leftSidebarTab === 'fields'} className={leftSidebarTab === 'fields' ? 'active' : ''} onClick={() => setLeftSidebarTab('fields')}>字段引用</button>
             <button type="button" className="canvas-left-close" aria-label="收起左侧栏" title="收起左侧栏" onClick={() => setPaletteOpen(false)}>×</button>
           </div>
           <div className="canvas-left-panel">
@@ -1746,6 +1747,37 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
                     </button>
                   ))}
                   {(project?.workflows || []).length === 0 && <div className="workflow-instance-empty">暂无流程实例</div>}
+                </div>
+              </div>
+            ) : leftSidebarTab === 'fields' ? (
+              <div className="canvas-fields-panel" role="tabpanel" aria-label="字段引用">
+                <div className="workflow-instance-header">
+                  <span>字段引用</span>
+                </div>
+                <div className="canvas-fields-list">
+                  {(project?.forms || []).length === 0 ? (
+                    <div className="workflow-instance-empty">暂无表单</div>
+                  ) : (project?.forms || []).map((form) => {
+                    const fields = (form.design?.components || [])
+                      .filter((c) => c.fieldBinding && !String(c.fieldBinding).startsWith('_'))
+                      .map((c) => ({
+                        name: String(c.fieldBinding),
+                        type: c.type,
+                        label: String(c.props?.label || c.props?.title || c.fieldBinding || ''),
+                      }));
+                    if (fields.length === 0) return null;
+                    return (
+                      <div key={form.id} className="canvas-fields-form-group">
+                        <div className="canvas-fields-form-header">{form.name}</div>
+                        {fields.map((field) => (
+                          <div key={field.name} className="canvas-fields-item">
+                            <span className="canvas-fields-name">{field.name}</span>
+                            <span className="canvas-fields-meta">{field.label} · {field.type}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ) : (
