@@ -5,6 +5,7 @@ import {
 import { tmpdir } from 'node:os';
 import { basename, extname, join } from 'node:path';
 import XLSX from 'xlsx';
+import { XMLParser } from 'fast-xml-parser';
 
 export type StagedSheet = {
   name: string;
@@ -21,7 +22,7 @@ export type StagedUpload = {
   path: string;
   size: number;
   mimeType: string;
-  fileType: 'xlsx' | 'xls' | 'csv' | 'json' | 'formflow' | 'zip';
+  fileType: 'xlsx' | 'xls' | 'csv' | 'tsv' | 'json' | 'xml' | 'parquet' | 'formflow' | 'zip';
   uploadedAt: string;
   expiresAt: string;
   tenantId?: string;
@@ -32,7 +33,7 @@ export type StagedUpload = {
 
 const STAGING_DIR = join(tmpdir(), 'formflow-upload-staging');
 const TTL_MS = 30 * 60 * 1000;
-const SUPPORTED = new Set(['xlsx', 'xls', 'csv', 'json']);
+const SUPPORTED = new Set(['xlsx', 'xls', 'csv', 'tsv', 'json', 'xml', 'parquet']);
 
 function safeFileId(fileId: string) {
   if (!/^file_[A-Za-z0-9_-]+$/.test(fileId)) throw new Error('无效 fileId');
@@ -51,9 +52,11 @@ function rowsToSheet(name: string, rows: unknown): StagedSheet {
   return { name, rowCount: data.length, colCount: headers.length, headers, data };
 }
 
-export function parseSourceBuffer(buffer: Buffer, originalName: string): { fileType: 'xlsx' | 'xls' | 'csv' | 'json'; sheets: StagedSheet[] } {
-  const fileType = extname(originalName).toLowerCase().slice(1) as 'xlsx' | 'xls' | 'csv' | 'json';
-  if (!SUPPORTED.has(fileType)) throw new Error('仅支持 XLSX、XLS、CSV、JSON');
+export function parseSourceBuffer(buffer: Buffer, originalName: string): { fileType: string; sheets: StagedSheet[] } {
+  const fileType = extname(originalName).toLowerCase().slice(1);
+  if (!SUPPORTED.has(fileType)) throw new Error('仅支持 XLSX、XLS、CSV、TSV、JSON、XML、Parquet');
+
+  // JSON
   if (fileType === 'json') {
     const parsed = JSON.parse(buffer.toString('utf8'));
     if (Array.isArray(parsed)) return { fileType, sheets: [rowsToSheet('Sheet1', parsed)] };
@@ -63,6 +66,56 @@ export function parseSourceBuffer(buffer: Buffer, originalName: string): { fileT
     const entries = Object.entries(parsed || {}).filter(([, value]) => Array.isArray(value));
     return { fileType, sheets: entries.length ? entries.map(([name, rows]) => rowsToSheet(name, rows)) : [rowsToSheet('Sheet1', [parsed])] };
   }
+
+  // TSV (tab-separated values)
+  if (fileType === 'tsv') {
+    const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true, FS: '\t' });
+    return {
+      fileType,
+      sheets: workbook.SheetNames.map((name) => rowsToSheet(
+        name,
+        XLSX.utils.sheet_to_json(workbook.Sheets[name], { defval: null }),
+      )),
+    };
+  }
+
+  // XML
+  if (fileType === 'xml') {
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: '@_',
+      textNodeName: '#text',
+      isArray: (name, jpath, isLeafNode, isAttribute) => !isAttribute,
+    });
+    const parsed = parser.parse(buffer.toString('utf8'));
+    // Find the array of records: root > items[] or root > firstArray
+    const root = Object.values(parsed || {})[0] as Record<string, unknown>;
+    if (!root || typeof root !== 'object') return { fileType, sheets: [rowsToSheet('Sheet1', [])] };
+    // Look for the first array in root
+    const arrayEntry = Object.entries(root).find(([, v]) => Array.isArray(v));
+    if (arrayEntry) {
+      return { fileType, sheets: [rowsToSheet(arrayEntry[0], arrayEntry[1])] };
+    }
+    // If root itself is an array
+    if (Array.isArray(root)) return { fileType, sheets: [rowsToSheet('Sheet1', root)] };
+    // Single record
+    return { fileType, sheets: [rowsToSheet('Sheet1', [flattenObject(root)])] };
+  }
+
+  // Parquet (limited support - requires native addon, falls back to empty)
+  if (fileType === 'parquet') {
+    try {
+      // Dynamic import to avoid hard dependency
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const parquet = require('parquet-wasm');
+      const rows = parquet.readParquet(buffer);
+      return { fileType, sheets: [rowsToSheet('Sheet1', rows)] };
+    } catch {
+      throw new Error('Parquet 解析需要安装 parquet-wasm 或 parquetjs 依赖。请运行: npm install parquet-wasm');
+    }
+  }
+
+  // Excel (xlsx/xls) and CSV
   const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true });
   return {
     fileType,
@@ -71,6 +124,20 @@ export function parseSourceBuffer(buffer: Buffer, originalName: string): { fileT
       XLSX.utils.sheet_to_json(workbook.Sheets[name], { defval: null }),
     )),
   };
+}
+
+/** Flatten nested object to dot-separated keys */
+function flattenObject(obj: Record<string, unknown>, prefix = ''): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const fullKey = prefix ? `${prefix}.${key}` : key;
+    if (value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+      Object.assign(result, flattenObject(value as Record<string, unknown>, fullKey));
+    } else {
+      result[fullKey] = value;
+    }
+  }
+  return result;
 }
 
 export function cleanupExpiredUploads(now = Date.now()): void {
@@ -108,7 +175,7 @@ export function stageUpload(input: {
     path,
     size: input.buffer.length,
     mimeType: input.mimeType || 'application/octet-stream',
-    fileType: parsed.fileType,
+    fileType: parsed.fileType as StagedUpload['fileType'],
     uploadedAt,
     expiresAt: new Date(Date.now() + TTL_MS).toISOString(),
     tenantId: input.tenantId,

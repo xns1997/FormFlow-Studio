@@ -267,6 +267,35 @@
 .data-preview-filter-chips { display: flex; gap: 5px; flex-basis: 100%; justify-content: flex-end; }
 .data-preview-filter-chips button { min-height: 24px; padding: 3px 8px; border: 1px solid var(--accent-line); border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11px; cursor: pointer; }
 
+/* ── FilterBar ─────────────────────────────────────── */
+.filter-bar { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-bottom: 1px solid var(--border, #e5e7eb); background: var(--bg-secondary, #f9fafb); flex-wrap: wrap; min-height: 36px; }
+.filter-bar-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border: 1px solid var(--accent-line, #bfdbfe); border-radius: 999px; background: var(--accent-soft, #eff6ff); color: var(--accent, #2563eb); font-size: 12px; cursor: pointer; position: relative; white-space: nowrap; }
+.filter-bar-chip:hover { background: var(--accent-hover, #dbeafe); }
+.filter-bar-chip-label { max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+.filter-bar-chip-delete { background: none; border: none; color: inherit; cursor: pointer; padding: 0 2px; font-size: 14px; line-height: 1; opacity: 0.6; }
+.filter-bar-chip-delete:hover { opacity: 1; }
+.filter-bar-add-btn { background: none; border: 1px dashed var(--border, #d1d5db); border-radius: 999px; padding: 3px 10px; font-size: 12px; color: var(--text-secondary, #6b7280); cursor: pointer; white-space: nowrap; }
+.filter-bar-add-btn:hover { border-color: var(--accent, #2563eb); color: var(--accent, #2563eb); }
+.filter-bar-clear-btn { background: none; border: none; font-size: 11px; color: var(--text-secondary, #6b7280); cursor: pointer; padding: 3px 6px; }
+.filter-bar-clear-btn:hover { color: #dc2626; }
+.filter-bar-popover { position: absolute; top: calc(100% + 4px); left: 0; z-index: 100; background: var(--bg, #fff); border: 1px solid var(--border, #e5e7eb); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-width: 240px; }
+.filter-bar-add-popover { position: absolute; top: calc(100% + 4px); left: 0; }
+.filter-bar-add-header { padding: 8px; border-bottom: 1px solid var(--border, #e5e7eb); }
+.filter-bar-add-search { width: 100%; padding: 6px 8px; border: 1px solid var(--border, #e5e7eb); border-radius: 4px; font-size: 13px; }
+.filter-bar-add-list { max-height: 240px; overflow-y: auto; padding: 4px; }
+.filter-bar-add-item { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 6px 10px; border: none; background: none; cursor: pointer; font-size: 13px; text-align: left; border-radius: 4px; }
+.filter-bar-add-item:hover { background: var(--bg-secondary, #f3f4f6); }
+.filter-bar-add-item-type { font-size: 11px; color: var(--text-secondary, #9ca3af); }
+.filter-bar-add-empty { padding: 12px; text-align: center; color: var(--text-secondary, #9ca3af); font-size: 13px; }
+
+/* ── Filter Editor ─────────────────────────────────── */
+.filter-editor { padding: 12px; min-width: 220px; }
+.filter-editor-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
+.filter-editor-delete { background: none; border: none; color: #dc2626; cursor: pointer; font-size: 12px; padding: 2px 6px; }
+.filter-editor-body { display: flex; flex-direction: column; gap: 6px; }
+.filter-editor-body select, .filter-editor-body input { padding: 6px 8px; border: 1px solid var(--border, #e5e7eb); border-radius: 4px; font-size: 13px; }
+.filter-editor-footer { display: flex; gap: 6px; justify-content: flex-end; margin-top: 10px; }
+
 .data-preview-feedback {
   position: fixed;
   right: 24px;
@@ -315,6 +344,64 @@
 .data-preview-row-detail span { overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
 .data-preview-analysis-meta { margin: 8px 0 14px; color: var(--muted); font-size: 12px; }
 .describe-col-actions { display: inline-flex; gap: 6px; margin-left: auto; }
+
+/* ── Describe: Insight Summary ──────────────────────── */
+.describe-insight-summary { background: var(--accent-soft, #eff6ff); border: 1px solid var(--accent-line, #bfdbfe); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
+.describe-insight-summary p { margin: 0 0 4px; font-size: 13px; line-height: 1.6; color: var(--text, #1f2937); }
+.describe-insight-summary p:last-child { margin-bottom: 0; }
+
+/* ── Describe: Charts Row ───────────────────────────── */
+.describe-charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.describe-charts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.describe-chart-card { background: var(--bg, #fff); border: 1px solid var(--border, #e5e7eb); border-radius: 8px; padding: 12px; }
+.describe-chart-card h4 { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
+.describe-chart-card h5 { margin: 0 0 6px; font-size: 12px; font-weight: 500; color: var(--text-secondary, #6b7280); }
+
+/* ── Chart Containers ───────────────────────────────── */
+.data-chart-container { width: 100%; height: 200px; position: relative; }
+.data-chart-container.data-chart-horizontal { height: 260px; }
+.data-chart-container.data-chart-pie { height: 220px; }
+.data-chart-container.data-chart-radar { height: 240px; }
+.data-chart-container.data-chart-heatmap { height: auto; overflow-x: auto; }
+.data-chart-container.data-chart-missing { height: auto; }
+.data-chart-empty { padding: 16px; text-align: center; color: var(--text-secondary, #9ca3af); font-size: 13px; }
+
+/* ── Heatmap ────────────────────────────────────────── */
+.heatmap-grid { display: grid; gap: 1px; font-size: 11px; }
+.heatmap-corner { background: transparent; }
+.heatmap-header { padding: 4px 6px; text-align: center; font-weight: 600; background: var(--bg-secondary, #f3f4f6); border-radius: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.heatmap-row-header { padding: 4px 6px; font-weight: 600; background: var(--bg-secondary, #f3f4f6); border-radius: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.heatmap-cell { padding: 4px 6px; text-align: center; border-radius: 2px; font-size: 10px; color: #fff; text-shadow: 0 0 2px rgba(0,0,0,0.3); }
+
+/* ── Box Plot ───────────────────────────────────────── */
+.data-chart-boxplot { padding: 8px 0; }
+.boxplot-stats { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.boxplot-stat { display: flex; flex-direction: column; align-items: center; padding: 4px 8px; background: var(--bg-secondary, #f9fafb); border-radius: 4px; }
+.boxplot-stat.boxplot-median { background: var(--accent-soft, #eff6ff); }
+.boxplot-label { font-size: 10px; color: var(--text-secondary, #6b7280); }
+.boxplot-value { font-size: 13px; font-weight: 600; }
+.boxplot-visual { position: relative; height: 24px; margin: 0 10%; }
+.boxplot-whisker-left, .boxplot-whisker-right { position: absolute; top: 50%; height: 2px; background: var(--text-secondary, #9ca3af); transform: translateY(-50%); }
+.boxplot-box { position: absolute; top: 25%; height: 50%; background: var(--accent-soft, #bfdbfe); border: 2px solid var(--accent, #3b82f6); border-radius: 4px; }
+.boxplot-median-line { position: absolute; top: 20%; height: 60%; width: 2px; background: var(--accent, #3b82f6); transform: translateX(-50%); }
+
+/* ── Missing Bars ───────────────────────────────────── */
+.missing-bars { display: flex; flex-direction: column; gap: 6px; }
+.missing-bar-row { display: flex; align-items: center; gap: 8px; }
+.missing-bar-label { width: 80px; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; color: var(--text-secondary, #6b7280); }
+.missing-bar-track { flex: 1; height: 16px; background: var(--bg-secondary, #f3f4f6); border-radius: 8px; overflow: hidden; }
+.missing-bar-fill { height: 100%; background: linear-gradient(90deg, #fca5a5, #ef4444); border-radius: 8px; transition: width 0.3s; }
+.missing-bar-value { width: 48px; font-size: 11px; color: var(--text-secondary, #6b7280); text-align: right; }
+
+/* ── Describe Column Chart ──────────────────────────── */
+.describe-col-chart { margin: 8px 0; max-height: 200px; overflow: hidden; }
+
+/* ── Config: Column Width Management ────────────────── */
+.config-empty-hint { padding: 12px; color: var(--text-secondary, #9ca3af); font-size: 13px; text-align: center; }
+.config-column-width-list { display: flex; flex-direction: column; gap: 4px; }
+.config-column-width-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--bg-secondary, #f9fafb); border-radius: 6px; }
+.config-column-width-name { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.config-column-width-value { font-size: 12px; color: var(--text-secondary, #6b7280); font-variant-numeric: tabular-nums; min-width: 48px; text-align: right; }
 .data-preview-grid .ag-cell-validation-error { box-shadow: inset 0 0 0 2px #dc2626; background: rgba(239, 68, 68, .08); }
 
 .data-preview-summary {

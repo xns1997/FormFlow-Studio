@@ -244,7 +244,7 @@ export interface SrcTableEntry {
   id: string;
   fileName: string;
   fileSize: number;
-  fileType: 'xlsx' | 'xls' | 'csv' | 'json' | 'sqlite';
+  fileType: 'xlsx' | 'xls' | 'csv' | 'tsv' | 'json' | 'xml' | 'parquet' | 'sqlite';
   uploadedAt: string;
   sheets: SrcSheetInfo[];
   dataHash: string;

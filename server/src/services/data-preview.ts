@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { dataIndexManager, DataIndexManager } from './data-index-cache.js';
 
 export type DataRow = Record<string, unknown>;
 export type SortRule = { colId?: string; field?: string; sort?: 'asc' | 'desc' };
@@ -89,18 +90,101 @@ export function queryRows(input: {
   sortModel?: SortRule[];
   filterModel?: Record<string, FilterRule>;
   maxPageSize?: number;
+  /** Optional: file/sheet key for index cache */
+  indexKey?: string;
 }) {
   const page = Math.max(1, Number(input.page) || 1);
   const pageSize = Math.min(input.maxPageSize || 500, Math.max(1, Number(input.pageSize) || 100));
+
+  // Check cache for repeated queries
+  const cacheKey = input.indexKey
+    ? DataIndexManager.makeCacheKey(
+        input.indexKey, '', page, pageSize,
+        input.search || '', input.keySearch || '',
+        input.sortModel || [], input.filterModel || {},
+      )
+    : null;
+
+  if (cacheKey) {
+    const cached = dataIndexManager.getCachedResult(cacheKey);
+    if (cached) {
+      return {
+        rows: cached.rows,
+        total: cached.total,
+        queryTotal: cached.queryTotal,
+        page,
+        pageSize,
+        totalPages: Math.max(1, Math.ceil(cached.queryTotal / pageSize)),
+        hasMore: (page - 1) * pageSize + pageSize < cached.queryTotal,
+        dataVersion: cached.dataVersion,
+      };
+    }
+  }
+
   const keys = buildRowKeys(input.rows, input.keyFields);
   let keyed = input.rows.map((row, index) => ({ ...row, __rowKey: keys[index], __rowIndex: index })) as KeyedRow[];
+
+  // Key search
   const keySearch = input.keySearch?.trim().toLocaleLowerCase();
   if (keySearch) keyed = keyed.filter((row) => row.__rowKey.toLocaleLowerCase().includes(encodeURIComponent(keySearch).toLocaleLowerCase()) || (input.keyFields || []).some((field) => contains(row[field], keySearch)));
+
+  // Full-text search
   const search = input.search?.trim().toLocaleLowerCase();
   if (search) keyed = keyed.filter((row) => input.headers.some((header) => contains(row[header], search)));
-  for (const [field, rule] of Object.entries(input.filterModel || {})) {
-    keyed = keyed.filter((row) => matchesFilter(row[field], rule));
+
+  // Column filters - use index for large datasets
+  const filterEntries = Object.entries(input.filterModel || {});
+  const useIndex = input.indexKey && input.rows.length > 10000 && filterEntries.length > 0;
+
+  if (useIndex) {
+    const index = dataIndexManager.getIndex(input.indexKey!, input.rows, input.headers);
+    // Apply indexed filters to narrow down candidates
+    let candidateIndices: Set<number> | null = null;
+
+    for (const [field, rule] of filterEntries) {
+      const filterType = rule.type || 'contains';
+      const filterValue = rule.filter;
+      const filterValue2 = rule.filterTo;
+      const indexedResult = index.filter(field, filterType, filterValue, filterValue2);
+
+      if (indexedResult) {
+        if (candidateIndices === null) {
+          candidateIndices = indexedResult;
+        } else {
+          // AND intersection
+          const intersection = new Set<number>();
+          for (const i of candidateIndices) {
+            if (indexedResult.has(i)) intersection.add(i);
+          }
+          candidateIndices = intersection;
+        }
+      }
+    }
+
+    // Apply candidate filter + remaining non-indexed filters
+    if (candidateIndices) {
+      keyed = keyed.filter((row) => {
+        if (!candidateIndices!.has(row.__rowIndex)) return false;
+        // Verify with full filter (for compound/complex filters)
+        for (const [field, rule] of filterEntries) {
+          if (!matchesFilter(row[field], rule)) return false;
+        }
+        return true;
+      });
+    } else {
+      // No index results, fall back to full scan
+      for (const [field, rule] of filterEntries) {
+        keyed = keyed.filter((row) => matchesFilter(row[field], rule));
+      }
+    }
+  } else {
+    // Small dataset, use simple filter
+    for (const [field, rule] of filterEntries) {
+      keyed = keyed.filter((row) => matchesFilter(row[field], rule));
+    }
   }
+
+  // Sorting
   const sortModel = (input.sortModel || []).filter((rule) => (rule.colId || rule.field) && rule.sort);
   if (sortModel.length) {
     keyed.sort((left, right) => {
@@ -112,9 +196,10 @@ export function queryRows(input: {
       return left.__rowIndex - right.__rowIndex;
     });
   }
+
   const queryTotal = keyed.length;
   const start = (page - 1) * pageSize;
-  return {
+  const result = {
     rows: keyed.slice(start, start + pageSize),
     total: input.rows.length,
     queryTotal,
@@ -124,6 +209,18 @@ export function queryRows(input: {
     hasMore: start + pageSize < queryTotal,
     dataVersion: dataVersion(input.rows),
   };
+
+  // Cache the result
+  if (cacheKey) {
+    dataIndexManager.cacheResult(cacheKey, {
+      rows: result.rows,
+      total: result.total,
+      queryTotal: result.queryTotal,
+      dataVersion: result.dataVersion,
+    });
+  }
+
+  return result;
 }
 
 export function applyBatchChanges(rows: DataRow[], keyFields: string[], changes: BatchChange) {
