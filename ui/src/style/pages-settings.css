@@ -304,7 +304,43 @@
 
 .notification-type-controls {
   display: grid;
-  gap: 8px;
+  gap: 10px;
+}
+
+/* ── Section Spacing Within Cards ──────────────────────── */
+
+.settings-card .settings-toggle-list + .settings-form,
+.settings-card .settings-form + .settings-toggle-list,
+.settings-card .settings-toggle-list + .settings-toggle-list,
+.settings-card .settings-form + .settings-form {
+  margin-top: 20px;
+}
+
+.settings-card .shortcut-list-section {
+  margin-top: 20px;
+}
+
+.settings-card .notification-type-grid {
+  margin-top: 20px;
+}
+
+/* Increase toggle list item spacing */
+.settings-card .settings-toggle-list {
+  gap: 10px;
+}
+
+.settings-card .settings-option-item {
+  min-height: 48px;
+  padding: 12px 14px;
+}
+
+/* Increase form field spacing */
+.settings-card .settings-form {
+  gap: 18px;
+}
+
+.settings-card .settings-grid {
+  gap: 18px;
 }
 
 .notification-duration-label {
