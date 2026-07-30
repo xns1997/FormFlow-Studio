@@ -246,10 +246,11 @@ export default function DataPreviewPage({
     });
   }, [projectId, selectedTableId, activeSheet?.name]);
 
-  // Update datasource when it changes
+  // Update datasource when it changes and trigger initial load
   useEffect(() => {
     if (gridApiRef.current && serverSideDatasource) {
       gridApiRef.current.setGridOption('serverSideDatasource', serverSideDatasource);
+      gridApiRef.current.refreshServerSide({ purge: true });
     }
   }, [serverSideDatasource]);
 
