@@ -12,6 +12,35 @@
   - 配置面板重组，新增列宽变更追踪和重置功能
 
 
+# [1.6.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.5.0...v1.6.0) (2026-07-30)
+
+
+### Bug Fixes
+
+* **test:** add workflow field to project settings test ([ea6dc97](https://github.com/xns1997/FormFlow-Studio/commit/ea6dc97fff83e3827ec3e7aba5b2edb0e7a7519d))
+* **ui:** correct switch handle size in settings page ([afc93dd](https://github.com/xns1997/FormFlow-Studio/commit/afc93dd882fe878943d11f9a037e7d07b0710099))
+* **ui:** improve spacing between settings components ([a6dbd2b](https://github.com/xns1997/FormFlow-Studio/commit/a6dbd2bce3871e66ed92930cad8efcef13ddd56b))
+
+
+### Features
+
+* **settings:** add appearance and workflow preferences ([8d54615](https://github.com/xns1997/FormFlow-Studio/commit/8d546152dcf94df4324fee2b0f077894b7335e9f))
+
+# [1.5.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.4.0...v1.5.0) (2026-07-30)
+
+
+### Bug Fixes
+
+* **agent:** resolve TypeScript compilation errors ([9d717fc](https://github.com/xns1997/FormFlow-Studio/commit/9d717fcf0df42aeae72f7aebf4614bbd10786f14))
+* **ui:** iOS 27 HIG compliance for all form controls ([c81c7ba](https://github.com/xns1997/FormFlow-Studio/commit/c81c7bad6d363fcbf88c0f959476451273792b8b))
+* **ui:** remove white background on antd Select focus-within ([1105482](https://github.com/xns1997/FormFlow-Studio/commit/110548221514b841eb42fbe3bd9dbd45b9610a7c))
+
+
+### Features
+
+* **agent:** extract orchestration into modular agent subsystem ([42faf53](https://github.com/xns1997/FormFlow-Studio/commit/42faf53e988d0236b32c1091391a0d736688f062))
+
+>>>>>>> origin/main
 # [1.4.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.3.0...v1.4.0) (2026-07-30)
 
 
