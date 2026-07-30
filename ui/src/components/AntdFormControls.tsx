@@ -122,17 +122,31 @@ function fromUploadFileList(fileList: UploadFile[]): UploadFileValue[] {
   }));
 }
 
+function usePrefersDark() {
+  const [dark, setDark] = React.useState(() =>
+    typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches,
+  );
+  React.useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => setDark(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return dark;
+}
+
 export function FormAntdProvider({ children }: { children: React.ReactNode }) {
+  const isDark = usePrefersDark();
   return (
     <ConfigProvider
       theme={{
         token: {
           borderRadius: 9,
-          colorPrimary: '#007aff',
-          colorBgContainer: '#ffffff',
-          colorBorder: 'rgba(60,60,67,0.18)',
+          colorPrimary: isDark ? '#0a84ff' : '#007aff',
+          colorBgContainer: isDark ? '#1c1c1e' : '#ffffff',
+          colorBorder: isDark ? 'rgba(235,235,245,0.18)' : 'rgba(60,60,67,0.18)',
           colorTextPlaceholder: '#8e8e93',
-          colorText: '#1c1c1e',
+          colorText: isDark ? '#f5f5f7' : '#1c1c1e',
           controlHeight: 36,
           fontSize: 14,
           boxShadow: 'none',
