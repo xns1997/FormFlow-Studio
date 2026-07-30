@@ -90,6 +90,7 @@ const ICONS: Record<string, IconComponent> = {
   table: Table,
   chart: ChartHistogram,
   card: CardTwo,
+  container: CardTwo,
   tabs: DocDetail,
   steps: List,
   docs: DocDetail,

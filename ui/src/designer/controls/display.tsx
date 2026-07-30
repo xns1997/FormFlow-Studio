@@ -17,7 +17,7 @@ function hasDynamicValueSource(component: DesignComponent) {
 }
 
 registerControl({
-  type: 'text', label: '文本', category: 'display', icon: '📄',
+  type: 'text', label: '文本', category: 'display', icon: 'text',
   defaultProps: {
     content: '文本内容', contentTemplate: '', name: '',
     fontSize: 15, fontWeight: 'normal', fontFamily: '', color: '#1c1c1e',
@@ -46,12 +46,12 @@ registerControl({
     const content = templated || previewValue || component.props.content || '文本';
     return (
       <div style={{ width: '100%', height: '100%', minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 2px', boxSizing: 'border-box', overflow: 'hidden' }}>
-        {mode === 'design' && template && component.props.content && <small role="status" style={{ color: '#b45309', fontSize: 10 }}>已配置动态模板：预览/运行时优先显示模板内容</small>}
+        {mode === 'design' && template && component.props.content && <small role="status" style={{ color: 'var(--warning)', fontSize: 10 }}>已配置动态模板：预览/运行时优先显示模板内容</small>}
         <span style={controlText({
           fontSize: component.props.fontSize || 15,
           fontWeight: component.props.fontWeight || 'normal',
           fontFamily: component.props.fontFamily || undefined,
-          color: component.props.color || '#1c1c1e',
+          color: component.props.color || 'var(--text)',
           textAlign: component.props.textAlign || 'left',
           letterSpacing: component.props.letterSpacing || 0,
           lineHeight: component.props.lineHeight || 1.5,
@@ -65,7 +65,7 @@ registerControl({
 });
 
 registerControl({
-  type: 'image', label: '图片', category: 'display', icon: '🖼️',
+  type: 'image', label: '图片', category: 'display', icon: 'image',
   defaultProps: {
     src: '', alt: '图片', name: '', fit: 'cover', borderRadius: 0, opacity: 1,
     rangeRef: null,
@@ -90,7 +90,7 @@ registerControl({
     return (
       <div role={mode === 'preview' ? 'button' : undefined} aria-label={mode === 'preview' ? String(component.props.alt || '图片') : undefined} tabIndex={mode === 'preview' ? 0 : -1} onClick={() => mode === 'preview' && runtime?.emit('onClick', resolvedSrc)} onKeyDown={(event) => { if (mode === 'preview' && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); runtime?.emit('onClick', resolvedSrc); } }} style={{ ...ios.glass, cursor: mode === 'preview' ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(118,118,128,0.08)', borderRadius: component.props.borderRadius || 0 }}>
         {resolvedSrc ? (
-          <img src={resolvedSrc} alt={component.props.alt || ''} onError={(event) => { event.currentTarget.style.display = 'none'; const parent = event.currentTarget.parentElement; if (parent && !parent.querySelector('[data-image-error]')) { const note = document.createElement('span'); note.dataset.imageError = 'true'; note.textContent = '图片加载失败，请检查链接'; note.setAttribute('role', 'status'); note.style.cssText = 'font-size:12px;color:#d70015;padding:8px;text-align:center'; parent.appendChild(note); } }} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: component.props.fit || 'cover', borderRadius: component.props.borderRadius || 0, opacity: component.props.opacity ?? 1 }} />
+          <img src={resolvedSrc} alt={component.props.alt || ''} onError={(event) => { event.currentTarget.style.display = 'none'; const parent = event.currentTarget.parentElement; if (parent && !parent.querySelector('[data-image-error]')) { const note = document.createElement('span'); note.dataset.imageError = 'true'; note.textContent = '图片加载失败，请检查链接'; note.setAttribute('role', 'status'); note.style.cssText = 'font-size:12px;color:var(--danger);padding:8px;text-align:center'; parent.appendChild(note); } }} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: component.props.fit || 'cover', borderRadius: component.props.borderRadius || 0, opacity: component.props.opacity ?? 1 }} />
         ) : (
           <span style={{ fontSize: 24, opacity: 0.2 }}><DesignerIcon name="image" size={24} /></span>
         )}
@@ -100,7 +100,7 @@ registerControl({
 });
 
 registerControl({
-  type: 'animatedNumber', label: '跳动数字', category: 'display', icon: '🔢',
+  type: 'animatedNumber', label: '跳动数字', category: 'display', icon: 'animatedNumber',
   defaultProps: {
     content: '0', name: '',
     fontSize: 32, fontWeight: 'bold', fontFamily: '', color: '#2563eb',
@@ -169,7 +169,7 @@ registerControl({
 });
 
 registerControl({
-  type: 'table', label: '数据表格', category: 'display', icon: '📊',
+  type: 'table', label: '数据表格', category: 'display', icon: 'table',
   defaultProps: {
     columns: ['名称', '类型', '状态'], rows: 3, name: '',
     editable: false, addable: false, removable: false, rowKey: '', changeTracking: 'fullRows',
@@ -296,7 +296,7 @@ function stopScrollPropagation(event: React.UIEvent<HTMLElement> | React.WheelEv
 // ── 图表控件注册 ──────────────────────────────────────────
 
 registerControl({
-  type: 'chart', label: '图表', category: 'display', icon: '📈',
+  type: 'chart', label: '图表', category: 'display', icon: 'chart',
   defaultProps: {
     chartType: 'bar', title: '图表标题', name: '',
     barColor: '#007aff', lineColor: '#ff9500', showLegend: false, showValues: false,
@@ -401,7 +401,7 @@ function ChartRender({ component, mode, runtime }: { component: DesignComponent;
     <div role={mode === 'preview' ? 'button' : undefined} aria-label={mode === 'preview' ? String(component.props.title || '图表') : undefined} tabIndex={mode === 'preview' ? 0 : -1} onClick={() => mode === 'preview' && runtime?.emit('onClick')} onKeyDown={(event) => { if (mode === 'preview' && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); runtime?.emit('onClick'); } }} style={{ ...ios.glass, cursor: mode === 'preview' ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
       <div style={{ padding: '10px 14px 0', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <span style={{ fontSize: 14, fontWeight: 650, color: '#1c1c1e' }}>{component.props.title || '图表'}</span>
+          <span style={{ fontSize: 14, fontWeight: 650, color: 'var(--text)' }}>{component.props.title || '图表'}</span>
           {mode === 'preview' && (
             <button
               type="button"
@@ -419,7 +419,7 @@ function ChartRender({ component, mode, runtime }: { component: DesignComponent;
           )}
         </div>
         {headers && dimsArr.length > 0 && metsArr.length > 0 && (
-          <span style={{ fontSize: 10, color: '#8e8e93', marginLeft: 8 }}>
+          <span style={{ fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 8 }}>
             维度:{dimsArr.map(d => headers[d] || `C${d}`).join(', ')}
             {' · '}指标:{metsArr.map(m => `${headers[m.col] || `C${m.col}`}(${m.agg})`).join(', ')}
             {!hasManualConfig && <em style={{ fontStyle: 'normal', color: '#34c759', marginLeft: 4 }}>自动</em>}

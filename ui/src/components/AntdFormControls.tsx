@@ -133,8 +133,8 @@ export function FormAntdProvider({ children }: { children: React.ReactNode }) {
           colorBorder: 'rgba(60,60,67,0.18)',
           colorTextPlaceholder: '#8e8e93',
           colorText: '#1c1c1e',
-          controlHeight: 36,
-          fontSize: 14,
+          controlHeight: 44,
+          fontSize: 16,
           boxShadow: 'none',
           // Form controls can run inside the application modal layer (z-index 1400).
           // Keep body-mounted Select/Picker popups above that layer.

@@ -813,18 +813,23 @@
   flex-wrap: wrap;
 }
 .designer-date-range-presets button {
-  min-height: 28px;
-  padding: 3px 8px;
-  border: 1px solid rgba(37,99,235,.24);
-  border-radius: 7px;
-  background: transparent;
+  min-height: 30px;
+  padding: 4px 10px;
+  border: 1px solid var(--accent-line);
+  border-radius: 8px;
+  background: var(--panel);
   color: var(--accent);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 510;
+  transition: background 0.15s, box-shadow 0.15s;
 }
-.designer-date-range-presets button:hover { background: var(--accent-soft); }
+.designer-date-range-presets button:hover { background: var(--accent-soft); box-shadow: 0 1px 4px rgba(0,122,255,0.12); }
+.designer-date-range-presets button:active { transform: scale(0.97); }
 .designer-date-quick-actions { display: flex; gap: 4px; margin-top: 4px; }
-.designer-date-quick-actions button { min-height: 28px; padding: 3px 8px; border: 1px solid rgba(37,99,235,.24); border-radius: 7px; background: transparent; color: var(--accent); cursor: pointer; font-size: 11px; }
+.designer-date-quick-actions button { min-height: 30px; padding: 4px 10px; border: 1px solid var(--accent-line); border-radius: 8px; background: var(--panel); color: var(--accent); cursor: pointer; font-size: 12px; font-weight: 510; transition: background 0.15s, box-shadow 0.15s; }
+.designer-date-quick-actions button:hover { background: var(--accent-soft); box-shadow: 0 1px 4px rgba(0,122,255,0.12); }
+.designer-date-quick-actions button:active { transform: scale(0.97); }
 
 .designer-upload-status { display: grid; gap: 2px; margin-top: 5px; color: var(--muted); font-size: 11px; line-height: 1.35; }
 .designer-upload-status .error { color: #d70015; }

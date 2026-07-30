@@ -82,7 +82,7 @@ function TagInputPreview({ component, mode, runtime }: { component: DesignCompon
         onBlur={() => runtime?.emit('onBlur')}
         onFocus={() => runtime?.emit('onFocus')}
       />
-      {invalidTag && <div role="alert" className="designer-field-hint designer-field-hint-error">标签“{invalidTag}”超出限制，已保留原文；请缩短或移除后再提交。</div>}
+      {invalidTag && <div role="alert" className="designer-field-hint designer-field-hint-error">{'⚠️ 标签"'}{invalidTag}{'"超出限制，已保留原文；请缩短或移除后再提交。'}</div>}
     </div>
   );
 }
@@ -106,7 +106,7 @@ function UploadPreview({ component, mode, runtime, imageOnly = false }: { compon
         disabled={!!component.props.disabled}
         onChange={(next) => runtime?.emit('onChange', next)}
       />
-      {files.length > 0 && <div role="status" className="designer-upload-status">{files.map((file) => <span key={file.name} className={file.status === 'error' ? 'error' : ''}>{file.status === 'error' ? `上传失败：${file.name}，请移除后重试` : `已选择：${file.name}`}</span>)}</div>}
+      {files.length > 0 && <div role="status" className="designer-upload-status">{files.map((file) => <span key={file.name} className={file.status === 'error' ? 'error' : ''}>{file.status === 'error' ? `⚠️ 上传失败：${file.name}，请移除后重试` : `已选择：${file.name}`}</span>)}</div>}
       {files.some((file) => file.status === 'error' || file.status === 'uploading') && <div className="designer-upload-actions">{files.filter((file) => file.status === 'error' || file.status === 'uploading').map((file) => file.status === 'error' ? <button key={`${file.name}-retry`} type="button" onClick={() => runtime?.emit('onChange', files.map((item) => item.name === file.name ? { ...item, status: 'done', error: undefined } : item))}>重试 {file.name}</button> : <button key={`${file.name}-cancel`} type="button" onClick={() => runtime?.emit('onChange', files.filter((item) => item.name !== file.name))}>取消 {file.name}</button>)}</div>}
       {imageOnly && (component.props.alt || component.props.privacyHint) && <small className="designer-field-hint">{component.props.alt ? `图片说明：${component.props.alt}` : ''}{component.props.alt && component.props.privacyHint ? ' · ' : ''}{component.props.privacyHint || ''}</small>}
     </div>
@@ -152,10 +152,10 @@ function DatePickerPreview({ component, mode, runtime }: { component: DesignComp
 }
 
 registerControl({
-  type: 'input', label: '文本输入', category: 'basic', icon: '✏️',
+  type: 'input', label: '文本输入', category: 'basic', icon: 'input',
   defaultProps: {
     label: 'Label', placeholder: '请输入', name: '', required: false, readonly: false, disabled: false,
-    fontFamily: '', fontSize: 15, fontWeight: '400', color: '#1c1c1e', lineHeight: 1.5, letterSpacing: 0, textAlign: 'left',
+    fontFamily: '', fontSize: 16, fontWeight: '400', color: '#1c1c1e', lineHeight: 1.5, letterSpacing: 0, textAlign: 'left',
     minLength: 0, maxLength: 0, pattern: '', patternMessage: '格式不正确',
     inputKind: 'text', codeTemplate: '', validator: 'none', customMessage: '输入内容不符合要求', validationRules: [], selectOnFocus: false, allowClear: true, trimWhitespace: true, textTransform: 'none', rememberLastInput: false,
     valueExpression: '', visibleExpression: '', disabledExpression: '', requiredExpression: '',
@@ -205,7 +205,7 @@ registerControl({
         inputMode={component.props.inputKind === 'phone' ? 'tel' : component.props.inputKind === 'email' ? 'email' : component.props.inputKind === 'url' ? 'url' : 'text'}
         maxLength={Number(component.props.maxLength) || undefined}
         showCount={Number(component.props.maxLength) > 0}
-        style={{ fontFamily: component.props.fontFamily || undefined, fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', lineHeight: component.props.lineHeight || undefined, letterSpacing: `${Number(component.props.letterSpacing) || 0}px`, textAlign: component.props.textAlign || 'left' }}
+        style={{ fontFamily: component.props.fontFamily || undefined, fontSize: component.props.fontSize || 16, fontWeight: component.props.fontWeight || '400', color: component.props.color || 'var(--text)', lineHeight: component.props.lineHeight || undefined, letterSpacing: `${Number(component.props.letterSpacing) || 0}px`, textAlign: component.props.textAlign || 'left' }}
         onChange={(next) => { const value = component.props.trimWhitespace === false ? next : next.trim(); const transformed = component.props.textTransform === 'upper' ? value.toUpperCase() : component.props.textTransform === 'lower' ? value.toLowerCase() : value; runtime?.emit('onChange', transformed); }}
         onBlur={() => runtime?.emit('onBlur')}
         onFocus={() => runtime?.emit('onFocus')}
@@ -219,11 +219,11 @@ registerControl({
 });
 
 registerControl({
-  type: 'textarea', label: '多行文本', category: 'basic', icon: '📝',
+  type: 'textarea', label: '多行文本', category: 'basic', icon: 'textarea',
   defaultProps: {
     label: 'Label', placeholder: '请输入', name: '', rows: 3, required: false, readonly: false, disabled: false,
     maxLength: 0, showCount: false, autoResize: true,
-    fontSize: 15, fontWeight: '400', color: '#1c1c1e', lineHeight: 1.5,
+    fontSize: 16, fontWeight: '400', color: '#1c1c1e', lineHeight: 1.5,
     minLength: 0, pattern: '', patternMessage: '格式不正确', customMessage: '输入内容不符合要求', validationRules: [],
     rangeRef: null,
   },
@@ -264,7 +264,7 @@ registerControl({
         autoSize={component.props.autoResize ? { minRows: Number(component.props.rows) || 3, maxRows: 8 } : false}
         maxLength={Number(component.props.maxLength) || undefined}
         showCount={!!component.props.showCount || Number(component.props.maxLength) > 0}
-        style={{ fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', lineHeight: component.props.lineHeight || 1.5 }}
+        style={{ fontSize: component.props.fontSize || 16, fontWeight: component.props.fontWeight || '400', color: component.props.color || 'var(--text)', lineHeight: component.props.lineHeight || 1.5 }}
         onChange={(next) => runtime?.emit('onChange', next)}
         onBlur={() => runtime?.emit('onBlur')}
         onFocus={() => runtime?.emit('onFocus')}
@@ -275,11 +275,11 @@ registerControl({
 });
 
 registerControl({
-  type: 'number', label: '数字输入', category: 'basic', icon: '🔢',
+  type: 'number', label: '数字输入', category: 'basic', icon: 'number',
   defaultProps: {
     label: 'Label', placeholder: '0', name: '', required: false, readonly: false, disabled: false,
     step: 1, precision: 0, prefix: '', suffix: '',
-    fontSize: 15, fontWeight: '400', color: '#1c1c1e', textAlign: 'left',
+    fontSize: 16, fontWeight: '400', color: '#1c1c1e', textAlign: 'left',
     integer: false, positive: false, customMessage: '请输入有效数字',
     rangeRef: null,
   },
@@ -320,7 +320,7 @@ registerControl({
         precision={Number.isFinite(Number(component.props.precision)) ? Number(component.props.precision) : undefined}
         prefix={component.props.prefix || undefined}
         suffix={component.props.suffix || undefined}
-        style={{ fontSize: component.props.fontSize || 14, fontWeight: component.props.fontWeight || '400', color: component.props.color || '#1c1c1e', textAlign: component.props.textAlign || 'left', width: '100%' }}
+        style={{ fontSize: component.props.fontSize || 16, fontWeight: component.props.fontWeight || '400', color: component.props.color || 'var(--text)', textAlign: component.props.textAlign || 'left', width: '100%' }}
         onChange={(next) => runtime?.emit('onChange', next === '' ? '' : Number(next))}
         onBlur={() => runtime?.emit('onBlur')}
         onFocus={() => runtime?.emit('onFocus')}
@@ -330,7 +330,7 @@ registerControl({
 });
 
 registerControl({
-  type: 'datePicker', label: '日期选择', category: 'basic', icon: '📅',
+  type: 'datePicker', label: '日期选择', category: 'basic', icon: 'datePicker',
   defaultProps: {
     label: '日期', name: '', placeholder: '选择日期', required: false, readonly: false, disabled: false,
     format: 'YYYY-MM-DD', minDate: '', maxDate: '', showTime: false,
@@ -339,7 +339,7 @@ registerControl({
     businessDayConfig: { mode: 'allDays' },
     displayPreset: 'date', timezone: 'local', displayFormat: '',
     storageFormat: '',
-    fontSize: 15, fontWeight: '400', color: '#1c1c1e',
+    fontSize: 16, fontWeight: '400', color: '#1c1c1e',
     customMessage: '请选择有效日期',
     rangeRef: null,
   },
@@ -380,7 +380,7 @@ registerControl({
 });
 
 registerControl({
-  type: 'timePicker', label: '时间选择', category: 'basic', icon: '⏰',
+  type: 'timePicker', label: '时间选择', category: 'basic', icon: 'timePicker',
   defaultProps: {
     label: '时间', name: '', placeholder: '选择时间', required: false, readonly: false, disabled: false,
     showSeconds: false, format: 'HH:mm', displayPreset: 'time', timezone: 'local', rangeRef: null,
@@ -445,7 +445,7 @@ registerControl({
 });
 
 registerControl({
-  type: 'dateRange', label: '日期范围', category: 'basic', icon: '🗓️',
+  type: 'dateRange', label: '日期范围', category: 'basic', icon: 'dateRange',
   defaultProps: {
     label: '日期范围', name: '', required: false, readonly: false, disabled: false,
     format: 'YYYY-MM-DD', startPlaceholder: '开始日期', endPlaceholder: '结束日期',
@@ -518,7 +518,7 @@ registerControl({
 });
 
 registerControl({
-  type: 'switch', label: '开关', category: 'basic', icon: '🔘',
+  type: 'switch', label: '开关', category: 'basic', icon: 'switch',
   defaultProps: {
     label: '启用', name: '', disabled: false, defaultValue: false, onText: '开启', offText: '关闭',
     size: 'default', activeColor: '#34c759', inactiveColor: 'rgba(118,118,128,0.18)',
@@ -553,14 +553,14 @@ registerControl({
           inactiveColor={component.props.inactiveColor}
           onChange={(next) => runtime?.emit('onChange', next)}
         />
-        <span aria-live="polite" style={{ fontSize: 12, color: '#6e6e73', minWidth: 30 }}>{checked ? (component.props.onText || '开启') : (component.props.offText || '关闭')}</span>
+        <span aria-live="polite" style={{ fontSize: 12, color: 'var(--text-secondary)', minWidth: 30 }}>{checked ? (component.props.onText || '开启') : (component.props.offText || '关闭')}</span>
       </div>
     );
   },
 });
 
 registerControl({
-  type: 'rating', label: '评分', category: 'basic', icon: '⭐',
+  type: 'rating', label: '评分', category: 'basic', icon: 'rating',
   defaultProps: {
     label: '评分', name: '', max: 5, defaultValue: 0, disabled: false, required: false, lowLabel: '不满意', highLabel: '非常满意',
     size: 'default', activeColor: '#ff9500', inactiveColor: '#e5e5ea', allowHalf: false, showText: false,
@@ -605,17 +605,17 @@ registerControl({
             allowHalf={!!component.props.allowHalf}
             onChange={(next) => runtime?.emit('onChange', next)}
           />
-          {component.props.showText && <span style={{ fontSize: 12, color: '#8e8e93', marginLeft: 4 }}>{val ? `${val}/${max}` : '未评分'}</span>}
+          {component.props.showText && <span style={{ fontSize: 12, color: 'var(--text-tertiary)', marginLeft: 4 }}>{val ? `${val}/${max}` : '未评分'}</span>}
         </div>
-        <span role="status" style={{ fontSize: 10, color: '#8e8e93', whiteSpace: 'nowrap' }}>{component.props.allowHalf ? '支持半星' : '整星'}；可用方向键调整</span>
-        <span style={{ fontSize: 11, color: '#8e8e93', minWidth: 54, textAlign: 'right' }}>{val >= max ? (component.props.highLabel || '非常满意') : val === 1 ? (component.props.lowLabel || '不满意') : ''}</span>
+        <span role="status" style={{ fontSize: 11, color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>{component.props.allowHalf ? '支持半星' : '整星'}；可用方向键调整</span>
+        <span style={{ fontSize: 11, color: 'var(--text-tertiary)', minWidth: 54, textAlign: 'right' }}>{val >= max ? (component.props.highLabel || '非常满意') : val === 1 ? (component.props.lowLabel || '不满意') : ''}</span>
       </div>
     );
   },
 });
 
 registerControl({
-  type: 'tagInput', label: '标签输入', category: 'basic', icon: '🏷️',
+  type: 'tagInput', label: '标签输入', category: 'basic', icon: 'tagInput',
   defaultProps: {
     label: '标签', name: '', placeholder: '输入后回车', required: false, disabled: false, maxTags: 0, maxTagLength: 0, allowDuplicates: false, rangeRef: null,
   },
@@ -636,7 +636,7 @@ registerControl({
 });
 
 registerControl({
-  type: 'upload', label: '文件上传', category: 'basic', icon: '📎',
+  type: 'upload', label: '文件上传', category: 'basic', icon: 'upload',
   defaultProps: {
     label: '文件上传', name: '', placeholder: '点击选择文件', required: false, disabled: false,
     accept: '', maxFileSizeMb: 0, maxCount: 0, rangeRef: null,
@@ -656,7 +656,7 @@ registerControl({
 });
 
 registerControl({
-  type: 'imageUpload', label: '图片上传', category: 'basic', icon: '🖼️',
+  type: 'imageUpload', label: '图片上传', category: 'basic', icon: 'imageUpload',
   defaultProps: {
     label: '图片上传', name: '', placeholder: '点击选择图片', required: false, disabled: false,
     accept: 'image/*', maxFileSizeMb: 0, maxCount: 1, minImageWidth: 0, maxImageWidth: 0, minImageHeight: 0, maxImageHeight: 0, imageRotate: 0, alt: '', privacyHint: '仅保存文件元信息', rangeRef: null,
@@ -679,7 +679,7 @@ registerControl({
 });
 
 registerControl({
-  type: 'button', label: '按钮', category: 'basic', icon: '🔲',
+  type: 'button', label: '按钮', category: 'basic', icon: 'button',
   defaultProps: {
     label: '提交', name: '', action: 'submit', variant: 'primary', disabled: false, loading: false, icon: '', confirmBeforeAction: true,
     fontSize: 16, fontWeight: '650', color: '#ffffff', backgroundColor: '',

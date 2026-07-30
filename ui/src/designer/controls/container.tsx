@@ -6,7 +6,7 @@ import type { PreviewControlRuntime } from '../types';
 import { spacingToCss } from '../../services/style/propertyStyles';
 
 registerControl({
-  type: 'container', label: '容器', category: 'container', icon: '📦',
+  type: 'container', label: '容器', category: 'container', icon: 'card',
   defaultProps: {
     title: '容器标题', subtitle: '', name: '',
     background: 'rgba(255,255,255,0.72)', borderRadius: 10, padding: 12, contentMinHeight: 'comfortable',
@@ -50,7 +50,7 @@ registerControl({
 });
 
 registerControl({
-  type: 'card', label: '卡片', category: 'container', icon: '🃏',
+  type: 'card', label: '卡片', category: 'container', icon: 'card',
   defaultProps: {
     title: '分组标题', subtitle: '', name: '',
     background: 'rgba(255,255,255,0.72)', borderRadius: 10, padding: 10,
@@ -99,7 +99,7 @@ registerControl({
 });
 
 registerControl({
-  type: 'tabs', label: '标签页', category: 'container', icon: '📑',
+  type: 'tabs', label: '标签页', category: 'container', icon: 'tabs',
   defaultProps: {
     tabs: ['选项一', '选项二', '选项三'], defaultTab: 0, name: '',
     style: 'segmented', activeColor: '#007aff', inactiveColor: '#8e8e93',
@@ -147,7 +147,7 @@ registerControl({
 });
 
 registerControl({
-  type: 'steps', label: '步骤条', category: 'container', icon: '🪜',
+  type: 'steps', label: '步骤条', category: 'container', icon: 'steps',
   defaultProps: {
     steps: ['开始', '处理', '完成'], defaultStep: 0, name: '',
     activeColor: '#2563eb', inactiveColor: '#94a3b8',
@@ -206,7 +206,7 @@ registerControl({
 });
 
 registerControl({
-  type: 'divider', label: '分割线', category: 'container', icon: '➖',
+  type: 'divider', label: '分割线', category: 'container', icon: 'divider',
   defaultProps: { orientation: 'horizontal', color: 'rgba(60,60,67,0.12)', thickness: 0.5, margin: 0, spacingPreset: 'normal' },
   propSchema: [
     { key: 'orientation', label: '方向', type: 'select', group: '基础', options: [

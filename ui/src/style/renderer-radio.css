@@ -10,12 +10,14 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
+  min-height: 44px;
+  padding: 10px 14px;
   border: var(--border-subtle);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s;
   background: var(--panel-soft);
+  box-sizing: border-box;
 }
 
 .lg-radio-item:hover { background: var(--fill); border-color: var(--line-strong); }

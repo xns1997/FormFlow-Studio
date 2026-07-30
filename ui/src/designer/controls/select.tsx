@@ -40,7 +40,7 @@ const OPTION_DATA_SCHEMA: PropSchemaEntry[] = [
 ];
 
 registerControl({
-  type: 'select', label: '下拉选择', category: 'select', icon: '📋',
+  type: 'select', label: '下拉选择', category: 'select', icon: 'select',
   defaultProps: {
     label: '选择', placeholder: '请选择', name: '', required: false, readonly: false, disabled: false, multiple: false, maxSelect: 0,
     options: [{ label: '选项A', value: 'a' }, { label: '选项B', value: 'b' }],
@@ -49,7 +49,7 @@ registerControl({
     emptyOptionsBehavior: 'keepEnabled',
     optionEmptyText: '暂无可选项',
     optionLoadingText: '加载选项中…', optionLoading: false,
-    fontSize: 15, fontWeight: '400', color: '#1c1c1e',
+    fontSize: 16, fontWeight: '400', color: '#1c1c1e',
     customMessage: '请选择有效选项',
     rangeRef: null,
   },
@@ -100,16 +100,16 @@ registerControl({
           emptyText={resolved.emptyText}
           disabled={!!component.props.disabled || component.props.optionLoading === true || (resolved.options.length === 0 && component.props.emptyOptionsBehavior === 'disable')}
           readOnly={!!component.props.readonly}
-          style={{ fontSize: Number(component.props.fontSize) || 15, fontWeight: component.props.fontWeight || 400, color: component.props.color || '#1c1c1e', width: '100%' }}
+          style={{ fontSize: Number(component.props.fontSize) || 16, fontWeight: component.props.fontWeight || 400, color: component.props.color || 'var(--text)', width: '100%' }}
           onChange={(next) => runtime?.emit('onChange', component.props.multiple && Number(component.props.maxSelect) > 0 && Array.isArray(next) ? next.slice(0, Number(component.props.maxSelect)) : next)}
           onBlur={() => runtime?.emit('onBlur')}
           onFocus={() => runtime?.emit('onFocus')}
         />}
-        {resolved.options.length > 0 && resolved.options.length <= 5 && !component.props.multiple && <small role="status" style={{ color: '#8e8e93', lineHeight: 1.4 }}>选项较少，已使用单选列表，减少打开下拉的步骤。</small>}
+        {resolved.options.length > 0 && resolved.options.length <= 5 && !component.props.multiple && <small role="status" style={{ color: 'var(--text-tertiary)', lineHeight: 1.4 }}>选项较少，已使用单选列表，减少打开下拉的步骤。</small>}
         {component.props.multiple && resolved.options.length > 0 && <button type="button" className="designer-select-select-all" disabled={!!component.props.disabled || !!component.props.readonly} onClick={() => runtime?.emit('onChange', resolved.options.slice(0, Number(component.props.maxSelect) > 0 ? Number(component.props.maxSelect) : undefined).map((option) => String(option.value)))}>全选可见选项</button>}
-        {clearedInvalidCount > 0 && <small role="status" style={{ color: '#b45309', lineHeight: 1.4 }}>已清除 {clearedInvalidCount} 个失效选择，请重新选择。</small>}
-        {component.props.optionLoading === true && <small role="status" style={{ color: '#8e8e93', lineHeight: 1.4 }}>{component.props.optionLoadingText || '加载选项中…'}</small>}
-        {component.props.optionLoading !== true && resolved.options.length === 0 && <small role="status" style={{ color: '#8e8e93', lineHeight: 1.4 }}>{component.props.emptyOptionsBehavior === 'disable' ? '暂无可选项，当前字段暂不可继续；请检查数据来源或筛选条件。' : '暂无可选项；请检查数据来源或筛选条件'}</small>}
+        {clearedInvalidCount > 0 && <small role="status" style={{ color: 'var(--warning)', lineHeight: 1.4 }}>已清除 {clearedInvalidCount} 个失效选择，请重新选择。</small>}
+        {component.props.optionLoading === true && <small role="status" style={{ color: 'var(--text-tertiary)', lineHeight: 1.4 }}>{component.props.optionLoadingText || '加载选项中…'}</small>}
+        {component.props.optionLoading !== true && resolved.options.length === 0 && <small role="status" style={{ color: 'var(--text-tertiary)', lineHeight: 1.4 }}>{component.props.emptyOptionsBehavior === 'disable' ? '暂无可选项，当前字段暂不可继续；请检查数据来源或筛选条件。' : '暂无可选项；请检查数据来源或筛选条件'}</small>}
       </div>
       </FormAntdProvider>
     );
@@ -117,7 +117,7 @@ registerControl({
 });
 
 registerControl({
-  type: 'segmented', label: '分段选择', category: 'select', icon: '🧩',
+  type: 'segmented', label: '分段选择', category: 'select', icon: 'segmented',
   defaultProps: {
     label: '分段选择', name: '', required: false, disabled: false,
     options: [{ label: '待处理', value: 'pending' }, { label: '进行中', value: 'processing' }, { label: '完成', value: 'done' }],
@@ -169,7 +169,7 @@ registerControl({
 });
 
 registerControl({
-  type: 'radio', label: '单选', category: 'select', icon: '🔘',
+  type: 'radio', label: '单选', category: 'select', icon: 'radio',
   defaultProps: {
     label: '单选', name: '', required: false, disabled: false, direction: 'vertical',
     options: [{ label: '选项A', value: 'a' }, { label: '选项B', value: 'b' }, { label: '选项C', value: 'c' }],
@@ -178,7 +178,7 @@ registerControl({
     emptyOptionsBehavior: 'keepEnabled',
     optionEmptyText: '暂无可选项',
     optionLoadingText: '加载选项中…',
-    fontSize: 15, fontWeight: '400', color: '#1c1c1e', size: 'default',
+    fontSize: 16, fontWeight: '400', color: '#1c1c1e', size: 'default',
     customMessage: '请选择一项',
     rangeRef: null,
   },
@@ -220,10 +220,10 @@ registerControl({
           emptyText={resolved.emptyText}
           direction={component.props.direction === 'horizontal' && horizontalAllowed ? 'horizontal' : 'vertical'}
           disabled={!!component.props.disabled}
-          style={{ fontSize: component.props.size === 'small' ? 13 : component.props.size === 'large' ? 17 : Number(component.props.fontSize) || 15, fontWeight: component.props.fontWeight || 400, color: component.props.color || '#1c1c1e' }}
+          style={{ fontSize: component.props.size === 'small' ? 13 : component.props.size === 'large' ? 17 : Number(component.props.fontSize) || 16, fontWeight: component.props.fontWeight || 400, color: component.props.color || 'var(--text)' }}
           onChange={(next) => runtime?.emit('onChange', next)}
         />
-        {component.props.direction === 'horizontal' && !horizontalAllowed && <small role="status" style={{ color: '#8e8e93' }}>选项较多或文字较长，已自动改为纵向排列</small>}
+        {component.props.direction === 'horizontal' && !horizontalAllowed && <small role="status" style={{ color: 'var(--text-tertiary)' }}>选项较多或文字较长，已自动改为纵向排列</small>}
       </div>
       </FormAntdProvider>
     );
@@ -231,7 +231,7 @@ registerControl({
 });
 
 registerControl({
-  type: 'checkbox', label: '多选', category: 'select', icon: '☑️',
+  type: 'checkbox', label: '多选', category: 'select', icon: 'checkbox',
   defaultProps: {
     label: '多选', name: '', required: false, disabled: false, direction: 'vertical',
     options: [{ label: '选项A', value: 'a' }, { label: '选项B', value: 'b' }, { label: '选项C', value: 'c' }],
@@ -241,7 +241,7 @@ registerControl({
     optionEmptyText: '暂无可选项',
     optionLoadingText: '加载选项中…',
     minSelect: 0, maxSelect: 0,
-    fontSize: 15, fontWeight: '400', color: '#1c1c1e', size: 'default',
+    fontSize: 16, fontWeight: '400', color: '#1c1c1e', size: 'default',
     customMessage: '请至少选择一项',
     rangeRef: null,
   },
@@ -283,10 +283,10 @@ registerControl({
           emptyText={resolved.emptyText}
           direction={component.props.direction === 'horizontal' ? 'horizontal' : 'vertical'}
           disabled={!!component.props.disabled}
-          style={{ fontSize: component.props.size === 'small' ? 13 : component.props.size === 'large' ? 17 : Number(component.props.fontSize) || 15, fontWeight: component.props.fontWeight || 400, color: component.props.color || '#1c1c1e' }}
+          style={{ fontSize: component.props.size === 'small' ? 13 : component.props.size === 'large' ? 17 : Number(component.props.fontSize) || 16, fontWeight: component.props.fontWeight || 400, color: component.props.color || 'var(--text)' }}
           onChange={(next) => runtime?.emit('onChange', next)}
         />
-        {(Number(component.props.minSelect) > 0 || Number(component.props.maxSelect) > 0) && <small role="status" style={{ color: checkedValues.length < Number(component.props.minSelect || 0) || (Number(component.props.maxSelect) > 0 && checkedValues.length > Number(component.props.maxSelect)) ? '#d70015' : '#8e8e93', lineHeight: 1.4 }}>已选 {checkedValues.length} 项{Number(component.props.minSelect) > 0 && checkedValues.length < Number(component.props.minSelect) ? `，还需 ${Number(component.props.minSelect) - checkedValues.length} 项` : ''}{Number(component.props.maxSelect) > 0 ? `，最多 ${component.props.maxSelect} 项` : ''}</small>}
+        {(Number(component.props.minSelect) > 0 || Number(component.props.maxSelect) > 0) && <small role="status" style={{ color: checkedValues.length < Number(component.props.minSelect || 0) || (Number(component.props.maxSelect) > 0 && checkedValues.length > Number(component.props.maxSelect)) ? 'var(--danger)' : 'var(--text-tertiary)', lineHeight: 1.4 }}>已选 {checkedValues.length} 项{Number(component.props.minSelect) > 0 && checkedValues.length < Number(component.props.minSelect) ? `，还需 ${Number(component.props.minSelect) - checkedValues.length} 项` : ''}{Number(component.props.maxSelect) > 0 ? `，最多 ${component.props.maxSelect} 项` : ''}</small>}
       </div>
       </FormAntdProvider>
     );

@@ -28,16 +28,16 @@ export const ios = {
   control: {
     flex: '0 0 auto',
     minWidth: 0,
-    minHeight: 36,
+    minHeight: 44,
     width: '100%',
     maxWidth: '100%',
-    height: 36,
+    height: 44,
     padding: '0 11px',
     border: '1px solid var(--line)',
     borderRadius: 9,
     background: 'var(--panel)',
     color: 'var(--text)',
-    fontSize: 14,
+    fontSize: 16,
     lineHeight: 1.25,
     outline: 'none',
     boxSizing: 'border-box',
@@ -54,7 +54,7 @@ export const ios = {
     borderRadius: 10,
     background: 'var(--panel)',
     color: 'var(--text)',
-    fontSize: 14,
+    fontSize: 16,
     lineHeight: 1.35,
     outline: 'none',
     boxSizing: 'border-box',
@@ -77,7 +77,7 @@ export const ios = {
     flex: '0 0 auto',
     minWidth: 0,
     width: '100%',
-    minHeight: 40,
+    minHeight: 44,
     boxSizing: 'border-box',
     background: 'var(--panel)',
     border: '1px solid var(--line)',
@@ -99,7 +99,7 @@ export const ios = {
   muted: {
     minWidth: 0,
     flex: '1 1 auto',
-    color: '#64748b',
+    color: 'var(--text-secondary)',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
@@ -107,7 +107,7 @@ export const ios = {
 };
 
 export const requiredMark: React.CSSProperties = {
-  color: '#ff3b30',
+  color: 'var(--danger)',
   marginLeft: 4,
   fontWeight: 700,
 };

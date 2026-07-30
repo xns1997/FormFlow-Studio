@@ -3,7 +3,10 @@
 .lg-switch {
   display: flex;
   align-items: center;
+  min-height: 44px;
+  padding: 7px 0;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .lg-switch input { display: none; }
