@@ -21,6 +21,10 @@ import { isEditableComponentType } from '../services/config/controlTypes';
 import { FormWindowFrame } from './FormWindowFrame';
 import { validateEditableTableValue } from '../components/EditableTableGrid';
 import { createFormInteractionMetrics, persistFormInteractionMetrics, recordFormMetric, restoreFormInteractionMetrics } from '../services/engine/formMetrics';
+import {
+  formatSideEffectDetails, formatTraceDetails, computeIdempotencyKey, computeResetValues,
+  validateFieldOnBlur, validateAllForSubmit, supportsDynamicOptions, supportsDateConvenience,
+} from '../services/engine/formRuntimePlayer';
 
 interface PreviewCanvasProps {
   formId?: string;
@@ -45,13 +49,7 @@ interface EventStatus {
   retry?: () => void;
 }
 
-function supportsDynamicOptions(componentType: string) {
-  return componentType === 'select' || componentType === 'radio' || componentType === 'checkbox' || componentType === 'segmented';
-}
-
-function supportsDateConvenience(componentType: string) {
-  return componentType === 'datePicker' || componentType === 'timePicker' || componentType === 'dateRange';
-}
+// supportsDynamicOptions and supportsDateConvenience imported from formRuntimePlayer
 
 type RuntimeOptionsState = {
   options: OptionItem[];

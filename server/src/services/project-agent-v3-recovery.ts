@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
-import type { AgentPlanRevision, AgentQuestion, AgentSessionV2, AgentTaskNode, AgentTaskStatus } from './project-agent-v2-store';
+import type { AgentPlanRevision, AgentQuestion, AgentSessionV2, AgentTaskNode, AgentTaskStatus, AgentFailureClass } from './project-agent-v2-store';
 
-export type AgentFailureClass = 'transient' | 'revision_conflict' | 'tool_scope' | 'invalid_arguments' | 'validation' | 'permission' | 'user_rejected' | 'specialist_failure';
+export type { AgentFailureClass };
 export type RecoveryAction = 'retry' | 'append_tasks' | 'replace_pending' | 'ask_user' | 'abort';
 export interface RecoveryTaskInput { id?: string; role: AgentTaskNode['role']; title: string; instruction: string; access: AgentTaskNode['access']; dependsOn?: string[]; acceptance?: string[]; strategyKey?: string; requirementIds?: string[]; evidenceKinds?: AgentTaskNode['evidenceKinds']; verificationScenarioIds?: string[]; }
 export interface AgentRecoveryPatch { action: RecoveryAction; diagnosis: string; strategy: string; tasks?: RecoveryTaskInput[]; cancelTaskIds?: string[]; questions?: Array<Omit<AgentQuestion, 'id'>>; reason?: string; }
