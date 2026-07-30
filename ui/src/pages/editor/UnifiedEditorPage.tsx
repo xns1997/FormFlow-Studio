@@ -754,9 +754,24 @@ export default function UnifiedEditorPage() {
                 </div>
                 {activeBehaviors.length === 0 ? (
                   <div className="unified-empty">
-                    <p>暂无规则</p>
-                    <p style={{ fontSize: 11, marginTop: 4 }}>规则定义表单的自动化行为</p>
-                    <button type="button" className="unified-add-btn" style={{ marginTop: 8 }} onClick={() => { if (activeForm) openBehaviorCreator({ scope: 'form', formId: activeForm.id }); }}>创建第一个规则</button>
+                    <p style={{ fontWeight: 600, fontSize: 13 }}>什么是规则？</p>
+                    <p style={{ fontSize: 11, marginTop: 4, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                      规则定义表单的自动化行为。<br />
+                      例如：当「金额」大于 100 时，自动显示「审批人」字段。
+                    </p>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                      <button type="button" className="unified-add-btn" onClick={() => { if (activeForm) openBehaviorCreator({ scope: 'form', formId: activeForm.id }); }}>空白创建</button>
+                      <button type="button" className="unified-add-btn" onClick={() => {
+                        if (!activeForm) return;
+                        const exampleName = '示例：字段显隐联动';
+                        const exampleCode = `// 字段显隐联动\n// 当某个字段值变化时，显示或隐藏另一个字段\n// 请将「字段名」替换为实际的字段名称\nconst value = ctx.getValue('字段名');\nctx.setVisible('目标字段', value === '条件值');`;
+                        const now = new Date().toISOString();
+                        const bh: BehaviorFile = { id: `bh_${Date.now()}`, name: exampleName, event: 'onFieldChange', code: exampleCode, priority: 10, enabled: true, createdAt: now, updatedAt: now };
+                        store.addFormBehavior?.(activeForm.id, bh);
+                        setForms((prev) => prev.map((f) => f.id === activeForm.id ? { ...f, behaviors: [...f.behaviors, bh] } : f));
+                        switchToBehavior(bh.id, 'form');
+                      }}>从示例创建</button>
+                    </div>
                   </div>
                 ) : activeBehaviors.map((bh) => (
                   <div
