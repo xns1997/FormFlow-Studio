@@ -153,7 +153,6 @@ button { min-width: var(--control-height-sm); min-height: var(--control-height-s
 ):focus,
 :where(.ant-input-affix-wrapper, .ant-input-number, .ant-picker, .ant-select):focus-within {
   border-color: var(--accent) !important;
-  background: var(--panel) !important;
   box-shadow: 0 0 0 3px var(--accent-soft) !important;
   outline: none;
 }
