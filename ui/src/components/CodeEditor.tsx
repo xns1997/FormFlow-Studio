@@ -542,8 +542,6 @@ export default function CodeEditor({
 
     instance.onDidDispose(() => {
       if (editorRef.current === instance) editorRef.current = null;
-      extraLibDisposablesRef.current.forEach((disposable) => disposable.dispose());
-      extraLibDisposablesRef.current = [];
       disposables.forEach((disposable) => disposable.dispose());
     });
     onMount?.(instance, monaco);
@@ -570,6 +568,19 @@ export default function CodeEditor({
       window.dispatchEvent(new Event('resize'));
       editorRef.current?.layout();
     }, 40);
+    return () => window.clearTimeout(id);
+  }, [fullOpen]);
+
+  // Re-layout inline editor after fullscreen modal exit animation completes
+  const prevFullOpenRef = useRef(fullOpen);
+  useEffect(() => {
+    const wasOpen = prevFullOpenRef.current;
+    prevFullOpenRef.current = fullOpen;
+    if (!wasOpen || fullOpen) return; // only trigger on close transition
+    const id = window.setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+      editorRef.current?.layout();
+    }, 250); // wait for modal exit animation (~200ms) to finish
     return () => window.clearTimeout(id);
   }, [fullOpen]);
 
