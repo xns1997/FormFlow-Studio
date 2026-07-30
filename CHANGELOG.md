@@ -1,3 +1,17 @@
+# [1.6.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.5.0...v1.6.0) (2026-07-30)
+
+
+### Bug Fixes
+
+* **test:** add workflow field to project settings test ([ea6dc97](https://github.com/xns1997/FormFlow-Studio/commit/ea6dc97fff83e3827ec3e7aba5b2edb0e7a7519d))
+* **ui:** correct switch handle size in settings page ([afc93dd](https://github.com/xns1997/FormFlow-Studio/commit/afc93dd882fe878943d11f9a037e7d07b0710099))
+* **ui:** improve spacing between settings components ([a6dbd2b](https://github.com/xns1997/FormFlow-Studio/commit/a6dbd2bce3871e66ed92930cad8efcef13ddd56b))
+
+
+### Features
+
+* **settings:** add appearance and workflow preferences ([8d54615](https://github.com/xns1997/FormFlow-Studio/commit/8d546152dcf94df4324fee2b0f077894b7335e9f))
+
 # [1.5.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.4.0...v1.5.0) (2026-07-30)
 
 
