@@ -37,6 +37,12 @@ import { compileComponentValidation, validateField } from '../services/engine/va
 import { resolveDateConstraintState } from '../services/data/dateConvenience';
 import { resolveOptionSource } from '../services/data/optionSource';
 import EditableTableGrid, { type EditableTableChangeDetail, type TableChangeTracking, validateEditableTableValue } from './EditableTableGrid';
+import {
+  resolveComponentFieldName, normalizeRenderProps,
+  computeExpressionValues, shouldValidateComponent, computeValidationErrors,
+  isWizardMode, computeWizardSteps, computeRequiredProgress,
+  WIZARD_FIELD_THRESHOLD, WIZARD_STEP_SIZE, CARD_GROUP_SIZE,
+} from '../services/engine/formEngine';
 
 interface FormRendererProps {
   components: ComponentNode[];
@@ -61,9 +67,7 @@ interface FormRendererProps {
   layout?: 'flat' | 'card';
 }
 
-const WIZARD_FIELD_THRESHOLD = 6;
-const WIZARD_STEP_SIZE = 4;
-const CARD_GROUP_SIZE = 4;
+// Constants imported from formEngine
 
 function RuntimeImage({ src, alt, style }: { src: string; alt: string; style?: React.CSSProperties }) {
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -435,17 +439,7 @@ export default function FormRenderer({
   );
 }
 
-function normalizeRenderProps(comp: ComponentNode): Record<string, unknown> {
-  return {
-    ...comp.props,
-    label: comp.label || comp.props.label,
-    name: comp.name || comp.props.name,
-  };
-}
-
-function resolveComponentFieldName(comp: ComponentNode): string {
-  return String(comp.fieldBinding || comp.name || comp.props.name || comp.id);
-}
+// normalizeRenderProps and resolveComponentFieldName imported from formEngine
 
 function normalizeFileList(files: unknown): UploadFileValue[] {
   return Array.isArray(files) ? files.filter((item) => item && typeof item === 'object').map((item) => {

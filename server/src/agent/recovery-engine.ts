@@ -5,7 +5,7 @@ import { compactAgentToolResult } from '../services/project-agent-v2-context';
 import { insertQualityRemediationTasks, qualityDiagnosticFingerprint, replaceInvalidRemediationTask, supersedeInvalidCrossRoleRepairs, type QualityDiagnostic } from '../services/project-agent-v2-remediation';
 import {
   applyRecoveryPatch, classifyAgentFailure, ensureRecoveryState, isRecoverableFailure, recoveryPatchExpandsRisk, strategyKey,
-  normalizeRecoveryPatch, type AgentRecoveryPatch, type AgentFailureClass,
+  normalizeRecoveryPatch, resetRecoveryBudget, type AgentRecoveryPatch, type AgentFailureClass,
 } from '../services/project-agent-v3-recovery';
 import {
   addAgentArtifact, appendAgentEvent, getCapabilityBundle, saveAgentSessionV2, sessionProjectIds, setAgentPhase, validateTaskGraph,
@@ -155,3 +155,7 @@ export async function recoverFailedTask(session: AgentSessionV2, failedTaskId: s
   appendAgentEvent(session, 'strategy_changed', { taskId: failed.id, strategy: patch.strategy, strategyKey: key, action: patch.action }); appendAgentEvent(session, 'recovery_budget_updated', { ...state }); saveAgentSessionV2(session);
   return expandsRisk ? 'waiting' : 'continued';
 }
+
+// Re-export for barrel
+export { resetRecoveryBudget };
+export type { AgentRecoveryPatch };

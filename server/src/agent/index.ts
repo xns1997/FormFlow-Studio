@@ -66,7 +66,9 @@ export {
   recoveryRevision,
   exhaustRecovery,
   pauseRecoveryForUser,
+  resetRecoveryBudget,
 } from './recovery-engine';
+export type { AgentRecoveryPatch } from './recovery-engine';
 
 // Orchestrator
 export {
@@ -77,6 +79,8 @@ export {
   executeStepTasks,
   requestTaskAssistance,
   blockTaskForRevisionChanges,
+  stallOrchestrationForUser,
+  failOrchestrationAtBudget,
   activePlan,
   addMessage,
   questionMetadata,
