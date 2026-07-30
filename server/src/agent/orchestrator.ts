@@ -3,8 +3,8 @@ import type { LlmMessage } from '../services/llm-provider-client';
 import type { McpRole } from '../services/formflow-tool-registry';
 import { listFormFlowTools, getFormFlowTool, executeLlmTool } from '../services/llm-tools';
 import { isStructuredPlanningError, PLANNING_MAX_ATTEMPTS, planningRepairInstruction, validatePlannerTaskRoleBoundaries } from '../services/project-agent-v2-planning';
-import { compactAgentToolResult, compactProjectStateCheck } from '../services/project-agent-v2-context';
-import { createProjectStateCheckSummary, summarizeCheckedProject, type ProjectStateCheckReason, type ProjectStateCheckSummary } from '../services/project-agent-state-check';
+import { compactAgentToolResult } from '../services/project-agent-v2-context';
+import { compactProjectStateCheck, createProjectStateCheckSummary, summarizeCheckedProject, type ProjectStateCheckReason, type ProjectStateCheckSummary } from '../services/project-agent-state-check';
 import { materializeAnalyzedRequirements, refreshRequirementCoverage } from '../services/project-agent-requirements';
 import {
   completeActionStep, completionBlockers, createActionStep, decisionExpandsRisk, ensureActionState, goalContractReady, prepareAssignments,
@@ -18,9 +18,9 @@ import {
   saveAgentSessionV2, sessionProjectIds, setAgentPhase, validateTaskGraph, type AgentSessionV2, type AgentPlanRevision, type AgentTaskNode, type AgentOrchestrationStep, type NextActionDecision,
 } from '../services/project-agent-v2-store';
 import { chat } from './llm-client';
-import { checkCurrentProjectState } from './state-checker';
 import { requestNextAction } from './decision-engine';
-import { runSpecialist, refreshRevision, RevisionRecomputeBlocked, ExpertAssistanceRequired, type RunContext } from './specialist-runner';
+import { runSpecialist, refreshRevision, RevisionRecomputeBlocked, ExpertAssistanceRequired } from './specialist-runner';
+import type { RunContext } from './types';
 import { verifyTask, QualityGateFailure, roleTitles } from './verifier';
 import { recoverFailedTask, pauseRecoveryForUser, requestRecoveryPatch } from './recovery-engine';
 

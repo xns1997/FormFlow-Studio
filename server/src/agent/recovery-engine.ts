@@ -5,10 +5,10 @@ import { compactAgentToolResult } from '../services/project-agent-v2-context';
 import { insertQualityRemediationTasks, qualityDiagnosticFingerprint, replaceInvalidRemediationTask, supersedeInvalidCrossRoleRepairs, type QualityDiagnostic } from '../services/project-agent-v2-remediation';
 import {
   applyRecoveryPatch, classifyAgentFailure, ensureRecoveryState, isRecoverableFailure, recoveryPatchExpandsRisk, strategyKey,
-  normalizeRecoveryPatch, validateTaskGraph, type AgentRecoveryPatch, type AgentFailureClass,
+  normalizeRecoveryPatch, type AgentRecoveryPatch, type AgentFailureClass,
 } from '../services/project-agent-v3-recovery';
 import {
-  addAgentArtifact, appendAgentEvent, getCapabilityBundle, saveAgentSessionV2, sessionProjectIds, setAgentPhase,
+  addAgentArtifact, appendAgentEvent, getCapabilityBundle, saveAgentSessionV2, sessionProjectIds, setAgentPhase, validateTaskGraph,
   type AgentSessionV2, type AgentPlanRevision, type AgentTaskNode,
 } from '../services/project-agent-v2-store';
 import { compactProjectStateCheck, type ProjectStateCheckSummary } from '../services/project-agent-state-check';
