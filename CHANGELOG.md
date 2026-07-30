@@ -1,3 +1,10 @@
+## [1.7.2](https://github.com/xns1997/FormFlow-Studio/compare/v1.7.1...v1.7.2) (2026-07-30)
+
+
+### Bug Fixes
+
+* **data-preview:** refresh server-side datasource after setting it ([9996e24](https://github.com/xns1997/FormFlow-Studio/commit/9996e24f9ea81a66922fc7a79d9924247eb2cd6f))
+
 ## [1.7.1](https://github.com/xns1997/FormFlow-Studio/compare/v1.7.0...v1.7.1) (2026-07-30)
 
 
