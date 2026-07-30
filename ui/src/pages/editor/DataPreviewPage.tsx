@@ -2,7 +2,6 @@ import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom';
 import { AgGridReact } from 'ag-grid-react';
 import { AllCommunityModule, ModuleRegistry, type ColDef, type GridApi } from 'ag-grid-community';
-import { ServerSideRowModelModule } from 'ag-grid-enterprise';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import Modal, { ModalFooter, ModalHeader } from '../../components/Modal';
 import { AntdCompatSelect } from '../../components/AntdFormControls';
@@ -43,7 +42,6 @@ import {
   resolveSequenceDateTokens,
 } from '../../services/data/sequenceRules';
 import { describeApi, projectApi } from '../../services/io/api';
-import { createServerSideDatasource, refreshServerSideDatasource } from '../../services/data/serverSideDatasource';
 import { FilterBar } from '../../components/FilterBar';
 import {
   HistogramChart,
@@ -56,7 +54,7 @@ import {
 } from '../../components/DataCharts';
 import DataTemplateRecommendationModal from './DataTemplateRecommendationModal';
 
-ModuleRegistry.registerModules([AllCommunityModule, ServerSideRowModelModule]);
+ModuleRegistry.registerModules([AllCommunityModule]);
 
 type DataTab = 'table' | 'describe' | 'config';
 type ColumnType = SrcColumnInfo['dataType'];
@@ -231,28 +229,6 @@ export default function DataPreviewPage({
   const projectId = project?.config?.id;
   const selectedTable = project?.srcTable.find((table) => table.id === selectedTableId) || null;
   const activeSheet = selectedTable?.sheets[activeSheetIdx] || null;
-
-  // Server-side datasource for AG Grid virtual scrolling
-  const serverSideDatasource = useMemo(() => {
-    if (!projectId || !selectedTableId || !activeSheet) return null;
-    return createServerSideDatasource({
-      projectId,
-      tableId: selectedTableId,
-      sheetName: activeSheet.name,
-      getSearch: () => query.search,
-      getKeySearch: () => query.keySearch,
-      onError: (message) => setFeedback({ type: 'error', message }),
-      onDataLoaded: (total) => setQueryTotal(total),
-    });
-  }, [projectId, selectedTableId, activeSheet?.name]);
-
-  // Update datasource when it changes and trigger initial load
-  useEffect(() => {
-    if (gridApiRef.current && serverSideDatasource) {
-      gridApiRef.current.setGridOption('serverSideDatasource', serverSideDatasource);
-      gridApiRef.current.refreshServerSide({ purge: true });
-    }
-  }, [serverSideDatasource]);
 
   const currentConfig = useMemo(() => {
     if (!selectedTable || !activeSheet) return null;
@@ -701,15 +677,46 @@ export default function DataPreviewPage({
       return;
     }
     // Server-side datasource handles data loading automatically
-    // Just reset selection state when context changes
+    if (!projectId || !selectedTable || !activeSheet || !selectedTableId) {
+      setRows([]);
+      setTotalRows(0);
+      return;
+    }
+    let cancelled = false;
+    const loadRows = async () => {
+      setLoading(true);
+      try {
+        const data = await dataPreviewApi.page({ projectId, tableId: selectedTable.id, sheetName: activeSheet.name, ...query });
+        if (cancelled) return;
+        const loadedRows = (data.rows || []).map((row) => {
+          const changes = pendingChanges.get(row.__rowKey);
+          return changes
+            ? { ...row, ...Object.fromEntries(Object.entries(changes).map(([field, change]) => [field, change.newValue])) }
+            : row;
+        });
+        setRows(query.page === 1 ? [...loadedRows, ...pendingAdds] : loadedRows);
+        setTotalRows(data.total ?? data.rows?.length ?? 0);
+        setQueryTotal(data.queryTotal ?? data.total ?? 0);
+        setDataVersion(data.dataVersion || '');
+      } catch (error) {
+        if (cancelled) return;
+        setRows([]);
+        setFeedback({
+          type: 'error',
+          message: formatDataPreviewError(error, '数据加载失败'),
+          actionLabel: '重试',
+          onAction: () => setReloadToken((value) => value + 1),
+        });
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    loadRows();
     setSelectedColIdx(null);
     setSelectedRowIdx(null);
     setDescribeReport(null);
-    // Refresh server-side datasource when context changes
-    if (gridApiRef.current) {
-      refreshServerSideDatasource(gridApiRef.current);
-    }
-  }, [projectId, selectedTableId, activeSheetIdx, activeSheet?.name, reloadToken]);
+    return () => { cancelled = true; };
+  }, [projectId, selectedTableId, activeSheetIdx, activeSheet?.name, query, reloadToken]);
 
   useEffect(() => {
     if (!selectedTable || !activeSheet || activeTab !== 'describe') return;
@@ -730,7 +737,7 @@ export default function DataPreviewPage({
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setQuery((current) => current.search === searchDraft ? current : { ...current, page: 1, search: searchDraft });
-      if (gridApiRef.current) refreshServerSideDatasource(gridApiRef.current);
+      if (gridApiRef.current) gridApiRef.current.onFilterChanged();
     }, 300);
     return () => window.clearTimeout(timer);
   }, [searchDraft]);
@@ -1034,7 +1041,7 @@ export default function DataPreviewPage({
                   <div className="data-preview-tool-group">
                     <label htmlFor="data-preview-search">查找</label>
                     <input id="data-preview-search" type="search" aria-label="全表搜索" value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder="搜索全部字段" />
-                    {(query.search || query.keySearch || Object.keys(query.filterModel).length > 0) && <button type="button" className="ui-btn ui-btn-xs" onClick={() => { setSearchDraft(''); setKeyJumpDraft(''); setQuery((current) => ({ ...current, page: 1, search: '', keySearch: '', filterModel: {} })); if (gridApiRef.current) { gridApiRef.current.setFilterModel(null); refreshServerSideDatasource(gridApiRef.current); } }}>清除筛选</button>}
+                    {(query.search || query.keySearch || Object.keys(query.filterModel).length > 0) && <button type="button" className="ui-btn ui-btn-xs" onClick={() => { setSearchDraft(''); setKeyJumpDraft(''); setQuery((current) => ({ ...current, page: 1, search: '', keySearch: '', filterModel: {} })); if (gridApiRef.current) gridApiRef.current.setFilterModel(null); }}>清除筛选</button>}
                   </div>
                   <div className="data-preview-tool-group">
                     <span>编辑</span>
@@ -1073,8 +1080,8 @@ export default function DataPreviewPage({
                     {saveState === 'saved' ? '已保存' : saveState === 'saving' ? '保存中' : saveState === 'error' ? '保存失败' : `未保存：${changedCellCount} 单元格 / ${pendingAdds.length} 新增 / ${pendingDeletes.size} 删除`}
                   </span>
                   {(query.search || query.keySearch) && <div className="data-preview-filter-chips">
-                    {query.search && <button type="button" onClick={() => { setSearchDraft(''); setQuery((current) => ({ ...current, page: 1, search: '' })); if (gridApiRef.current) refreshServerSideDatasource(gridApiRef.current); }}>搜索：{query.search} ×</button>}
-                    {query.keySearch && <button type="button" onClick={() => { setKeyJumpDraft(''); setQuery((current) => ({ ...current, page: 1, keySearch: '' })); if (gridApiRef.current) refreshServerSideDatasource(gridApiRef.current); }}>Key：{query.keySearch} ×</button>}
+                    {query.search && <button type="button" onClick={() => { setSearchDraft(''); setQuery((current) => ({ ...current, page: 1, search: '' })); }}>搜索：{query.search} ×</button>}
+                    {query.keySearch && <button type="button" onClick={() => { setKeyJumpDraft(''); setQuery((current) => ({ ...current, page: 1, keySearch: '' })); }}>Key：{query.keySearch} ×</button>}
                   </div>}
             </div>
           )}
@@ -1107,7 +1114,6 @@ export default function DataPreviewPage({
                 setQuery((current) => ({ ...current, page: 1, search: '', keySearch: '', filterModel: {} }));
                 if (gridApiRef.current) {
                   gridApiRef.current.setFilterModel(null);
-                  refreshServerSideDatasource(gridApiRef.current);
                 }
               }}
             />
@@ -1184,8 +1190,7 @@ export default function DataPreviewPage({
                   aria-busy={loading}
                 >
                   <AgGridReact
-                    rowModelType="serverSide"
-                    serverSideDatasource={serverSideDatasource || undefined}
+                    rowData={rows}
                     columnDefs={colDefs}
                     defaultColDef={{
                       resizable: true,
@@ -1196,13 +1201,8 @@ export default function DataPreviewPage({
                     headerHeight={currentConfig?.headerHeight}
                     rowSelection={{ mode: 'singleRow' }}
                     getRowId={(params) => String(params.data.__rowKey)}
-                    cacheBlockSize={500}
-                    maxBlocksInCache={10}
                     onGridReady={(event) => {
                       gridApiRef.current = event.api;
-                      if (serverSideDatasource) {
-                        event.api.setGridOption('serverSideDatasource', serverSideDatasource);
-                      }
                       if (gridContainerRef.current?.clientWidth && currentConfig?.autoFitColumns && Object.keys(currentConfig.columnWidths).length === 0) event.api.sizeColumnsToFit();
                     }}
                     getRowClass={(params) => {
@@ -1236,13 +1236,11 @@ export default function DataPreviewPage({
                     }}
                     onFilterChanged={(event) => {
                       const filterModel = event.api.getFilterModel();
-                      setQuery((current) => ({ ...current, page: 1, filterModel }));
-                      // Server-side datasource refreshes automatically via getRows
+                      setQuery((current) => JSON.stringify(current.filterModel) === JSON.stringify(filterModel) ? current : { ...current, page: 1, filterModel });
                     }}
                     onSortChanged={(event) => {
                       const sortModel = event.api.getColumnState().filter((column) => column.sort).map((column) => ({ colId: column.colId, sort: column.sort || undefined })) as PreviewQuery['sortModel'];
-                      setQuery((current) => ({ ...current, page: 1, sortModel }));
-                      // Server-side datasource refreshes automatically via getRows
+                      setQuery((current) => JSON.stringify(current.sortModel) === JSON.stringify(sortModel) ? current : { ...current, page: 1, sortModel });
                     }}
                     onCellValueChanged={onCellValueChanged}
                   />
@@ -1250,11 +1248,17 @@ export default function DataPreviewPage({
               )}
               <div className="data-preview-pager">
                 <div className="data-preview-pager-group data-preview-pager-group-nav">
-                  <span className="data-preview-pager-status">共 {queryTotal} 行{queryTotal !== totalRows ? `（筛选自 ${totalRows} 行）` : ''}</span>
+                  <button type="button" className="ui-btn ui-btn-xs" disabled={query.page <= 1 || loading} onClick={() => setQuery((current) => ({ ...current, page: current.page - 1 }))}>上一页</button>
+                  <span className="data-preview-pager-status">第 {query.page} / {Math.max(1, Math.ceil(queryTotal / query.pageSize))} 页</span>
+                  <button type="button" className="ui-btn ui-btn-xs" disabled={query.page >= Math.max(1, Math.ceil(queryTotal / query.pageSize)) || loading} onClick={() => setQuery((current) => ({ ...current, page: current.page + 1 }))}>下一页</button>
+                </div>
+                <div className="data-preview-pager-group data-preview-pager-group-jump">
+                  <AntdCompatSelect aria-label="每页行数" value={String(query.pageSize)} onChange={(event) => setQuery((current) => ({ ...current, page: 1, pageSize: Number(event.target.value) }))}>{[50, 100, 200, 500].map((size) => <option key={size} value={size}>{size} 行/页</option>)}</AntdCompatSelect>
+                  <label><span>跳转</span><input aria-label="跳转页码" type="number" min={1} max={Math.max(1, Math.ceil(queryTotal / query.pageSize))} value={query.page} onChange={(event) => setQuery((current) => ({ ...current, page: Math.max(1, Math.min(Number(event.target.value) || 1, Math.max(1, Math.ceil(queryTotal / current.pageSize)))) }))} /></label>
                 </div>
                 <div className="data-preview-pager-group data-preview-pager-group-key">
-                  <label><span>Key</span><input aria-label="跳转到 Key" value={keyJumpDraft} onChange={(event) => setKeyJumpDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { setQuery((current) => ({ ...current, keySearch: keyJumpDraft.trim() })); if (gridApiRef.current) refreshServerSideDatasource(gridApiRef.current); } }} /></label>
-                  <button type="button" className="ui-btn ui-btn-xs" disabled={!keyJumpDraft.trim()} onClick={() => { setQuery((current) => ({ ...current, keySearch: keyJumpDraft.trim() })); if (gridApiRef.current) refreshServerSideDatasource(gridApiRef.current); }}>定位</button>
+                  <label><span>Key</span><input aria-label="跳转到 Key" value={keyJumpDraft} onChange={(event) => setKeyJumpDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') setQuery((current) => ({ ...current, page: 1, keySearch: keyJumpDraft.trim() })); }} /></label>
+                  <button type="button" className="ui-btn ui-btn-xs" disabled={!keyJumpDraft.trim()} onClick={() => setQuery((current) => ({ ...current, page: 1, keySearch: keyJumpDraft.trim() }))}>定位</button>
                 </div>
               </div>
             </div>
