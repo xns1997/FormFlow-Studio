@@ -56,7 +56,7 @@ export default function UnifiedEditorPage() {
   const [activeFormId, setActiveFormId] = useState<string | null>(null);
   const [renamingFormId, setRenamingFormId] = useState<string | null>(null);
   const [formNameDraft, setFormNameDraft] = useState('');
-  const [leftPanelTab, setLeftPanelTab] = useState<'controls' | 'fields' | 'forms' | 'behaviors' | 'workflows'>('controls');
+  const [leftPanelTab, setLeftPanelTab] = useState<'controls' | 'fields' | 'forms' | 'rules' | 'behaviors' | 'workflows'>('controls');
   const initialMode = searchParams.get('mode');
   const [editMode, setEditMode] = useState<EditMode>(initialMode && ['design', 'behavior', 'flow', 'data', 'settings'].includes(initialMode) ? initialMode as EditMode : 'design');
   const hasWorkbenchPanels = editMode === 'design' || editMode === 'behavior';
@@ -262,6 +262,23 @@ export default function UnifiedEditorPage() {
     else if (mode === 'flow') switchToFlow();
     else switchToSettings();
   }, [openTemplateCenter, switchToBehavior, switchToData, switchToDesign, switchToFlow, switchToSettings]);
+
+  // ── 快捷键：Cmd/Ctrl+1/2/3 切换模式 ──────────────────────────────
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      // 忽略输入框和 Monaco 编辑器中的快捷键
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.closest('.monaco-editor')) return;
+      if (e.key === '1') { e.preventDefault(); switchToDesign(); }
+      else if (e.key === '2') { e.preventDefault(); switchToBehavior(); }
+      else if (e.key === '3') { e.preventDefault(); switchToFlow(); }
+      else if (e.key === ',') { e.preventDefault(); switchToSettings(); }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [switchToDesign, switchToBehavior, switchToFlow, switchToSettings]);
 
   useEffect(() => {
     if (editMode !== 'design') return;
@@ -641,10 +658,11 @@ export default function UnifiedEditorPage() {
       </div>
 
       <div className="unified-body">
-        {/* 链路工作台左侧始终保留表单上下文 */}
-        {hasWorkbenchPanels && <div
+        {/* 链路工作台左侧始终保留表单上下文（design/behavior 模式保持挂载以保留上下文） */}
+        <div
           ref={panels.leftPanelRef}
           className={`unified-left ${panels.leftOpen ? 'is-open' : 'is-closed'} ${panels.leftIsDrawer ? 'is-drawer' : ''}`}
+          style={{ display: hasWorkbenchPanels ? undefined : 'none' }}
           aria-hidden={!panels.leftOpen}
         >
           {editMode === 'behavior' ? (
@@ -653,6 +671,7 @@ export default function UnifiedEditorPage() {
             <button data-panel-focus type="button" role="tab" aria-selected={leftPanelTab === 'controls'} className={`unified-left-tab ${leftPanelTab === 'controls' ? 'active' : ''}`} onClick={() => setLeftPanelTab('controls')}>控件</button>
             <button type="button" role="tab" aria-selected={leftPanelTab === 'fields'} className={`unified-left-tab ${leftPanelTab === 'fields' ? 'active' : ''}`} onClick={() => setLeftPanelTab('fields')}>数据字段</button>
             <button type="button" role="tab" aria-selected={leftPanelTab === 'forms'} className={`unified-left-tab ${leftPanelTab === 'forms' ? 'active' : ''}`} onClick={() => setLeftPanelTab('forms')}>表单</button>
+            <button type="button" role="tab" aria-selected={leftPanelTab === 'rules'} className={`unified-left-tab ${leftPanelTab === 'rules' ? 'active' : ''}`} onClick={() => setLeftPanelTab('rules')}>规则</button>
             {panels.leftIsDrawer && <button type="button" className="unified-left-close" aria-label="关闭左侧栏" onClick={() => panels.closeDrawer()}><DesignerIcon name="sidebarClose" /></button>}
           </div>}
 
@@ -726,6 +745,35 @@ export default function UnifiedEditorPage() {
               </div>
             )}
 
+            {/* 规则列表（设计模式下查看当前表单关联的规则） */}
+            {editMode !== 'behavior' && leftPanelTab === 'rules' && (
+              <div className="unified-panel-content">
+                <div className="unified-panel-header">
+                  <span>{activeForm?.name || '当前表单'} 的规则 ({activeBehaviors.length})</span>
+                  <button type="button" onClick={() => { if (activeForm) openBehaviorCreator({ scope: 'form', formId: activeForm.id }); }} className="unified-add-btn">+ 新建</button>
+                </div>
+                {activeBehaviors.length === 0 ? (
+                  <div className="unified-empty">
+                    <p>暂无规则</p>
+                    <p style={{ fontSize: 11, marginTop: 4 }}>规则定义表单的自动化行为</p>
+                    <button type="button" className="unified-add-btn" style={{ marginTop: 8 }} onClick={() => { if (activeForm) openBehaviorCreator({ scope: 'form', formId: activeForm.id }); }}>创建第一个规则</button>
+                  </div>
+                ) : activeBehaviors.map((bh) => (
+                  <div
+                    key={bh.id}
+                    className={`unified-list-item ${editingBehaviorId === bh.id ? 'active' : ''}`}
+                    onClick={() => switchToBehavior(bh.id, 'form')}
+                  >
+                    <span className="unified-list-icon">⚡</span>
+                    <div className="unified-list-info">
+                      <span className="unified-list-name">{bh.name}</span>
+                      <span className="unified-list-meta">{bh.event}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* 行为列表 */}
             {(editMode === 'behavior' || leftPanelTab === 'behaviors') && (
               <div className="unified-panel-content">
@@ -791,6 +839,35 @@ export default function UnifiedEditorPage() {
                   </React.Fragment>
                 ))}
 
+                {/* 字段引用 */}
+                {activeForm && (() => {
+                  const fields = (activeForm.design?.components || [])
+                    .filter((c) => c.fieldBinding && !String(c.fieldBinding).startsWith('_'))
+                    .map((c) => ({
+                      name: String(c.fieldBinding),
+                      type: c.type,
+                      label: String(c.props?.label || c.props?.title || c.fieldBinding || ''),
+                    }));
+                  if (fields.length === 0) return null;
+                  return (
+                    <>
+                      <div className="unified-panel-divider" />
+                      <div className="unified-panel-header">
+                        <span>字段引用 ({fields.length})</span>
+                      </div>
+                      {fields.map((field) => (
+                        <div key={field.name} className="unified-list-item field-ref-item">
+                          <span className="unified-list-icon">📎</span>
+                          <div className="unified-list-info">
+                            <span className="unified-list-name">{field.name}</span>
+                            <span className="unified-list-meta">{field.label} · {field.type}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  );
+                })()}
+
               </div>
             )}
 
@@ -822,7 +899,7 @@ export default function UnifiedEditorPage() {
               </div>
             )}
           </div>
-        </div>}
+        </div>
 
         {/* 中间：行为模式保留只读可选择表单；流程模式使用纯流程画布 */}
         <div className="unified-center">
@@ -839,9 +916,10 @@ export default function UnifiedEditorPage() {
         </div>
 
         {/* 右侧：行为代码或属性配置 */}
-        {hasWorkbenchPanels && <div
+        <div
           ref={panels.rightPanelRef}
           className={`unified-right ${isBehaviorMode ? 'unified-right-expanded' : ''} ${panels.rightOpen ? 'is-open' : 'is-closed'} ${panels.rightIsDrawer ? 'is-drawer' : ''}`}
+          style={{ display: hasWorkbenchPanels ? undefined : 'none' }}
           aria-hidden={!panels.rightOpen}
         >
           {isBehaviorMode ? behaviorAuthoringMode === 'rules' ? (
@@ -996,7 +1074,7 @@ export default function UnifiedEditorPage() {
               setSearchParams(next, { replace: true });
             }}
           />}
-        </div>}
+        </div>
         {panels.activeDrawer && <button type="button" className="workbench-drawer-backdrop" aria-label="关闭侧栏" onClick={() => panels.closeDrawer()} />}
       </div>
 
