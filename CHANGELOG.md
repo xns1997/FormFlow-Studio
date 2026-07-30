@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/xns1997/FormFlow-Studio/compare/v1.7.0...v1.7.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* **data-preview:** set server-side datasource on grid ready ([4012ddf](https://github.com/xns1997/FormFlow-Studio/commit/4012ddfc5953dd29115b2bb6dfa911669ce8e833))
+
 # [1.7.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.6.0...v1.7.0) (2026-07-30)
 
 
