@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.3.0...v1.4.0) (2026-07-30)
+
+
+### Features
+
+* add comprehensive animation system with anime.js v4 ([ffbcaeb](https://github.com/xns1997/FormFlow-Studio/commit/ffbcaeb35c3238a6d4988840a5ea1dec32da446b))
+
 # [1.3.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.2.0...v1.3.0) (2026-07-29)
 
 
