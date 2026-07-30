@@ -66,6 +66,19 @@
 - 默认不级联删除。存在引用时，先向用户报告引用；只有用户明确同意后才设置 `cascade: true` 并完成确认调用。
 - 云端 MCP/HTTP 必须使用 Bearer Token 和 `x-tenant-id`；stdio 云端模式使用 `FORMFLOW_TOKEN` 与 `FORMFLOW_TENANT_ID`。
 
+## 版本号规范
+
+提交代码时必须遵循语义化版本约束：
+
+- **0.0.x**（补丁）：修复 bug、样式调整、CSS 微调、文案修正、文档勘误
+- **0.x.0**（次版本）：新增功能、改进已有功能、重构模块、新增配置项、性能优化
+
+示例：
+- 修复 Switch 手柄尺寸 → `0.0.x`
+- 增加系统设置外观配置项 → `0.x.0`
+- 调整组件间距 → `0.0.x`
+- 新增工作流执行偏好设置 → `0.x.0`
+
 ## 离线项目包
 
 如果 FormFlow Server/MCP 不可用，而任务只涉及已解包项目目录或 `.formflow` 单文件包，使用仓库内置 `formflow-project-editor` skill：先 `inspect`，再通过紧凑 YAML 执行 `create` 或 `normalize`，最后执行 `validate --json`。禁止直接原地覆盖输入项目。
