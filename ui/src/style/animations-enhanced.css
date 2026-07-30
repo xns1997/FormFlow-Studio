@@ -1,0 +1,541 @@
+/* ══════════════════════════════════════════════════════════════════════
+   animations-enhanced.css — iOS 26/27-style motion system
+   Spring-based animations, micro-interactions, and dynamic transitions
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── iOS Spring Animation Curves ────────────────────────────────────── */
+:root {
+  /* iOS-standard spring curves */
+  --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --spring-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --spring-snappy: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --spring-gentle: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Duration tokens */
+  --duration-instant: 0.1s;
+  --duration-fast: 0.2s;
+  --duration-normal: 0.3s;
+  --duration-slow: 0.4s;
+  --duration-slower: 0.5s;
+
+  /* Easing tokens */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Button Micro-Interactions ──────────────────────────────────────── */
+:where(button:not([class]), .ui-btn) {
+  transition:
+    transform var(--duration-fast) var(--spring-bounce),
+    box-shadow var(--duration-fast) var(--spring-smooth),
+    border-color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+:where(button:not([class]), .ui-btn):hover:not(:disabled) {
+  transform: translateY(-1px) scale(1.02);
+}
+
+:where(button:not([class]), .ui-btn):active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+  transition-duration: var(--duration-instant);
+}
+
+/* Primary button pulse on hover */
+.ui-btn-primary:hover:not(:disabled) {
+  animation: button-pulse 0.6s var(--spring-smooth);
+}
+
+@keyframes button-pulse {
+  0% { box-shadow: 0 7px 18px rgba(0,122,255,0.24); }
+  50% { box-shadow: 0 7px 18px rgba(0,122,255,0.4), 0 0 0 4px rgba(0,122,255,0.1); }
+  100% { box-shadow: 0 7px 18px rgba(0,122,255,0.24); }
+}
+
+/* ── Card Interactions ──────────────────────────────────────────────── */
+.project-card {
+  transition:
+    transform var(--duration-normal) var(--spring-snappy),
+    box-shadow var(--duration-normal) var(--spring-smooth),
+    border-color var(--duration-normal) var(--ease-out);
+}
+
+.project-card:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,122,255,0.1);
+}
+
+.project-card:active {
+  transform: translateY(0) scale(0.99);
+  transition-duration: var(--duration-instant);
+}
+
+/* Card entrance animation */
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.projects-grid .project-card {
+  animation: card-enter 0.4s var(--spring-snappy) backwards;
+}
+
+.projects-grid .project-card:nth-child(1) { animation-delay: 0.05s; }
+.projects-grid .project-card:nth-child(2) { animation-delay: 0.1s; }
+.projects-grid .project-card:nth-child(3) { animation-delay: 0.15s; }
+.projects-grid .project-card:nth-child(4) { animation-delay: 0.2s; }
+.projects-grid .project-card:nth-child(5) { animation-delay: 0.25s; }
+.projects-grid .project-card:nth-child(6) { animation-delay: 0.3s; }
+
+/* ── Sidebar Item Interactions ──────────────────────────────────────── */
+.sidebar-item {
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--spring-bounce),
+    padding-left var(--duration-fast) var(--ease-out);
+}
+
+.sidebar-item:hover {
+  transform: translateX(2px);
+}
+
+.sidebar-item.active {
+  animation: sidebar-active 0.3s var(--spring-bounce);
+}
+
+@keyframes sidebar-active {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(4px); }
+  100% { transform: translateX(0); }
+}
+
+/* ── Form Control Focus Animations ──────────────────────────────────── */
+:where(
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  select,
+  .ant-input,
+  .ant-input-affix-wrapper,
+  .ant-input-number,
+  .ant-picker,
+  .ant-select,
+  .ant-select-selector
+) {
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--spring-smooth),
+    transform var(--duration-fast) var(--spring-bounce);
+}
+
+:where(
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  select,
+  .ant-input,
+  .ant-input-affix-wrapper,
+  .ant-input-number,
+  .ant-picker
+):focus,
+:where(.ant-input-affix-wrapper, .ant-input-number, .ant-picker, .ant-select):focus-within {
+  transform: scale(1.01);
+  box-shadow: 0 0 0 3px var(--accent-soft), 0 4px 12px rgba(0,122,255,0.1);
+}
+
+/* Checkbox and radio animations */
+:where(input[type='checkbox'], input[type='radio']) {
+  transition:
+    transform var(--duration-fast) var(--spring-bounce),
+    accent-color var(--duration-fast) var(--ease-out);
+}
+
+:where(input[type='checkbox'], input[type='radio']):active {
+  transform: scale(0.9);
+}
+
+/* ── Tab and Segmented Control Animations ───────────────────────────── */
+.tabs .tab,
+.ant-segmented-item {
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--spring-bounce);
+}
+
+.tabs .tab:active,
+.ant-segmented-item:active {
+  transform: scale(0.95);
+}
+
+.tabs .tab.active,
+.ant-segmented-item-selected {
+  animation: tab-activate 0.3s var(--spring-bounce);
+}
+
+@keyframes tab-activate {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* ── Modal Animations ──────────────────────────────────────────────── */
+@keyframes modal-overlay-enter {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(12px);
+  }
+}
+
+@keyframes modal-content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modal-content-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+}
+
+.modal-overlay {
+  animation: modal-overlay-enter 0.25s var(--ease-out) forwards;
+}
+
+.modal-content,
+.modal-container {
+  animation: modal-content-enter 0.35s var(--spring-snappy) forwards;
+}
+
+.modal-overlay.modal-exiting .modal-content,
+.modal-overlay.modal-exiting .modal-container {
+  animation: modal-content-exit 0.2s var(--ease-in) forwards;
+}
+
+/* ── Toast and Notification Animations ──────────────────────────────── */
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes toast-slide-out {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%) scale(0.9);
+  }
+}
+
+.toast-enter {
+  animation: toast-slide-in 0.35s var(--spring-snappy) forwards;
+}
+
+.toast-exit {
+  animation: toast-slide-out 0.25s var(--ease-in) forwards;
+}
+
+/* Notification cascade */
+.notification-item {
+  animation: notification-pop 0.3s var(--spring-bounce) backwards;
+}
+
+@keyframes notification-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.notification-item:nth-child(2) { animation-delay: 0.05s; }
+.notification-item:nth-child(3) { animation-delay: 0.1s; }
+.notification-item:nth-child(4) { animation-delay: 0.15s; }
+.notification-item:nth-child(5) { animation-delay: 0.2s; }
+
+/* ── Dropdown Animations ───────────────────────────────────────────── */
+@keyframes dropdown-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scaleY(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+@keyframes dropdown-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px) scaleY(0.98);
+  }
+}
+
+.lg-select-popup,
+.ant-select-dropdown {
+  animation: dropdown-enter 0.2s var(--spring-snappy) forwards;
+  transform-origin: top center;
+}
+
+.lg-select-popup.closing,
+.ant-select-dropdown.closing {
+  animation: dropdown-exit 0.15s var(--ease-in) forwards;
+}
+
+/* ── Loading and Skeleton Animations ────────────────────────────────── */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--fill-secondary) 25%,
+    var(--fill) 37%,
+    var(--fill-secondary) 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* Spinner animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+/* Pulse animation for loading states */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.loading-pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* ── Progress Bar Animations ───────────────────────────────────────── */
+@keyframes progress-fill {
+  from { width: 0; }
+}
+
+.progress-bar {
+  animation: progress-fill 0.5s var(--ease-out) forwards;
+}
+
+.progress-bar.indeterminate {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--accent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: progress-indeterminate 1.5s ease-in-out infinite;
+}
+
+@keyframes progress-indeterminate {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ── Hover Lift Effect ─────────────────────────────────────────────── */
+.hover-lift {
+  transition:
+    transform var(--duration-normal) var(--spring-snappy),
+    box-shadow var(--duration-normal) var(--spring-smooth);
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+}
+
+/* ── Scale Bounce Effect ───────────────────────────────────────────── */
+.scale-bounce {
+  transition: transform var(--duration-fast) var(--spring-bounce);
+}
+
+.scale-bounce:hover {
+  transform: scale(1.05);
+}
+
+.scale-bounce:active {
+  transform: scale(0.95);
+}
+
+/* ── Ripple Effect (for touch feedback) ─────────────────────────────── */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at var(--ripple-x, 50%) var(--ripple-y, 50%),
+    rgba(255,255,255,0.3) 0%,
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.ripple:active::after {
+  opacity: 1;
+  transition: opacity 0s;
+}
+
+/* ── Stagger Children Animation ────────────────────────────────────── */
+.stagger-children > * {
+  animation: stagger-fade-in 0.3s var(--spring-snappy) backwards;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+
+@keyframes stagger-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Shake Animation (for errors) ──────────────────────────────────── */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.shake {
+  animation: shake 0.5s var(--spring-bounce);
+}
+
+/* ── Success Checkmark Animation ───────────────────────────────────── */
+@keyframes checkmark {
+  0% {
+    stroke-dashoffset: 50;
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+.checkmark {
+  animation: checkmark 0.5s var(--spring-snappy) forwards;
+}
+
+/* ── Number Count Up Animation ─────────────────────────────────────── */
+@keyframes count-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.count-up {
+  animation: count-up 0.4s var(--spring-snappy) forwards;
+}
+
+/* ── Floating Action Button Animation ──────────────────────────────── */
+@keyframes fab-enter {
+  from {
+    opacity: 0;
+    transform: scale(0) rotate(-180deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.fab {
+  animation: fab-enter 0.4s var(--spring-bounce) forwards;
+}
+
+.fab:hover {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.fab:active {
+  transform: scale(0.9) rotate(-5deg);
+}
+
+/* ── Reduced Motion Support ────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
