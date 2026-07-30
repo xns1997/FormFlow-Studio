@@ -12,10 +12,13 @@ test('project settings normalization fills missing nested values', () => {
   const settings = normalizeProjectSettings({
     behavior: { enableJsScripts: false } as any,
     publish: { format: 'csv' } as any,
+    workflow: { maxConcurrency: 8 } as any,
     updatedAt: '2026-01-01T00:00:00.000Z',
   });
   assert.equal(settings.behavior.enableJsScripts, false);
   assert.equal(settings.behavior.enableNodeBehavior, true);
   assert.equal(settings.publish.format, 'csv');
   assert.equal(settings.publish.generateChangeLog, true);
+  assert.equal(settings.workflow.maxConcurrency, 8);
+  assert.equal(settings.workflow.retryCount, 2);
 });
