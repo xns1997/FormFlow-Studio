@@ -416,6 +416,10 @@
   overflow: hidden;
 }
 
+.form-window-frame.is-runtime {
+  overflow: visible;
+}
+
 .form-window-frame.is-runtime .form-window-frame-content {
   overflow: auto;
   overscroll-behavior: contain;
