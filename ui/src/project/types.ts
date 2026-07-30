@@ -129,6 +129,7 @@ export interface ProjectConfig {
 export interface ProjectSettings {
   behavior: ProjectBehaviorSettings;
   publish: ProjectPublishSettings;
+  workflow: ProjectWorkflowSettings;
   updatedAt: string;
 }
 
@@ -149,6 +150,14 @@ export interface ProjectPublishSettings {
   allowWriteBack: boolean;
   generateChangeLog: boolean;
   outputFileName: string;
+}
+
+export interface ProjectWorkflowSettings {
+  maxConcurrency: number;
+  retryCount: number;
+  nodeTimeout: number;
+  overallTimeout: number;
+  errorStrategy: 'abort' | 'continue' | 'skip';
 }
 
 export interface ProjectRelease {
@@ -187,6 +196,13 @@ export function createDefaultProjectSettings(): ProjectSettings {
       generateChangeLog: true,
       outputFileName: 'formflow-export',
     },
+    workflow: {
+      maxConcurrency: 4,
+      retryCount: 2,
+      nodeTimeout: 30000,
+      overallTimeout: 300000,
+      errorStrategy: 'abort',
+    },
     updatedAt: new Date().toISOString(),
   };
 }
@@ -217,6 +233,7 @@ export function normalizeProjectSettings(settings: ProjectSettings | undefined):
     ...settings,
     behavior: { ...defaults.behavior, ...(settings?.behavior || {}) },
     publish: { ...defaults.publish, ...(settings?.publish || {}) },
+    workflow: { ...defaults.workflow, ...(settings?.workflow || {}) },
     updatedAt: settings?.updatedAt || defaults.updatedAt,
   };
 }

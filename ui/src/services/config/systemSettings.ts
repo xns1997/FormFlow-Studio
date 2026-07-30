@@ -1,3 +1,16 @@
+export type ThemeMode = 'light' | 'dark' | 'system';
+export type ShortcutScheme = 'vscode' | 'vim';
+export type SpacingPreset = 'compact' | 'standard' | 'spacious';
+export type LabelPosition = 'top' | 'left' | 'right';
+export type AutoSaveInterval = 'off' | '30s' | '1m' | '2m' | '5m';
+export type NotificationSound = 'default' | 'subtle' | 'chime' | 'none';
+
+export interface NotificationTypePrefs {
+  toast: boolean;
+  sound: boolean;
+  durationMs: number;
+}
+
 export interface SystemSettings {
   general: {
     language: string;
@@ -20,6 +33,49 @@ export interface SystemSettings {
     suggestionDocs: boolean;
     wordWrap: boolean;
     formatOnSave: boolean;
+  };
+  appearance: {
+    theme: ThemeMode;
+    editorFontFamily: string;
+    editorFontFamilyCustom: string;
+    sidebarWidth: number;
+    sidebarCollapsed: boolean;
+    canvasZoom: number;
+    shortcutScheme: ShortcutScheme;
+    shortcutOverrides: Record<string, string>;
+    notificationSound: NotificationSound;
+    notifications: {
+      success: NotificationTypePrefs;
+      warning: NotificationTypePrefs;
+      error: NotificationTypePrefs;
+      info: NotificationTypePrefs;
+    };
+  };
+  workflowPreferences: {
+    defaultBehavior: {
+      enableJsScripts: boolean;
+      enableNodeBehavior: boolean;
+      enableDebugDrawer: boolean;
+      autoOpenDebugDrawerOnWarnOrError: boolean;
+      mirrorScriptLogsToConsole: boolean;
+      enableServerDebugApi: boolean;
+      scriptTimeout: number;
+      errorStrategy: 'show-error' | 'silent';
+      loopProtection: number;
+    };
+    dataImport: {
+      encoding: string;
+      delimiter: string;
+      hasHeader: boolean;
+    };
+    formDesigner: {
+      labelPosition: LabelPosition;
+      columns: number;
+      spacing: SpacingPreset;
+    };
+    autoSaveInterval: AutoSaveInterval;
+    defaultTemplate: string;
+    lastUsedTemplate: string;
   };
   experiments: {
     enableNewRouter: boolean;
@@ -56,6 +112,49 @@ export function createDefaultSystemSettings(): SystemSettings {
       wordWrap: true,
       formatOnSave: false,
     },
+    appearance: {
+      theme: 'system',
+      editorFontFamily: 'default',
+      editorFontFamilyCustom: '',
+      sidebarWidth: 240,
+      sidebarCollapsed: false,
+      canvasZoom: 100,
+      shortcutScheme: 'vscode',
+      shortcutOverrides: {},
+      notificationSound: 'default',
+      notifications: {
+        success: { toast: true, sound: false, durationMs: 3000 },
+        warning: { toast: true, sound: true, durationMs: 5000 },
+        error: { toast: true, sound: true, durationMs: 8000 },
+        info: { toast: true, sound: false, durationMs: 4000 },
+      },
+    },
+    workflowPreferences: {
+      defaultBehavior: {
+        enableJsScripts: true,
+        enableNodeBehavior: true,
+        enableDebugDrawer: true,
+        autoOpenDebugDrawerOnWarnOrError: true,
+        mirrorScriptLogsToConsole: false,
+        enableServerDebugApi: false,
+        scriptTimeout: 5000,
+        errorStrategy: 'show-error',
+        loopProtection: 100,
+      },
+      dataImport: {
+        encoding: 'UTF-8',
+        delimiter: ',',
+        hasHeader: true,
+      },
+      formDesigner: {
+        labelPosition: 'top',
+        columns: 1,
+        spacing: 'standard',
+      },
+      autoSaveInterval: '1m',
+      defaultTemplate: '',
+      lastUsedTemplate: '',
+    },
     experiments: {
       enableNewRouter: true,
       enablePreviewDocs: true,
@@ -74,6 +173,23 @@ export function normalizeSystemSettings(value: Partial<SystemSettings> | undefin
     general: { ...defaults.general, ...(value?.general || {}) },
     storage: { ...defaults.storage, ...(value?.storage || {}) },
     editor: { ...defaults.editor, ...(value?.editor || {}) },
+    appearance: {
+      ...defaults.appearance,
+      ...(value?.appearance || {}),
+      notifications: {
+        success: { ...defaults.appearance.notifications.success, ...(value?.appearance?.notifications?.success || {}) },
+        warning: { ...defaults.appearance.notifications.warning, ...(value?.appearance?.notifications?.warning || {}) },
+        error: { ...defaults.appearance.notifications.error, ...(value?.appearance?.notifications?.error || {}) },
+        info: { ...defaults.appearance.notifications.info, ...(value?.appearance?.notifications?.info || {}) },
+      },
+    },
+    workflowPreferences: {
+      ...defaults.workflowPreferences,
+      ...(value?.workflowPreferences || {}),
+      defaultBehavior: { ...defaults.workflowPreferences.defaultBehavior, ...(value?.workflowPreferences?.defaultBehavior || {}) },
+      dataImport: { ...defaults.workflowPreferences.dataImport, ...(value?.workflowPreferences?.dataImport || {}) },
+      formDesigner: { ...defaults.workflowPreferences.formDesigner, ...(value?.workflowPreferences?.formDesigner || {}) },
+    },
     experiments: { ...defaults.experiments, ...(value?.experiments || {}) },
     updatedAt: value?.updatedAt || defaults.updatedAt,
   };

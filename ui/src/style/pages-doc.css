@@ -1393,10 +1393,15 @@ button.docs-breadcrumb-link {
 }
 
 @media (prefers-color-scheme: dark) {
-  .docs-markdown-content code {
+  :root:not([data-theme]) .docs-markdown-content code {
     background: rgba(255, 255, 255, 0.1);
     color: #f5f5f7;
   }
+}
+
+:root[data-theme="dark"] .docs-markdown-content code {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f5f5f7;
 }
 
 .docs-markdown-content pre {

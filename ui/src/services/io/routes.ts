@@ -1,6 +1,6 @@
 export type WorkspaceTab = 'data' | 'template' | 'canvas' | 'designer' | 'behavior' | 'test' | 'settings';
-export type ProjectSettingsSection = 'general' | 'versions' | 'behavior' | 'publish';
-export type SystemSettingsSection = 'general' | 'storage' | 'editor' | 'ai' | 'experts' | 'experiments';
+export type ProjectSettingsSection = 'general' | 'versions' | 'behavior' | 'publish' | 'workflow';
+export type SystemSettingsSection = 'general' | 'appearance' | 'storage' | 'editor' | 'workflow' | 'ai' | 'experts' | 'experiments';
 export type DocSourcePage = 'workspace' | 'settings';
 
 export function buildProjectsPath() {

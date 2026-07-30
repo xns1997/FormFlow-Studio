@@ -102,13 +102,29 @@ function App() {
 }
 
 function AppThemeRoot() {
-  const [darkMode, setDarkMode] = React.useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const [darkMode, setDarkMode] = React.useState(() => {
+    const attr = document.documentElement.getAttribute('data-theme');
+    if (attr === 'dark') return true;
+    if (attr === 'light') return false;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
 
   React.useEffect(() => {
     const media = window.matchMedia('(prefers-color-scheme: dark)');
-    const syncAppearance = (event: MediaQueryListEvent) => setDarkMode(event.matches);
+    const syncAppearance = () => {
+      const attr = document.documentElement.getAttribute('data-theme');
+      if (attr === 'dark') { setDarkMode(true); return; }
+      if (attr === 'light') { setDarkMode(false); return; }
+      setDarkMode(media.matches);
+    };
     media.addEventListener('change', syncAppearance);
-    return () => media.removeEventListener('change', syncAppearance);
+    // Also observe data-theme attribute changes
+    const observer = new MutationObserver(syncAppearance);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => {
+      media.removeEventListener('change', syncAppearance);
+      observer.disconnect();
+    };
   }, []);
 
   return (

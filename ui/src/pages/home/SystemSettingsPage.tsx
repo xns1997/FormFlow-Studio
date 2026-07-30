@@ -5,12 +5,16 @@ import { useSystemSettingsStore } from '../../project/systemSettingsStore';
 import { buildSystemSettingsPath, type SystemSettingsSection } from '../../services/io/routes';
 import LlmSettingsSection from './LlmSettingsSection';
 import ExpertManagementSection from './ExpertManagementSection';
+import AppearanceSection from './AppearanceSection';
+import WorkflowPreferencesSection from './WorkflowPreferencesSection';
 import { DesignerIcon } from '../../designer/icons';
 
 const sectionMeta: Record<SystemSettingsSection, { title: string; description: string; badge: string }> = {
   general: { title: '常规', description: '应用级语言、时区、日期格式与顶部时钟显示。', badge: 'Workspace' },
+  appearance: { title: '外观', description: '主题、字体、侧边栏、画布缩放、快捷键与通知偏好。', badge: 'UI/UX' },
   storage: { title: '存储', description: '后端地址、草稿自动保存与请求超时策略。', badge: 'Data' },
   editor: { title: '编辑器', description: '代码编辑器阅读性与默认编辑行为。', badge: 'Editor' },
+  workflow: { title: '工作流', description: '默认行为策略、数据导入、表单设计器与自动保存偏好。', badge: 'Workflow' },
   ai: { title: '大模型', description: '管理模型服务、模型配置、备用路由与智能体运行服务。', badge: 'AI Runtime' },
   experts: { title: '专家管理', description: '查看和管理每位专家的提示词、工具权限与已注册知识。', badge: 'Agent Registry' },
   experiments: { title: '实验功能', description: '灰度开关与调试、文档试玩等增强能力。', badge: 'Labs' },
@@ -18,8 +22,10 @@ const sectionMeta: Record<SystemSettingsSection, { title: string; description: s
 
 const settingsNavigation: Array<{ section: SystemSettingsSection; label: string; icon: string }> = [
   { section: 'general', label: '常规', icon: 'settings' },
+  { section: 'appearance', label: '外观', icon: 'design' },
   { section: 'storage', label: '存储', icon: 'upload' },
   { section: 'editor', label: '编辑器', icon: 'design' },
+  { section: 'workflow', label: '工作流', icon: 'workflow' },
   { section: 'ai', label: '大模型', icon: 'behavior' },
   { section: 'experts', label: '专家管理', icon: 'workflow' },
   { section: 'experiments', label: '实验功能', icon: 'test' },
@@ -163,6 +169,8 @@ export default function SystemSettingsPage() {
               </div>
             )}
 
+            {section === 'appearance' && <AppearanceSection />}
+            {section === 'workflow' && <WorkflowPreferencesSection />}
             {section === 'experiments' && (
               <div className="settings-card-stack system-settings-content-grid">
                 <section className="settings-card">

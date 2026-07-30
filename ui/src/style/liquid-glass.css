@@ -265,20 +265,34 @@ button.nav-link { border-color: transparent; background: transparent; font: inhe
 }
 
 @media (prefers-color-scheme: dark) {
-  body {
+  :root:not([data-theme]) body {
     background:
       radial-gradient(circle at 12% -8%, rgba(10, 132, 255, 0.2), transparent 34%),
       radial-gradient(circle at 86% 0%, rgba(191, 90, 242, 0.14), transparent 31%),
       #000;
   }
 
-  .app-nav { border-bottom-color: rgba(255, 255, 255, 0.08); }
-  .nav-link:hover, .nav-link.active, .nav-project-badge, .nav-status-clock { background: rgba(255, 255, 255, 0.09); border-color: rgba(255, 255, 255, 0.08); }
-  .projects-toolbar { border-color: rgba(255, 255, 255, 0.08); background: rgba(28, 28, 30, 0.68); }
-  .projects-search input { background: rgba(118, 118, 128, 0.2); }
-  .projects-view-toggle { background: rgba(118, 118, 128, 0.22); }
-  .projects-view-toggle button.active { background: #48484a; }
+  :root:not([data-theme]) .app-nav { border-bottom-color: rgba(255, 255, 255, 0.08); }
+  :root:not([data-theme]) .nav-link:hover, :root:not([data-theme]) .nav-link.active, :root:not([data-theme]) .nav-project-badge, :root:not([data-theme]) .nav-status-clock { background: rgba(255, 255, 255, 0.09); border-color: rgba(255, 255, 255, 0.08); }
+  :root:not([data-theme]) .projects-toolbar { border-color: rgba(255, 255, 255, 0.08); background: rgba(28, 28, 30, 0.68); }
+  :root:not([data-theme]) .projects-search input { background: rgba(118, 118, 128, 0.2); }
+  :root:not([data-theme]) .projects-view-toggle { background: rgba(118, 118, 128, 0.22); }
+  :root:not([data-theme]) .projects-view-toggle button.active { background: #48484a; }
 }
+
+:root[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 12% -8%, rgba(10, 132, 255, 0.2), transparent 34%),
+    radial-gradient(circle at 86% 0%, rgba(191, 90, 242, 0.14), transparent 31%),
+    #000;
+}
+
+:root[data-theme="dark"] .app-nav { border-bottom-color: rgba(255, 255, 255, 0.08); }
+:root[data-theme="dark"] .nav-link:hover, :root[data-theme="dark"] .nav-link.active, :root[data-theme="dark"] .nav-project-badge, :root[data-theme="dark"] .nav-status-clock { background: rgba(255, 255, 255, 0.09); border-color: rgba(255, 255, 255, 0.08); }
+:root[data-theme="dark"] .projects-toolbar { border-color: rgba(255, 255, 255, 0.08); background: rgba(28, 28, 30, 0.68); }
+:root[data-theme="dark"] .projects-search input { background: rgba(118, 118, 128, 0.2); }
+:root[data-theme="dark"] .projects-view-toggle { background: rgba(118, 118, 128, 0.22); }
+:root[data-theme="dark"] .projects-view-toggle button.active { background: #48484a; }
 
 @media (prefers-reduced-transparency: reduce) {
   .app-nav,

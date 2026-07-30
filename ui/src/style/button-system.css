@@ -167,9 +167,15 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :where(button:not([class]), .ui-btn) {
+  :root:not([data-theme]) :where(button:not([class]), .ui-btn) {
     border-color: var(--line);
     background: rgba(58, 58, 60, 0.82);
     box-shadow: 0 4px 14px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.08);
   }
+}
+
+:root[data-theme="dark"] :where(button:not([class]), .ui-btn) {
+  border-color: var(--line);
+  background: rgba(58, 58, 60, 0.82);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.08);
 }

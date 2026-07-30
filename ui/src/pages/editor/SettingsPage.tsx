@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AntdCompatSelect } from '../../components/AntdFormControls';
+import { InputNumber, Select } from 'antd';
 import { Link, useParams } from 'react-router-dom';
 import { useProjectStore } from '../../project/store';
 import { normalizeProjectStructure } from '../../project/manager';
@@ -11,6 +12,7 @@ const sectionMeta: Record<ProjectSettingsSection, { title: string; description: 
   versions: { title: '版本', description: '查看、保存和恢复项目快照。', docSlug: 'flow-parameter-reference' },
   behavior: { title: '行为', description: '配置脚本执行、节点行为和异常处理策略。', docSlug: 'field-change' },
   publish: { title: '发布', description: '控制导出格式、写回行为和变更日志。', docSlug: 'submit' },
+  workflow: { title: '工作流', description: '配置工作流执行的并发、重试、超时和错误策略。', docSlug: 'flow-parameter-reference' },
 };
 const settingsSections = Object.keys(sectionMeta) as ProjectSettingsSection[];
 
@@ -70,6 +72,18 @@ export default function SettingsPage() {
       settings: {
         ...projectSettings,
         publish: { ...projectSettings.publish, ...patch },
+        updatedAt: new Date().toISOString(),
+      },
+    });
+  }, [project, projectSettings, setProject]);
+
+  const updateWorkflowSettings = useCallback((patch: Partial<NonNullable<typeof projectSettings>['workflow']>) => {
+    if (!project || !projectSettings) return;
+    setProject({
+      ...project,
+      settings: {
+        ...projectSettings,
+        workflow: { ...projectSettings.workflow, ...patch },
         updatedAt: new Date().toISOString(),
       },
     });
@@ -210,6 +224,42 @@ export default function SettingsPage() {
               </div>
             </section>
           )}
+          {section === 'workflow' && (
+            <section className="settings-card">
+              <div className="settings-card-header">
+                <div className="settings-card-title">
+                  <h3>工作流执行</h3>
+                  <p>配置工作流执行的并发、重试、超时和错误策略。</p>
+                </div>
+              </div>
+              <div className="settings-form settings-grid">
+                <label>
+                  <span>最大并发节点数</span>
+                  <InputNumber min={1} max={16} value={projectSettings.workflow.maxConcurrency} onChange={(value) => updateWorkflowSettings({ maxConcurrency: value ?? 4 })} />
+                </label>
+                <label>
+                  <span>失败重试次数</span>
+                  <InputNumber min={0} max={5} value={projectSettings.workflow.retryCount} onChange={(value) => updateWorkflowSettings({ retryCount: value ?? 2 })} />
+                </label>
+                <label>
+                  <span>单节点超时（毫秒）</span>
+                  <InputNumber min={1000} max={600000} value={projectSettings.workflow.nodeTimeout} onChange={(value) => updateWorkflowSettings({ nodeTimeout: value ?? 30000 })} />
+                </label>
+                <label>
+                  <span>整体超时（毫秒）</span>
+                  <InputNumber min={5000} max={3600000} value={projectSettings.workflow.overallTimeout} onChange={(value) => updateWorkflowSettings({ overallTimeout: value ?? 300000 })} />
+                </label>
+                <label>
+                  <span>错误策略</span>
+                  <AntdCompatSelect value={projectSettings.workflow.errorStrategy} onChange={(e) => updateWorkflowSettings({ errorStrategy: e.target.value as 'abort' | 'continue' | 'skip' })}>
+                    <option value="abort">中止工作流</option>
+                    <option value="continue">继续执行</option>
+                    <option value="skip">跳过失败节点</option>
+                  </AntdCompatSelect>
+                </label>
+              </div>
+            </section>
+          )}
           </div>
         </div>
       </div>
@@ -223,6 +273,7 @@ export default function SettingsPage() {
               <div className="stat"><span className="stat-label">项目版本</span><span className="stat-value">{project.config.version}</span></div>
             <div className="stat"><span className="stat-label">行为脚本</span><span className="stat-value">{projectSettings.behavior.enableJsScripts ? '开启' : '关闭'}</span></div>
             <div className="stat"><span className="stat-label">默认导出</span><span className="stat-value">{projectSettings.publish.format.toUpperCase()}</span></div>
+            <div className="stat"><span className="stat-label">工作流并发</span><span className="stat-value">{projectSettings.workflow.maxConcurrency}</span></div>
             <div className="stat"><span className="stat-label">版本快照</span><span className="stat-value">{versions.length}</span></div>
           </div>
         </div>

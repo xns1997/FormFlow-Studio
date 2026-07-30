@@ -29,6 +29,7 @@ const projectSettingsTabs: Array<{ section: ProjectSettingsSection; label: strin
   { section: 'versions', label: '版本', icon: 'projects' },
   { section: 'behavior', label: '行为', icon: 'behavior' },
   { section: 'publish', label: '发布', icon: 'upload' },
+  { section: 'workflow', label: '工作流', icon: 'workflow' },
 ];
 
 export default function Layout() {
@@ -91,7 +92,7 @@ export default function Layout() {
       let section: SystemSettingsSection = 'general';
       try {
         const remembered = localStorage.getItem('formflow.settings.lastSection');
-        if (remembered && ['general', 'storage', 'editor', 'ai', 'experts', 'experiments'].includes(remembered)) section = remembered as SystemSettingsSection;
+        if (remembered && ['general', 'appearance', 'storage', 'editor', 'workflow', 'ai', 'experts', 'experiments'].includes(remembered)) section = remembered as SystemSettingsSection;
       } catch { /* use default */ }
       navigate(buildSystemSettingsPath(section));
     };
