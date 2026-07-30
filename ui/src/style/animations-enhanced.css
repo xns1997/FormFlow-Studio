@@ -145,8 +145,14 @@
   .ant-input-number,
   .ant-picker
 ):focus,
-:where(.ant-input-affix-wrapper, .ant-input-number, .ant-picker, .ant-select):focus-within {
+:where(.ant-input-affix-wrapper, .ant-input-number, .ant-picker):focus-within {
   transform: scale(1.01);
+  box-shadow: 0 0 0 3px var(--accent-soft), 0 4px 12px rgba(0,122,255,0.1);
+}
+
+/* ant-select must NOT receive transform on focus — a containing-block transform
+   clips the selection-item text and desynchronises the dropdown portal. */
+.ant-select:focus-within {
   box-shadow: 0 0 0 3px var(--accent-soft), 0 4px 12px rgba(0,122,255,0.1);
 }
 

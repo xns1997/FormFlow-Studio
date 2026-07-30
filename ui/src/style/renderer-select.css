@@ -50,14 +50,13 @@
   background-color: var(--warning-soft);
 }
 
-/* Dropdown popup animation */
-.lg-select-popup,
-.ant-select-dropdown {
+/* Dropdown popup animation (native select only — .ant-select-dropdown is
+   handled by animations-enhanced.css to avoid duplicate keyframes) */
+.lg-select-popup {
   animation: dropdown-enter 0.2s ease-out forwards;
   transform-origin: top center;
 }
 
-.lg-select-popup.closing,
-.ant-select-dropdown.closing {
+.lg-select-popup.closing {
   animation: dropdown-exit 0.15s ease-in forwards;
 }
