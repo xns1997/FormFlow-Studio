@@ -803,7 +803,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  height: min(860px, 92vh);
+  height: min(860px, 92dvh);
 }
 
 .data-template-layout {

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import DocModal from '../../components/DocModal';
+import ContextHelpPanel from '../../components/ContextHelpPanel';
+import DocsCommandPalette from '../../components/DocsCommandPalette';
 import { DesignerIcon } from '../../designer/icons';
 import { useProjectStore } from '../../project/store';
 import { useSystemSettingsStore } from '../../project/systemSettingsStore';
@@ -239,7 +240,8 @@ export default function Layout() {
       <main className="app-main" id="main-content">
         <Outlet />
       </main>
-      {projectId && <DocModal open={docOpen} onClose={() => setDocOpen(false)} />}
+      <DocsCommandPalette />
+      {projectId && <ContextHelpPanel open={docOpen} onClose={() => setDocOpen(false)} />}
     </div>
   );
 }

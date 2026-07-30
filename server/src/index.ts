@@ -44,6 +44,7 @@ import { llmProviderClient } from './services/llm-provider-client';
 import { initVectorStore, probeVectorStore } from './services/vector-store';
 import { initRuleAgentStore } from './services/rule-agent-store';
 import { mcpRouter } from './mcp-server';
+import { docsRouter } from './routes/docs';
 
 const app = express();
 const PORT = env.port;
@@ -92,6 +93,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/api/projects', projectRouter);
+app.use('/api/docs', docsRouter);
 app.use('/api/files', fileRouter);
 app.use('/api/data', dataRouter);
 app.use('/api/history', historyRouter);

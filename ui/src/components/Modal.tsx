@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useModal } from '../services/animation';
+import { isImeKeyboardEvent } from '../services/io/docs/ime';
 
 const modalStack: symbol[] = [];
 const ModalTitleContext = createContext<string | null>(null);
@@ -79,6 +80,7 @@ export default function Modal({
 
     const handler = (e: KeyboardEvent) => {
       if (modalStack[modalStack.length - 1] !== token) return;
+      if (isImeKeyboardEvent(e)) return;
       if (e.key === 'Escape') {
         e.preventDefault();
         onCloseRef.current();

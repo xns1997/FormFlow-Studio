@@ -1,7 +1,7 @@
 import { request } from './api';
 
 export type SessionUser = { id: string; username: string; role: 'admin' | 'editor' | 'viewer' };
-export type Session = { token: string; user: SessionUser };
+export type Session = { token: string; user: SessionUser; tenantId?: string };
 const KEY = 'formflow.session';
 
 export function getSession(): Session | null {

@@ -355,8 +355,8 @@
 }
 
 .code-editor-modal-container {
-  height: 94vh;
-  min-height: 560px;
+  height: 94dvh;
+  min-height: 0;
 }
 
 .code-editor-modal-container .modal-header {

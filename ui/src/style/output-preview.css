@@ -1,8 +1,9 @@
 .output-preview-shell {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  height: min(820px, calc(92vh - 58px));
-  min-height: 360px;
+  height: min(820px, calc(92dvh - 58px));
+  min-height: min(360px, calc(92dvh - 58px));
+  min-width: 0;
 }
 
 .output-preview-toolbar {

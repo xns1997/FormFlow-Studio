@@ -457,7 +457,21 @@
 .quick-picker-results button em { color: var(--accent); font-size: 10px; font-style: normal; }
 .quick-picker-empty { padding: 18px; color: var(--muted); font-size: 10px; text-align: center; }
 
-.canvas-flow { flex: 1; min-height: 0; position: relative; }
+.canvas-flow {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.canvas-flow > .react-flow {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
 
 .canvas-toolbar {
   display: flex;

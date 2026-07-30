@@ -86,6 +86,7 @@
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 70%, transparent) 0%, transparent 100%),
     var(--panel);
+  flex: 0 0 auto;
 }
 
 .method-library-modal-title {
@@ -114,8 +115,12 @@
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
   gap: 16px;
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 16px;
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .template-center-modal-shell {

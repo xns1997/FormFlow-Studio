@@ -1,28 +1,3271 @@
 {
-  "openapi":"3.1.0","info":{"title":"FormFlow Studio API","version":"0.6.0","description":"FormFlow projects, data, workflows, tasks, governance and integrations API"},
-  "servers":[{"url":"/api"}],
-  "components":{"securitySchemes":{"bearerAuth":{"type":"http","scheme":"bearer","bearerFormat":"JWT"}},"schemas":{"Error":{"type":"object","properties":{"error":{"type":"string"}}},"Task":{"type":"object","properties":{"id":{"type":"string"},"state":{"enum":["queued","running","completed","failed","cancelled"]},"progress":{"type":"number"}}}}},
-  "paths":{
-    "/health":{"get":{"summary":"Health check","responses":{"200":{"description":"Healthy"}}}},
-    "/users/login":{"post":{"summary":"Login","requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","required":["username","password"],"properties":{"username":{"type":"string"},"password":{"type":"string"}}}}}},"responses":{"200":{"description":"Session"},"401":{"description":"Invalid credentials"}}}},
-    "/projects":{"get":{"summary":"List accessible projects","security":[{"bearerAuth":[]}],"responses":{"200":{"description":"Projects"}}},"post":{"summary":"Create project","security":[{"bearerAuth":[]}],"responses":{"200":{"description":"Created"}}}},
-    "/data/paginated":{"post":{"summary":"Read paginated table data","responses":{"200":{"description":"Rows"}}}},
-    "/database/test":{"post":{"summary":"Test database connection","responses":{"200":{"description":"Connected"}}}},
-    "/database/query":{"post":{"summary":"Execute parameterized SQL","responses":{"200":{"description":"Query result"}}}},
-    "/tasks":{"get":{"summary":"List background tasks","responses":{"200":{"description":"Tasks"}}},"post":{"summary":"Enqueue task","responses":{"202":{"description":"Queued","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Task"}}}}}}},
-    "/notifications":{"get":{"summary":"List notifications","responses":{"200":{"description":"Notifications"}}},"post":{"summary":"Send notification","responses":{"201":{"description":"Sent"}}}},
-    "/ai/chat":{"post":{"summary":"Chat through a configured model profile","responses":{"200":{"description":"Completion"},"503":{"description":"Provider unavailable"},"504":{"description":"Provider timeout"}}}},
-    "/ai/chat/stream":{"post":{"summary":"Stream chat events through SSE","responses":{"200":{"description":"SSE message_delta/tool_call/usage/completed events"}}}},
-    "/ai/embeddings":{"post":{"summary":"Create embeddings through a model profile","responses":{"200":{"description":"Embedding vectors"},"422":{"description":"Capability unavailable"}}}},
-    "/ai/knowledge/index":{"post":{"summary":"Embed and upsert project knowledge chunks into pgvector","responses":{"201":{"description":"Knowledge chunks indexed"},"422":{"description":"Invalid input or embedding capability unavailable"},"503":{"description":"Provider unavailable"}}}},
-    "/ai/knowledge/search":{"post":{"summary":"Search tenant and project scoped knowledge with pgvector","responses":{"200":{"description":"Ranked knowledge chunks"},"422":{"description":"Invalid query or embedding capability unavailable"}}}},
-    "/ai/knowledge":{"delete":{"summary":"Delete a project knowledge source or collection","responses":{"200":{"description":"Deleted row count"}}}},
-    "/ai/providers":{"get":{"summary":"List visible LLM providers","responses":{"200":{"description":"Masked provider configurations"}}},"post":{"summary":"Create encrypted LLM provider configuration","responses":{"201":{"description":"Provider created"}}}},
-    "/ai/profiles":{"get":{"summary":"List model profiles","responses":{"200":{"description":"Model profiles"}}},"post":{"summary":"Create model profile","responses":{"201":{"description":"Profile created"}}}},
-    "/ai/agents":{"get":{"summary":"List declarative agents","responses":{"200":{"description":"Agent definitions"}}},"post":{"summary":"Publish declarative agent","responses":{"201":{"description":"Agent version created"}}}},
-    "/ai/agents/{id}/runs":{"post":{"summary":"Run a managed agent","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string"}}],"responses":{"200":{"description":"Completed run"},"202":{"description":"Run waiting for tool result"}}}},
-    "/ai/plugins":{"get":{"summary":"List administrator-installed Provider plugins","responses":{"200":{"description":"Plugin registrations"}}}},
-    "/export/pdf":{"post":{"summary":"Export rows as PDF","responses":{"200":{"description":"PDF file","content":{"application/pdf":{"schema":{"type":"string","contentEncoding":"binary"}}}}}}},
-    "/metadata/{projectId}":{"get":{"summary":"Get project metadata","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"responses":{"200":{"description":"Metadata"}}},"put":{"summary":"Update project metadata","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}],"responses":{"200":{"description":"Updated"}}}}
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FormFlow Studio API",
+    "version": "1.2.0",
+    "description": "FormFlow public HTTP API. Generated route coverage is enriched by curated operation descriptions."
+  },
+  "servers": [
+    {
+      "url": "/api"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "progress": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid request",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/ai/agents": {
+      "get": {
+        "summary": "List declarative agents",
+        "responses": {
+          "200": {
+            "description": "Agent definitions"
+          }
+        }
+      },
+      "post": {
+        "summary": "Publish declarative agent",
+        "responses": {
+          "201": {
+            "description": "Agent version created"
+          }
+        }
+      }
+    },
+    "/ai/agents/{id}": {
+      "put": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "PUT /ai/agents/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "DELETE /ai/agents/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/agents/{id}/runs": {
+      "post": {
+        "summary": "Run a managed agent",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Completed run"
+          },
+          "202": {
+            "description": "Run waiting for tool result"
+          }
+        }
+      }
+    },
+    "/ai/chat": {
+      "post": {
+        "summary": "Chat through a configured model profile",
+        "responses": {
+          "200": {
+            "description": "Completion"
+          },
+          "503": {
+            "description": "Provider unavailable"
+          },
+          "504": {
+            "description": "Provider timeout"
+          }
+        }
+      }
+    },
+    "/ai/chat/stream": {
+      "post": {
+        "summary": "Stream chat events through SSE",
+        "responses": {
+          "200": {
+            "description": "SSE message_delta/tool_call/usage/completed events"
+          }
+        }
+      }
+    },
+    "/ai/embeddings": {
+      "post": {
+        "summary": "Create embeddings through a model profile",
+        "responses": {
+          "200": {
+            "description": "Embedding vectors"
+          },
+          "422": {
+            "description": "Capability unavailable"
+          }
+        }
+      }
+    },
+    "/ai/health": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "GET /ai/health",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/insight": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "POST /ai/insight",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/knowledge": {
+      "delete": {
+        "summary": "Delete a project knowledge source or collection",
+        "responses": {
+          "200": {
+            "description": "Deleted row count"
+          }
+        }
+      }
+    },
+    "/ai/knowledge/index": {
+      "post": {
+        "summary": "Embed and upsert project knowledge chunks into pgvector",
+        "responses": {
+          "201": {
+            "description": "Knowledge chunks indexed"
+          },
+          "422": {
+            "description": "Invalid input or embedding capability unavailable"
+          },
+          "503": {
+            "description": "Provider unavailable"
+          }
+        }
+      }
+    },
+    "/ai/knowledge/search": {
+      "post": {
+        "summary": "Search tenant and project scoped knowledge with pgvector",
+        "responses": {
+          "200": {
+            "description": "Ranked knowledge chunks"
+          },
+          "422": {
+            "description": "Invalid query or embedding capability unavailable"
+          }
+        }
+      }
+    },
+    "/ai/mcp-roles": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "GET /ai/mcp-roles",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/mcp-roles/{role}/tools": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "GET /ai/mcp-roles/{role}/tools",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/mcp-roles/{role}/tools/{toolName}/invoke": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "POST /ai/mcp-roles/{role}/tools/{toolName}/invoke",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "toolName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/plugins": {
+      "get": {
+        "summary": "List administrator-installed Provider plugins",
+        "responses": {
+          "200": {
+            "description": "Plugin registrations"
+          }
+        }
+      }
+    },
+    "/ai/profiles": {
+      "get": {
+        "summary": "List model profiles",
+        "responses": {
+          "200": {
+            "description": "Model profiles"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create model profile",
+        "responses": {
+          "201": {
+            "description": "Profile created"
+          }
+        }
+      }
+    },
+    "/ai/profiles/{id}": {
+      "put": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "PUT /ai/profiles/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "DELETE /ai/profiles/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/sessions": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "GET /ai/project-agent/sessions",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "POST /ai/project-agent/sessions",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/sessions/{id}": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "GET /ai/project-agent/sessions/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "DELETE /ai/project-agent/sessions/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/sessions/{id}/confirm-blueprint": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "POST /ai/project-agent/sessions/{id}/confirm-blueprint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/sessions/{id}/confirm-operation": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "POST /ai/project-agent/sessions/{id}/confirm-operation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/sessions/{id}/confirm-plan": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "POST /ai/project-agent/sessions/{id}/confirm-plan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/sessions/{id}/control": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "POST /ai/project-agent/sessions/{id}/control",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/sessions/{id}/turns": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "POST /ai/project-agent/sessions/{id}/turns",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/providers": {
+      "get": {
+        "summary": "List visible LLM providers",
+        "responses": {
+          "200": {
+            "description": "Masked provider configurations"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create encrypted LLM provider configuration",
+        "responses": {
+          "201": {
+            "description": "Provider created"
+          }
+        }
+      }
+    },
+    "/ai/providers/{id}": {
+      "put": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "PUT /ai/providers/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "DELETE /ai/providers/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/providers/{id}/models": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "GET /ai/providers/{id}/models",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/providers/{id}/test": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "POST /ai/providers/{id}/test",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/query": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "POST /ai/query",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/rule-agent/proposals/{id}/apply": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "POST /ai/rule-agent/proposals/{id}/apply",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/rule-agent/sessions": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "GET /ai/rule-agent/sessions",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "POST /ai/rule-agent/sessions",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/rule-agent/sessions/{id}": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "GET /ai/rule-agent/sessions/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "DELETE /ai/rule-agent/sessions/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/rule-agent/sessions/{id}/runtime-authorizations": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "POST /ai/rule-agent/sessions/{id}/runtime-authorizations",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/rule-agent/sessions/{id}/turns": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "POST /ai/rule-agent/sessions/{id}/turns",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/rule-agent/settings": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "GET /ai/rule-agent/settings",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "PUT /ai/rule-agent/settings",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/runs/{runId}": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "GET /ai/runs/{runId}",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/runs/{runId}/resume": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "POST /ai/runs/{runId}/resume",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/approvals": {
+      "post": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "POST /approvals",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "GET /approvals",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/approvals/{id}": {
+      "get": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "GET /approvals/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/approvals/{id}/action": {
+      "post": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "POST /approvals/{id}/action",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/audit": {
+      "get": {
+        "tags": [
+          "audit"
+        ],
+        "summary": "GET /audit",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/backup/export": {
+      "get": {
+        "tags": [
+          "backup"
+        ],
+        "summary": "GET /backup/export",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/backup/restore": {
+      "post": {
+        "tags": [
+          "backup"
+        ],
+        "summary": "POST /backup/restore",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/checkpoints": {
+      "post": {
+        "tags": [
+          "checkpoints"
+        ],
+        "summary": "POST /checkpoints",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/checkpoints/{id}": {
+      "get": {
+        "tags": [
+          "checkpoints"
+        ],
+        "summary": "GET /checkpoints/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "checkpoints"
+        ],
+        "summary": "DELETE /checkpoints/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/comments": {
+      "get": {
+        "tags": [
+          "comments"
+        ],
+        "summary": "GET /comments",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "comments"
+        ],
+        "summary": "POST /comments",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/comments/{id}": {
+      "patch": {
+        "tags": [
+          "comments"
+        ],
+        "summary": "PATCH /comments/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "comments"
+        ],
+        "summary": "DELETE /comments/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/comments/count": {
+      "get": {
+        "tags": [
+          "comments"
+        ],
+        "summary": "GET /comments/count",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/configs": {
+      "get": {
+        "tags": [
+          "configs"
+        ],
+        "summary": "GET /configs",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/configs/{id}": {
+      "get": {
+        "tags": [
+          "configs"
+        ],
+        "summary": "GET /configs/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "configs"
+        ],
+        "summary": "PUT /configs/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "configs"
+        ],
+        "summary": "DELETE /configs/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/data/{fileId}/{sheetName}/columns": {
+      "get": {
+        "tags": [
+          "data"
+        ],
+        "summary": "GET /data/{fileId}/{sheetName}/columns",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sheetName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/data/{fileId}/{sheetName}/rows": {
+      "get": {
+        "tags": [
+          "data"
+        ],
+        "summary": "GET /data/{fileId}/{sheetName}/rows",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sheetName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "data"
+        ],
+        "summary": "POST /data/{fileId}/{sheetName}/rows",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sheetName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/data/{fileId}/{sheetName}/rows/{rowIdx}": {
+      "put": {
+        "tags": [
+          "data"
+        ],
+        "summary": "PUT /data/{fileId}/{sheetName}/rows/{rowIdx}",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sheetName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rowIdx",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "data"
+        ],
+        "summary": "DELETE /data/{fileId}/{sheetName}/rows/{rowIdx}",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sheetName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rowIdx",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/data/batch": {
+      "post": {
+        "tags": [
+          "data"
+        ],
+        "summary": "POST /data/batch",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/data/export": {
+      "post": {
+        "tags": [
+          "data"
+        ],
+        "summary": "POST /data/export",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/data/export-query": {
+      "post": {
+        "tags": [
+          "data"
+        ],
+        "summary": "POST /data/export-query",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/data/paginated": {
+      "post": {
+        "summary": "Read paginated table data",
+        "responses": {
+          "200": {
+            "description": "Rows"
+          }
+        }
+      }
+    },
+    "/data/parse": {
+      "post": {
+        "tags": [
+          "data"
+        ],
+        "summary": "POST /data/parse",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/data/transaction": {
+      "post": {
+        "tags": [
+          "data"
+        ],
+        "summary": "POST /data/transaction",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/database/query": {
+      "post": {
+        "summary": "Execute parameterized SQL",
+        "responses": {
+          "200": {
+            "description": "Query result"
+          }
+        }
+      }
+    },
+    "/database/test": {
+      "post": {
+        "summary": "Test database connection",
+        "responses": {
+          "200": {
+            "description": "Connected"
+          }
+        }
+      }
+    },
+    "/database/write": {
+      "post": {
+        "tags": [
+          "database"
+        ],
+        "summary": "POST /database/write",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/debug/logs": {
+      "get": {
+        "tags": [
+          "debug"
+        ],
+        "summary": "GET /debug/logs",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "debug"
+        ],
+        "summary": "DELETE /debug/logs",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/debug/requests/{requestId}": {
+      "get": {
+        "tags": [
+          "debug"
+        ],
+        "summary": "GET /debug/requests/{requestId}",
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/describe/{fileId}": {
+      "get": {
+        "tags": [
+          "describe"
+        ],
+        "summary": "GET /describe/{fileId}",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "describe"
+        ],
+        "summary": "DELETE /describe/{fileId}",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/describe/{fileId}/cache": {
+      "get": {
+        "tags": [
+          "describe"
+        ],
+        "summary": "GET /describe/{fileId}/cache",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/docs/events": {
+      "post": {
+        "tags": [
+          "docs"
+        ],
+        "summary": "POST /docs/events",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/docs/state": {
+      "get": {
+        "tags": [
+          "docs"
+        ],
+        "summary": "GET /docs/state",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "docs"
+        ],
+        "summary": "PUT /docs/state",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/export/pdf": {
+      "post": {
+        "summary": "Export rows as PDF",
+        "responses": {
+          "200": {
+            "description": "PDF file",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "contentEncoding": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files": {
+      "get": {
+        "tags": [
+          "files"
+        ],
+        "summary": "GET /files",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/files/{id}": {
+      "get": {
+        "tags": [
+          "files"
+        ],
+        "summary": "GET /files/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "files"
+        ],
+        "summary": "DELETE /files/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/files/{id}/data": {
+      "get": {
+        "tags": [
+          "files"
+        ],
+        "summary": "GET /files/{id}/data",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/files/{id}/raw": {
+      "get": {
+        "tags": [
+          "files"
+        ],
+        "summary": "GET /files/{id}/raw",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/files/upload": {
+      "post": {
+        "tags": [
+          "files"
+        ],
+        "summary": "POST /files/upload",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "Healthy"
+          }
+        }
+      }
+    },
+    "/history/{projectId}": {
+      "get": {
+        "tags": [
+          "history"
+        ],
+        "summary": "GET /history/{projectId}",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "history"
+        ],
+        "summary": "POST /history/{projectId}",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "history"
+        ],
+        "summary": "DELETE /history/{projectId}",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/history/{projectId}/{versionId}": {
+      "get": {
+        "tags": [
+          "history"
+        ],
+        "summary": "GET /history/{projectId}/{versionId}",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "history"
+        ],
+        "summary": "DELETE /history/{projectId}/{versionId}",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/history/{projectId}/{versionId}/restore": {
+      "post": {
+        "tags": [
+          "history"
+        ],
+        "summary": "POST /history/{projectId}/{versionId}/restore",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/metadata/{projectId}": {
+      "get": {
+        "summary": "Get project metadata",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Metadata"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update project metadata",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated"
+          }
+        }
+      }
+    },
+    "/ml/{command}": {
+      "post": {
+        "tags": [
+          "ml"
+        ],
+        "summary": "POST /ml/{command}",
+        "parameters": [
+          {
+            "name": "command",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/notifications": {
+      "get": {
+        "summary": "List notifications",
+        "responses": {
+          "200": {
+            "description": "Notifications"
+          }
+        }
+      },
+      "post": {
+        "summary": "Send notification",
+        "responses": {
+          "201": {
+            "description": "Sent"
+          }
+        }
+      }
+    },
+    "/notifications/{id}/read": {
+      "patch": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "PATCH /notifications/{id}/read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/notifications/settings/current": {
+      "get": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "GET /notifications/settings/current",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "PUT /notifications/settings/current",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/plugins": {
+      "get": {
+        "tags": [
+          "plugins"
+        ],
+        "summary": "GET /plugins",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/plugins/{id}/storage/{key}": {
+      "get": {
+        "tags": [
+          "plugins"
+        ],
+        "summary": "GET /plugins/{id}/storage/{key}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "plugins"
+        ],
+        "summary": "PUT /plugins/{id}/storage/{key}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/projects": {
+      "get": {
+        "summary": "List accessible projects",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Projects"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create project",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Created"
+          }
+        }
+      }
+    },
+    "/projects/{id}": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "GET /projects/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "PUT /projects/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "DELETE /projects/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/projects/{id}/access/{userId}": {
+      "put": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "PUT /projects/{id}/access/{userId}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/projects/{id}/clone": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "POST /projects/{id}/clone",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/projects/{id}/data-sources/import": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "POST /projects/{id}/data-sources/import",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/projects/{id}/invite": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "POST /projects/{id}/invite",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/projects/{id}/lock": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "GET /projects/{id}/lock",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "POST /projects/{id}/lock",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "DELETE /projects/{id}/lock",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/projects/{id}/members": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "GET /projects/{id}/members",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/projects/{id}/members/{userId}": {
+      "delete": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "DELETE /projects/{id}/members/{userId}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/projects/{id}/package": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "GET /projects/{id}/package",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/projects/{id}/runtime-data": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "GET /projects/{id}/runtime-data",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/projects/accept-invite": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "POST /projects/accept-invite",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/projects/data/batch": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "POST /projects/data/batch",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/projects/data/query": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "POST /projects/data/query",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/projects/package/import": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "POST /projects/package/import",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/projects/shared-with-me": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "GET /projects/shared-with-me",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/tasks": {
+      "get": {
+        "summary": "List background tasks",
+        "responses": {
+          "200": {
+            "description": "Tasks"
+          }
+        }
+      },
+      "post": {
+        "summary": "Enqueue task",
+        "responses": {
+          "202": {
+            "description": "Queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{id}": {
+      "get": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "GET /tasks/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/tasks/{id}/cancel": {
+      "post": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "POST /tasks/{id}/cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/tasks/schedules": {
+      "get": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "GET /tasks/schedules",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "POST /tasks/schedules",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/tasks/schedules/{id}": {
+      "delete": {
+        "tags": [
+          "tasks"
+        ],
+        "summary": "DELETE /tasks/schedules/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/tenants": {
+      "get": {
+        "tags": [
+          "tenants"
+        ],
+        "summary": "GET /tenants",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "tenants"
+        ],
+        "summary": "POST /tenants",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/tenants/{id}": {
+      "get": {
+        "tags": [
+          "tenants"
+        ],
+        "summary": "GET /tenants/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "tenants"
+        ],
+        "summary": "PUT /tenants/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "tenants"
+        ],
+        "summary": "DELETE /tenants/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "GET /users",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "POST /users",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/users/{id}/role": {
+      "patch": {
+        "tags": [
+          "users"
+        ],
+        "summary": "PATCH /users/{id}/role",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/users/login": {
+      "post": {
+        "summary": "Login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "password"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session"
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "GET /users/me",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/users/register": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "POST /users/register",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    }
   }
 }

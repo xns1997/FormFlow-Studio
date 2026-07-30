@@ -398,7 +398,7 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
 }
 
 .property-editor-modal-body {
-  min-height: 460px;
+  min-height: min(460px, 60dvh);
   padding: 0 20px 22px;
   overflow: auto;
 }
