@@ -26,6 +26,11 @@
 
 * **settings:** add appearance and workflow preferences ([8d54615](https://github.com/xns1997/FormFlow-Studio/commit/8d546152dcf94df4324fee2b0f077894b7335e9f))
 
+
+### Documentation
+
+* **docs:** add versioning constraints for Codex and Claude ([e79dcb](https://github.com/xns1997/FormFlow-Studio/commit/e79dcbbe))
+
 # [1.5.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.4.0...v1.5.0) (2026-07-30)
 
 
@@ -40,7 +45,6 @@
 
 * **agent:** extract orchestration into modular agent subsystem ([42faf53](https://github.com/xns1997/FormFlow-Studio/commit/42faf53e988d0236b32c1091391a0d736688f062))
 
->>>>>>> origin/main
 # [1.4.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.3.0...v1.4.0) (2026-07-30)
 
 
@@ -81,7 +85,7 @@
 
 ## 当前状态
 
-- 当前已发布版本：[`1.2.0`](./docs/changelog/v1.md)
+- 当前已发布版本：[`1.7.0`](./docs/changelog/v1.md)
 - 开发中变更：[`Unreleased`](./docs/changelog/unreleased.md)
 
 ## 分卷导航
