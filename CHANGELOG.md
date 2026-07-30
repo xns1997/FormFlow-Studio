@@ -1,3 +1,11 @@
+# [1.7.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.6.0...v1.7.0) (2026-07-30)
+
+
+### Features
+
+* **data-preview:** 增强数据预览功能 ([de1213b](https://github.com/xns1997/FormFlow-Studio/commit/de1213b4718ca6be89d05fddb430092576540ca3))
+* **data-preview:** 增强数据预览功能 ([763ba4b](https://github.com/xns1997/FormFlow-Studio/commit/763ba4bbdd9f96740d1862756a95e5e1ff661bc0))
+
 # [1.6.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.5.0...v1.6.0) (2026-07-30)
 
 
