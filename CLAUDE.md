@@ -57,4 +57,12 @@
 
 离线编辑本地项目包时，使用 `.codex/skills/formflow-project-editor/` 中的 CLI：`inspect → create/normalize → validate --json`，不得直接覆盖输入路径。
 
+## TODO 文件管理
+
+所有 TODO 文件必须放在 `todos/` 目录下，禁止在项目根目录或其他位置创建 TODO 文件。
+
+- 已有 TODO 文件：`todos/TODO.md`、`todos/TODO-P0-core.md`、`todos/TODO-P1-enhance.md`、`todos/TODO-P2-enterprise.md` 等。
+- 新建 TODO 文件时，路径必须以 `todos/` 开头，例如 `todos/TODO-NEW-TASK.md`。
+- 读取已有 TODO 时也从 `todos/` 目录读取。
+
 完整说明：`docs/llm-tools-mcp.md`；业务编排规范：`docs/project-creation-spec.md`。
