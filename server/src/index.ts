@@ -45,6 +45,7 @@ import { initVectorStore, probeVectorStore } from './services/vector-store';
 import { initRuleAgentStore } from './services/rule-agent-store';
 import { mcpRouter } from './mcp-server';
 import { docsRouter } from './routes/docs';
+import { datasourceRouter } from './routes/datasource';
 
 const app = express();
 const PORT = env.port;
@@ -119,6 +120,7 @@ app.use('/api/comments', commentRouter);
 app.use('/api/approvals', approvalRouter);
 app.use('/api/tenants', tenantRouter);
 app.use('/api/checkpoints', checkpointRouter);
+app.use('/api/datasources', datasourceRouter);
 app.use('/mcp', mcpRouter);
 
 app.get('/api/health', (_req, res) => {

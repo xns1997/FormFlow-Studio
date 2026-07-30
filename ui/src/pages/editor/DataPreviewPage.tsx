@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom';
 import { AgGridReact } from 'ag-grid-react';
 import { AllCommunityModule, ModuleRegistry, type ColDef, type GridApi } from 'ag-grid-community';
+import { ServerSideRowModelModule } from 'ag-grid-enterprise';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import Modal, { ModalFooter, ModalHeader } from '../../components/Modal';
 import { AntdCompatSelect } from '../../components/AntdFormControls';
@@ -42,9 +43,20 @@ import {
   resolveSequenceDateTokens,
 } from '../../services/data/sequenceRules';
 import { describeApi, projectApi } from '../../services/io/api';
+import { createServerSideDatasource, refreshServerSideDatasource } from '../../services/data/serverSideDatasource';
+import { FilterBar } from '../../components/FilterBar';
+import {
+  HistogramChart,
+  CategoryBarChart,
+  PieChart,
+  CorrelationHeatmap,
+  QualityRadarChart,
+  MissingValueHeatmap,
+  BoxPlotChart,
+} from '../../components/DataCharts';
 import DataTemplateRecommendationModal from './DataTemplateRecommendationModal';
 
-ModuleRegistry.registerModules([AllCommunityModule]);
+ModuleRegistry.registerModules([AllCommunityModule, ServerSideRowModelModule]);
 
 type DataTab = 'table' | 'describe' | 'config';
 type ColumnType = SrcColumnInfo['dataType'];
@@ -210,10 +222,29 @@ export default function DataPreviewPage({
   const [columnSearch, setColumnSearch] = useState('');
   const [selectedTemplateFields, setSelectedTemplateFields] = useState<string[]>([]);
   const [showTemplateRecommendations, setShowTemplateRecommendations] = useState(false);
+  const [showExternalDsModal, setShowExternalDsModal] = useState(false);
+  const [externalDsDraft, setExternalDsDraft] = useState({ name: '', type: 'mysql' as string, host: '', port: '3306', database: '', user: '', password: '', query: '', url: '', method: 'GET', dataPath: '' });
+  const [externalDsTesting, setExternalDsTesting] = useState(false);
+  const [externalDsTestResult, setExternalDsTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [manuallyResizedColumns, setManuallyResizedColumns] = useState<Set<string>>(new Set());
 
   const projectId = project?.config?.id;
   const selectedTable = project?.srcTable.find((table) => table.id === selectedTableId) || null;
   const activeSheet = selectedTable?.sheets[activeSheetIdx] || null;
+
+  // Server-side datasource for AG Grid virtual scrolling
+  const serverSideDatasource = useMemo(() => {
+    if (!projectId || !selectedTableId || !activeSheet) return null;
+    return createServerSideDatasource({
+      projectId,
+      tableId: selectedTableId,
+      sheetName: activeSheet.name,
+      getSearch: () => query.search,
+      getKeySearch: () => query.keySearch,
+      onError: (message) => setFeedback({ type: 'error', message }),
+      onDataLoaded: (total) => setQueryTotal(total),
+    });
+  }, [projectId, selectedTableId, activeSheet?.name]);
   const currentConfig = useMemo(() => {
     if (!selectedTable || !activeSheet) return null;
     const defaults = createDefaultTableConfig(
@@ -392,6 +423,12 @@ export default function DataPreviewPage({
     const newWidth = event.column.getActualWidth();
     if (!colId || colId === '__rowNumber') return;
     if (Math.abs(newWidth - (currentConfig.columnWidths[colId] || 0)) <= 2) return;
+    // Track manually resized columns
+    setManuallyResizedColumns((prev) => {
+      const next = new Set(prev);
+      next.add(colId);
+      return next;
+    });
     void updateConfig({
       columnWidths: { ...currentConfig.columnWidths, [colId]: newWidth },
     });
@@ -580,7 +617,7 @@ export default function DataPreviewPage({
     try {
       if (!projectId) throw new Error('项目尚未加载');
       const ext = file.name.split('.').pop()?.toLowerCase() || '';
-      if (!['csv', 'json', 'xlsx', 'xls'].includes(ext)) throw new Error(`不支持的文件格式：.${ext}`);
+      if (!['csv', 'tsv', 'json', 'xlsx', 'xls', 'xml', 'parquet'].includes(ext)) throw new Error(`不支持的文件格式：.${ext}。支持: xlsx, xls, csv, tsv, json, xml, parquet`);
       const result = await projectApi.importDataSource(projectId, file, {
         mode: replaceTableId ? 'replace' : 'create',
         tableId: replaceTableId,
@@ -654,41 +691,16 @@ export default function DataPreviewPage({
       setTotalRows(0);
       return;
     }
-    let cancelled = false;
-    const loadRows = async () => {
-      setLoading(true);
-      try {
-        const data = await dataPreviewApi.page({ projectId, tableId: selectedTable.id, sheetName: activeSheet.name, ...query });
-        if (cancelled) return;
-        const loadedRows = (data.rows || []).map((row) => {
-          const changes = pendingChanges.get(row.__rowKey);
-          return changes
-            ? { ...row, ...Object.fromEntries(Object.entries(changes).map(([field, change]) => [field, change.newValue])) }
-            : row;
-        });
-        setRows(query.page === 1 ? [...loadedRows, ...pendingAdds] : loadedRows);
-        setTotalRows(data.total ?? data.rows?.length ?? 0);
-        setQueryTotal(data.queryTotal ?? data.total ?? 0);
-        setDataVersion(data.dataVersion || '');
-      } catch (error) {
-        if (cancelled) return;
-        setRows([]);
-        setFeedback({
-          type: 'error',
-          message: formatDataPreviewError(error, '数据加载失败'),
-          actionLabel: '重试',
-          onAction: () => setReloadToken((value) => value + 1),
-        });
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    loadRows();
+    // Server-side datasource handles data loading automatically
+    // Just reset selection state when context changes
     setSelectedColIdx(null);
     setSelectedRowIdx(null);
     setDescribeReport(null);
-    return () => { cancelled = true; };
-  }, [projectId, selectedTableId, activeSheetIdx, activeSheet?.name, query, reloadToken]);
+    // Refresh server-side datasource when context changes
+    if (gridApiRef.current) {
+      refreshServerSideDatasource(gridApiRef.current);
+    }
+  }, [projectId, selectedTableId, activeSheetIdx, activeSheet?.name, reloadToken]);
 
   useEffect(() => {
     if (!selectedTable || !activeSheet || activeTab !== 'describe') return;
@@ -709,6 +721,7 @@ export default function DataPreviewPage({
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setQuery((current) => current.search === searchDraft ? current : { ...current, page: 1, search: searchDraft });
+      if (gridApiRef.current) refreshServerSideDatasource(gridApiRef.current);
     }, 300);
     return () => window.clearTimeout(timer);
   }, [searchDraft]);
@@ -937,11 +950,12 @@ export default function DataPreviewPage({
           <div className="data-preview-sidebar-actions">
             <button type="button" className="ui-btn ui-btn-xs" onClick={() => setShowCreateWizard(true)}>+ 建表</button>
             <button type="button" className="ui-btn ui-btn-xs" onClick={() => fileRef.current?.click()}>+ 上传</button>
+            <button type="button" className="ui-btn ui-btn-xs" onClick={() => setShowExternalDsModal(true)}>+ 连接</button>
           </div>
           <input
             ref={fileRef}
             type="file"
-            accept=".xlsx,.xls,.csv,.json"
+            accept=".xlsx,.xls,.csv,.tsv,.json,.xml,.parquet"
             style={{ display: 'none' }}
             onChange={(event) => event.target.files?.[0] && startUpload(event.target.files[0])}
           />
@@ -1011,7 +1025,7 @@ export default function DataPreviewPage({
                   <div className="data-preview-tool-group">
                     <label htmlFor="data-preview-search">查找</label>
                     <input id="data-preview-search" type="search" aria-label="全表搜索" value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder="搜索全部字段" />
-                    {(query.search || query.keySearch || Object.keys(query.filterModel).length > 0) && <button type="button" className="ui-btn ui-btn-xs" onClick={() => { setSearchDraft(''); setKeyJumpDraft(''); setQuery((current) => ({ ...current, page: 1, search: '', keySearch: '', filterModel: {} })); }}>清除筛选</button>}
+                    {(query.search || query.keySearch || Object.keys(query.filterModel).length > 0) && <button type="button" className="ui-btn ui-btn-xs" onClick={() => { setSearchDraft(''); setKeyJumpDraft(''); setQuery((current) => ({ ...current, page: 1, search: '', keySearch: '', filterModel: {} })); if (gridApiRef.current) { gridApiRef.current.setFilterModel(null); refreshServerSideDatasource(gridApiRef.current); } }}>清除筛选</button>}
                   </div>
                   <div className="data-preview-tool-group">
                     <span>编辑</span>
@@ -1049,12 +1063,45 @@ export default function DataPreviewPage({
                     <span className="data-preview-state-icon" aria-hidden="true">{saveState === 'saved' ? '✓' : saveState === 'error' ? '!' : '●'}</span>
                     {saveState === 'saved' ? '已保存' : saveState === 'saving' ? '保存中' : saveState === 'error' ? '保存失败' : `未保存：${changedCellCount} 单元格 / ${pendingAdds.length} 新增 / ${pendingDeletes.size} 删除`}
                   </span>
-                  {(query.search || query.keySearch || Object.keys(query.filterModel).length > 0) && <div className="data-preview-filter-chips">
-                    {query.search && <button type="button" onClick={() => { setSearchDraft(''); setQuery((current) => ({ ...current, page: 1, search: '' })); }}>搜索：{query.search} ×</button>}
-                    {query.keySearch && <button type="button" onClick={() => { setKeyJumpDraft(''); setQuery((current) => ({ ...current, page: 1, keySearch: '' })); }}>Key：{query.keySearch} ×</button>}
-                    {Object.keys(query.filterModel).map((field) => <button key={field} type="button" onClick={() => setQuery((current) => { const filterModel = { ...current.filterModel }; delete filterModel[field]; return { ...current, page: 1, filterModel }; })}>{field} ×</button>)}
+                  {(query.search || query.keySearch) && <div className="data-preview-filter-chips">
+                    {query.search && <button type="button" onClick={() => { setSearchDraft(''); setQuery((current) => ({ ...current, page: 1, search: '' })); if (gridApiRef.current) refreshServerSideDatasource(gridApiRef.current); }}>搜索：{query.search} ×</button>}
+                    {query.keySearch && <button type="button" onClick={() => { setKeyJumpDraft(''); setQuery((current) => ({ ...current, page: 1, keySearch: '' })); if (gridApiRef.current) refreshServerSideDatasource(gridApiRef.current); }}>Key：{query.keySearch} ×</button>}
                   </div>}
             </div>
+          )}
+          {activeSheet && activeTab === 'table' && (
+            <FilterBar
+              filterModel={query.filterModel}
+              columns={(activeSheet.columns || []).map((col) => ({ name: col.name, dataType: col.dataType }))}
+              onFilterChange={(field, rule) => {
+                setQuery((current) => {
+                  const filterModel = { ...current.filterModel };
+                  if (rule) {
+                    filterModel[field] = rule;
+                  } else {
+                    delete filterModel[field];
+                  }
+                  return { ...current, page: 1, filterModel };
+                });
+                // Also sync with AG Grid's filter model
+                if (gridApiRef.current) {
+                  if (rule) {
+                    gridApiRef.current.setColumnFilterModel(field, rule).then(() => gridApiRef.current?.onFilterChanged());
+                  } else {
+                    gridApiRef.current.setColumnFilterModel(field, null).then(() => gridApiRef.current?.onFilterChanged());
+                  }
+                }
+              }}
+              onClearAll={() => {
+                setSearchDraft('');
+                setKeyJumpDraft('');
+                setQuery((current) => ({ ...current, page: 1, search: '', keySearch: '', filterModel: {} }));
+                if (gridApiRef.current) {
+                  gridApiRef.current.setFilterModel(null);
+                  refreshServerSideDatasource(gridApiRef.current);
+                }
+              }}
+            />
           )}
           {activeSheet && activeTab === 'table' && selectedTemplateFields.length > 0 && (
             <div className="data-preview-template-selection" role="status" aria-live="polite">
@@ -1128,7 +1175,8 @@ export default function DataPreviewPage({
                   aria-busy={loading}
                 >
                   <AgGridReact
-                    rowData={rows}
+                    rowModelType="serverSide"
+                    serverSideDatasource={serverSideDatasource || undefined}
                     columnDefs={colDefs}
                     defaultColDef={{
                       resizable: true,
@@ -1139,6 +1187,8 @@ export default function DataPreviewPage({
                     headerHeight={currentConfig?.headerHeight}
                     rowSelection={{ mode: 'singleRow' }}
                     getRowId={(params) => String(params.data.__rowKey)}
+                    cacheBlockSize={500}
+                    maxBlocksInCache={10}
                     onGridReady={(event) => {
                       gridApiRef.current = event.api;
                       if (gridContainerRef.current?.clientWidth && currentConfig?.autoFitColumns && Object.keys(currentConfig.columnWidths).length === 0) event.api.sizeColumnsToFit();
@@ -1174,11 +1224,13 @@ export default function DataPreviewPage({
                     }}
                     onFilterChanged={(event) => {
                       const filterModel = event.api.getFilterModel();
-                      setQuery((current) => JSON.stringify(current.filterModel) === JSON.stringify(filterModel) ? current : { ...current, page: 1, filterModel });
+                      setQuery((current) => ({ ...current, page: 1, filterModel }));
+                      // Server-side datasource refreshes automatically via getRows
                     }}
                     onSortChanged={(event) => {
                       const sortModel = event.api.getColumnState().filter((column) => column.sort).map((column) => ({ colId: column.colId, sort: column.sort || undefined })) as PreviewQuery['sortModel'];
-                      setQuery((current) => JSON.stringify(current.sortModel) === JSON.stringify(sortModel) ? current : { ...current, page: 1, sortModel });
+                      setQuery((current) => ({ ...current, page: 1, sortModel }));
+                      // Server-side datasource refreshes automatically via getRows
                     }}
                     onCellValueChanged={onCellValueChanged}
                   />
@@ -1186,17 +1238,11 @@ export default function DataPreviewPage({
               )}
               <div className="data-preview-pager">
                 <div className="data-preview-pager-group data-preview-pager-group-nav">
-                  <button type="button" className="ui-btn ui-btn-xs" disabled={query.page <= 1 || loading} onClick={() => setQuery((current) => ({ ...current, page: current.page - 1 }))}>上一页</button>
-                  <span className="data-preview-pager-status">第 {query.page} / {Math.max(1, Math.ceil(queryTotal / query.pageSize))} 页</span>
-                  <button type="button" className="ui-btn ui-btn-xs" disabled={query.page >= Math.max(1, Math.ceil(queryTotal / query.pageSize)) || loading} onClick={() => setQuery((current) => ({ ...current, page: current.page + 1 }))}>下一页</button>
-                </div>
-                <div className="data-preview-pager-group data-preview-pager-group-jump">
-                  <AntdCompatSelect aria-label="每页行数" value={String(query.pageSize)} onChange={(event) => setQuery((current) => ({ ...current, page: 1, pageSize: Number(event.target.value) }))}>{[50, 100, 200, 500].map((size) => <option key={size} value={size}>{size} 行/页</option>)}</AntdCompatSelect>
-                  <label><span>跳转</span><input aria-label="跳转页码" type="number" min={1} max={Math.max(1, Math.ceil(queryTotal / query.pageSize))} value={query.page} onChange={(event) => setQuery((current) => ({ ...current, page: Math.max(1, Math.min(Number(event.target.value) || 1, Math.max(1, Math.ceil(queryTotal / current.pageSize)))) }))} /></label>
+                  <span className="data-preview-pager-status">共 {queryTotal} 行{queryTotal !== totalRows ? `（筛选自 ${totalRows} 行）` : ''}</span>
                 </div>
                 <div className="data-preview-pager-group data-preview-pager-group-key">
-                  <label><span>Key</span><input aria-label="跳转到 Key" value={keyJumpDraft} onChange={(event) => setKeyJumpDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') setQuery((current) => ({ ...current, page: 1, keySearch: keyJumpDraft.trim() })); }} /></label>
-                  <button type="button" className="ui-btn ui-btn-xs" disabled={!keyJumpDraft.trim()} onClick={() => setQuery((current) => ({ ...current, page: 1, keySearch: keyJumpDraft.trim() }))}>定位</button>
+                  <label><span>Key</span><input aria-label="跳转到 Key" value={keyJumpDraft} onChange={(event) => setKeyJumpDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { setQuery((current) => ({ ...current, keySearch: keyJumpDraft.trim() })); if (gridApiRef.current) refreshServerSideDatasource(gridApiRef.current); } }} /></label>
+                  <button type="button" className="ui-btn ui-btn-xs" disabled={!keyJumpDraft.trim()} onClick={() => { setQuery((current) => ({ ...current, keySearch: keyJumpDraft.trim() })); if (gridApiRef.current) refreshServerSideDatasource(gridApiRef.current); }}>定位</button>
                 </div>
               </div>
             </div>
@@ -1212,7 +1258,28 @@ export default function DataPreviewPage({
                 <div className="data-preview-empty-panel">{describeLoading ? '正在分析数据…' : '加载数据概览中…'}</div>
               ) : (
                 <>
+                  {/* Insight Summary */}
+                  {(() => {
+                    const insights: string[] = [];
+                    const r = describeReport;
+                    insights.push(`该数据集包含 ${r.overview?.rows || 0} 行 × ${r.overview?.columns || 0} 列，整体质量评分 ${r.qualityScore || 0}/100。`);
+                    const missingCols = (r.columns || []).filter((c: any) => parseFloat(c.nullPercent) > 5);
+                    if (missingCols.length > 0) insights.push(`${missingCols.length} 列存在显著缺失值，其中"${missingCols[0].name}"缺失率最高（${missingCols[0].nullPercent}）。`);
+                    const outlierCols = (r.columns || []).filter((c: any) => c.hasOutliers);
+                    if (outlierCols.length > 0) insights.push(`${outlierCols.length} 个数值列存在异常值。`);
+                    const keyCandidates = (r.columns || []).filter((c: any) => c.cardinality === 'high' && parseFloat(c.nullPercent) === 0);
+                    if (keyCandidates.length > 0) insights.push(`推荐主键候选："${keyCandidates[0].name}"（唯一值 ${keyCandidates[0].uniqueCount}）。`);
+                    if (r.overview?.duplicateRows > 0) insights.push(`发现 ${r.overview.duplicateRows} 行重复数据（${r.overview.duplicatePercent}）。`);
+                    return (
+                      <div className="describe-insight-summary">
+                        {insights.map((text, i) => <p key={i}>{text}</p>)}
+                      </div>
+                    );
+                  })()}
+
                   <p className="data-preview-analysis-meta">分析范围：{selectedTable?.fileName} / {activeSheet.name} · 当前为缓存结果，保存数据后可重新分析</p>
+
+                  {/* Stats Cards */}
                   <div className="describe-overview">
                     <div className="describe-stat"><strong>{describeReport.overview?.rows || 0}</strong><span>行</span></div>
                     <div className="describe-stat"><strong>{describeReport.overview?.columns || 0}</strong><span>列</span></div>
@@ -1221,8 +1288,22 @@ export default function DataPreviewPage({
                     <div className="describe-stat"><strong>{describeReport.overview?.missingPercent || '0%'}</strong><span>缺失率</span></div>
                     <div className="describe-stat"><strong>{describeReport.qualityScore || 0}</strong><span>质量分</span></div>
                   </div>
+
+                  {/* Charts Row: Quality Radar + Missing Heatmap */}
+                  <div className="describe-charts-row">
+                    <div className="describe-chart-card">
+                      <h4>数据质量</h4>
+                      <QualityRadarChart report={describeReport} />
+                    </div>
+                    <div className="describe-chart-card">
+                      <h4>缺失值分布</h4>
+                      <MissingValueHeatmap columns={describeReport.columns || []} totalRows={describeReport.overview?.rows || 1} />
+                    </div>
+                  </div>
+
+                  {/* Column Analysis */}
                   <div className="describe-section">
-                    <h4>字段信息</h4>
+                    <h4>字段分析</h4>
                     <div className="describe-col-list">
                       {describeReport.columns?.map((col: any, index: number) => (
                         <div key={index} className="describe-col-item">
@@ -1241,6 +1322,13 @@ export default function DataPreviewPage({
                             <span>空值: {col.nullPercent}</span>
                             {col.cardinality && <span>基数: {col.cardinality}</span>}
                           </div>
+                          <div className="describe-col-chart">
+                            {col.stats && (col.type === 'number' || col.type === 'numeric') && <BoxPlotChart column={col} />}
+                            {col.topValues && col.topValues.length > 0 && (col.cardinality === 'low' || col.topValues.length <= 8
+                              ? <PieChart column={col.name} topValues={col.topValues} />
+                              : <CategoryBarChart column={col.name} topValues={col.topValues} />
+                            )}
+                          </div>
                           <div className="describe-col-samples">
                             {col.sampleValues?.slice(0, 4).map((value: string, itemIndex: number) => (
                               <span key={itemIndex} className="describe-sample">{value}</span>
@@ -1250,6 +1338,29 @@ export default function DataPreviewPage({
                       ))}
                     </div>
                   </div>
+
+                  {/* Distributions */}
+                  {describeReport.distributions && describeReport.distributions.length > 0 && (
+                    <div className="describe-section">
+                      <h4>数值分布</h4>
+                      <div className="describe-charts-grid">
+                        {describeReport.distributions.map((dist: any, i: number) => (
+                          <div key={i} className="describe-chart-card">
+                            <h5>{dist.column}</h5>
+                            <HistogramChart distribution={dist} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Correlation Heatmap */}
+                  {describeReport.correlations && Object.keys(describeReport.correlations).length >= 2 && (
+                    <div className="describe-section">
+                      <h4>相关性矩阵</h4>
+                      <CorrelationHeatmap correlations={describeReport.correlations} />
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -1319,6 +1430,13 @@ export default function DataPreviewPage({
                           <h4>显示与交互</h4>
                           <p>控制表格展示、筛选排序与行号。</p>
                         </div>
+                        <button type="button" className="ui-btn ui-btn-xs" onClick={() => void updateConfig({
+                          showRowNumbers: true,
+                          alternateRowColor: true,
+                          showGridLines: true,
+                          filterEnabled: true,
+                          sortEnabled: true,
+                        })}>重置</button>
                       </div>
                       <div className="settings-toggle-list">
                         <label className="settings-option-item"><input type="checkbox" checked={currentConfig.showRowNumbers !== false} onChange={(event) => void updateConfig({ showRowNumbers: event.target.checked })} /><span>显示行号</span></label>
@@ -1327,6 +1445,38 @@ export default function DataPreviewPage({
                         <label className="settings-option-item"><input type="checkbox" checked={currentConfig.filterEnabled} onChange={(event) => void updateConfig({ filterEnabled: event.target.checked })} /><span>启用筛选</span></label>
                         <label className="settings-option-item"><input type="checkbox" checked={currentConfig.sortEnabled} onChange={(event) => void updateConfig({ sortEnabled: event.target.checked })} /><span>启用排序</span></label>
                       </div>
+                    </section>
+
+                    <section className="settings-card settings-group">
+                      <div className="settings-card-header">
+                        <div className="settings-card-title">
+                          <h4>列宽管理</h4>
+                          <p>查看和管理手动调整过的列宽。仅显示手动拖拽修改过的列。</p>
+                        </div>
+                        {manuallyResizedColumns.size > 0 && (
+                          <button type="button" className="ui-btn ui-btn-xs" onClick={() => {
+                            setManuallyResizedColumns(new Set());
+                            void updateConfig({ columnWidths: {} });
+                          }}>重置全部</button>
+                        )}
+                      </div>
+                      {manuallyResizedColumns.size === 0 ? (
+                        <p className="config-empty-hint">暂无手动调整的列宽。拖拽列边框可调整列宽。</p>
+                      ) : (
+                        <div className="config-column-width-list">
+                          {Array.from(manuallyResizedColumns).map((colId) => (
+                            <div key={colId} className="config-column-width-item">
+                              <span className="config-column-width-name">{colId}</span>
+                              <span className="config-column-width-value">{currentConfig.columnWidths[colId] || '-'}px</span>
+                              <button type="button" className="ui-btn ui-btn-xs" onClick={() => {
+                                setManuallyResizedColumns((prev) => { const next = new Set(prev); next.delete(colId); return next; });
+                                const { [colId]: _, ...rest } = currentConfig.columnWidths;
+                                void updateConfig({ columnWidths: rest });
+                              }}>重置</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </section>
                   </div>
                 </div>
@@ -1354,10 +1504,6 @@ export default function DataPreviewPage({
                   <label><span>行数</span><input value={String(totalRows)} readOnly /></label>
                   <label><span>列数</span><input value={String(activeSheet.headers.length)} readOnly /></label>
                 </div>
-                <label className="data-preview-toggle">
-                  <input type="checkbox" checked={currentConfig?.showRowNumbers !== false} onChange={(event) => void updateConfig({ showRowNumbers: event.target.checked })} />
-                  <span>显示行号列</span>
-                </label>
               </section>
 
               {selectedRowKey && (() => {
@@ -1690,6 +1836,119 @@ export default function DataPreviewPage({
           onOpenAdvanced={onOpenTemplateCenter}
         />
       )}
+
+      <Modal open={showExternalDsModal} onClose={() => { setShowExternalDsModal(false); setExternalDsTestResult(null); }} maxWidth={560}>
+        <ModalHeader title="连接外部数据源" onClose={() => { setShowExternalDsModal(false); setExternalDsTestResult(null); }} />
+        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '16px 24px' }}>
+          <label className="schema-field">
+            <span>数据源名称</span>
+            <input value={externalDsDraft.name} onChange={(e) => setExternalDsDraft((d) => ({ ...d, name: e.target.value }))} placeholder="例如：生产数据库" />
+          </label>
+          <label className="schema-field">
+            <span>类型</span>
+            <AntdCompatSelect value={externalDsDraft.type} onChange={(e) => {
+              const type = e.target.value;
+              setExternalDsDraft((d) => ({ ...d, type, port: type === 'mysql' ? '3306' : type === 'postgresql' ? '5432' : d.port }));
+            }}>
+              <option value="mysql">MySQL</option>
+              <option value="postgresql">PostgreSQL</option>
+              <option value="api">API (REST)</option>
+            </AntdCompatSelect>
+          </label>
+
+          {(externalDsDraft.type === 'mysql' || externalDsDraft.type === 'postgresql') && (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: 8 }}>
+                <label className="schema-field"><span>主机</span><input value={externalDsDraft.host} onChange={(e) => setExternalDsDraft((d) => ({ ...d, host: e.target.value }))} placeholder="localhost" /></label>
+                <label className="schema-field"><span>端口</span><input value={externalDsDraft.port} onChange={(e) => setExternalDsDraft((d) => ({ ...d, port: e.target.value }))} placeholder={externalDsDraft.type === 'mysql' ? '3306' : '5432'} /></label>
+              </div>
+              <label className="schema-field"><span>数据库</span><input value={externalDsDraft.database} onChange={(e) => setExternalDsDraft((d) => ({ ...d, database: e.target.value }))} placeholder="mydb" /></label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <label className="schema-field"><span>用户名</span><input value={externalDsDraft.user} onChange={(e) => setExternalDsDraft((d) => ({ ...d, user: e.target.value }))} placeholder="root" /></label>
+                <label className="schema-field"><span>密码</span><input type="password" value={externalDsDraft.password} onChange={(e) => setExternalDsDraft((d) => ({ ...d, password: e.target.value }))} /></label>
+              </div>
+              <label className="schema-field"><span>SQL 查询</span><textarea value={externalDsDraft.query} onChange={(e) => setExternalDsDraft((d) => ({ ...d, query: e.target.value }))} placeholder="SELECT * FROM users LIMIT 10000" rows={3} /></label>
+            </>
+          )}
+
+          {externalDsDraft.type === 'api' && (
+            <>
+              <label className="schema-field"><span>URL</span><input value={externalDsDraft.url} onChange={(e) => setExternalDsDraft((d) => ({ ...d, url: e.target.value }))} placeholder="https://api.example.com/data" /></label>
+              <label className="schema-field">
+                <span>方法</span>
+                <AntdCompatSelect value={externalDsDraft.method} onChange={(e) => setExternalDsDraft((d) => ({ ...d, method: e.target.value }))}>
+                  <option value="GET">GET</option>
+                  <option value="POST">POST</option>
+                </AntdCompatSelect>
+              </label>
+              <label className="schema-field"><span>数据路径（JSONPath）</span><input value={externalDsDraft.dataPath} onChange={(e) => setExternalDsDraft((d) => ({ ...d, dataPath: e.target.value }))} placeholder="data.items（可选，留空自动检测）" /></label>
+            </>
+          )}
+
+          {externalDsTestResult && (
+            <div style={{ padding: '8px 12px', borderRadius: 6, background: externalDsTestResult.success ? '#f0fdf4' : '#fef2f2', color: externalDsTestResult.success ? '#166534' : '#991b1b', fontSize: 13 }}>
+              {externalDsTestResult.success ? '✓' : '✗'} {externalDsTestResult.message}
+            </div>
+          )}
+        </div>
+        <ModalFooter>
+          <button type="button" className="ui-btn" onClick={() => { setShowExternalDsModal(false); setExternalDsTestResult(null); }}>取消</button>
+          <button
+            type="button"
+            className="ui-btn"
+            disabled={externalDsTesting}
+            onClick={async () => {
+              setExternalDsTesting(true);
+              setExternalDsTestResult(null);
+              try {
+                const conn = externalDsDraft.type === 'api'
+                  ? { url: externalDsDraft.url, method: externalDsDraft.method, dataPath: externalDsDraft.dataPath }
+                  : { host: externalDsDraft.host, port: Number(externalDsDraft.port), database: externalDsDraft.database, user: externalDsDraft.user, password: externalDsDraft.password };
+                const res = await fetch('/api/datasources/test', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ type: externalDsDraft.type, connection: conn }),
+                });
+                const result = await res.json();
+                setExternalDsTestResult(result);
+              } catch (err) {
+                setExternalDsTestResult({ success: false, message: String(err) });
+              } finally {
+                setExternalDsTesting(false);
+              }
+            }}
+          >
+            {externalDsTesting ? '测试中...' : '测试连接'}
+          </button>
+          <button
+            type="button"
+            className="ui-btn ui-btn-primary"
+            onClick={async () => {
+              if (!projectId || !externalDsDraft.name) return;
+              const conn = externalDsDraft.type === 'api'
+                ? { url: externalDsDraft.url, method: externalDsDraft.method, dataPath: externalDsDraft.dataPath }
+                : { host: externalDsDraft.host, port: Number(externalDsDraft.port), database: externalDsDraft.database, user: externalDsDraft.user, password: externalDsDraft.password };
+              try {
+                const res = await fetch(`/api/datasources/${projectId}`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name: externalDsDraft.name, type: externalDsDraft.type, connection: conn, query: externalDsDraft.query, cache: { enabled: false, ttl: 300 }, writeBack: false }),
+                });
+                const result = await res.json();
+                if (result.success) {
+                  setShowExternalDsModal(false);
+                  setExternalDsTestResult(null);
+                  setExternalDsDraft({ name: '', type: 'mysql', host: '', port: '3306', database: '', user: '', password: '', query: '', url: '', method: 'GET', dataPath: '' });
+                }
+              } catch (err) {
+                setExternalDsTestResult({ success: false, message: `保存失败: ${err}` });
+              }
+            }}
+          >
+            保存
+          </button>
+        </ModalFooter>
+      </Modal>
     </div>
   );
 }

@@ -49,6 +49,7 @@
     "cors": "^2.8.6",
     "dayjs": "^1.11.13",
     "express": "^5.2.1",
+    "fast-xml-parser": "^5.10.1",
     "highlight.js": "^11.11.1",
     "jszip": "^3.10.1",
     "marked": "^18.0.6",
