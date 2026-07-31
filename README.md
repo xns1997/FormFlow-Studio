@@ -1,10 +1,10 @@
-# FormFlow Studio v1.7.0
+# FormFlow Studio v1.8.0
 
 **Excel 表单编排框架** —— 数据驱动表单生成、流程编排、表单设计与运行时一体化工作台。
 
 > 将 Excel / CSV / JSON / TSV / XML / Parquet 数据表转化为可交互的表单应用，支持数据库直连和 API 数据源，通过拖拽式节点编排数据处理流程，无需编写后端代码。
 
-本仓库当前发布版本为 **1.7.0**。本版本全面增强数据预览功能：新增多种文件类型支持、AG Grid 虚拟滚动性能优化、筛选交互中文化、数据概览图表可视化、配置 UI 重组；详细变更见 [`CHANGELOG.md`](./CHANGELOG.md)。
+本仓库当前发布版本为 **1.8.0**。本文档中心全面升级：多场景 Playground、事件交叉引用、设计系统统一、动画交互增强；详细变更见 [`CHANGELOG.md`](./CHANGELOG.md)。
 
 ## 先看这里
 
@@ -14,13 +14,13 @@
 - 技术栈、目录结构与项目包格式：[`docs/readme/project-layout.md`](./docs/readme/project-layout.md)
 - 按大版本拆分的更新记录：[`docs/changelog/README.md`](./docs/changelog/README.md)
 
-## v1.7.0 数据预览增强
+## v1.8.0 文档中心升级
 
-- **多格式支持**：新增 TSV、XML、Parquet 文件解析；支持 MySQL/PostgreSQL 数据库直连和 REST API 数据源，连接信息加密存储。
-- **虚拟滚动**：AG Grid 切换到 Server-Side Row Model，支持大数据量（10万+行）流畅浏览；服务端索引/缓存加速筛选排序。
-- **筛选优化**：新增工具栏下方筛选条，筛选类型纯中文显示并按数据类型分组，支持双向管理筛选条件。
-- **数据概览**：顶部自动生成洞察式摘要；新增质量雷达图、缺失值分布、箱线图、饼图、相关性热力图等 7 种图表。
-- **配置重组**：配置面板分组为可折叠 sections，新增列宽变更追踪（仅记录手动拖拽），支持重置单列/全部列宽。
+- **多场景 Playground**：每个控件支持 2-4 个场景切换（如 input: 基础文本/密码输入/带前后缀/搜索框），切换时自动重置 Props/Values JSON。
+- **事件交叉引用**：控件文档自动关联事件文档（onChange/onBlur/onFocus 等），显示可点击的事件跳转链接。
+- **设计系统统一**：Playground 颜色统一为 --accent，徽章用 --success/--danger；新增 --font-mono, --surface 等缺失变量。
+- **动画交互增强**：文章淡入、卡片交错滑入、侧边栏 hover 缩进、活跃项蓝色指示条、代码语法高亮（highlight.js）。
+- **类型安全**：节点执行器、端口检查器等核心模块替换 any 为精确 TypeScript 类型。
 
 ## 主开发分支（尚未发布）
 

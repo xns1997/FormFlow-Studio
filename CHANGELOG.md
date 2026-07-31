@@ -1,23 +1,32 @@
-# [1.8.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.7.3...v1.8.0) (2026-07-30)
-
-
-### Bug Fixes
-
-* **dsl-editor:** restore inline editor after fullscreen close ([e97d01a](https://github.com/xns1997/FormFlow-Studio/commit/e97d01a03b14adec246b177b987914b1e3d3aeea))
-* **runtime:** allow scrollbar in runtime form content area ([f2e93d4](https://github.com/xns1997/FormFlow-Studio/commit/f2e93d44753f68065a7f249588b564da71cd3fea))
+## [1.8.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.7.2...v1.8.0) (2026-07-31)
 
 
 ### Features
 
-* **editor:** empty state guidance + flow field reference panel ([6d93cce](https://github.com/xns1997/FormFlow-Studio/commit/6d93ccec6d7b9c59bf60c2992e0669f010e76b16))
-* **editor:** mode switching optimization - naming, context, field ref, shortcuts ([168de13](https://github.com/xns1997/FormFlow-Studio/commit/168de13a7389ccab9f99df815d2a798122ffec56))
-
-## [1.7.3](https://github.com/xns1997/FormFlow-Studio/compare/v1.7.2...v1.7.3) (2026-07-30)
+* **docs:** 多场景 Playground 与事件交叉引用 ([f95e73f](https://github.com/xns1997/FormFlow-Studio/commit/f95e73f))
+  - 每个控件支持 2-4 个场景切换（如 input: 基础文本/密码输入/带前后缀/搜索框）
+  - 控件文档自动关联事件文档，显示可点击的事件跳转链接
+  - Playground 场景切换时自动重置 Props/Values JSON
+* **ui:** 文档中心设计审计与交互增强 ([247dd39](https://github.com/xns1997/FormFlow-Studio/commit/247dd39))
+  - 统一设计令牌：Playground 颜色 #2563eb → var(--accent)，徽章用 --success/--danger
+  - 新增缺失 CSS 变量：--font-mono, --surface, --surface-secondary, --hover-bg
+  - 新增动画：fadeIn 文章进入、slideUp 卡片交错入场、scaleIn 按压反馈
+  - 侧边栏 hover 缩进 + 活跃项蓝色指示条
+  - 代码块引入 highlight.js 语法高亮（JSON/JS）
+* **types:** 替换 any 类型为精确 TypeScript 类型 ([734cb41](https://github.com/xns1997/FormFlow-Studio/commit/734cb41))
+  - 节点执行器数据数组 any[] → Record<string, unknown>[]
+  - 端口类型检查器 any → Record<string, unknown>
+  - XLSX 工作表类型引入 XLSX.WorkSheet / XLSX.WorkBook
 
 
 ### Bug Fixes
 
-* **data-preview:** revert to client-side row model for reliable data display ([6d1785d](https://github.com/xns1997/FormFlow-Studio/commit/6d1785daad7de2efab4a156e2411555484252e01))
+* **docs:** 控件文档 Playground 在 DocsPlatformPage 中恢复显示 ([12b7f00](https://github.com/xns1997/FormFlow-Studio/commit/12b7f00))
+* **docs:** 切换控件时 Playground 状态正确重置 ([9f942d0](https://github.com/xns1997/FormFlow-Studio/commit/9f942d0))
+* **ui:** 文档三栏布局修复，tree/toc/article 各自独立滚动 ([f802eff](https://github.com/xns1997/FormFlow-Studio/commit/f802eff))
+* **ui:** 文档首页滚动修复 ([c177e7d](https://github.com/xns1997/FormFlow-Studio/commit/c177e7d))
+* **ui:** 文档表格行样式重设计，字段名用代码徽章高亮 ([69c9172](https://github.com/xns1997/FormFlow-Studio/commit/69c9172))
+
 
 ## [1.7.2](https://github.com/xns1997/FormFlow-Studio/compare/v1.7.1...v1.7.2) (2026-07-30)
 
