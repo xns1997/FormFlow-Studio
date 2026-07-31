@@ -2258,7 +2258,6 @@ mark.docs-search-highlight {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  overscroll-behavior: contain;
 }
 
 .docs-v2-scroll-root:focus {
@@ -2490,9 +2489,10 @@ mark.docs-search-highlight {
 .docs-v2-shell {
   display: grid;
   grid-template-columns: minmax(190px, 240px) minmax(0, 1fr) minmax(150px, 200px);
+  grid-template-rows: 1fr;
   gap: clamp(24px, 4vw, 56px);
   width: calc(100% - 64px);
-  height: 100dvh;
+  height: 100%;
   margin: 0 auto;
   padding: var(--space-3xl) 0 0;
   color: var(--text);
