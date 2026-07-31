@@ -2257,6 +2257,9 @@ mark.docs-search-highlight {
   height: 100%;
   min-width: 0;
   min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
 }
 
 .docs-v2-scroll-root:focus {
