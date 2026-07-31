@@ -2,7 +2,7 @@ import * as XLSX from 'xlsx';
 import type { NodeExecutor } from '../types';
 export const execute: NodeExecutor = (args, props) => {
   const [trigger, workbook, sheetOverride] = args;
-  const wb = workbook as any;
+  const wb = workbook as XLSX.WorkBook | undefined;
   const qType = (props.queryType as string) || 'getCellValue';
   const sheetName = (sheetOverride as string) || (props.sheetName as string) || wb?.SheetNames?.[0] || '';
   const ws = wb?.Sheets?.[sheetName];
@@ -15,14 +15,14 @@ export const execute: NodeExecutor = (args, props) => {
     case 'getColumnValues': {
       const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
       const colIdx = 0;
-      result = data.map((row: any) => row[colIdx]);
+      result = data.map((row) => (row as unknown[])[colIdx]);
       break;
     }
     case 'findRows': {
       const data = XLSX.utils.sheet_to_json(ws);
       const field = props.filterField as string;
       const val = props.filterValue as string;
-      result = data.filter((row: any) => field && row[field] == val);
+      result = data.filter((row) => field && (row as Record<string, unknown>)[field] == val);
       break;
     }
     case 'countRows': {

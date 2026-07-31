@@ -2,7 +2,7 @@ import { registerExecutor, type NodeExecContext } from '../executor-registry';
 
 const ML_API = 'http://localhost:3001/api/ml';
 
-async function callML(command: string, args: Record<string, unknown> = {}): Promise<any> {
+async function callML(command: string, args: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
   const resp = await fetch(`${ML_API}/${command}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -17,7 +17,7 @@ registerExecutor('ml:normalize', async (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: `数据格式错误: ${dataCheck.error}` };
-  const data = dataCheck.normalized as any[];
+  const data = dataCheck.normalized as Record<string, unknown>[];
   const fields = String(properties.fields || '').split(',').map(s => s.trim()).filter(Boolean);
   const result = await callML('normalize', { data, fields: fields.length ? fields : undefined, min: properties.min ?? 0, max: properties.max ?? 1 });
   return result;
@@ -27,7 +27,7 @@ registerExecutor('ml:standardize', async (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: `数据格式错误: ${dataCheck.error}` };
-  const data = dataCheck.normalized as any[];
+  const data = dataCheck.normalized as Record<string, unknown>[];
   const fields = String(properties.fields || '').split(',').map(s => s.trim()).filter(Boolean);
   return callML('standardize', { data, fields: fields.length ? fields : undefined });
 });

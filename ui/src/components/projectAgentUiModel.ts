@@ -348,8 +348,8 @@ function toolBusinessFeedback(event: ProjectAgentEvent, running = false) {
   ].filter(Boolean);
   const exact: Record<string, [string, string]> = {
     'system.capabilities.get': ['确认可用工具与安全限制', `${Array.isArray(data?.roles) ? `${data.roles.length} 类专家能力` : '工具能力已就绪'}${Number.isFinite(data?.tools) ? `，当前角色可用 ${data.tools} 项工具` : ''}`],
-    'catalog.templates.list': ['检查可用项目模板', Array.isArray(data) ? `找到 ${data.length} 个模板${data.length ? `：${data.slice(0, 3).map((item: any) => item?.name).filter(Boolean).join('、')}${data.length > 3 ? '等' : ''}` : ''}` : '模板目录已读取'],
-    'project.list': ['检查现有项目', Array.isArray(data) ? `发现 ${data.length} 个可访问项目${data.length ? `：${data.slice(0, 3).map((item: any) => item?.name).filter(Boolean).join('、')}` : ''}` : '现有项目已检查'],
+    'catalog.templates.list': ['检查可用项目模板', Array.isArray(data) ? `找到 ${data.length} 个模板${data.length ? `：${data.slice(0, 3).map((item: Record<string, unknown>) => item?.name).filter(Boolean).join('、')}${data.length > 3 ? '等' : ''}` : ''}` : '模板目录已读取'],
+    'project.list': ['检查现有项目', Array.isArray(data) ? `发现 ${data.length} 个可访问项目${data.length ? `：${data.slice(0, 3).map((item: Record<string, unknown>) => item?.name).filter(Boolean).join('、')}` : ''}` : '现有项目已检查'],
     'project.initialize': ['创建并初始化项目', [projectName ? `“${projectName}”` : '', countParts.join('、'), validation?.valid === true ? '结构校验通过' : ''].filter(Boolean).join(' · ')],
     'project.create': ['创建项目', projectName ? `已创建“${projectName}”` : '项目基础结构已建立'],
     'project.inspect': ['检查项目业务结构', [projectName ? `“${projectName}”` : '', countParts.join('、')].filter(Boolean).join(' · ')],

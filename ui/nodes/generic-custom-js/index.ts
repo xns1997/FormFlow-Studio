@@ -18,10 +18,10 @@ function parsePortDef(raw: unknown): Array<{ name: string; label: string; type: 
   try {
     const arr = JSON.parse(raw);
     if (!Array.isArray(arr)) return [];
-    return arr.filter((p: any) => p && typeof p.name === 'string').map((p: any) => ({
-      name: p.name,
-      label: p.label || p.name,
-      type: p.type || 'any',
+    return arr.filter((p: Record<string, unknown>) => p && typeof p.name === 'string').map((p: Record<string, unknown>) => ({
+      name: p.name as string,
+      label: (p.label || p.name) as string,
+      type: (p.type || 'any') as string,
     }));
   } catch { return []; }
 }

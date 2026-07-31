@@ -39,7 +39,7 @@ export default function RuleAgentPanel({ projectId, formId, code, components, ta
     if (sessionId) return sessionId;
     const sessions = await llmApi.ruleAgent.sessions(projectId, formId);
     const session = sessions[0] || await llmApi.ruleAgent.createSession({ projectId, formId });
-    setSessionId(session.id); setMessages((session.messages || []).map((item: any) => ({ role: item.role, content: item.content })));
+    setSessionId(session.id); setMessages((session.messages || []).map((item: Record<string, unknown>) => ({ role: item.role as string, content: item.content as string })));
     return session.id as string;
   }
 

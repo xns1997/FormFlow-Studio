@@ -67,7 +67,7 @@ const SwitchEditor: PropertyEditorComponent = (context) => <div className="prop-
   <div className="property-toggle-label"><span>{context.def.label}</span>{context.def.help && <small title={context.def.help}>?</small>}</div>
   <div className="property-toggle-control"><PropertyFieldActions context={context} /><AntdSwitchInput checked={!!context.value} disabled={context.disabled} onChange={context.onChange} /></div>
 </div>;
-const SelectEditor: PropertyEditorComponent = (context) => { const def = scalarDef(context); return <FieldShell context={context}><AntdSelectInput value={context.value as string ?? def.default ?? ''} options={def.options || []} disabled={context.disabled} onChange={context.onChange} /></FieldShell>; };
+const SelectEditor: PropertyEditorComponent = (context) => { const def = scalarDef(context); return <FieldShell context={context}><AntdSelectInput value={context.value as string ?? def.default ?? ''} options={(def.options || []).map((opt) => ({ label: opt.label, value: String(opt.value) }))} disabled={context.disabled} onChange={context.onChange} /></FieldShell>; };
 const ColorEditor: PropertyEditorComponent = (context) => <div className="prop-field property-compact-field">
   <div className="property-compact-label"><span>{context.def.label}</span>{context.def.help && <small title={context.def.help}>?</small>}</div>
   <div className="property-compact-control"><PropertyFieldActions context={context} /><AntdColorInput value={String(context.value ?? '#000000')} disabled={context.disabled} onChange={context.onChange} /></div>

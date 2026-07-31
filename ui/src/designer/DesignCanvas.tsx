@@ -76,15 +76,15 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
     let cancelled = false;
     projectApi.runtimeData(projectId).then((runtime) => {
       if (cancelled) return;
-      const fullById = new Map((runtime.tables || []).map((table: any) => [table.id, table]));
+      const fullById = new Map((runtime.tables || []).map((table: Record<string, unknown>) => [table.id, table]));
       setRuntimeTables(tables.map((table) => {
-        const full = fullById.get(table.id) as any;
+        const full = fullById.get(table.id) as Record<string, unknown> | undefined;
         if (!full) return table;
         return {
           ...table,
           sheets: table.sheets.map((sheet) => {
-            const runtimeSheet = full.sheets?.find((entry: any) => entry.name === sheet.name);
-            return runtimeSheet ? { ...sheet, preview: runtimeSheet.rows, rowCount: runtimeSheet.rowCount } : sheet;
+            const runtimeSheet = (full.sheets as Record<string, unknown>[])?.find((entry) => entry.name === sheet.name);
+            return runtimeSheet ? { ...sheet, preview: runtimeSheet.rows as Record<string, unknown>[], rowCount: runtimeSheet.rowCount as number } : sheet;
           }),
         };
       }));
@@ -107,6 +107,7 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
   const fieldKey = (item: DataFieldDragItem) => `${item.tableId}:${item.sheetName}:${item.column.name}`;
 
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- X6 graph type is complex
     let mountedGraph: any = null;
     const raf = requestAnimationFrame(() => {
       initGraph();

@@ -4,6 +4,14 @@ type Axis = 'row' | 'column';
 type Action = 'insert' | 'delete';
 type CellRange = { s: { r: number; c: number }; e: { r: number; c: number } };
 
+interface ProjectWorksheet {
+  __fromProject?: boolean;
+  headers?: string[];
+  preview?: Record<string, unknown>[];
+  sheetName?: string;
+  [key: string]: unknown;
+}
+
 const cellKeyPattern = /^[A-Z]+\d+$/;
 
 function positiveInteger(value: unknown, fallback: number): number {
@@ -11,13 +19,14 @@ function positiveInteger(value: unknown, fallback: number): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-export function toEditableWorksheet(worksheet: any): any {
-  if (!worksheet?.__fromProject) return worksheet;
-  const headers: string[] = worksheet.headers || [];
-  const rows: Record<string, unknown>[] = worksheet.preview || [];
+export function toEditableWorksheet(worksheet: XLSX.WorkSheet | ProjectWorksheet): XLSX.WorkSheet | ProjectWorksheet {
+  if (!(worksheet as ProjectWorksheet)?.__fromProject) return worksheet;
+  const ws = worksheet as ProjectWorksheet;
+  const headers: string[] = ws.headers || [];
+  const rows: Record<string, unknown>[] = ws.preview || [];
   const converted = XLSX.utils.json_to_sheet(rows, { header: headers.length ? headers : undefined });
   Object.defineProperty(converted, '__sourceSheetName', {
-    value: worksheet.sheetName || '', configurable: true, enumerable: false, writable: true,
+    value: ws.sheetName || '', configurable: true, enumerable: false, writable: true,
   });
   return converted;
 }
@@ -69,7 +78,7 @@ function shiftFormula(formula: string, axis: Axis, index: number, count: number,
   });
 }
 
-function recalculateRef(worksheet: any) {
+function recalculateRef(worksheet: XLSX.WorkSheet) {
   const cells = Object.keys(worksheet).filter((key) => cellKeyPattern.test(key)).map((key) => XLSX.utils.decode_cell(key));
   if (!cells.length) { worksheet['!ref'] = 'A1'; return; }
   worksheet['!ref'] = XLSX.utils.encode_range({
@@ -78,8 +87,8 @@ function recalculateRef(worksheet: any) {
   });
 }
 
-export function editWorksheetStructure(worksheet: any, axis: Axis, action: Action, start: unknown, amount: unknown) {
-  const editable = toEditableWorksheet(worksheet);
+export function editWorksheetStructure(worksheet: XLSX.WorkSheet | ProjectWorksheet, axis: Axis, action: Action, start: unknown, amount: unknown) {
+  const editable = toEditableWorksheet(worksheet) as XLSX.WorkSheet;
   if (!editable || typeof editable !== 'object') throw new Error('缺少 worksheet 输入');
   const index = positiveInteger(start, 1) - 1;
   const count = positiveInteger(amount, 1);
@@ -98,9 +107,9 @@ export function editWorksheetStructure(worksheet: any, axis: Axis, action: Actio
   }
 
   if (Array.isArray(editable['!merges'])) {
-    editable['!merges'] = editable['!merges']
+    editable['!merges'] = (editable['!merges'] as CellRange[])
       .map((range: CellRange) => transformRange(range, axis, index, count, action))
-      .filter(Boolean);
+      .filter((r): r is CellRange => r !== null);
   }
   if (typeof editable['!autofilter']?.ref === 'string') {
     const transformed = transformRange(XLSX.utils.decode_range(editable['!autofilter'].ref), axis, index, count, action);
@@ -109,8 +118,8 @@ export function editWorksheetStructure(worksheet: any, axis: Axis, action: Actio
   }
   const dimensionKey = axis === 'row' ? '!rows' : '!cols';
   if (Array.isArray(editable[dimensionKey])) {
-    if (action === 'insert') editable[dimensionKey].splice(index, 0, ...Array.from({ length: count }, () => undefined));
-    else editable[dimensionKey].splice(index, count);
+    if (action === 'insert') (editable[dimensionKey] as unknown[]).splice(index, 0, ...Array.from({ length: count }, () => undefined));
+    else (editable[dimensionKey] as unknown[]).splice(index, count);
   }
   recalculateRef(editable);
   const range = XLSX.utils.decode_range(editable['!ref'] || 'A1');
@@ -122,8 +131,8 @@ export function editWorksheetStructure(worksheet: any, axis: Axis, action: Actio
   };
 }
 
-export function writeWorksheetRange(worksheet: any, values: unknown, address: string) {
-  const editable = toEditableWorksheet(worksheet);
+export function writeWorksheetRange(worksheet: XLSX.WorkSheet | ProjectWorksheet, values: unknown, address: string) {
+  const editable = toEditableWorksheet(worksheet) as XLSX.WorkSheet;
   if (!editable || !Array.isArray(values)) throw new Error('缺少 worksheet 或 values 输入');
   const rows = Array.isArray(values[0]) ? values as unknown[][] : [values as unknown[]];
   XLSX.utils.sheet_add_aoa(editable, rows, { origin: address || 'A1' });

@@ -4,6 +4,7 @@ import { useCallback, type RefObject } from 'react';
  * Canvas viewport operations: zoom, pan, fit.
  * Extracted from useDesigner to improve locality and testability.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- X6 graph type is complex
 export function useCanvasViewport(
   graphRef: RefObject<any>,
   setZoom: (zoom: number) => void,

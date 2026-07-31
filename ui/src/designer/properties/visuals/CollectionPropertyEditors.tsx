@@ -29,9 +29,9 @@ function isDateComponentType(type?: string) {
   return type === 'datePicker' || type === 'timePicker' || type === 'dateRange';
 }
 
-function summarizeOptionSourceCard(source: ReturnType<typeof normalizeOptionSource>, tables: ReturnType<typeof useProjectStore.getState>['project'] extends infer T ? NonNullable<any> : never) {
+function summarizeOptionSourceCard(source: ReturnType<typeof normalizeOptionSource>, tables: Array<Record<string, unknown>>) {
   if (source.mode === 'table') {
-    const table = tables.find((item: any) => item.id === source.tableId);
+    const table = tables.find((item) => item.id === source.tableId);
     return `数据表 · ${table?.fileName || '未选择数据表'} / ${source.sheetName || '未选工作表'} / ${source.labelField || '未选字段'}`;
   }
   if (source.mode === 'range') {

@@ -338,16 +338,16 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
   const bringToFront = useCallback(() => {
     const graph = graphRef.current;
     if (!graph) return;
-    const maxZ = Math.max(0, ...graph.getCells().map((cell: any) => cell.getZIndex() ?? 0));
-    graph.getSelectedCells().filter((cell: any) => cell.id !== FORM_WINDOW_CELL_ID).forEach((cell: any, index: number) => cell.setZIndex(maxZ + index + 1));
+    const maxZ = Math.max(0, ...graph.getCells().map((cell: { getZIndex: () => number | undefined }) => cell.getZIndex() ?? 0));
+    graph.getSelectedCells().filter((cell: { id: string }) => cell.id !== FORM_WINDOW_CELL_ID).forEach((cell: { setZIndex: (z: number) => void }, index: number) => cell.setZIndex(maxZ + index + 1));
     syncComponentsFromGraph();
   }, [graphRef, syncComponentsFromGraph]);
 
   const sendToBack = useCallback(() => {
     const graph = graphRef.current;
     if (!graph) return;
-    const minZ = Math.min(0, ...graph.getCells().map((cell: any) => cell.getZIndex() ?? 0));
-    graph.getSelectedCells().filter((cell: any) => cell.id !== FORM_WINDOW_CELL_ID).forEach((cell: any, index: number) => cell.setZIndex(minZ - index - 1));
+    const minZ = Math.min(0, ...graph.getCells().map((cell: { getZIndex: () => number | undefined }) => cell.getZIndex() ?? 0));
+    graph.getSelectedCells().filter((cell: { id: string }) => cell.id !== FORM_WINDOW_CELL_ID).forEach((cell: { setZIndex: (z: number) => void }, index: number) => cell.setZIndex(minZ - index - 1));
     syncComponentsFromGraph();
   }, [graphRef, syncComponentsFromGraph]);
 

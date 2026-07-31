@@ -152,13 +152,13 @@ function WorkbookDisplayer({ value }: { value: unknown }) {
 }
 
 function WorksheetDisplayer({ value, compact }: { value: unknown; compact?: boolean }) {
-  const ws = value as any;
-  const isProject = ws?.__fromProject;
-  const headers: string[] = ws?.headers || [];
-  const preview: any[] = ws?.preview || [];
-  const rows = ws?.rowCount || preview.length;
-  const cols = ws?.colCount || headers.length;
-  const name = ws?.sheetName || '';
+  const ws = value as Record<string, unknown> | null;
+  const isProject = !!ws?.__fromProject;
+  const headers: string[] = (ws?.headers as string[]) || [];
+  const preview: Record<string, unknown>[] = (ws?.preview as Record<string, unknown>[]) || [];
+  const rows = (ws?.rowCount as number) || preview.length;
+  const cols = (ws?.colCount as number) || headers.length;
+  const name = (ws?.sheetName as string) || '';
 
   if (compact) {
     return (
@@ -193,7 +193,7 @@ function WorksheetDisplayer({ value, compact }: { value: unknown; compact?: bool
               <tr>{headers.slice(0, 6).map((h: string, i: number) => <th key={i}>{h}</th>)}{headers.length > 6 && <th>…</th>}</tr>
             </thead>
             <tbody>
-              {preview.slice(0, 3).map((row: any, ri: number) => (
+              {preview.slice(0, 3).map((row, ri: number) => (
                 <tr key={ri}>{headers.slice(0, 6).map((h: string, ci: number) => <td key={ci}>{String(row[h] ?? '')}</td>)}{headers.length > 6 && <td>…</td>}</tr>
               ))}
             </tbody>
