@@ -1,3 +1,17 @@
+# [1.8.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.7.3...v1.8.0) (2026-07-30)
+
+
+### Bug Fixes
+
+* **dsl-editor:** restore inline editor after fullscreen close ([e97d01a](https://github.com/xns1997/FormFlow-Studio/commit/e97d01a03b14adec246b177b987914b1e3d3aeea))
+* **runtime:** allow scrollbar in runtime form content area ([f2e93d4](https://github.com/xns1997/FormFlow-Studio/commit/f2e93d44753f68065a7f249588b564da71cd3fea))
+
+
+### Features
+
+* **editor:** empty state guidance + flow field reference panel ([6d93cce](https://github.com/xns1997/FormFlow-Studio/commit/6d93ccec6d7b9c59bf60c2992e0669f010e76b16))
+* **editor:** mode switching optimization - naming, context, field ref, shortcuts ([168de13](https://github.com/xns1997/FormFlow-Studio/commit/168de13a7389ccab9f99df815d2a798122ffec56))
+
 ## [1.7.3](https://github.com/xns1997/FormFlow-Studio/compare/v1.7.2...v1.7.3) (2026-07-30)
 
 
