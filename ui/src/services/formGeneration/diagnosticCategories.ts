@@ -126,13 +126,22 @@ export function getDiagnosticExplanation(diagnosticId: string): DiagnosticExplan
   return EXPLANATIONS[prefix] || EXPLANATIONS[diagnosticId];
 }
 
+const CATEGORY_MAP: Record<string, string> = {
+  'missing-name': 'field-binding',
+  'duplicate': 'field-binding',
+  'unbound': 'field-binding',
+  'required-hint': 'validation',
+  'write-conflict': 'linkage',
+  'linkage-cycle': 'linkage',
+  'button-action': 'button',
+  'invalid-flow': 'workflow',
+  'missing-flow': 'workflow',
+  'broken-edge': 'workflow',
+  'invalid-key': 'data-source',
+};
+
 export function getDiagnosticCategory(diagnosticId: string): DiagnosticCategory {
   const prefix = diagnosticId.split(':')[0];
-  if (prefix.includes('name') || prefix.includes('duplicate') || prefix.includes('unbound')) return DIAGNOSTIC_CATEGORIES['field-binding'];
-  if (prefix.includes('required') || prefix.includes('validation')) return DIAGNOSTIC_CATEGORIES['validation'];
-  if (prefix.includes('linkage') || prefix.includes('write-conflict')) return DIAGNOSTIC_CATEGORIES['linkage'];
-  if (prefix.includes('flow') || prefix.includes('edge') || prefix.includes('broken')) return DIAGNOSTIC_CATEGORIES['workflow'];
-  if (prefix.includes('key') || prefix.includes('table')) return DIAGNOSTIC_CATEGORIES['data-source'];
-  if (prefix.includes('button')) return DIAGNOSTIC_CATEGORIES['button'];
-  return DIAGNOSTIC_CATEGORIES['layout'];
+  const categoryId = CATEGORY_MAP[prefix] || 'layout';
+  return DIAGNOSTIC_CATEGORIES[categoryId] || DIAGNOSTIC_CATEGORIES['layout'];
 }

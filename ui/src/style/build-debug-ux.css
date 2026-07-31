@@ -1,7 +1,7 @@
 /* ============================================================
    Build Guidance & Debugging UX
-   DiagnosticPanel, ComponentInspector, DataFlowTracer,
-   PropertyTooltip, OnboardingGuide
+   CollapsiblePanel, DiagnosticPanel, ComponentInspector,
+   DataFlowTracer, PropertyTooltip, OnboardingGuide
    ============================================================ */
 
 /* ── Debug Panels Container ─────────────────────────────────── */
@@ -22,6 +22,69 @@
 
 .designer-debug-panels > * {
   flex-shrink: 0;
+}
+
+/* ── CollapsiblePanel ───────────────────────────────────────── */
+
+.collapsible-panel {
+  position: relative;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.1);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  overflow: hidden;
+  backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+}
+
+.collapsible-panel[data-open] {
+  max-height: min(60vh, 600px);
+}
+
+.collapsible-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(248, 250, 252, 0.92));
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.collapsible-panel__header-info {
+  min-width: 0;
+}
+
+.collapsible-panel__title {
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.collapsible-panel__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.collapsible-panel__subtitle {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.collapsible-panel__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.collapsible-panel__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* ── DiagnosticPanel ────────────────────────────────────────── */
@@ -109,9 +172,24 @@
   border-color: rgba(59, 130, 246, 0.5);
 }
 
-.diagnostic-panel__severity-tabs {
+.diagnostic-panel__filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.diagnostic-panel__severity-tabs,
+.diagnostic-panel__source-tabs {
   display: flex;
   gap: 4px;
+}
+
+.diagnostic-source-badge {
+  font-size: 9px;
+  color: #64748b;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.1);
 }
 
 .diagnostic-tab {
@@ -483,6 +561,25 @@
   box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.2);
 }
 
+.dataflow-node--inspected {
+  background: rgba(59, 130, 246, 0.12);
+  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.dataflow-node[role="button"] {
+  cursor: pointer;
+}
+
+.dataflow-node[role="button"]:hover {
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.dataflow-node[role="button"]:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.4);
+  outline-offset: 1px;
+  border-radius: 8px;
+}
+
 .dataflow-node__icon {
   font-size: 12px;
   flex-shrink: 0;
@@ -540,6 +637,39 @@
 .dataflow-connection__status {
   font-size: 10px;
   flex-shrink: 0;
+}
+
+.dataflow-inspect {
+  margin-top: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+  background: rgba(59, 130, 246, 0.04);
+  overflow: hidden;
+}
+
+.dataflow-inspect__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e40af;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.dataflow-inspect__body {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.dataflow-inspect__connections {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
 }
 
 /* ── PropertyTooltip ────────────────────────────────────────── */

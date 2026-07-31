@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type ResizeHandle, useDesigner } from './useDesigner';
 import { DesignerIcon } from './icons';
 import { PreviewCanvas } from './PreviewCanvas';
@@ -18,6 +18,8 @@ import { diagnoseForm } from '../services/formGeneration/formDiagnostics';
 import DiagnosticPanel from '../components/DiagnosticPanel';
 import ComponentInspector from '../components/ComponentInspector';
 import DataFlowTracer from '../components/DataFlowTracer';
+import OnboardingGuide, { hasCompletedOnboarding, markOnboardingCompleted } from '../components/OnboardingGuide';
+import { getErrors, onError, installGlobalErrorHandlers, type ManagedError } from '../services/engine/errorManager';
 
 interface Props {
   designer: ReturnType<typeof useDesigner>;
@@ -43,12 +45,29 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
   const [diagnosticOpen, setDiagnosticOpen] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [dataflowOpen, setDataflowOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(() => !hasCompletedOnboarding());
+  const [runtimeErrors, setRuntimeErrors] = useState<ManagedError[]>([]);
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const toolbarAvailability = getCanvasToolbarAvailability(designer);
 
   // Diagnostic computation
   const diagnostics = useMemo(() => diagnoseForm(designer.components, tables, workflows), [designer.components, tables, workflows]);
   const selectedComponent = designer.selectedIds.length === 1 ? designer.components.find((c) => c.id === designer.selectedIds[0]) ?? null : null;
+
+  // Install global error handlers and subscribe to ErrorManager
+  useEffect(() => {
+    installGlobalErrorHandlers();
+    setRuntimeErrors(getErrors({ limit: 50 }));
+    const unsub = onError(() => setRuntimeErrors(getErrors({ limit: 50 })));
+    return unsub;
+  }, []);
+
+  // Quick Fix handler
+  const handleApplyFix = useCallback((diagnosticId: string, props: Record<string, unknown>) => {
+    const componentId = diagnosticId.split(':')[1];
+    if (!componentId) return;
+    designer.updateComponentProps(componentId, props);
+  }, [designer]);
 
   useEffect(() => {
     if (mode !== 'preview' || !projectId) { setRuntimeTables(tables); return; }
@@ -286,13 +305,23 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
       {mode === 'preview' && (
         <PreviewCanvas formId={formId} components={designer.components} formWindow={designer.formWindow} zoom={designer.zoom} workflows={workflows} tables={runtimeTables} />
       )}
+      {/* Onboarding Guide */}
+      {showOnboarding && (
+        <OnboardingGuide
+          onComplete={() => { markOnboardingCompleted(); setShowOnboarding(false); }}
+          onSkip={() => { markOnboardingCompleted(); setShowOnboarding(false); }}
+        />
+      )}
+
       {/* Debug & Guidance Panels */}
       <div className="designer-debug-panels">
         <DiagnosticPanel
           diagnostics={diagnostics}
+          runtimeErrors={runtimeErrors}
           open={diagnosticOpen}
           onToggle={setDiagnosticOpen}
           onJumpToComponent={(id) => designer.setSelectedId?.(id)}
+          onApplyFix={handleApplyFix}
         />
         {selectedComponent && (
           <ComponentInspector

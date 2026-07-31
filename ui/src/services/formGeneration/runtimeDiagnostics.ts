@@ -4,6 +4,7 @@
  */
 
 import type { DebugEntry, DebugEntryLevel } from '../../project/types';
+import { groupBy } from './inspectorHelpers';
 
 export interface RuntimeDiagnostic {
   id: string;
@@ -174,24 +175,12 @@ export function enrichDebugEntries(entries: DebugEntry[]): RuntimeDiagnostic[] {
   return entries.map(enrichDebugEntry);
 }
 
-export function groupByCategory(diagnostics: RuntimeDiagnostic[]): Map<RuntimeDiagnosticCategory, RuntimeDiagnostic[]> {
-  const groups = new Map<RuntimeDiagnosticCategory, RuntimeDiagnostic[]>();
-  for (const d of diagnostics) {
-    const list = groups.get(d.category) || [];
-    list.push(d);
-    groups.set(d.category, list);
-  }
-  return groups;
+export function groupByCategory(diagnostics: RuntimeDiagnostic[]): Map<string, RuntimeDiagnostic[]> {
+  return groupBy(diagnostics, (d) => d.category);
 }
 
-export function groupBySeverity(diagnostics: RuntimeDiagnostic[]): Map<DebugEntryLevel, RuntimeDiagnostic[]> {
-  const groups = new Map<DebugEntryLevel, RuntimeDiagnostic[]>();
-  for (const d of diagnostics) {
-    const list = groups.get(d.severity) || [];
-    list.push(d);
-    groups.set(d.severity, list);
-  }
-  return groups;
+export function groupBySeverity(diagnostics: RuntimeDiagnostic[]): Map<string, RuntimeDiagnostic[]> {
+  return groupBy(diagnostics, (d) => d.severity);
 }
 
 export const CATEGORY_LABELS: Record<RuntimeDiagnosticCategory, { label: string; icon: string }> = {

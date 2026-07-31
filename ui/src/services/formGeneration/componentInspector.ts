@@ -4,6 +4,7 @@
  */
 
 import type { DesignComponent, SrcTableEntry, WorkflowFile } from '../../project/types';
+import { getField } from './inspectorHelpers';
 
 export interface ComponentState {
   id: string;
@@ -74,7 +75,7 @@ export function inspectComponent(
   tables: SrcTableEntry[],
   workflows: WorkflowFile[],
 ): ComponentState {
-  const field = String(component.fieldBinding || component.props?.name || '').trim();
+  const field = getField(component);
   const label = String(component.props?.label || component.props?.title || field || component.id);
 
   // Bindings
@@ -229,7 +230,7 @@ export function buildDataFlowGraph(
 
   // Component nodes
   for (const comp of components) {
-    const field = String(comp.fieldBinding || comp.props?.name || '').trim();
+    const field = getField(comp);
     if (!field) continue;
 
     const connections: DataFlowConnection[] = [];
