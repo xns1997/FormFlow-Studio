@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { getErrors, getErrorSummary, ingestErrors, clearErrors } from '../services/error-logger';
+import { asyncHandler } from '../middleware/async-handler';
 
 const router = Router();
 
 // POST /api/errors — receive errors from frontend (batch)
-router.post('/', (req, res) => {
+router.post('/', asyncHandler(async (req, res) => {
   const { errors } = req.body as { errors?: Array<Record<string, unknown>> };
   if (!Array.isArray(errors) || errors.length === 0) {
     res.status(400).json({ error: 'errors array is required' });
@@ -25,10 +26,10 @@ router.post('/', (req, res) => {
   }));
   const ingested = ingestErrors(sanitized);
   res.json({ success: true, count: ingested.length });
-});
+}));
 
 // GET /api/errors — query errors with filters
-router.get('/', (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
   const errors = getErrors({
     severity: typeof req.query.severity === 'string' ? req.query.severity as any : undefined,
     category: typeof req.query.category === 'string' ? req.query.category as any : undefined,
@@ -36,17 +37,17 @@ router.get('/', (req, res) => {
     limit: typeof req.query.limit === 'string' ? Number(req.query.limit) : undefined,
   });
   res.json({ errors });
-});
+}));
 
 // GET /api/errors/summary — get error statistics
-router.get('/summary', (_req, res) => {
+router.get('/summary', asyncHandler(async (_req, res) => {
   res.json(getErrorSummary());
-});
+}));
 
 // DELETE /api/errors — clear all errors
-router.delete('/', (_req, res) => {
+router.delete('/', asyncHandler(async (_req, res) => {
   clearErrors();
   res.json({ success: true });
-});
+}));
 
 export { router as errorRouter };

@@ -5,6 +5,7 @@ import { PreviewCanvas } from './PreviewCanvas';
 import { useProjectStore } from '../project/store';
 import Modal, { ModalFooter, ModalHeader } from '../components/Modal';
 import { AntdCompatSelect } from '../components/AntdFormControls';
+import { SectionErrorBoundary } from '../components/SectionErrorBoundary';
 import {
   controlOptionsFromSamples,
   FIELD_DROP_COMMITTED_EVENT,
@@ -303,44 +304,54 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
         aria-hidden={mode === 'preview'}
       />
       {mode === 'preview' && (
-        <PreviewCanvas formId={formId} components={designer.components} formWindow={designer.formWindow} zoom={designer.zoom} workflows={workflows} tables={runtimeTables} />
+        <SectionErrorBoundary name="表单预览">
+          <PreviewCanvas formId={formId} components={designer.components} formWindow={designer.formWindow} zoom={designer.zoom} workflows={workflows} tables={runtimeTables} />
+        </SectionErrorBoundary>
       )}
       {/* Onboarding Guide */}
       {showOnboarding && (
-        <OnboardingGuide
-          onComplete={() => { markOnboardingCompleted(); setShowOnboarding(false); }}
-          onSkip={() => { markOnboardingCompleted(); setShowOnboarding(false); }}
-        />
+        <SectionErrorBoundary name="新手引导">
+          <OnboardingGuide
+            onComplete={() => { markOnboardingCompleted(); setShowOnboarding(false); }}
+            onSkip={() => { markOnboardingCompleted(); setShowOnboarding(false); }}
+          />
+        </SectionErrorBoundary>
       )}
 
       {/* Debug & Guidance Panels */}
       <div className="designer-debug-panels">
-        <DiagnosticPanel
-          diagnostics={diagnostics}
-          runtimeErrors={runtimeErrors}
-          open={diagnosticOpen}
-          onToggle={setDiagnosticOpen}
-          onJumpToComponent={(id) => designer.setSelectedId?.(id)}
-          onApplyFix={handleApplyFix}
-        />
+        <SectionErrorBoundary name="诊断面板">
+          <DiagnosticPanel
+            diagnostics={diagnostics}
+            runtimeErrors={runtimeErrors}
+            open={diagnosticOpen}
+            onToggle={setDiagnosticOpen}
+            onJumpToComponent={(id) => designer.setSelectedId?.(id)}
+            onApplyFix={handleApplyFix}
+          />
+        </SectionErrorBoundary>
         {selectedComponent && (
-          <ComponentInspector
-            selectedComponent={selectedComponent}
-            allComponents={designer.components}
+          <SectionErrorBoundary name="组件检查">
+            <ComponentInspector
+              selectedComponent={selectedComponent}
+              allComponents={designer.components}
+              tables={tables}
+              workflows={workflows}
+              open={inspectorOpen}
+              onToggle={setInspectorOpen}
+            />
+          </SectionErrorBoundary>
+        )}
+        <SectionErrorBoundary name="数据流">
+          <DataFlowTracer
+            components={designer.components}
             tables={tables}
             workflows={workflows}
-            open={inspectorOpen}
-            onToggle={setInspectorOpen}
+            open={dataflowOpen}
+            onToggle={setDataflowOpen}
+            selectedComponentId={designer.selectedIds[0]}
           />
-        )}
-        <DataFlowTracer
-          components={designer.components}
-          tables={tables}
-          workflows={workflows}
-          open={dataflowOpen}
-          onToggle={setDataflowOpen}
-          selectedComponentId={designer.selectedIds[0]}
-        />
+        </SectionErrorBoundary>
       </div>
       {mode === 'design' && !readOnly && designer.selectedIds.length === 1 && designer.selectionOverlay && (
         <div
