@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Select } from 'antd';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import HighlightText from '../../components/HighlightText';
+import ComponentDocPlayground from '../../components/ComponentDocPlayground';
 import {
   buildSearchIndex,
   findDoc,
@@ -129,6 +130,9 @@ export default function DocsPlatformPage({ home = false }: { home?: boolean }) {
               {current.actions?.map((action) => action.href && <button key={action.label} type="button" onClick={() => navigate(action.label === '返回项目' && safeReturnTo ? safeReturnTo : action.href!)}>{action.label}</button>)}
             </div>
           </header>
+          {current.domain === 'controls' && current.id.startsWith('form-design:') && (
+            <ComponentDocPlayground componentType={current.id.slice('form-design:'.length)} title={current.title} />
+          )}
           {current.blocks.map((block) => (
             <section id={block.id} key={block.id} className="docs-v2-section">
               <h2>{block.title}</h2>
