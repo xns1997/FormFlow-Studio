@@ -252,7 +252,9 @@ function controlEntries(): DocEntry[] {
     canonicalPath: `/docs/reference/controls/${control.type}`, kind: 'reference', domain: 'controls',
     title: control.label, summary: `${CATEGORY_LABELS[control.category]}控件：查看属性、事件、默认值和使用建议。`,
     aliases: [control.type], tags: [CATEGORY_LABELS[control.category], '控件'], audiences: ['builder', 'developer'],
-    source: { kind: 'control-registry', label: '控件注册表' }, relatedIds: [], updatedAt: UPDATED_AT,
+    source: { kind: 'control-registry', label: '控件注册表' },
+    relatedIds: control.eventSchema.map((e) => `event:control:${e.key}`),
+    updatedAt: UPDATED_AT,
     blocks: [
       {
         id: 'properties', title: '属性',

@@ -1163,6 +1163,81 @@ button.docs-breadcrumb-link {
   background: rgba(239, 68, 68, 0.12);
 }
 
+.docs-playground-scenarios {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.docs-playground-scenario-tab {
+  padding: 6px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 8px;
+  background: rgba(248, 250, 252, 0.8);
+  color: #475569;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.docs-playground-scenario-tab:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.docs-playground-scenario-tab.active {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+}
+
+.docs-playground-events {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: rgba(37, 99, 235, 0.04);
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  border-radius: 10px;
+}
+
+.docs-playground-events-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.docs-playground-event-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  border-radius: 6px;
+  background: #fff;
+  color: #2563eb;
+  font-size: 12px;
+  font-family: var(--font-mono, monospace);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.docs-playground-event-link::before {
+  content: '⚡';
+  font-size: 11px;
+}
+
+.docs-playground-event-link:hover {
+  border-color: #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+  text-decoration: none;
+}
+
 .docs-playground-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.85fr);
