@@ -133,7 +133,7 @@ export default function DocsPlatformPage({ home = false }: { home?: boolean }) {
         <aside className="docs-v2-tree" aria-label="文档目录">
           <Link className="docs-v2-home-link" to="/docs">文档中心</Link>
           <strong>{domainLabels[current.domain] || current.domain}</strong>
-          <nav>{sameDomain.map((entry) => <Link key={entry.id} className={entry.id === current.id ? 'active' : ''} to={entry.canonicalPath}>{entry.title}</Link>)}</nav>
+          <div className="docs-v2-tree-scroll">{sameDomain.map((entry) => <Link key={entry.id} className={entry.id === current.id ? 'active' : ''} to={entry.canonicalPath}>{entry.title}</Link>)}</div>
         </aside>
         <article className="docs-v2-article">
           <nav className="docs-breadcrumb" aria-label="面包屑"><Link to="/docs">文档中心</Link><span>/</span><span>{kindLabels[current.kind]}</span><span>/</span><span>{current.title}</span></nav>
@@ -182,7 +182,7 @@ export default function DocsPlatformPage({ home = false }: { home?: boolean }) {
           </nav>
           <footer className="docs-v2-feedback"><span>这篇文档有帮助吗？</span><button type="button" onClick={() => void sendDocEvent({ type: 'feedback', docId: current.id, category: 'helpful' })}>有帮助</button><button type="button" onClick={() => void sendDocEvent({ type: 'feedback', docId: current.id, category: 'not-helpful' })}>需要改进</button></footer>
         </article>
-        <aside className="docs-v2-toc" aria-label="页内目录"><strong>本页内容</strong>{current.blocks.map((block) => <a key={block.id} href={`#${block.id}`}>{block.title}</a>)}</aside>
+        <aside className="docs-v2-toc" aria-label="页内目录"><strong>本页内容</strong><div className="docs-v2-toc-scroll">{current.blocks.map((block) => <a key={block.id} href={`#${block.id}`}>{block.title}</a>)}</div></aside>
         </div>
       </DocsScrollRoot>
     );
