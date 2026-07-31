@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { type ResizeHandle, useDesigner } from './useDesigner';
 import { DesignerIcon } from './icons';
 import { PreviewCanvas } from './PreviewCanvas';
@@ -14,6 +14,10 @@ import {
 } from '../services/formGeneration/fieldControlRecommendation';
 import { getCanvasToolbarAvailability } from './canvasToolbarModel';
 import { projectApi } from '../services/io/api';
+import { diagnoseForm } from '../services/formGeneration/formDiagnostics';
+import DiagnosticPanel from '../components/DiagnosticPanel';
+import ComponentInspector from '../components/ComponentInspector';
+import DataFlowTracer from '../components/DataFlowTracer';
 
 interface Props {
   designer: ReturnType<typeof useDesigner>;
@@ -36,8 +40,15 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
   } | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [layoutNotice, setLayoutNotice] = useState('');
+  const [diagnosticOpen, setDiagnosticOpen] = useState(false);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [dataflowOpen, setDataflowOpen] = useState(false);
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const toolbarAvailability = getCanvasToolbarAvailability(designer);
+
+  // Diagnostic computation
+  const diagnostics = useMemo(() => diagnoseForm(designer.components, tables, workflows), [designer.components, tables, workflows]);
+  const selectedComponent = designer.selectedIds.length === 1 ? designer.components.find((c) => c.id === designer.selectedIds[0]) ?? null : null;
 
   useEffect(() => {
     if (mode !== 'preview' || !projectId) { setRuntimeTables(tables); return; }
@@ -275,6 +286,33 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
       {mode === 'preview' && (
         <PreviewCanvas formId={formId} components={designer.components} formWindow={designer.formWindow} zoom={designer.zoom} workflows={workflows} tables={runtimeTables} />
       )}
+      {/* Debug & Guidance Panels */}
+      <div className="designer-debug-panels">
+        <DiagnosticPanel
+          diagnostics={diagnostics}
+          open={diagnosticOpen}
+          onToggle={setDiagnosticOpen}
+          onJumpToComponent={(id) => designer.setSelectedId?.(id)}
+        />
+        {selectedComponent && (
+          <ComponentInspector
+            selectedComponent={selectedComponent}
+            allComponents={designer.components}
+            tables={tables}
+            workflows={workflows}
+            open={inspectorOpen}
+            onToggle={setInspectorOpen}
+          />
+        )}
+        <DataFlowTracer
+          components={designer.components}
+          tables={tables}
+          workflows={workflows}
+          open={dataflowOpen}
+          onToggle={setDataflowOpen}
+          selectedComponentId={designer.selectedIds[0]}
+        />
+      </div>
       {mode === 'design' && !readOnly && designer.selectedIds.length === 1 && designer.selectionOverlay && (
         <div
           className="designer-selection-overlay"
