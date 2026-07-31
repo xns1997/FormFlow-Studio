@@ -2257,7 +2257,6 @@ mark.docs-search-highlight {
   height: 100%;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
 }
 
 .docs-v2-scroll-root:focus {
@@ -2496,29 +2495,46 @@ mark.docs-search-highlight {
   margin: 0 auto;
   padding: 0;
   color: var(--text);
-  overflow: hidden;
 }
 
 .docs-v2-tree {
+  display: flex;
+  flex-direction: column;
   min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
   padding-top: var(--space-3xl);
   font-size: 13px;
   line-height: 1.45;
 }
 
-.docs-v2-tree nav,
-.docs-v2-toc {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
+.docs-v2-tree-scroll {
+  flex: 1;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.docs-v2-toc {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   padding-top: var(--space-3xl);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.docs-v2-toc-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
 }
 
 .docs-v2-tree a,
