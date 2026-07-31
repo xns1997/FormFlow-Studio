@@ -1147,49 +1147,49 @@ button.docs-breadcrumb-link {
   display: inline-flex;
   align-items: center;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 11px;
   font-weight: 600;
 }
 
 .docs-playground-badge,
 .docs-playground-ok-badge {
-  color: #0f766e;
-  background: rgba(20, 184, 166, 0.12);
+  color: var(--success);
+  background: var(--success-soft);
 }
 
 .docs-playground-error-badge {
-  color: #b91c1c;
-  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger);
+  background: var(--danger-soft);
 }
 
 .docs-playground-scenarios {
   display: flex;
-  gap: 6px;
+  gap: var(--space-sm);
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-lg);
 }
 
 .docs-playground-scenario-tab {
   padding: 6px 14px;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  border-radius: 8px;
-  background: rgba(248, 250, 252, 0.8);
-  color: #475569;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--fill-tertiary);
+  color: var(--text-secondary);
   font-size: 13px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.15s ease;
 }
 
 .docs-playground-scenario-tab:hover {
-  border-color: #2563eb;
-  color: #2563eb;
-  background: rgba(37, 99, 235, 0.06);
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .docs-playground-scenario-tab.active {
-  border-color: #2563eb;
-  background: #2563eb;
+  border-color: var(--accent);
+  background: var(--accent);
   color: #fff;
   font-weight: 600;
 }
@@ -1197,34 +1197,34 @@ button.docs-breadcrumb-link {
 .docs-playground-events {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-sm);
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-lg);
   padding: 10px 14px;
-  background: rgba(37, 99, 235, 0.04);
-  border: 1px solid rgba(37, 99, 235, 0.12);
-  border-radius: 10px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius);
 }
 
 .docs-playground-events-label {
   font-size: 13px;
   font-weight: 600;
-  color: #334155;
+  color: var(--text);
 }
 
 .docs-playground-event-link {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   padding: 3px 10px;
-  border: 1px solid rgba(37, 99, 235, 0.25);
-  border-radius: 6px;
-  background: #fff;
-  color: #2563eb;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--accent);
   font-size: 12px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   text-decoration: none;
-  transition: all 0.15s;
+  transition: all 0.15s ease;
 }
 
 .docs-playground-event-link::before {
@@ -1233,8 +1233,8 @@ button.docs-breadcrumb-link {
 }
 
 .docs-playground-event-link:hover {
-  border-color: #2563eb;
-  background: rgba(37, 99, 235, 0.08);
+  border-color: var(--accent);
+  background: var(--accent-soft);
   text-decoration: none;
 }
 
@@ -2440,7 +2440,7 @@ mark.docs-search-highlight {
 .docs-v2-task-grid b {
   margin-top: auto;
   padding-top: 10px;
-  color: #0f766e;
+  color: var(--success);
   font-size: 13px;
 }
 
@@ -2495,7 +2495,7 @@ mark.docs-search-highlight {
   gap: clamp(24px, 4vw, 56px);
   width: calc(100% - 64px);
   margin: 0 auto;
-  padding: 36px 0 80px;
+  padding: var(--space-3xl) 0 80px;
   color: var(--text);
   align-items: start;
 }
@@ -2516,15 +2516,16 @@ mark.docs-search-highlight {
 .docs-v2-toc {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-xs);
 }
 
 .docs-v2-tree a,
 .docs-v2-toc a {
-  padding: 8px 10px;
-  border-radius: 8px;
+  padding: var(--space-sm) 10px;
+  border-radius: var(--radius-sm);
   color: var(--text-secondary);
   text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .docs-v2-tree a:hover,
@@ -2536,7 +2537,7 @@ mark.docs-search-highlight {
 
 .docs-v2-home-link {
   margin: 0 0 14px;
-  color: var(--accent) !important;
+  color: var(--accent);
   font-weight: 650;
 }
 
@@ -2606,7 +2607,7 @@ mark.docs-search-highlight {
   overflow: hidden;
   margin-top: 14px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 
 .docs-v2-table-row {
@@ -2640,9 +2641,9 @@ mark.docs-search-highlight {
 .docs-v2-code {
   overflow: hidden;
   margin: 14px 0;
-  border-radius: 12px;
-  background: #111827;
-  color: #e5e7eb;
+  border-radius: var(--radius-md);
+  background: #0f172a;
+  color: #e2e8f0;
 }
 
 .docs-v2-code header {
@@ -2852,11 +2853,103 @@ mark.docs-search-highlight {
 
 @media (prefers-reduced-motion: reduce) {
   .docs-v2-task-grid > a,
-  .docs-v2-results > a { transition: none; }
+  .docs-v2-results > a,
+  .docs-v2-tree a,
+  .docs-v2-toc a,
+  .docs-playground-scenario-tab,
+  .docs-playground-event-link,
+  .docs-v2-actions button,
+  .docs-v2-feedback button { transition: none; }
+  .docs-v2-article,
+  .docs-v2-section,
+  .docs-v2-task-grid > a,
+  .docs-v2-reference-grid button { animation: none; }
 }
 
 @media (prefers-contrast: more) {
   .docs-v2-task-grid > a,
   .docs-v2-table,
   .docs-v2-reference-grid button { border-width: 2px; }
+}
+
+/* ── Animations ──────────────────────────────────────── */
+
+@keyframes docs-fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes docs-slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes docs-scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.docs-v2-article {
+  animation: docs-fadeIn 0.3s ease both;
+}
+
+.docs-v2-section {
+  animation: docs-fadeIn 0.35s ease both;
+}
+
+.docs-v2-task-grid > a,
+.docs-v2-reference-grid button {
+  animation: docs-slideUp 0.4s ease both;
+}
+
+.docs-v2-task-grid > a:nth-child(2),
+.docs-v2-reference-grid button:nth-child(2) { animation-delay: 0.04s; }
+.docs-v2-task-grid > a:nth-child(3),
+.docs-v2-reference-grid button:nth-child(3) { animation-delay: 0.08s; }
+.docs-v2-task-grid > a:nth-child(4),
+.docs-v2-reference-grid button:nth-child(4) { animation-delay: 0.12s; }
+.docs-v2-task-grid > a:nth-child(5) { animation-delay: 0.16s; }
+.docs-v2-task-grid > a:nth-child(6) { animation-delay: 0.20s; }
+.docs-v2-task-grid > a:nth-child(7) { animation-delay: 0.24s; }
+.docs-v2-task-grid > a:nth-child(8) { animation-delay: 0.28s; }
+
+.docs-playground-scenario-tab {
+  animation: docs-scaleIn 0.2s ease both;
+}
+
+.docs-v2-tree a {
+  transition: background 0.15s ease, color 0.15s ease, padding-left 0.2s ease;
+}
+
+.docs-v2-tree a:hover {
+  padding-left: 14px;
+}
+
+.docs-v2-tree a.active {
+  position: relative;
+}
+
+.docs-v2-tree a.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 16px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.docs-v2-pager a {
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.docs-v2-pager a:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.docs-v2-feedback button:hover {
+  transform: scale(1.02);
 }
