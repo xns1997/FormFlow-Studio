@@ -2257,10 +2257,8 @@ mark.docs-search-highlight {
   height: 100%;
   min-width: 0;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-  -webkit-overflow-scrolling: touch;
 }
 
 .docs-v2-scroll-root:focus {
@@ -2494,13 +2492,17 @@ mark.docs-search-highlight {
   grid-template-columns: minmax(190px, 240px) minmax(0, 1fr) minmax(150px, 200px);
   gap: clamp(24px, 4vw, 56px);
   width: calc(100% - 64px);
+  height: 100dvh;
   margin: 0 auto;
-  padding: var(--space-3xl) 0 80px;
+  padding: var(--space-3xl) 0 0;
   color: var(--text);
+  overflow: hidden;
 }
 
-.docs-v2-tree,
-.docs-v2-toc {
+.docs-v2-tree {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   font-size: 13px;
   line-height: 1.45;
 }
@@ -2544,6 +2546,9 @@ mark.docs-search-highlight {
   min-width: 0;
   font-size: 15px;
   line-height: 1.72;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 80px;
 }
 
 .docs-v2-article > header {
