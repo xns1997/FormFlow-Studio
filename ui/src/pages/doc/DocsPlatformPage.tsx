@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Select } from 'antd';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import hljs from 'highlight.js/lib/core';
+import json from 'highlight.js/lib/languages/json';
+import javascript from 'highlight.js/lib/languages/javascript';
 import HighlightText from '../../components/HighlightText';
 import ComponentDocPlayground from '../../components/ComponentDocPlayground';
 import {
@@ -16,6 +19,19 @@ import {
 } from '../../services/io/docs/catalog';
 import { loadDocUserState, recordRecentSearch, saveDocUserState, sendDocEvent } from '../../services/io/docs/user-state';
 import { isImeKeyboardEvent } from '../../services/io/docs/ime';
+
+hljs.registerLanguage('json', json);
+hljs.registerLanguage('javascript', javascript);
+
+function HighlightedCode({ code, language = 'json' }: { code: string; language?: string }) {
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.innerHTML = hljs.highlight(code, { language }).value;
+    }
+  }, [code, language]);
+  return <code ref={ref} className={`hljs language-${language}`} />;
+}
 
 const kindLabels: Record<DocKind, string> = { task: '任务指南', troubleshooting: '排错', case: '案例', reference: '功能参考' };
 const domainLabels: Record<string, string> = {
@@ -150,12 +166,13 @@ export default function DocsPlatformPage({ home = false }: { home?: boolean }) {
               {block.fields && <div className="docs-v2-table" role="table">{block.fields.map((field) => <div className="docs-v2-table-row" role="row" key={`${field.name}:${field.type}`}><div role="cell"><code>{field.name}</code><small>{field.type}</small></div><p role="cell">{field.description}</p></div>)}</div>}
               {block.examples?.map((example) => {
                 const exampleId = `${current.id}:${block.id}:${example.title}`;
+                const lang = block.id === 'defaults' ? 'json' : 'javascript';
                 return <div className="docs-v2-code" key={example.title}><header><strong>{example.title}</strong><button type="button" aria-live="polite" onClick={() => {
                   void navigator.clipboard.writeText(example.code).then(() => {
                     setCopiedExample(exampleId);
                     window.setTimeout(() => setCopiedExample((value) => value === exampleId ? '' : value), 1500);
                   });
-                }}>{copiedExample === exampleId ? '已复制' : '复制'}</button></header><pre><code>{example.code}</code></pre></div>;
+                }}>{copiedExample === exampleId ? '已复制' : '复制'}</button></header><pre><HighlightedCode code={example.code} language={lang} /></pre></div>;
               })}
             </section>
           ))}
