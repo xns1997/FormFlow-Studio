@@ -2490,19 +2490,21 @@ mark.docs-search-highlight {
   display: grid;
   grid-template-columns: minmax(190px, 240px) minmax(0, 1fr) minmax(150px, 200px);
   grid-template-rows: 1fr;
-  gap: clamp(24px, 4vw, 56px);
+  gap: 0 clamp(24px, 4vw, 56px);
   width: calc(100% - 64px);
   height: 100%;
   margin: 0 auto;
-  padding: var(--space-3xl) 0 0;
+  padding: 0;
   color: var(--text);
   overflow: hidden;
 }
 
 .docs-v2-tree {
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+  padding-top: var(--space-3xl);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -2512,6 +2514,11 @@ mark.docs-search-highlight {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding-top: var(--space-3xl);
 }
 
 .docs-v2-tree a,
@@ -2544,11 +2551,12 @@ mark.docs-search-highlight {
 
 .docs-v2-article {
   min-width: 0;
+  min-height: 0;
   font-size: 15px;
   line-height: 1.72;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding-bottom: 80px;
+  padding: var(--space-3xl) 0 80px;
 }
 
 .docs-v2-article > header {
