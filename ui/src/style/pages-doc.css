@@ -2515,6 +2515,7 @@ mark.docs-search-highlight {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
+  padding-bottom: var(--space-3xl);
 }
 
 .docs-v2-toc {
@@ -2535,6 +2536,7 @@ mark.docs-search-highlight {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
+  padding-bottom: var(--space-3xl);
 }
 
 .docs-v2-tree a,
