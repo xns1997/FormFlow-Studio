@@ -2606,14 +2606,20 @@ mark.docs-search-highlight {
 .docs-v2-table {
   overflow: hidden;
   margin-top: 14px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
+  background: var(--panel);
 }
 
 .docs-v2-table-row {
   display: grid;
-  grid-template-columns: minmax(150px, 34%) 1fr;
-  border-bottom: 1px solid var(--border);
+  grid-template-columns: minmax(160px, 280px) 1fr;
+  border-bottom: 1px solid var(--line);
+  transition: background 0.12s ease;
+}
+
+.docs-v2-table-row:hover {
+  background: var(--fill-tertiary);
 }
 
 .docs-v2-table-row:last-child {
@@ -2623,14 +2629,38 @@ mark.docs-search-highlight {
 .docs-v2-table-row > div,
 .docs-v2-table-row > p {
   margin: 0;
-  padding: 13px 14px;
+  padding: 14px 16px;
 }
 
 .docs-v2-table-row > div {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  background: var(--surface-secondary);
+  gap: var(--space-xs);
+  background: var(--fill-tertiary);
+  border-right: 1px solid var(--line);
+}
+
+.docs-v2-table-row > div code {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  width: fit-content;
+}
+
+.docs-v2-table-row > div small {
+  color: var(--text-tertiary);
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+}
+
+.docs-v2-table-row > p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .docs-v2-table-row small {
