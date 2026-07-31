@@ -157,7 +157,7 @@ export default function DocsPlatformPage({ home = false }: { home?: boolean }) {
               .map((id) => entries.find((e) => e.id === id))
               .filter((e): e is DocEntry => !!e)
               .map((e) => ({ label: e.title, href: e.canonicalPath }));
-            return <ComponentDocPlayground componentType={componentType} title={current.title} relatedEventLinks={relatedEventLinks} />;
+            return <ComponentDocPlayground key={current.id} componentType={componentType} title={current.title} relatedEventLinks={relatedEventLinks} />;
           })()}
           {current.blocks.map((block) => (
             <section id={block.id} key={block.id} className="docs-v2-section">
