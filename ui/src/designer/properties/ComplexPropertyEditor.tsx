@@ -14,7 +14,7 @@ type DraftMode = 'visual' | 'source';
 
 function cloneValue<T>(value: T): T {
   if (value === undefined) return value;
-  return JSON.parse(JSON.stringify(value)) as T;
+  try { return JSON.parse(JSON.stringify(value)) as T; } catch { return value; }
 }
 
 function initialValue(context: PropertyEditorContext) {

@@ -7,8 +7,12 @@ const KEY = 'formflow.session';
 export function getSession(): Session | null {
   try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { return null; }
 }
-export function saveSession(session: Session) { localStorage.setItem(KEY, JSON.stringify(session)); }
-export function clearSession() { localStorage.removeItem(KEY); }
+export function saveSession(session: Session) {
+  try { localStorage.setItem(KEY, JSON.stringify(session)); } catch { /* private browsing or quota exceeded */ }
+}
+export function clearSession() {
+  try { localStorage.removeItem(KEY); } catch { /* ignore */ }
+}
 export async function login(username: string, password: string): Promise<Session> {
   const session = await request('/users/login', { method: 'POST', body: JSON.stringify({ username, password }) });
   saveSession(session);

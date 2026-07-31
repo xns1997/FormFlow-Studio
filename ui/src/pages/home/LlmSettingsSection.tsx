@@ -304,7 +304,7 @@ export default function LlmSettingsSection() {
       <div className="settings-form llm-agent-form">
         <div className="settings-grid">
           <label><span>模型配置</span><Select value={projectAgentProfileId} options={enabledProfileOptions} onChange={setProjectAgentProfileId} /></label>
-          <label><span>新会话默认能力包</span><Select value={defaultBundleId} options={publishedBundleOptions} onChange={(id) => { setDefaultBundleId(id); localStorage.setItem('formflow.projectAgent.bundle', id); }} /></label>
+          <label><span>新会话默认能力包</span><Select value={defaultBundleId} options={publishedBundleOptions} onChange={(id) => { setDefaultBundleId(id); try { localStorage.setItem('formflow.projectAgent.bundle', id); } catch { /* ignore */ } }} /></label>
         </div>
         <div className="llm-settings-actions llm-editor-actions"><Button type="primary" loading={saving} onClick={() => void saveProjectAgent()}>保存设置</Button></div>
       </div>

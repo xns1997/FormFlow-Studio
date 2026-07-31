@@ -88,7 +88,7 @@ function parseLiteral(text: string) {
 }
 
 function cloneBindings(bindings: FlowBindingsV2): FlowBindingsV2 {
-  return JSON.parse(JSON.stringify(bindings)) as FlowBindingsV2;
+  try { return JSON.parse(JSON.stringify(bindings)) as FlowBindingsV2; } catch { return { version: 2, inputs: {}, outputs: {} }; }
 }
 
 function fieldOptions(components: DesignComponent[]) {
@@ -266,7 +266,8 @@ export function FlowTriggerEditor({
         } as ComponentNode,
       };
       const inputs = resolveV2FlowInputs(bindings, workflow, context);
-      const outputs = JSON.parse(sampleOutputs || '{}') as Record<string, unknown>;
+      let outputs: Record<string, unknown> = {};
+      try { outputs = JSON.parse(sampleOutputs || '{}') as Record<string, unknown>; } catch { /* malformed */ }
       const prepared = prepareV2FlowOutputWrites(bindings, workflow, outputs, context, components);
       setTrialResult(JSON.stringify({
         note: '仅试算映射，不执行流程节点',

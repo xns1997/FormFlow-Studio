@@ -362,7 +362,14 @@ export async function importFormFlowPackage(file: File): Promise<ProjectStructur
     throw new Error('仅支持 .formflow 项目包');
   }
   const JSZip = (await import('jszip')).default;
-  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  let zip: import('jszip');
+  try {
+    zip = await JSZip.loadAsync(await file.arrayBuffer());
+  } catch {
+    throw new Error('项目包文件损坏，无法解压');
+  }
+
+  try {
 
   // 1. 读取 project.json
   const pkgContent = await zip.file(PROJECT_CONFIG_FILE)?.async('text');
@@ -454,6 +461,9 @@ export async function importFormFlowPackage(file: File): Promise<ProjectStructur
     designs,
     behaviors,
   };
+  } catch (err) {
+    throw new Error(`项目包解析失败：${err instanceof Error ? err.message : '格式错误'}`);
+  }
 }
 
 // ── 下载 .formflow 项目包 ──────────────────────────

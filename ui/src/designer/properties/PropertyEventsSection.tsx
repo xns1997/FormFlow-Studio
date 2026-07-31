@@ -14,8 +14,8 @@ import { useAppInteraction } from '../../components/AppInteractionProvider';
 import { useProjectStore } from '../../project/store';
 import { ensureWorkflowIo } from '../../services/engine/workflowIo';
 
-function clone<T>(value: T): T { return value === undefined ? value : JSON.parse(JSON.stringify(value)) as T; }
-function same(left: unknown, right: unknown) { return JSON.stringify(left) === JSON.stringify(right); }
+function clone<T>(value: T): T { if (value === undefined) return value; try { return JSON.parse(JSON.stringify(value)) as T; } catch { return value; } }
+function same(left: unknown, right: unknown) { try { return JSON.stringify(left) === JSON.stringify(right); } catch { return left === right; } }
 
 interface Props {
   component: DesignComponent;

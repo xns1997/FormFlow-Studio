@@ -1507,7 +1507,9 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
       if (!spec) return null;
       const savedOutputs = n.data?.outputs;
       const savedError = n.data?.error;
-      return { id: n.id, type: 'formflow', position: n.position, data: { specId: n.specId, label: spec.label, kind: spec.kind, category: spec.category, description: spec.description, propertiesJson: JSON.stringify(n.data?.propertiesJson ? JSON.parse(n.data.propertiesJson) : {}), connectedPortsJson: '[]', ...(savedOutputs ? { outputs: savedOutputs } : {}), ...(savedError ? { error: savedError } : {}) } };
+      let parsedProps: Record<string, unknown> = {};
+      try { parsedProps = n.data?.propertiesJson ? JSON.parse(n.data.propertiesJson) : {}; } catch { /* malformed JSON */ }
+      return { id: n.id, type: 'formflow', position: n.position, data: { specId: n.specId, label: spec.label, kind: spec.kind, category: spec.category, description: spec.description, propertiesJson: JSON.stringify(parsedProps), connectedPortsJson: '[]', ...(savedOutputs ? { outputs: savedOutputs } : {}), ...(savedError ? { error: savedError } : {}) } };
     }).filter(Boolean) as FlowNode[];
       const loadedEdges: Edge[] = dedupeEdges((activeWorkflow.edges || []).map((e: any) => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle, animated: true, type: 'smoothstep' })));
     setNodes(loadedNodes);

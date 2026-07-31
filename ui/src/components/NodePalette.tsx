@@ -123,7 +123,7 @@ export default function NodePalette({ specs, tables, selectedSpec, onAdd, onPoin
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    localStorage.setItem(NODE_DISCOVERY_STORAGE_KEY, JSON.stringify(preferences));
+    try { localStorage.setItem(NODE_DISCOVERY_STORAGE_KEY, JSON.stringify(preferences)); } catch { /* ignore */ }
   }, [preferences]);
 
   useEffect(() => {
