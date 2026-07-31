@@ -2493,7 +2493,7 @@ mark.docs-search-highlight {
   display: grid;
   grid-template-columns: minmax(190px, 240px) minmax(0, 1fr) minmax(150px, 200px);
   gap: clamp(24px, 4vw, 56px);
-  width: min(1440px, calc(100% - 48px));
+  width: min(1680px, calc(100% - 32px));
   margin: 0 auto;
   padding: 36px 0 80px;
   color: var(--text);
