@@ -2497,17 +2497,10 @@ mark.docs-search-highlight {
   margin: 0 auto;
   padding: var(--space-3xl) 0 80px;
   color: var(--text);
-  align-items: start;
 }
 
 .docs-v2-tree,
 .docs-v2-toc {
-  position: sticky;
-  top: 24px;
-  max-height: calc(100dvh - 116px);
-  overflow: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
   font-size: 13px;
   line-height: 1.45;
 }
