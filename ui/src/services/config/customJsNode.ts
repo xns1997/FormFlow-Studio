@@ -1,3 +1,4 @@
+import { parseJson, parseJsonOrNull } from '../engine/safeJson';
 import type { CodeEditorExtraLib, CodeEditorSuggestion } from '../../components/CodeEditor';
 import type { FlowNodeSpec, SchemaPort } from '../../flowRegistry';
 import type { PropertyType } from '../../../nodes/excel-api-types';
@@ -35,7 +36,7 @@ export function parseCustomJsPortDefinitions(raw: unknown): PortDefinitionEntry[
     ? raw.trim()
       ? (() => {
           try {
-            return JSON.parse(raw);
+            return parseJson(raw, {});
           } catch {
             return {};
           }
@@ -105,7 +106,7 @@ export function resolveNodeProperties(spec: FlowNodeSpec | undefined, properties
   );
   try {
     const parsed = typeof propertiesJson === 'string'
-      ? (propertiesJson.trim() ? JSON.parse(propertiesJson) : {})
+      ? (propertiesJson.trim() ? parseJson(propertiesJson, {}) : {})
       : (propertiesJson && typeof propertiesJson === 'object' ? propertiesJson : {});
     return { ...defaults, ...(parsed as Record<string, unknown>) };
   } catch {

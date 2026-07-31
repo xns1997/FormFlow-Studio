@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { parseJson, parseJsonOrNull } from '../../services/engine/safeJson';
 import {
   Background,
   Controls,
@@ -247,10 +248,10 @@ type PortTableRow = {
 };
 
 function PortTableEditor({ value, onChange, disabled, allowInputContract = false }: { value: unknown; onChange: (val: string) => void; disabled?: boolean; allowInputContract?: boolean }) {
-  const parseRows = useCallback((source: unknown) => {
+  const parseRows = useCallback((source: unknown): PortTableRow[] => {
     if (typeof source === 'string' && source.trim()) {
       try {
-        const arr = JSON.parse(source);
+        const arr = parseJsonOrNull<unknown[]>(source);
         if (Array.isArray(arr)) {
           return arr
             .filter((row: any) => row && typeof row.name === 'string')
@@ -313,7 +314,7 @@ function PortTableEditor({ value, onChange, disabled, allowInputContract = false
             onChange={(next) => {
               setRawText(next);
               try {
-                const parsed = JSON.parse(next);
+                const parsed = parseJson(next, null);
                 if (!Array.isArray(parsed)) {
                   setRawError('字段定义必须是数组');
                   return;
@@ -1038,7 +1039,7 @@ export default function CanvasPage() {
   const selectedRangeRef = useMemo<RangeRef | null>(() => {
     if (!selectedNode || selectedNode.data.specId !== 'generic:sheet-source') return null;
     try {
-      const properties = JSON.parse(selectedNode.data.propertiesJson || '{}');
+      const properties = parseJson(selectedNode.data.propertiesJson || '{}', {} as any);
       if (properties.sourceMode !== 'range') return null;
       return properties.rangeRef || null;
     } catch { return null; }
@@ -1572,7 +1573,7 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
           const autoHeader = (nr.outputs as any)?.__autoHeader;
           if (autoHeader && Array.isArray(autoHeader) && autoHeader.length > 0) {
             try {
-              const currentProps = JSON.parse(n.data.propertiesJson || '{}');
+              const currentProps = parseJson(n.data.propertiesJson || '{}', {} as any);
               if (!currentProps.header || (Array.isArray(currentProps.header) && currentProps.header.length === 0)) {
                 currentProps.header = autoHeader;
                 updatedData.propertiesJson = JSON.stringify(currentProps);
@@ -1585,7 +1586,7 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
           const headers = (nr.outputs as any)?.headers;
           if (headers && Array.isArray(headers)) {
             try {
-              const currentProps = JSON.parse(n.data.propertiesJson || '{}');
+              const currentProps = parseJson(n.data.propertiesJson || '{}', {} as any);
               if (!currentProps.headers || currentProps.headers.length === 0) {
                 currentProps.headers = headers;
                 updatedData.propertiesJson = JSON.stringify(currentProps);

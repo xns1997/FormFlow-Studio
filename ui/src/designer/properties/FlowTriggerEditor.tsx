@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { parseJson, parseJsonOrNull } from '../../services/engine/safeJson';
 import type { ComponentNode } from '../../models';
 import type { DesignComponent, WorkflowFile } from '../../project/types';
 import {
@@ -387,8 +388,8 @@ export function FlowTriggerEditor({
           onChange={(text) => {
             setAdvancedText(text);
             try {
-              const parsed = JSON.parse(text) as FlowBindingsV2;
-              if (parsed?.version !== 2 || !parsed.inputs || !parsed.outputs) throw new Error('必须是包含 version: 2、inputs 和 outputs 的对象');
+              const parsed = parseJson<FlowBindingsV2>(text, null as any);
+              if (!parsed || parsed?.version !== 2 || !parsed.inputs || !parsed.outputs) throw new Error('必须是包含 version: 2、inputs 和 outputs 的对象');
               setAdvancedError('');
               emit(parsed);
             } catch (error) {

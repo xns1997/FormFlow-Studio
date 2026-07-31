@@ -1,5 +1,6 @@
 // 行为导入导出服务 — JSON 序列化
 
+import { parseJson } from '../engine/safeJson';
 import type { BehaviorFile } from '../../project/types';
 
 export interface BehaviorExportData {
@@ -22,7 +23,8 @@ export function importBehaviors(json: string): { behaviors: BehaviorFile[]; erro
   let behaviors: BehaviorFile[] = [];
 
   try {
-    const data = JSON.parse(json);
+    const data = parseJson<any>(json, null);
+    if (!data) { errors.push('JSON 解析失败'); return { behaviors, errors }; }
 
     // 支持直接数组格式
     if (Array.isArray(data)) {

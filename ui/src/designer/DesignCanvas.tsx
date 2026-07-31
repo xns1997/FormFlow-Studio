@@ -21,6 +21,7 @@ import ComponentInspector from '../components/ComponentInspector';
 import DataFlowTracer from '../components/DataFlowTracer';
 import OnboardingGuide, { hasCompletedOnboarding, markOnboardingCompleted } from '../components/OnboardingGuide';
 import { getErrors, onError, installGlobalErrorHandlers, type ManagedError } from '../services/engine/errorManager';
+import { parseJsonOrNull } from '../services/engine/safeJson';
 
 interface Props {
   designer: ReturnType<typeof useDesigner>;
@@ -170,7 +171,7 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
     const fieldPayload = e.dataTransfer.getData('application/formflow-fields');
     if (fieldPayload) {
       try {
-        const fields = JSON.parse(fieldPayload) as DataFieldDragItem[];
+        const fields = parseJsonOrNull<DataFieldDragItem[]>(fieldPayload);
         const graph = designer.graphRef.current;
         if (!graph || !Array.isArray(fields) || fields.length === 0) return;
         const point = graph.clientToLocal(e.clientX, e.clientY);
