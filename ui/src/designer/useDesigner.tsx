@@ -30,6 +30,7 @@ import {
 } from '../../../shared/form-window-layout';
 import { measureRenderedControls } from './formLayoutMeasurement';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- X6 node type is complex
 const DesignNodeView = ({ node }: { node: any }) => {
   const data = node.getData();
   const control = getControl(data.componentType);
@@ -37,12 +38,12 @@ const DesignNodeView = ({ node }: { node: any }) => {
   const C = control.render;
   const graph = typeof node.getGraph === 'function' ? node.getGraph() : null;
   const liveChildren = graph?.getNodes?.()
-    ?.filter((candidate: any) => {
+    ?.filter((candidate: { id: string; getData?: () => Record<string, unknown> }) => {
       if (candidate.id === node.id) return false;
       const childData = candidate.getData?.();
-      return childData?.designComponent?.parentId === node.id;
+      return (childData?.designComponent as Record<string, unknown>)?.parentId === node.id;
     })
-    ?.map((candidate: any) => candidate.id) || data.designComponent?.children || [];
+    ?.map((candidate: { id: string }) => candidate.id) || data.designComponent?.children || [];
   const hydratedComponent = {
     ...data.designComponent,
     children: liveChildren,
@@ -57,6 +58,7 @@ const DesignNodeView = ({ node }: { node: any }) => {
   );
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- X6 node type is complex
 const DesignFormWindowView = ({ node }: { node: any }) => {
   const data = node.getData();
   const formWindow = data.formWindowConfig as FormWindowConfig;

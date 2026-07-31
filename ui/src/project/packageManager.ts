@@ -1,7 +1,8 @@
 // 项目包管理器 - 外部统一使用 .formflow 单文件，内部采用 ZIP 容器
 
+import { parseJson, parseJsonOrNull } from '../services/engine/safeJson';
 import type {
-  ProjectStructure, ProjectPackage, FormIndex, DataIndex,
+  ProjectStructure, ProjectPackage, ProjectRelease, FormIndex, DataIndex,
   DataMetaFile, WorkflowsFile, OutputsFile,
   DesignFile, BehaviorFile, WorkflowFile, OutputFile, SrcTableEntry, FormEntry,
 } from './types';
@@ -22,7 +23,7 @@ async function readJsonFile<T>(dirHandle: FileSystemDirectoryHandle, path: strin
     }
     const fileHandle = await current.getFileHandle(parts[parts.length - 1]);
     const file = await fileHandle.getFile();
-    return JSON.parse(await file.text()) as T;
+    return parseJson<T>(await file.text(), null as T);
   } catch {
     return null;
   }
@@ -362,41 +363,48 @@ export async function importFormFlowPackage(file: File): Promise<ProjectStructur
     throw new Error('仅支持 .formflow 项目包');
   }
   const JSZip = (await import('jszip')).default;
-  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  let zip: import('jszip');
+  try {
+    zip = await JSZip.loadAsync(await file.arrayBuffer());
+  } catch {
+    throw new Error('项目包文件损坏，无法解压');
+  }
+
+  try {
 
   // 1. 读取 project.json
   const pkgContent = await zip.file(PROJECT_CONFIG_FILE)?.async('text');
   if (!pkgContent) return null;
-  const pkg = JSON.parse(pkgContent) as ProjectPackage;
-  if (pkg.kind !== 'formflow-project' || pkg.formatVersion !== 2 || !pkg.config) return null;
+  const pkg = parseJson<ProjectPackage>(pkgContent, null as any);
+  if (!pkg || pkg.kind !== 'formflow-project' || pkg.formatVersion !== 2 || !pkg.config) return null;
   const releaseContent = await zip.file(PROJECT_RELEASE_FILE)?.async('text');
-  const release = releaseContent ? JSON.parse(releaseContent) : pkg.release;
+  const release = releaseContent ? parseJsonOrNull<ProjectRelease>(releaseContent) ?? pkg.release : pkg.release;
 
   // 2. 读取表单
   const formIndexContent = await zip.file(`${FORMS_DIR}/${FORM_INDEX_FILE}`)?.async('text');
-  const formIndex = formIndexContent ? JSON.parse(formIndexContent) as FormIndex : null;
+  const formIndex = formIndexContent ? parseJsonOrNull<FormIndex>(formIndexContent) : null;
   const designs: DesignFile[] = [];
   const behaviorFilesByFormId = new Map<string, { behaviors: BehaviorFile[]; ruleCode: string }>();
   if (formIndex?.forms) {
     for (const form of formIndex.forms) {
       const content = await zip.file(`${FORMS_DIR}/${form.fileName}`)?.async('text');
-      if (content) designs.push(JSON.parse(content));
+      if (content) { const d = parseJsonOrNull<DesignFile>(content); if (d) designs.push(d); }
       const behaviorsContent = await zip.file(`${FORMS_DIR}/${form.behaviorsFileName}`)?.async('text');
-      const parsed = behaviorsContent ? JSON.parse(behaviorsContent) as { behaviors?: BehaviorFile[]; ruleCode?: string } : null;
+      const parsed = behaviorsContent ? parseJsonOrNull<{ behaviors?: BehaviorFile[]; ruleCode?: string }>(behaviorsContent) : null;
       behaviorFilesByFormId.set(form.id, { behaviors: parsed?.behaviors || [], ruleCode: parsed?.ruleCode || '' });
     }
   }
 
   // 3. 读取数据元数据
   const dataIndexContent = await zip.file(`${DATA_DIR}/${DATA_INDEX_FILE}`)?.async('text');
-  const dataIndex = dataIndexContent ? JSON.parse(dataIndexContent) as DataIndex : null;
+  const dataIndex = dataIndexContent ? parseJsonOrNull<DataIndex>(dataIndexContent) : null;
   const srcTable: SrcTableEntry[] = [];
   if (dataIndex?.sources) {
     for (const source of dataIndex.sources) {
       const content = await zip.file(`${DATA_DIR}/${source.metaFile}`)?.async('text');
       if (content) {
-        const meta = JSON.parse(content) as DataMetaFile;
-        srcTable.push({
+        const meta = parseJsonOrNull<DataMetaFile>(content);
+        if (meta) srcTable.push({
           id: meta.id,
           fileName: meta.fileName,
           fileSize: meta.fileSize,
@@ -414,25 +422,25 @@ export async function importFormFlowPackage(file: File): Promise<ProjectStructur
     if (!source.behaviorsFile) return [];
     const content = await zip.file(`${DATA_DIR}/${source.behaviorsFile}`)?.async('text');
     if (!content) return [];
-    const parsed = JSON.parse(content) as { sheets?: ProjectStructure['sheetBehaviors'] };
-    return parsed.sheets || [];
+    const parsed = parseJsonOrNull<{ sheets?: ProjectStructure['sheetBehaviors'] }>(content);
+    return parsed?.sheets || [];
   }))).flat();
 
   // 4. 读取行为
   const behaviorsContent = await zip.file('global-behaviors.json')?.async('text');
-  const behaviorsFile = behaviorsContent ? JSON.parse(behaviorsContent) as { behaviors?: BehaviorFile[] } : null;
+  const behaviorsFile = behaviorsContent ? parseJsonOrNull<{ behaviors?: BehaviorFile[] }>(behaviorsContent) : null;
   const behaviors: BehaviorFile[] = behaviorsFile?.behaviors || [];
 
   // 5. 读取流程
   const workflowsContent = await zip.file(`${WORKFLOWS_DIR}/${WORKFLOWS_FILE}`)?.async('text');
-  const workflowsFile = workflowsContent ? JSON.parse(workflowsContent) as WorkflowsFile : null;
+  const workflowsFile = workflowsContent ? parseJsonOrNull<WorkflowsFile>(workflowsContent) : null;
   const workflows: WorkflowFile[] = workflowsFile?.workflows || [];
 
   const outputsContent = await zip.file(`${OUTPUTS_DIR}/${OUTPUTS_FILE}`)?.async('text');
-  const outputsFile = outputsContent ? JSON.parse(outputsContent) as OutputsFile : null;
+  const outputsFile = outputsContent ? parseJsonOrNull<OutputsFile>(outputsContent) : null;
   const outputs: OutputFile[] = outputsFile?.outputs || [];
   const testingContent = await zip.file('testing/testing.json')?.async('text');
-  const testing = testingContent ? JSON.parse(testingContent) as ProjectStructure['testing'] : undefined;
+  const testing = testingContent ? parseJsonOrNull<ProjectStructure['testing']>(testingContent) : undefined;
 
   return {
     config: pkg.config,
@@ -454,6 +462,9 @@ export async function importFormFlowPackage(file: File): Promise<ProjectStructur
     designs,
     behaviors,
   };
+  } catch (err) {
+    throw new Error(`项目包解析失败：${err instanceof Error ? err.message : '格式错误'}`);
+  }
 }
 
 // ── 下载 .formflow 项目包 ──────────────────────────

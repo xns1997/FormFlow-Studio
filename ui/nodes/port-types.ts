@@ -89,7 +89,7 @@ reg('any', (v) => ({ valid: true, normalized: v }));
 // Excel 数据类型
 reg('workbook', (v) => {
   if (v === null || v === undefined) return { valid: false, error: 'workbook 为空' };
-  const wb = v as any;
+  const wb = v as Record<string, unknown>;
   if (wb.SheetNames && wb.Sheets) return { valid: true, normalized: v };
   if (wb.__fromProject) return { valid: true, normalized: v };
   return { valid: false, error: `期望 workbook 对象（需含 SheetNames/Sheets），实际: ${typeof v}` };
@@ -97,7 +97,7 @@ reg('workbook', (v) => {
 
 reg('worksheet', (v) => {
   if (v === null || v === undefined) return { valid: false, error: 'worksheet 为空' };
-  const ws = v as any;
+  const ws = v as Record<string, unknown>;
   // XLSX worksheet: has !ref or cell addresses
   if (ws['!ref'] || ws['!cols'] || ws['!rows']) return { valid: true, normalized: v };
   // Project worksheet wrapper
@@ -109,7 +109,7 @@ reg('worksheet', (v) => {
 
 reg('cell', (v) => {
   if (v === null || v === undefined) return { valid: false, error: 'cell 坐标为空' };
-  const c = v as any;
+  const c = v as Record<string, unknown>;
   if (typeof c.r === 'number' && typeof c.c === 'number') return { valid: true, normalized: { r: c.r, c: c.c } };
   if (typeof c.row === 'number' && typeof c.col === 'number') return { valid: true, normalized: { r: c.row, c: c.col } };
   return { valid: false, error: `期望 cell 坐标 {r, c}，实际: ${JSON.stringify(v)}` };
@@ -117,15 +117,21 @@ reg('cell', (v) => {
 
 reg('range', (v) => {
   if (v === null || v === undefined) return { valid: false, error: 'range 为空' };
-  const r = v as any;
+  const r = v as Record<string, unknown>;
   if (r.kind === 'complex-range' && Array.isArray(r.areas)) {
-    const validAreas = r.areas.every((area: any) => area?.s && area?.e
-      && [area.s.r, area.s.c, area.e.r, area.e.c].every(Number.isFinite));
+    const areas = r.areas as Array<Record<string, unknown>>;
+    const validAreas = areas.every((area) => {
+      const s = area?.s as Record<string, unknown> | undefined;
+      const e = area?.e as Record<string, unknown> | undefined;
+      return s && e && [s.r, s.c, e.r, e.c].every((v) => typeof v === 'number' && Number.isFinite(v));
+    });
     return validAreas
       ? { valid: true, normalized: v }
       : { valid: false, error: '复杂 range 的 areas 坐标无效' };
   }
-  if (r.s && r.e && typeof r.s.r === 'number' && typeof r.s.c === 'number') return { valid: true, normalized: v };
+  const s = r.s as Record<string, unknown> | undefined;
+  const e = r.e as Record<string, unknown> | undefined;
+  if (s && e && typeof s.r === 'number' && typeof s.c === 'number') return { valid: true, normalized: v };
   if (r.startRow !== undefined && r.startCol !== undefined && r.endRow !== undefined && r.endCol !== undefined) {
     return { valid: true, normalized: { s: { r: r.startRow, c: r.startCol }, e: { r: r.endRow, c: r.endCol } } };
   }
@@ -153,7 +159,7 @@ reg('cell-ref', (v) => {
 // 数据集合类型
 reg('json-rows', (v) => {
   if (v === null || v === undefined) return { valid: false, error: 'json-rows 为空' };
-  const ws = v as any;
+  const ws = v as Record<string, unknown> | null;
   if (ws?.__fromProject && Array.isArray(ws.preview)) {
     return { valid: true, normalized: ws.preview };
   }
@@ -183,7 +189,7 @@ reg('options', (v) => {
   if (v === null || v === undefined) return { valid: false, error: 'options 为空' };
   if (!Array.isArray(v)) return { valid: false, error: `期望选项数组，实际: ${typeof v}` };
   if (v.length === 0) return { valid: true, normalized: v };
-  const first = v[0] as any;
+  const first = v[0] as Record<string, unknown>;
   if (first && typeof first === 'object' && ('label' in first || 'value' in first)) return { valid: true, normalized: v };
   // 允许简单字符串数组作为选项
   if (typeof first === 'string') return { valid: true, normalized: v.map(s => ({ label: s, value: s })) };
@@ -224,14 +230,14 @@ reg('json-string', (v) => {
 // 配置类型
 reg('filter', (v) => {
   if (v === null || v === undefined) return { valid: false, error: 'filter 为空' };
-  const f = v as any;
+  const f = v as Record<string, unknown>;
   if (typeof f === 'object' && ('field' in f || 'operator' in f || 'value' in f)) return { valid: true, normalized: v };
   return { valid: false, error: '期望 {field, operator, value} 配置' };
 });
 
 reg('sort-config', (v) => {
   if (v === null || v === undefined) return { valid: false, error: 'sort-config 为空' };
-  const s = v as any;
+  const s = v as Record<string, unknown>;
   if (typeof s === 'object' && 'field' in s) return { valid: true, normalized: { field: s.field, order: s.order || 'asc' } };
   return { valid: false, error: `期望 {field, order} 配置` };
 });
@@ -244,7 +250,7 @@ reg('style', (v) => {
 
 reg('validation-rule', (v) => {
   if (v === null || v === undefined) return { valid: false, error: 'validation-rule 为空' };
-  const r = v as any;
+  const r = v as Record<string, unknown>;
   if (typeof r === 'object' && 'type' in r) return { valid: true, normalized: v };
   return { valid: false, error: `期望 {type, ...} 校验规则` };
 });

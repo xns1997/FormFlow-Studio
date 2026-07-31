@@ -146,6 +146,7 @@ function collectInternalBindings(components: DesignComponent[]) {
     }));
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- workflow structure varies
 function summarizeWorkflow(workflow: any) {
   if (!workflow) return undefined;
   return {
@@ -157,6 +158,7 @@ function summarizeWorkflow(workflow: any) {
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- behavior structure varies
 function summarizeBehaviors(behaviors: any[]) {
   return (behaviors || []).map((behavior) => ({
     id: String(behavior.id || ''),

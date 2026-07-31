@@ -3,6 +3,7 @@ import type { SrcTableEntry } from '../../src/project/types';
 import { editWorksheetStructure, toEditableWorksheet } from '../xlsx-worksheet-ops';
 import { createComplexRange, getRangeAreas, intersectComplexRanges, parseRangeAddress, type RangeArea } from '../../src/services/data/rangeGeometry';
 import { parseCustomJsPortDefinitions } from '../../src/services/config/customJsNode';
+import type * as XLSXTypes from 'xlsx';
 
 function jsonValue(value: unknown, fallback: unknown) {
   if (typeof value !== 'string') return value ?? fallback;
@@ -169,12 +170,12 @@ async function resolveWorksheetSource(ctx: NodeExecContext) {
   const wb = inputs.workbook;
   const wbCheck = ctx.checkType('workbook', wb);
   if (wbCheck.valid) {
-    const wbObj = wbCheck.normalized as any;
+    const wbObj = wbCheck.normalized as XLSXTypes.WorkBook;
     const names: string[] = wbObj.SheetNames || [];
     const mode = String(inputs.worksheetMode || properties.worksheetMode || 'active');
     const requestedName = String(inputs.sheetName || properties.sheetName || '');
     const requestedIndex = Math.max(0, Math.trunc(Number(inputs.sheetIndex ?? properties.sheetIndex ?? 0)));
-    const activeIndex = Math.max(0, Math.trunc(Number(wbObj.Workbook?.Views?.[0]?.activeTab ?? 0)));
+    const activeIndex = Math.max(0, Math.trunc(Number((wbObj.Workbook?.Views?.[0] as Record<string, unknown>)?.activeTab ?? 0)));
     const sheetName = mode === 'byName' && requestedName
       ? requestedName
       : mode === 'byIndex'
@@ -220,7 +221,7 @@ for (const [id, axis, action] of [
   ['generic:delete-columns', 'column', 'delete'],
 ] as const) {
   registerExecutor(id, ({ inputs, properties }) => editWorksheetStructure(
-    inputs.worksheet,
+    inputs.worksheet as Parameters<typeof editWorksheetStructure>[0],
     axis,
     action,
     inputs.index ?? properties.index ?? 1,
@@ -229,9 +230,9 @@ for (const [id, axis, action] of [
 }
 
 registerExecutor('generic:worksheet-commit', async ({ inputs, properties, assertType }) => {
-  const workbook = assertType('workbook', inputs.workbook, 'workbook') as any;
-  const worksheet = toEditableWorksheet(assertType('worksheet', inputs.worksheet, 'worksheet'));
-  const requestedName = String(inputs.sheetName || properties.sheetName || (worksheet as any)?.__sourceSheetName || '');
+  const workbook = assertType('workbook', inputs.workbook, 'workbook') as XLSXTypes.WorkBook;
+  const worksheet = toEditableWorksheet(assertType('worksheet', inputs.worksheet, 'worksheet') as Parameters<typeof toEditableWorksheet>[0]);
+  const requestedName = String(inputs.sheetName || properties.sheetName || (worksheet as Record<string, unknown>)?.__sourceSheetName || '');
   const identityName = (workbook.SheetNames || []).find((name: string) => workbook.Sheets[name] === inputs.worksheet || workbook.Sheets[name] === worksheet);
   const sheetName = requestedName || identityName || workbook.SheetNames?.[0] || 'Sheet1';
   workbook.Sheets[sheetName] = worksheet;
@@ -248,16 +249,17 @@ function workbookMimeType(bookType: string) {
 }
 
 registerExecutor('generic:workbook-save', async ({ inputs, properties, assertType }) => {
-  const workbook = assertType('workbook', inputs.workbook, 'workbook') as any;
+  const workbook = assertType('workbook', inputs.workbook, 'workbook') as Record<string, unknown>;
   const bookType = String(properties.bookType || 'xlsx');
   const baseName = String(inputs.fileName || properties.fileName || 'output');
   const fileName = `${baseName.replace(/\.(xlsx|xlsm|xlsb|xls|ods)$/i, '')}.${bookType}`;
   const XLSX = await import('xlsx');
-  const fileData = XLSX.write(workbook, { bookType: bookType as any, type: 'array', compression: properties.compression !== false });
+  const fileData = XLSX.write(workbook as unknown as XLSXTypes.WorkBook, { bookType: bookType as XLSXTypes.BookType, type: 'array', compression: properties.compression !== false });
   return { workbook, fileData, fileName, mimeType: workbookMimeType(bookType) };
 });
 
 function buildSheetSourceRangeResult(ws: unknown, inputs: Record<string, unknown>, properties: Record<string, unknown>) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- XLSX worksheet has dynamic cell properties
   const wsAny = ws as any;
   if (!wsAny || typeof wsAny !== 'object') throw new Error('缺少 worksheet 输入');
   return import('xlsx').then((XLSX) => {
@@ -339,6 +341,7 @@ registerExecutor('generic:sheet-source', async (ctx) => {
 registerExecutor('generic:range-select', async (ctx) => {
   const { inputs, properties } = ctx;
   const ws = inputs.worksheet;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- XLSX worksheet has dynamic cell properties
   const wsAny = ws as any;
   if (!wsAny || typeof wsAny !== 'object') throw new Error('缺少 worksheet 输入');
   return buildSheetSourceRangeResult(wsAny, inputs, properties);
@@ -406,8 +409,8 @@ registerExecutor('generic:for-each', ({ inputs }) => {
 
 async function rowsFromData(data: unknown): Promise<Record<string, unknown>[]> {
   if (Array.isArray(data)) return data as Record<string, unknown>[];
-  const worksheet = data as any;
-  if (worksheet?.__fromProject) return worksheet.preview || [];
+  const worksheet = data as Record<string, unknown> | null;
+  if (worksheet?.__fromProject) return (worksheet.preview as Record<string, unknown>[]) || [];
   if (worksheet && typeof worksheet === 'object' && worksheet['!ref']) {
     const XLSX = await import('xlsx');
     return XLSX.utils.sheet_to_json(worksheet, { defval: '' }) as Record<string, unknown>[];
@@ -426,9 +429,9 @@ registerExecutor('generic:export', async ({ inputs, properties }) => {
   const rows = await rowsFromData(inputs.data);
   if (format === 'xlsx') {
     const XLSX = await import('xlsx');
-    const source = inputs.data as any;
+    const source = inputs.data as Record<string, unknown> | null;
     const worksheet = source && typeof source === 'object' && source['!ref']
-      ? source
+      ? source as XLSXTypes.WorkSheet
       : XLSX.utils.json_to_sheet(rows, { skipHeader: properties.includeHeader === false });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, String(properties.sheetName || 'Sheet1'));
@@ -541,10 +544,10 @@ registerExecutor('generic:choice-input', ({ inputs, properties }) => {
 function getValueByPath(source: unknown, path: string): unknown {
   if (!path) return source;
   const segments = path.split('.').filter(Boolean);
-  let current: any = source;
+  let current: unknown = source;
   for (const segment of segments) {
-    if (current == null) return undefined;
-    current = current[segment];
+    if (current == null || typeof current !== 'object') return undefined;
+    current = (current as Record<string, unknown>)[segment];
   }
   return current;
 }
@@ -962,7 +965,7 @@ registerExecutor('generic:display-table', (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: `数据类型错误: ${dataCheck.error}` };
-  const data = dataCheck.normalized as any[];
+  const data = dataCheck.normalized as Record<string, unknown>[];
   const maxRows = Number(properties.maxRows || 0);
   const displayData = maxRows > 0 ? data.slice(0, maxRows) : data;
 
@@ -976,7 +979,7 @@ registerExecutor('generic:display-table', (ctx) => {
 registerExecutor('generic:display-stats', (ctx) => {
   const { inputs, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
-  const data = dataCheck.valid ? (dataCheck.normalized as any[]) : [];
+  const data = dataCheck.valid ? (dataCheck.normalized as Record<string, unknown>[]) : [];
   const headers = data.length > 0 ? Object.keys(data[0]) : [];
 
   const columnTypes: Record<string, string> = {};
@@ -1006,21 +1009,21 @@ registerExecutor('generic:merge', (ctx) => {
   const leftCheck = checkType('json-rows', inputs.leftData);
   const rightCheck = checkType('json-rows', inputs.rightData);
   if (!leftCheck.valid || !rightCheck.valid) return { error: '输入数据格式错误' };
-  const left = leftCheck.normalized as any[];
-  const right = rightCheck.normalized as any[];
+  const left = leftCheck.normalized as Record<string, unknown>[];
+  const right = rightCheck.normalized as Record<string, unknown>[];
   const leftKey = String(properties.leftKey || '');
   const rightKey = String(properties.rightKey || '');
   const joinType = String(properties.joinType || 'inner');
 
-  const rightMap = new Map<any, any[]>();
+  const rightMap = new Map<unknown, Record<string, unknown>[]>();
   for (const row of right) {
     const key = row[rightKey];
     if (!rightMap.has(key)) rightMap.set(key, []);
     rightMap.get(key)!.push(row);
   }
 
-  const result: any[] = [];
-  const matchedRight = new Set<any>();
+  const result: Record<string, unknown>[] = [];
+  const matchedRight = new Set<unknown>();
 
   for (const lRow of left) {
     const key = lRow[leftKey];
@@ -1044,12 +1047,12 @@ registerExecutor('generic:merge', (ctx) => {
   }
 
   if (joinType === 'non-matches') {
-    const nonMatch: any[] = [];
+    const nonMatch: Record<string, unknown>[] = [];
     for (const lRow of left) {
       if (!rightMap.has(lRow[leftKey])) nonMatch.push({ ...lRow });
     }
     for (const [key, rows] of rightMap) {
-      if (!left.some((l: any) => l[leftKey] === key)) {
+      if (!left.some((l) => l[leftKey] === key)) {
         for (const rRow of rows) nonMatch.push({ ...rRow });
       }
     }
@@ -1064,8 +1067,8 @@ registerExecutor('generic:append', (ctx) => {
   const mainCheck = checkType('json-rows', inputs.data);
   const extraCheck = checkType('json-rows', inputs.extra);
   if (!mainCheck.valid || !extraCheck.valid) return { error: '输入数据格式错误' };
-  const main = mainCheck.normalized as any[];
-  const extra = extraCheck.normalized as any[];
+  const main = mainCheck.normalized as Record<string, unknown>[];
+  const extra = extraCheck.normalized as Record<string, unknown>[];
   const deduplicate = properties.deduplicate === true;
 
   let result = [...main, ...extra];
@@ -1086,12 +1089,12 @@ registerExecutor('generic:group-by', (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: '输入数据格式错误' };
-  const data = dataCheck.normalized as any[];
+  const data = dataCheck.normalized as Record<string, unknown>[];
   const groupField = String(properties.groupByField || '');
   const aggField = String(properties.aggField || '');
   const aggFunc = String(properties.aggFunc || 'sum');
 
-  const groups = new Map<any, number[]>();
+  const groups = new Map<unknown, number[]>();
   for (const row of data) {
     const key = row[groupField];
     if (!groups.has(key)) groups.set(key, []);
@@ -1099,7 +1102,7 @@ registerExecutor('generic:group-by', (ctx) => {
     if (!isNaN(val)) groups.get(key)!.push(val);
   }
 
-  const result: any[] = [];
+  const result: Record<string, unknown>[] = [];
   for (const [key, values] of groups) {
     let aggValue: number;
     switch (aggFunc) {
@@ -1131,13 +1134,13 @@ registerExecutor('generic:pivot', (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: '输入数据格式错误' };
-  const data = dataCheck.normalized as any[];
+  const data = dataCheck.normalized as Record<string, unknown>[];
   const rowKey = String(properties.rowKey || '');
   const colKey = String(properties.colKey || '');
   const valueKey = String(properties.valueKey || '');
   const aggFunc = String(properties.aggFunc || 'first');
 
-  const pivotMap = new Map<string, Map<string, any[]>>();
+  const pivotMap = new Map<string, Map<string, unknown[]>>();
   const colSet = new Set<string>();
 
   for (const row of data) {
@@ -1151,15 +1154,15 @@ registerExecutor('generic:pivot', (ctx) => {
   }
 
   const columns = [...colSet].sort();
-  const result: any[] = [];
+  const result: Record<string, unknown>[] = [];
   for (const [rk, rowMap] of pivotMap) {
-    const outRow: any = { [rowKey]: rk };
+    const outRow: Record<string, unknown> = { [rowKey]: rk };
     for (const ck of columns) {
       const values = rowMap.get(ck) || [];
       if (values.length === 0) { outRow[ck] = null; continue; }
       switch (aggFunc) {
-        case 'sum': outRow[ck] = values.reduce((a: number, b: any) => a + Number(b), 0); break;
-        case 'avg': outRow[ck] = values.reduce((a: number, b: any) => a + Number(b), 0) / values.length; break;
+        case 'sum': outRow[ck] = values.reduce((a: number, b) => a + Number(b), 0); break;
+        case 'avg': outRow[ck] = values.reduce((a: number, b) => a + Number(b), 0) / values.length; break;
         case 'count': outRow[ck] = values.length; break;
         case 'first': outRow[ck] = values[0]; break;
         case 'last': outRow[ck] = values[values.length - 1]; break;
@@ -1176,14 +1179,14 @@ registerExecutor('generic:unpivot', (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: '输入数据格式错误' };
-  const data = dataCheck.normalized as any[];
+  const data = dataCheck.normalized as Record<string, unknown>[];
   const idFields = String(properties.idFields || '').split(',').map(s => s.trim()).filter(Boolean);
   const valueName = String(properties.valueName || 'value');
   const keyName = String(properties.keyName || 'variable');
 
-  const result: any[] = [];
+  const result: Record<string, unknown>[] = [];
   for (const row of data) {
-    const idPart: any = {};
+    const idPart: Record<string, unknown> = {};
     for (const f of idFields) idPart[f] = row[f];
     for (const [k, v] of Object.entries(row)) {
       if (idFields.includes(k)) continue;
@@ -1199,15 +1202,15 @@ registerExecutor('generic:compare', (ctx) => {
   const aCheck = checkType('json-rows', inputs.dataA);
   const bCheck = checkType('json-rows', inputs.dataB);
   if (!aCheck.valid || !bCheck.valid) return { error: '输入数据格式错误' };
-  const dataA = aCheck.normalized as any[];
-  const dataB = bCheck.normalized as any[];
+  const dataA = aCheck.normalized as Record<string, unknown>[];
+  const dataB = bCheck.normalized as Record<string, unknown>[];
   const matchField = String(properties.matchField || '');
 
-  const bMap = new Map<any, any>();
+  const bMap = new Map<unknown, Record<string, unknown>>();
   for (const row of dataB) bMap.set(row[matchField], row);
 
-  const onlyA: any[] = [], same: any[] = [], different: any[] = [];
-  const matchedBKeys = new Set<any>();
+  const onlyA: Record<string, unknown>[] = [], same: Record<string, unknown>[] = [], different: Record<string, unknown>[] = [];
+  const matchedBKeys = new Set<unknown>();
 
   for (const aRow of dataA) {
     const key = aRow[matchField];
@@ -1233,7 +1236,7 @@ registerExecutor('generic:sample', (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: '输入数据格式错误' };
-  const data = dataCheck.normalized as any[];
+  const data = dataCheck.normalized as Record<string, unknown>[];
   const mode = String(properties.mode || 'count');
   const count = Number(properties.count || 10);
   const percent = Number(properties.percent || 10);
@@ -1260,7 +1263,7 @@ registerExecutor('generic:type-cast', (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: '输入数据格式错误' };
-  const data = dataCheck.normalized as any[];
+  const data = dataCheck.normalized as Record<string, unknown>[];
   const field = String(properties.field || '');
   const targetType = String(properties.targetType || 'string');
   const onError = String(properties.onError || 'null');
@@ -1278,7 +1281,7 @@ registerExecutor('generic:type-cast', (ctx) => {
         }
         case 'boolean': newRow[field] = val === true || val === 'true' || val === '1' || val === 1; break;
         case 'date': {
-          const d = new Date(val);
+          const d = new Date(val as string);
           newRow[field] = isNaN(d.getTime()) ? null : d.toISOString();
           break;
         }
@@ -1296,7 +1299,7 @@ registerExecutor('generic:handle-missing', (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: '输入数据格式错误' };
-  const data = dataCheck.normalized as any[];
+  const data = dataCheck.normalized as Record<string, unknown>[];
   const field = String(properties.field || '');
   const strategy = String(properties.strategy || 'fill');
   const fillValue = properties.fillValue ?? '';
@@ -1376,7 +1379,7 @@ registerExecutor('generic:string-manip', (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: '输入数据格式错误' };
-  const data = dataCheck.normalized as any[];
+  const data = dataCheck.normalized as Record<string, unknown>[];
   const field = String(properties.field || '');
   const operation = String(properties.operation || 'trim');
   const param1 = String(properties.param1 || '');
@@ -1414,7 +1417,7 @@ registerExecutor('generic:date-time', (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: '输入数据格式错误' };
-  const data = dataCheck.normalized as any[];
+  const data = dataCheck.normalized as Record<string, unknown>[];
   const field = String(properties.field || '');
   const operation = String(properties.operation || 'extract');
   const unit = String(properties.unit || 'day');
@@ -1424,7 +1427,7 @@ registerExecutor('generic:date-time', (ctx) => {
   const result = data.map(row => {
     const newRow = { ...row };
     const val = row[field];
-    const d = val instanceof Date ? val : new Date(val);
+    const d = val instanceof Date ? val : new Date(val as string);
     if (isNaN(d.getTime())) { newRow[newField] = null; return newRow; }
 
     switch (operation) {
@@ -1478,7 +1481,7 @@ registerExecutor('generic:regex-extract', (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: '输入数据格式错误' };
-  const data = dataCheck.normalized as any[];
+  const data = dataCheck.normalized as Record<string, unknown>[];
   const field = String(properties.field || '');
   const pattern = String(properties.pattern || '');
   const group = Number(properties.group || 0);
@@ -1502,12 +1505,12 @@ registerExecutor('generic:rename-columns', (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: '输入数据格式错误' };
-  const data = dataCheck.normalized as any[];
+  const data = dataCheck.normalized as Record<string, unknown>[];
   let mapping: Record<string, string> = {};
   try { mapping = JSON.parse(String(properties.mapping || '{}')); } catch {}
 
   const result = data.map(row => {
-    const newRow: any = {};
+    const newRow: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(row)) {
       newRow[mapping[k] ?? k] = v;
     }
@@ -1521,17 +1524,17 @@ registerExecutor('generic:flatten', (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: '输入数据格式错误' };
-  const data = dataCheck.normalized as any[];
+  const data = dataCheck.normalized as Record<string, unknown>[];
   const separator = String(properties.separator || '.');
   const maxDepth = Number(properties.maxDepth || 5);
 
-  function flattenObj(obj: any, prefix = '', depth = 0): any {
+  function flattenObj(obj: Record<string, unknown>, prefix = '', depth = 0): Record<string, unknown> {
     if (depth >= maxDepth) return { [prefix]: obj };
-    const result: any = {};
+    const result: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(obj)) {
       const key = prefix ? `${prefix}${separator}${k}` : k;
       if (v && typeof v === 'object' && !Array.isArray(v)) {
-        Object.assign(result, flattenObj(v, key, depth + 1));
+        Object.assign(result, flattenObj(v as Record<string, unknown>, key, depth + 1));
       } else {
         result[key] = v;
       }
@@ -1547,7 +1550,7 @@ registerExecutor('generic:hash', (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: '输入数据格式错误' };
-  const data = dataCheck.normalized as any[];
+  const data = dataCheck.normalized as Record<string, unknown>[];
   const field = String(properties.field || '');
   const newField = String(properties.newField || 'hash');
 
@@ -1575,7 +1578,7 @@ registerExecutor('generic:encode', (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: '输入数据格式错误' };
-  const data = dataCheck.normalized as any[];
+  const data = dataCheck.normalized as Record<string, unknown>[];
   const field = String(properties.field || '');
   const encoding = String(properties.encoding || 'base64_encode');
   const newField = String(properties.newField || '') || field;
@@ -1603,10 +1606,10 @@ registerExecutor('generic:encode', (ctx) => {
 registerExecutor('generic:validate-json', (ctx) => {
   const { inputs, properties } = ctx;
   const data = inputs.data;
-  let schema: any;
+  let schema: Record<string, unknown>;
   try { schema = JSON.parse(String(properties.schema || '{}')); } catch { return { error: 'Schema 格式错误' }; }
 
-  const errors: any[] = [];
+  const errors: Array<{ field: string; message: string }> = [];
   if (schema.type && typeof data !== schema.type) {
     errors.push({ field: 'root', message: `期望类型 ${schema.type}，实际 ${typeof data}` });
   }
@@ -1617,10 +1620,11 @@ registerExecutor('generic:validate-json', (ctx) => {
     }
   }
   if (schema.properties && typeof data === 'object') {
-    for (const [key, propSchema] of Object.entries(schema.properties as any)) {
-      const val = (data as any)[key];
-      if (val !== undefined && (propSchema as any).type && typeof val !== (propSchema as any).type) {
-        errors.push({ field: key, message: `字段 ${key} 期望 ${(propSchema as any).type}，实际 ${typeof val}` });
+    const properties = schema.properties as Record<string, Record<string, unknown>>;
+    for (const [key, propSchema] of Object.entries(properties)) {
+      const val = (data as Record<string, unknown>)[key];
+      if (val !== undefined && propSchema.type && typeof val !== propSchema.type) {
+        errors.push({ field: key, message: `字段 ${key} 期望 ${propSchema.type}，实际 ${typeof val}` });
       }
     }
   }
@@ -1631,7 +1635,7 @@ registerExecutor('generic:validate-json', (ctx) => {
 registerExecutor('generic:validate-xml', (ctx) => {
   const { inputs } = ctx;
   const data = String(inputs.data || '');
-  const errors: any[] = [];
+  const errors: Array<{ message: string }> = [];
 
   const tagMatch = data.match(/<(\w+)[\s>]/);
   if (!tagMatch) errors.push({ message: '未找到有效的 XML 标签' });
@@ -1657,7 +1661,7 @@ registerExecutor('generic:validate-csv', (ctx) => {
   if (lines.length < 2) return { valid: false, errors: [{ message: 'CSV 至少需要表头和一行数据' }] };
 
   const headers = lines[0].split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
-  const errors: any[] = [];
+  const errors: Array<{ field?: string; message: string }> = [];
 
   for (const f of requiredFields) {
     if (!headers.includes(f)) errors.push({ field: f, message: `缺少必填列 ${f}` });
@@ -1670,11 +1674,11 @@ registerExecutor('generic:unique-check', (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: '输入数据格式错误' };
-  const data = dataCheck.normalized as any[];
+  const data = dataCheck.normalized as Record<string, unknown>[];
   const field = String(properties.field || '');
 
-  const seen = new Map<any, number>();
-  const duplicates: any[] = [];
+  const seen = new Map<unknown, number>();
+  const duplicates: Record<string, unknown>[] = [];
 
   for (const row of data) {
     const val = row[field];
@@ -1694,14 +1698,14 @@ registerExecutor('generic:range-check', (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: '输入数据格式错误' };
-  const data = dataCheck.normalized as any[];
+  const data = dataCheck.normalized as Record<string, unknown>[];
   const field = String(properties.field || '');
   const minValue = properties.minValue;
   const maxValue = properties.maxValue;
   const dataType = String(properties.dataType || 'number');
 
-  const passed: any[] = [];
-  const failed: any[] = [];
+  const passed: Record<string, unknown>[] = [];
+  const failed: Record<string, unknown>[] = [];
 
   for (const row of data) {
     const val = row[field];
@@ -1712,7 +1716,7 @@ registerExecutor('generic:range-check', (ctx) => {
       if (minValue !== '' && n < Number(minValue)) inRange = false;
       if (maxValue !== '' && n > Number(maxValue)) inRange = false;
     } else if (dataType === 'date') {
-      const d = new Date(val);
+      const d = new Date(val as string);
       if (minValue && d < new Date(String(minValue))) inRange = false;
       if (maxValue && d > new Date(String(maxValue))) inRange = false;
     } else {
@@ -1873,7 +1877,7 @@ registerExecutor('generic:pdf-report', async (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const dataCheck = checkType('json-rows', inputs.data);
   if (!dataCheck.valid) return { error: `数据格式错误: ${dataCheck.error}` };
-  const data = dataCheck.normalized as any[];
+  const data = dataCheck.normalized as Record<string, unknown>[];
   const title = String(properties.title || '数据报告');
   const autoDownload = properties.autoDownload !== false;
 

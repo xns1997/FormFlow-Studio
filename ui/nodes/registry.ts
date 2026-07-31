@@ -903,13 +903,13 @@ export async function loadNodeRegistry(): Promise<NodeRegistry> {
       const declaredPorts: SchemaPort[] = (schema.ports || []).length > 0
         ? schema.ports
         : [
-            ...(schema.inputs || []).map((input: any) => ({
-              name: input.name, label: input.name, type: normalizeSchemaType(input.type), direction: 'input' as const,
-              required: input.required, description: input.description || input.name,
+            ...(schema.inputs || []).map((input: Record<string, unknown>) => ({
+              name: input.name as string, label: input.name as string, type: normalizeSchemaType(input.type as string), direction: 'input' as const,
+              required: input.required as boolean, description: (input.description || input.name) as string,
             })),
-            ...(schema.outputs || []).map((output: any) => ({
-              name: output.name, label: output.name, type: normalizeSchemaType(output.type), direction: 'output' as const,
-              description: output.description || output.name,
+            ...(schema.outputs || []).map((output: Record<string, unknown>) => ({
+              name: output.name as string, label: output.name as string, type: normalizeSchemaType(output.type as string), direction: 'output' as const,
+              description: (output.description || output.name) as string,
             })),
           ];
       for (const generatedPort of spec.ports) {
@@ -931,11 +931,11 @@ export async function loadNodeRegistry(): Promise<NodeRegistry> {
       if (pkg.name.startsWith('func-') && pkg.loadExecutor) {
         executorRegistry.registerExecutor(spec.id, async (ctx) => {
           const schema = pkg.schema;
-          const inputPorts = (schema.ports || []).filter((port: any) => port.direction === 'input' || port.direction === 'both');
-          const args = inputPorts.map((port: any) => ctx.inputs[port.name]);
+          const inputPorts = (schema.ports || []).filter((port: SchemaPort) => port.direction === 'input' || port.direction === 'both');
+          const args = inputPorts.map((port: SchemaPort) => ctx.inputs[port.name]);
           const result = await nodePackageApi.executeNodePackage(pkg.loadExecutor!, args, ctx.properties);
           if (result && typeof result === 'object' && !Array.isArray(result)) return result as Record<string, unknown>;
-          const output = (schema.ports || []).find((port: any) => port.direction === 'output' || port.direction === 'both');
+          const output = (schema.ports || []).find((port: SchemaPort) => port.direction === 'output' || port.direction === 'both');
           return { [output?.name || 'result']: result };
         });
       }
@@ -943,7 +943,10 @@ export async function loadNodeRegistry(): Promise<NodeRegistry> {
 
     const pluginManifests = await pluginLoader.discoverPlugins();
     const pluginSpecs = pluginLoader.pluginNodeSpecs(pluginManifests);
-    for (const spec of pluginSpecs) if ((spec as any).executorUrl) executorRegistry.registerExecutor(spec.id, async (ctx) => { const module = await import(/* @vite-ignore */ (spec as any).executorUrl); return module.execute(ctx); });
+    for (const spec of pluginSpecs) {
+      const pluginSpec = spec as FlowNodeSpec & { executorUrl?: string };
+      if (pluginSpec.executorUrl) executorRegistry.registerExecutor(spec.id, async (ctx) => { const module = await import(/* @vite-ignore */ pluginSpec.executorUrl!); return module.execute(ctx); });
+    }
     const allSpecs = [...scenarioSpecs, ...genericNodeSpecs, ...packageNodeSpecs, ...xlsxSpecs, ...pluginSpecs].map((spec) => ({
       ...spec,
       keywords: [...new Set([...(spec.keywords || []), ...(DISCOVERY_KEYWORDS[spec.id] || [])])],

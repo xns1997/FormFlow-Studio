@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Select } from 'antd';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import HighlightText from '../../components/HighlightText';
+import ComponentDocPlayground from '../../components/ComponentDocPlayground';
 import {
   buildSearchIndex,
   findDoc,
@@ -129,6 +130,19 @@ export default function DocsPlatformPage({ home = false }: { home?: boolean }) {
               {current.actions?.map((action) => action.href && <button key={action.label} type="button" onClick={() => navigate(action.label === '返回项目' && safeReturnTo ? safeReturnTo : action.href!)}>{action.label}</button>)}
             </div>
           </header>
+          {current.domain === 'controls' && (() => {
+            const componentType = current.id.startsWith('form-design:')
+              ? current.id.slice('form-design:'.length)
+              : current.id.startsWith('control:')
+                ? current.id.slice('control:'.length)
+                : null;
+            if (!componentType) return null;
+            const relatedEventLinks = (current.relatedIds || [])
+              .map((id) => entries.find((e) => e.id === id))
+              .filter((e): e is DocEntry => !!e)
+              .map((e) => ({ label: e.title, href: e.canonicalPath }));
+            return <ComponentDocPlayground componentType={componentType} title={current.title} relatedEventLinks={relatedEventLinks} />;
+          })()}
           {current.blocks.map((block) => (
             <section id={block.id} key={block.id} className="docs-v2-section">
               <h2>{block.title}</h2>

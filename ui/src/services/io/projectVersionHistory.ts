@@ -18,15 +18,16 @@ export function createVersion(project: ProjectStructure, label: string): Project
     label: label || `版本 ${nextVersion}`,
     snapshot: JSON.stringify(project),
   };
-  localStorage.setItem(`formflow_versions_${project.config.id}`, JSON.stringify([...versions, version]));
+  try { localStorage.setItem(`formflow_versions_${project.config.id}`, JSON.stringify([...versions, version])); } catch { /* quota exceeded */ }
   return version;
 }
 
 export function getVersions(projectId: string): ProjectVersion[] {
-  const data = localStorage.getItem(`formflow_versions_${projectId}`);
-  if (!data) return [];
-  try { return JSON.parse(data) as ProjectVersion[]; }
-  catch { return []; }
+  try {
+    const data = localStorage.getItem(`formflow_versions_${projectId}`);
+    if (!data) return [];
+    return JSON.parse(data) as ProjectVersion[];
+  } catch { return []; }
 }
 
 export function restoreVersion(projectId: string, versionId: string): ProjectStructure | null {
@@ -37,12 +38,14 @@ export function restoreVersion(projectId: string, versionId: string): ProjectStr
 }
 
 export function deleteVersion(projectId: string, versionId: string): void {
-  localStorage.setItem(
-    `formflow_versions_${projectId}`,
-    JSON.stringify(getVersions(projectId).filter((item) => item.id !== versionId)),
-  );
+  try {
+    localStorage.setItem(
+      `formflow_versions_${projectId}`,
+      JSON.stringify(getVersions(projectId).filter((item) => item.id !== versionId)),
+    );
+  } catch { /* ignore */ }
 }
 
 export function clearVersions(projectId: string): void {
-  localStorage.removeItem(`formflow_versions_${projectId}`);
+  try { localStorage.removeItem(`formflow_versions_${projectId}`); } catch { /* ignore */ }
 }

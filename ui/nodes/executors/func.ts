@@ -1,4 +1,5 @@
 import { registerExecutor, type NodeExecContext, type NodeExecResult } from '../executor-registry';
+import type * as XLSX from 'xlsx';
 
 async function getXlsx() {
   return await import('xlsx');
@@ -190,7 +191,7 @@ registerExecutor('func-apply-style', async (ctx) => {
 
 registerExecutor('func-conditional-format', async (ctx) => {
   const { inputs, properties } = ctx;
-  const worksheet = inputs.worksheet as any;
+  const worksheet = inputs.worksheet as XLSX.WorkSheet | undefined;
   const field = String(properties.field || '');
   const condition = String(properties.condition || 'contains');
   const value = properties.value ?? '';
@@ -199,11 +200,11 @@ registerExecutor('func-conditional-format', async (ctx) => {
 
   // 从 worksheet 中提取数据进行条件格式化标记
   let data: Record<string, unknown>[] = [];
-  if (worksheet.__fromProject) {
-    data = worksheet.preview || [];
+  if ((worksheet as XLSX.WorkSheet & { __fromProject?: boolean }).__fromProject) {
+    data = ((worksheet as XLSX.WorkSheet & { preview?: Record<string, unknown>[] }).preview) || [];
   }
 
-  const highlighted: any[] = [];
+  const highlighted: Record<string, unknown>[] = [];
   for (const row of data) {
     if (field && row[field] !== undefined) {
       let match = false;
@@ -236,7 +237,7 @@ registerExecutor('func-conditional-format', async (ctx) => {
 
 registerExecutor('func-data-validation', async (ctx) => {
   const { inputs, properties } = ctx;
-  const worksheet = inputs.worksheet as any;
+  const worksheet = inputs.worksheet as XLSX.WorkSheet | undefined;
   const field = String(properties.field || '');
   const validationType = String(properties.validationType || 'list');
   const formula1 = String(properties.formula1 || '');
@@ -244,11 +245,11 @@ registerExecutor('func-data-validation', async (ctx) => {
   if (!worksheet) return { validated: false, error: '缺少 worksheet 输入' };
 
   let data: Record<string, unknown>[] = [];
-  if (worksheet.__fromProject) {
-    data = worksheet.preview || [];
+  if ((worksheet as XLSX.WorkSheet & { __fromProject?: boolean }).__fromProject) {
+    data = ((worksheet as XLSX.WorkSheet & { preview?: Record<string, unknown>[] }).preview) || [];
   }
 
-  const errors: any[] = [];
+  const errors: Array<{ row: number; field: string; value: unknown; message: string }> = [];
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
     if (field && row[field] !== undefined) {
@@ -262,7 +263,7 @@ registerExecutor('func-data-validation', async (ctx) => {
         }
         case 'whole':
         case 'decimal': valid = !isNaN(Number(val)); break;
-        case 'date': valid = !isNaN(new Date(val as any).getTime()); break;
+        case 'date': valid = !isNaN(new Date(val as string).getTime()); break;
         case 'textLength': valid = typeof val === 'string' && val.length <= Number(formula1 || 255); break;
         default: valid = true;
       }
@@ -281,7 +282,7 @@ registerExecutor('func-data-validation', async (ctx) => {
 
 registerExecutor('func-add-comment', async (ctx) => {
   const { inputs, properties } = ctx;
-  const worksheet = inputs.worksheet as any;
+  const worksheet = inputs.worksheet as XLSX.WorkSheet | undefined;
   const author = String(properties.author || '用户');
   const commentText = String(properties.comment || '');
 
@@ -309,7 +310,7 @@ registerExecutor('func-add-comment', async (ctx) => {
 
 registerExecutor('func-named-item', async (ctx) => {
   const { inputs, properties } = ctx;
-  const worksheet = inputs.worksheet as any;
+  const worksheet = inputs.worksheet as XLSX.WorkSheet | undefined;
   const name = String(properties.name || '');
   const range = String(properties.range || 'A1');
 
@@ -326,7 +327,7 @@ registerExecutor('func-named-item', async (ctx) => {
 
 registerExecutor('func-protect-sheet', async (ctx) => {
   const { inputs, properties } = ctx;
-  const worksheet = inputs.worksheet as any;
+  const worksheet = inputs.worksheet as XLSX.WorkSheet | undefined;
   const password = String(properties.password || '');
 
   if (!worksheet) return { protected: false, error: '缺少 worksheet 输入' };
@@ -356,7 +357,7 @@ registerExecutor('func-protect-workbook', async (ctx) => {
 
 registerExecutor('func-create-chart', async (ctx) => {
   const { inputs, properties, checkType } = ctx;
-  const worksheet = inputs.worksheet as any;
+  const worksheet = inputs.worksheet as XLSX.WorkSheet | undefined;
   if (worksheet && typeof worksheet === 'object') {
     if (!worksheet['!charts']) worksheet['!charts'] = [];
     const chartName = `Chart${worksheet['!charts'].length + 1}`;
@@ -449,7 +450,7 @@ registerExecutor('func-create-chart', async (ctx) => {
 
 registerExecutor('func-merge-cells', async (ctx) => {
   const { inputs, properties } = ctx;
-  const worksheet = inputs.worksheet as any;
+  const worksheet = inputs.worksheet as XLSX.WorkSheet | undefined;
   const startCell = String(properties.startCell || 'A1');
   const endCell = String(properties.endCell || 'A1');
 
@@ -474,7 +475,7 @@ registerExecutor('func-find-replace', async (ctx) => {
   const { inputs, properties } = ctx;
   const find = ctx.assertType('string', properties.find || '', 'find') as string;
   const replace = ctx.assertType('string', properties.replace || '', 'replace') as string;
-  const worksheet = inputs.worksheet as any;
+  const worksheet = inputs.worksheet as XLSX.WorkSheet | undefined;
 
   if (!find) return { replaced: false, error: '缺少查找内容' };
   if (!worksheet) return { replaced: false, error: '缺少 worksheet 输入' };
@@ -518,7 +519,7 @@ registerExecutor('func-find-replace', async (ctx) => {
 
 registerExecutor('func-remove-duplicates', async (ctx) => {
   const { inputs, properties } = ctx;
-  const worksheet = inputs.worksheet as any;
+  const worksheet = inputs.worksheet as XLSX.WorkSheet | undefined;
   const columns = String(properties.columns || '');
 
   if (!worksheet) return { duplicatesRemoved: false, error: '缺少 worksheet 输入' };
@@ -555,7 +556,7 @@ registerExecutor('func-remove-duplicates', async (ctx) => {
 
 registerExecutor('func-create-table', async (ctx) => {
   const { inputs, properties } = ctx;
-  const worksheet = inputs.worksheet as any;
+  const worksheet = inputs.worksheet as XLSX.WorkSheet | undefined;
   const tableName = String(properties.tableName || 'Table1');
   const style = String(properties.style || 'TableStyleMedium9');
 
@@ -619,7 +620,7 @@ registerExecutor('func-sheet-operation', async (ctx) => {
 
 registerExecutor('func-copy-range', async (ctx) => {
   const { inputs, properties } = ctx;
-  const worksheet = inputs.worksheet as any;
+  const worksheet = inputs.worksheet as XLSX.WorkSheet | undefined;
   const sourceRange = String(properties.sourceRange || 'A1');
   const targetRange = String(properties.targetRange || 'A1');
 

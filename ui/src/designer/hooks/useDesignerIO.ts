@@ -4,6 +4,7 @@ import type { DesignerState } from './useDesignerState';
 import { autoResizeContainers } from '../utils';
 import { hydrateControlComponent } from '../registry';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- X6 graph type is complex
 interface DesignerIOCtx extends DesignerState {
   renderDesignOnGraph: (graph: any, design: DesignFile) => void;
   selectComponent: (id: string | null) => void;

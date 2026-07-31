@@ -248,8 +248,10 @@ export default function MarkdownRenderer({ content, className }: MarkdownRendere
       },
       recordTransform: (opts: any) => {
         const input = opts?.input || {};
-        const mapping = JSON.parse(opts?.mapping || '{}');
-        const defaults = JSON.parse(opts?.defaults || '{}');
+        let mapping: Record<string, any> = {};
+        let defaults: Record<string, any> = {};
+        try { mapping = JSON.parse(opts?.mapping || '{}'); } catch { /* ignore */ }
+        try { defaults = JSON.parse(opts?.defaults || '{}'); } catch { /* ignore */ }
         const result: Record<string, any> = { ...defaults };
         for (const [newKey, oldKey] of Object.entries(mapping)) {
           if (typeof oldKey === 'string' && oldKey in input) result[newKey] = input[oldKey];

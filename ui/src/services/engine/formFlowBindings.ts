@@ -167,7 +167,11 @@ function sourceForImport(name: string, components: FieldComponent[]): FlowInputB
 }
 
 function cloneBindings(bindings: FlowBindingsV2): FlowBindingsV2 {
-  return JSON.parse(JSON.stringify(bindings)) as FlowBindingsV2;
+  try {
+    return JSON.parse(JSON.stringify(bindings)) as FlowBindingsV2;
+  } catch {
+    return { version: 2, inputs: {}, outputs: {} };
+  }
 }
 
 export function normalizeFlowBindings(

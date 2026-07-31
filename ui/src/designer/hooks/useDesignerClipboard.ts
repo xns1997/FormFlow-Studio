@@ -24,7 +24,7 @@ export function useDesignerClipboard(ctx: DesignerClipboardCtx) {
   const copy = useCallback(() => {
     const graph = graphRef.current;
     if (graph) {
-      const cells = graph.getSelectedCells().filter((cell: any) => cell.id !== FORM_WINDOW_CELL_ID);
+      const cells = graph.getSelectedCells().filter((cell: { id: string }) => cell.id !== FORM_WINDOW_CELL_ID);
       if (cells.length) {
         graph.copy(cells);
         bumpHistoryRevision();
@@ -37,7 +37,7 @@ export function useDesignerClipboard(ctx: DesignerClipboardCtx) {
     if (!graph) return;
     const pasted = graph.paste({ offset: 24 });
     const nextComponents: DesignComponent[] = [];
-    pasted.forEach((cell: any) => {
+    pasted.forEach((cell: { isNode: () => boolean }) => {
       if (!cell.isNode()) return;
       const node = cell as Node;
       const data = node.getData();
@@ -73,12 +73,12 @@ export function useDesignerClipboard(ctx: DesignerClipboardCtx) {
   const duplicate = useCallback(() => {
     const graph = graphRef.current;
     if (!graph) return;
-    const cells = graph.getSelectedCells().filter((cell: any) => cell.id !== FORM_WINDOW_CELL_ID);
+    const cells = graph.getSelectedCells().filter((cell: { id: string }) => cell.id !== FORM_WINDOW_CELL_ID);
     if (!cells.length) return;
     graph.copy(cells);
     const pasted = graph.paste({ offset: 24 });
     const nextComponents: DesignComponent[] = [];
-    pasted.forEach((cell: any) => {
+    pasted.forEach((cell: { isNode: () => boolean }) => {
       if (!cell.isNode()) return;
       const node = cell as Node;
       const data = node.getData();

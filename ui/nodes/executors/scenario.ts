@@ -58,15 +58,15 @@ registerExecutor('scenario:append-rows', async (ctx) => {
 registerExecutor('scenario:sheet-preview', async (ctx) => {
   const wsCheck = ctx.checkType('worksheet', ctx.inputs.worksheet);
   if (!wsCheck.valid) return { error: `工作表类型错误: ${wsCheck.error}` };
-  const ws = wsCheck.normalized as any;
+  const ws = wsCheck.normalized as Record<string, unknown>;
 
   if (ws.__fromProject) {
-    const preview = ws.preview || [];
-    const csvCheck = ctx.checkType('csv-string', preview.map((r: any) => Object.values(r).join(',')).join('\n'));
+    const preview = (ws.preview as Record<string, unknown>[]) || [];
+    const csvCheck = ctx.checkType('csv-string', preview.map((r) => Object.values(r).join(',')).join('\n'));
     return {
       jsonPreview: preview,
       csvPreview: csvCheck.valid ? csvCheck.normalized : '',
-      htmlPreview: '<table>' + preview.map((r: any) => '<tr>' + Object.values(r).map(v => `<td>${v}</td>`).join('') + '</tr>').join('') + '</table>',
+      htmlPreview: '<table>' + preview.map((r) => '<tr>' + Object.values(r).map(v => `<td>${v}</td>`).join('') + '</tr>').join('') + '</table>',
     };
   }
 

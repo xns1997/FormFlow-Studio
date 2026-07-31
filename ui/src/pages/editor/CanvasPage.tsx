@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { parseJson, parseJsonOrNull } from '../../services/engine/safeJson';
 import {
   Background,
   Controls,
@@ -20,6 +21,7 @@ import {
   type NodeChange,
 } from '@xyflow/react';
 import { loadNodeRegistry, type FlowNodeSpec, type NodeRegistry, type SchemaPort } from '../../flowRegistry';
+import type { SchemaProperty } from '../../../nodes/excel-api-types';
 import { useProjectStore } from '../../project/store';
 import { executeFlow, type FlowExecutionResult } from '../../services/engine/flowEngine';
 import { rangeToAddress } from '../../services/data/rangeResolver';
@@ -247,22 +249,25 @@ type PortTableRow = {
 };
 
 function PortTableEditor({ value, onChange, disabled, allowInputContract = false }: { value: unknown; onChange: (val: string) => void; disabled?: boolean; allowInputContract?: boolean }) {
-  const parseRows = useCallback((source: unknown) => {
+  const parseRows = useCallback((source: unknown): PortTableRow[] => {
     if (typeof source === 'string' && source.trim()) {
       try {
-        const arr = JSON.parse(source);
+        const arr = parseJsonOrNull<unknown[]>(source);
         if (Array.isArray(arr)) {
           return arr
-            .filter((row: any) => row && typeof row.name === 'string')
-            .map((row: any) => ({
-              id: String(row.id || '').trim() || undefined,
-              name: String(row.name || ''),
-              label: String(row.label || row.name || ''),
-              type: String(row.type || 'any'),
-              description: String(row.description || ''),
-              required: row.required === true,
-              ...(Object.prototype.hasOwnProperty.call(row, 'defaultValue') ? { defaultValue: row.defaultValue } : {}),
-            }));
+            .filter((row) => row && typeof (row as Record<string, unknown>).name === 'string')
+            .map((row) => {
+              const r = row as Record<string, unknown>;
+              return {
+                id: String(r.id || '').trim() || undefined,
+                name: String(r.name || ''),
+                label: String(r.label || r.name || ''),
+                type: String(r.type || 'any'),
+                description: String(r.description || ''),
+                required: r.required === true,
+                ...(Object.prototype.hasOwnProperty.call(r, 'defaultValue') ? { defaultValue: r.defaultValue } : {}),
+              };
+            });
         }
       } catch {}
     }
@@ -313,7 +318,7 @@ function PortTableEditor({ value, onChange, disabled, allowInputContract = false
             onChange={(next) => {
               setRawText(next);
               try {
-                const parsed = JSON.parse(next);
+                const parsed = parseJson(next, null);
                 if (!Array.isArray(parsed)) {
                   setRawError('字段定义必须是数组');
                   return;
@@ -393,7 +398,7 @@ function FormFlowNode({ data, selected }: NodeProps<FlowNode>) {
   }, [ports]);
 
   const fieldRows = useMemo(() => {
-    const rows: Array<{ prop: any; inputPort: SchemaPort | null; outputPort: SchemaPort | null }> = [];
+    const rows: Array<{ prop: SchemaProperty | null; inputPort: SchemaPort | null; outputPort: SchemaPort | null }> = [];
     const usedNames = new Set<string>();
     for (const prop of properties) {
       const portList = portsByName.get(prop.name) || [];
@@ -441,7 +446,7 @@ function FormFlowNode({ data, selected }: NodeProps<FlowNode>) {
 }
 
 const SchemaField = React.memo(function SchemaField({ prop, value, onChange, connected, specId, tables, currentProps, onOpenRangeSelector, sourceInfo }: {
-  prop: any; value: unknown; onChange: (name: string, val: unknown) => void; connected?: boolean;
+  prop: SchemaProperty; value: unknown; onChange: (name: string, val: unknown) => void; connected?: boolean;
   specId?: string; tables?: SrcTableEntry[]; currentProps?: Record<string, unknown>;
   onOpenRangeSelector?: () => void;
   sourceInfo?: { nodeLabel: string; portLabel: string; value?: unknown } | null;
@@ -612,7 +617,7 @@ const SchemaField = React.memo(function SchemaField({ prop, value, onChange, con
         <span>{prop.label}{prop.required && <em className="required">*</em>}{portBadge}</span>
         {disabled ? connectedValueDisplay : (
           <>
-            {prop.type === 'boolean' ? (
+            {(prop.type as string) === 'boolean' ? (
               <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <input type="checkbox" checked={!!current} onChange={(e) => onChange(prop.name, e.target.checked)} />
                 <span>{prop.label}</span>
@@ -713,7 +718,7 @@ const SchemaField = React.memo(function SchemaField({ prop, value, onChange, con
 });
 
 function StructuredSchemaEditor({ prop, value, disabled, editorPath, onCommit }: {
-  prop: any;
+  prop: SchemaProperty;
   value: unknown;
   disabled: boolean;
   editorPath?: string;
@@ -965,7 +970,7 @@ export default function CanvasPage() {
   const [edges, setEdges] = useState<Edge[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(true);
-  const [leftSidebarTab, setLeftSidebarTab] = useState<'workflows' | 'nodes'>('workflows');
+  const [leftSidebarTab, setLeftSidebarTab] = useState<'workflows' | 'nodes' | 'fields'>('workflows');
   const [currentWorkflowId, setCurrentWorkflowId] = useState<string | null>(null);
   const [flowRunning, setFlowRunning] = useState(false);
   const [flowResult, setFlowResult] = useState<FlowExecutionResult | null>(null);
@@ -1038,7 +1043,7 @@ export default function CanvasPage() {
   const selectedRangeRef = useMemo<RangeRef | null>(() => {
     if (!selectedNode || selectedNode.data.specId !== 'generic:sheet-source') return null;
     try {
-      const properties = JSON.parse(selectedNode.data.propertiesJson || '{}');
+      const properties = parseJson(selectedNode.data.propertiesJson || '{}', {} as any);
       if (properties.sourceMode !== 'range') return null;
       return properties.rangeRef || null;
     } catch { return null; }
@@ -1502,14 +1507,16 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
       updateWorkflow(wf.id, { nodes: migrated.workflow.nodes, edges: migrated.workflow.edges });
     }
     const activeWorkflow = migrated.workflow;
-    const loadedNodes: FlowNode[] = (activeWorkflow.nodes || []).map((n: any) => {
+    const loadedNodes: FlowNode[] = (activeWorkflow.nodes || []).map((n) => {
       const spec = resolveCanvasNodeSpec(registry, n.specId);
       if (!spec) return null;
       const savedOutputs = n.data?.outputs;
       const savedError = n.data?.error;
-      return { id: n.id, type: 'formflow', position: n.position, data: { specId: n.specId, label: spec.label, kind: spec.kind, category: spec.category, description: spec.description, propertiesJson: JSON.stringify(n.data?.propertiesJson ? JSON.parse(n.data.propertiesJson) : {}), connectedPortsJson: '[]', ...(savedOutputs ? { outputs: savedOutputs } : {}), ...(savedError ? { error: savedError } : {}) } };
+      let parsedProps: Record<string, unknown> = {};
+      try { parsedProps = n.data?.propertiesJson ? JSON.parse(n.data.propertiesJson as string) : {}; } catch { /* malformed JSON */ }
+      return { id: n.id, type: 'formflow', position: n.position, data: { specId: n.specId, label: spec.label, kind: spec.kind, category: spec.category, description: spec.description, propertiesJson: JSON.stringify(parsedProps), connectedPortsJson: '[]', ...(savedOutputs ? { outputs: savedOutputs } : {}), ...(savedError ? { error: savedError } : {}) } };
     }).filter(Boolean) as FlowNode[];
-      const loadedEdges: Edge[] = dedupeEdges((activeWorkflow.edges || []).map((e: any) => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle, animated: true, type: 'smoothstep' })));
+      const loadedEdges: Edge[] = dedupeEdges((activeWorkflow.edges || []).map((e) => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle, targetHandle: e.targetHandle, animated: true, type: 'smoothstep' })));
     setNodes(loadedNodes);
     setEdges(loadedEdges);
     setCurrentWorkflowId(activeWorkflow.id);
@@ -1570,7 +1577,7 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
           const autoHeader = (nr.outputs as any)?.__autoHeader;
           if (autoHeader && Array.isArray(autoHeader) && autoHeader.length > 0) {
             try {
-              const currentProps = JSON.parse(n.data.propertiesJson || '{}');
+              const currentProps = parseJson(n.data.propertiesJson || '{}', {} as any);
               if (!currentProps.header || (Array.isArray(currentProps.header) && currentProps.header.length === 0)) {
                 currentProps.header = autoHeader;
                 updatedData.propertiesJson = JSON.stringify(currentProps);
@@ -1583,7 +1590,7 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
           const headers = (nr.outputs as any)?.headers;
           if (headers && Array.isArray(headers)) {
             try {
-              const currentProps = JSON.parse(n.data.propertiesJson || '{}');
+              const currentProps = parseJson(n.data.propertiesJson || '{}', {} as any);
               if (!currentProps.headers || currentProps.headers.length === 0) {
                 currentProps.headers = headers;
                 updatedData.propertiesJson = JSON.stringify(currentProps);
@@ -1717,6 +1724,7 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
           <div className="canvas-left-tabs" role="tablist" aria-label="流程编排左侧栏视图">
             <button type="button" role="tab" aria-selected={leftSidebarTab === 'workflows'} className={leftSidebarTab === 'workflows' ? 'active' : ''} onClick={() => setLeftSidebarTab('workflows')}>流程实例</button>
             <button type="button" role="tab" aria-selected={leftSidebarTab === 'nodes'} className={leftSidebarTab === 'nodes' ? 'active' : ''} onClick={() => setLeftSidebarTab('nodes')}>节点库</button>
+            <button type="button" role="tab" aria-selected={leftSidebarTab === 'fields'} className={leftSidebarTab === 'fields' ? 'active' : ''} onClick={() => setLeftSidebarTab('fields')}>字段引用</button>
             <button type="button" className="canvas-left-close" aria-label="收起左侧栏" title="收起左侧栏" onClick={() => setPaletteOpen(false)}>×</button>
           </div>
           <div className="canvas-left-panel">
@@ -1746,6 +1754,37 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
                     </button>
                   ))}
                   {(project?.workflows || []).length === 0 && <div className="workflow-instance-empty">暂无流程实例</div>}
+                </div>
+              </div>
+            ) : leftSidebarTab === 'fields' ? (
+              <div className="canvas-fields-panel" role="tabpanel" aria-label="字段引用">
+                <div className="workflow-instance-header">
+                  <span>字段引用</span>
+                </div>
+                <div className="canvas-fields-list">
+                  {(project?.forms || []).length === 0 ? (
+                    <div className="workflow-instance-empty">暂无表单</div>
+                  ) : (project?.forms || []).map((form) => {
+                    const fields = (form.design?.components || [])
+                      .filter((c) => c.fieldBinding && !String(c.fieldBinding).startsWith('_'))
+                      .map((c) => ({
+                        name: String(c.fieldBinding),
+                        type: c.type,
+                        label: String(c.props?.label || c.props?.title || c.fieldBinding || ''),
+                      }));
+                    if (fields.length === 0) return null;
+                    return (
+                      <div key={form.id} className="canvas-fields-form-group">
+                        <div className="canvas-fields-form-header">{form.name}</div>
+                        {fields.map((field) => (
+                          <div key={field.name} className="canvas-fields-item">
+                            <span className="canvas-fields-name">{field.name}</span>
+                            <span className="canvas-fields-meta">{field.label} · {field.type}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ) : (
@@ -1956,7 +1995,7 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
               {inspectorProps.length > 0 && (
                 <section className="inspector-section schema-config">
                   <div className="inspector-section-title"><h4>配置</h4><span>{inspectorProps.length} 项</span></div>
-                  <div className="schema-fields">{inspectorProps.map((p: any) => <SchemaField key={p.name} prop={p} value={currentProps[p.name]} onChange={updateProp} connected={connectedPorts.has(`in:${p.name}`)} specId={selectedNode.data.specId} tables={srcTables} currentProps={currentProps} onOpenRangeSelector={openRangeSelector} sourceInfo={connectedSourceMap.get(p.name)?.[0]} />)}</div>
+                  <div className="schema-fields">{inspectorProps.map((p) => <SchemaField key={p.name} prop={p} value={currentProps[p.name]} onChange={updateProp} connected={connectedPorts.has(`in:${p.name}`)} specId={selectedNode.data.specId} tables={srcTables} currentProps={currentProps} onOpenRangeSelector={openRangeSelector} sourceInfo={connectedSourceMap.get(p.name)?.[0]} />)}</div>
                 </section>
               )}
               {inspectorInputPorts.length > 0 && (
@@ -2050,7 +2089,7 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
                   <div className="output-ports">
                     {Object.entries(selectedNode.data.outputs).map(([key, val]) => {
                       if (key.startsWith('__')) return null;
-                      const portDef = inspectorPorts.find((p: any) => p.name === key);
+                      const portDef = inspectorPorts.find((p) => p.name === key);
                       const portType = portDef?.type || 'any';
                       const fileName = String(selectedNode.data.outputs?.fileName || 'output.xlsx');
                       const mimeType = String(selectedNode.data.outputs?.mimeType || 'application/octet-stream');

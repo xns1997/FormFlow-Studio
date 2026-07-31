@@ -1,3 +1,4 @@
+import { parseJsonOrNull } from '../engine/safeJson';
 export type ThemeMode = 'light' | 'dark' | 'system';
 export type ShortcutScheme = 'vscode' | 'vim';
 export type SpacingPreset = 'compact' | 'standard' | 'spacious';
@@ -204,7 +205,8 @@ export function loadSystemSettings(): SystemSettings {
   const raw = readStorage();
   if (!raw) return createDefaultSystemSettings();
   try {
-    return normalizeSystemSettings(JSON.parse(raw) as Partial<SystemSettings>);
+    const parsed = parseJsonOrNull<Partial<SystemSettings>>(raw);
+    return parsed ? normalizeSystemSettings(parsed) : createDefaultSystemSettings();
   } catch {
     return createDefaultSystemSettings();
   }

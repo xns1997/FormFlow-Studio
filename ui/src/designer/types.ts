@@ -73,8 +73,8 @@ export interface PropDef {
   validation?: PropValidation;
   /** Reserved metadata. The property panel intentionally exposes no AI entry point. */
   assistantCapability?: PropertyAssistantCapability;
-  default?: any;
-  options?: Array<{ label: string; value: any }>;
+  default?: unknown;
+  options?: Array<{ label: string; value: unknown }>;
   group?: string;
   section?: PropertySection;
   task?: PropertyTaskId;

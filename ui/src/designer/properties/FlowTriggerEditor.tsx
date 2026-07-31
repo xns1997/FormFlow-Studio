@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { parseJson, parseJsonOrNull } from '../../services/engine/safeJson';
 import type { ComponentNode } from '../../models';
 import type { DesignComponent, WorkflowFile } from '../../project/types';
 import {
@@ -88,7 +89,7 @@ function parseLiteral(text: string) {
 }
 
 function cloneBindings(bindings: FlowBindingsV2): FlowBindingsV2 {
-  return JSON.parse(JSON.stringify(bindings)) as FlowBindingsV2;
+  try { return JSON.parse(JSON.stringify(bindings)) as FlowBindingsV2; } catch { return { version: 2, inputs: {}, outputs: {} }; }
 }
 
 function fieldOptions(components: DesignComponent[]) {
@@ -266,7 +267,8 @@ export function FlowTriggerEditor({
         } as ComponentNode,
       };
       const inputs = resolveV2FlowInputs(bindings, workflow, context);
-      const outputs = JSON.parse(sampleOutputs || '{}') as Record<string, unknown>;
+      let outputs: Record<string, unknown> = {};
+      try { outputs = JSON.parse(sampleOutputs || '{}') as Record<string, unknown>; } catch { /* malformed */ }
       const prepared = prepareV2FlowOutputWrites(bindings, workflow, outputs, context, components);
       setTrialResult(JSON.stringify({
         note: '仅试算映射，不执行流程节点',
@@ -386,8 +388,8 @@ export function FlowTriggerEditor({
           onChange={(text) => {
             setAdvancedText(text);
             try {
-              const parsed = JSON.parse(text) as FlowBindingsV2;
-              if (parsed?.version !== 2 || !parsed.inputs || !parsed.outputs) throw new Error('必须是包含 version: 2、inputs 和 outputs 的对象');
+              const parsed = parseJson<FlowBindingsV2>(text, null as any);
+              if (!parsed || parsed?.version !== 2 || !parsed.inputs || !parsed.outputs) throw new Error('必须是包含 version: 2、inputs 和 outputs 的对象');
               setAdvancedError('');
               emit(parsed);
             } catch (error) {

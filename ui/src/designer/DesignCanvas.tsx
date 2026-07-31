@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type ResizeHandle, useDesigner } from './useDesigner';
 import { DesignerIcon } from './icons';
 import { PreviewCanvas } from './PreviewCanvas';
 import { useProjectStore } from '../project/store';
 import Modal, { ModalFooter, ModalHeader } from '../components/Modal';
 import { AntdCompatSelect } from '../components/AntdFormControls';
+import { SectionErrorBoundary } from '../components/SectionErrorBoundary';
 import {
   controlOptionsFromSamples,
   FIELD_DROP_COMMITTED_EVENT,
@@ -14,6 +15,13 @@ import {
 } from '../services/formGeneration/fieldControlRecommendation';
 import { getCanvasToolbarAvailability } from './canvasToolbarModel';
 import { projectApi } from '../services/io/api';
+import { diagnoseForm } from '../services/formGeneration/formDiagnostics';
+import DiagnosticPanel from '../components/DiagnosticPanel';
+import ComponentInspector from '../components/ComponentInspector';
+import DataFlowTracer from '../components/DataFlowTracer';
+import OnboardingGuide, { hasCompletedOnboarding, markOnboardingCompleted } from '../components/OnboardingGuide';
+import { getErrors, onError, installGlobalErrorHandlers, type ManagedError } from '../services/engine/errorManager';
+import { parseJsonOrNull } from '../services/engine/safeJson';
 
 interface Props {
   designer: ReturnType<typeof useDesigner>;
@@ -36,23 +44,47 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
   } | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [layoutNotice, setLayoutNotice] = useState('');
+  const [diagnosticOpen, setDiagnosticOpen] = useState(false);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [dataflowOpen, setDataflowOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(() => !hasCompletedOnboarding());
+  const [runtimeErrors, setRuntimeErrors] = useState<ManagedError[]>([]);
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const toolbarAvailability = getCanvasToolbarAvailability(designer);
+
+  // Diagnostic computation
+  const diagnostics = useMemo(() => diagnoseForm(designer.components, tables, workflows), [designer.components, tables, workflows]);
+  const selectedComponent = designer.selectedIds.length === 1 ? designer.components.find((c) => c.id === designer.selectedIds[0]) ?? null : null;
+
+  // Install global error handlers and subscribe to ErrorManager
+  useEffect(() => {
+    installGlobalErrorHandlers();
+    setRuntimeErrors(getErrors({ limit: 50 }));
+    const unsub = onError(() => setRuntimeErrors(getErrors({ limit: 50 })));
+    return unsub;
+  }, []);
+
+  // Quick Fix handler
+  const handleApplyFix = useCallback((diagnosticId: string, props: Record<string, unknown>) => {
+    const componentId = diagnosticId.split(':')[1];
+    if (!componentId) return;
+    designer.updateComponentProps(componentId, props);
+  }, [designer]);
 
   useEffect(() => {
     if (mode !== 'preview' || !projectId) { setRuntimeTables(tables); return; }
     let cancelled = false;
     projectApi.runtimeData(projectId).then((runtime) => {
       if (cancelled) return;
-      const fullById = new Map((runtime.tables || []).map((table: any) => [table.id, table]));
+      const fullById = new Map((runtime.tables || []).map((table: Record<string, unknown>) => [table.id, table]));
       setRuntimeTables(tables.map((table) => {
-        const full = fullById.get(table.id) as any;
+        const full = fullById.get(table.id) as Record<string, unknown> | undefined;
         if (!full) return table;
         return {
           ...table,
           sheets: table.sheets.map((sheet) => {
-            const runtimeSheet = full.sheets?.find((entry: any) => entry.name === sheet.name);
-            return runtimeSheet ? { ...sheet, preview: runtimeSheet.rows, rowCount: runtimeSheet.rowCount } : sheet;
+            const runtimeSheet = (full.sheets as Record<string, unknown>[])?.find((entry) => entry.name === sheet.name);
+            return runtimeSheet ? { ...sheet, preview: runtimeSheet.rows as Record<string, unknown>[], rowCount: runtimeSheet.rowCount as number } : sheet;
           }),
         };
       }));
@@ -75,6 +107,7 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
   const fieldKey = (item: DataFieldDragItem) => `${item.tableId}:${item.sheetName}:${item.column.name}`;
 
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- X6 graph type is complex
     let mountedGraph: any = null;
     const raf = requestAnimationFrame(() => {
       initGraph();
@@ -139,7 +172,7 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
     const fieldPayload = e.dataTransfer.getData('application/formflow-fields');
     if (fieldPayload) {
       try {
-        const fields = JSON.parse(fieldPayload) as DataFieldDragItem[];
+        const fields = parseJsonOrNull<DataFieldDragItem[]>(fieldPayload);
         const graph = designer.graphRef.current;
         if (!graph || !Array.isArray(fields) || fields.length === 0) return;
         const point = graph.clientToLocal(e.clientX, e.clientY);
@@ -273,8 +306,55 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
         aria-hidden={mode === 'preview'}
       />
       {mode === 'preview' && (
-        <PreviewCanvas formId={formId} components={designer.components} formWindow={designer.formWindow} zoom={designer.zoom} workflows={workflows} tables={runtimeTables} />
+        <SectionErrorBoundary name="表单预览">
+          <PreviewCanvas formId={formId} components={designer.components} formWindow={designer.formWindow} zoom={designer.zoom} workflows={workflows} tables={runtimeTables} />
+        </SectionErrorBoundary>
       )}
+      {/* Onboarding Guide */}
+      {showOnboarding && (
+        <SectionErrorBoundary name="新手引导">
+          <OnboardingGuide
+            onComplete={() => { markOnboardingCompleted(); setShowOnboarding(false); }}
+            onSkip={() => { markOnboardingCompleted(); setShowOnboarding(false); }}
+          />
+        </SectionErrorBoundary>
+      )}
+
+      {/* Debug & Guidance Panels */}
+      <div className="designer-debug-panels">
+        <SectionErrorBoundary name="诊断面板">
+          <DiagnosticPanel
+            diagnostics={diagnostics}
+            runtimeErrors={runtimeErrors}
+            open={diagnosticOpen}
+            onToggle={setDiagnosticOpen}
+            onJumpToComponent={(id) => designer.setSelectedId?.(id)}
+            onApplyFix={handleApplyFix}
+          />
+        </SectionErrorBoundary>
+        {selectedComponent && (
+          <SectionErrorBoundary name="组件检查">
+            <ComponentInspector
+              selectedComponent={selectedComponent}
+              allComponents={designer.components}
+              tables={tables}
+              workflows={workflows}
+              open={inspectorOpen}
+              onToggle={setInspectorOpen}
+            />
+          </SectionErrorBoundary>
+        )}
+        <SectionErrorBoundary name="数据流">
+          <DataFlowTracer
+            components={designer.components}
+            tables={tables}
+            workflows={workflows}
+            open={dataflowOpen}
+            onToggle={setDataflowOpen}
+            selectedComponentId={designer.selectedIds[0]}
+          />
+        </SectionErrorBoundary>
+      </div>
       {mode === 'design' && !readOnly && designer.selectedIds.length === 1 && designer.selectionOverlay && (
         <div
           className="designer-selection-overlay"

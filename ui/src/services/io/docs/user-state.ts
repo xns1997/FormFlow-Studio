@@ -14,7 +14,7 @@ export function readLocalDocState(): DocUserState {
 }
 
 export function writeLocalDocState(state: DocUserState) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, updatedAt: state.updatedAt || new Date().toISOString() }));
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, updatedAt: state.updatedAt || new Date().toISOString() })); } catch { /* ignore */ }
 }
 
 export async function loadDocUserState(): Promise<DocUserState> {

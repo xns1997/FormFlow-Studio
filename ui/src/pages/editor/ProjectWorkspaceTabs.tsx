@@ -5,12 +5,12 @@ import { buildWorkspacePath, type WorkspaceTab } from '../../services/io/routes'
 export type ProjectWorkspaceMode = 'data' | 'template' | 'design' | 'behavior' | 'flow' | 'test' | 'settings';
 
 const tabs: Array<{ mode: ProjectWorkspaceMode; label: string; routeTab?: WorkspaceTab }> = [
-  { mode: 'data', label: '数据预览', routeTab: 'data' },
-  { mode: 'design', label: '表单设计', routeTab: 'designer' },
-  { mode: 'behavior', label: '行为定义', routeTab: 'behavior' },
-  { mode: 'flow', label: '流程编排', routeTab: 'canvas' },
-  { mode: 'test', label: '测试运行', routeTab: 'test' },
-  { mode: 'settings', label: '项目设置', routeTab: 'settings' },
+  { mode: 'data', label: '数据', routeTab: 'data' },
+  { mode: 'design', label: '表单', routeTab: 'designer' },
+  { mode: 'behavior', label: '规则', routeTab: 'behavior' },
+  { mode: 'flow', label: '流程', routeTab: 'canvas' },
+  { mode: 'test', label: '测试', routeTab: 'test' },
+  { mode: 'settings', label: '设置', routeTab: 'settings' },
 ];
 
 interface ProjectWorkspaceTabsProps {

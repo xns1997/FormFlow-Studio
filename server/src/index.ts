@@ -46,6 +46,7 @@ import { initRuleAgentStore } from './services/rule-agent-store';
 import { mcpRouter } from './mcp-server';
 import { docsRouter } from './routes/docs';
 import { datasourceRouter } from './routes/datasource';
+import { errorRouter } from './routes/errors';
 
 const app = express();
 const PORT = env.port;
@@ -121,6 +122,7 @@ app.use('/api/approvals', approvalRouter);
 app.use('/api/tenants', tenantRouter);
 app.use('/api/checkpoints', checkpointRouter);
 app.use('/api/datasources', datasourceRouter);
+app.use('/api/errors', errorRouter);
 app.use('/mcp', mcpRouter);
 
 app.get('/api/health', (_req, res) => {
@@ -181,5 +183,38 @@ const server = app.listen(PORT, () => {
   logDebug('info', 'server', `FormFlow Server running on http://localhost:${PORT}`);
 });
 initNotificationWs(server);
+
+// ── Process-level error handlers ──────────────────────────────────────────────
+// These catch any unhandled error that would otherwise crash the process.
+
+process.on('uncaughtException', (err: Error) => {
+  logDebug('error', 'process', 'uncaughtException', {
+    context: { message: err.message, stack: err.stack },
+  });
+  // Don't exit — keep the server running. Log and continue.
+});
+
+process.on('unhandledRejection', (reason: unknown) => {
+  const message = reason instanceof Error ? reason.message : String(reason);
+  const stack = reason instanceof Error ? reason.stack : undefined;
+  logDebug('error', 'process', 'unhandledRejection', {
+    context: { message, stack },
+  });
+  // Don't exit — keep the server running. Log and continue.
+});
+
+// Graceful shutdown
+function gracefulShutdown(signal: string) {
+  logDebug('info', 'server', `${signal} received, shutting down gracefully`);
+  server.close(() => {
+    logDebug('info', 'server', 'Server closed');
+    process.exit(0);
+  });
+  // Force exit after 10s
+  setTimeout(() => process.exit(1), 10000);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 export default app;

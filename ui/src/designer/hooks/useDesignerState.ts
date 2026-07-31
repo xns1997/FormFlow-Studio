@@ -49,6 +49,7 @@ export interface SelectionOverlay {
 export function useDesignerState() {
   // Refs
   const containerRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- X6 graph type is complex
   const graphRef = useRef<any>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const selectedIdRef = useRef<string | null>(null);
