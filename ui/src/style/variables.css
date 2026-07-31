@@ -67,6 +67,16 @@
   --space-md: 12px;
   --space-lg: 16px;
   --space-xl: 24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+
+  /* Typography */
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Surfaces for docs and content areas */
+  --surface: var(--panel);
+  --surface-secondary: var(--panel-soft);
+  --hover-bg: var(--fill-secondary);
   --z-dropdown: 100;
   /* Modal dialogs must cover floating workspaces such as the project-agent drawer (z-index 1199). */
   --z-modal: 1400;
