@@ -29,7 +29,13 @@ import MarkdownRenderer from './MarkdownRenderer';
 import HighlightText from './HighlightText';
 import DocPrevNextNav from './DocPrevNextNav';
 import DocRecommendations from './DocRecommendations';
+import DocScreenshot, { DocStepScreenshots } from './DocScreenshot';
 import { useMarkdown } from '../hooks/useMarkdown';
+import {
+  LEGACY_DOC_DOMAINS,
+  type DocScreenshotEntry,
+  type LegacyDocSectionId,
+} from '../services/io/docs/doc-screenshots';
 
 interface DocModalProps {
   open: boolean;
@@ -37,7 +43,25 @@ interface DocModalProps {
   initialSlug?: string;
 }
 
-type DocSectionId = 'overview' | 'behavior' | 'form-design' | 'flow-nodes' | 'backend';
+type DocSectionId = LegacyDocSectionId;
+
+function createModalScreenshotEntry(doc: BehaviorEventDocEntry | BehaviorTopicDocEntry, sectionId: DocSectionId): DocScreenshotEntry {
+  const isEvent = 'eventName' in doc;
+  return {
+    id: `legacy:${doc.id}`,
+    title: doc.title,
+    kind: 'reference',
+    domain: isEvent ? 'events' : LEGACY_DOC_DOMAINS[sectionId],
+    blocks: isEvent
+      ? []
+      : doc.sections.map((section, index) => ({
+          id: `section-${index}`,
+          title: section.title,
+          body: section.body,
+          examples: section.examples,
+        })),
+  };
+}
 
 interface ModalRouteState {
   sectionId?: DocSectionId;
@@ -687,10 +711,13 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
             </div>
           </div>
 
+          <DocScreenshot entry={createModalScreenshotEntry(currentEventDoc, 'behavior')} />
+
           {currentEventDoc.sections.map((section, index) => (
             <section key={`${currentEventDoc.id}:${section.title}`} id={`section-${index}`} className="docs-section">
               <h3>{section.title}</h3>
               <DocSectionBody body={section.body} markdownBody={section.markdownBody} />
+              <DocStepScreenshots entry={createModalScreenshotEntry(currentEventDoc, 'behavior')} blockId={`section-${index}`} />
               {section.fields && section.fields.length > 0 && <ReferenceFieldTable fields={section.fields} />}
               {section.apis && section.apis.length > 0 && <ApiReferenceList apis={section.apis} />}
               {section.shortcuts && section.shortcuts.length > 0 && <ShortcutList shortcuts={section.shortcuts} />}
@@ -726,6 +753,8 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
               <button type="button" className="docs-link-button" onClick={() => handleNavigateSection('behavior')}>行为文档</button>
             </div>
           </div>
+
+          <DocScreenshot entry={createModalScreenshotEntry(currentEventDoc, 'behavior')} />
 
           <section className="docs-meta-row">
             <div className="docs-meta-card">
@@ -991,6 +1020,8 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
             </div>
           </div>
 
+          <DocScreenshot entry={createModalScreenshotEntry(genericCurrentDoc, route.sectionId as DocSectionId)} />
+
           {componentPlaygroundType && (
             <ComponentDocPlayground componentType={componentPlaygroundType} title={genericCurrentDoc.title} variant="modal" />
           )}
@@ -999,6 +1030,7 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
             <section key={`${genericCurrentDoc.id}:${section.title}`} id={`section-${index}`} className="docs-section">
               <h3>{section.title}</h3>
               <DocSectionBody body={section.body} markdownBody={section.markdownBody} />
+              <DocStepScreenshots entry={createModalScreenshotEntry(genericCurrentDoc, route.sectionId as DocSectionId)} blockId={`section-${index}`} />
               {section.fields && section.fields.length > 0 && <ReferenceFieldTable fields={section.fields} />}
               {section.apis && section.apis.length > 0 && <ApiReferenceList apis={section.apis} />}
               {section.shortcuts && section.shortcuts.length > 0 && <ShortcutList shortcuts={section.shortcuts} />}

@@ -6,6 +6,7 @@ import json from 'highlight.js/lib/languages/json';
 import javascript from 'highlight.js/lib/languages/javascript';
 import HighlightText from '../../components/HighlightText';
 import ComponentDocPlayground from '../../components/ComponentDocPlayground';
+import DocScreenshot, { DocStepScreenshots } from '../../components/DocScreenshot';
 import {
   buildSearchIndex,
   findDoc,
@@ -146,6 +147,7 @@ export default function DocsPlatformPage({ home = false }: { home?: boolean }) {
               {current.actions?.map((action) => action.href && <button key={action.label} type="button" onClick={() => navigate(action.label === '返回项目' && safeReturnTo ? safeReturnTo : action.href!)}>{action.label}</button>)}
             </div>
           </header>
+          <DocScreenshot entry={current} />
           {current.domain === 'controls' && (() => {
             const componentType = current.id.startsWith('form-design:')
               ? current.id.slice('form-design:'.length)
@@ -163,6 +165,7 @@ export default function DocsPlatformPage({ home = false }: { home?: boolean }) {
             <section id={block.id} key={block.id} className="docs-v2-section">
               <h2>{block.title}</h2>
               {block.body && block.body.split('\n').map((line, indexLine) => <p key={indexLine}>{line}</p>)}
+              <DocStepScreenshots entry={current} blockId={block.id} />
               {block.fields && <div className="docs-v2-table" role="table">{block.fields.map((field) => <div className="docs-v2-table-row" role="row" key={`${field.name}:${field.type}`}><div role="cell"><code>{field.name}</code><small>{field.type}</small></div><p role="cell">{field.description}</p></div>)}</div>}
               {block.examples?.map((example) => {
                 const exampleId = `${current.id}:${block.id}:${example.title}`;

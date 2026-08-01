@@ -22,6 +22,7 @@
     "typecheck:tests": "tsc --noEmit -p tsconfig.tests.json",
     "build": "npm run build:ui && npm run build:server",
     "docs:openapi": "node scripts/generate-openapi.mjs",
+    "docs:screenshots": "node scripts/capture-doc-screenshots.mjs",
     "build:ui": "vite build ui",
     "build:server": "vite build --config server/vite.config.ts",
     "verify": "npm run typecheck && npm test && npm run build",
