@@ -5,7 +5,7 @@ import { serverDataPath } from '../config/paths';
 import { env } from '../config/env';
 
 export type TaskState = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
-export type DagStep = { id: string; dependsOn?: string[]; condition?: { step: string; equals?: unknown }; retries?: number; action: { type: 'http' | 'delay' | 'value'; url?: string; method?: string; body?: unknown; ms?: number; value?: unknown } };
+export type DagStep = { id: string; dependsOn?: string[]; condition?: { step: string; equals?: unknown }; retries?: number; action: { type: 'http' | 'delay' | 'value'; url?: string; method?: string; body?: unknown; ms?: number; value?: unknown; retryable?: boolean } };
 export type TaskRecord = { id: string; name: string; state: TaskState; progress: number; payload: { steps?: DagStep[]; [key: string]: unknown }; result?: unknown; error?: string; logs: { at: string; message: string }[]; createdAt: string; startedAt?: string; finishedAt?: string };
 
 const TASK_DIR = serverDataPath('tasks');
@@ -15,6 +15,14 @@ const workerId = `worker_${process.pid}_${randomUUID()}`;
 let pool: Pool | undefined;
 let pollTimer: NodeJS.Timeout | undefined;
 let polling = false;
+const activeExecutions = new Set<Promise<void>>();
+
+function trackExecution(id: string): Promise<void> {
+  const execution = executeTask(id);
+  activeExecutions.add(execution);
+  execution.then(() => activeExecutions.delete(execution), () => activeExecutions.delete(execution));
+  return execution;
+}
 
 function persistFallback() {
   if (pool) return;
@@ -24,7 +32,16 @@ function persistFallback() {
 
 function loadFallback() {
   if (!existsSync(TASK_FILE)) return;
-  try { for (const task of JSON.parse(readFileSync(TASK_FILE, 'utf8')) as TaskRecord[]) records.set(task.id, task); } catch { /* ignore invalid local fallback */ }
+  try {
+    for (const task of JSON.parse(readFileSync(TASK_FILE, 'utf8')) as TaskRecord[]) {
+      if (task.state === 'running') {
+        task.state = 'queued';
+        task.startedAt = undefined;
+        task.logs = [...task.logs, { at: new Date().toISOString(), message: '服务重启后恢复排队' }];
+      }
+      records.set(task.id, task);
+    }
+  } catch { /* ignore invalid local fallback */ }
 }
 loadFallback();
 
@@ -71,10 +88,19 @@ async function runAction(action: DagStep['action']) {
   if (action.type === 'delay') { await new Promise((resolve) => setTimeout(resolve, Math.max(0, Number(action.ms || 0)))); return { delayed: action.ms || 0 }; }
   if (action.type === 'value') return action.value;
   if (!action.url) throw new Error('HTTP 动作缺少 URL');
-  const response = await fetch(action.url, { method: action.method || 'GET', headers: { 'Content-Type': 'application/json' }, body: ['GET', 'HEAD'].includes(action.method || 'GET') ? undefined : JSON.stringify(action.body) });
-  const value = await response.json().catch(() => response.text());
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return value;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+  try {
+    const response = await fetch(action.url, { method: action.method || 'GET', headers: { 'Content-Type': 'application/json' }, body: ['GET', 'HEAD'].includes(action.method || 'GET') ? undefined : JSON.stringify(action.body), signal: controller.signal });
+    const value = await response.json().catch(() => response.text());
+    if (!response.ok) throw Object.assign(new Error(`HTTP ${response.status}`), { status: response.status });
+    return value;
+  } finally { clearTimeout(timeout); }
+}
+
+function isRetryableFailure(error: unknown) {
+  const status = typeof (error as { status?: unknown })?.status === 'number' ? Number((error as { status: number }).status) : undefined;
+  return status === undefined || [408, 425, 429, 502, 503, 504].includes(status);
 }
 
 export async function executeTask(id: string) {
@@ -86,23 +112,26 @@ export async function executeTask(id: string) {
   if (!task || task.state === 'cancelled') return;
   task.state = 'running'; task.startedAt ||= new Date().toISOString(); await log(task, '任务开始');
   try {
-    const outputs: Record<string, unknown> = {};
-    const pending = new Map((task.payload.steps || []).map((step) => [step.id, step]));
+    const outputs: Record<string, unknown> = task.result && typeof task.result === 'object' && !Array.isArray(task.result) ? { ...(task.result as Record<string, unknown>) } : {};
+    const pending = new Map((task.payload.steps || []).filter((step) => !(step.id in outputs)).map((step) => [step.id, step]));
     while (pending.size) {
       const runnable = [...pending.values()].filter((step) => (step.dependsOn || []).every((dependency) => dependency in outputs));
       if (!runnable.length) throw new Error('DAG 存在循环依赖或缺失依赖');
-      await Promise.all(runnable.map(async (step) => {
+      for (const step of runnable) {
         if (step.condition && outputs[step.condition.step] !== step.condition.equals) {
-          outputs[step.id] = { skipped: true }; pending.delete(step.id); await log(task!, `跳过步骤 ${step.id}`); return;
+          outputs[step.id] = { skipped: true }; pending.delete(step.id); task.result = outputs; await log(task!, `跳过步骤 ${step.id}`); await saveTask(task); continue;
         }
         let lastError: unknown;
-        for (let attempt = 0; attempt <= (step.retries || 0); attempt += 1) {
+        const safeAction = step.action.type !== 'http' || step.action.retryable === true || ['GET', 'HEAD'].includes(String(step.action.method || 'GET').toUpperCase());
+        const retries = step.retries ?? (safeAction ? 2 : 0);
+        for (let attempt = 0; attempt <= retries; attempt += 1) {
           try { outputs[step.id] = await runAction(step.action); lastError = undefined; break; }
-          catch (error) { lastError = error; await log(task!, `步骤 ${step.id} 第 ${attempt + 1} 次失败: ${error}`); }
+          catch (error) { lastError = error; await log(task!, `步骤 ${step.id} 第 ${attempt + 1} 次失败: ${error}`); if (!isRetryableFailure(error)) break; }
         }
         if (lastError) throw lastError;
-        pending.delete(step.id); await log(task!, `完成步骤 ${step.id}`);
-      }));
+        pending.delete(step.id); task.result = outputs; await log(task!, `完成步骤 ${step.id}`); await saveTask(task);
+      }
+      task.result = outputs;
       task.progress = Math.round((Object.keys(outputs).length / Math.max(1, task.payload.steps?.length || 1)) * 100); await saveTask(task);
     }
     task.state = 'completed'; task.progress = 100; task.result = outputs; task.finishedAt = new Date().toISOString(); await log(task, '任务完成');
@@ -129,7 +158,7 @@ async function claimAndExecute() {
       void pool?.query("UPDATE formflow_tasks SET lease_expires_at = NOW() + INTERVAL '30 seconds', updated_at = NOW() WHERE id = $1 AND locked_by = $2 AND state = 'running'", [task.id, workerId]);
     }, 10_000);
     heartbeat.unref();
-    try { await executeTask(task.id); } finally { clearInterval(heartbeat); }
+    try { await trackExecution(task.id); } finally { clearInterval(heartbeat); }
   } catch (error) {
     if (client) await client.query('ROLLBACK').catch(() => undefined);
     console.error('[task-worker]', error);
@@ -145,6 +174,8 @@ export async function initTaskQueue() {
   if (pool) return;
   if (!databaseUrl) {
     if (required) throw new Error('FORMFLOW_DATABASE_REQUIRED=true 时必须配置 FORMFLOW_DATABASE_URL');
+    for (const task of records.values()) if (task.state === 'queued') queueMicrotask(() => void trackExecution(task.id));
+    persistFallback();
     return;
   }
   const candidate = new Pool({ connectionString: databaseUrl, max: 10, connectionTimeoutMillis: 3000 });
@@ -184,7 +215,7 @@ export async function initTaskQueue() {
 export async function enqueueTask(name: string, payload: TaskRecord['payload']) {
   const task: TaskRecord = { id: `task_${randomUUID()}`, name: name || '未命名任务', state: 'queued', progress: 0, payload, logs: [], createdAt: new Date().toISOString() };
   records.set(task.id, task); await saveTask(task);
-  if (pool) void claimAndExecute(); else queueMicrotask(() => void executeTask(task.id));
+  if (pool) void claimAndExecute(); else queueMicrotask(() => void trackExecution(task.id));
   return task;
 }
 
@@ -209,6 +240,13 @@ export async function cancelTask(id: string) {
 export async function shutdownTaskQueue() {
   if (pollTimer) clearInterval(pollTimer);
   pollTimer = undefined;
+  const active = [...activeExecutions];
+  if (active.length) {
+    await Promise.race([
+      Promise.allSettled(active).then(() => undefined),
+      new Promise<void>((resolve) => setTimeout(resolve, 9_000)),
+    ]);
+  }
   const activePool = pool;
   pool = undefined;
   if (activePool) await activePool.end();

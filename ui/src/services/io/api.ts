@@ -1,5 +1,6 @@
 // 后端 API 客户端
-import { consumeReconnectingStream, createHttpTransport, HttpTransportError, type ReconnectingStreamState } from './transport';
+import { consumeReconnectingStream, createHttpTransport, HttpTransportError, type ReconnectingStreamState, type TransportRequestInit } from './transport';
+import { enqueueOffline, replayOfflineQueue } from './offlineQueue';
 
 export const API_BASE = (((import.meta as any).env?.VITE_API_BASE) || '/api').replace(/\/$/, '');
 export type ProjectAgentSessionScope = 'project' | 'unbound' | 'all';
@@ -18,9 +19,53 @@ function authorizationHeaders(): Record<string, string> {
   };
 }
 
-const transport = createHttpTransport({ baseUrl: API_BASE, authorizationHeaders });
+const transport = createHttpTransport({
+  baseUrl: API_BASE,
+  authorizationHeaders,
+  timeoutMs: 30_000,
+  offlineQueue: async ({ path, init }) => {
+    const headers = Object.fromEntries(new Headers(init.headers));
+    const session = currentSession();
+    await enqueueOffline({
+      id: headers['x-idempotency-key'] || `offline_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      tenantId: session?.tenantId,
+      userId: session?.user?.id,
+      scopeKey: offlineScopeKey(session),
+      projectId: path.match(/^\/projects\/([^/?]+)/)?.[1],
+      path,
+      method: String(init.method || 'GET').toUpperCase(),
+      headers,
+      body: typeof init.body === 'string' ? init.body : undefined,
+      baseRevision: init.baseRevision,
+    });
+  },
+});
 
-async function confirmedRequest(path: string, init: RequestInit) {
+function currentSession(): any {
+  try { return JSON.parse(localStorage.getItem('formflow.session') || 'null'); } catch { return null; }
+}
+function offlineScopeKey(session = currentSession()): string { return `${session?.tenantId || 'local'}:${session?.user?.id || session?.user?.username || 'anonymous'}`; }
+
+export async function replayOfflineRequests(): Promise<void> {
+  await replayOfflineQueue(async (item) => {
+    try {
+      const requestHeaders: Record<string, string> = { ...item.headers };
+      if (item.baseRevision) requestHeaders['if-match'] = item.baseRevision;
+      delete requestHeaders.Authorization;
+      delete requestHeaders.authorization;
+      Object.assign(requestHeaders, authorizationHeaders());
+      await transport.raw(item.path, { method: item.method, headers: requestHeaders, body: item.body });
+      return 'completed';
+    } catch (error) {
+      if (error instanceof HttpTransportError && error.status === 409) return 'conflict';
+      return 'retry';
+    }
+  }, offlineScopeKey());
+}
+
+export function currentOfflineScopeKey(): string { return offlineScopeKey(); }
+
+async function confirmedRequest(path: string, init: TransportRequestInit) {
   try {
     return await transport.json(path, init);
   } catch (error) {
@@ -35,16 +80,16 @@ async function confirmedRequest(path: string, init: RequestInit) {
   }
 }
 
-export async function request<T = any>(path: string, options?: RequestInit): Promise<T> {
+export async function request<T = any>(path: string, options?: TransportRequestInit): Promise<T> {
   return transport.json<T>(path, options);
 }
 
-export async function requestRaw(path: string, options?: RequestInit): Promise<Response> {
+export async function requestRaw(path: string, options?: TransportRequestInit): Promise<Response> {
   return transport.raw(path, options);
 }
 
 /** Read a structured API envelope even when the endpoint intentionally returns 409/422. */
-export async function requestResult(path: string, options?: RequestInit): Promise<{ status: number; ok: boolean; body: any }> {
+export async function requestResult(path: string, options?: TransportRequestInit): Promise<{ status: number; ok: boolean; body: any }> {
   const result = await transport.result(path, options);
   return { status: result.status, ok: result.ok, body: result.body };
 }
@@ -63,6 +108,8 @@ export const projectApi = {
       ...(metadata?.idempotencyKey ? { 'x-idempotency-key': metadata.idempotencyKey } : {}),
     },
     body: JSON.stringify(data),
+    queueWhenOffline: true,
+    baseRevision: metadata?.baseRevision,
   }),
   updateWithRevision: (id: string, data: any, metadata: { baseRevision: string; idempotencyKey: string }) => transport.response<any>(`/projects/${encodeURIComponent(id)}`, {
     method: 'PUT',

@@ -15,8 +15,8 @@ import { userRouter } from './routes/users';
 import { optionalAuth, requireAuth } from './middleware/auth';
 import { databaseRouter } from './routes/database';
 import { taskRouter } from './routes/tasks';
-import { initScheduler } from './services/scheduler';
-import { initTaskQueue } from './services/task-queue';
+import { initScheduler, stopScheduler } from './services/scheduler';
+import { initTaskQueue, shutdownTaskQueue } from './services/task-queue';
 import { env } from './config/env';
 import { auditRouter } from './routes/audit';
 import { join } from 'node:path';
@@ -54,6 +54,17 @@ const PORT = env.port;
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use((req, res, next) => {
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  (req as typeof req & { requestId?: string }).requestId = requestId;
+  res.setHeader('x-request-id', requestId);
+  const startedAt = Date.now();
+  logDebug('info', 'http', 'request:start', { route: req.path, requestId, context: { method: req.method, path: req.originalUrl, query: req.query } });
+  res.on('finish', () => logDebug(res.statusCode >= 400 ? 'warn' : 'info', 'http', 'request:finish', {
+    route: req.path, requestId, context: { method: req.method, path: req.originalUrl, statusCode: res.statusCode, duration: Date.now() - startedAt },
+  }));
+  next();
+});
 app.use(optionalAuth);
 app.use((req: import('./middleware/auth').AuthRequest, res, next) => {
   if (env.mode !== 'cloud' || req.method === 'OPTIONS' || !req.path.startsWith('/api/')) return next();
@@ -72,27 +83,6 @@ app.use((req: import('./middleware/auth').AuthRequest, res, next) => {
 });
 app.use(dataAccessAudit);
 app.use(tenantIsolation);
-
-app.use((req, res, next) => {
-  const requestId = `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  (req as typeof req & { requestId?: string }).requestId = requestId;
-  res.setHeader('x-request-id', requestId);
-  const startedAt = Date.now();
-  logDebug('info', 'http', 'request:start', {
-    route: req.path,
-    requestId,
-    context: { method: req.method, path: req.originalUrl, query: req.query },
-  });
-  res.on('finish', () => {
-    const duration = Date.now() - startedAt;
-    logDebug(res.statusCode >= 400 ? 'warn' : 'info', 'http', 'request:finish', {
-      route: req.path,
-      requestId,
-      context: { method: req.method, path: req.originalUrl, statusCode: res.statusCode, duration },
-    });
-  });
-  next();
-});
 
 app.use('/api/projects', projectRouter);
 app.use('/api/docs', docsRouter);
@@ -143,14 +133,43 @@ if (existsSync(frontendDir)) {
 app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   const requestId = (req as express.Request & { requestId?: string }).requestId;
   const message = err instanceof Error ? err.message : String(err);
+  const status = typeof (err as { status?: unknown })?.status === 'number' ? Number((err as { status: number }).status) : 500;
+  const code = typeof (err as { code?: unknown })?.code === 'string' ? String((err as { code: string }).code) : 'INTERNAL_ERROR';
   logDebug('error', 'http', 'request:error', {
     route: req.path,
     requestId,
     context: { method: req.method, error: message },
   });
   if (res.headersSent) return;
-  res.status(500).json({ error: message, requestId });
+  res.status(status >= 400 && status < 600 ? status : 500).json({ error: env.nodeEnv === 'production' && status >= 500 ? '服务暂时不可用，请稍后重试' : message, message: env.nodeEnv === 'production' && status >= 500 ? undefined : message, code, requestId, retryable: [408, 425, 429, 502, 503, 504].includes(status) });
 });
+
+let server: ReturnType<typeof app.listen> | undefined;
+let shuttingDown = false;
+async function gracefulShutdown(signal: string, fatal = false) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logDebug(fatal ? 'error' : 'info', 'server', `${signal} received, shutting down gracefully`, { context: { fatal } });
+  const forceExit = setTimeout(() => process.exit(1), 10_000);
+  stopScheduler();
+  await shutdownTaskQueue().catch((error) => logDebug('error', 'server', 'task queue shutdown failed', { context: { error: String(error) } }));
+  if (!server) { clearTimeout(forceExit); process.exit(fatal ? 1 : 0); return; }
+  await new Promise<void>((resolve) => server?.close(() => resolve()));
+  clearTimeout(forceExit);
+  process.exit(fatal ? 1 : 0);
+}
+
+process.on('uncaughtException', (err: Error) => {
+  logDebug('error', 'process', 'uncaughtException', { context: { message: err.message, stack: err.stack } });
+  void gracefulShutdown('uncaughtException', true);
+});
+process.on('unhandledRejection', (reason: unknown) => {
+  const error = reason instanceof Error ? reason : new Error(String(reason));
+  logDebug('error', 'process', 'unhandledRejection', { context: { message: error.message, stack: error.stack } });
+  void gracefulShutdown('unhandledRejection', true);
+});
+process.on('SIGTERM', () => void gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => void gracefulShutdown('SIGINT'));
 
 const database = await ensureDatabase();
 recordDatabaseHealth(database.available, {
@@ -179,42 +198,9 @@ await startRuntimeHealthMonitor({
   intervalMs: env.healthIntervalMs,
 });
 
-const server = app.listen(PORT, () => {
+server = app.listen(PORT, () => {
   logDebug('info', 'server', `FormFlow Server running on http://localhost:${PORT}`);
 });
-initNotificationWs(server);
-
-// ── Process-level error handlers ──────────────────────────────────────────────
-// These catch any unhandled error that would otherwise crash the process.
-
-process.on('uncaughtException', (err: Error) => {
-  logDebug('error', 'process', 'uncaughtException', {
-    context: { message: err.message, stack: err.stack },
-  });
-  // Don't exit — keep the server running. Log and continue.
-});
-
-process.on('unhandledRejection', (reason: unknown) => {
-  const message = reason instanceof Error ? reason.message : String(reason);
-  const stack = reason instanceof Error ? reason.stack : undefined;
-  logDebug('error', 'process', 'unhandledRejection', {
-    context: { message, stack },
-  });
-  // Don't exit — keep the server running. Log and continue.
-});
-
-// Graceful shutdown
-function gracefulShutdown(signal: string) {
-  logDebug('info', 'server', `${signal} received, shutting down gracefully`);
-  server.close(() => {
-    logDebug('info', 'server', 'Server closed');
-    process.exit(0);
-  });
-  // Force exit after 10s
-  setTimeout(() => process.exit(1), 10000);
-}
-
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+if (server) initNotificationWs(server);
 
 export default app;

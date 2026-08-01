@@ -27,6 +27,7 @@ export interface SystemSettings {
     preferOfflineSave: boolean;
     autoSaveDrafts: boolean;
     requestTimeoutMs: number;
+    offlineRetentionDays: number;
   };
   editor: {
     fontSize: number;
@@ -105,6 +106,7 @@ export function createDefaultSystemSettings(): SystemSettings {
       preferOfflineSave: true,
       autoSaveDrafts: true,
       requestTimeoutMs: 15000,
+      offlineRetentionDays: 0,
     },
     editor: {
       fontSize: 13,

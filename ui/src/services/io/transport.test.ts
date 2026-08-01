@@ -58,3 +58,57 @@ test('reconnecting stream resumes from the last acknowledged cursor', async () =
   assert.deepEqual(opens, [4, 5]);
   assert.deepEqual(received, [5, 6]);
 });
+
+test('transport retries safe transient failures and preserves the request idempotency key', async () => {
+  let attempts = 0;
+  const seenKeys: string[] = [];
+  const transport = createHttpTransport({
+    baseUrl: '/api',
+    fetch: async (_input, init) => {
+      attempts += 1;
+      seenKeys.push(new Headers(init?.headers).get('x-idempotency-key') || '');
+      if (attempts < 3) return new Response(JSON.stringify({ error: 'temporarily unavailable' }), { status: 503, headers: { 'content-type': 'application/json' } });
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } });
+    },
+    retry: { maxAttempts: 3, baseDelayMs: 0 },
+  });
+
+  const result = await transport.json('/projects/p1', {
+    method: 'PUT',
+    headers: { 'x-idempotency-key': 'same-key' },
+    body: JSON.stringify({ name: 'p1' }),
+  });
+  assert.deepEqual(result, { ok: true });
+  assert.equal(attempts, 3);
+  assert.deepEqual(seenKeys, ['same-key', 'same-key', 'same-key']);
+});
+
+test('transport times out without retrying a non-idempotent mutation', async () => {
+  let attempts = 0;
+  const transport = createHttpTransport({
+    baseUrl: '/api',
+    fetch: async () => {
+      attempts += 1;
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } });
+    },
+    timeoutMs: 5,
+    retry: { maxAttempts: 3, baseDelayMs: 0 },
+  });
+
+  await assert.rejects(() => transport.json('/projects/p1', { method: 'POST', body: '{}' }), /请求超时/);
+  assert.equal(attempts, 1);
+});
+
+test('transport exposes Retry-After metadata from transient responses', async () => {
+  const transport = createHttpTransport({
+    baseUrl: '/api',
+    fetch: async () => new Response(JSON.stringify({ error: 'busy' }), { status: 429, headers: { 'content-type': 'application/json', 'retry-after': '3' } }),
+    retry: { maxAttempts: 1 },
+  });
+  await assert.rejects(() => transport.json('/health'), (error: unknown) => {
+    assert.ok(error instanceof HttpTransportError);
+    assert.equal(error.retryAfterMs, 3000);
+    return true;
+  });
+});

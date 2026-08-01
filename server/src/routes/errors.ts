@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getErrors, getErrorSummary, ingestErrors, clearErrors } from '../services/error-logger';
+import { getErrors, getErrorSummary, ingestErrors, clearErrors, type ManagedError } from '../services/error-logger';
 import { asyncHandler } from '../middleware/async-handler';
 
 const router = Router();
@@ -24,7 +24,7 @@ router.post('/', asyncHandler(async (req, res) => {
     context: e.context && typeof e.context === 'object' ? e.context as Record<string, unknown> : undefined,
     stack: typeof e.stack === 'string' ? e.stack : undefined,
   }));
-  const ingested = ingestErrors(sanitized);
+  const ingested = ingestErrors(sanitized as Array<Omit<ManagedError, 'id' | 'timestamp'>>);
   res.json({ success: true, count: ingested.length });
 }));
 

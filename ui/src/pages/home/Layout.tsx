@@ -16,6 +16,9 @@ import {
 } from '../../services/io/routes';
 import { NotificationCenter } from '../../components/NotificationCenter';
 import ProjectAgentDrawer from '../../components/ProjectAgentDrawer';
+import { SectionErrorBoundary } from '../../components/SectionErrorBoundary';
+import { currentOfflineScopeKey, replayOfflineRequests } from '../../services/io/api';
+import { pruneOfflineQueue } from '../../services/io/offlineQueue';
 
 const homeNavItems = [
   { to: buildProjectsPath(), label: '项目列表', icon: 'projects', match: '/projects' },
@@ -84,6 +87,17 @@ export default function Layout() {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, [settings.general.showClock]);
+
+  useEffect(() => {
+    const replay = () => {
+      void pruneOfflineQueue(settings.storage.offlineRetentionDays, currentOfflineScopeKey()).catch(() => undefined);
+      if (navigator.onLine) void replayOfflineRequests().catch(() => undefined);
+    };
+    window.addEventListener('online', replay);
+    replay();
+    const timer = window.setInterval(replay, 30_000);
+    return () => { window.removeEventListener('online', replay); window.clearInterval(timer); };
+  }, [settings.storage.offlineRetentionDays]);
 
   useEffect(() => {
     const handleAppShortcuts = (event: KeyboardEvent) => {
@@ -215,9 +229,7 @@ export default function Layout() {
               <span className="nav-status-clock-text">{clockText}</span>
             </div>
           )}
-          {projectId && (
-            <ProjectAgentDrawer projectId={projectId || undefined} launcherVariant="nav" />
-          )}
+          {projectId && <SectionErrorBoundary name="智能体面板"><ProjectAgentDrawer projectId={projectId || undefined} launcherVariant="nav" /></SectionErrorBoundary>}
           {projectId ? (
             <button
               type="button"
@@ -239,7 +251,9 @@ export default function Layout() {
         </div>
       </nav>
       <main className="app-main" id="main-content">
-        <Outlet />
+        <SectionErrorBoundary name="当前工作区" resetKey={location.pathname + location.search}>
+          <Outlet />
+        </SectionErrorBoundary>
       </main>
       <DocsCommandPalette />
       {projectId && <ContextHelpPanel open={docOpen} onClose={() => setDocOpen(false)} />}

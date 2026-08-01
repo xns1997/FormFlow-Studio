@@ -118,7 +118,7 @@ export function logError(params: {
 /**
  * Receive errors from the frontend (batch).
  */
-export function ingestErrors(errors: Array<Omit<ManagedError, 'id'>>): ManagedError[] {
+export function ingestErrors(errors: Array<Omit<ManagedError, 'id' | 'timestamp'>>): ManagedError[] {
   return errors.map((e) => logError(e));
 }
 

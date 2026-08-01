@@ -40,6 +40,9 @@ import { useAppInteraction } from '../../components/AppInteractionProvider';
 import { DesignerIcon } from '../../designer/icons';
 import { useWorkbenchPanels } from './useWorkbenchPanels';
 import ProjectWorkspaceTabs, { type ProjectWorkspaceMode } from './ProjectWorkspaceTabs';
+import { SectionErrorBoundary } from '../../components/SectionErrorBoundary';
+import { loadEditorDraft, saveEditorDraft } from '../../services/io/draftStore';
+import { currentOfflineScopeKey } from '../../services/io/api';
 
 // 编辑模式：决定中间/右侧布局
 type EditMode = 'design' | 'behavior' | 'flow' | 'data' | 'settings';
@@ -85,6 +88,7 @@ export default function UnifiedEditorPage() {
   const ruleSaveTimersRef = useRef(new Map<string, number>());
   const designHydratedRef = useRef(false);
   const structuredEditPendingRef = useRef(false);
+  const draftProjectRef = useRef<string | null>(null);
 
   // 初始化：加载表单
   useEffect(() => {
@@ -113,6 +117,35 @@ export default function UnifiedEditorPage() {
       store.addForm?.(first);
     }
   }, [project?.forms, project?.designs]);
+
+  useEffect(() => {
+    const projectId = project?.config.id;
+    if (!projectId || draftProjectRef.current === projectId) return;
+    draftProjectRef.current = projectId;
+    void loadEditorDraft(`${currentOfflineScopeKey()}:${projectId}`).then((draft) => {
+      if (!draft || !Array.isArray(draft.forms)) return;
+      setForms(draft.forms as FormEntry[]);
+      setActiveFormId(draft.activeFormId || (draft.forms[0] as FormEntry | undefined)?.id || null);
+      if (typeof draft.behaviorDraft === 'string') setBehaviorDraft(draft.behaviorDraft);
+    });
+  }, [project?.config.id]);
+
+  useEffect(() => {
+    const projectId = project?.config.id;
+    if (!projectId || !forms.length) return undefined;
+    const timer = window.setTimeout(() => {
+      void saveEditorDraft({
+        id: `${currentOfflineScopeKey()}:${projectId}`,
+        projectId,
+        scopeKey: currentOfflineScopeKey(),
+        updatedAt: Date.now(),
+        forms,
+        activeFormId,
+        behaviorDraft,
+      });
+    }, 800);
+    return () => window.clearTimeout(timer);
+  }, [project?.config.id, forms, activeFormId, behaviorDraft]);
 
   // 切换表单时先清空再加载
   useEffect(() => {
@@ -918,16 +951,16 @@ export default function UnifiedEditorPage() {
 
         {/* 中间：行为模式保留只读可选择表单；流程模式使用纯流程画布 */}
         <div className="unified-center">
-          {editMode === 'design' && <div className="chain-form-pane"><DesignCanvas designer={designer} formId={activeForm?.id} /></div>}
-          {editMode === 'behavior' && <div className="chain-form-pane behavior-readonly-pane">
+          {editMode === 'design' && <SectionErrorBoundary name="表单设计区"><div className="chain-form-pane"><DesignCanvas designer={designer} formId={activeForm?.id} /></div></SectionErrorBoundary>}
+          {editMode === 'behavior' && <SectionErrorBoundary name="行为预览区"><div className="chain-form-pane behavior-readonly-pane">
             <DesignCanvas designer={designer} formId={activeForm?.id} readOnly hideToolbar />
             {designer.mode === 'design' && <SelectedControlInfo
               component={designer.selectedId ? designer.components.find((component) => component.id === designer.selectedId) || null : null}
             />}
-          </div>}
-          {editMode === 'flow' && <div className="chain-flow-pane"><CanvasWithProvider /></div>}
-          <div className="unified-page-pane" style={{ display: editMode === 'data' ? 'flex' : 'none' }}><DataPreviewPage onOpenTemplateCenter={openTemplateCenterView} /></div>
-          <div className="unified-page-pane" style={{ display: editMode === 'settings' ? 'flex' : 'none' }}><SettingsPage /></div>
+          </div></SectionErrorBoundary>}
+          {editMode === 'flow' && <SectionErrorBoundary name="流程画布"><div className="chain-flow-pane"><CanvasWithProvider /></div></SectionErrorBoundary>}
+          <SectionErrorBoundary name="数据预览区"><div className="unified-page-pane" style={{ display: editMode === 'data' ? 'flex' : 'none' }}><DataPreviewPage onOpenTemplateCenter={openTemplateCenterView} /></div></SectionErrorBoundary>
+          <SectionErrorBoundary name="项目设置区"><div className="unified-page-pane" style={{ display: editMode === 'settings' ? 'flex' : 'none' }}><SettingsPage /></div></SectionErrorBoundary>
         </div>
 
         {/* 右侧：行为代码或属性配置 */}

@@ -8,6 +8,8 @@ import ExpertManagementSection from './ExpertManagementSection';
 import AppearanceSection from './AppearanceSection';
 import WorkflowPreferencesSection from './WorkflowPreferencesSection';
 import { DesignerIcon } from '../../designer/icons';
+import { clearOfflineQueue } from '../../services/io/offlineQueue';
+import { currentOfflineScopeKey } from '../../services/io/api';
 
 const sectionMeta: Record<SystemSettingsSection, { title: string; description: string; badge: string }> = {
   general: { title: '常规', description: '应用级语言、时区、日期格式与顶部时钟显示。', badge: 'Workspace' },
@@ -138,10 +140,12 @@ export default function SystemSettingsPage() {
                   <div className="settings-form settings-grid">
                     <label><span>API Base</span><input value={settings.storage.apiBase} onChange={(e) => updateSettings((current) => ({ ...current, storage: { ...current.storage, apiBase: e.target.value } }))} /></label>
                     <label><span>请求超时（毫秒）</span><input type="number" value={settings.storage.requestTimeoutMs} onChange={(e) => updateSettings((current) => ({ ...current, storage: { ...current.storage, requestTimeoutMs: Math.max(1000, Number(e.target.value) || 15000) } }))} /></label>
+                    <label><span>离线内容自动清理（天，0 表示长期保留）</span><input type="number" min="0" value={settings.storage.offlineRetentionDays} onChange={(e) => updateSettings((current) => ({ ...current, storage: { ...current.storage, offlineRetentionDays: Math.max(0, Number(e.target.value) || 0) } }))} /></label>
                   </div>
                   <div className="settings-toggle-list">
                     <label className="settings-option-item"><input type="checkbox" checked={settings.storage.preferOfflineSave} onChange={(e) => updateSettings((current) => ({ ...current, storage: { ...current.storage, preferOfflineSave: e.target.checked } }))} /><span>优先离线兼容保存</span></label>
                     <label className="settings-option-item"><input type="checkbox" checked={settings.storage.autoSaveDrafts} onChange={(e) => updateSettings((current) => ({ ...current, storage: { ...current.storage, autoSaveDrafts: e.target.checked } }))} /><span>自动保存草稿</span></label>
+                    <button type="button" className="ui-btn ui-btn-secondary" onClick={() => { void clearOfflineQueue(undefined, currentOfflineScopeKey()); }}>清空本机离线队列</button>
                   </div>
                 </section>
               </div>

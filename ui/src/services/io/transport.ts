@@ -7,6 +7,17 @@ export interface SseFrame {
 
 export type ReconnectingStreamState = 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
 
+export interface RetryPolicy {
+  maxAttempts?: number;
+  baseDelayMs?: number;
+  maxDelayMs?: number;
+}
+
+export interface TransportRequestInit extends RequestInit {
+  queueWhenOffline?: boolean;
+  baseRevision?: string;
+}
+
 function abortableDelay(milliseconds: number, signal: AbortSignal) {
   return new Promise<void>((resolve) => {
     if (signal.aborted) return resolve();
@@ -94,10 +105,18 @@ export class HttpTransportError extends Error {
     public readonly code?: string,
     public readonly details?: unknown,
     public readonly requestId?: string,
+    public readonly retryAfterMs?: number,
   ) {
     super(message);
     this.name = 'HttpTransportError';
   }
+}
+
+function parseRetryAfter(value: string | null): number | undefined {
+  if (!value) return undefined;
+  if (/^\d+$/.test(value.trim())) return Number(value.trim()) * 1000;
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? Math.max(0, timestamp - Date.now()) : undefined;
 }
 
 export interface HttpResponse<T> {
@@ -111,30 +130,84 @@ export function createHttpTransport(options: {
   baseUrl: string;
   fetch?: typeof fetch;
   authorizationHeaders?: () => Record<string, string>;
+  timeoutMs?: number;
+  retry?: RetryPolicy;
+  offlineQueue?: (request: { path: string; init: TransportRequestInit }) => Promise<void>;
 }) {
   const fetcher = (input: RequestInfo | URL, init?: RequestInit) => (options.fetch || globalThis.fetch)(input, init);
-  const raw = async (path: string, init: RequestInit = {}) => {
+  const retryDefaults = { maxAttempts: 3, baseDelayMs: 250, maxDelayMs: 5_000, ...options.retry };
+  const retryableStatuses = new Set([408, 425, 429, 502, 503, 504]);
+  const safeMethods = new Set(['GET', 'HEAD', 'OPTIONS']);
+  const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+  const isRetryableRequest = (init: TransportRequestInit) => {
+    const method = String(init.method || 'GET').toUpperCase();
+    if (safeMethods.has(method)) return true;
+    const headers = new Headers(init.headers);
+    return headers.has('x-idempotency-key') && (init.body == null || typeof init.body === 'string');
+  };
+  const fetchOnce = async (path: string, init: TransportRequestInit, timeoutMs?: number) => {
     const headers = new Headers(init.headers);
     if (init.body != null && !(init.body instanceof FormData) && !headers.has('content-type')) headers.set('content-type', 'application/json');
     for (const [key, value] of Object.entries(options.authorizationHeaders?.() || {})) headers.set(key, value);
-    const response = await fetcher(`${options.baseUrl}${path}`, { ...init, headers });
-    if (response.ok) return response;
-    const contentType = response.headers.get('content-type') || '';
-    const body = response.status === 204
-      ? undefined
-      : contentType.includes('json')
-        ? await response.json().catch(() => undefined)
-        : await response.text().catch(() => undefined);
-    const detail = body && typeof body === 'object' ? body as Record<string, unknown> : {};
-    throw new HttpTransportError(
-      String(detail.error || detail.message || `HTTP ${response.status}`),
-      response.status,
-      typeof detail.code === 'string' ? detail.code : undefined,
-      body,
-      response.headers.get('x-request-id') || undefined,
-    );
+    const controller = new AbortController();
+    const timer = timeoutMs && timeoutMs > 0 ? setTimeout(() => controller.abort(), timeoutMs) : undefined;
+    const onAbort = () => controller.abort();
+    init.signal?.addEventListener('abort', onAbort, { once: true });
+    try {
+      const response = await fetcher(`${options.baseUrl}${path}`, { ...init, headers, signal: controller.signal });
+      if (controller.signal.aborted && !init.signal?.aborted) throw new Error('请求超时');
+      if (response.ok) return response;
+      const contentType = response.headers.get('content-type') || '';
+      const body = response.status === 204
+        ? undefined
+        : contentType.includes('json')
+          ? await response.json().catch(() => undefined)
+          : await response.text().catch(() => undefined);
+      const detail = body && typeof body === 'object' ? body as Record<string, unknown> : {};
+      throw new HttpTransportError(
+        String(detail.error || detail.message || `HTTP ${response.status}`),
+        response.status,
+        typeof detail.code === 'string' ? detail.code : undefined,
+        body,
+        response.headers.get('x-request-id') || undefined,
+        parseRetryAfter(response.headers.get('retry-after')),
+      );
+    } catch (error) {
+      if (controller.signal.aborted && !init.signal?.aborted) throw new Error('请求超时');
+      throw error;
+    } finally {
+      if (timer) clearTimeout(timer);
+      init.signal?.removeEventListener('abort', onAbort);
+    }
   };
-  const execute = async <T>(path: string, init: RequestInit = {}): Promise<HttpResponse<T>> => {
+  const raw = async (path: string, init: TransportRequestInit = {}) => {
+    const canRetry = isRetryableRequest(init);
+    const maxAttempts = canRetry ? Math.max(1, retryDefaults.maxAttempts) : 1;
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        const response = await fetchOnce(path, init, options.timeoutMs);
+        return response;
+      } catch (error) {
+        lastError = error;
+        const retryable = error instanceof HttpTransportError
+          ? retryableStatuses.has(error.status)
+          : !(error instanceof Error && error.message === '请求超时') && !init.signal?.aborted;
+        if (!retryable || attempt >= maxAttempts) {
+          if (init.queueWhenOffline && canRetry && options.offlineQueue && (error instanceof TypeError || (error instanceof Error && error.message === '请求超时'))) {
+            await options.offlineQueue({ path, init });
+          }
+          throw error;
+        }
+        const exponentialDelay = Math.min(retryDefaults.maxDelayMs, retryDefaults.baseDelayMs * 2 ** (attempt - 1));
+        const retryAfter = error instanceof HttpTransportError ? error.retryAfterMs : undefined;
+        const delay = Math.min(retryDefaults.maxDelayMs, retryAfter ?? exponentialDelay) + Math.floor(Math.random() * 100);
+        await sleep(delay);
+      }
+    }
+    throw lastError;
+  };
+  const execute = async <T>(path: string, init: TransportRequestInit = {}): Promise<HttpResponse<T>> => {
     const response = await raw(path, init);
     const contentType = response.headers.get('content-type') || '';
     const body = response.status === 204
@@ -152,8 +225,8 @@ export function createHttpTransport(options: {
   return {
     raw,
     response: execute,
-    async json<T = unknown>(path: string, init?: RequestInit) { return (await execute<T>(path, init)).data; },
-    async result<T = unknown>(path: string, init?: RequestInit) {
+    async json<T = unknown>(path: string, init?: TransportRequestInit) { return (await execute<T>(path, init)).data; },
+    async result<T = unknown>(path: string, init?: TransportRequestInit) {
       try {
         const response = await execute<T>(path, init);
         return { status: response.status, ok: true as const, body: response.data, headers: response.headers };

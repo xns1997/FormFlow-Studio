@@ -5,29 +5,37 @@ import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  resetKey?: string | number;
 }
 
 interface State {
   hasError: boolean;
   error: Error | null;
+  resetVersion: number;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, resetVersion: 0 };
   }
 
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return { hasError: true, error, resetVersion: 0 };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('[ErrorBoundary]', error, errorInfo);
   }
 
+  componentDidUpdate(previousProps: Props) {
+    if (previousProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState((state) => ({ hasError: false, error: null, resetVersion: state.resetVersion + 1 }));
+    }
+  }
+
   handleReset = () => {
-    this.setState({ hasError: false, error: null });
+    this.setState((state) => ({ hasError: false, error: null, resetVersion: state.resetVersion + 1 }));
   };
 
   render() {
@@ -51,7 +59,7 @@ export class ErrorBoundary extends Component<Props, State> {
             页面出现错误
           </h2>
           <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16, maxWidth: 400 }}>
-            {this.state.error?.message || '发生了未知错误'}
+            当前区域已停止渲染，其他功能仍可继续使用。{this.state.error?.message ? `（${this.state.error.message}）` : ''}
           </p>
           <div style={{ display: 'flex', gap: 8 }}>
             <button
@@ -61,19 +69,12 @@ export class ErrorBoundary extends Component<Props, State> {
             >
               重试
             </button>
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="ui-btn ui-btn-primary"
-            >
-              刷新页面
-            </button>
           </div>
         </div>
       );
     }
 
-    return this.props.children;
+    return <React.Fragment key={this.state.resetVersion}>{this.props.children}</React.Fragment>;
   }
 }
 

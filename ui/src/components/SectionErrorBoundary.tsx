@@ -9,21 +9,23 @@ interface Props {
   children: ReactNode;
   name: string;
   fallback?: ReactNode;
+  resetKey?: string | number;
 }
 
 interface State {
   hasError: boolean;
   error: Error | null;
+  resetVersion: number;
 }
 
 export class SectionErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, resetVersion: 0 };
   }
 
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return { hasError: true, error, resetVersion: 0 };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -37,8 +39,14 @@ export class SectionErrorBoundary extends Component<Props, State> {
     });
   }
 
+  componentDidUpdate(previousProps: Props) {
+    if (previousProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState((state) => ({ hasError: false, error: null, resetVersion: state.resetVersion + 1 }));
+    }
+  }
+
   handleReset = () => {
-    this.setState({ hasError: false, error: null });
+    this.setState((state) => ({ hasError: false, error: null, resetVersion: state.resetVersion + 1 }));
   };
 
   render() {
@@ -63,6 +71,6 @@ export class SectionErrorBoundary extends Component<Props, State> {
       );
     }
 
-    return this.props.children;
+    return <React.Fragment key={this.state.resetVersion}>{this.props.children}</React.Fragment>;
   }
 }

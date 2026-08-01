@@ -1,7 +1,7 @@
 {
   "name": "formflow-studio",
   "private": true,
-  "version": "1.8.0",
+  "version": "1.9.0",
   "type": "module",
   "bin": {
     "formflow": "bin/formflow",
@@ -13,7 +13,8 @@
     "dev:provider": "node scripts/start-llm-provider.mjs",
     "dev:all": "concurrently --kill-others-on-fail \"npm run dev:provider\" \"cross-env FORMFLOW_MODE=local LLM_PROVIDER_GRPC_URL=127.0.0.1:50051 npm run dev:server\" \"cross-env VITE_APP_MODE=local npm run dev\"",
     "dev:cloud": "concurrently \"cross-env FORMFLOW_MODE=cloud npm run dev:server\" \"cross-env VITE_APP_MODE=cloud npm run dev\"",
-    "server": "npx tsx server/src/index.ts",
+    "server": "node scripts/supervise-server.mjs npm run server:child",
+    "server:child": "npx tsx server/src/index.ts",
     "test": "node scripts/run-tests.mjs",
     "typecheck": "npm run typecheck:ui && npm run typecheck:server && npm run typecheck:tests",
     "typecheck:ui": "tsc --noEmit -p ui/tsconfig.json",

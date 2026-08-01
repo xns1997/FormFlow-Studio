@@ -17,11 +17,17 @@ function activate(schedule: ScheduleRecord) {
   if (!cron.validate(schedule.cron)) throw new Error('无效 Cron 表达式');
   running.set(schedule.id, cron.schedule(schedule.cron, async () => {
     schedule.lastRunAt = new Date().toISOString(); persist();
-    await enqueueTask(schedule.name, { ...schedule.payload, scheduleId: schedule.id });
+    try { await enqueueTask(schedule.name, { ...schedule.payload, scheduleId: schedule.id }); }
+    catch (error) { console.error(`[scheduler:${schedule.id}] enqueue failed`, error); }
   }, { timezone: schedule.timezone }));
 }
 export function initScheduler() {
-  if (existsSync(FILE)) try { for (const item of JSON.parse(readFileSync(FILE, 'utf8')) as ScheduleRecord[]) { schedules.set(item.id, item); activate(item); } } catch (error) { console.error('[scheduler]', error); }
+  if (existsSync(FILE)) try {
+    for (const item of JSON.parse(readFileSync(FILE, 'utf8')) as ScheduleRecord[]) {
+      schedules.set(item.id, item);
+      try { activate(item); } catch (error) { console.error(`[scheduler:${item.id}] invalid schedule`, error); }
+    }
+  } catch (error) { console.error('[scheduler]', error); }
 }
 export function listSchedules() { return [...schedules.values()]; }
 export function saveSchedule(input: Omit<ScheduleRecord, 'id' | 'createdAt'> & { id?: string }) {
@@ -30,3 +36,4 @@ export function saveSchedule(input: Omit<ScheduleRecord, 'id' | 'createdAt'> & {
   activate(record); schedules.set(record.id, record); persist(); return record;
 }
 export function deleteSchedule(id: string) { running.get(id)?.stop(); running.delete(id); const removed = schedules.delete(id); persist(); return removed; }
+export function stopScheduler() { for (const task of running.values()) task.stop(); running.clear(); }
