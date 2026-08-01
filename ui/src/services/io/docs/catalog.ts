@@ -63,7 +63,7 @@ export type DocFeedbackEvent = {
   category?: 'helpful' | 'not-helpful' | 'missing' | 'outdated' | 'unclear' | 'example-error';
 };
 
-const UPDATED_AT = '2026-07-29';
+const UPDATED_AT = '2026-08-01';
 const curatedTechnicalSpecs: Array<[string, string, string, DocDomain, string[]]> = [
   ['project-creation-spec', '项目创建与交付规范', '从创建、导入、设计、测试到交付的标准流程。', 'delivery', ['项目创建', '交付', '质量门禁']],
   ['behavior-rule-syntax', '规则语法 Reference', 'Behavior Rule DSL 的语法、动作、表达式和确定性校验规则。', 'behavior', ['DSL', 'rule', 'lint']],
@@ -84,6 +84,29 @@ const curatedTechnicalDocs: DocEntry[] = curatedTechnicalSpecs.map(([slug, title
     { id: 'source', title: '权威来源', body: `本页对应仓库用户手册 docs/${slug}.md，并纳入统一搜索、导航和内容覆盖检查。` },
   ],
 }));
+const templateUsageGuide: DocEntry = {
+  id: 'guide:template-usage-logic',
+  slug: 'template-usage-logic',
+  canonicalPath: '/docs/reference/templates/template-usage-logic',
+  kind: 'reference',
+  domain: 'templates',
+  title: '通用模板使用逻辑',
+  summary: '从筛选模板、核对前置条件到字段映射、预览、应用和回退的统一流程。',
+  aliases: ['通用模板', '模板映射', '模板中心', '字段映射'],
+  tags: ['模板', '通用指南', '字段映射'],
+  audiences: ['builder', 'developer'],
+  source: { kind: 'curated', label: 'FormFlow 模板使用指南' },
+  relatedIds: ['task:apply-templates'],
+  updatedAt: UPDATED_AT,
+  blocks: [
+    { id: 'overview', title: '适用范围', body: '先用这篇指南理解模板中心的通用操作，再回到具体模板页面查看是否存在专属配置、专属字段映射或独特结果预览。' },
+    { id: 'prerequisites', title: '使用前确认', body: '确认当前项目已经打开，目标数据表可用，并优先补齐稳定 Key、必要字段和基础数据质量问题。' },
+    { id: 'template-types', title: '模板类型与前置条件', body: '先分清项目模板、表单模板和操作模板的适用范围，再检查目标数据表、Key 和必要字段是否已经满足。缺失时先在数据页补齐，再返回模板中心。' },
+    { id: 'search', title: '第 1 步：搜索与选择模板', body: '在模板中心按场景搜索并筛选模板，先看它要创建的是表单、流程还是结果页，再决定是否进入配置。' },
+    { id: 'mapping', title: '第 2 步：映射字段并预览结果', body: '选择目标数据表，完成字段映射和必要参数配置，确认预览中的表单、流程或输出结构确实符合当前项目。' },
+    { id: 'apply', title: '第 3 步：应用后检查与失败恢复', body: '应用后立即回到质量检查和测试页确认新增内容可运行；如果结果不符合预期，优先记录本次新增内容，再回退或清理。' },
+  ],
+};
 const stageSpecs = [
   ['understand-create', '认识与创建', '了解 FormFlow，并创建可继续配置的项目。', 'getting-started', ['项目', '创建', '入门']],
   ['import-model', '导入与建模', '导入 Excel、CSV 或 JSON，确认字段类型并配置稳定主键。', 'data', ['导入 Excel', '主键', '字段类型']],
@@ -104,13 +127,20 @@ function taskEntry(spec: typeof stageSpecs[number]): DocEntry {
     'test-quality': 'troubleshooting:submit-validation',
     'package-release': 'troubleshooting:release-blocked',
   };
-  return {
-    id: `task:${slug}`, slug, canonicalPath: `/docs/tasks/${slug}`, kind: 'task', domain,
-    stage: slug, title, summary, aliases: [...tags, ...(slug === 'import-model' ? ['主键冲突'] : [])], tags: [...tags, '任务指南'], audiences: ['builder'],
-    source: { kind: 'curated', label: 'FormFlow 使用指南' },
-    relatedIds: troubleshootingByStage[slug] ? [troubleshootingByStage[slug]] : [], updatedAt: UPDATED_AT,
-    actions: [{ type: 'navigate', label: '返回项目', href: '/projects' }],
-    blocks: [
+  const relatedIds = [
+    ...(troubleshootingByStage[slug] ? [troubleshootingByStage[slug]] : []),
+    ...(slug === 'apply-templates' ? ['guide:template-usage-logic'] : []),
+  ];
+  const blocks = slug === 'apply-templates'
+    ? [
+      { id: 'goal', title: '目标', body: summary },
+      { id: 'prerequisites', title: '开始前', body: '确认项目已打开，并先检查目标数据表、Key 与必要字段是否已经准备好。' },
+      { id: 'guide', title: '推荐路径', body: '先阅读《通用模板使用逻辑》，确认模板要求的数据表、Key 和字段，再进入对应模板页面查看是否存在专属配置或结果预览。只有图片能解释独特差异时，模板页才会单独配图。' },
+      { id: 'done', title: '完成检查', body: taskChecks[slug] },
+      { id: 'troubleshooting', title: '常见问题与排错', body: taskTroubleshooting[slug] },
+      { id: 'related', title: '关联参考', body: '继续阅读通用模板指南与具体模板页面；遇到阻断时，优先从排错文档核对数据准备是否完整。' },
+    ]
+    : [
       { id: 'goal', title: '目标', body: summary },
       { id: 'prerequisites', title: '开始前', body: slug === 'understand-create' ? '准备一个清晰的业务目标。其余阶段需要已有项目，并先保存当前修改。' : '确认项目已打开且当前修改已保存；涉及数据写回时，先配置非空且唯一的主键。' },
       { id: 'steps', title: '操作步骤', body: taskSteps[slug] },
@@ -118,19 +148,26 @@ function taskEntry(spec: typeof stageSpecs[number]): DocEntry {
       { id: 'troubleshooting', title: '常见问题与排错', body: taskTroubleshooting[slug] },
       { id: 'related', title: '关联参考', body: `继续在功能参考中查看“${tags.join('、')}”；遇到阻断时从排错分类进入最接近的错误现象。` },
       { id: 'try', title: '安全试玩', body: '示例只用于检查配置形状或复制，不会写入当前项目。', examples: [{ title: '任务检查清单', code: JSON.stringify({ task: slug, saved: true, validated: true, projectMutation: false }, null, 2) }] },
-    ],
+    ];
+  return {
+    id: `task:${slug}`, slug, canonicalPath: `/docs/tasks/${slug}`, kind: 'task', domain,
+    stage: slug, title, summary, aliases: [...tags, ...(slug === 'import-model' ? ['主键冲突'] : [])], tags: [...tags, '任务指南'], audiences: ['builder'],
+    source: { kind: 'curated', label: 'FormFlow 使用指南' },
+    relatedIds, updatedAt: UPDATED_AT,
+    actions: [{ type: 'navigate', label: '返回项目', href: '/projects' }],
+    blocks,
   };
 }
 
 const taskSteps: Record<string, string> = {
-  'understand-create': '1. 从项目列表选择“新建项目”。\n2. 填写可识别的名称和用途。\n3. 选择空白项目或与业务接近的模板。\n4. 进入编辑器，确认项目名称和工作模式正确。',
-  'import-model': '1. 进入数据工作区并导入文件。\n2. 核对 Sheet、表头、样本值和推断类型。\n3. 选择业务稳定字段作为主键，并运行唯一性校验。\n4. 修复空值或重复值后保存数据配置。',
-  'generate-design': '1. 从目标数据表生成表单。\n2. 核对显示名称与保存字段。\n3. 配置必填、格式和数据绑定。\n4. 在预览中完成一次有效填写。',
-  'behavior-workflow': '1. 先用可视化规则实现简单联动。\n2. 需要多步处理时创建流程并连接输入输出。\n3. 将按钮或事件绑定到目标流程。\n4. 用确定性 lint 和测试运行验证。',
-  'apply-templates': '1. 打开模板中心并按用途搜索。\n2. 检查模板要求的数据表、主键和字段。\n3. 完成字段映射并预览将创建的内容。\n4. 应用后运行质量检查。',
-  'test-quality': '1. 生成覆盖关键路径的 Mock 数据。\n2. 在测试运行中执行正常、空值和边界场景。\n3. 打开质量页修复 error，再处理 warning。\n4. 重新运行回归并保存结果。',
-  'use-export': '1. 进入使用模式完成一次真实操作。\n2. 检查查询、筛选、分页和写回。\n3. 选择导出格式与范围。\n4. 下载并打开结果，核对列和行数。',
-  'package-release': '1. 运行项目包校验。\n2. 修复所有阻断问题。\n3. 使用发布预览检查版本和影响。\n4. 在明确确认后执行交付或发布。',
+  'understand-create': '1. 在项目列表点击“新建项目”。\n2. 选择空白项目或与业务接近的内置模板。\n3. 填写可识别的项目名称和用途。\n4. 创建并进入编辑器，确认项目名称和当前工作模式。',
+  'import-model': '1. 在数据工作区确认“上传”入口，准备带稳定 Key 的源文件。\n2. 选中目标数据表，核对表头、样本值和字段类型。\n3. 在“配置”页勾选用于唯一定位的 Key 字段。\n4. 返回数据表，用搜索或分页确认当前结果可继续后续表单生成。',
+  'generate-design': '1. 在数据表中选择字段并点击“选择模板生成表单”。\n2. 在生成弹窗中确认推荐模板和预览内容，再点击“创建并打开”。\n3. 在设计器中选中控件，核对标签、必填和数据绑定。\n4. 打开运行态表单，确认能进入真实填写。',
+  'behavior-workflow': '1. 在规则页选中“规则代码”，核对当前表单的提交校验与提醒语句。\n2. 切到流程页，确认“工作记录录入保存”流程的节点与连线完整。\n3. 在流程页选中“表单保存”节点，检查 work_records / 工作记录 的字段映射与必填字段。\n4. 打开顶部“测试 71%”样例面板，核对覆盖率与失败用例。',
+  'apply-templates': '',
+  'test-quality': '1. 打开顶部“测试 71%”查看自动测试样例和覆盖率。\n2. 点击“一键运行全部”，核对正常填写、必填为空和主键重复等场景结果。\n3. 打开数据质量页查看质量分数、质量趋势和问题分布。\n4. 返回测试面板，确认最近运行时间与当前通过情况。',
+  'use-export': '1. 在使用页打开目标表单，确认进入真实填写界面。\n2. 切到数据页，对目标数据表搜索 W-0001，确认当前结果范围已收敛到 1 行。\n3. 在当前结果上点击“导出结果”，导出筛选后的数据。\n4. 确认“已导出当前结果（1 行）”提示，并复核下载文件为 1 行 XLSX。',
+  'package-release': '1. 打开“发布检查”确认当前有 6 个自动测试阻断项。\n2. 切到“自动测试样例”，核对失败用例与发布阻断项一一对应。\n3. 打开设置页的“发布”分组，确认默认导出格式、输出文件名和写回策略。\n4. 点击“保存”，记录当前交付策略已保存，后续只需先清掉自动测试阻断再发布。',
 };
 const taskChecks: Record<string, string> = Object.fromEntries(stageSpecs.map(([slug]) => [slug, '页面没有阻断错误；关键操作可重复执行；重新打开项目后配置仍然存在；相关数据、表单或输出可在预期位置找到。']));
 const taskTroubleshooting: Record<string, string> = {
@@ -206,11 +243,11 @@ function templateEntries(): DocEntry[] {
     id: template.id, slug: template.slug, canonicalPath: `/docs/reference/templates/${template.slug}`,
     kind: 'reference', domain: 'templates', title: template.title, summary: template.summary,
     aliases: template.aliases, tags: template.tags, audiences: ['builder', 'developer'],
-    source: { kind: 'template-registry', label: template.sourceLabel }, relatedIds: ['task:apply-templates'], updatedAt: UPDATED_AT,
+    source: { kind: 'template-registry', label: template.sourceLabel }, relatedIds: ['guide:template-usage-logic', 'task:apply-templates'], updatedAt: UPDATED_AT,
     blocks: [
       { id: 'overview', title: '模板用途', body: template.summary },
       { id: 'capabilities', title: '能力与要求', fields: template.fields },
-      { id: 'apply', title: '应用步骤', body: '在模板中心选择此模板，完成数据表与字段映射，预览生成内容后应用，并运行质量检查。' },
+      { id: 'apply', title: '如何落地到当前项目', body: '通用搜索、字段映射、预览和质量检查逻辑统一收敛到《通用模板使用逻辑》。如果这个模板有专属参数、专属字段角色或独特结果预览，再结合本页能力说明处理差异。' },
     ],
   }));
 }
@@ -327,7 +364,7 @@ export async function loadDocCatalog(): Promise<DocEntry[]> {
     return narrative ? { ...entry, blocks: [...entry.blocks, ...legacyTopic(narrative, 'controls').blocks.filter((block) => block.id !== 'section-0')] } : entry;
   });
   const collected = [
-    ...stageSpecs.map(taskEntry), ...troubleshootingDocs, ...caseDocs, ...curatedTechnicalDocs, ...templateEntries(), ...legacy, ...controls,
+    ...stageSpecs.map(taskEntry), ...troubleshootingDocs, ...caseDocs, ...curatedTechnicalDocs, templateUsageGuide, ...templateEntries(), ...legacy, ...controls,
     ...behaviorEventDocs.map(eventEntry), ...registry.specs.map(nodeEntry), ...openapiEntries(),
   ];
   const seenPaths = new Set<string>();

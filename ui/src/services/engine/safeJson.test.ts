@@ -15,23 +15,23 @@ test('parseJson returns fallback on non-string', () => {
 });
 
 test('parseJson repairs trailing comma', () => {
-  const result = parseJson<{ a: number; b: number }>('{"a":1,"b":2,}', {});
+  const result = parseJson<{ a: number; b: number }>('{"a":1,"b":2,}', { a: 0, b: 0 });
   assert.equal(result.a, 1);
   assert.equal(result.b, 2);
 });
 
 test('parseJson repairs single quotes', () => {
-  const result = parseJson<{ name: string }>("{'name':'hello'}", {});
+  const result = parseJson<{ name: string }>("{'name':'hello'}", { name: '' });
   assert.equal(result.name, 'hello');
 });
 
 test('parseJson repairs unquoted keys', () => {
-  const result = parseJson<{ name: string }>('{"name":hello}', {});
+  const result = parseJson<{ name: string }>('{"name":hello}', { name: '' });
   assert.equal(result.name, 'hello');
 });
 
 test('parseJson repairs missing quotes on string values', () => {
-  const result = parseJson<{ key: string }>('{"key": value}', {});
+  const result = parseJson<{ key: string }>('{"key": value}', { key: '' });
   assert.equal(result.key, 'value');
 });
 

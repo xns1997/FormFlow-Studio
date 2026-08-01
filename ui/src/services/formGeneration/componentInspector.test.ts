@@ -47,14 +47,23 @@ const components: DesignComponent[] = [
 const tables: SrcTableEntry[] = [{
   id: 'employees',
   fileName: 'employees.xlsx',
+  fileSize: 1024,
+  fileType: 'xlsx',
+  uploadedAt: '2026-01-01T00:00:00.000Z',
+  dataHash: 'employees-hash',
   sheets: [{
     name: 'Sheet1',
     rowCount: 10,
+    colCount: 3,
     headers: ['姓名', '拼音', '部门'],
     columns: [
-      { name: '姓名', dataType: 'string', nullable: false, uniqueCount: 10, sampleValues: ['张三', '李四'] },
-      { name: '拼音', dataType: 'string', nullable: true, uniqueCount: 10, sampleValues: ['zhangsan', 'lisi'] },
-      { name: '部门', dataType: 'string', nullable: false, uniqueCount: 3, sampleValues: ['技术部', '产品部'] },
+      { name: '姓名', index: 0, dataType: 'string', nullable: false, uniqueCount: 10, sampleValues: ['张三', '李四'] },
+      { name: '拼音', index: 1, dataType: 'string', nullable: true, uniqueCount: 10, sampleValues: ['zhangsan', 'lisi'] },
+      { name: '部门', index: 2, dataType: 'string', nullable: false, uniqueCount: 3, sampleValues: ['技术部', '产品部'] },
+    ],
+    preview: [
+      { 姓名: '张三', 拼音: 'zhangsan', 部门: '技术部' },
+      { 姓名: '李四', 拼音: 'lisi', 部门: '产品部' },
     ],
   }],
 }];

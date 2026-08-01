@@ -869,7 +869,9 @@ test('row and column structure operations preserve cells, formulas and merged ra
   const insertedRows = editWorksheetStructure(worksheet, 'row', 'insert', 2, 1).worksheet;
   assert.equal(insertedRows.A3.v, 1);
   assert.equal(insertedRows.C3.f, 'A3+B3');
-  assert.equal(XLSX.utils.encode_range(insertedRows['!merges'][0]), 'A4:B4');
+  const firstInsertedMerge = insertedRows['!merges']?.[0];
+  assert.ok(firstInsertedMerge);
+  assert.equal(XLSX.utils.encode_range(firstInsertedMerge), 'A4:B4');
 
   const deletedRows = editWorksheetStructure(insertedRows, 'row', 'delete', 2, 1).worksheet;
   assert.equal(deletedRows.A2.v, 1);

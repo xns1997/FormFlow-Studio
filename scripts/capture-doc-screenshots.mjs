@@ -6,7 +6,7 @@ const baseUrl = process.env.FORMFLOW_DOCS_BASE_URL || 'http://localhost:5175';
 const apiDocsUrl = process.env.FORMFLOW_DOCS_API_URL || 'http://localhost:3103/api-docs';
 const outputDir = resolve('ui/public/docs/screenshots');
 const fixture = {
-  id: 'proj_1785585600000',
+  id: `proj_docs_${Date.now()}`,
   name: '文档截图示例：灵活就业分析',
   description: '仅供公开文档截图使用的脱敏示例项目',
   author: 'FormFlow 文档团队',
@@ -15,6 +15,7 @@ const fixture = {
 const frozenTime = Date.parse('2026-08-01T12:00:00.000Z');
 
 await mkdir(outputDir, { recursive: true });
+await mkdir(resolve(outputDir, 'tasks'), { recursive: true });
 const browser = await chromium.launch();
 const context = await browser.newContext({
   viewport: { width: 1600, height: 1000 },
@@ -78,17 +79,26 @@ async function removeOwnedFixture(projectId) {
 }
 
 try {
+  await page.route('**/api/projects', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+      return;
+    }
+    await route.continue();
+  });
   await page.goto(`${baseUrl}/projects`, { waitUntil: 'domcontentloaded' });
   await page.evaluate(() => localStorage.setItem('formflow-onboarding-completed', 'true'));
   await page.reload({ waitUntil: 'domcontentloaded' });
   await removeOwnedFixture(fixture.id);
   await page.reload({ waitUntil: 'domcontentloaded' });
   await waitForStablePage();
+  await capture('tasks/understand-create-01');
 
   await page.getByRole('button', { name: '新建项目' }).click();
   await page.getByRole('button', { name: /内置模板/ }).click();
   await page.locator('.project-wizard-template-card').filter({ hasText: fixture.templateName }).click();
   await capture('project-create');
+  await capture('tasks/understand-create-02');
 
   await page.getByRole('button', { name: '下一步' }).click();
   await page.getByLabel('项目名称').fill(fixture.name);
@@ -96,14 +106,13 @@ try {
   await page.getByLabel('作者').fill(fixture.author);
   await page.getByLabel('标签').fill('文档, 示例, 脱敏');
   await capture('project-details');
+  await capture('tasks/understand-create-03');
   await page.getByRole('button', { name: '下一步' }).click();
-  createdFixtureId = fixture.id;
   await page.getByRole('button', { name: '创建并进入项目' }).click();
   await page.waitForURL(/\/projects\/[^/]+\/editor/);
-  const navigatedProjectId = new URL(page.url()).pathname.split('/')[2];
-  if (navigatedProjectId !== fixture.id) {
-    throw new Error(`fixture ID 不确定：期望 ${fixture.id}，实际 ${navigatedProjectId}`);
-  }
+  createdFixtureId = new URL(page.url()).pathname.split('/')[2];
+  if (!createdFixtureId) throw new Error('创建项目后未能解析项目 ID');
+  await capture('tasks/understand-create-04');
 
   const routes = [
     ['data-workspace', 'data'],

@@ -2665,8 +2665,16 @@ mark.docs-search-highlight {
 }
 
 .docs-v2-step-screenshot figcaption {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
   padding: 7px 11px 9px;
   font-size: 11px;
+}
+
+.docs-v2-step-screenshot figcaption strong {
+  flex: 0 0 auto;
+  color: var(--accent);
 }
 
 .docs-v2-actions {
@@ -2819,6 +2827,41 @@ mark.docs-search-highlight {
   padding: 24px 0;
   border-top: 1px solid var(--border);
   font-size: 13px;
+}
+
+.docs-v2-related-docs {
+  margin-top: 28px;
+}
+
+.docs-v2-related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.docs-v2-related-card {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--panel) 88%, white 12%);
+  color: var(--text);
+  text-decoration: none;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.05);
+}
+
+.docs-v2-related-card span {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.docs-v2-related-card strong {
+  font-size: 14px;
+}
+
+.docs-v2-related-card p {
+  margin: 0;
 }
 
 .docs-v2-pager {
@@ -2986,7 +3029,8 @@ mark.docs-search-highlight {
   .docs-v2-shell { display: block; padding-top: 16px; }
   .docs-v2-tree { position: static; max-height: 180px; margin-bottom: 20px; padding: 10px; border: 1px solid var(--border); border-radius: 12px; }
   .docs-v2-task-grid,
-  .docs-v2-reference-grid { grid-template-columns: 1fr; }
+  .docs-v2-reference-grid,
+  .docs-v2-related-grid { grid-template-columns: 1fr; }
   .docs-v2-table-row { grid-template-columns: 1fr; }
   .docs-v2-actions,
   .docs-v2-feedback { align-items: stretch; flex-direction: column; }

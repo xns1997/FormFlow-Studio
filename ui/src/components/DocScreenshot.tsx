@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   buildDocIllustrationPlan,
-  type PlannedScreenshot,
+  type PlannedStepScreenshot,
 } from '../services/io/docs/doc-illustration-plan';
 import type { DocScreenshotEntry } from '../services/io/docs/doc-screenshots';
 
@@ -15,11 +15,9 @@ type FocusStyle = React.CSSProperties & {
 function ScreenshotFigure({
   screenshot,
   customizationId,
-  step,
 }: {
-  screenshot: PlannedScreenshot;
+  screenshot: PlannedStepScreenshot;
   customizationId: string;
-  step?: boolean;
 }) {
   const focusStyle: FocusStyle = {
     '--focus-x': `${screenshot.focus.x}%`,
@@ -30,7 +28,7 @@ function ScreenshotFigure({
   const responsiveSrc = screenshot.src.replace(/\.png$/, '-1x.png');
   return (
     <figure
-      className={`docs-v2-screenshot${step ? ' docs-v2-step-screenshot' : ''}`}
+      className="docs-v2-screenshot docs-v2-step-screenshot"
       data-doc-screenshot={customizationId}
       style={focusStyle}
     >
@@ -49,14 +47,12 @@ function ScreenshotFigure({
         <span className="docs-v2-screenshot-focus" aria-hidden="true" />
         <strong className="docs-v2-screenshot-callout">{screenshot.callout}</strong>
       </div>
-      <figcaption>{screenshot.label} · Playwright 2× 高清截图</figcaption>
+      <figcaption>
+        <strong>步骤 {screenshot.sequence}</strong>
+        <span>{screenshot.instruction}</span>
+      </figcaption>
     </figure>
   );
-}
-
-export default function DocScreenshot({ entry }: { entry: DocScreenshotEntry }) {
-  const plan = buildDocIllustrationPlan(entry);
-  return <ScreenshotFigure screenshot={plan.hero} customizationId={plan.customizationId} />;
 }
 
 export function DocStepScreenshots({ entry, blockId }: { entry: DocScreenshotEntry; blockId: string }) {
@@ -70,7 +66,6 @@ export function DocStepScreenshots({ entry, blockId }: { entry: DocScreenshotEnt
           key={`${blockId}:${screenshot.sequence}:${screenshot.instruction}`}
           screenshot={screenshot}
           customizationId={`${plan.customizationId}-${blockId}-${screenshot.sequence}`}
-          step
         />
       ))}
     </div>

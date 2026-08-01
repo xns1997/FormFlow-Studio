@@ -29,7 +29,7 @@ import MarkdownRenderer from './MarkdownRenderer';
 import HighlightText from './HighlightText';
 import DocPrevNextNav from './DocPrevNextNav';
 import DocRecommendations from './DocRecommendations';
-import DocScreenshot, { DocStepScreenshots } from './DocScreenshot';
+import { DocStepScreenshots } from './DocScreenshot';
 import { useMarkdown } from '../hooks/useMarkdown';
 import {
   LEGACY_DOC_DOMAINS,
@@ -711,8 +711,6 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
             </div>
           </div>
 
-          <DocScreenshot entry={createModalScreenshotEntry(currentEventDoc, 'behavior')} />
-
           {currentEventDoc.sections.map((section, index) => (
             <section key={`${currentEventDoc.id}:${section.title}`} id={`section-${index}`} className="docs-section">
               <h3>{section.title}</h3>
@@ -753,8 +751,6 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
               <button type="button" className="docs-link-button" onClick={() => handleNavigateSection('behavior')}>行为文档</button>
             </div>
           </div>
-
-          <DocScreenshot entry={createModalScreenshotEntry(currentEventDoc, 'behavior')} />
 
           <section className="docs-meta-row">
             <div className="docs-meta-card">
@@ -1019,8 +1015,6 @@ export default function DocModal({ open, onClose, initialSlug }: DocModalProps) 
               </button>
             </div>
           </div>
-
-          <DocScreenshot entry={createModalScreenshotEntry(genericCurrentDoc, route.sectionId as DocSectionId)} />
 
           {componentPlaygroundType && (
             <ComponentDocPlayground componentType={componentPlaygroundType} title={genericCurrentDoc.title} variant="modal" />

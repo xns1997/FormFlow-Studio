@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import { resolve } from 'node:path';
 import { loadDocCatalog } from './catalog';
+import { buildDocIllustrationPlan } from './doc-illustration-plan';
 import { DOC_SCREENSHOTS, DOC_SPECIAL_SCREENSHOTS, LEGACY_DOC_DOMAINS, getDocScreenshot } from './doc-screenshots';
 
 test('every catalog document resolves to an existing 2x product screenshot', async () => {
@@ -20,7 +21,12 @@ test('every catalog document resolves to an existing 2x product screenshot', asy
     assert.ok(DOC_SCREENSHOTS[domain]);
   }
 
-  const uniqueSources = [...new Set([...Object.values(DOC_SCREENSHOTS), ...Object.values(DOC_SPECIAL_SCREENSHOTS)].map((item) => item.src))];
+  const plannedSources = entries.flatMap((entry) => Object.values(buildDocIllustrationPlan(entry).stepsByBlock).flat().map((item) => item.src));
+  const uniqueSources = [...new Set([
+    ...Object.values(DOC_SCREENSHOTS).map((item) => item.src),
+    ...Object.values(DOC_SPECIAL_SCREENSHOTS).map((item) => item.src),
+    ...plannedSources,
+  ])];
   assert.ok(uniqueSources.length > 1);
   for (const src of uniqueSources) {
     const png = await readFile(resolve('ui/public', src.slice(1)));

@@ -6,7 +6,7 @@ import json from 'highlight.js/lib/languages/json';
 import javascript from 'highlight.js/lib/languages/javascript';
 import HighlightText from '../../components/HighlightText';
 import ComponentDocPlayground from '../../components/ComponentDocPlayground';
-import DocScreenshot, { DocStepScreenshots } from '../../components/DocScreenshot';
+import { DocStepScreenshots } from '../../components/DocScreenshot';
 import {
   buildSearchIndex,
   findDoc,
@@ -126,6 +126,7 @@ export default function DocsPlatformPage({ home = false }: { home?: boolean }) {
     const currentIndex = entries.findIndex((entry) => entry.id === current.id);
     const previous = currentIndex > 0 ? entries[currentIndex - 1] : undefined;
     const next = currentIndex >= 0 && currentIndex < entries.length - 1 ? entries[currentIndex + 1] : undefined;
+    const relatedEntries = (current.relatedIds || []).map((id) => entries.find((entry) => entry.id === id)).filter((entry): entry is DocEntry => !!entry);
     const returnTo = params.get('returnTo');
     const safeReturnTo = returnTo?.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '';
     return (
@@ -147,7 +148,6 @@ export default function DocsPlatformPage({ home = false }: { home?: boolean }) {
               {current.actions?.map((action) => action.href && <button key={action.label} type="button" onClick={() => navigate(action.label === '返回项目' && safeReturnTo ? safeReturnTo : action.href!)}>{action.label}</button>)}
             </div>
           </header>
-          <DocScreenshot entry={current} />
           {current.domain === 'controls' && (() => {
             const componentType = current.id.startsWith('form-design:')
               ? current.id.slice('form-design:'.length)
@@ -179,6 +179,20 @@ export default function DocsPlatformPage({ home = false }: { home?: boolean }) {
               })}
             </section>
           ))}
+          {relatedEntries.length > 0 && (
+            <section className="docs-v2-section docs-v2-related-docs" aria-label="继续阅读">
+              <h2>继续阅读</h2>
+              <div className="docs-v2-related-grid">
+                {relatedEntries.map((entry) => (
+                  <Link key={entry.id} to={entry.canonicalPath} className="docs-v2-related-card">
+                    <span>{kindLabels[entry.kind]} · {domainLabels[entry.domain]}</span>
+                    <strong>{entry.title}</strong>
+                    <p>{entry.summary}</p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
           <nav className="docs-v2-pager" aria-label="上一篇和下一篇">
             {previous ? <Link to={previous.canonicalPath}><small>上一篇</small><strong>{previous.title}</strong></Link> : <span />}
             {next && <Link to={next.canonicalPath}><small>下一篇</small><strong>{next.title}</strong></Link>}

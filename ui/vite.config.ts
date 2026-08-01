@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:3001',
+      '/api': process.env.FORMFLOW_UI_API_PROXY || 'http://localhost:3001',
     },
   },
   build: {
