@@ -114,7 +114,7 @@
   - `npm test -- ui/src/services/io/docs/doc-illustration-plan.test.ts ui/src/services/io/docs/doc-screenshots.test.ts ui/src/services/io/docs/catalog.test.ts`
 - 完整测试通过：`npm test`
 - 生产构建通过：`npm run build`
-- `npm run typecheck` 未通过，但失败点位于现有测试文件：
-  - `ui/src/services/engine/flowEngine.test.ts`
-  - `ui/src/services/engine/safeJson.test.ts`
-  - `ui/src/services/formGeneration/componentInspector.test.ts`
+- `npm run typecheck` 通过。
+- 代码审查完成：
+  - Standards：未发现违反 `CODEX.md`、`AGENTS.md` 或 `README.md` 的硬性规范问题。
+  - Judgement calls：`doc-illustration-plan.ts` 与 `doc-illustration-plan.test.ts` 存在一定的数据表/断言重复，但属于可接受的文档资产映射与验收测试重复，不阻塞本次交付。
