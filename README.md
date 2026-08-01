@@ -9,7 +9,8 @@
 ## 先看这里
 
 - 产品与能力概览：[`docs/readme/overview.md`](./docs/readme/overview.md)
-- 5 分钟上手、FAQ 与使用场景：[`docs/readme/getting-started.md`](./docs/readme/getting-started.md)
+- 带配图的新手教程：[`docs/readme/beginner-tutorial.md`](./docs/readme/beginner-tutorial.md)
+- 安装、自有数据快速上手、FAQ 与使用场景：[`docs/readme/getting-started.md`](./docs/readme/getting-started.md)
 - 智能体 / MCP / 离线项目包编辑：[`docs/readme/ai-project-editing.md`](./docs/readme/ai-project-editing.md)
 - 技术栈、目录结构与项目包格式：[`docs/readme/project-layout.md`](./docs/readme/project-layout.md)
 - 按大版本拆分的更新记录：[`docs/changelog/README.md`](./docs/changelog/README.md)
