@@ -1,3 +1,42 @@
+# [1.9.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.8.0...v1.9.0) (2026-08-02)
+
+
+### Bug Fixes
+
+* comprehensive error hardening — no error can crash frontend or backend ([b217c40](https://github.com/xns1997/FormFlow-Studio/commit/b217c4041d70034031988b62a5c21565ee075540))
+* **docs:** reset playground state when switching controls ([9f942d0](https://github.com/xns1997/FormFlow-Studio/commit/9f942d0e5e6fd74bffec1aa791ea844646b24f9c))
+* **docs:** restore playground in control documentation page ([12b7f00](https://github.com/xns1997/FormFlow-Studio/commit/12b7f005495c3d129f587ddf9e3573ac2b5a97a9))
+* **dsl-editor:** restore inline editor after fullscreen close ([5cccb3b](https://github.com/xns1997/FormFlow-Studio/commit/5cccb3b00d689be8e1d3d70781d9bb535000fc87))
+* **editor:** wire error management, fix review findings, add backend error API ([63386f5](https://github.com/xns1997/FormFlow-Studio/commit/63386f53e3d613d772179dd3087bed11e22bbe4a))
+* **frontend:** harden all remaining unprotected error paths ([92830f9](https://github.com/xns1997/FormFlow-Studio/commit/92830f981c4bcec5d4eae72485b4a3f4415f339d))
+* **runtime:** allow scrollbar in runtime form content area ([4fc9a04](https://github.com/xns1997/FormFlow-Studio/commit/4fc9a045b28a61aa30cabb45d94291fb588543b6))
+* **types:** replace any types with proper TypeScript types ([734cb41](https://github.com/xns1997/FormFlow-Studio/commit/734cb4174ebf67eaa5daea37e31930f92ddcec97))
+* **ui:** add bottom padding to docs tree/toc scroll areas ([f802eff](https://github.com/xns1997/FormFlow-Studio/commit/f802eff9abce96027bb70095300b09d4b36dceb4))
+* **ui:** add side margins to docs shell ([09c65e4](https://github.com/xns1997/FormFlow-Studio/commit/09c65e451b3d4f6e423d29e2c813e14b9f49379a))
+* **ui:** docs layout flex chain — shell 100% height, columns min-height:0 ([70c8a34](https://github.com/xns1997/FormFlow-Studio/commit/70c8a3427fa814fcd7d20c280068a830d1d2c517))
+* **ui:** docs scroll-root overflow-y:auto for home page scrolling ([c177e7d](https://github.com/xns1997/FormFlow-Studio/commit/c177e7d6657f05e39de3decd60d19996e751395d))
+* **ui:** docs shell full width ([ce95aa5](https://github.com/xns1997/FormFlow-Studio/commit/ce95aa5bdb3ea68486ee6a463e769b221165e168))
+* **ui:** docs shell height 100% inherits from parent ([efb17bc](https://github.com/xns1997/FormFlow-Studio/commit/efb17bc8da20cf8d311cc8905c63e61723d7b6cf))
+* **ui:** docs three columns scroll independently, outer shell fixed ([5949717](https://github.com/xns1997/FormFlow-Studio/commit/5949717abd0924d00d1ae366c519cb01c1a23fe4))
+* **ui:** docs tree/toc — wrap list in scroll container, aside is flex column ([5acbce4](https://github.com/xns1997/FormFlow-Studio/commit/5acbce4bc23ccd6ab35bd5a278a9bcc93a688684))
+* **ui:** remove sticky/scroll from docs sidebar columns, page scrolls as one ([f6503cc](https://github.com/xns1997/FormFlow-Studio/commit/f6503ccee76f6b874a320bd86994448e1a45f1de))
+* **ui:** widen docs article area from 760px to flexible width ([f72350b](https://github.com/xns1997/FormFlow-Studio/commit/f72350b5c80f978d06ef7afe3de0ea9f83b4d340))
+* **ui:** widen docs shell to 1680px max ([48070da](https://github.com/xns1997/FormFlow-Studio/commit/48070da3d075f8e9c1937cd2533a451e1710536e))
+
+
+### Features
+
+* add jsonrepair package to enhance JSON parsing capabilities ([eca01a2](https://github.com/xns1997/FormFlow-Studio/commit/eca01a22dca8a7faeff081b9e25f15dd7a138e20))
+* **docs:** add per-step Playwright illustrations ([ba25612](https://github.com/xns1997/FormFlow-Studio/commit/ba256123826786f11e452624bc446b0e6cf5ef83))
+* **docs:** multi-scenario playgrounds + event cross-references ([f95e73f](https://github.com/xns1997/FormFlow-Studio/commit/f95e73f192889d362c35630aa212958ab7203f7c))
+* **editor:** build guidance & debugging UX — diagnostic panel, component inspector, data flow tracer, onboarding guide ([33c61e5](https://github.com/xns1997/FormFlow-Studio/commit/33c61e5012208d2f466cd0891de469b50e8e68a1))
+* **editor:** empty state guidance + flow field reference panel ([2d61f5f](https://github.com/xns1997/FormFlow-Studio/commit/2d61f5f77fe390e9ed327337e5228a211fc38cff))
+* **editor:** mode switching optimization - naming, context, field ref, shortcuts ([2714ec6](https://github.com/xns1997/FormFlow-Studio/commit/2714ec6962529badd822db26d4e27b29af6b0432))
+* harden frontend recovery and server supervision ([5911c00](https://github.com/xns1997/FormFlow-Studio/commit/5911c00313c9e5eab30c05af38243097ede492fc))
+* integrate jsonrepair — all JSON parsing now auto-repairs malformed input ([6f0e032](https://github.com/xns1997/FormFlow-Studio/commit/6f0e032d17a18f5412b1932fed31ac11f43d8843))
+* **ui:** docs center design audit — unified tokens, animations, spacing ([247dd39](https://github.com/xns1997/FormFlow-Studio/commit/247dd39d5ddcb12530c8d4ab5499a64ac22a23e4)), closes [#2563eb](https://github.com/xns1997/FormFlow-Studio/issues/2563eb) [#0f766e](https://github.com/xns1997/FormFlow-Studio/issues/0f766e) [#0f172a](https://github.com/xns1997/FormFlow-Studio/issues/0f172a)
+* **ui:** improve docs table styling + add code syntax highlighting ([69c9172](https://github.com/xns1997/FormFlow-Studio/commit/69c9172ce86d8a49fbb76f3c7af4fe9746854644))
+
 ## [1.8.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.7.2...v1.8.0) (2026-07-31)
 
 
