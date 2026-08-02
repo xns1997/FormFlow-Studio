@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { marked } from 'marked';
 import hljs from 'highlight.js/lib/core';
@@ -11,6 +11,7 @@ import python from 'highlight.js/lib/languages/python';
 import bash from 'highlight.js/lib/languages/bash';
 import css from 'highlight.js/lib/languages/css';
 import xml from 'highlight.js/lib/languages/xml';
+import plaintext from 'highlight.js/lib/languages/plaintext';
 
 // 注册常用语言
 hljs.registerLanguage('javascript', javascript);
@@ -21,6 +22,11 @@ hljs.registerLanguage('bash', bash);
 hljs.registerLanguage('css', css);
 hljs.registerLanguage('html', xml);
 hljs.registerLanguage('xml', xml);
+hljs.registerLanguage('text', plaintext);
+hljs.registerLanguage('plaintext', plaintext);
+hljs.registerLanguage('plain', plaintext);
+hljs.registerLanguage('txt', plaintext);
+hljs.registerLanguage('ebnf', plaintext);
 
 interface MarkdownRendererProps {
   content: string;
@@ -57,6 +63,10 @@ function enhanceCodeBlocks(html: string): string {
     (_match, lang: string, _editable: string | undefined, code: string) => {
       const decodedCode = code.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
 
+      if (lang === 'mermaid') {
+        return `<div class="docs-mermaid-block"><div class="docs-mermaid-placeholder" data-mermaid-spec="${encodeURIComponent(decodedCode.trim())}"></div></div>`;
+      }
+
       // 流程预览占位符
       if (lang === 'flow-preview') {
         const previewId = decodedCode.trim();
@@ -69,8 +79,12 @@ function enhanceCodeBlocks(html: string): string {
       }
 
       let highlighted: string;
+      const requestedLanguage = lang === 'ebnf' ? 'text' : lang;
+      const knownLanguage = hljs.getLanguage(requestedLanguage);
       try {
-        highlighted = hljs.highlight(code, { language: lang }).value;
+        highlighted = knownLanguage
+          ? hljs.highlight(code, { language: requestedLanguage }).value
+          : hljs.highlightAuto(code).value;
       } catch {
         highlighted = hljs.highlightAuto(code).value;
       }
@@ -146,8 +160,18 @@ function sanitizeHtml(html: string) {
   return parsed.body.innerHTML;
 }
 
+function escapeHtml(source: string) {
+  return source
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export default function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const mermaidScopeId = useId().replace(/[^a-zA-Z0-9_-]/g, '-');
 
   const html = useMemo(() => {
     const raw = marked.parse(content) as string;
@@ -162,6 +186,7 @@ export default function MarkdownRenderer({ content, className }: MarkdownRendere
   // 初始化可编辑代码块和折叠块
   useEffect(() => {
     if (!containerRef.current) return;
+    let disposed = false;
 
     // 折叠块箭头动画
     const details = containerRef.current.querySelectorAll('details');
@@ -374,7 +399,37 @@ export default function MarkdownRenderer({ content, className }: MarkdownRendere
       flowRoots.push(root);
     });
 
+    const mermaidPlaceholders = containerRef.current.querySelectorAll<HTMLElement>('.docs-mermaid-placeholder');
+    if (mermaidPlaceholders.length) {
+      void import('mermaid').then(async ({ default: mermaid }) => {
+        mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: 'strict',
+          theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'default',
+        });
+        for (const [index, placeholder] of Array.from(mermaidPlaceholders).entries()) {
+          const spec = decodeURIComponent(placeholder.dataset.mermaidSpec || '');
+          if (!spec || disposed) continue;
+          try {
+            const { svg } = await mermaid.render(`docs-mermaid-${mermaidScopeId}-${index}-${Date.now()}`, spec);
+            if (disposed) return;
+            placeholder.innerHTML = svg;
+            placeholder.classList.add('docs-mermaid-placeholder--ready');
+          } catch (error) {
+            if (disposed) return;
+            console.warn('[docs] Mermaid render failed', error);
+            const message = error instanceof Error ? error.message : String(error);
+            placeholder.innerHTML = `<div class="docs-mermaid-error"><strong>Mermaid 渲染失败</strong><p>${escapeHtml(message)}</p><pre><code>${escapeHtml(spec)}</code></pre></div>`;
+            placeholder.classList.add('docs-mermaid-placeholder--error');
+          }
+        }
+      }).catch((error) => {
+        console.warn('[docs] Mermaid loader failed', error);
+      });
+    }
+
     return () => {
+      disposed = true;
       delete (window as any).__runCodeSandbox;
       delete (window as any).__resetCodeSandbox;
       containerRef.current?.removeEventListener('click', copyHandler);

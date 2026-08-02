@@ -129,8 +129,16 @@
 
 ## 当前状态
 
-- 当前已发布版本：[`1.7.0`](./docs/changelog/v1.md)
+- 当前已发布版本：[`1.8.0`](./docs/changelog/v1.md)
 - 开发中变更：[`Unreleased`](./docs/changelog/unreleased.md)
+
+### Unreleased 摘要
+
+- 任务教程进入“逐页校正文字语义，再核截图”的整改阶段：清理重复图、错图、旧图和无教学意义的顶部配图，并把 Mermaid 流程图规范单独沉淀为共享文档。
+- 行为文档入口、旧 slug 跳转与 canonical path 解析已收口到统一路由解析器；Behavior 页面补上规则语法、上下文、控件句柄、流程参数、CRUD 快速模式和最佳实践的显式入口。
+- DSL Reference 从占位页升级为完整参考：现在同时覆盖语法约束、执行时序、关键词、动作语义、诊断范围、典型用例和反例，并在前端真实页面完成 Mermaid 渲染验收。
+
+更多开发中明细见 [`docs/changelog/unreleased.md`](./docs/changelog/unreleased.md)。
 
 ## 分卷导航
 

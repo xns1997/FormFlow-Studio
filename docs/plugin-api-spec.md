@@ -23,6 +23,14 @@
 
 ## 生命周期
 
+```mermaid
+flowchart TD
+  A["discover"] --> B["register"]
+  B --> C["activate"]
+  C --> D["reload"]
+  D --> E["dispose"]
+```
+
 - `discover`：启动时扫描清单并校验 `apiVersion`、ID 唯一性。
 - `register`：节点加入统一注册表；存在 `executorUrl` 时注册远程执行器。
 - `activate`：首次执行节点时动态加载执行模块。

@@ -2,6 +2,15 @@
 
 FormFlow 使用 PostgreSQL 的 `pgvector` 扩展保存知识分块和 Embedding。Express 负责租户、项目权限、Embedding 模型路由和向量数据访问；浏览器不直接访问数据库。
 
+```mermaid
+flowchart TD
+  A["知识文档或查询请求"] --> B["Express"]
+  B --> C["租户与项目权限校验"]
+  C --> D["Embedding 模型路由"]
+  D --> E["pgvector 索引或检索"]
+  E --> F["返回写入或检索结果"]
+```
+
 ## 启动与健康检查
 
 Docker Compose 使用 `pgvector/pgvector:pg17`。后端启动时会执行 `CREATE EXTENSION IF NOT EXISTS vector`，创建 `formflow_knowledge_chunks`，随后在 `/api/health` 中暴露：
@@ -14,6 +23,15 @@ Docker Compose 使用 `pgvector/pgvector:pg17`。后端启动时会执行 `CREAT
 ```
 
 本地 PostgreSQL 没有安装扩展时，默认以降级模式启动，`vectorSearch` 为 `false`，后台健康检查会继续尝试恢复。设置 `FORMFLOW_VECTOR_REQUIRED=true` 可令生产环境在扩展不可用时拒绝启动，并在运行期间将 `/api/ready` 标记为未就绪。
+
+```mermaid
+flowchart TD
+  A["启动服务"] --> B{"pgvector 可用?"}
+  B -->|是| C["vectorSearch 可用"]
+  B -->|否| D{"强制要求向量?"}
+  D -->|否| E["降级启动并持续健康检查"]
+  D -->|是| F["拒绝启动 / ready 未就绪"]
+```
 
 向量列不固定维度，记录会保存实际 `dimensions` 和 `embedding_model`。需要 HNSW 索引时设置：
 

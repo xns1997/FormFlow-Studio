@@ -1,7 +1,73 @@
+import { backendDocs, behaviorEventDocs, behaviorTopicDocs, formDesignDocs, overviewDocs } from './behaviorDocs';
+
 export type WorkspaceTab = 'data' | 'template' | 'canvas' | 'designer' | 'behavior' | 'test' | 'settings';
 export type ProjectSettingsSection = 'general' | 'versions' | 'behavior' | 'publish' | 'workflow';
 export type SystemSettingsSection = 'general' | 'appearance' | 'storage' | 'editor' | 'workflow' | 'ai' | 'experts' | 'experiments';
 export type DocSourcePage = 'workspace' | 'settings';
+export type LegacyDocSection = 'overview' | 'behavior' | 'form-design' | 'flow-nodes' | 'backend';
+
+function withDocSource(path: string, source?: {
+  fromProject?: string;
+  fromPage?: DocSourcePage;
+  fromTab?: string;
+}) {
+  if (!source) return path;
+  const search = new URLSearchParams();
+  if (source.fromProject) search.set('fromProject', source.fromProject);
+  if (source.fromPage) search.set('fromPage', source.fromPage);
+  if (source.fromTab) search.set('fromTab', source.fromTab);
+  const query = search.toString();
+  return query ? `${path}?${query}` : path;
+}
+
+const TOPIC_BEHAVIOR_SLUGS = new Set(behaviorTopicDocs.map((doc) => doc.slug));
+const EVENT_SLUGS = new Set(behaviorEventDocs.map((doc) => doc.slug));
+const OVERVIEW_SLUGS = new Set(overviewDocs.map((doc) => doc.slug));
+const CONTROL_SLUGS = new Set(formDesignDocs.map((doc) => doc.slug));
+const API_SLUGS = new Set(backendDocs.map((doc) => doc.slug));
+
+export function resolveDocCanonicalPath(slug?: string) {
+  if (!slug) return '/docs';
+  if (TOPIC_BEHAVIOR_SLUGS.has(slug)) return `/docs/reference/behavior/${encodeURIComponent(slug)}`;
+  if (EVENT_SLUGS.has(slug)) return `/docs/reference/events/${encodeURIComponent(slug)}`;
+  if (OVERVIEW_SLUGS.has(slug)) return `/docs/reference/getting-started/${encodeURIComponent(slug)}`;
+  if (CONTROL_SLUGS.has(slug)) return `/docs/reference/controls/${encodeURIComponent(slug)}`;
+  if (API_SLUGS.has(slug)) return `/docs/reference/api/${encodeURIComponent(slug)}`;
+  return `/docs?q=${encodeURIComponent(slug)}`;
+}
+
+export function resolveLegacyDocPath(section: LegacyDocSection, slug?: string) {
+  if (!slug) {
+    const domain = section === 'overview'
+      ? 'getting-started'
+      : section === 'form-design'
+        ? 'controls'
+        : section === 'flow-nodes'
+          ? 'nodes'
+          : section === 'backend'
+            ? 'api'
+            : 'events';
+    return `/docs?domain=${encodeURIComponent(domain)}`;
+  }
+  if (section === 'behavior') {
+    if (TOPIC_BEHAVIOR_SLUGS.has(slug)) return `/docs/reference/behavior/${encodeURIComponent(slug)}`;
+    if (EVENT_SLUGS.has(slug)) return `/docs/reference/events/${encodeURIComponent(slug)}`;
+    return `/docs?domain=behavior&q=${encodeURIComponent(slug)}`;
+  }
+  if (section === 'overview') {
+    if (OVERVIEW_SLUGS.has(slug)) return `/docs/reference/getting-started/${encodeURIComponent(slug)}`;
+    return `/docs?domain=getting-started&q=${encodeURIComponent(slug)}`;
+  }
+  if (section === 'form-design') {
+    if (CONTROL_SLUGS.has(slug)) return `/docs/reference/controls/${encodeURIComponent(slug)}`;
+    return `/docs?domain=controls&q=${encodeURIComponent(slug)}`;
+  }
+  if (section === 'backend') {
+    if (API_SLUGS.has(slug)) return `/docs/reference/api/${encodeURIComponent(slug)}`;
+    return `/docs?domain=api&q=${encodeURIComponent(slug)}`;
+  }
+  return `/docs?domain=nodes&q=${encodeURIComponent(slug)}`;
+}
 
 export function buildProjectsPath() {
   return '/projects';
@@ -32,14 +98,7 @@ export function buildDocsPath(slug?: string, source?: {
   fromPage?: DocSourcePage;
   fromTab?: string;
 }) {
-  const base = slug ? `/docs/${slug}` : '/docs';
-  if (!source) return base;
-  const search = new URLSearchParams();
-  if (source.fromProject) search.set('fromProject', source.fromProject);
-  if (source.fromPage) search.set('fromPage', source.fromPage);
-  if (source.fromTab) search.set('fromTab', source.fromTab);
-  const query = search.toString();
-  return query ? `${base}?${query}` : base;
+  return withDocSource(resolveDocCanonicalPath(slug), source);
 }
 
 export function buildDocsSectionPath(sectionId: string, slug?: string, source?: {
@@ -48,13 +107,7 @@ export function buildDocsSectionPath(sectionId: string, slug?: string, source?: 
   fromTab?: string;
 }) {
   const base = slug ? `/docs/${sectionId}/${slug}` : `/docs/${sectionId}`;
-  if (!source) return base;
-  const search = new URLSearchParams();
-  if (source.fromProject) search.set('fromProject', source.fromProject);
-  if (source.fromPage) search.set('fromPage', source.fromPage);
-  if (source.fromTab) search.set('fromTab', source.fromTab);
-  const query = search.toString();
-  return query ? `${base}?${query}` : base;
+  return withDocSource(base, source);
 }
 
 export function buildUsagePath(projectId: string) {

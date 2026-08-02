@@ -16,6 +16,14 @@ HTTP 使用 `/mcp/<role>`，stdio 使用 `formflow-mcp --role <role>`。原无�
 
 仓库级调用约束、revision、幂等、确认与发布门禁，统一以根目录 [`../../CODEX.md`](../../CODEX.md) 为准。
 
+```mermaid
+flowchart TD
+  A["确认目标契约"] --> B["选择专职 MCP 角色"]
+  B --> C["读取项目与 revision"]
+  C --> D["执行领域修改"]
+  D --> E["质量校验 / 打包预检"]
+```
+
 ## Codex 内置 skill
 
 仓库内置了面向 Codex 的 FormFlow v2 skill：[`../../.codex/skills/formflow-project-editor/`](../../.codex/skills/formflow-project-editor/)。

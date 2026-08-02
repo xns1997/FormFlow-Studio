@@ -2,6 +2,14 @@
 
 FormFlow Server 在同一进程中暴露七个专职 MCP。它们共用 Schema、权限、revision、确认和审计逻辑，但写工具只归属一个领域。
 
+```mermaid
+flowchart TD
+  A["发现角色与工具"] --> B["读取项目与版本"]
+  B --> C["调用对应领域写工具"]
+  C --> D["处理确认要求"]
+  D --> E["执行校验或预览"]
+```
+
 ## 接入方式
 
 - 查看角色：`GET /api/ai/mcp-roles`

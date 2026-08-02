@@ -19,6 +19,10 @@ export interface PlannedScreenshot {
 export interface PlannedStepScreenshot extends PlannedScreenshot {
   sequence: number;
   instruction: string;
+  scenarioId: string;
+  stateCheckpoint: string;
+  expectedVisibleFacts: string[];
+  forbiddenVisibleFacts: string[];
 }
 
 export interface DocIllustrationPlan {
@@ -27,6 +31,16 @@ export interface DocIllustrationPlan {
 }
 
 type IllustrationEntry = DocScreenshotEntry & Partial<Pick<DocEntry, 'id' | 'kind' | 'blocks'>>;
+type StepNarrative = {
+  scenarioId: string;
+  stateCheckpoint: string;
+  expectedVisibleFacts: string[];
+  forbiddenVisibleFacts: string[];
+};
+const DOC_SCREENSHOT_BLOCKLIST = new Set<string>([
+  'topic:behavior-rule-syntax',
+  'topic:best-practices',
+]);
 
 const ENTRY_STEP_SCREENSHOTS: Record<string, Record<string, Array<{
   src: string;
@@ -36,55 +50,54 @@ const ENTRY_STEP_SCREENSHOTS: Record<string, Record<string, Array<{
   'task:understand-create': {
     steps: [
       { src: '/docs/screenshots/tasks/understand-create-01.png', label: '项目列表的新建入口', focus: { x: 82, y: 13, width: 15, height: 10 } },
-      { src: '/docs/screenshots/tasks/understand-create-02.png', label: '创建项目的起始方式', focus: { x: 17, y: 24, width: 66, height: 55 } },
-      { src: '/docs/screenshots/tasks/understand-create-03.png', label: '项目基础信息表单', focus: { x: 23, y: 27, width: 55, height: 48 } },
-      { src: '/docs/screenshots/tasks/understand-create-04.png', label: '编辑器中的项目名称与工作模式', focus: { x: 0, y: 6, width: 100, height: 10 } },
+      { src: '/docs/screenshots/tasks/understand-create-02.png', label: '创建项目向导中的起始方式选择', focus: { x: 17, y: 24, width: 66, height: 55 } },
+      { src: '/docs/screenshots/tasks/understand-create-03.png', label: '创建项目向导中的基础信息表单', focus: { x: 23, y: 27, width: 55, height: 48 } },
+      { src: '/docs/screenshots/tasks/understand-create-04.png', label: '创建后已打开的示例项目数据页', focus: { x: 0, y: 6, width: 100, height: 10 } },
     ],
   },
   'task:import-model': {
     steps: [
       { src: '/docs/screenshots/tasks/import-model-01.png', label: '空项目中的上传入口与数据工作区', focus: { x: 0, y: 9, width: 28, height: 28 } },
-      { src: '/docs/screenshots/tasks/import-model-02.png', label: '已导入数据表的表头、样本值与字段类型', focus: { x: 15, y: 16, width: 84, height: 74 } },
+      { src: '/docs/screenshots/tasks/import-model-02.png', label: 'work_records.json 数据表的表头、样本值与字段数量', focus: { x: 15, y: 16, width: 84, height: 74 } },
       { src: '/docs/screenshots/tasks/import-model-03.png', label: '配置页中的 Key 勾选区域', focus: { x: 3, y: 20, width: 74, height: 33 } },
-      { src: '/docs/screenshots/tasks/import-model-04.png', label: '返回数据表后用搜索确认当前结果', focus: { x: 0, y: 11, width: 80, height: 26 } },
+      { src: '/docs/screenshots/tasks/import-model-04.png', label: '返回数据表后搜索 JOB-0001 的筛选结果', focus: { x: 0, y: 11, width: 80, height: 26 } },
     ],
   },
   'task:generate-design': {
     steps: [
-      { src: '/docs/screenshots/tasks/generate-design-01.png', label: '选择字段并触发模板生成入口', focus: { x: 0, y: 18, width: 79, height: 18 } },
-      { src: '/docs/screenshots/tasks/generate-design-02.png', label: '生成弹窗中的推荐模板和预览内容', focus: { x: 12, y: 14, width: 76, height: 77 } },
-      { src: '/docs/screenshots/tasks/generate-design-03.png', label: '设计器中已选控件与右侧属性栏', focus: { x: 20, y: 21, width: 79, height: 64 } },
-      { src: '/docs/screenshots/tasks/generate-design-04.png', label: '运行态表单中的真实填写入口', focus: { x: 22, y: 31, width: 56, height: 45 } },
+      { src: '/docs/screenshots/tasks/generate-design-01.png', label: '勾选字段后触发模板生成入口', focus: { x: 0, y: 18, width: 79, height: 18 } },
+      { src: '/docs/screenshots/tasks/generate-design-02.png', label: '模板选择弹窗中的单表数据录入预览', focus: { x: 12, y: 14, width: 76, height: 77 } },
+      { src: '/docs/screenshots/tasks/generate-design-03.png', label: '表单设计器中当前控件的标签、必填与校验配置', focus: { x: 20, y: 21, width: 79, height: 64 } },
+      { src: '/docs/screenshots/tasks/generate-design-04.png', label: '创建并打开后的运行预览表单', focus: { x: 22, y: 31, width: 56, height: 45 } },
     ],
   },
   'task:behavior-workflow': {
     steps: [
-      { src: '/docs/screenshots/tasks/behavior-workflow-01.png', label: '规则页中已选中的规则代码与当前表单', focus: { x: 0, y: 13, width: 100, height: 79 } },
+      { src: '/docs/screenshots/tasks/behavior-workflow-01.png', label: '规则页中当前表单的规则代码与提醒语句', focus: { x: 0, y: 13, width: 100, height: 79 } },
       { src: '/docs/screenshots/tasks/behavior-workflow-02.png', label: '流程页中的保存流程总览与节点连线', focus: { x: 0, y: 12, width: 100, height: 79 } },
-      { src: '/docs/screenshots/tasks/behavior-workflow-03.png', label: '流程页中表单保存节点的字段映射与必填字段', focus: { x: 39, y: 12, width: 61, height: 80 } },
-      { src: '/docs/screenshots/tasks/behavior-workflow-04.png', label: '测试样例面板中的覆盖率与失败用例', focus: { x: 26, y: 8, width: 48, height: 84 } },
+      { src: '/docs/screenshots/tasks/behavior-workflow-03.png', label: '表单保存节点的主键、必填字段和字段映射配置', focus: { x: 39, y: 12, width: 61, height: 80 } },
+      { src: '/docs/screenshots/tasks/behavior-workflow-04.png', label: '自动测试样例面板中的覆盖率与用例分布', focus: { x: 26, y: 8, width: 48, height: 84 } },
     ],
   },
   'task:test-quality': {
     steps: [
-      { src: '/docs/screenshots/tasks/test-quality-01.png', label: '自动测试样例中的覆盖率与样例总览', focus: { x: 27, y: 8, width: 47, height: 84 } },
-      { src: '/docs/screenshots/tasks/test-quality-02.png', label: '运行全部后的测试样例结果列表与执行状态', focus: { x: 27, y: 24, width: 47, height: 67 } },
+      { src: '/docs/screenshots/tasks/test-quality-01.png', label: '自动测试样例中的覆盖率、通过数与失败用例', focus: { x: 27, y: 8, width: 47, height: 84 } },
+      { src: '/docs/screenshots/tasks/test-quality-02.png', label: '同一面板中的必填、枚举与边界值样例结果', focus: { x: 27, y: 24, width: 47, height: 67 } },
       { src: '/docs/screenshots/tasks/test-quality-03.png', label: '数据质量页中的质量分数、趋势和问题分布', focus: { x: 1, y: 4, width: 98, height: 88 } },
-      { src: '/docs/screenshots/tasks/test-quality-04.png', label: '返回测试面板后确认最近运行时间与当前通过情况', focus: { x: 27, y: 8, width: 47, height: 84 } },
     ],
   },
   'task:use-export': {
     steps: [
-      { src: '/docs/screenshots/tasks/use-export-01.png', label: '使用页中已打开的从业者档案编辑表单', focus: { x: 16, y: 12, width: 68, height: 64 } },
-      { src: '/docs/screenshots/tasks/use-export-02.png', label: '数据页中搜索 W-0001 后收敛到 1 行的当前结果', focus: { x: 0, y: 11, width: 79, height: 84 } },
+      { src: '/docs/screenshots/tasks/use-export-01.png', label: 'worker_profiles.json 中搜索 W-0001 后收敛到 1 行', focus: { x: 16, y: 12, width: 68, height: 64 } },
+      { src: '/docs/screenshots/tasks/use-export-02.png', label: '导出前确认当前筛选结果仍为 1 行', focus: { x: 0, y: 11, width: 79, height: 84 } },
       { src: '/docs/screenshots/tasks/use-export-03.png', label: '筛选结果上方的导出结果入口', focus: { x: 53, y: 11, width: 22, height: 10 } },
-      { src: '/docs/screenshots/tasks/use-export-04.png', label: '导出成功提示与当前结果范围', focus: { x: 83, y: 78, width: 16, height: 10 } },
+      { src: '/docs/screenshots/tasks/use-export-04.png', label: '右下角的导出成功提示', focus: { x: 77, y: 84, width: 22, height: 12 } },
     ],
   },
   'task:package-release': {
     steps: [
       { src: '/docs/screenshots/tasks/package-release-01.png', label: '发布门禁中的阻断数量与失败列表', focus: { x: 26, y: 21, width: 49, height: 56 } },
-      { src: '/docs/screenshots/tasks/package-release-02.png', label: '自动测试样例中的失败用例与覆盖率总览', focus: { x: 26, y: 15, width: 49, height: 78 } },
+      { src: '/docs/screenshots/tasks/package-release-02.png', label: '自动测试样例中的失败用例列表', focus: { x: 26, y: 15, width: 49, height: 78 } },
       { src: '/docs/screenshots/tasks/package-release-03.png', label: '设置页发布分组中的导出格式、文件名和写回策略', focus: { x: 2, y: 10, width: 97, height: 61 } },
       { src: '/docs/screenshots/tasks/package-release-04.png', label: '保存后的交付策略与已保存状态', focus: { x: 62, y: 2, width: 37, height: 51 } },
     ],
@@ -98,6 +111,199 @@ const ENTRY_STEP_SCREENSHOTS: Record<string, Record<string, Array<{
     ],
     apply: [
       { src: '/docs/screenshots/quality-center.png', label: '应用后进入质量检查确认结果的页面', focus: { x: 1, y: 8, width: 96, height: 79 } },
+    ],
+  },
+};
+
+const ENTRY_STEP_NARRATIVES: Record<string, Record<string, StepNarrative[]>> = {
+  'task:understand-create': {
+    steps: [
+      {
+        scenarioId: 'task-understand-create-demo',
+        stateCheckpoint: 'project-list-empty',
+        expectedVisibleFacts: ['所有项目页', '新建项目按钮', '空列表提示'],
+        forbiddenVisibleFacts: ['创建项目向导', '数据表列表'],
+      },
+      {
+        scenarioId: 'task-understand-create-demo',
+        stateCheckpoint: 'create-wizard-entry-step',
+        expectedVisibleFacts: ['创建项目向导', '起始方式', '空白项目 / 内置模板 / .formflow 导入'],
+        forbiddenVisibleFacts: ['基础信息表单', '数据表列表'],
+      },
+      {
+        scenarioId: 'task-understand-create-demo',
+        stateCheckpoint: 'create-wizard-basic-info',
+        expectedVisibleFacts: ['创建项目向导', '基础信息', '项目名称', '项目描述'],
+        forbiddenVisibleFacts: ['起始方式卡片', '数据表列表'],
+      },
+      {
+        scenarioId: 'task-understand-create-demo',
+        stateCheckpoint: 'project-opened-data-page',
+        expectedVisibleFacts: ['数据页', '4 张数据表', 'worker_profiles.json', 'work_records.json'],
+        forbiddenVisibleFacts: ['创建项目向导', '空项目提示'],
+      },
+    ],
+  },
+  'task:import-model': {
+    steps: [
+      {
+        scenarioId: 'task-import-model-demo',
+        stateCheckpoint: 'empty-data-workspace',
+        expectedVisibleFacts: ['数据表(0)', '上传入口', '暂无数据表'],
+        forbiddenVisibleFacts: ['work_records.json', 'Key 配置'],
+      },
+      {
+        scenarioId: 'task-import-model-demo',
+        stateCheckpoint: 'work-records-loaded',
+        expectedVisibleFacts: ['work_records.json', '900 行', '工作记录ID', '从业者ID'],
+        forbiddenVisibleFacts: ['暂无数据表', 'Key 配置勾选卡片'],
+      },
+      {
+        scenarioId: 'task-import-model-demo',
+        stateCheckpoint: 'work-records-key-configured',
+        expectedVisibleFacts: ['配置', 'Key 配置', '工作记录ID 已勾选'],
+        forbiddenVisibleFacts: ['暂无数据表', '搜索 JOB-0001'],
+      },
+      {
+        scenarioId: 'task-import-model-demo',
+        stateCheckpoint: 'work-records-filtered-by-job-id',
+        expectedVisibleFacts: ['JOB-00014 搜索', '1 / 900 行', 'work_records.json'],
+        forbiddenVisibleFacts: ['Key 配置卡片', '暂无数据表'],
+      },
+    ],
+  },
+  'task:generate-design': {
+    steps: [
+      {
+        scenarioId: 'task-generate-design-demo',
+        stateCheckpoint: 'fields-selected-for-template',
+        expectedVisibleFacts: ['已选 2 个字段', '工作记录ID', '从业者ID', '选择模板生成表单'],
+        forbiddenVisibleFacts: ['规则代码', '运行预览弹窗'],
+      },
+      {
+        scenarioId: 'task-generate-design-demo',
+        stateCheckpoint: 'template-preview-open',
+        expectedVisibleFacts: ['选择模板生成表单', '单表数据录入', '创建并打开'],
+        forbiddenVisibleFacts: ['规则代码', '自动测试样例'],
+      },
+      {
+        scenarioId: 'task-generate-design-demo',
+        stateCheckpoint: 'designer-control-selected',
+        expectedVisibleFacts: ['表单设计器', '文本输入', '标签', '必填'],
+        forbiddenVisibleFacts: ['创建项目向导', '自动测试样例弹窗'],
+      },
+      {
+        scenarioId: 'task-generate-design-demo',
+        stateCheckpoint: 'runtime-preview-opened',
+        expectedVisibleFacts: ['单表数据录入', '工作记录ID', '从业者ID', '校验并保存'],
+        forbiddenVisibleFacts: ['规则代码', '模板选择弹窗'],
+      },
+    ],
+  },
+  'task:behavior-workflow': {
+    steps: [
+      {
+        scenarioId: 'task-behavior-workflow-demo',
+        stateCheckpoint: 'rule-code-opened',
+        expectedVisibleFacts: ['规则代码', 'before submit', '工时提醒'],
+        forbiddenVisibleFacts: ['创建项目向导', '发布门禁弹窗'],
+      },
+      {
+        scenarioId: 'task-behavior-workflow-demo',
+        stateCheckpoint: 'workflow-overview-opened',
+        expectedVisibleFacts: ['工作记录录入保存', '3 个节点', '4 条连线'],
+        forbiddenVisibleFacts: ['创建项目向导', 'Key 配置'],
+      },
+      {
+        scenarioId: 'task-behavior-workflow-demo',
+        stateCheckpoint: 'workflow-save-node-selected',
+        expectedVisibleFacts: ['表单保存', '主键字段', '必填字段', '字段映射'],
+        forbiddenVisibleFacts: ['创建项目向导', '暂无数据表'],
+      },
+      {
+        scenarioId: 'task-behavior-workflow-demo',
+        stateCheckpoint: 'test-modal-opened',
+        expectedVisibleFacts: ['自动测试样例', '覆盖率 71%', '失败', '通过'],
+        forbiddenVisibleFacts: ['创建项目向导', '发布门禁'],
+      },
+    ],
+  },
+  'task:test-quality': {
+    steps: [
+      {
+        scenarioId: 'task-test-quality-demo',
+        stateCheckpoint: 'test-modal-overview',
+        expectedVisibleFacts: ['自动测试样例', '覆盖率 71%', '15/21 通过'],
+        forbiddenVisibleFacts: ['数据质量总览', '发布门禁'],
+      },
+      {
+        scenarioId: 'task-test-quality-demo',
+        stateCheckpoint: 'test-modal-case-results',
+        expectedVisibleFacts: ['必填字段为空', '枚举 校验外值', 'boundary'],
+        forbiddenVisibleFacts: ['数据质量总览', '发布门禁'],
+      },
+      {
+        scenarioId: 'task-test-quality-demo',
+        stateCheckpoint: 'quality-dashboard-opened',
+        expectedVisibleFacts: ['质量分数', '质量趋势', '问题分布'],
+        forbiddenVisibleFacts: ['自动测试样例', '发布门禁'],
+      },
+    ],
+  },
+  'task:use-export': {
+    steps: [
+      {
+        scenarioId: 'task-use-export-demo',
+        stateCheckpoint: 'worker-profile-filtered',
+        expectedVisibleFacts: ['worker_profiles.json', 'W-0001', '1 / 150 行'],
+        forbiddenVisibleFacts: ['工作记录录入保存', '发布门禁'],
+      },
+      {
+        scenarioId: 'task-use-export-demo',
+        stateCheckpoint: 'worker-profile-ready-to-export',
+        expectedVisibleFacts: ['worker_profiles.json', 'W-0001', '1 / 150 行'],
+        forbiddenVisibleFacts: ['已导出当前结果', '发布门禁'],
+      },
+      {
+        scenarioId: 'task-use-export-demo',
+        stateCheckpoint: 'export-action-highlighted',
+        expectedVisibleFacts: ['导出结果', 'W-0001', '1 / 150 行'],
+        forbiddenVisibleFacts: ['已导出当前结果', '发布门禁'],
+      },
+      {
+        scenarioId: 'task-use-export-demo',
+        stateCheckpoint: 'export-success-toast',
+        expectedVisibleFacts: ['已导出当前结果（1 行）', '导出成功提示'],
+        forbiddenVisibleFacts: ['发布门禁', '创建项目向导'],
+      },
+    ],
+  },
+  'task:package-release': {
+    steps: [
+      {
+        scenarioId: 'task-package-release-demo',
+        stateCheckpoint: 'release-gate-opened',
+        expectedVisibleFacts: ['发布门禁', '还有 6 个阻断项'],
+        forbiddenVisibleFacts: ['创建项目向导', 'Key 配置'],
+      },
+      {
+        scenarioId: 'task-package-release-demo',
+        stateCheckpoint: 'test-modal-blockers',
+        expectedVisibleFacts: ['自动测试样例', '覆盖率 71%', '正常填写', '订单数 最小边界', '工时 最小边界'],
+        forbiddenVisibleFacts: ['创建项目向导', 'Key 配置'],
+      },
+      {
+        scenarioId: 'task-package-release-demo',
+        stateCheckpoint: 'publish-settings-opened',
+        expectedVisibleFacts: ['发布', '导出格式', '输出文件名'],
+        forbiddenVisibleFacts: ['创建项目向导', '发布门禁弹窗'],
+      },
+      {
+        scenarioId: 'task-package-release-demo',
+        stateCheckpoint: 'publish-settings-saved',
+        expectedVisibleFacts: ['已保存', '发布', '配置摘要'],
+        forbiddenVisibleFacts: ['创建项目向导', '发布门禁弹窗'],
+      },
     ],
   },
 };
@@ -269,17 +475,23 @@ export function buildDocIllustrationPlan(entry: IllustrationEntry): DocIllustrat
   const identity = entry.id || `${entry.domain}:${entry.title}`;
   const customizationId = `doc-shot-${stableHash(identity).toString(16).padStart(8, '0')}`;
   const stepsByBlock: Record<string, PlannedStepScreenshot[]> = {};
+  if (entry.id && DOC_SCREENSHOT_BLOCKLIST.has(entry.id)) return { customizationId, stepsByBlock };
 
   for (const block of entry.blocks || []) {
     const instructions = extractInstructionSteps(block);
     if (instructions.length === 0) continue;
     stepsByBlock[block.id] = instructions.map((instruction, index) => {
       const explicitScreenshot = entry.id ? ENTRY_STEP_SCREENSHOTS[entry.id]?.[block.id]?.[index] : undefined;
+      const narrative = entry.id ? ENTRY_STEP_NARRATIVES[entry.id]?.[block.id]?.[index] : undefined;
       if (explicitScreenshot) {
         return {
           ...explicitScreenshot,
           sequence: index + 1,
           instruction,
+          scenarioId: narrative?.scenarioId || identity,
+          stateCheckpoint: narrative?.stateCheckpoint || `${block.id}-${index + 1}`,
+          expectedVisibleFacts: [...(narrative?.expectedVisibleFacts || [])],
+          forbiddenVisibleFacts: [...(narrative?.forbiddenVisibleFacts || [])],
           alt: `${entry.title}，第 ${index + 1} 步“${instruction}”：${explicitScreenshot.label}界面`,
           callout: `第 ${index + 1} 步 · ${instruction}`,
         };
@@ -289,6 +501,10 @@ export function buildDocIllustrationPlan(entry: IllustrationEntry): DocIllustrat
         ...source,
         sequence: index + 1,
         instruction,
+        scenarioId: narrative?.scenarioId || identity,
+        stateCheckpoint: narrative?.stateCheckpoint || `${block.id}-${index + 1}`,
+        expectedVisibleFacts: [...(narrative?.expectedVisibleFacts || [])],
+        forbiddenVisibleFacts: [...(narrative?.forbiddenVisibleFacts || [])],
         alt: `${entry.title}，第 ${index + 1} 步“${instruction}”：${source.label}界面`,
         callout: `第 ${index + 1} 步 · ${instruction}`,
         focus: focus || instructionFocus(domain, instruction),

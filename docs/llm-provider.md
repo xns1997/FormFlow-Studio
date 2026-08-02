@@ -1,5 +1,12 @@
 # 通用大模型 Provider
 
+```mermaid
+flowchart TD
+  A["前端请求"] --> B["Express 鉴权与路由"]
+  B --> C["Provider 执行模型 / Agent"]
+  C --> D["返回结果并记录审计"]
+```
+
 ## 规则语法智能体
 
 规则编辑器使用受控智能体协调代码编辑、语法检查、隔离测试和表单状态读取。Express 负责会话、权限、工具执行与最终写入；Provider 只运行模型节点和声明式图，不访问项目数据库。
@@ -11,6 +18,13 @@
 FormFlow 的模型运行时位于独立的 `llm-provider/` 服务。前端只访问 Express；Express 保存配置、租户权限和审计信息，通过 gRPC 调用 Provider。Provider 不读取 FormFlow 项目数据，也不持久化 API Key。
 
 ## 服务边界
+
+```mermaid
+flowchart TD
+  A["服务边界"] --> B["Express<br/>工具 / 配置 / 审计"]
+  A --> C["Python Provider<br/>模型 / Embedding / Agent"]
+  A --> D["Flask / gRPC<br/>健康检查 / 流式"]
+```
 
 - Express：Provider、模型 Profile、Agent 定义、加密凭据、项目覆盖、业务工具执行。
 - Python Provider：模型协议适配、LangGraph 调用图、Embedding、流式输出、声明式 Agent、管理员插件和 PostgreSQL checkpoint。

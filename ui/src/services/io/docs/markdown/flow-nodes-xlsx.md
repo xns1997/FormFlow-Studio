@@ -2,6 +2,13 @@
 
 高级 XLSX 节点组封装 SheetJS 底层方法，直接调用 XLSX 库的核心 API，适合需要精细控制的高级场景。
 
+```mermaid
+flowchart TD
+  A["读取工作簿"] --> B["Sheet 与 JSON 转换"]
+  B --> C["执行底层 XLSX 操作"]
+  C --> D["追加或保存工作簿"]
+```
+
 ## 读取工作簿 (XLSX.read)
 
 > 从 ArrayBuffer、二进制字符串或文本中读取工作簿
@@ -187,8 +194,14 @@ console.log(sheet.outputs.worksheet['!ref']); // 'A1:B3'
 
 ### 连接模式
 
-```
-[文件来源] → [读取工作簿] → [Sheet转JSON] → [数据处理] → [JSON转Sheet] → [追加Sheet] → [保存工作簿]
+```mermaid
+flowchart TD
+  A["文件来源"] --> B["读取工作簿"]
+  B --> C["Sheet 转 JSON"]
+  C --> D["数据处理"]
+  D --> E["JSON 转 Sheet"]
+  E --> F["追加 Sheet"]
+  F --> G["保存工作簿"]
 ```
 
 ### 注意事项

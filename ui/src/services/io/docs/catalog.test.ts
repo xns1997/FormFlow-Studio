@@ -27,6 +27,7 @@ test('unified catalog covers every registered control, baseline node, event and 
   assert.equal(entries.filter((entry) => entry.id.startsWith('template:operation:')).length, operationTemplates.length);
   assert.equal(new Set(entries.map((entry) => entry.id)).size, entries.length);
   assert.equal(new Set(entries.map((entry) => entry.canonicalPath)).size, entries.length);
+  assert.equal(entries.some((entry) => entry.id === 'guide:behavior-rule-syntax'), false);
 });
 
 test('search handles Chinese tasks, pinyin, English identifiers and business-first ranking', async () => {
@@ -59,4 +60,13 @@ test('search supports compact pinyin, initials, fuzzy spelling and multiple keyw
   assert.ok(searchDocs(index, 'zjct').slice(0, 5).some((result) => result.entry.id.includes('primary-key-conflict') || result.entry.id === 'task:import-model'));
   assert.ok(searchDocs(index, 'onSubmt').slice(0, 5).some((result) => result.entry.id.startsWith('event:')));
   assert.ok(searchDocs(index, 'excel 主键').slice(0, 5).some((result) => result.entry.id === 'task:import-model'));
+});
+
+test('behavior rule syntax canonical page resolves to legacy topic content instead of generic guide placeholder', async () => {
+  const entries = await loadDocCatalog();
+  const entry = entries.find((item) => item.canonicalPath === '/docs/reference/behavior/behavior-rule-syntax');
+  assert.ok(entry);
+  assert.equal(entry.id, 'topic:behavior-rule-syntax');
+  assert.ok(entry.blocks.some((block) => block.markdownBody === 'behavior-rule-syntax-overview.md'));
+  assert.ok(entry.blocks.some((block) => (block.fields || []).some((field) => field.name === 'before click("按钮名") -> 守卫动作(...)')));
 });

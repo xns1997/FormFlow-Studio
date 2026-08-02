@@ -4,7 +4,7 @@
 
 > 将 Excel / CSV / JSON / TSV / XML / Parquet 数据表转化为可交互的表单应用，支持数据库直连和 API 数据源，通过拖拽式节点编排数据处理流程，无需编写后端代码。
 
-本仓库当前发布版本为 **1.8.0**。本文档中心全面升级：多场景 Playground、事件交叉引用、设计系统统一、动画交互增强；详细变更见 [`CHANGELOG.md`](./CHANGELOG.md)。
+本仓库当前发布版本为 **1.8.0**。`main` 分支上的开发中版本继续推进文档系统、规则语法 Reference 与任务教程整改；详细变更见 [`CHANGELOG.md`](./CHANGELOG.md)。
 
 ## 先看这里
 
@@ -30,6 +30,9 @@
 - **统一数据变更入口**：REST、MCP 和表格批量写回共用 revision、幂等、访问控制和破坏性确认语义。
 - **共享领域核心**：行为 DSL、属性表达式、字段推断、表单脚手架和事件契约集中到 `shared/formflow-core`。
 - **可部署构建**：前端、服务端和测试使用独立 TypeScript 边界；生产构建同时生成 UI 与 Server 产物。
+- **任务教程整改**：开始按“先校正文案语义，再验截图连续性”的标准重做新手与任务文档，清理无教学价值的顶部配图、重复截图和错图。
+- **DSL Reference 完整化**：规则语法页不再是占位说明，现已覆盖句型、关键词、参数边界、执行时序、典型用例与反例，并在前端实际页面完成 Mermaid 验收。
+- **文档路由与渲染修复**：Behavior 相关 topic docs 统一走 canonical path；Mermaid 渲染改为实例级唯一 id，并补齐 `ebnf` / `text` 代码块高亮兜底。
 
 ## 快速开始
 
@@ -61,6 +64,7 @@ pnpm dev:all
 - 项目编排规范：[`docs/project-creation-spec.md`](./docs/project-creation-spec.md)
 - 行为事件参考：[`docs/behavior-event-reference.md`](./docs/behavior-event-reference.md)
 - 规则语法参考：[`docs/behavior-rule-syntax.md`](./docs/behavior-rule-syntax.md)
+- Mermaid 流程图规范：[`docs/readme/mermaid-flowchart-guidelines.md`](./docs/readme/mermaid-flowchart-guidelines.md)
 - 大模型 Provider：[`docs/llm-provider.md`](./docs/llm-provider.md)
 - pgvector 检索：[`docs/pgvector.md`](./docs/pgvector.md)
 

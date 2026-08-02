@@ -4,9 +4,12 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'reac
 import hljs from 'highlight.js/lib/core';
 import json from 'highlight.js/lib/languages/json';
 import javascript from 'highlight.js/lib/languages/javascript';
+import plaintext from 'highlight.js/lib/languages/plaintext';
 import HighlightText from '../../components/HighlightText';
 import ComponentDocPlayground from '../../components/ComponentDocPlayground';
 import { DocStepScreenshots } from '../../components/DocScreenshot';
+import MarkdownRenderer from '../../components/MarkdownRenderer';
+import { useMarkdown } from '../../hooks/useMarkdown';
 import {
   buildSearchIndex,
   findDoc,
@@ -23,12 +26,18 @@ import { isImeKeyboardEvent } from '../../services/io/docs/ime';
 
 hljs.registerLanguage('json', json);
 hljs.registerLanguage('javascript', javascript);
+hljs.registerLanguage('text', plaintext);
+hljs.registerLanguage('plaintext', plaintext);
+hljs.registerLanguage('plain', plaintext);
+hljs.registerLanguage('txt', plaintext);
+hljs.registerLanguage('ebnf', plaintext);
 
 function HighlightedCode({ code, language = 'json' }: { code: string; language?: string }) {
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
     if (ref.current) {
-      ref.current.innerHTML = hljs.highlight(code, { language }).value;
+      const requestedLanguage = hljs.getLanguage(language) ? language : 'text';
+      ref.current.innerHTML = hljs.highlight(code, { language: requestedLanguage }).value;
     }
   }, [code, language]);
   return <code ref={ref} className={`hljs language-${language}`} />;
@@ -47,6 +56,18 @@ function DocsScrollRoot({ children, label }: { children: React.ReactNode; label:
       {children}
     </div>
   );
+}
+
+function CatalogBlockBody({ body, markdownBody }: { body?: string; markdownBody?: string }) {
+  const mdContent = useMarkdown(markdownBody);
+
+  if (markdownBody) {
+    if (!mdContent) return <div className="docs-empty-inline">加载中...</div>;
+    return <MarkdownRenderer content={mdContent} />;
+  }
+
+  if (!body) return null;
+  return <>{body.split('\n').map((line, indexLine) => <p key={indexLine}>{line}</p>)}</>;
 }
 
 export default function DocsPlatformPage({ home = false }: { home?: boolean }) {
@@ -164,7 +185,7 @@ export default function DocsPlatformPage({ home = false }: { home?: boolean }) {
           {current.blocks.map((block) => (
             <section id={block.id} key={block.id} className="docs-v2-section">
               <h2>{block.title}</h2>
-              {block.body && block.body.split('\n').map((line, indexLine) => <p key={indexLine}>{line}</p>)}
+              <CatalogBlockBody body={block.body} markdownBody={block.markdownBody} />
               <DocStepScreenshots entry={current} blockId={block.id} />
               {block.fields && <div className="docs-v2-table" role="table">{block.fields.map((field) => <div className="docs-v2-table-row" role="row" key={`${field.name}:${field.type}`}><div role="cell"><code>{field.name}</code><small>{field.type}</small></div><p role="cell">{field.description}</p></div>)}</div>}
               {block.examples?.map((example) => {

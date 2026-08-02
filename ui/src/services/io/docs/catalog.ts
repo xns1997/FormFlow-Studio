@@ -24,6 +24,7 @@ export type DocBlock = {
   id: string;
   title: string;
   body?: string;
+  markdownBody?: string;
   fields?: Array<{ name: string; type: string; description: string }>;
   examples?: Array<{ title: string; code: string }>;
 };
@@ -66,7 +67,6 @@ export type DocFeedbackEvent = {
 const UPDATED_AT = '2026-08-01';
 const curatedTechnicalSpecs: Array<[string, string, string, DocDomain, string[]]> = [
   ['project-creation-spec', '项目创建与交付规范', '从创建、导入、设计、测试到交付的标准流程。', 'delivery', ['项目创建', '交付', '质量门禁']],
-  ['behavior-rule-syntax', '规则语法 Reference', 'Behavior Rule DSL 的语法、动作、表达式和确定性校验规则。', 'behavior', ['DSL', 'rule', 'lint']],
   ['llm-tools-mcp', '大模型工具与 MCP', '七个专职 MCP 的角色、工具发现、revision、幂等、确认与发布门禁。', 'api', ['MCP', 'LLM tools', 'agent']],
   ['plugin-api', 'Plugin API', '插件清单、节点注册、生命周期、配置和持久化接口。', 'api', ['plugin', '插件', 'manifest']],
   ['llm-provider', '通用大模型 Provider', '模型 Provider、受控工具、会话权限和部署接口。', 'api', ['LLM', 'Provider', '模型']],
@@ -160,14 +160,14 @@ function taskEntry(spec: typeof stageSpecs[number]): DocEntry {
 }
 
 const taskSteps: Record<string, string> = {
-  'understand-create': '1. 在项目列表点击“新建项目”。\n2. 选择空白项目或与业务接近的内置模板。\n3. 填写可识别的项目名称和用途。\n4. 创建并进入编辑器，确认项目名称和当前工作模式。',
-  'import-model': '1. 在数据工作区确认“上传”入口，准备带稳定 Key 的源文件。\n2. 选中目标数据表，核对表头、样本值和字段类型。\n3. 在“配置”页勾选用于唯一定位的 Key 字段。\n4. 返回数据表，用搜索或分页确认当前结果可继续后续表单生成。',
-  'generate-design': '1. 在数据表中选择字段并点击“选择模板生成表单”。\n2. 在生成弹窗中确认推荐模板和预览内容，再点击“创建并打开”。\n3. 在设计器中选中控件，核对标签、必填和数据绑定。\n4. 打开运行态表单，确认能进入真实填写。',
-  'behavior-workflow': '1. 在规则页选中“规则代码”，核对当前表单的提交校验与提醒语句。\n2. 切到流程页，确认“工作记录录入保存”流程的节点与连线完整。\n3. 在流程页选中“表单保存”节点，检查 work_records / 工作记录 的字段映射与必填字段。\n4. 打开顶部“测试 71%”样例面板，核对覆盖率与失败用例。',
+  'understand-create': '1. 在项目列表点击“新建项目”。\n2. 在创建项目向导的“起始方式”中选择空白项目、内置模板或 .formflow 导入。\n3. 在“基础信息”步骤填写项目名称、项目描述、作者和标签。\n4. 创建后先进入数据页，确认示例项目已经打开并显示 4 张数据表。',
+  'import-model': '1. 在空数据工作区使用“上传”入口准备导入源文件。\n2. 导入后切到 work_records.json 数据表，检查表头、样本值和字段数量。\n3. 打开“配置”页，为 work_records.json 勾选“工作记录ID”作为 Key。\n4. 返回数据表并搜索 JOB-00014，确认筛选结果已经收敛到 1 条目标记录。',
+  'generate-design': '1. 在 work_records.json 勾选“工作记录ID”和“从业者ID”，点击“选择模板生成表单”。\n2. 在模板选择弹窗中确认“单表数据录入”模板预览，并准备“创建并打开”。\n3. 在表单设计器中选中文本输入控件，检查标签、必填和校验配置。\n4. 在创建并打开后的运行预览中，确认表单骨架已经生成并可继续填写。',
+  'behavior-workflow': '1. 在规则页选中“规则代码”，检查提交前必填校验和工时提醒语句。\n2. 切到流程页，查看“工作记录录入保存”流程的节点与连线。\n3. 在流程页选中“表单保存”节点，检查主键字段、必填字段和字段映射配置。\n4. 打开自动测试样例面板，查看当前覆盖率与失败/通过用例分布。',
   'apply-templates': '',
-  'test-quality': '1. 打开顶部“测试 71%”查看自动测试样例和覆盖率。\n2. 点击“一键运行全部”，核对正常填写、必填为空和主键重复等场景结果。\n3. 打开数据质量页查看质量分数、质量趋势和问题分布。\n4. 返回测试面板，确认最近运行时间与当前通过情况。',
-  'use-export': '1. 在使用页打开目标表单，确认进入真实填写界面。\n2. 切到数据页，对目标数据表搜索 W-0001，确认当前结果范围已收敛到 1 行。\n3. 在当前结果上点击“导出结果”，导出筛选后的数据。\n4. 确认“已导出当前结果（1 行）”提示，并复核下载文件为 1 行 XLSX。',
-  'package-release': '1. 打开“发布检查”确认当前有 6 个自动测试阻断项。\n2. 切到“自动测试样例”，核对失败用例与发布阻断项一一对应。\n3. 打开设置页的“发布”分组，确认默认导出格式、输出文件名和写回策略。\n4. 点击“保存”，记录当前交付策略已保存，后续只需先清掉自动测试阻断再发布。',
+  'test-quality': '1. 打开自动测试样例面板，查看当前覆盖率、通过数和失败用例。\n2. 在同一面板中核对必填为空、枚举校验和边界值等样例结果。\n3. 切到数据质量页，确认质量分数、趋势和问题分布。',
+  'use-export': '1. 在 worker_profiles.json 中搜索 W-0001，确认筛选结果收敛到 1 条从业者档案。\n2. 保持当前筛选结果，核对导出前的表格范围就是这 1 行记录。\n3. 点击“导出结果”，从当前筛选结果导出数据。\n4. 确认右下角提示“已导出当前结果（1 行）”。',
+  'package-release': '1. 打开“发布检查”确认当前有 6 个自动测试阻断项。\n2. 切到“自动测试样例”，核对失败列表里已经出现“正常填写”“订单数最小边界”“工时最小/最大边界”等发布阻断项。\n3. 打开设置页的“发布”分组，确认默认导出格式、输出文件名和写回策略。\n4. 点击“保存”，确认右上角显示“已保存”，且右侧配置摘要保持最新状态。',
 };
 const taskChecks: Record<string, string> = Object.fromEntries(stageSpecs.map(([slug]) => [slug, '页面没有阻断错误；关键操作可重复执行；重新打开项目后配置仍然存在；相关数据、表单或输出可在预期位置找到。']));
 const taskTroubleshooting: Record<string, string> = {
@@ -260,7 +260,12 @@ function legacyTopic(doc: BehaviorTopicDocEntry, domain: DocDomain): DocEntry {
     relatedIds: [], updatedAt: UPDATED_AT,
     blocks: doc.sections.map((section, index) => ({
       id: `section-${index}`, title: section.title, body: section.body,
-      fields: section.fields?.map((field) => ({ name: field.name, type: field.type, description: field.description })),
+      markdownBody: section.markdownBody,
+      fields: [
+        ...(section.fields?.map((field) => ({ name: field.name, type: field.type, description: field.description })) || []),
+        ...(section.shortcuts?.map((item) => ({ name: item.path, type: '快捷写法', description: item.description })) || []),
+        ...(section.apis?.map((api) => ({ name: api.name, type: api.signature, description: api.description })) || []),
+      ],
       examples: section.examples,
     })),
   };

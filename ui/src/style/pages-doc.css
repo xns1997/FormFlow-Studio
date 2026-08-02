@@ -1671,6 +1671,58 @@ button.docs-breadcrumb-link {
   border-radius: 0 0 8px 8px;
 }
 
+.docs-mermaid-block {
+  margin: 14px 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  overflow-x: auto;
+}
+
+.docs-mermaid-placeholder {
+  min-height: 96px;
+  color: var(--muted);
+}
+
+.docs-mermaid-placeholder--ready {
+  display: flex;
+  justify-content: center;
+}
+
+.docs-mermaid-placeholder svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.docs-mermaid-placeholder--error pre {
+  margin: 0;
+}
+
+.docs-mermaid-error {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--text);
+}
+
+.docs-mermaid-error strong {
+  font-size: 13px;
+}
+
+.docs-mermaid-error p {
+  margin: 0;
+  color: var(--danger, #c2410c);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.docs-mermaid-error pre {
+  margin: 0;
+  overflow-x: auto;
+}
+
 /* ── Markdown Tables ────────────────────────────────────── */
 
 .docs-table-wrapper {

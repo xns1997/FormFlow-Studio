@@ -31,5 +31,11 @@ test('only instructional steps render accessible product screenshots', async () 
       assert.doesNotMatch(stepMarkup, /<svg/);
     }
   }
-  assert.ok(renderedSteps > 200);
+  const syntaxReference = entries.find((entry) => entry.id === 'topic:behavior-rule-syntax');
+  assert.ok(syntaxReference);
+  assert.equal(renderToStaticMarkup(createElement(DocStepScreenshots, { entry: syntaxReference, blockId: 'overview' })), '');
+  const bestPractices = entries.find((entry) => entry.id === 'topic:best-practices');
+  assert.ok(bestPractices);
+  assert.equal(renderToStaticMarkup(createElement(DocStepScreenshots, { entry: bestPractices, blockId: 'section-1' })), '');
+  assert.ok(renderedSteps >= 30);
 });

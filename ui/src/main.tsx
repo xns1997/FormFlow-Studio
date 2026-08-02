@@ -30,6 +30,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoginPage } from './pages/auth';
 import { getSession } from './services/io/auth';
 import { AppInteractionProvider } from './components/AppInteractionProvider';
+import { resolveLegacyDocPath, type LegacyDocSection } from './services/io/routes';
 
 const isCloudMode = ((import.meta as any).env?.VITE_APP_MODE || 'local') === 'cloud';
 function ModeGate() {
@@ -155,19 +156,10 @@ function WorkspaceEditorRedirect({ mode }: { mode: 'data' | 'design' | 'behavior
   return <Navigate to={`/projects/${id}/editor?${query.toString()}`} replace />;
 }
 
-function LegacyDocsRedirect({ section }: { section: 'overview' | 'behavior' | 'form-design' | 'flow-nodes' | 'backend' }) {
+function LegacyDocsRedirect({ section }: { section: LegacyDocSection }) {
   const { slug } = useParams<{ slug?: string }>();
   const location = useLocation();
-  const domain = section === 'overview' ? 'getting-started'
-    : section === 'form-design' ? 'controls'
-      : section === 'flow-nodes' ? 'nodes'
-        : section === 'backend' ? 'api'
-          : 'events';
-  if (slug && section !== 'flow-nodes') return <Navigate to={`/docs/reference/${domain}/${encodeURIComponent(slug)}${location.search}`} replace />;
-  const query = new URLSearchParams(location.search);
-  query.set('domain', domain);
-  if (slug) query.set('q', slug.replace(/^group-/, ''));
-  return <Navigate to={`/docs?${query.toString()}`} replace />;
+  return <Navigate to={`${resolveLegacyDocPath(section, slug)}${location.search}`} replace />;
 }
 
 const root = createRoot(document.querySelector('#app') as HTMLElement);

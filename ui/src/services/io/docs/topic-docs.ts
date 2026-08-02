@@ -142,30 +142,39 @@ export const behaviorTopicDocs: BehaviorTopicDocEntry[] = [
     summary: '在行为定义中用受控 DSL 编写显隐、必填、计算、级联和流程规则，并编译为可视化联动。',
     sections: [
       {
-        title: '编辑器能力',
-        body: '每个表单的行为列表默认包含一个空白“规则代码”实例。点击实例即可进入，无需先创建脚本；普通事件脚本通过“+ 新建”创建。Monaco 会提供语法高亮、逐行诊断和 Suggestion，源码随表单行为文件持久化。',
+        title: 'DSL 定位',
+        markdownBody: 'behavior-rule-syntax-overview.md',
       },
       {
-        title: '规则骨架',
+        title: '语法、关键词与动作',
+        markdownBody: 'behavior-rule-syntax-grammar.md',
         shortcuts: [
           { path: 'when $字段 条件 值 -> 动作(...)', description: '字段变化且条件成立时执行动作。' },
           { path: 'else -> 动作(...)', description: '执行上一条 when 的严格反向分支。' },
           { path: 'compute $目标 = 表达式 watch($字段, ...)', description: '监听字段并重新计算目标值。' },
           { path: 'on change($字段) -> 动作(...)', description: '字段变化时直接执行动作。' },
+          { path: 'before click("按钮名") -> 守卫动作(...)', description: '按钮点击前先执行守卫校验。' },
           { path: 'before submit / on load / on submit -> 动作', description: '在表单生命周期执行规则。' },
+          { path: 'requireAny($字段, ...)', description: '要求至少填写一个字段。' },
+          { path: 'validate($字段, email)', description: '使用内置校验器做提交前校验。' },
+          { path: 'compare($结束日期, ">=", $开始日期)', description: '比较当前字段与另一字段。' },
         ],
       },
       {
-        title: '完整示例',
+        title: '执行逻辑',
+        markdownBody: 'behavior-rule-syntax-execution.md',
+      },
+      {
+        title: '用例与反例',
+        markdownBody: 'behavior-rule-syntax-examples.md',
         examples: [
           { title: '条件显隐', code: 'when $部门 == "技术部" -> show(@tech-stack); require($技术栈)\nelse -> hide(@tech-stack); clear($技术栈)' },
           { title: '金额计算', code: 'compute $合计 = $数量 * $单价 watch($数量, $单价)' },
-          { title: '提交校验', code: 'before submit -> require($姓名, $手机号); message("请检查必填项", warning)' },
+          { title: '查询按钮守卫', code: 'before click("lookup") -> requireAny($教师ID, $姓名)' },
+          { title: '提交前校验', code: 'before submit -> require($姓名, $手机号); validate($邮箱, email); range($年龄, 18, 60); length($姓名, 2, 20)' },
+          { title: '跨字段比较', code: 'before submit -> compare($结束日期, ">=", $开始日期)' },
+          { title: '提交流程', code: 'on submit -> run("save_employee"); message("提交完成", success)' },
         ],
-      },
-      {
-        title: '应用结果',
-        body: '通过诊断后点击“应用到当前表单”。规则会写入对应控件的 linkageRules，仍可回到表单设计器的事件属性中可视化调整。规则 DSL 不执行任意 JavaScript。',
       },
     ],
   },

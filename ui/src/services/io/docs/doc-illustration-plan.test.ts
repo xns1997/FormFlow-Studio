@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
+import { resolve } from 'node:path';
 import { loadDocCatalog } from './catalog';
 import { buildDocIllustrationPlan, extractInstructionSteps } from './doc-illustration-plan';
+
+const STEP_SCREENSHOT_EXEMPTIONS = new Set([
+  'topic:behavior-rule-syntax',
+  'topic:best-practices',
+]);
 
 test('every document receives a stable illustration namespace without a generic hero', async () => {
   const entries = await loadDocCatalog();
@@ -20,6 +28,11 @@ test('every instructional step receives a matching screenshot plan', async () =>
     for (const block of entry.blocks) {
       const steps = extractInstructionSteps(block);
       const illustrations = plan.stepsByBlock[block.id] || [];
+      if (STEP_SCREENSHOT_EXEMPTIONS.has(entry.id)) {
+        assert.equal(illustrations.length, 0, `${entry.id}:${block.id}`);
+        stepCount += steps.length;
+        continue;
+      }
       assert.equal(illustrations.length, steps.length, `${entry.id}:${block.id}`);
       for (const [index, step] of steps.entries()) {
         const illustration = illustrations[index];
@@ -28,6 +41,11 @@ test('every instructional step receives a matching screenshot plan', async () =>
         assert.ok(illustration.alt.includes(entry.title));
         assert.ok(illustration.alt.includes(step));
         assert.match(illustration.src, /^\/docs\/screenshots\/.+\.png$/);
+        if (entry.id.startsWith('task:')) {
+          assert.ok(illustration.scenarioId.length > 0, `${entry.id}:${block.id}:${index}`);
+          assert.ok(illustration.stateCheckpoint.length > 0, `${entry.id}:${block.id}:${index}`);
+          assert.ok(illustration.expectedVisibleFacts.length > 0, `${entry.id}:${block.id}:${index}`);
+        }
       }
       stepCount += steps.length;
     }
@@ -103,9 +121,9 @@ test('project creation steps use dedicated Playwright scenes', async () => {
   const creation = buildDocIllustrationPlan(entries.find((entry) => entry.id === 'task:understand-create')!);
   assert.deepEqual(creation.stepsByBlock.steps.map((step) => step.instruction), [
     '在项目列表点击“新建项目”。',
-    '选择空白项目或与业务接近的内置模板。',
-    '填写可识别的项目名称和用途。',
-    '创建并进入编辑器，确认项目名称和当前工作模式。',
+    '在创建项目向导的“起始方式”中选择空白项目、内置模板或 .formflow 导入。',
+    '在“基础信息”步骤填写项目名称、项目描述、作者和标签。',
+    '创建后先进入数据页，确认示例项目已经打开并显示 4 张数据表。',
   ]);
   assert.deepEqual(creation.stepsByBlock.steps.map((step) => step.src), [
     '/docs/screenshots/tasks/understand-create-01.png',
@@ -120,10 +138,10 @@ test('import-model uses dedicated task screenshots with distinct product states'
   const entries = await loadDocCatalog();
   const plan = buildDocIllustrationPlan(entries.find((entry) => entry.id === 'task:import-model')!);
   assert.deepEqual(plan.stepsByBlock.steps.map((step) => step.instruction), [
-    '在数据工作区确认“上传”入口，准备带稳定 Key 的源文件。',
-    '选中目标数据表，核对表头、样本值和字段类型。',
-    '在“配置”页勾选用于唯一定位的 Key 字段。',
-    '返回数据表，用搜索或分页确认当前结果可继续后续表单生成。',
+    '在空数据工作区使用“上传”入口准备导入源文件。',
+    '导入后切到 work_records.json 数据表，检查表头、样本值和字段数量。',
+    '打开“配置”页，为 work_records.json 勾选“工作记录ID”作为 Key。',
+    '返回数据表并搜索 JOB-00014，确认筛选结果已经收敛到 1 条目标记录。',
   ]);
   assert.deepEqual(plan.stepsByBlock.steps.map((step) => step.src), [
     '/docs/screenshots/tasks/import-model-01.png',
@@ -138,10 +156,10 @@ test('generate-design uses dedicated task screenshots with design and runtime st
   const entries = await loadDocCatalog();
   const plan = buildDocIllustrationPlan(entries.find((entry) => entry.id === 'task:generate-design')!);
   assert.deepEqual(plan.stepsByBlock.steps.map((step) => step.instruction), [
-    '在数据表中选择字段并点击“选择模板生成表单”。',
-    '在生成弹窗中确认推荐模板和预览内容，再点击“创建并打开”。',
-    '在设计器中选中控件，核对标签、必填和数据绑定。',
-    '打开运行态表单，确认能进入真实填写。',
+    '在 work_records.json 勾选“工作记录ID”和“从业者ID”，点击“选择模板生成表单”。',
+    '在模板选择弹窗中确认“单表数据录入”模板预览，并准备“创建并打开”。',
+    '在表单设计器中选中文本输入控件，检查标签、必填和校验配置。',
+    '在创建并打开后的运行预览中，确认表单骨架已经生成并可继续填写。',
   ]);
   assert.deepEqual(plan.stepsByBlock.steps.map((step) => step.src), [
     '/docs/screenshots/tasks/generate-design-01.png',
@@ -156,10 +174,10 @@ test('behavior-workflow uses dedicated task screenshots with rule, flow and test
   const entries = await loadDocCatalog();
   const plan = buildDocIllustrationPlan(entries.find((entry) => entry.id === 'task:behavior-workflow')!);
   assert.deepEqual(plan.stepsByBlock.steps.map((step) => step.instruction), [
-    '在规则页选中“规则代码”，核对当前表单的提交校验与提醒语句。',
-    '切到流程页，确认“工作记录录入保存”流程的节点与连线完整。',
-    '在流程页选中“表单保存”节点，检查 work_records / 工作记录 的字段映射与必填字段。',
-    '打开顶部“测试 71%”样例面板，核对覆盖率与失败用例。',
+    '在规则页选中“规则代码”，检查提交前必填校验和工时提醒语句。',
+    '切到流程页，查看“工作记录录入保存”流程的节点与连线。',
+    '在流程页选中“表单保存”节点，检查主键字段、必填字段和字段映射配置。',
+    '打开自动测试样例面板，查看当前覆盖率与失败/通过用例分布。',
   ]);
   assert.deepEqual(plan.stepsByBlock.steps.map((step) => step.src), [
     '/docs/screenshots/tasks/behavior-workflow-01.png',
@@ -174,28 +192,61 @@ test('test-quality uses dedicated task screenshots with test overview and qualit
   const entries = await loadDocCatalog();
   const plan = buildDocIllustrationPlan(entries.find((entry) => entry.id === 'task:test-quality')!);
   assert.deepEqual(plan.stepsByBlock.steps.map((step) => step.instruction), [
-    '打开顶部“测试 71%”查看自动测试样例和覆盖率。',
-    '点击“一键运行全部”，核对正常填写、必填为空和主键重复等场景结果。',
-    '打开数据质量页查看质量分数、质量趋势和问题分布。',
-    '返回测试面板，确认最近运行时间与当前通过情况。',
+    '打开自动测试样例面板，查看当前覆盖率、通过数和失败用例。',
+    '在同一面板中核对必填为空、枚举校验和边界值等样例结果。',
+    '切到数据质量页，确认质量分数、趋势和问题分布。',
   ]);
   assert.deepEqual(plan.stepsByBlock.steps.map((step) => step.src), [
     '/docs/screenshots/tasks/test-quality-01.png',
     '/docs/screenshots/tasks/test-quality-02.png',
     '/docs/screenshots/tasks/test-quality-03.png',
-    '/docs/screenshots/tasks/test-quality-04.png',
   ]);
   assert.equal(new Set(plan.stepsByBlock.steps.map((step) => JSON.stringify(step.focus))).size, 3);
+});
+
+test('task guides carry a continuous scenario and do not reuse the same screenshot within one page', async () => {
+  const entries = await loadDocCatalog();
+  for (const entry of entries.filter((item) => item.kind === 'task' && item.id !== 'task:apply-templates')) {
+    const steps = buildDocIllustrationPlan(entry).stepsByBlock.steps || [];
+    assert.ok(steps.length >= 3, entry.id);
+    assert.equal(new Set(steps.map((step) => step.scenarioId)).size, 1, entry.id);
+    assert.equal(new Set(steps.map((step) => step.src)).size, steps.length, entry.id);
+  }
+});
+
+test('task guides do not reuse byte-identical screenshot assets within one page', async () => {
+  const entries = await loadDocCatalog();
+  for (const entry of entries.filter((item) => item.kind === 'task' && item.id !== 'task:apply-templates')) {
+    const steps = buildDocIllustrationPlan(entry).stepsByBlock.steps || [];
+    const hiDpiHashes = await Promise.all(steps.map(async (step) => {
+      const file = resolve('ui/public', step.src.replace(/^\//, ''));
+      return createHash('sha256').update(await readFile(file)).digest('hex');
+    }));
+    const loDpiHashes = await Promise.all(steps.map(async (step) => {
+      const file = resolve('ui/public', step.src.replace(/\.png$/, '-1x.png').replace(/^\//, ''));
+      return createHash('sha256').update(await readFile(file)).digest('hex');
+    }));
+    assert.equal(new Set(hiDpiHashes).size, hiDpiHashes.length, `${entry.id}:2x`);
+    assert.equal(new Set(loDpiHashes).size, loDpiHashes.length, `${entry.id}:1x`);
+  }
+});
+
+test('reference and best-practice pages do not render task-style step screenshots by default', async () => {
+  const entries = await loadDocCatalog();
+  const syntax = buildDocIllustrationPlan(entries.find((entry) => entry.id === 'topic:behavior-rule-syntax')!);
+  const pitfalls = buildDocIllustrationPlan(entries.find((entry) => entry.id === 'topic:best-practices')!);
+  assert.deepEqual(syntax.stepsByBlock, {});
+  assert.deepEqual(pitfalls.stepsByBlock, {});
 });
 
 test('use-export uses dedicated task screenshots with runtime, filtered result and export states', async () => {
   const entries = await loadDocCatalog();
   const plan = buildDocIllustrationPlan(entries.find((entry) => entry.id === 'task:use-export')!);
   assert.deepEqual(plan.stepsByBlock.steps.map((step) => step.instruction), [
-    '在使用页打开目标表单，确认进入真实填写界面。',
-    '切到数据页，对目标数据表搜索 W-0001，确认当前结果范围已收敛到 1 行。',
-    '在当前结果上点击“导出结果”，导出筛选后的数据。',
-    '确认“已导出当前结果（1 行）”提示，并复核下载文件为 1 行 XLSX。',
+    '在 worker_profiles.json 中搜索 W-0001，确认筛选结果收敛到 1 条从业者档案。',
+    '保持当前筛选结果，核对导出前的表格范围就是这 1 行记录。',
+    '点击“导出结果”，从当前筛选结果导出数据。',
+    '确认右下角提示“已导出当前结果（1 行）”。',
   ]);
   assert.deepEqual(plan.stepsByBlock.steps.map((step) => step.src), [
     '/docs/screenshots/tasks/use-export-01.png',
@@ -211,9 +262,9 @@ test('package-release uses dedicated task screenshots with publish gate, failing
   const plan = buildDocIllustrationPlan(entries.find((entry) => entry.id === 'task:package-release')!);
   assert.deepEqual(plan.stepsByBlock.steps.map((step) => step.instruction), [
     '打开“发布检查”确认当前有 6 个自动测试阻断项。',
-    '切到“自动测试样例”，核对失败用例与发布阻断项一一对应。',
+    '切到“自动测试样例”，核对失败列表里已经出现“正常填写”“订单数最小边界”“工时最小/最大边界”等发布阻断项。',
     '打开设置页的“发布”分组，确认默认导出格式、输出文件名和写回策略。',
-    '点击“保存”，记录当前交付策略已保存，后续只需先清掉自动测试阻断再发布。',
+    '点击“保存”，确认右上角显示“已保存”，且右侧配置摘要保持最新状态。',
   ]);
   assert.deepEqual(plan.stepsByBlock.steps.map((step) => step.src), [
     '/docs/screenshots/tasks/package-release-01.png',

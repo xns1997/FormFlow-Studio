@@ -19,6 +19,7 @@ import { downloadBehaviors, importBehaviors, readFileAsText } from '../../servic
 import {
   getBehaviorDocsByScope,
   getBehaviorEventDoc,
+  behaviorTopicDocs,
   getControlApis,
   getScriptApis,
   getSharedContextFields,
@@ -46,6 +47,8 @@ export default function BehaviorPage() {
   const scripts = project?.behaviors || [];
   const workflows = project?.workflows || [];
   const scriptDocs = useMemo(() => getBehaviorDocsByScope('script'), []);
+  const topicDocs = useMemo(() => behaviorTopicDocs.filter((doc) =>
+    ['context-reference', 'control-handles-reference', 'flow-parameter-reference', 'behavior-rule-syntax', 'crud-quick-patterns', 'best-practices'].includes(doc.slug)), []);
   const topicQuery = useMemo(() => {
     return {
       fromProject: projectId,
@@ -193,9 +196,9 @@ export default function BehaviorPage() {
             </div>
             <div className="behavior-doc-link-group">
               <Link to={buildDocsPath(undefined, topicQuery)} className="behavior-doc-link">打开文档首页</Link>
-              <Link to={buildDocsPath('context-reference', topicQuery)} className="behavior-doc-link">查看上下文总览</Link>
-              <Link to={buildDocsPath('control-handles-reference', topicQuery)} className="behavior-doc-link">查看控件句柄 reference</Link>
-              <Link to={buildDocsPath('flow-parameter-reference', topicQuery)} className="behavior-doc-link">查看流程参数 reference</Link>
+              {topicDocs.map((doc) => (
+                <Link key={doc.id} to={buildDocsPath(doc.slug, topicQuery)} className="behavior-doc-link">{doc.title}</Link>
+              ))}
             </div>
           </div>
 
@@ -236,9 +239,9 @@ export default function BehaviorPage() {
             >
               查看完整文档
             </Link>
-            <Link to={buildDocsPath('context-reference', topicQuery)} className="behavior-doc-link">上下文总览</Link>
-            <Link to={buildDocsPath('control-handles-reference', topicQuery)} className="behavior-doc-link">控件句柄 reference</Link>
-            <Link to={buildDocsPath('flow-parameter-reference', topicQuery)} className="behavior-doc-link">流程参数 reference</Link>
+            {topicDocs.map((doc) => (
+              <Link key={doc.id} to={buildDocsPath(doc.slug, topicQuery)} className="behavior-doc-link">{doc.title}</Link>
+            ))}
           </div>
         </div>
 
