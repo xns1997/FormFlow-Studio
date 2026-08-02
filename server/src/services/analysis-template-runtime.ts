@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { PYTHON_EXECUTABLE, pythonServicePath } from '../config/paths';
 import { buildRowKeys, dataVersion } from './data-preview';
 import { batchProjectRows, fullSourceRows, toolError, type JsonObject } from './project-authoring';
-import { analyzeOperationTemplate, getOperationTemplate, queryRelationRows, resourceFingerprint } from './template-operation-center';
+import { analyzeOperationTemplate, getOperationTemplate, queryRelationRows, resourceFingerprint } from './template';
 
 const SCRIPT = pythonServicePath('src', 'ml_engine.py');
 const COMMANDS: Record<string, string> = {

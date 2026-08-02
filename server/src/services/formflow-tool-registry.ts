@@ -97,7 +97,26 @@ const register: RegisterFn = (definition) => {
   } as FormFlowToolDefinition);
 };
 
-const helpers: ToolHelpers = { schema, string, array, object, boolean, commitProject };
+const helpers: ToolHelpers = {
+  schema, string, array, object, boolean, commitProject,
+  projectId: (input: Record<string, any>, context: { projectId?: string }) => String(input.projectId || context.projectId || ''),
+  findById: (items: any[], id: string, code: string) => {
+    const item = items.find((entry) => entry.id === id);
+    if (!item) throw toolError(code, `${id} 不存在`);
+    return item;
+  },
+  upsert: (items: any[], item: any) => {
+    const index = items.findIndex((entry) => entry.id === item.id);
+    if (index >= 0) items[index] = item; else items.push(item);
+    return item;
+  },
+  remove: (items: any[], id: string) => {
+    const index = items.findIndex((entry) => entry.id === id);
+    if (index < 0) return false;
+    items.splice(index, 1);
+    return true;
+  },
+};
 
 // ─── Import and register domain tools ─────────────────────────────────────────
 

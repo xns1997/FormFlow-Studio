@@ -5,7 +5,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPOSITORY_ROOT } from '../../config/paths';
 import { PROJECT_TEMPLATES } from '../../../../shared/project-templates';
-import { OPERATION_TEMPLATES, getOperationTemplate } from '../template-operation-center';
+import { OPERATION_TEMPLATES, getOperationTemplate } from '../template';
 import { requireProject } from '../project-authoring';
 import type { RegisterFn, ToolHelpers } from './types';
 

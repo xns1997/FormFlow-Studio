@@ -40,23 +40,16 @@ import NodePalette, { QuickNodePicker } from '../../components/NodePalette';
 import { createQuickNodeConnection, findBestCompatiblePort, portTypesCompatible, type NodeConnectionContext } from '../../services/config/nodeDiscovery';
 import { createWorkflowIoScaffold, ensureWorkflowIo } from '../../services/engine/workflowIo';
 import { layoutWorkflow, type LayoutDiagnostics, type MeasuredNodeBox } from '../../services/layout';
-import { createRemovedWorkflowNodeSpec, isRemovedWorkflowNode } from '../../services/engine/removedWorkflowNodes';
+import { isRemovedWorkflowNode } from '../../services/engine/removedWorkflowNodes';
 import { createFlowRecipe, FLOW_RECIPES, validateFlowRecipeParams, type FlowRecipeId } from '../../services/engine/flowRecipes';
 import { recordAuthoringEvent } from '../../services/formGeneration/authoringTelemetry';
-
-type FlowNodeData = {
-  specId: string;
-  label: string;
-  kind: string;
-  category: string;
-  description: string;
-  propertiesJson: string;
-  connectedPortsJson: string;
-  outputPreview?: string;
-  outputs?: Record<string, unknown>;
-  error?: string;
-  debugActive?: boolean;
-};
+import {
+  INPUT_OVERRIDE_KEY,
+  buildProjectSheetValue, createNode, dedupeEdges, getInputOverrides, getInputSelections, getLogicalEdgeKey,
+  isStructuredInputType, nodeDataFromSpec, normalizeSheetKey, parseLiteralValue, resolveCanvasNodeSpec,
+  setInputOverride, setInputSelection, supportsProjectSheetInput,
+  type FlowNodeData,
+} from '../../services/engine/flowCanvasCore';
 
 type FlowNode = Node<FlowNodeData>;
 type ToolbarLogLevel = 'info' | 'success' | 'warning' | 'error';
@@ -70,7 +63,6 @@ type ToolbarLogEntry = {
   source: ToolbarLogSource;
 };
 
-const INPUT_OVERRIDE_KEY = '__inputOverrides';
 const MAX_TOOLBAR_LOGS = 50;
 
 function formatToolbarLogTime(value: Date) {
@@ -110,108 +102,6 @@ function getToolbarLogSourceLabel(source: ToolbarLogSource) {
   }
 }
 
-function nodeDataFromSpec(spec: FlowNodeSpec): FlowNodeData {
-  return { specId: spec.id, label: spec.label, kind: spec.kind, category: spec.category, description: spec.description, propertiesJson: '{}', connectedPortsJson: '[]' };
-}
-
-function getInputOverrides(properties: Record<string, unknown>) {
-  const raw = properties[INPUT_OVERRIDE_KEY];
-  return raw && typeof raw === 'object' && !Array.isArray(raw)
-    ? raw as Record<string, unknown>
-    : {};
-}
-
-function getInputSelections(properties: Record<string, unknown>) {
-  const raw = properties.__inputSelections;
-  return raw && typeof raw === 'object' && !Array.isArray(raw)
-    ? raw as Record<string, string>
-    : {};
-}
-
-function setInputOverride(properties: Record<string, unknown>, portName: string, value: unknown) {
-  const current = getInputOverrides(properties);
-  const next = { ...current };
-  if (value === undefined) delete next[portName];
-  else next[portName] = value;
-  if (Object.keys(next).length === 0) {
-    return Object.fromEntries(Object.entries(properties).filter(([key]) => key !== INPUT_OVERRIDE_KEY));
-  }
-  return { ...properties, [INPUT_OVERRIDE_KEY]: next };
-}
-
-function setInputSelection(properties: Record<string, unknown>, portName: string, edgeId: string | undefined) {
-  const current = getInputSelections(properties);
-  const next = { ...current };
-  if (!edgeId) delete next[portName];
-  else next[portName] = edgeId;
-  const withoutSelections = Object.fromEntries(Object.entries(properties).filter(([key]) => key !== '__inputSelections'));
-  if (Object.keys(next).length === 0) return withoutSelections;
-  return { ...withoutSelections, __inputSelections: next };
-}
-
-function normalizeSheetKey(tableId: string, sheetName: string) {
-  return `${tableId}::${sheetName}`;
-}
-
-function getLogicalEdgeKey(edge: Pick<Edge, 'source' | 'target' | 'sourceHandle' | 'targetHandle'>) {
-  return `${edge.source}::${edge.sourceHandle || ''}=>${edge.target}::${edge.targetHandle || ''}`;
-}
-
-function dedupeEdges<T extends Pick<Edge, 'source' | 'target' | 'sourceHandle' | 'targetHandle'>>(edgeList: T[]) {
-  const seen = new Set<string>();
-  return edgeList.filter((edge) => {
-    const key = getLogicalEdgeKey(edge);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-function isStructuredInputType(type: string) {
-  return ['any', 'json', 'object', 'array', 'json-rows', 'filter', 'sort-config', 'validation-rule', 'style'].includes(type);
-}
-
-function supportsProjectSheetInput(port: SchemaPort) {
-  if (port.type === 'worksheet' || port.type === 'workbook' || port.type === 'json-rows') return true;
-  if (port.type === 'array') {
-    return /data|rows|records|items|list/i.test(port.name);
-  }
-  if (port.type === 'any') {
-    return /data|rows|records|items|list|source|table|sheet/i.test(port.name);
-  }
-  return false;
-}
-
-function buildProjectSheetValue(port: SchemaPort, table: SrcTableEntry, sheet: SrcTableEntry['sheets'][number]) {
-  const worksheet = {
-    __fromProject: true,
-    tableId: table.id,
-    sheetName: sheet.name,
-    headers: sheet.headers,
-    preview: sheet.preview,
-    rowCount: sheet.rowCount,
-    colCount: sheet.colCount,
-  };
-  if (port.type === 'worksheet' || port.type === 'workbook') return worksheet;
-  if (port.type === 'json-rows') return worksheet;
-  if (port.type === 'array') return sheet.preview;
-  if (port.type === 'any') return sheet.preview;
-  return undefined;
-}
-
-function createNode(spec: FlowNodeSpec, index: number, position?: { x: number; y: number }): FlowNode {
-  return {
-    id: `${spec.id}:${Date.now()}:${index}`,
-    type: 'formflow',
-    position: position || { x: 120 + (index % 4) * 280, y: 120 + Math.floor(index / 4) * 180 },
-    data: nodeDataFromSpec(spec),
-  };
-}
-
-function resolveCanvasNodeSpec(registry: NodeRegistry | null | undefined, specId: string): FlowNodeSpec | undefined {
-  return registry?.byId.get(specId) || (isRemovedWorkflowNode(specId) ? createRemovedWorkflowNodeSpec(specId) : undefined);
-}
-
 function downloadFileData(value: unknown, fileName: string, mimeType: string) {
   const blob = value instanceof Blob
     ? value
@@ -232,11 +122,6 @@ function downloadFileData(value: unknown, fileName: string, mimeType: string) {
 }
 
 const PORT_TYPE_OPTIONS = ['string', 'number', 'boolean', 'object', 'array', 'json', 'any', 'trigger'];
-
-function parseLiteralValue(value: string) {
-  if (value === '') return undefined;
-  try { return JSON.parse(value); } catch { return value; }
-}
 
 type PortTableRow = {
   id?: string;

@@ -8,8 +8,7 @@ import plaintext from 'highlight.js/lib/languages/plaintext';
 import HighlightText from '../../components/HighlightText';
 import ComponentDocPlayground from '../../components/ComponentDocPlayground';
 import { DocStepScreenshots } from '../../components/DocScreenshot';
-import MarkdownRenderer from '../../components/MarkdownRenderer';
-import { useMarkdown } from '../../hooks/useMarkdown';
+import { CatalogBlockBody } from '../../components/doc/DocContent';
 import {
   buildSearchIndex,
   findDoc,
@@ -56,18 +55,6 @@ function DocsScrollRoot({ children, label }: { children: React.ReactNode; label:
       {children}
     </div>
   );
-}
-
-function CatalogBlockBody({ body, markdownBody }: { body?: string; markdownBody?: string }) {
-  const mdContent = useMarkdown(markdownBody);
-
-  if (markdownBody) {
-    if (!mdContent) return <div className="docs-empty-inline">加载中...</div>;
-    return <MarkdownRenderer content={mdContent} />;
-  }
-
-  if (!body) return null;
-  return <>{body.split('\n').map((line, indexLine) => <p key={indexLine}>{line}</p>)}</>;
 }
 
 export default function DocsPlatformPage({ home = false }: { home?: boolean }) {

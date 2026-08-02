@@ -16,7 +16,8 @@ process.env.FORMFLOW_PROJECTS_DIR = join(testRoot, 'projects');
 process.env.FORMFLOW_DATA_DIR = join(testRoot, 'server-data');
 
 const { mcpRouter } = await import('./mcp-server');
-const { aiRouter, listProjectAgentTools, projectAgentToolArguments } = await import('./routes/ai');
+const { aiRouter } = await import('./routes/ai');
+const { listProjectAgentTools, projectAgentToolArguments } = await import('./services/project-agent-tools');
 const projectAgentV2Store = await import('./services/project-agent-v2-store');
 
 test.after(() => rmSync(testRoot, { recursive: true, force: true }));

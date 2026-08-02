@@ -17,10 +17,10 @@ import { buildProjectTemplate, resolveProjectTemplateId } from '../../../../shar
 import { getStagedUpload, consumeStagedUpload } from '../upload-staging';
 import type { RegisterFn, ToolHelpers } from './types';
 
-function projectId(input: Record<string, any>, context: { projectId?: string }) { return String(input.projectId || context.projectId || ''); }
 function user(context: any) { return context.user || (context.userId ? { id: context.userId, username: context.userId, role: 'viewer' } : undefined); }
 
 export function registerProjectTools(register: RegisterFn, h: ToolHelpers) {
+  const { projectId } = h;
   register({ name: 'project.list', title: '项目列表', description: '列出可见 FormFlow 项目。', inputSchema: h.schema(), risk: 'read', handler: (_input, context) => listProjectPackages().filter((item) => { try { return canAccessProject(user(context), requireProject(item.id), 'view'); } catch { return false; } }) });
   register({ name: 'project.get', title: '读取项目', description: '读取完整项目模型和 revision。', inputSchema: h.schema(['projectId'], { projectId: h.string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => { const project = requireProject(projectId(input, context)); return { project, summary: projectSummary(project), revision: projectRevision(project) }; } });
   register({ name: 'project.inspect', title: '检查项目', description: '返回适合大模型消费的项目摘要。', inputSchema: h.schema(['projectId'], { projectId: h.string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => projectSummary(requireProject(projectId(input, context))) });

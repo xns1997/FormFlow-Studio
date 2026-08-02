@@ -1,54 +1,86 @@
 /**
  * Template operation center barrel export.
  *
- * The original 4,026-line file has deep internal coupling between its 5 responsibilities.
- * This barrel provides the import path for future incremental decomposition:
+ * Split from template-operation-center.ts into shared (types + cross-region
+ * helpers) and R1..R5 responsibility modules:
  *
- *   R1: Template Definitions  (lines 203-350)   → definitions.ts  [TODO]
- *   R2: Feasibility Analysis  (lines 352-823)   → feasibility.ts  [TODO]
- *   R3: Recommendation        (lines 825-1029)  → recommendation.ts [TODO]
- *   R4: Code Generation       (lines 1031-3823) → generation.ts   [TODO]
- *   R5: Import/Export/Instance (lines 3825-4026) → instance.ts     [TODO]
- *
- * Dependency chain: R1 ← R2 ← R3, R1+R2+R3+R4 ← R5
+ *   R1: Template Definitions      -> definitions.ts
+ *   R2: Feasibility Analysis      -> feasibility.ts
+ *   R3: Recommendation            -> recommendation.ts
+ *   R4: Code Generation           -> generation.ts
+ *   R5: Import/Export/Instance    -> instance.ts
  */
 
-// Re-export everything from the original file
 export {
-  OPERATION_TEMPLATES,
-  getOperationTemplate,
-  validateImportedOperationTemplate,
-  exportOperationTemplatePackage,
-  analyzeOperationTemplate,
-  recommendOperationTemplates,
-  suggestDataRelations,
-  validateRelation,
-  planOperationTemplate,
-  applyOperationPlan,
-  inspectTemplateInstanceDrift,
-  deleteTemplateInstanceResources,
-  regenerateTemplateInstance,
-  applyDataRowsTransaction,
   queryRelationRows,
-  resourceFingerprint,
-} from '../template-operation-center';
+  validateRelation,
+} from './shared';
 
 export type {
-  TemplateKind,
-  FeasibilityStatus,
   CheckStatus,
-  FieldRole,
-  NormalizedFieldType,
-  NormalizedField,
   DataRelation,
-  TemplateSelection,
+  EventFallbackReason,
   FeasibilityCheck,
   FeasibilityReport,
+  FeasibilityStatus,
+  FieldRole,
   GenerationSummary,
-  EventFallbackReason,
-  TemplateRuleArtifact,
-  TemplateBehaviorArtifact,
-  TemplateArtifactBundle,
+  JoinQueryOptions,
+  NormalizedField,
+  NormalizedFieldType,
   OperationTemplateDefinition,
+  TemplateArtifactBundle,
+  TemplateBehaviorArtifact,
+  TemplateKind,
   TemplateRecommendation,
-} from '../template-operation-center';
+  TemplateRuleArtifact,
+  TemplateSelection,
+} from './shared';
+
+
+export {
+  OPERATION_TEMPLATES,
+  exportOperationTemplatePackage,
+  getOperationTemplate,
+  validateImportedOperationTemplate,
+} from './definitions';
+
+
+export {
+  analyzeOperationTemplate,
+} from './feasibility';
+
+
+export {
+  recommendOperationTemplates,
+  suggestDataRelations,
+} from './recommendation';
+
+export type {
+  RelationSuggestion,
+} from './recommendation';
+
+
+export {
+  planOperationTemplate,
+} from './generation';
+
+export type {
+  GenerationPlan,
+} from './generation';
+
+
+export {
+  applyDataRowsTransaction,
+  applyOperationPlan,
+  deleteTemplateInstanceResources,
+  inspectTemplateInstanceDrift,
+  regenerateTemplateInstance,
+  resourceFingerprint,
+} from './instance';
+
+export type {
+  DataTransactionOperation,
+  DataTransactionResult,
+} from './instance';
+

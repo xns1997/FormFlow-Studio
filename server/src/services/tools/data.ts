@@ -3,13 +3,12 @@
  */
 import { assertRevision, batchProjectRows, fullSourceRows,
   queryProjectRows, requireProject, serializeTableSource, tableFromInput, toolError } from '../project-authoring';
-import { applyDataRowsTransaction, queryRelationRows, suggestDataRelations, validateRelation, type DataRelation } from '../template-operation-center';
+import { applyDataRowsTransaction, queryRelationRows, suggestDataRelations, validateRelation, type DataRelation } from '../template';
 import { dataSourceConfigSchema, dataRowUpdateSchema } from '../tool-shared';
 import type { RegisterFn, ToolHelpers } from './types';
 
-function projectId(input: Record<string, any>, context: { projectId?: string }) { return String(input.projectId || context.projectId || ''); }
-
 export function registerDataTools(register: RegisterFn, h: ToolHelpers) {
+  const { projectId } = h;
   // Data source CRUD
   register({ name: 'data_source.list', title: '数据源列表', description: '列出项目数据源。', inputSchema: h.schema(['projectId'], { projectId: h.string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => requireProject(projectId(input, context)).srcTable || [] });
   register({ name: 'data_source.get', title: '读取数据源', description: '读取数据源及 Sheet 元数据。', inputSchema: h.schema(['projectId', 'id'], { projectId: h.string, id: h.string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => { const items = requireProject(projectId(input, context)).srcTable || []; const item = items.find((e: any) => e.id === input.id); if (!item) throw toolError('TABLE_NOT_FOUND', `${input.id} 不存在`); return item; } });

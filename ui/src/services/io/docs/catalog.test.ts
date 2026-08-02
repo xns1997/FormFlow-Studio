@@ -6,7 +6,7 @@ import { PROJECT_TEMPLATES } from '../../../../../shared/project-templates';
 import '../../../designer/controls';
 import { getAllControls } from '../../../designer/registry';
 import { loadNodeRegistry } from '../../../../nodes/registry';
-import { behaviorEventDocs } from '../behaviorDocs';
+import { behaviorEventDocs, flowNodeDocs } from '../behaviorDocs';
 import { buildSearchIndex, loadDocCatalog, searchDocs } from './catalog';
 
 test('unified catalog covers every registered control, baseline node, event and OpenAPI operation', async () => {
@@ -18,7 +18,10 @@ test('unified catalog covers every registered control, baseline node, event and 
   assert.equal(entries.some((entry) => entry.id === 'control:animatedNumber'), true);
   assert.equal(entries.some((entry) => entry.id === 'control:form'), false);
   const nodeRegistry = await loadNodeRegistry();
-  assert.equal(entries.filter((entry) => entry.domain === 'nodes').length, nodeRegistry.specs.length);
+  assert.equal(
+    entries.filter((entry) => entry.domain === 'nodes').length,
+    nodeRegistry.specs.length + flowNodeDocs.length,
+  );
   assert.equal(entries.filter((entry) => entry.domain === 'events').length, behaviorEventDocs.length);
   const operationCount = Object.values((openapi as any).paths || {}).reduce((total: number, operations: any) =>
     total + Object.keys(operations).filter((method) => ['get', 'post', 'put', 'patch', 'delete'].includes(method)).length, 0);

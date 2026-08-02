@@ -5,12 +5,8 @@ import { assertRevision, requireProject, toolError, validateProjectModel } from 
 import { normalizeWorkflowNode, normalizeWorkflowEdge, normalizeWorkflowItem, workflowEdgeSchema, workflowItemSchema, workflowNodeSchema } from '../tool-shared';
 import type { RegisterFn, ToolHelpers } from './types';
 
-function projectId(input: Record<string, any>, context: { projectId?: string }) { return String(input.projectId || context.projectId || ''); }
-function findById(items: any[], id: string, code: string) { const item = items.find((entry) => entry.id === id); if (!item) throw toolError(code, `${id} 不存在`); return item; }
-function upsert(items: any[], item: any) { const index = items.findIndex((entry) => entry.id === item.id); if (index >= 0) items[index] = item; else items.push(item); return item; }
-function remove(items: any[], id: string) { const index = items.findIndex((entry) => entry.id === id); if (index < 0) return false; items.splice(index, 1); return true; }
-
 export function registerWorkflowTools(register: RegisterFn, h: ToolHelpers) {
+  const { projectId, findById, upsert, remove } = h;
   // Workflow CRUD
   register({ name: 'workflow.list', title: 'workflow 列表', description: '列出项目 workflow。', inputSchema: h.schema(['projectId'], { projectId: h.string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => requireProject(projectId(input, context)).workflows || [] });
   register({ name: 'workflow.get', title: '读取 workflow', description: '读取指定 workflow。', inputSchema: h.schema(['projectId', 'id'], { projectId: h.string, id: h.string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => findById(requireProject(projectId(input, context)).workflows || [], input.id, 'WORKFLOW_NOT_FOUND') });

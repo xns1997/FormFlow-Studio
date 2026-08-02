@@ -5,12 +5,8 @@ import { assertRevision, packageProject, projectRevision, requireProject, toolEr
 import { inspectProjectQuality } from '../project-quality';
 import type { RegisterFn, ToolHelpers } from './types';
 
-function projectId(input: Record<string, any>, context: { projectId?: string }) { return String(input.projectId || context.projectId || ''); }
-function findById(items: any[], id: string, code: string) { const item = items.find((entry) => entry.id === id); if (!item) throw toolError(code, `${id} 不存在`); return item; }
-function upsert(items: any[], item: any) { const index = items.findIndex((entry) => entry.id === item.id); if (index >= 0) items[index] = item; else items.push(item); return item; }
-function remove(items: any[], id: string) { const index = items.findIndex((entry) => entry.id === id); if (index < 0) return false; items.splice(index, 1); return true; }
-
 export function registerDeliveryTools(register: RegisterFn, h: ToolHelpers) {
+  const { projectId, findById, upsert, remove } = h;
   // Output CRUD
   register({ name: 'output.list', title: 'output 列表', description: '列出项目 output。', inputSchema: h.schema(['projectId'], { projectId: h.string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => requireProject(projectId(input, context)).outputs || [] });
   register({ name: 'output.get', title: '读取 output', description: '读取指定 output。', inputSchema: h.schema(['projectId', 'id'], { projectId: h.string, id: h.string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => findById(requireProject(projectId(input, context)).outputs || [], input.id, 'OUTPUT_NOT_FOUND') });

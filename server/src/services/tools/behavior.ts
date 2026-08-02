@@ -7,12 +7,8 @@ import { formContext, lintRuleCode, readRuleReference, runRuleSandbox } from '..
 import { behaviorListInputSchema, behaviorRuleSchema } from '../tool-shared';
 import type { RegisterFn, ToolHelpers } from './types';
 
-function projectId(input: Record<string, any>, context: { projectId?: string }) { return String(input.projectId || context.projectId || ''); }
-function findById(items: any[], id: string, code: string) { const item = items.find((entry) => entry.id === id); if (!item) throw toolError(code, `${id} 不存在`); return item; }
-function upsert(items: any[], item: any) { const index = items.findIndex((entry) => entry.id === item.id); if (index >= 0) items[index] = item; else items.push(item); return item; }
-function remove(items: any[], id: string) { const index = items.findIndex((entry) => entry.id === id); if (index < 0) return false; items.splice(index, 1); return true; }
-
 export function registerBehaviorTools(register: RegisterFn, h: ToolHelpers) {
+  const { projectId, findById, upsert, remove } = h;
   register({ name: 'behavior.list', title: '行为列表', description: '按 global/sheet/form 作用域列出行为；form 必须传 formId，sheet 必须传 tableId 和 sheetName。', inputSchema: behaviorListInputSchema, risk: 'read', requiredAccess: 'view', handler: (input, context) => {
     const project = requireProject(projectId(input, context));
     if (input.scope === 'global') return project.globalBehaviors || [];

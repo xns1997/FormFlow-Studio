@@ -5,10 +5,7 @@ import {
   behaviorTopicDocs,
   getBehaviorDocBySlug,
   getBehaviorDocsByScope,
-  type BehaviorApiReference,
   type BehaviorEventDocEntry,
-  type BehaviorReferenceField,
-  type BehaviorReferenceShortcut,
 } from '../../services/io/behaviorDocs';
 import {
   buildDocsPath,
@@ -19,57 +16,15 @@ import {
   type WorkspaceTab,
 } from '../../services/io/routes';
 import { DocSidebar } from '../../components/DocSidebar';
-import { DesignerIcon } from '../../designer/icons';
-
-function ReferenceFieldTable({ fields }: { fields: BehaviorReferenceField[] }) {
-  if (fields.length === 0) return <div className="docs-empty-inline">当前条目没有额外字段。</div>;
-  return (
-    <div className="docs-table">
-      {fields.map((field) => (
-        <div key={field.name} className="docs-table-row">
-          <div className="docs-table-key">
-            <code>{field.name}</code>
-            <span>{field.type}</span>
-          </div>
-          <div className="docs-table-value">{field.description}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ApiReferenceList({ apis }: { apis: BehaviorApiReference[] }) {
-  if (apis.length === 0) return <div className="docs-empty-inline">当前条目没有 API 说明。</div>;
-  return (
-    <div className="docs-card-list">
-      {apis.map((api) => (
-        <article key={api.name} className="docs-card">
-          <div className="docs-card-title">
-            <strong>{api.name}</strong>
-            <code>{api.signature}</code>
-          </div>
-          <p>{api.description}</p>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function ShortcutList({ shortcuts }: { shortcuts: BehaviorReferenceShortcut[] }) {
-  if (shortcuts.length === 0) return <div className="docs-empty-inline">当前条目没有快捷 reference。</div>;
-  return (
-    <div className="docs-card-list">
-      {shortcuts.map((shortcut) => (
-        <article key={shortcut.path} className="docs-card docs-card-compact">
-          <div className="docs-card-title">
-            <code>{shortcut.path}</code>
-          </div>
-          <p>{shortcut.description}</p>
-        </article>
-      ))}
-    </div>
-  );
-}
+import {
+  ApiReferenceList,
+  ReferenceFieldTable,
+  SearchIcon,
+  ShortcutList,
+  TagFilter,
+  computeMatchScore,
+  fuzzyFilter,
+} from '../../components/doc/DocContent';
 
 function EventLink({
   doc,
@@ -89,71 +44,6 @@ function EventLink({
       <span className="docs-index-item-meta">{doc.eventName}</span>
       <small>{doc.summary}</small>
     </Link>
-  );
-}
-
-function computeMatchScore(doc: BehaviorEventDocEntry, keyword: string): number {
-  const kw = keyword.toLowerCase();
-  let score = 0;
-  if (doc.eventName.toLowerCase().includes(kw)) score += 3;
-  if (doc.title.toLowerCase().includes(kw)) score += 2;
-  if (doc.tags?.some((t) => t.toLowerCase().includes(kw))) score += 2;
-  if (doc.category.toLowerCase().includes(kw)) score += 1;
-  if (doc.summary.toLowerCase().includes(kw)) score += 1;
-  return score;
-}
-
-function fuzzyFilter(docs: BehaviorEventDocEntry[], query: string): BehaviorEventDocEntry[] {
-  const keywords = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  if (keywords.length === 0) return docs;
-
-  const scored: Array<{ doc: BehaviorEventDocEntry; score: number }> = [];
-  for (const doc of docs) {
-    let totalScore = 0;
-    let allMatch = true;
-    for (const kw of keywords) {
-      const s = computeMatchScore(doc, kw);
-      if (s === 0) { allMatch = false; break; }
-      totalScore += s;
-    }
-    if (allMatch) scored.push({ doc, score: totalScore });
-  }
-
-  scored.sort((a, b) => b.score - a.score);
-  return scored.map((s) => s.doc);
-}
-
-function SearchIcon() {
-  return (
-    <span className="docs-search-icon" aria-hidden="true">
-      <DesignerIcon name="search" size={16} />
-    </span>
-  );
-}
-
-function TagFilter({
-  allTags,
-  selectedTags,
-  onToggle,
-}: {
-  allTags: string[];
-  selectedTags: Set<string>;
-  onToggle: (tag: string) => void;
-}) {
-  if (allTags.length === 0) return null;
-  return (
-    <div className="docs-tag-filter">
-      {allTags.map((tag) => (
-        <button
-          key={tag}
-          type="button"
-          className={`docs-tag-pill ${selectedTags.has(tag) ? 'docs-tag-pill--active' : ''}`}
-          onClick={() => onToggle(tag)}
-        >
-          {tag}
-        </button>
-      ))}
-    </div>
   );
 }
 

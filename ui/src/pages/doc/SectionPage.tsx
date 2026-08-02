@@ -3,14 +3,16 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { DesignerIcon } from '../../designer/icons';
 import ComponentDocPlayground from '../../components/ComponentDocPlayground';
 import { DocSidebar } from '../../components/DocSidebar';
-import MarkdownRenderer from '../../components/MarkdownRenderer';
 import DocPrevNextNav from '../../components/DocPrevNextNav';
-import { useMarkdown } from '../../hooks/useMarkdown';
+import {
+  ApiReferenceList,
+  DocSectionBody,
+  ExampleList,
+  ReferenceFieldTable,
+  ShortcutList,
+  inferCategory,
+} from '../../components/doc/DocContent';
 import type {
-  BehaviorApiReference,
-  BehaviorDocExample,
-  BehaviorReferenceField,
-  BehaviorReferenceShortcut,
   BehaviorTopicDocEntry,
 } from '../../services/io/behaviorDocs';
 
@@ -20,92 +22,6 @@ interface SectionPageProps {
   docs: BehaviorTopicDocEntry[];
   categories?: string[];
   basePath: string;
-}
-
-function ReferenceFieldTable({ fields }: { fields: BehaviorReferenceField[] }) {
-  if (fields.length === 0) return <div className="docs-empty-inline">暂无字段说明。</div>;
-  return (
-    <div className="docs-table">
-      {fields.map((field) => (
-        <div key={field.name} className="docs-table-row">
-          <div className="docs-table-key">
-            <code>{field.name}</code>
-            <span>{field.type}</span>
-          </div>
-          <div className="docs-table-value">{field.description}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ApiReferenceList({ apis }: { apis: BehaviorApiReference[] }) {
-  if (apis.length === 0) return null;
-  return (
-    <div className="docs-card-list">
-      {apis.map((api) => (
-        <article key={api.name} className="docs-card">
-          <div className="docs-card-title">
-            <strong>{api.name}</strong>
-            <code>{api.signature}</code>
-          </div>
-          <p>{api.description}</p>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function ShortcutList({ shortcuts }: { shortcuts: BehaviorReferenceShortcut[] }) {
-  if (shortcuts.length === 0) return null;
-  return (
-    <div className="docs-card-list">
-      {shortcuts.map((shortcut) => (
-        <article key={shortcut.path} className="docs-card docs-card-compact">
-          <div className="docs-card-title">
-            <code>{shortcut.path}</code>
-          </div>
-          <p>{shortcut.description}</p>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function ExampleList({ examples }: { examples: BehaviorDocExample[] }) {
-  if (examples.length === 0) return null;
-  return (
-    <div className="docs-card-list">
-      {examples.map((example) => (
-        <article key={example.title} className="docs-card">
-          <div className="docs-card-title">
-            <strong>{example.title}</strong>
-          </div>
-          <pre className="docs-code-block"><code>{example.code}</code></pre>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function DocSectionBody({ body, markdownBody }: { body?: string; markdownBody?: string }) {
-  const mdContent = useMarkdown(markdownBody);
-
-  if (markdownBody) {
-    if (!mdContent) return <div className="docs-empty-inline">加载中...</div>;
-    return <MarkdownRenderer content={mdContent} />;
-  }
-
-  if (body) return <p className="docs-lead">{body}</p>;
-  return null;
-}
-
-function inferCategory(doc: BehaviorTopicDocEntry, categories: string[]) {
-  if (doc.category) return doc.category;
-  for (const category of categories) {
-    if (doc.id.includes(category.toLowerCase()) || doc.title.includes(category)) return category;
-  }
-  return categories[0] || '全部';
 }
 
 export default function SectionPage({ sectionId, sectionTitle, docs, categories = [], basePath }: SectionPageProps) {

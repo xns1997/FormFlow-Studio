@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { analysisRunStatus, appendAnalysisRun, applyPredictionWriteback, assessAnalysisResult, runAnalysisTemplate } from './analysis-template-runtime';
-import { applyOperationPlan, inspectTemplateInstanceDrift, planOperationTemplate } from './template-operation-center';
+import { applyOperationPlan, inspectTemplateInstanceDrift, planOperationTemplate } from './template';
 
 function project(): any {
   return { config: { id: 'analysis_runtime_test', updatedAt: '2026-07-22T00:00:00.000Z' }, srcTable: [{ id: 'sales', fileName: 'sales.json', fileType: 'json', sheets: [{ name: '销售', rowCount: 3, headers: ['区域', '月份', '销售额'], columns: [{ name: '区域', dataType: 'enum', uniqueCount: 2 }, { name: '月份', dataType: 'enum', uniqueCount: 2 }, { name: '销售额', dataType: 'number' }], preview: [{ 区域: '东区', 月份: '一月', 销售额: 10 }, { 区域: '东区', 月份: '二月', 销售额: 20 }, { 区域: '西区', 月份: '一月', 销售额: 5 }], config: { keyFields: [], readOnly: true } }] }], relations: [] };

@@ -15,22 +15,28 @@ import {
   getBehaviorDocsByScope,
   getDocSection,
   overviewDocs,
-  type BehaviorApiReference,
-  type BehaviorDocExample,
   type BehaviorEventDocEntry,
-  type BehaviorReferenceField,
-  type BehaviorReferenceShortcut,
   type BehaviorTopicDocEntry,
   type DocSection,
 } from '../services/io/behaviorDocs';
 import { DocSidebar } from './DocSidebar';
 import ComponentDocPlayground from './ComponentDocPlayground';
-import MarkdownRenderer from './MarkdownRenderer';
 import HighlightText from './HighlightText';
 import DocPrevNextNav from './DocPrevNextNav';
 import DocRecommendations from './DocRecommendations';
 import { DocStepScreenshots } from './DocScreenshot';
-import { useMarkdown } from '../hooks/useMarkdown';
+import {
+  ApiReferenceList,
+  DocSectionBody,
+  ExampleList,
+  ReferenceFieldTable,
+  SearchIcon,
+  ShortcutList,
+  TagFilter,
+  computeMatchScore,
+  fuzzyFilter,
+  inferCategory,
+} from './doc/DocContent';
 import {
   LEGACY_DOC_DOMAINS,
   type DocScreenshotEntry,
@@ -73,138 +79,6 @@ interface HotDoc {
   section: string;
   sectionId: DocSectionId;
   slug: string;
-}
-
-function ReferenceFieldTable({ fields }: { fields: BehaviorReferenceField[] }) {
-  if (fields.length === 0) return <div className="docs-empty-inline">暂无字段说明。</div>;
-  return (
-    <div className="docs-table">
-      {fields.map((field) => (
-        <div key={field.name} className="docs-table-row">
-          <div className="docs-table-key">
-            <code>{field.name}</code>
-            <span>{field.type}</span>
-          </div>
-          <div className="docs-table-value">{field.description}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ApiReferenceList({ apis }: { apis: BehaviorApiReference[] }) {
-  if (apis.length === 0) return <div className="docs-empty-inline">当前条目没有 API 说明。</div>;
-  return (
-    <div className="docs-card-list">
-      {apis.map((api) => (
-        <article key={api.name} className="docs-card">
-          <div className="docs-card-title">
-            <strong>{api.name}</strong>
-            <code>{api.signature}</code>
-          </div>
-          <p>{api.description}</p>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function ShortcutList({ shortcuts }: { shortcuts: BehaviorReferenceShortcut[] }) {
-  if (shortcuts.length === 0) return <div className="docs-empty-inline">当前条目没有快捷 reference。</div>;
-  return (
-    <div className="docs-card-list">
-      {shortcuts.map((shortcut) => (
-        <article key={shortcut.path} className="docs-card docs-card-compact">
-          <div className="docs-card-title">
-            <code>{shortcut.path}</code>
-          </div>
-          <p>{shortcut.description}</p>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function ExampleList({ examples }: { examples: BehaviorDocExample[] }) {
-  if (examples.length === 0) return null;
-  return (
-    <div className="docs-card-list">
-      {examples.map((example) => (
-        <article key={example.title} className="docs-card">
-          <div className="docs-card-title">
-            <strong>{example.title}</strong>
-          </div>
-          <pre className="docs-code-block"><code>{example.code}</code></pre>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-/**
- * 文档段落内容渲染组件
- * 优先渲染 markdownBody（通过 MarkdownRenderer），否则渲染 body 纯文本
- */
-function DocSectionBody({ body, markdownBody }: { body?: string; markdownBody?: string }) {
-  const mdContent = useMarkdown(markdownBody);
-
-  if (markdownBody) {
-    if (!mdContent) return <div className="docs-empty-inline">加载中...</div>;
-    return <MarkdownRenderer content={mdContent} />;
-  }
-
-  if (body) return <p className="docs-lead">{body}</p>;
-  return null;
-}
-
-function SearchIcon() {
-  return (
-    <span className="docs-search-icon" aria-hidden="true">
-      <DesignerIcon name="search" size={16} />
-    </span>
-  );
-}
-
-function computeMatchScore(doc: BehaviorEventDocEntry, keyword: string): number {
-  const kw = keyword.toLowerCase();
-  let score = 0;
-  if (doc.eventName.toLowerCase().includes(kw)) score += 3;
-  if (doc.title.toLowerCase().includes(kw)) score += 2;
-  if (doc.tags?.some((t) => t.toLowerCase().includes(kw))) score += 2;
-  if (doc.category.toLowerCase().includes(kw)) score += 1;
-  if (doc.summary.toLowerCase().includes(kw)) score += 1;
-  return score;
-}
-
-function fuzzyFilter(docs: BehaviorEventDocEntry[], query: string): BehaviorEventDocEntry[] {
-  const keywords = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  if (keywords.length === 0) return docs;
-
-  const scored: Array<{ doc: BehaviorEventDocEntry; score: number }> = [];
-  for (const doc of docs) {
-    let totalScore = 0;
-    let allMatch = true;
-    for (const kw of keywords) {
-      const score = computeMatchScore(doc, kw);
-      if (score === 0) {
-        allMatch = false;
-        break;
-      }
-      totalScore += score;
-    }
-    if (allMatch) scored.push({ doc, score: totalScore });
-  }
-
-  scored.sort((a, b) => b.score - a.score);
-  return scored.map((item) => item.doc);
-}
-
-function inferCategory(doc: BehaviorTopicDocEntry, categories: string[]) {
-  if (doc.category) return doc.category;
-  for (const category of categories) {
-    if (doc.id.includes(category.toLowerCase()) || doc.title.includes(category)) return category;
-  }
-  return categories[0] || '全部';
 }
 
 function extractEventTocSections(doc: BehaviorEventDocEntry): Array<{ id: string; title: string }> {
@@ -265,32 +139,6 @@ function getSectionConfig(sectionId: DocSectionId): {
   if (sectionId === 'flow-nodes') return { section: getDocSection('flow-nodes'), docs: flowNodeDocs, categories: flowNodeCategories };
   if (sectionId === 'backend') return { section: getDocSection('backend'), docs: backendDocs, categories: [] };
   return { section: getDocSection('behavior'), docs: behaviorTopicDocs, categories: [] };
-}
-
-function TagFilter({
-  allTags,
-  selectedTags,
-  onToggle,
-}: {
-  allTags: string[];
-  selectedTags: Set<string>;
-  onToggle: (tag: string) => void;
-}) {
-  if (allTags.length === 0) return null;
-  return (
-    <div className="docs-tag-filter">
-      {allTags.map((tag) => (
-        <button
-          key={tag}
-          type="button"
-          className={`docs-tag-pill ${selectedTags.has(tag) ? 'docs-tag-pill--active' : ''}`}
-          onClick={() => onToggle(tag)}
-        >
-          {tag}
-        </button>
-      ))}
-    </div>
-  );
 }
 
 export default function DocModal({ open, onClose, initialSlug }: DocModalProps) {

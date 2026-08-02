@@ -16,6 +16,7 @@ import {
   addProjectAgentMessage, createProjectAgentSession, getProjectAgentSession, listProjectAgentSessions,
   recordProjectAgentEvents, saveProjectAgentSession, type ProjectAgentMode, type ProjectAgentSession, type ProjectAgentStage,
 } from '../services/project-agent-store';
+import { listProjectAgentTools, projectAgentToolArguments } from '../services/project-agent-tools';
 import { projectAgentV2Router } from './project-agent-v2';
 
 const router = Router();
@@ -82,12 +83,6 @@ function coordinatorPrompt(session: ProjectAgentSession) {
 function specialistPrompt(session: ProjectAgentSession, role: McpRole, instruction: string, retryCount = 0) {
   return `你是 FormFlow ${roleTitles[role]}，只能处理 ${role} 领域。任务：${instruction}\n${session.projectId ? `当前项目：${session.projectId}。每次修改前必须先 project.inspect、project.get 获取最新 revision；冲突时重新读取并重新计算。` : '当前尚未绑定项目，只能在 project 领域创建项目。'}${retryCount ? `\n这是失败后的第 ${retryCount} 次重试。项目可能保留了前次尝试的部分成果；先检查现有资源，已存在的资源应使用 update/upsert 补全，不要重复 create，也不要回放旧参数。` : ''}\n使用唯一且重试稳定的 idempotencyKey。完成后调用可用的项目校验工具。删除、覆盖必须等待确认。永不调用 release.apply。简洁报告完成项、校验和阻断项。`;
 }
-export function listProjectAgentTools(role: McpRole) { return listFormFlowTools(role).filter((tool) => tool.name !== 'release.apply'); }
-export function projectAgentToolArguments(toolName: string, argumentsValue: Record<string, any>, checkpointRevision?: string) {
-  const definition = getFormFlowTool(toolName); const supportsRevision = Boolean((definition?.inputSchema as any)?.properties?.baseRevision);
-  return supportsRevision && checkpointRevision && !argumentsValue?.baseRevision ? { ...argumentsValue, baseRevision: checkpointRevision } : argumentsValue;
-}
-
 function adminOnly(req: AuthRequest, res: Response, next: NextFunction) {
   if (env.mode !== 'cloud' || req.user?.role === 'admin') return next();
   return res.status(req.user ? 403 : 401).json({ error: req.user ? '需要管理员权限' : '需要登录' });

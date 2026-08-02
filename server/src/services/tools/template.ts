@@ -3,16 +3,12 @@
  */
 import { createHash } from 'node:crypto';
 import { assertRevision, projectRevision, requireProject, toolError } from '../project-authoring';
-import { OPERATION_TEMPLATES, analyzeOperationTemplate, applyOperationPlan, deleteTemplateInstanceResources, exportOperationTemplatePackage, getOperationTemplate, inspectTemplateInstanceDrift, planOperationTemplate, recommendOperationTemplates, regenerateTemplateInstance, validateImportedOperationTemplate } from '../template-operation-center';
+import { OPERATION_TEMPLATES, analyzeOperationTemplate, applyOperationPlan, deleteTemplateInstanceResources, exportOperationTemplatePackage, getOperationTemplate, inspectTemplateInstanceDrift, planOperationTemplate, recommendOperationTemplates, regenerateTemplateInstance, validateImportedOperationTemplate } from '../template';
 import { listAudit } from '../audit-store';
 import type { RegisterFn, ToolHelpers } from './types';
 
-function projectId(input: Record<string, any>, context: { projectId?: string }) { return String(input.projectId || context.projectId || ''); }
-function findById(items: any[], id: string, code: string) { const item = items.find((entry) => entry.id === id); if (!item) throw toolError(code, `${id} 不存在`); return item; }
-function upsert(items: any[], item: any) { const index = items.findIndex((entry) => entry.id === item.id); if (index >= 0) items[index] = item; else items.push(item); return item; }
-function remove(items: any[], id: string) { const index = items.findIndex((entry) => entry.id === id); if (index < 0) return false; items.splice(index, 1); return true; }
-
 export function registerTemplateTools(register: RegisterFn, h: ToolHelpers) {
+  const { projectId, findById, upsert, remove } = h;
   register({ name: 'template.analyze', title: '模板可行性检查', description: '按模板专属规则检查选择对象、主键、关系、字段角色、样本量和必填参数。', inputSchema: h.schema(['projectId', 'templateId'], { projectId: h.string, templateId: h.string, selection: h.object, parameters: h.object }), risk: 'read', requiredAccess: 'view', handler: (input, context) => analyzeOperationTemplate(requireProject(projectId(input, context)), input.templateId, input.selection || {}, input.parameters || {}) });
   register({ name: 'template.recommend', title: '按数据选择推荐模板', description: '评估全部操作模板，返回稳定排序、匹配原因、可安全推断参数和未解决配置。', inputSchema: h.schema(['projectId', 'selection'], { projectId: h.string, selection: h.object }), risk: 'read', requiredAccess: 'view', handler: (input, context) => recommendOperationTemplates(requireProject(projectId(input, context)), input.selection || {}) });
   register({ name: 'template.plan', title: '生成计划预览', description: '构建确定性的模板生成计划，返回完整生成物摘要和 ID 冲突，不写项目。', inputSchema: h.schema(['projectId', 'templateId'], { projectId: h.string, templateId: h.string, selection: h.object, parameters: h.object }), risk: 'read', requiredAccess: 'view', handler: (input, context) => { const project = requireProject(projectId(input, context)); return { plan: { ...planOperationTemplate(project, input.templateId, input.selection || {}, input.parameters || {}), baseRevision: projectRevision(project) }, revision: projectRevision(project) }; } });

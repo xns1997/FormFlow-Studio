@@ -6,10 +6,8 @@ import { generateMockData, generateProjectTestSuite, profileMockData, runProject
 import { analysisRunStatus, appendAnalysisRun, applyPredictionWriteback, runAnalysisTemplate } from '../analysis-template-runtime';
 import type { RegisterFn, ToolHelpers } from './types';
 
-function projectId(input: Record<string, any>, context: { projectId?: string }) { return String(input.projectId || context.projectId || ''); }
-function upsert(items: any[], item: any) { const index = items.findIndex((entry) => entry.id === item.id); if (index >= 0) items[index] = item; else items.push(item); return item; }
-
 export function registerQualityTools(register: RegisterFn, h: ToolHelpers) {
+  const { projectId, upsert } = h;
   // Mock data
   register({ name: 'mock_data.profile', title: '分析 Mock 数据模型', description: '分析列类型、主键和本地化生成器，不修改项目。', inputSchema: h.schema(['projectId', 'tableId', 'sheetName'], { projectId: h.string, tableId: h.string, sheetName: h.string }), risk: 'read', requiredAccess: 'view', handler: (input, context) => profileMockData(requireProject(projectId(input, context)), input as any) });
   for (const name of ['generate', 'preview'] as const) register({ name: `mock_data.${name}`, title: `${name === 'generate' ? '生成' : '预览'} Mock 数据`, description: '按固定 seed 生成可追加的有效行和隔离负向场景。', inputSchema: h.schema(['projectId', 'tableId', 'sheetName'], { projectId: h.string, tableId: h.string, sheetName: h.string, rowCount: { type: 'number' }, seed: {}, scenarios: { type: 'array' } }), risk: 'read', requiredAccess: 'view', handler: (input, context) => generateMockData(requireProject(projectId(input, context)), input as any) });
