@@ -8,6 +8,10 @@ export const overviewDocs: BehaviorTopicDocEntry[] = [
     summary: 'FormFlow 是一个基于 Excel 的表单编排框架，将电子表格的数据能力与表单的交互能力结合。',
     sections: [
       {
+        title: '整体链路',
+        markdownBody: 'what-is-formflow-data-flow.md',
+      },
+      {
         title: '核心理念',
         body: 'FormFlow 将 Excel 数据表作为数据源，通过可视化设计器拖拽生成表单，再通过行为脚本和流程引擎实现业务逻辑。三者协同工作，无需编写后端代码即可构建完整的数据录入和处理应用。',
       },
@@ -37,11 +41,15 @@ export const overviewDocs: BehaviorTopicDocEntry[] = [
     summary: '5 分钟创建你的第一个表单应用：导入数据、设计表单、添加行为、测试运行。',
     sections: [
       {
+        title: '主流程',
+        markdownBody: 'getting-started-main-flow.md',
+      },
+      {
         title: '第一步：创建项目',
         body: '点击首页「新建项目」，输入项目名称和描述。项目是所有表单、数据、流程的容器。',
       },
       {
-        title: '第二步：导入数据',
+        title: '第二步：导入自己的数据',
         body: '在工作区的「数据预览」标签页，上传 Excel/CSV/JSON 文件。系统会自动解析表结构、列类型和数据样本。',
       },
       {

@@ -25,6 +25,7 @@ server/data/project-mutation-replays.json
 server/data/tool-mutation-replays.json
 server/data/configs/llm-management.json
 server/data/configs/project-agent-*.json
+server/data/docs/
 playwright-report/
 test-results/
 *.bak

@@ -20,14 +20,6 @@ flowchart TD
   A --> D["计算同步"]
   A --> E["按钮守卫"]
   A --> F["生命周期"]
-  B --> B1["when ..."]
-  B --> B2["else ..."]
-  C --> C1["on change(...)"]
-  D --> D1["compute ... watch(...)"]
-  E --> E1["before click(...)"]
-  F --> F1["on load"]
-  F --> F2["before submit"]
-  F --> F3["on submit"]
 ```
 
 ## 怎么读一条规则

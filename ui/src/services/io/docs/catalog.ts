@@ -10,6 +10,7 @@ import {
   backendDocs,
   behaviorEventDocs,
   behaviorTopicDocs,
+  flowNodeDocs,
   formDesignDocs,
   overviewDocs,
 } from '../behaviorDocs';
@@ -73,15 +74,26 @@ const curatedTechnicalSpecs: Array<[string, string, string, DocDomain, string[]]
   ['pgvector', 'pgvector 向量检索', '知识分块、Embedding、健康检查与降级模式。', 'api', ['pgvector', 'embedding', '知识检索']],
   ['operation-templates', '模板化操作中心', '录入、维护、跨表、分析和预测操作模板的选择与使用。', 'templates', ['模板中心', 'CRUD', '分析模板']],
 ];
+const curatedMarkdownFiles: Record<string, string> = {
+  'project-creation-spec': 'docs/project-creation-spec.md',
+  'llm-tools-mcp': 'docs/llm-tools-mcp.md',
+  'plugin-api': 'docs/plugin-api-spec.md',
+  'llm-provider': 'docs/llm-provider.md',
+  'pgvector': 'docs/pgvector.md',
+  'operation-templates': 'docs/template-operation-center-plan.md',
+};
 const curatedTechnicalDocs: DocEntry[] = curatedTechnicalSpecs.map(([slug, title, summary, domain, aliases]) => ({
   id: `guide:${slug}`, slug, canonicalPath: `/docs/reference/${domain}/${slug}`, kind: 'reference' as const,
   domain, title, summary, aliases, tags: ['精选手册', ...aliases],
   audiences: domain === 'api' ? ['developer', 'admin'] : ['builder', 'developer'],
-  source: { kind: 'curated' as const, label: `docs/${slug}.md` }, relatedIds: [], updatedAt: UPDATED_AT,
+  source: { kind: 'curated' as const, label: curatedMarkdownFiles[slug] || `docs/${slug}.md` }, relatedIds: [], updatedAt: UPDATED_AT,
   blocks: [
     { id: 'overview', title: '内容概览', body: summary },
+    ...(curatedMarkdownFiles[slug]
+      ? [{ id: 'guide', title: '流程与说明', markdownBody: curatedMarkdownFiles[slug] }]
+      : []),
     { id: 'usage', title: '如何使用', body: '从本文确认适用范围和前置条件，再按顺序执行；遇到错误时优先遵循页面中的确定性校验与安全门禁。' },
-    { id: 'source', title: '权威来源', body: `本页对应仓库用户手册 docs/${slug}.md，并纳入统一搜索、导航和内容覆盖检查。` },
+    { id: 'source', title: '权威来源', body: `本页对应仓库用户手册 ${curatedMarkdownFiles[slug] || `docs/${slug}.md`}，并纳入统一搜索、导航和内容覆盖检查。` },
   ],
 }));
 const templateUsageGuide: DocEntry = {
@@ -102,6 +114,7 @@ const templateUsageGuide: DocEntry = {
     { id: 'overview', title: '适用范围', body: '先用这篇指南理解模板中心的通用操作，再回到具体模板页面查看是否存在专属配置、专属字段映射或独特结果预览。' },
     { id: 'prerequisites', title: '使用前确认', body: '确认当前项目已经打开，目标数据表可用，并优先补齐稳定 Key、必要字段和基础数据质量问题。' },
     { id: 'template-types', title: '模板类型与前置条件', body: '先分清项目模板、表单模板和操作模板的适用范围，再检查目标数据表、Key 和必要字段是否已经满足。缺失时先在数据页补齐，再返回模板中心。' },
+    { id: 'flow', title: '主流程', markdownBody: 'template-usage-logic-flow.md' },
     { id: 'search', title: '第 1 步：搜索与选择模板', body: '在模板中心按场景搜索并筛选模板，先看它要创建的是表单、流程还是结果页，再决定是否进入配置。' },
     { id: 'mapping', title: '第 2 步：映射字段并预览结果', body: '选择目标数据表，完成字段映射和必要参数配置，确认预览中的表单、流程或输出结构确实符合当前项目。' },
     { id: 'apply', title: '第 3 步：应用后检查与失败恢复', body: '应用后立即回到质量检查和测试页确认新增内容可运行；如果结果不符合预期，优先记录本次新增内容，再回退或清理。' },
@@ -135,6 +148,7 @@ function taskEntry(spec: typeof stageSpecs[number]): DocEntry {
     ? [
       { id: 'goal', title: '目标', body: summary },
       { id: 'prerequisites', title: '开始前', body: '确认项目已打开，并先检查目标数据表、Key 与必要字段是否已经准备好。' },
+      { id: 'flow', title: '主流程', markdownBody: 'task-apply-templates-flow.md' },
       { id: 'guide', title: '推荐路径', body: '先阅读《通用模板使用逻辑》，确认模板要求的数据表、Key 和字段，再进入对应模板页面查看是否存在专属配置或结果预览。只有图片能解释独特差异时，模板页才会单独配图。' },
       { id: 'done', title: '完成检查', body: taskChecks[slug] },
       { id: 'troubleshooting', title: '常见问题与排错', body: taskTroubleshooting[slug] },
@@ -143,6 +157,7 @@ function taskEntry(spec: typeof stageSpecs[number]): DocEntry {
     : [
       { id: 'goal', title: '目标', body: summary },
       { id: 'prerequisites', title: '开始前', body: slug === 'understand-create' ? '准备一个清晰的业务目标。其余阶段需要已有项目，并先保存当前修改。' : '确认项目已打开且当前修改已保存；涉及数据写回时，先配置非空且唯一的主键。' },
+      { id: 'flow', title: '主流程', markdownBody: `task-${slug}-flow.md` },
       { id: 'steps', title: '操作步骤', body: taskSteps[slug] },
       { id: 'done', title: '完成检查', body: taskChecks[slug] },
       { id: 'troubleshooting', title: '常见问题与排错', body: taskTroubleshooting[slug] },
@@ -197,6 +212,7 @@ const troubleshootingDocs: DocEntry[] = troubleshootingSpecs.map(([slug, title, 
   source: { kind: 'curated', label: 'FormFlow 排错手册' }, relatedIds: [], updatedAt: UPDATED_AT,
   blocks: [
     { id: 'symptoms', title: '现象与边界', body: summary },
+    { id: 'flow', title: '排查流程', markdownBody: `troubleshooting-${slug}-flow.md` },
     { id: 'checks', title: '按顺序检查', body: '1. 保留当前页面与错误信息，不要重复提交。\n2. 检查页面原位诊断和最近一次运行日志。\n3. 核对稳定 ID、数据主键、必填参数和连接端口。\n4. 云模式再核对租户、权限、revision、幂等键与确认令牌。' },
     { id: 'recovery', title: '恢复与验证', body: '修正最早出现的阻断问题后重新运行最小场景；确认成功后再恢复完整数据和后续步骤。' },
   ],
@@ -215,6 +231,7 @@ const caseDocs: DocEntry[] = caseSpecs.map(([slug, title, summary, domain, alias
   source: { kind: 'curated', label: 'FormFlow 场景案例' }, relatedIds: [], updatedAt: UPDATED_AT,
   blocks: [
     { id: 'scenario', title: '业务场景', body: summary },
+    { id: 'flow', title: '搭建流程', markdownBody: `case-${slug}-flow.md` },
     { id: 'build', title: '搭建路径', body: '先建立稳定数据模型，再生成表单；简单联动使用规则，多步处理使用流程；最后以正常、空值和冲突数据完成测试。' },
     { id: 'acceptance', title: '验收要点', body: '目标用户能完成核心任务；错误有原位说明和恢复路径；重新打开后配置与数据一致；交付前没有阻断级质量问题。' },
   ],
@@ -362,6 +379,7 @@ export async function loadDocCatalog(): Promise<DocEntry[]> {
     ...overviewDocs.map((doc) => legacyTopic(doc, 'getting-started')),
     ...behaviorTopicDocs.map((doc) => legacyTopic(doc, 'behavior')),
     ...backendDocs.map((doc) => legacyTopic(doc, 'api')),
+    ...flowNodeDocs.map((doc) => legacyTopic(doc, 'nodes')),
   ];
   const existingFormNarrative = new Map(formDesignDocs.filter((doc) => doc.id !== 'form-design:form').map((doc) => [doc.slug, doc]));
   const controls = controlEntries().map((entry) => {
@@ -411,7 +429,6 @@ function fuzzyIncludes(haystack: string, needle: string) {
 export function searchDocs(index: DocSearchDocument[], query: string, filters?: { kind?: DocKind; domain?: DocDomain }): DocSearchResult[] {
   const terms = normalize(query).split(' ').filter(Boolean);
   if (!terms.length) return [];
-  const started = performance.now();
   const results = index.flatMap((entry) => {
     if (filters?.kind && entry.kind !== filters.kind) return [];
     if (filters?.domain && entry.domain !== filters.domain) return [];
@@ -430,14 +447,12 @@ export function searchDocs(index: DocSearchDocument[], query: string, filters?: 
     const snippetSource = entry.summary || entry.blocks.find((block) => block.body)?.body || '';
     return [{ entry, score, snippet: snippetSource.slice(0, 180), matchedTerms: terms }];
   }).sort((a, b) => b.score - a.score || a.entry.title.localeCompare(b.entry.title, 'zh-CN'));
-  void started;
   return results;
 }
 
 export function findDoc(entries: DocEntry[], kindOrDomain: string | undefined, slug: string | undefined) {
   if (!slug) return undefined;
   const decoded = decodeURIComponent(slug);
-  return entries.find((entry) => entry.slug === slug || entry.slug === decoded || entry.id === `node:${decoded}`)
-    && entries.find((entry) => (entry.slug === slug || entry.slug === decoded || entry.id === `node:${decoded}`)
-      && (!kindOrDomain || entry.kind === kindOrDomain || entry.domain === kindOrDomain));
+  return entries.find((entry) => (entry.slug === slug || entry.slug === decoded || entry.id === `node:${decoded}`)
+    && (!kindOrDomain || entry.kind === kindOrDomain || entry.domain === kindOrDomain));
 }

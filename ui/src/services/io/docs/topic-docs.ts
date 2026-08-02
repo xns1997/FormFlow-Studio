@@ -104,6 +104,10 @@ export const behaviorTopicDocs: BehaviorTopicDocEntry[] = [
     summary: '把查单条、查列表、生成编号、回填表单、必填校验和重置表单收敛成更短的脚本模式。',
     sections: [
       {
+        title: '主流程',
+        markdownBody: 'crud-quick-patterns-flow.md',
+      },
+      {
         title: '推荐 API',
         body: '优先用这些高级 ctx 方法，避免重复手写 querySheet / reduce / setValue 链路。',
         fields: [
