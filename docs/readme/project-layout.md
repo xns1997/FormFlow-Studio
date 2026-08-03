@@ -48,13 +48,25 @@ Vite 8 通过 `import.meta.glob('./*/schema.json')` 自动识别 `ui/nodes` 下�
 ├── project.json
 ├── forms/
 │   ├── _index.json
-│   └── <form-id>.json
+│   ├── <form-id>.json
+│   └── <form-id>.behaviors.json
 ├── data/
 │   ├── _index.json
-│   └── <source-id>.meta.json
+│   ├── <source-id>.meta.json
+│   └── <source-id>.behaviors.json
 ├── workflows/workflows.json
-├── behaviors/behaviors.json
-└── outputs/outputs.json
+├── global-behaviors.json
+├── testing/testing.json
+├── outputs/outputs.json
+└── release.json
 ```
 
 `project.json` 必须声明 `kind: "formflow-project"` 和 `formatVersion: 2`。浏览器导入导出的 `.zip` 与服务端磁盘目录 `.formflow` 使用相同内容结构，前端通过 ZIP 内部的 `project.json` 识别项目包。
+
+行为与测试资产按作用域分布：
+
+- 全局行为：`global-behaviors.json`
+- 表单行为：`forms/<form-id>.behaviors.json`
+- 工作表行为：`data/<table-id>.behaviors.json`
+- 测试资产：`testing/testing.json`（生成配置、隔离夹具、测试套件与有界运行历史）
+- 发布状态：`release.json`（`design | test | use`、默认表单/Sheet 与入口权限）

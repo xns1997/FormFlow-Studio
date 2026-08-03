@@ -30,12 +30,12 @@ flowchart TD
 
 基于当前仓库实现，系统已经具备以下能力：
 
-- 项目包结构：`project.json`、`forms/`、`data/`、`workflows/`、`global-behaviors.json`、`outputs/`、`release.json`
+- 项目包结构：`project.json`、`forms/`（含 `<form-id>.behaviors.json`）、`data/`（含 `<table-id>.behaviors.json`）、`workflows/`、`global-behaviors.json`、`testing/testing.json`、`outputs/`、`release.json`
 - 项目创建方式：空白、模板、ZIP 导入
-- 数据导入与配置：支持 Excel / CSV / JSON，支持 sheet 级 key 配置、冻结区、筛选、列宽等
+- 数据导入与配置：支持 Excel（xlsx/xls）、CSV、TSV、JSON、XML、Parquet，支持 sheet 级 key 配置、冻结区、筛选、列宽等
 - 数据准备：服务端搜索、筛选、排序、分页、Key 定位、完整结果导出，以及带版本冲突保护的跨页批量写回
 - 表单设计：从数据生成五种用途表单、字段拖入与补齐、任务式属性编辑、预览模式、流程触发器、控件事件脚本
-- 流程编排：工作流画布、参数映射、172 个节点包、10 个高阶宏、5 个流程配方、节点执行与输出预览
+- 流程编排：工作流画布、参数映射、219 个节点包（含 79 个 XLSX/SheetJS 方法节点）、11 个版本化高阶宏、5 个流程配方、节点执行与输出预览
 - 行为能力：全局行为、工作表行为、表单行为、受控规则 DSL、行为模板、方法库、行为测试、事件参考文档
 - 测试运行：表单渲染、行切换、事件执行、流程联动、导出、变更日志
 - 发布与使用模式：`release.json` 保存 `design | test | use` 状态、默认表单/Sheet 和设计入口权限；独立使用模式隐藏创作入口
@@ -142,7 +142,7 @@ flowchart TD
 
 ### 输入
 
-- Excel / CSV / JSON 数据源
+- Excel（xlsx/xls）、CSV、TSV、JSON、XML、Parquet 数据源
 
 ### 操作规范
 
@@ -358,14 +358,13 @@ flowchart TD
 
 目标存储建议：
 
-- `sheet-behaviors/<tableId>.<sheetName>.json`
-  或
 - `data/<tableId>.behaviors.json`
 
 当前现状说明：
 
-- 仓库内尚未看到独立的工作表行为持久化结构
-- 因此这是首个明确建议补齐的一等能力
+- 工作表行为已实现为一等能力，与全局行为、表单行为同属统一行为模型
+- 持久化为 `data/<tableId>.behaviors.json`（项目模型 `project.sheetBehaviors`），按 `tableId + sheetName` 定位作用域
+- 编辑与执行时使用 `behavior.upsert` / `behavior.delete` 的 `scope: "sheet"`，并同时传 `tableId + sheetName`
 
 ### 6.4 表单行为
 
@@ -530,6 +529,8 @@ flowchart TD
 ├── workflows/
 │   └── workflows.json
 ├── global-behaviors.json
+├── testing/
+│   └── testing.json
 ├── outputs/
 │   └── outputs.json
 └── release.json
@@ -553,7 +554,7 @@ flowchart TD
 
 ## 6. 功能查漏补缺清单
 
-以下状态基于 2026-07-14 的仓库实现复核。
+以下状态基于 2026-08-03 的仓库实现复核。
 
 ### P0
 

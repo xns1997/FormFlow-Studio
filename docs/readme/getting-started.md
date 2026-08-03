@@ -42,7 +42,7 @@ pnpm dev:all
 
 如果你还没有自己的数据，推荐先完成带 4 张高清界面截图的[新手教程：10 分钟完成第一个 FormFlow 应用](./beginner-tutorial.md)。它从内置模板开始，不需要准备 Excel 或编写代码，并会带你走通数据、表单设计、测试和保存的完整闭环。
 
-如果你已经准备好 Excel、CSV 或 JSON，可以直接按下面的清单开始。
+如果你已经准备好 Excel、CSV、TSV、JSON、XML 或 Parquet，可以直接按下面的清单开始。
 
 ```mermaid
 flowchart TD
@@ -63,7 +63,7 @@ flowchart TD
 ### 第二步：导入自己的数据
 
 1. 进入项目后切换到“数据”
-2. 点击“+ 上传”，选择 Excel / CSV / JSON
+2. 点击“+ 上传”，选择 Excel / CSV / TSV / JSON / XML / Parquet 文件
 3. 系统自动解析表结构、列类型和数据样本
 
 ### 第三步：设计表单

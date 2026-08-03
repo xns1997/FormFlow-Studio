@@ -76,7 +76,7 @@ Express 队列通过 `FOR UPDATE SKIP LOCKED` 抢占任务，并使用 30 秒 le
 
 Express 启动时先执行基础设施自检：连接目标数据库；目标库不存在时通过 `postgres` maintenance database 创建；localhost PostgreSQL 未运行且允许自动启动时，使用 `initdb` 初始化本地数据目录并通过 `pg_ctl` 启动。远程或容器数据库只探测、不由应用进程控制。
 
-AI Provider 不作为 Express 的启动前置条件。Express 启动时立即执行一次 gRPC Health，此后按 `FORMFLOW_HEALTH_INTERVAL_MS` 周期探测。`GET /api/health` 返回缓存的数据库与 AI 状态以及 `capabilities.ai`；`GET /api/ready` 仅以数据库是否可用决定 readiness；`GET /api/ai/health` 触发实时 AI 探测。AI 服务恢复后 flag 会自动恢复为 `true`。
+AI Provider 不作为 Express 的启动前置条件。Express 启动时立即执行一次 gRPC Health，此后按 `FORMFLOW_HEALTH_INTERVAL_MS` 周期探测。`GET /api/health` 返回缓存的数据库、AI 与向量状态以及 `capabilities.ai`；`GET /api/ready` 以数据库是否可用（`FORMFLOW_VECTOR_REQUIRED=true` 时还包括向量状态）决定 readiness；`GET /api/ai/health` 触发实时 AI 探测。AI 服务恢复后 flag 会自动恢复为 `true`。
 
 从旧部署升级时，应先停止创建新的 Agent run，并处理完仍处于 `waiting_tool` 的运行。旧 Redis checkpoint 不会自动复制；升级后设置上述两个数据库 URL，启动 PostgreSQL，再启动 Provider 和 Express。通过 `/readyz` 中的 `checkpoint_store: "postgresql"` 和系统设置页的“PostgreSQL checkpoint 已连接”确认切换完成。
 

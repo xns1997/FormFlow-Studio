@@ -176,6 +176,7 @@
 - 任务教程进入“逐页校正文字语义，再核截图”的整改阶段：清理重复图、错图、旧图和无教学意义的顶部配图，并把 Mermaid 流程图规范单独沉淀为共享文档。
 - 行为文档入口、旧 slug 跳转与 canonical path 解析已收口到统一路由解析器；Behavior 页面补上规则语法、上下文、控件句柄、流程参数、CRUD 快速模式和最佳实践的显式入口。
 - DSL Reference 从占位页升级为完整参考：现在同时覆盖语法约束、执行时序、关键词、动作语义、诊断范围、典型用例和反例，并在前端真实页面完成 Mermaid 渲染验收。
+- 完成仓库文档全量审查与勘误：按源码复核并修正节点/宏数量、项目包结构、数据导入格式、MCP/LLM 端点与 `/api/health` 语义；补全分卷 changelog 缺失的 1.3.0–1.8.0 版本与操作模板目录；同步修正 CLAUDE.md / CODEX.md 中已移除的旧接口（`/mcp`、`/api/ai/tools`、`project.apply_patch`、`release.apply`）。
 
 更多开发中明细见 [`docs/changelog/unreleased.md`](./docs/changelog/unreleased.md)。
 

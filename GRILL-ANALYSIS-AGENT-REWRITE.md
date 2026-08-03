@@ -1,6 +1,7 @@
 # 🔥 Grill-Me 深度分析：项目智能体重写方案
 
 > 分析日期：2026-07-30
+> 状态：历史分析文档；所述重写已落地为 `server/src/agent/` 模块化子系统（orchestrator / decision-engine / recovery-engine / observer / verifier / specialist-runner 等），文中文件清单与行数为当时的现状快照。
 > 目标：彻底重写项目智能体，实现如同 Codex 一样的自动编排、自动检查、自动调用合适工具、自动修复能力
 
 ---

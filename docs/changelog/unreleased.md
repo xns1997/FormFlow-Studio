@@ -7,6 +7,14 @@
 - 重做 8 篇“按任务学习”文档的截图验收模型：同篇截图必须来自连续操作链路，步骤文案、截图内容、框选区域和界面状态一一对应；补充共享《Mermaid 流程图规范》并统一清扫过长、横向拥挤或工程味过重的 Mermaid 图。
 - 新增并前端接入完整的 **规则语法 Reference**：覆盖 DSL 定位、完整句型、语法硬约束、参数与表达式边界、运行时触发顺序、诊断编号、典型用例与反例；Behavior 页面补上 DSL 语法、CRUD 快速模式、最佳实践等稳定入口。
 - 修复文档前端的 Mermaid 渲染串台问题：为每个 MarkdownRenderer 实例生成唯一 Mermaid 作用域 id，并补齐 `ebnf` / `text` / `plaintext` 高亮兜底，避免规则语法页图表重叠或代码块语言缺失导致的控制台报错。
+- 完成仓库**文档全量审查与勘误**：
+  - 按 `ui/nodes/*/schema.json` 重新核验节点数量：219 个节点包（140 个业务/场景节点 + 79 个 XLSX 方法节点）、11 个版本化高阶宏、5 个流程配方，并重写概览中的节点分类表；
+  - 数据导入格式补充 TSV、XML、Parquet 与外部数据源直连（MySQL / PostgreSQL / API）；
+  - 修正 FormFlow v2 项目包结构说明：`global-behaviors.json`、各作用域 `<id>.behaviors.json`、`testing/testing.json`、`release.json`，移除不存在的 `behaviors/` 目录描述；
+  - 修正 `CLAUDE.md` / `CODEX.md` 中已移除的旧接口（`/mcp`、`/api/ai/tools`、`project.apply_patch`、`release.apply`），统一为七领域角色化 MCP 与 `release.update/preview`；
+  - 对齐 `/api/health` 与 `/api/ready` 的实际返回结构与 readiness 语义；
+  - 补全 `docs/changelog/v1.md` 缺失的 1.3.0–1.8.0 版本记录，操作模板目录补充「主从详情」「多表批量更新」；
+  - 为历史设计/分析文档（低操作开发计划、编辑器模式切换、GRILL 重写分析）补充当前落地状态说明，避免旧快照被当作现状。
 
 ## 流程绑定与运行时
 

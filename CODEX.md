@@ -50,7 +50,7 @@
 - 流程：`workflow.create/update/delete/validate`、`workflow_node.*`、`workflow_edge.*`
 - 输出：`output.upsert/delete/generate`
 - 交付：`project.package.validate/export`
-- 发布：`release.get/update/preview/apply`
+- 发布：`release.get/update/preview`（`release.apply` 永远不可用）
 
 前端项目智能体使用 `/api/ai/project-agent/v2/sessions` 建立 V2 会话。根智能体先只读检查并生成可确认的目标契约，不预先生成完整专家任务图。确认后，协调器根据最新业务观察选择下一步行动：互不依赖的只读任务可并发，任何写任务独占当前决策步并使用最新 revision；每个专家仍只能调用所属 MCP。工具结果先压缩成简练观察再回灌模型，内部 ID 和完整事件仅用于幂等与审计。连续两次无证据或状态推进时必须暂停提问，协调器声明完成也必须通过需求证据及质量/交付门禁。进度通过带单调 `seq` 的 SSE 事件流发布，暂停、停止和转向在工具边界生效。破坏性确认和发布门禁不因目标确认而放宽，`release.apply` 永远不可用。旧 `/api/ai/project-agent/sessions` 返回 410。
 

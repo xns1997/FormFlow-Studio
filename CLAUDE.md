@@ -4,7 +4,7 @@
 
 ## MCP 发现
 
-推荐使用 stdio MCP 命令 `formflow-mcp`；也可连接 Streamable HTTP `/mcp`。连接成功后：
+在线项目创建与编辑由七个专职 MCP 提供：`project`、`data`、`form`、`workflow`、`behavior`、`quality`、`delivery`。推荐使用 stdio MCP 命令 `formflow-mcp --role <role>`（或设置 `FORMFLOW_MCP_ROLE`）；也可连接 Streamable HTTP `/mcp/<role>`。连接成功后：
 
 1. 调用 `system.capabilities.get`。
 2. 调用 `tools/list`，以实时返回的描述和输入 Schema 为准。
@@ -17,8 +17,11 @@
 
 如果 MCP 客户端不可用，可使用：
 
-- `GET /api/ai/tools` 查看工具；
-- `POST /api/ai/tools/<tool-name>/invoke` 调用，body 为 `{ "arguments": { ... } }`。
+- `GET /api/ai/mcp-roles` 查看角色与工具数；
+- `GET /api/ai/mcp-roles/<role>/tools` 查看指定角色工具；
+- `POST /api/ai/mcp-roles/<role>/tools/<tool-name>/invoke` 调用，body 为 `{ "arguments": { ... } }`。
+
+不指定角色会被拒绝；原聚合 `/mcp`、`/api/ai/tools` 和无角色 invoke 接口已移除并返回 410。
 
 ## 必须遵守的调用协议
 
@@ -28,23 +31,22 @@
 - 收到 `confirmation_required` 时停止自动执行，向用户说明 `impact`。用户批准后，保持其余参数完全一致，加入返回的 `confirmationToken` 再调用。
 - 删除默认不使用 `cascade`；只有用户明确批准级联影响后才传 `cascade: true`。
 - 修改完成后必须执行 `project.validate` 或 `project.package.validate`。
-- 发布前必须执行 `release.preview`；`release.apply` 属于破坏性确认操作，不得自行决定发布。
+- 发布前必须执行 `release.preview`；`release.apply` 永远不可用，不得自行决定或尝试发布。
 
 ## 工具选择
 
 - 新项目骨架：`project.initialize`
 - 已有数据直接生成项目：`project.build_from_data`
-- 多资源批量修改：`project.apply_patch`
 - 导入/创建数据表：`data_source.import`、`data_source.create`
 - 配置 Sheet 和主键：`data_sheet.configure`、`data_keys.validate`
 - 查询/写回数据：`data_rows.query`、`data_rows.batch`
 - 创建或从表生成表单：`form.create`、`form.generate_from_table`
 - 精确修改控件/绑定：`form_component.*`、`form_binding.*`
-- 三层行为：`behavior.*`
+- 三层行为（全局 / 工作表 / 表单）：`behavior.*`；规则代码由 behavior MCP 专职写入
 - 规则参考、检查和测试：`rule_reference.search`、`rule_syntax.lint`、`rule_test.run`
 - 流程及节点/连线：`workflow.*`、`workflow_node.*`、`workflow_edge.*`
 - 输出与项目包：`output.*`、`project.package.*`
-- 发布：`release.get`、`release.preview`、`release.apply`
+- 发布：`release.get`、`release.update`（草稿）、`release.preview`（预检），不得调用 `release.apply`
 
 需要控件或流程节点类型时先查询 `catalog.components.*` 或 `catalog.workflow_nodes.*`，不得创造目录中不存在的类型、属性或端口。
 

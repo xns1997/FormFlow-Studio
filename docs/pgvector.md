@@ -17,10 +17,14 @@ Docker Compose 使用 `pgvector/pgvector:pg17`。后端启动时会执行 `CREAT
 
 ```json
 {
+  "status": "ok",
+  "ready": true,
   "capabilities": { "vectorSearch": true },
-  "checks": { "vector": { "status": "ok" } }
+  "checks": { "database": { "status": "ok" }, "ai": { "status": "ok" }, "vector": { "status": "ok" } }
 }
 ```
+
+`status` 在数据库或强制向量不可用时为 `not_ready`，数据库正常但 AI 不可用时为 `degraded`；`ready` 只由数据库状态（以及 `FORMFLOW_VECTOR_REQUIRED=true` 时的向量状态）决定。
 
 本地 PostgreSQL 没有安装扩展时，默认以降级模式启动，`vectorSearch` 为 `false`，后台健康检查会继续尝试恢复。设置 `FORMFLOW_VECTOR_REQUIRED=true` 可令生产环境在扩展不可用时拒绝启动，并在运行期间将 `/api/ready` 标记为未就绪。
 
