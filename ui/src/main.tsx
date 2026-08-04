@@ -1,3 +1,7 @@
+// 必须在任何 React / React Router 代码运行前修复残缺的宿主 URLSearchParams，
+// 否则 useSearchParams 会因 defaultSearchParams.forEach 缺失导致区域崩溃。
+import './services/engine/urlSearchParamsShim';
+
 import '@xyflow/react/dist/style.css';
 import 'antd/dist/reset.css';
 import './style/index.css';

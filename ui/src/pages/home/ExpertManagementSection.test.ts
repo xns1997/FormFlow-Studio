@@ -1,22 +1,37 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { replaceExpert, selectedToolNames, type ExpertConfigDraft } from './ExpertManagementSection';
+import { scopeSelectedToolNames, type ScopeRole } from './ExpertManagementSection';
+import type { ProjectAgentScopeConfig } from '../../components/projectAgentUiModel';
 
-const agents: ExpertConfigDraft[] = [
-  { role: 'data', name: '数据专家', description: '', instructions: 'data', tools: [], toolMode: 'all' },
-  { role: 'form', name: '表单专家', description: '', instructions: 'form', tools: [], toolMode: 'selected' },
-];
+const roles: ScopeRole[] = ['project', 'data', 'form', 'workflow', 'behavior', 'quality', 'delivery'];
+
+function scope(overrides: Partial<ProjectAgentScopeConfig>): ProjectAgentScopeConfig {
+  return {
+    role: 'form',
+    name: '表单',
+    description: '',
+    instructions: 'form',
+    tools: [],
+    toolMode: 'all',
+    knowledge: [],
+    ...overrides,
+  };
+}
+
 const tools = [
-  { name: 'form.get', title: '读取表单', description: '', risk: 'read' as const, ownerRole: 'form' },
-  { name: 'form.update', title: '更新表单', description: '', risk: 'write' as const, ownerRole: 'form' },
+  { name: 'form.get', title: '读取表单', risk: 'read' },
+  { name: 'form.update', title: '更新表单', risk: 'write' },
 ];
 
-test('expert draft updates only the selected registration', () => {
-  const next = replaceExpert(agents, 'form', { instructions: 'updated' });
-  assert.equal(next[0].instructions, 'data'); assert.equal(next[1].instructions, 'updated'); assert.equal(agents[1].instructions, 'form');
+test('every capability bundle scope is one of the seven MCP roles', () => {
+  assert.equal(roles.length, 7);
+  assert.ok(roles.includes('data'));
+  assert.ok(roles.includes('delivery'));
+  assert.equal((roles as readonly string[]).includes('coordinator'), false);
 });
 
 test('tool authorization distinguishes all tools from an intentionally empty whitelist', () => {
-  assert.deepEqual(selectedToolNames({ ...agents[0], role: 'form' }, tools), ['form.get', 'form.update']);
-  assert.deepEqual(selectedToolNames(agents[1], tools), []);
+  assert.deepEqual(scopeSelectedToolNames(scope({ role: 'form' }), tools), ['form.get', 'form.update']);
+  assert.deepEqual(scopeSelectedToolNames(scope({ role: 'form', toolMode: 'selected', tools: [] }), tools), []);
+  assert.deepEqual(scopeSelectedToolNames(scope({ role: 'form', toolMode: 'selected', tools: ['form.update'] }), tools), ['form.update']);
 });

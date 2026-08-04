@@ -1,6 +1,7 @@
 import type { DataRelation, DesignComponent, DesignFile, FormMode, FormWindowConfig, SrcTableEntry } from '../project/types';
 import { createDesignFile } from '../project/types';
 import { generateFormScaffold } from '../services/formGeneration/formScaffold';
+import { FORM_TEMPLATES } from '../../../shared/form-templates';
 
 export interface DesignTemplateDefinition {
   key: string;
@@ -62,12 +63,13 @@ export interface CreateDesignTemplateOptions {
   now?: string;
 }
 
-export const DESIGN_TEMPLATES: DesignTemplateDefinition[] = [
-  { key: 'blank', label: '空白表单', description: '从空白设计开始', formMode: 'create' },
-  { key: 'basic-entry', label: '基础录入表单', description: '按真实字段生成录入布局与操作区', formMode: 'create' },
-  { key: 'lookup-edit', label: '查询修改表单', description: '按真实字段生成查询区、编辑区和保存区', formMode: 'lookup-edit' },
-  { key: 'master-detail', label: '主从详情表单', description: '为已声明关系预留主表列表与详情编辑区', formMode: 'edit' },
-];
+/** 与共享目录（catalog.form_templates.*）同源，保证前后端模板集合一致。 */
+export const DESIGN_TEMPLATES: DesignTemplateDefinition[] = FORM_TEMPLATES.map((template) => ({
+  key: template.key,
+  label: template.label,
+  description: template.description,
+  formMode: template.formMode,
+}));
 
 function component(
   id: string,

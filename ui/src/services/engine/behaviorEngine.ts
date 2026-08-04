@@ -1,9 +1,11 @@
 // 行为引擎 - Trigger/Condition/Action/SideEffect 四元组
 
-import type { RuntimeState, BehaviorLog } from '../../models';
+import type { RuntimeState, BehaviorLog, ValidationRule } from '../../models';
 import type { FormLinkageOptionsConfig, SrcTableEntry } from '../../project/types';
 import { createSandboxContext } from '../config/scriptSandbox';
 import { evaluatePropertyExpression } from './propertyExpression';
+import { validateField } from './validator';
+import { comparableValue, sameValue } from './valueUtils';
 
 export type TriggerType =
   // 基础事件（原有）
@@ -142,18 +144,20 @@ export function evaluateCondition(value: unknown, condition: ConditionConfig): b
   switch (operator) {
     case '==': return value === cv;
     case '!=': return value !== cv;
-    case '>': return Number(value) > Number(cv);
-    case '<': return Number(value) < Number(cv);
-    case '>=': return Number(value) >= Number(cv);
-    case '<=': return Number(value) <= Number(cv);
+    case '>': return cmp(value) > cmp(cv);
+    case '<': return cmp(value) < cmp(cv);
+    // 文档 8：`>=` 与 `<`、`<=` 与 `>` 互为严格反向。对 NaN/空值等不可比输入
+    // 用“精确取反”定义，保证 when/else 恰有一个分支命中（文档 11.5）。
+    case '>=': return !(cmp(value) < cmp(cv));
+    case '<=': return !(cmp(value) > cmp(cv));
     case 'contains': return String(value).includes(String(cv));
     case 'notContains': return !String(value).includes(String(cv));
     case 'startsWith': return String(value).startsWith(String(cv));
     case 'notStartsWith': return !String(value).startsWith(String(cv));
     case 'endsWith': return String(value).endsWith(String(cv));
     case 'notEndsWith': return !String(value).endsWith(String(cv));
-    case 'isEmpty': return value === null || value === undefined || value === '';
-    case 'isNotEmpty': return value !== null && value !== undefined && value !== '';
+    case 'isEmpty': return value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0);
+    case 'isNotEmpty': return value !== null && value !== undefined && value !== '' && !(Array.isArray(value) && value.length === 0);
     case 'regex': try { return new RegExp(String(cv)).test(String(value)); } catch { return false; }
     case 'custom': try { return Boolean(new Function('value', `return ${condition.customExpression}`)(value)); } catch { return false; }
     default: return false;
@@ -184,6 +188,43 @@ export function evaluateConditions(
     currentLogic = cond.logic;
   }
   return result;
+}
+
+function isBlankValue(value: unknown) {
+  return value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0);
+}
+
+function cmp(value: unknown): number | string {
+  return comparableValue(value) as number | string;
+}
+
+/** 与条件求值一致的比较语义：`>=`/`<=` 为 `<`/`>` 的精确取反（文档 8/11.5） */
+function compareOperator(left: unknown, operator: NonNullable<ActionConfig['operator']>, right: unknown): boolean {
+  switch (operator) {
+    case '==': return left === right;
+    case '!=': return left !== right;
+    case '>': return cmp(left) > cmp(right);
+    case '<': return cmp(left) < cmp(right);
+    case '>=': return !(cmp(left) < cmp(right));
+    case '<=': return !(cmp(left) > cmp(right));
+    default: return false;
+  }
+}
+
+function recordGuardFailure(
+  key: string,
+  message: string,
+  state: RuntimeState,
+  setState: (updater: (prev: RuntimeState) => RuntimeState) => void,
+): never {
+  setState((prev) => ({
+    ...prev,
+    validationErrors: { ...prev.validationErrors, [key]: message },
+    behaviorLogs: [...prev.behaviorLogs, {
+      timestamp: Date.now(), level: 'error', source: 'behavior-engine', message,
+    }],
+  }));
+  throw new Error(message);
 }
 
 export async function executeAction(action: ActionConfig, state: RuntimeState, setState: (updater: (prev: RuntimeState) => RuntimeState) => void, tables?: any[], onSubmit?: () => void, context?: BehaviorExecutionContext): Promise<void> {
@@ -264,6 +305,80 @@ export async function executeAction(action: ActionConfig, state: RuntimeState, s
         };
       });
       break;
+    case 'assertRequired': {
+      const fields = (action.fields || []).filter(Boolean);
+      const missing = fields.filter((field) => isBlankValue(state.formValues[field]));
+      if (!missing.length) break;
+      recordGuardFailure(missing[0]!, action.message || `请填写以下字段：${missing.join('、')}`, state, setState);
+      break;
+    }
+    case 'assertAny': {
+      const fields = (action.fields || []).filter(Boolean);
+      if (fields.some((field) => !isBlankValue(state.formValues[field]))) break;
+      recordGuardFailure(fields[0] || 'form', action.message || `请至少填写以下字段之一：${fields.join('、')}`, state, setState);
+      break;
+    }
+    case 'assertValidator': {
+      const field = String(action.targetField || '').trim();
+      if (!field) break;
+      const validator = String(action.validator || '').trim();
+      const rules: ValidationRule[] = validator === 'pattern'
+        ? [{ type: 'pattern', param: String(action.pattern || ''), message: action.message || `${field} 格式不正确` }]
+        : [{ type: validator as ValidationRule['type'], message: action.message || `${field} 格式不正确` }];
+      const error = validateField(state.formValues[field], rules, state.formValues);
+      if (!error) break;
+      recordGuardFailure(field, error, state, setState);
+      break;
+    }
+    case 'assertRange': {
+      const field = String(action.targetField || '').trim();
+      if (!field || isBlankValue(state.formValues[field])) break;
+      const rules: ValidationRule[] = [];
+      if (action.min != null) rules.push({ type: 'min', param: String(action.min), message: action.message || `${field} 不能小于 ${action.min}` });
+      if (action.max != null) rules.push({ type: 'max', param: String(action.max), message: action.message || `${field} 不能大于 ${action.max}` });
+      const error = validateField(state.formValues[field], rules, state.formValues);
+      if (!error) break;
+      recordGuardFailure(field, error, state, setState);
+      break;
+    }
+    case 'assertLength': {
+      const field = String(action.targetField || '').trim();
+      if (!field || isBlankValue(state.formValues[field])) break;
+      const rules: ValidationRule[] = [];
+      if (action.min != null) rules.push({ type: 'minLength', param: String(action.min), message: action.message || `${field} 最少 ${action.min} 个字符` });
+      if (action.max != null) rules.push({ type: 'maxLength', param: String(action.max), message: action.message || `${field} 最多 ${action.max} 个字符` });
+      const error = validateField(state.formValues[field], rules, state.formValues);
+      if (!error) break;
+      recordGuardFailure(field, error, state, setState);
+      break;
+    }
+    case 'assertDirty': {
+      const fields = (action.fields || []).filter(Boolean);
+      const original = state.originalValues || {};
+      if (fields.some((field) => !sameValue(state.formValues[field], original[field]))) break;
+      recordGuardFailure(fields[0] || 'form', action.message || `请至少修改以下字段之一：${fields.join('、')}`, state, setState);
+      break;
+    }
+    case 'assertReadonly': {
+      const fields = (action.fields || []).filter(Boolean);
+      const original = state.originalValues || {};
+      const changed = fields.filter((field) => !sameValue(state.formValues[field], original[field]));
+      if (!changed.length) break;
+      recordGuardFailure(changed[0]!, action.message || `只读字段不允许修改：${changed.join('、')}`, state, setState);
+      break;
+    }
+    case 'assertCompare': {
+      const field = String(action.targetField || '').trim();
+      const operator = action.operator;
+      if (!field || !operator) break;
+      const left = state.formValues[field];
+      const right = action.valueSource === 'field' && action.sourceField ? state.formValues[action.sourceField] : action.value;
+      if (isBlankValue(left) || isBlankValue(right)) break;
+      if (compareOperator(left, operator, right)) break;
+      const rightLabel = action.valueSource === 'field' && action.sourceField ? action.sourceField : String(right ?? '');
+      recordGuardFailure(field, action.message || `${field} 需要满足 ${operator} ${rightLabel}`, state, setState);
+      break;
+    }
     case 'switchTab':
       if (action.tabName) setState((prev) => ({
         ...prev,
@@ -480,11 +595,15 @@ export async function executeBehaviorRule(
   tables?: SrcTableEntry[],
   onSubmit?: () => void,
   context?: BehaviorExecutionContext,
+  eventField?: string,
 ): Promise<BehaviorExecutionResult> {
   const result: BehaviorExecutionResult = { success: true, actionsExecuted: 0, sideEffectsExecuted: 0, errors: [], logs: [] };
 
   if (!rule.enabled) return result;
   if (rule.trigger.type !== triggerType) return result;
+  // 字段变化事件必须命中触发字段（文档 11.4：字段变化触发该字段的 when/else/on change/compute）
+  const isFieldTrigger = triggerType === 'fieldChange' || triggerType === 'valueChange';
+  if (isFieldTrigger && rule.trigger.fieldName && rule.trigger.fieldName !== eventField) return result;
 
   const conditionsPassed = evaluateConditions(rule.conditions, state.formValues, context);
   if (!conditionsPassed) return result;
@@ -526,12 +645,13 @@ export async function executeAllRules(
   tables?: SrcTableEntry[],
   onSubmit?: () => void,
   context?: BehaviorExecutionContext,
+  eventField?: string,
 ): Promise<BehaviorExecutionResult> {
   const sortedRules = [...rules].sort((a, b) => a.priority - b.priority);
   const totalResult: BehaviorExecutionResult = { success: true, actionsExecuted: 0, sideEffectsExecuted: 0, errors: [], logs: [] };
 
   for (const rule of sortedRules) {
-    const result = await executeBehaviorRule(rule, triggerType, state, setState, tables, onSubmit, context);
+    const result = await executeBehaviorRule(rule, triggerType, state, setState, tables, onSubmit, context, eventField);
     totalResult.actionsExecuted += result.actionsExecuted;
     totalResult.sideEffectsExecuted += result.sideEffectsExecuted;
     totalResult.errors.push(...result.errors);

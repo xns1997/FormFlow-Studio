@@ -17,7 +17,8 @@
         "scatter",
         "area",
         "doughnut",
-        "radar"
+        "radar",
+        "polarArea"
       ],
       "default": "bar",
       "description": "图表类型"

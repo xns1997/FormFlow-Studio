@@ -32,9 +32,35 @@ export type ToolResult<T = unknown> =
   | { ok: false; error: { code: string; message: string; path?: string; details?: unknown; retryable: boolean }; meta: { requestId: string } }
   | { ok: false; status: 'confirmation_required'; confirmation: { token: string; expiresAt: string; summary: string; impact: unknown }; meta: { requestId: string } };
 
+/** 一个“看起来能过、实际会失败”的错误调用示例，用于 skill 与工具手册中提示不要照抄。 */
+export interface ToolWrongExample {
+  /** 一句话说明为什么这是错误调用。 */
+  summary: string;
+  /** 错误调用示例参数（禁止照抄）。 */
+  arguments: Record<string, any>;
+  /** 预期失败/返回的错误码或后果；没有固定错误码时说明后果。 */
+  expectedError?: string;
+}
+
+/** 一个可直接照抄的工具调用示例（字段名与 schema 一致，值是示意业务值）。 */
+export interface ToolExample {
+  /** 一句话说明这个示例在做什么。 */
+  summary?: string;
+  /** 完整 arguments 示例；示例中的 id/名称等需替换为真实值。 */
+  arguments: Record<string, any>;
+  /** 成功返回的数据形状（data 部分），帮助模型解读工具结果。 */
+  success?: unknown;
+  /** 常见错误返回（code + message），帮助模型在失败时正确修复。 */
+  errors?: Array<{ code: string; message: string }>;
+  /** 与该正确示例配对的常见错误调用（禁止照抄）。 */
+  wrong?: ToolWrongExample[];
+}
+
 export interface FormFlowToolDefinition {
   name: string; title: string; description: string; inputSchema: JsonSchema; outputSchema: JsonSchema;
   risk: ToolRisk; requiredAccess?: ProjectAccess; ownerRole: McpRole; sharedReadRoles?: McpRole[];
+  /** 供智能体与 skill 照抄的调用示例。 */
+  examples?: ToolExample[];
   handler(input: Record<string, any>, context: ToolContext): Promise<unknown> | unknown;
   impact?: (input: Record<string, any>, context: ToolContext) => unknown;
   confirmWhen?: (input: Record<string, any>) => boolean;
@@ -115,7 +141,7 @@ export const schema = (required: string[] = [], properties: Record<string, unkno
 
 export const dataColumnSchema: JsonSchema = {
   type: 'object', required: ['name'],
-  properties: { name: string, title: string, type: { type: 'string', enum: ['string', 'number', 'boolean', 'date', 'enum'] }, nullable: boolean, enum: { type: 'array', items: string } },
+  properties: { name: string, title: string, type: { type: 'string', enum: ['string', 'text', 'number', 'integer', 'float', 'double', 'boolean', 'bool', 'date', 'datetime', 'enum'], description: '列类型。常用别名（text/integer/float/double/bool/datetime）会自动规范化为 string/number/boolean/date。' }, nullable: boolean, enum: { type: 'array', items: string } },
   additionalProperties: true,
 };
 
@@ -134,7 +160,10 @@ export const dataSourceConfigSchema: JsonSchema = {
 
 export const dataRowUpdateSchema: JsonSchema = {
   type: 'object', required: ['rowKey', 'changes'],
-  properties: { rowKey: string, changes: { type: 'object', additionalProperties: true } },
+  properties: {
+    rowKey: { type: 'string', description: '稳定行键，格式 "key:<主键值>"（如 "key:S-001"）；新增/更新/删除都按主键值定位。' },
+    changes: { type: 'object', additionalProperties: true, description: '业务字段名到值的映射；新增行需包含全部必填列。' },
+  },
   additionalProperties: false,
 };
 

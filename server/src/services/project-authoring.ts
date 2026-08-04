@@ -210,10 +210,14 @@ export function validateProjectModel(project: JsonObject): ValidationReport {
       if (!nodeIds.has(edge.target)) errors.push({ code: 'MISSING_REFERENCE', path: `workflows.${workflow.id}.edges.${edge.id}.target`, message: `目标节点 ${edge.target} 不存在` });
       const catalogPath = join(REPOSITORY_ROOT, '.codex', 'skills', 'formflow-project-editor', 'references', 'node-ports-v2.json');
       if (existsSync(catalogPath)) {
-        const catalog = JSON.parse(readFileSync(catalogPath, 'utf8')); const source = nodes.find((item: any) => item.id === edge.source); const target = nodes.find((item: any) => item.id === edge.target);
-        const sourcePort = edge.sourceHandle?.replace(/^out:/, ''); const targetPort = edge.targetHandle?.replace(/^in:/, '');
-        if (source && sourcePort && catalog[source.specId] && !catalog[source.specId].outputs.includes(sourcePort)) errors.push({ code: 'INVALID_PORT', path: `workflows.${workflow.id}.edges.${edge.id}.sourceHandle`, message: `输出端口 ${sourcePort} 不存在` });
-        if (target && targetPort && catalog[target.specId] && !catalog[target.specId].inputs.includes(targetPort)) errors.push({ code: 'INVALID_PORT', path: `workflows.${workflow.id}.edges.${edge.id}.targetHandle`, message: `输入端口 ${targetPort} 不存在` });
+        try {
+          const catalog = JSON.parse(readFileSync(catalogPath, 'utf8')); const source = nodes.find((item: any) => item.id === edge.source); const target = nodes.find((item: any) => item.id === edge.target);
+          const sourcePort = edge.sourceHandle?.replace(/^out:/, ''); const targetPort = edge.targetHandle?.replace(/^in:/, '');
+          if (source && sourcePort && catalog[source.specId] && !catalog[source.specId].outputs.includes(sourcePort)) errors.push({ code: 'INVALID_PORT', path: `workflows.${workflow.id}.edges.${edge.id}.sourceHandle`, message: `输出端口 ${sourcePort} 不存在` });
+          if (target && targetPort && catalog[target.specId] && !catalog[target.specId].inputs.includes(targetPort)) errors.push({ code: 'INVALID_PORT', path: `workflows.${workflow.id}.edges.${edge.id}.targetHandle`, message: `输入端口 ${targetPort} 不存在` });
+        } catch {
+          // 端口目录缺失或损坏时不阻断其余结构校验。
+        }
       }
     }
   }
@@ -452,12 +456,19 @@ export function fullSourceRows(project: JsonObject, table: JsonObject, sheet: Js
 }
 
 export function batchProjectRows(project: JsonObject, input: JsonObject) {
-  const changes = [...(input.adds || []), ...(input.updates || []), ...(input.deletes || [])];
-  if (changes.length > 1000) throw toolError('BATCH_LIMIT_EXCEEDED', '单次 batch 最多 1000 个变更');
   const table = (project.srcTable || []).find((item: any) => item.id === input.tableId); if (!table) throw toolError('TABLE_NOT_FOUND', '数据表不存在', 'tableId');
   const sheet = (table.sheets || []).find((item: any) => item.name === input.sheetName); if (!sheet) throw toolError('SHEET_NOT_FOUND', 'Sheet 不存在', 'sheetName');
+  const keyFields = (sheet.config?.keyFields || []) as string[];
+  const adds = (input.adds || []).map((item: any) =>
+    // 兼容三种写法：业务记录直接追加；{rowKey, changes} 或 {rowKey, values} 包装则解包为业务记录（rowKey 仅用于定位，追加时不重复写入）。
+    item && typeof item === 'object' && ('changes' in item || 'values' in item)
+      ? (item.changes ?? item.values)
+      : item);
+  input = { ...input, adds };
+  const changes = [...adds, ...(input.updates || []), ...(input.deletes || [])];
+  if (changes.length > 1000) throw toolError('BATCH_LIMIT_EXCEEDED', '单次 batch 最多 1000 个变更');
   const currentRows = fullSourceRows(project, table, sheet); const currentVersion = dataVersion(currentRows); if (input.baseVersion && input.baseVersion !== currentVersion) throw toolError('DATA_VERSION_CONFLICT', '数据已被修改', 'baseVersion', { currentVersion });
-  const next = applyBatchChanges(currentRows, sheet.config?.keyFields || [], input); validateConfiguredKeys(next, sheet.config?.keyFields || []); sheet.preview = next; sheet.rowCount = next.length; project.config.updatedAt = new Date().toISOString();
+  const next = applyBatchChanges(currentRows, keyFields, input); validateConfiguredKeys(next, keyFields); sheet.preview = next; sheet.rowCount = next.length; project.config.updatedAt = new Date().toISOString();
   return { total: next.length, dataVersion: dataVersion(next), applied: { adds: input.adds?.length || 0, updates: input.updates?.length || 0, deletes: input.deletes?.length || 0 } };
 }
 
@@ -470,7 +481,7 @@ export function generatedForm(table: JsonObject, sheet: JsonObject, input: JsonO
     const options = componentType === 'select' ? [...new Set([...(column?.enum || []), ...(column?.sampleValues || [])].map(String))].map((value) => ({ label: value, value })) : undefined;
     components.push({ id: componentId, type: componentType, x: 80 + (index % 2) * 390, y: 130 + Math.floor(index / 2) * 92, width: 340, height: componentType === 'textarea' || componentType === 'imageUpload' ? 120 : 76, zIndex: 2, fieldBinding: header, props: { name: header, label: header, required: (sheet.config?.keyFields || []).includes(header), readonly: mode === 'detail', ...(options ? { options } : {}) } });
   });
-  return { id, name: input.name || `${table.id} ${mode}`, design: { id: `${id}_design`, name: input.name || id, formMode: mode, viewport: { zoom: 1, panX: 0, panY: 0 }, gridSize: 12, coordinateSpace: FORM_WINDOW_COORDINATE_SPACE, formWindow: growFormWindowToFit({ x: 40, y: 40, width: 900, height: Math.max(500, 140 + sheet.headers.length * 90), props: { title: input.name || `${table.id} 表单`, showFooter: false } }, components as any), components, bindings: [{ id: `${id}_binding`, sourceId: table.id, targetId: id, type: 'table', config: { tableId: table.id, sheetName: sheet.name } }], createdAt: now, updatedAt: now }, behaviors: [], ruleCode: '', createdAt: now, updatedAt: now };
+  return { id, name: input.name || `${table.id} ${mode}`, design: { id: `${id}_design`, name: input.name || id, formMode: mode, ...(input.templateKey ? { templateKey: String(input.templateKey) } : {}), viewport: { zoom: 1, panX: 0, panY: 0 }, gridSize: 12, coordinateSpace: FORM_WINDOW_COORDINATE_SPACE, formWindow: growFormWindowToFit({ x: 40, y: 40, width: 900, height: Math.max(500, 140 + sheet.headers.length * 90), props: { title: input.name || `${table.id} 表单`, showFooter: false } }, components as any), components, bindings: [{ id: `${id}_binding`, sourceId: table.id, targetId: id, type: 'table', config: { tableId: table.id, sheetName: sheet.name } }], createdAt: now, updatedAt: now }, behaviors: [], ruleCode: '', createdAt: now, updatedAt: now };
 }
 
 export async function packageProject(projectId: string): Promise<Buffer> {

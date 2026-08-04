@@ -128,6 +128,107 @@ const ERROR_PATTERNS: Array<{
       { label: '使用更新策略', description: '配置为更新已有记录而非新建' },
     ],
   },
+  {
+    pattern: /defaultSearchParams|forEach is not a function/i,
+    category: 'runtime',
+    cause: '宿主环境（浏览器 / WebView / 扩展）提供的 URLSearchParams 实现不完整，缺少 forEach 等迭代能力，导致 React Router 合并 URL 参数时失败。应用已内置启动防护，刷新后通常不再出现。',
+    impact: '仅该区域显示不完整，其余功能不受影响。',
+    fixes: [
+      { label: '刷新页面', description: '应用已内置 URLSearchParams 兼容修复，刷新后通常可恢复', action: 'refresh' },
+      { label: '重试', description: '重新加载该区域', action: 'retry' },
+      { label: '使用标准浏览器', description: '若在 WebView 或扩展环境运行，请改用 Chrome / Edge / Safari / Firefox 标准窗口', action: 'reconfigure' },
+    ],
+  },
+  {
+    pattern: /chunk.*load|Failed to fetch dynamically imported|importing module|loading chunk/i,
+    category: 'network',
+    cause: '应用发布了新版本或缓存过期，浏览器仍在使用旧代码块，动态加载新资源失败。',
+    impact: '对应功能暂时无法打开。',
+    fixes: [
+      { label: '刷新页面', description: '获取最新版本资源', action: 'refresh' },
+      { label: '重试', description: '重新加载该资源', action: 'retry' },
+    ],
+  },
+  {
+    pattern: /is not a function|is not defined/i,
+    category: 'runtime',
+    cause: '代码运行环境缺少某个 API 或函数实现，或页面代码与资源版本不一致。',
+    impact: '对应功能无法执行。',
+    fixes: [
+      { label: '刷新页面', description: '重新加载完整资源', action: 'refresh' },
+      { label: '使用标准浏览器', description: '若在 WebView 或扩展环境运行，请改用标准浏览器窗口', action: 'reconfigure' },
+    ],
+  },
+  {
+    pattern: /ResizeObserver loop/i,
+    category: 'runtime',
+    cause: '浏览器尺寸观察器反馈循环，通常由布局抖动引起，属于浏览器已知的无害告警。',
+    impact: '一般无实际影响。',
+    fixes: [
+      { label: '忽略', description: '该告警通常不影响功能', action: 'ignore' },
+      { label: '刷新页面', description: '刷新后告警通常消失', action: 'refresh' },
+    ],
+  },
+  {
+    pattern: /Unexpected token|Unexpected end of JSON input|JSON\.parse|invalid json/i,
+    category: 'runtime',
+    cause: '收到的数据不是有效的 JSON，可能是数据源返回了错误内容或网络传输被截断。',
+    impact: '数据无法解析，相关功能可能显示为空。',
+    fixes: [
+      { label: '重试', description: '重新请求一次', action: 'retry' },
+      { label: '检查数据源', description: '确认接口或数据文件返回的是合法 JSON' },
+    ],
+  },
+  {
+    pattern: /QuotaExceededError|quota|storage.*full|存储空间/i,
+    category: 'runtime',
+    cause: '浏览器本地存储空间已满，写入被拒绝。',
+    impact: '本地缓存或草稿无法保存。',
+    fixes: [
+      { label: '清理浏览器存储', description: '清除该站点的缓存 / LocalStorage 后重试' },
+      { label: '刷新页面', description: '清理后刷新页面' },
+    ],
+  },
+  {
+    pattern: /AbortError|user aborted/i,
+    category: 'runtime',
+    cause: '请求被用户或浏览器主动取消（如页面切换、重复提交）。',
+    impact: '本次操作未完成，通常无需处理。',
+    fixes: [
+      { label: '忽略', description: '操作已取消，无需处理', action: 'ignore' },
+      { label: '重试', description: '如需完成操作请重新执行', action: 'retry' },
+    ],
+  },
+  {
+    pattern: /out of memory|heap.*exhausted|内存不足/i,
+    category: 'runtime',
+    cause: '页面处理的数据量过大或存在内存泄漏，浏览器内存耗尽。',
+    impact: '页面可能变慢或崩溃。',
+    fixes: [
+      { label: '刷新页面', description: '释放内存后重试', action: 'refresh' },
+      { label: '减少数据量', description: '减少导入/加载的数据行数或分批处理' },
+    ],
+  },
+  {
+    pattern: /Script error/i,
+    category: 'runtime',
+    cause: '跨域脚本抛出的错误被浏览器安全策略隐藏了细节（显示为 Script error）。',
+    impact: '无法获取具体错误位置，功能可能受影响。',
+    fixes: [
+      { label: '刷新页面', description: '重试一次', action: 'refresh' },
+      { label: '使用标准浏览器', description: '跨域场景请使用标准浏览器窗口' },
+    ],
+  },
+  {
+    pattern: /NotAllowedError|SecurityError|not allowed to|安全策略拒绝/i,
+    category: 'permission',
+    cause: '浏览器安全策略或权限设置拒绝了该操作（如剪贴板、摄像头、存储权限）。',
+    impact: '该操作被阻止。',
+    fixes: [
+      { label: '检查权限设置', description: '在浏览器站点设置中允许所需权限' },
+      { label: '联系管理员', description: '若为公司策略导致，请联系管理员' },
+    ],
+  },
 ];
 
 function matchCategory(message: string): { category: RuntimeDiagnosticCategory; cause: string; impact: string; fixes: RuntimeFix[] } {
@@ -142,6 +243,7 @@ function matchCategory(message: string): { category: RuntimeDiagnosticCategory; 
     impact: '可能影响正常使用。',
     fixes: [
       { label: '查看详细日志', description: '展开查看完整错误信息' },
+      { label: '刷新页面', description: '刷新后通常可恢复', action: 'refresh' },
       { label: '重试', description: '重新执行操作', action: 'retry' },
     ],
   };

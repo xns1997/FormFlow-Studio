@@ -19,6 +19,7 @@
 可读 MCP resources：
 
 - `formflow://catalog/components`
+- `formflow://catalog/form-templates`
 - `formflow://catalog/workflow-nodes`
 - `formflow://catalog/events`
 - `formflow://projects`
@@ -42,9 +43,11 @@
 - Sheet 与主键：`data_sheet.get/configure`、`data_keys.validate`
 - 数据行：`data_rows.query/batch`
 - 表单：`form.create/generate_from_table/update/delete`
+- 表单模板：`catalog.form_templates.list/get`（空白/基础录入/查询修改/主从详情；`form.create` 与 `form.generate_from_table` 支持 `templateId`）
 - 控件与绑定：`form_component.upsert/delete`、`form_binding.upsert/delete`
 - 行为：`behavior.list/upsert/delete`
 - 规则：`rule_reference.search`、`rule_syntax.lint`、`rule_test.run`、`rule_code.update`（lint 通过后写入并编译联动）
+- 规则形式化验证：`rule_verify.model`（有界模型检查：事件触发链终止 + 迁移确定性）
 - Mock 与回归：`mock_data.profile/generate/preview/apply`、`project_test.generate/run/history`
 - 项目质量：`project.quality.inspect`
 - 流程：`workflow.create/update/delete/validate`、`workflow_node.*`、`workflow_edge.*`
@@ -52,7 +55,11 @@
 - 交付：`project.package.validate/export`
 - 发布：`release.get/update/preview`（`release.apply` 永远不可用）
 
-前端项目智能体使用 `/api/ai/project-agent/v2/sessions` 建立 V2 会话。根智能体先只读检查并生成可确认的目标契约，不预先生成完整专家任务图。确认后，协调器根据最新业务观察选择下一步行动：互不依赖的只读任务可并发，任何写任务独占当前决策步并使用最新 revision；每个专家仍只能调用所属 MCP。工具结果先压缩成简练观察再回灌模型，内部 ID 和完整事件仅用于幂等与审计。连续两次无证据或状态推进时必须暂停提问，协调器声明完成也必须通过需求证据及质量/交付门禁。进度通过带单调 `seq` 的 SSE 事件流发布，暂停、停止和转向在工具边界生效。破坏性确认和发布门禁不因目标确认而放宽，`release.apply` 永远不可用。旧 `/api/ai/project-agent/sessions` 返回 410。
+前端项目智能体使用 `/api/ai/project-agent/v4/threads` 建立线程（thread）。智能体采用**单一主循环**（类 Codex 架构）：先只读检查项目并生成可确认的目标契约（goal、successCriteria、任务清单），确认后每次迭代由同一个智能体决定下一步调用哪个 MCP 角色作用域的工具；写工具前自动刷新最新 revision，删除/覆盖等待用户确认，`release.apply` 永远不可用。工具结果压缩成简练观察回灌模型；确定性门禁不因任何确认放宽——写任务通过前必须 `project.validate`，线程完成必须通过结构校验及计划包含的质量/交付门禁（`release.preview`）。连续两步无证据/状态推进时暂停提问，同一阻塞条件连续三次未解决标记 blocked 并提问，决策步预算超限暂停。进度通过带单调 `seq` 的 SSE 事件流发布，暂停、停止和转向在工具边界生效。旧 `/api/ai/project-agent/v2` 与 V1 端点已移除。
+
+行为规则在写任务完成与线程最终门禁中还会运行**形式化验证**：对每个携带 Behavior Rule DSL 的表单执行 `rule_verify.model`（有界显式状态模型检查），静态错误、疑似无限触发链或迁移确定性不一致都会阻止任务/线程完成；模型反例路径会回灌给智能体用于修复。
+
+线程支持两种执行模式（`PATCH /threads/:id {mode}` 或随 turn 覆盖）：**计划模式**默认生成目标契约并等待用户确认后执行；**目标模式**（`mode: "goal"`）在规划后自动确认并立即进入主循环，智能体自主「走一步看一步」，用户可随时暂停、打断（转向）、继续或停止。
 
 工具总数和具体 Schema 以实时 `tools/list` 为准。
 

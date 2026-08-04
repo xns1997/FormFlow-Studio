@@ -28,6 +28,16 @@ flowchart TD
 
 删除、覆盖导入、发布，以及包含删除项的批量操作，第一次调用返回 `confirmation_required`。确认后使用完全相同的参数并补充 `confirmationToken` 再调用；令牌五分钟过期、绑定调用人和参数且只能使用一次。
 
+## Skill 中的工具手册
+
+七个领域 skill（`project/data/form/workflow/behavior/quality/delivery`）在运行时注入的「工具手册」中，为每个工具提供三部分：
+
+- **传參**：必填/可选、类型与说明，由实时 inputSchema + 字段说明生成，随注册中心保持一致；
+- **正确调用**：可直接照抄结构、替换真实 id/名称的 JSON 示例（工具定义内 `examples` + 集中式调用指导）；
+- **错误调用**：常见“看起来对、实际会失败”的传参方式、原因与预期错误码（集中式 `TOOL_CALL_GUIDANCE`），禁止照抄。
+
+系统设置 → 专家管理的「工具手册」标签页展示同一份结构化内容（`GET /api/ai/project-agent/v4/capability-bundles/:id/scopes` 的 `toolDocs` 字段），可在发布前核对每个作用域工具的调用契约。
+
 ## 数据导入
 
 `data_source.import` 接受：
@@ -40,25 +50,24 @@ flowchart TD
 
 ## 项目编排智能体
 
-项目智能体 V2 使用显式版本 API；旧 `/api/ai/project-agent/sessions` 端点返回 410：
+项目智能体 V4 使用显式版本 API（旧 V2/V1 端点已移除）：
 
-- `GET/POST /api/ai/project-agent/v2/sessions`
-- `GET /api/ai/project-agent/v2/sessions/history?q=&status=&projectId=&archived=&cursor=&limit=`：只返回轻量历史摘要并使用不透明游标分页。
-- `PATCH /api/ai/project-agent/v2/sessions/:id`：更新历史任务标题或置顶状态。
-- `DELETE /api/ai/project-agent/v2/sessions/:id`、`POST /api/ai/project-agent/v2/sessions/:id/restore`：归档与恢复任务，不删除项目内容。
-- `DELETE /api/ai/project-agent/v2/sessions/:id/permanent`：明确确认后永久删除任务及其审计记录；执行中的任务必须先安全暂停。
-- `POST /api/ai/project-agent/v2/sessions/:id/turns`
-- `GET /api/ai/project-agent/v2/sessions/:id/events?afterSeq=<seq>`
-- `POST /api/ai/project-agent/v2/sessions/:id/plans/:planId/confirm`
-- `POST /api/ai/project-agent/v2/sessions/:id/operations/:operationId/decision`
-- `POST /api/ai/project-agent/v2/sessions/:id/control`
-- `GET/POST /api/ai/project-agent/v2/capability-bundles`
+- `GET/POST /api/ai/project-agent/v4/threads`
+- `GET /api/ai/project-agent/v4/threads/history?q=&status=&projectId=&archived=&cursor=&limit=`：轻量历史摘要 + 不透明游标分页。
+- `GET/PATCH /api/ai/project-agent/v4/threads/:id`：线程详情与标题/置顶更新。
+- `PUT /api/ai/project-agent/v4/threads/:id/projects`：限定项目范围。
+- `DELETE /api/ai/project-agent/v4/threads/:id`、`POST .../restore`：归档与恢复。
+- `DELETE /api/ai/project-agent/v4/threads/:id/permanent`：确认后永久删除。
+- `POST /api/ai/project-agent/v4/threads/:id/turns`、`.../turns/retry`
+- `POST /api/ai/project-agent/v4/threads/:id/plan/confirm`、`.../plan/reject`：确认或拒绝目标契约（拒绝携带反馈重新规划）。
+- `POST /api/ai/project-agent/v4/threads/:id/operations/:operationId/decision`
+- `POST /api/ai/project-agent/v4/threads/:id/control`（pause/continue/stop/retry/replan）、`.../steer`
+- `GET /api/ai/project-agent/v4/threads/:id/events?afterSeq=<seq>`
+- `GET/POST /api/ai/project-agent/v4/capability-bundles`、`GET .../:id/scopes`
 
-根智能体先调用只读工具检查项目，再提出最多三个高影响问题或生成目标契约。目标契约只确认需求、成功标准、范围与风险，不预先生成专家任务图。执行阶段由协调器根据最新观察选择下一步行动；互不依赖的只读任务最多四路并发，任何写任务独占当前决策步并使用最新 revision。工具结果压缩成可读观察后回灌模型，新增风险、项目范围或破坏性操作仍需确认。连续两次没有证据、revision 或需求状态推进时暂停并向用户提问，最大步数由能力包的 `maxDecisionSteps` 控制，并兼容旧 `maxLoopRounds`。协调器的 `complete` 不能绕过需求证据及质量/交付门禁。
+智能体采用单一主循环：一个智能体持有线程上下文与单一活跃计划（goal、successCriteria、任务清单），每次迭代决定下一步调用哪个 MCP 角色作用域的工具；写工具前自动刷新最新 revision 并注入稳定 `idempotencyKey`，删除/覆盖操作独立等待确认，`release.apply` 永远不可调用。七个领域以 skill 形式组织（`project/data/form/workflow/behavior/quality/delivery`），决策时先按 skill 目录选择作用域，再使用该领域工具。确定性门禁不因目标确认放宽：写任务通过前必须 `project.validate`，线程完成必须通过结构校验与计划包含的质量/交付预检。连续两步无证据推进暂停提问，同一阻塞条件连续三次标记 blocked，决策步预算超限暂停。
 
-事件接口支持 JSON 补播和 `text/event-stream`，所有事件携带会话内单调 `seq`；客户端断线后从最后序号恢复。新会话发布 `decision_started`、`action_selected`、`action_started`、`observation_recorded`、`action_completed`、`orchestration_stalled` 和 `orchestration_completed`；旧事件继续兼容读取。删除、覆盖等操作仍独立等待确认，`release.apply` 永远不进入能力包或专家工具列表。
-
-会话中的消息和目标契约可携带 `turnId`，动态任务通过内部 `stepId` 关联其触发行动。前端据此将用户输入、目标确认、当前行动、工具反馈、验收和最终回复渲染为单一业务时间线；内部序号和 ID 不进入普通界面。旧会话仍可从 `rounds` 与 `roundId` 转换为业务行动，缺少关联字段时按时间戳与事件顺序回退归组，API 路径和既有字段保持兼容。
+事件接口支持 JSON 补播与 `text/event-stream`，所有事件携带线程内单调 `seq`，客户端断线后从最后序号恢复。主要事件：`turn_started`、`grounding_completed`、`plan_proposed`、`plan_confirmed`、`plan_rejected`、`tool_call`、`tool_observation`、`revision_refreshed`、`approval_required`、`approval_decided`、`task_started/task_completed/task_failed`、`gate_failed`、`thread_completed`、`thread_blocked`、`question_asked`。能力包内的 agents 已降级为作用域配置（提示词片段 + 工具白名单 + 附加知识），系统 skill 提供领域规范与运行时工具目录。
 
 项目质量与测试相关工具：
 
@@ -66,8 +75,17 @@ flowchart TD
 - `mock_data.profile/generate/preview/apply`：固定 seed 生成；正常行只追加，负向场景隔离保存。
 - `project_test.generate/run/history`：持久化测试套件、运行结构/规则/表单约束测试并保留最近二十次结果。
 - `rule_code.update`：由 behavior MCP 专职写入 Behavior Rule DSL；写入前强制 lint，然后编译为表单控件联动。`form.update` 不能绕过该边界修改规则或行为。
+- `rule_verify.model`：对表单规则运行有界显式状态模型检查（终止性 + 确定性抽查），返回 `passed/acyclic/deterministic/statesExplored/counterexample/staticDiagnostics`；静态错误、疑似无限触发链或确定性不一致均判为未通过。智能体写任务完成与线程最终门禁会自动对携带规则的表单运行它。
 
 项目包中的 `testing/testing.json` 保存生成配置、隔离夹具、测试套件和有界运行历史；旧包缺少该文件时按空资产读取。
+
+## 表单模板
+
+- `catalog.form_templates.list`：列出表单模板（空白、基础录入、查询修改、主从详情），返回 `key/label/description/formMode/scaffoldFromTable/requiresRelation/options`。
+- `catalog.form_templates.get {key}`：读取单个模板详情；未知 key 返回错误。
+- `form.create` 支持可选 `templateId`：不传 `design` 时按模板初始化空骨架（记录 `templateKey` 与默认 `formMode`）；同时传 `design` 时仅补齐缺失的 `templateKey`。
+- `form.generate_from_table` 支持可选 `templateId`：未显式传 `mode` 时采用模板默认模式，生成的设计记录 `templateKey`。
+- 主从详情模板（`master-detail`）要求先声明主从关系；其余模板可直接从数据表生成。
 
 ## 表单坐标约定
 

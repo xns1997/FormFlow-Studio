@@ -801,6 +801,7 @@ export function useDesigner() {
     addComponentAtViewportCenter,
     removeComponent: actions.removeComponent,
     updateComponentProps: actions.updateComponentProps,
+    updateComponentField: actions.updateComponentField,
     updateComponentGeometry: actions.updateComponentGeometry,
     reparentComponent: actions.reparentComponent,
     clearDesign: io.clearDesign,

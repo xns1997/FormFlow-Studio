@@ -2,13 +2,15 @@ import React, { useMemo } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale, BarElement, LineElement,
-  PointElement, ArcElement, Filler, Title, Tooltip, Legend,
+  PointElement, ArcElement, RadialLinearScale, Filler, Title, Tooltip, Legend,
+  RadarController, PolarAreaController, ScatterController,
 } from 'chart.js';
-import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
+import { Bar, Line, Pie, Doughnut, Radar, PolarArea, Scatter } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, LineElement,
-  PointElement, ArcElement, Filler, Title, Tooltip, Legend,
+  PointElement, ArcElement, RadialLinearScale, Filler, Title, Tooltip, Legend,
+  RadarController, PolarAreaController, ScatterController,
 );
 
 // ── 聚合函数 ──────────────────────────────────────────────
@@ -268,6 +270,8 @@ export interface ChartDataConfig {
     borderWidth?: number;
     fill?: boolean;
     tension?: number;
+    pointBackgroundColor?: string;
+    pointRadius?: number;
   }>;
 }
 
@@ -283,8 +287,26 @@ export interface SanitizedChartSchema {
   valid: boolean;
 }
 
+export type ChartType = 'bar' | 'line' | 'pie' | 'doughnut' | 'area' | 'radar' | 'polarArea' | 'scatter';
+
+export const CHART_TYPE_OPTIONS: { value: ChartType; label: string }[] = [
+  { value: 'bar', label: '柱状图' },
+  { value: 'line', label: '折线图' },
+  { value: 'pie', label: '饼图' },
+  { value: 'doughnut', label: '环形图' },
+  { value: 'area', label: '面积图' },
+  { value: 'radar', label: '雷达图' },
+  { value: 'polarArea', label: '极区图' },
+  { value: 'scatter', label: '散点图' },
+];
+
+export interface ScatterPoint {
+  x: number;
+  y: number;
+}
+
 interface ChartWidgetProps {
-  chartType: 'bar' | 'line' | 'pie' | 'doughnut' | 'area';
+  chartType: ChartType;
   title?: string;
   data?: ChartDataConfig;
   rawData?: unknown[][];
@@ -437,6 +459,25 @@ export function normalizeChartInput(value: unknown): NormalizedChartInput | null
   };
 }
 
+/**
+ * 将标签 + 数值的数据结构转换为散点图所需的 {x, y} 点集。
+ * 标签本身可解析为数字时直接作为 X 坐标，否则回退为序号，保证任何数据都能渲染。
+ */
+export function toScatterPoints(chartData: ChartDataConfig): { labels: string[]; datasets: Array<Omit<ChartDataConfig['datasets'][number], 'data'> & { data: ScatterPoint[] }> } {
+  return {
+    labels: chartData.labels,
+    datasets: chartData.datasets.map((dataset) => ({
+      ...dataset,
+      data: dataset.data.map((value, index) => {
+        const label = chartData.labels[index];
+        const numericLabel = Number(label);
+        const isNumericLabel = label !== null && label !== undefined && String(label).trim() !== '' && Number.isFinite(numericLabel);
+        return { x: isNumericLabel ? numericLabel : index, y: value };
+      }),
+    })),
+  };
+}
+
 export default function ChartWidget({
   chartType, title, data, rawData, headers, dimensions, metrics,
   barColor = '#007AFF', lineColor = '#FF9500',
@@ -444,6 +485,9 @@ export default function ChartWidget({
 }: ChartWidgetProps) {
   const isArea = chartType === 'area';
   const effectiveType = isArea ? 'line' : chartType;
+  const isPolar = effectiveType === 'pie' || effectiveType === 'doughnut' || effectiveType === 'polarArea';
+  const isRadial = effectiveType === 'radar' || effectiveType === 'polarArea';
+  const isScatter = effectiveType === 'scatter';
   const sanitizedSchema = useMemo(
     () => sanitizeChartSchema(headers, dimensions, metrics),
     [headers, dimensions, metrics],
@@ -466,16 +510,21 @@ export default function ChartWidget({
       const color = i === 0 ? barColor : (i === 1 ? lineColor : PIE_COLORS[i % PIE_COLORS.length]);
       return {
         ...ds,
-        backgroundColor: ds.backgroundColor || (effectiveType === 'pie' || effectiveType === 'doughnut'
+        backgroundColor: ds.backgroundColor || (isPolar
           ? PIE_COLORS.slice(0, chartData.labels.length)
+          : effectiveType === 'radar' ? hexToRgba(color, 0.25)
           : effectiveType === 'line' && !isArea ? 'transparent' : hexToRgba(color, 0.7)),
-        borderColor: ds.borderColor || (effectiveType === 'pie' || effectiveType === 'doughnut' ? '#ffffff' : color),
+        borderColor: ds.borderColor || (isPolar ? '#ffffff' : color),
         borderWidth: ds.borderWidth ?? 2,
         fill: isArea ? true : ds.fill,
         tension: ds.tension ?? (effectiveType === 'line' || isArea ? 0.4 : 0),
+        pointBackgroundColor: ds.pointBackgroundColor || (effectiveType === 'radar' || isScatter ? color : undefined),
+        pointRadius: ds.pointRadius ?? (isScatter ? 5 : undefined),
       };
     }),
-  }), [chartData, barColor, lineColor, effectiveType, isArea]);
+  }), [chartData, barColor, lineColor, effectiveType, isArea, isPolar, isScatter]);
+
+  const scatterData = useMemo(() => isScatter ? toScatterPoints(enrichedData) : null, [enrichedData, isScatter]);
 
   const options = {
     responsive: true,
@@ -485,10 +534,16 @@ export default function ChartWidget({
       title: { display: !!title, text: title || '' },
       tooltip: { enabled: true },
     },
-    scales: effectiveType === 'pie' || effectiveType === 'doughnut' ? {} : {
-      x: { display: true, grid: { display: false } },
-      y: { display: true, grid: { color: 'rgba(0,0,0,0.06)' } },
-    },
+    scales: isRadial ? { r: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' } } }
+      : isPolar ? {}
+      : isScatter ? {
+          x: { display: true, grid: { color: 'rgba(0,0,0,0.06)' } },
+          y: { display: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' } },
+        }
+      : {
+          x: { display: true, grid: { display: false } },
+          y: { display: true, grid: { color: 'rgba(0,0,0,0.06)' } },
+        },
     animation: { duration: 600 },
   };
 
@@ -499,6 +554,9 @@ export default function ChartWidget({
     case 'line': return <div style={style}><Line data={enrichedData} options={options} /></div>;
     case 'pie': return <div style={style}><Pie data={enrichedData} options={options} /></div>;
     case 'doughnut': return <div style={style}><Doughnut data={enrichedData} options={options} /></div>;
+    case 'radar': return <div style={style}><Radar data={enrichedData} options={options} /></div>;
+    case 'polarArea': return <div style={style}><PolarArea data={enrichedData} options={options} /></div>;
+    case 'scatter': return <div style={style}><Scatter data={scatterData as any} options={options} /></div>;
     default: return <div style={style}><Bar data={enrichedData} options={options} /></div>;
   }
 }

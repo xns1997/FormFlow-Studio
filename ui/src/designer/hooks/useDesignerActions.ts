@@ -187,6 +187,24 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
     syncSelectionOverlay(id);
   }, [graphRef, componentsRef, commitComponents, finalizeComponents, setNodeComponentData, syncSelectionOverlay, updateFormWindow]);
 
+  const updateComponentField = useCallback((id: string, fieldName: string) => {
+    if (id === FORM_WINDOW_CELL_ID) return;
+    const name = String(fieldName || '').trim();
+    if (!name) return;
+    const nextComponents = finalizeComponents(componentsRef.current.map((c) => c.id === id
+      ? { ...c, fieldBinding: name, props: { ...c.props, name } }
+      : c));
+    const next = nextComponents.find((item) => item.id === id);
+    const graph = graphRef.current;
+    const node = graph?.getCellById(id) as Node | null;
+    if (node && next) {
+      graph?.startBatch('property-edit');
+      try { setNodeComponentData(node, next); } finally { graph?.stopBatch('property-edit'); }
+    }
+    commitComponents(nextComponents);
+    syncSelectionOverlay(id);
+  }, [graphRef, componentsRef, commitComponents, finalizeComponents, setNodeComponentData, syncSelectionOverlay]);
+
   const updateComponentGeometry = useCallback((id: string, patch: Partial<Pick<DesignComponent, 'x' | 'y' | 'width' | 'height'>>) => {
     if (id === FORM_WINDOW_CELL_ID) {
       updateFormWindow(patch);
@@ -356,6 +374,7 @@ export function useDesignerActions(ctx: DesignerActionsCtx) {
     removeComponent,
     deleteSelected,
     updateComponentProps,
+    updateComponentField,
     updateComponentGeometry,
     resizeSelected,
     reparentComponent,

@@ -5,6 +5,7 @@ import { env } from '../config/env';
 import { readProjectPackage } from './project-package-store';
 import { commitProject } from './project-authoring';
 import { compileBehaviorDsl, applyBehaviorDslToComponents, hasBehaviorDslErrors } from '../../../shared/formflow-core/behaviorDsl';
+import type { FieldType } from '../../../shared/formflow-core/behaviorDsl';
 import type { RuleAgentSession } from './rule-agent-store';
 
 export const ruleHash = (source: string) => createHash('sha256').update(source).digest('hex');
@@ -27,9 +28,39 @@ export function formContext(projectId: string, formId: string) {
   return { project, form, components, fields, tables: project.srcTable || [], workflows: project.workflows || [] };
 }
 
+/**
+ * 从表单绑定的数据表列推导字段静态类型（FFR306 表达式类型检查的数据源）。
+ * 取不到类型时按 unknown 处理，不产生误报。
+ */
+export function deriveFieldTypes(form: any, tables: any[]): Record<string, FieldType> {
+  const bindings = form.design?.bindings || [];
+  const tableBinding = bindings.find((item: any) => item.type === 'table');
+  const table = tables.find((item: any) => String(item.id) === String(tableBinding?.config?.tableId || tableBinding?.sourceId || ''));
+  const sheetName = String(tableBinding?.config?.sheetName || 'Sheet1');
+  const sheet = table?.sheets?.find((item: any) => item.name === sheetName);
+  const result: Record<string, FieldType> = {};
+  for (const column of sheet?.columns || []) {
+    const name = String(column.name || '');
+    if (!name) continue;
+    const dataType = String(column.dataType || '').toLowerCase();
+    result[name] = dataType === 'number' ? 'number'
+      : dataType === 'boolean' ? 'boolean'
+        : dataType === 'date' ? 'date'
+          : dataType === 'enum' || dataType === 'text' || dataType === 'string' ? 'string'
+            : 'unknown';
+  }
+  return result;
+}
+
 export function lintRuleCode(projectId: string, formId: string, code: string) {
   const context = formContext(projectId, formId);
-  return compileBehaviorDsl(code, { fields: context.fields, components: context.components, tables: context.tables, workflows: context.workflows });
+  return compileBehaviorDsl(code, {
+    fields: context.fields,
+    fieldTypes: deriveFieldTypes(context.form, context.tables),
+    components: context.components,
+    tables: context.tables,
+    workflows: context.workflows,
+  });
 }
 
 export function runRuleSandbox(projectId: string, formId: string, code: string) {

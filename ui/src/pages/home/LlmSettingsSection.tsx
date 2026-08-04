@@ -20,7 +20,7 @@ interface AgentView {
   id: string; name: string; version: number; scope: 'global' | 'tenant' | 'project'; tenantId?: string; projectId?: string;
   modelProfileId: string; definition: Record<string, unknown>; enabled: boolean;
 }
-interface CapabilityBundleView { id: string; bundleId: string; version: number; ownerId: string; name: string; description: string; status: 'draft' | 'published'; agents: unknown[]; context: { recentMessages: number; maxSummaryChars: number }; budget: { maxParallelReads: number; maxAttempts: number; maxToolSteps: number; maxLoopRounds?: number; maxDecisionSteps?: number }; }
+interface CapabilityBundleView { id: string; bundleId: string; version: number; ownerId: string; name: string; description: string; status: 'draft' | 'published'; scopes: unknown[]; context: { recentMessages: number; maxSummaryChars: number }; budget: { maxDecisionSteps: number; maxAttempts: number; maxToolSteps: number; maxRecoveryCycles: number }; }
 
 export interface ProviderDraft { id?: string; name: string; kind: ProviderKind; baseUrl: string; apiKey: string; timeoutMs: number; enabled: boolean; }
 export interface ProfileDraft { id?: string; name: string; capabilities: Capability[]; temperature: number; maxTokens?: number; routes: Array<{ providerId: string; model: string }>; enabled: boolean; }
@@ -66,7 +66,7 @@ export default function LlmSettingsSection() {
   const [projectAgentProfileId, setProjectAgentProfileId] = useState('default-cloud');
   const [capabilityBundles, setCapabilityBundles] = useState<CapabilityBundleView[]>([]);
   const [defaultBundleId, setDefaultBundleId] = useState(() => { try { return localStorage.getItem('formflow.projectAgent.bundle') || 'cap_default_v1'; } catch { return 'cap_default_v1'; } });
-  const [bundleDraft, setBundleDraft] = useState({ id: '', name: '', description: '', agentsJson: '[]', maxParallelReads: 4, maxAttempts: 3, maxToolSteps: 32, maxLoopRounds: 24 });
+  const [bundleDraft, setBundleDraft] = useState({ id: '', name: '', description: '', maxDecisionSteps: 40, maxAttempts: 3, maxToolSteps: 24, maxRecoveryCycles: 6 });
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -166,11 +166,14 @@ export default function LlmSettingsSection() {
     finally { setSaving(false); }
   }
 
-  function editBundle(bundle?: CapabilityBundleView) { setBundleDraft(bundle ? { id: bundle.id, name: bundle.name, description: bundle.description, agentsJson: JSON.stringify(bundle.agents, null, 2), maxParallelReads: bundle.budget.maxParallelReads, maxAttempts: bundle.budget.maxAttempts, maxToolSteps: bundle.budget.maxToolSteps, maxLoopRounds: bundle.budget.maxDecisionSteps ?? bundle.budget.maxLoopRounds ?? 24 } : { id: '', name: '', description: '', agentsJson: '[]', maxParallelReads: 4, maxAttempts: 3, maxToolSteps: 32, maxLoopRounds: 24 }); }
+  function editBundle(bundle?: CapabilityBundleView) { setBundleDraft(bundle ? { id: bundle.id, name: bundle.name, description: bundle.description, maxDecisionSteps: bundle.budget.maxDecisionSteps, maxAttempts: bundle.budget.maxAttempts, maxToolSteps: bundle.budget.maxToolSteps, maxRecoveryCycles: bundle.budget.maxRecoveryCycles } : { id: '', name: '', description: '', maxDecisionSteps: 40, maxAttempts: 3, maxToolSteps: 24, maxRecoveryCycles: 6 }); }
   async function saveBundle() {
-    let agents: unknown[]; try { agents = JSON.parse(bundleDraft.agentsJson); if (!Array.isArray(agents)) throw new Error(); } catch { return message.warning('智能体配置必须是 JSON 数组'); }
     if (!bundleDraft.name.trim()) return message.warning('请填写能力包名称'); setSaving(true);
-    try { const payload = { name: bundleDraft.name.trim(), description: bundleDraft.description, agents, budget: { maxParallelReads: bundleDraft.maxParallelReads, maxAttempts: bundleDraft.maxAttempts, maxToolSteps: bundleDraft.maxToolSteps, maxDecisionSteps: bundleDraft.maxLoopRounds, maxLoopRounds: bundleDraft.maxLoopRounds }, context: { recentMessages: 8, maxSummaryChars: 6000 } }; const saved = bundleDraft.id ? await llmApi.projectAgent.capabilityBundles.update(bundleDraft.id, payload) : await llmApi.projectAgent.capabilityBundles.create(payload); await llmApi.projectAgent.capabilityBundles.validate(saved.id); message.success('能力包草稿已保存并通过校验'); editBundle(); await refresh(); }
+    try {
+      const existing = capabilityBundles.find((item) => item.id === bundleDraft.id);
+      const payload = { name: bundleDraft.name.trim(), description: bundleDraft.description, scopes: existing?.scopes, budget: { maxDecisionSteps: bundleDraft.maxDecisionSteps, maxAttempts: bundleDraft.maxAttempts, maxToolSteps: bundleDraft.maxToolSteps, maxRecoveryCycles: bundleDraft.maxRecoveryCycles }, context: { recentMessages: 8, maxSummaryChars: 6000 } };
+      const saved = bundleDraft.id ? await llmApi.projectAgent.capabilityBundles.update(bundleDraft.id, payload) : await llmApi.projectAgent.capabilityBundles.create(payload); await llmApi.projectAgent.capabilityBundles.validate(saved.id); message.success('能力包草稿已保存并通过校验'); editBundle(); await refresh();
+    }
     catch (error) { message.error(error instanceof Error ? error.message : String(error)); } finally { setSaving(false); }
   }
   async function publishBundle(bundle: CapabilityBundleView) { if (!await confirm({ title: '发布能力包？', message: `发布“${bundle.name}”v${bundle.version}？`, detail: '发布后的版本不可修改，新会话可以选择使用。', confirmLabel: '发布版本' })) return; try { await llmApi.projectAgent.capabilityBundles.publish(bundle.id); message.success('能力包版本已发布，新会话可以选择使用'); await refresh(); } catch (error) { message.error(error instanceof Error ? error.message : String(error)); } }
@@ -330,10 +333,10 @@ export default function LlmSettingsSection() {
         <div className="settings-form llm-settings-form llm-editor-form llm-bundle-form">
           <div className="settings-grid">
             <label><span>能力包名称</span><Input value={bundleDraft.name} onChange={(event) => setBundleDraft({ ...bundleDraft, name: event.target.value })} /></label>
-            <label><span>只读并发数</span><InputNumber min={1} max={4} value={bundleDraft.maxParallelReads} onChange={(value) => setBundleDraft({ ...bundleDraft, maxParallelReads: Number(value) || 1 })} /></label>
             <label><span>最大尝试次数</span><InputNumber min={1} max={3} value={bundleDraft.maxAttempts} onChange={(value) => setBundleDraft({ ...bundleDraft, maxAttempts: Number(value) || 1 })} /></label>
-            <label><span>工具步数预算</span><InputNumber min={1} max={96} value={bundleDraft.maxToolSteps} onChange={(value) => setBundleDraft({ ...bundleDraft, maxToolSteps: Number(value) || 32 })} /></label>
-            <label><span>最大决策步数</span><InputNumber min={1} max={64} value={bundleDraft.maxLoopRounds} onChange={(value) => setBundleDraft({ ...bundleDraft, maxLoopRounds: Number(value) || 24 })} /></label>
+            <label><span>工具步数预算</span><InputNumber min={1} max={128} value={bundleDraft.maxToolSteps} onChange={(value) => setBundleDraft({ ...bundleDraft, maxToolSteps: Number(value) || 24 })} /></label>
+            <label><span>最大决策步数</span><InputNumber min={1} max={128} value={bundleDraft.maxDecisionSteps} onChange={(value) => setBundleDraft({ ...bundleDraft, maxDecisionSteps: Number(value) || 40 })} /></label>
+            <label><span>恢复周期上限</span><InputNumber min={1} max={16} value={bundleDraft.maxRecoveryCycles} onChange={(value) => setBundleDraft({ ...bundleDraft, maxRecoveryCycles: Number(value) || 6 })} /></label>
             <label className="llm-settings-wide"><span>说明</span><Input value={bundleDraft.description} onChange={(event) => setBundleDraft({ ...bundleDraft, description: event.target.value })} placeholder="说明此能力包适用的任务" /></label>
             <div className="llm-settings-wide expert-inline-note"><div><strong>专家配置已迁移到注册中心</strong><span>提示词、工具权限和知识条目使用结构化界面管理，不再直接编辑 JSON。</span></div><Button href="/settings/experts">打开专家管理</Button></div>
           </div>

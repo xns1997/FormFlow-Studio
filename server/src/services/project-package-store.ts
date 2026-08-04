@@ -21,7 +21,11 @@ export function projectPackagePath(id: string): string {
 }
 
 function readJson<T>(path: string): T {
-  return JSON.parse(readFileSync(path, 'utf8')) as T;
+  try {
+    return JSON.parse(readFileSync(path, 'utf8')) as T;
+  } catch (error) {
+    throw new Error(`项目包文件损坏：${path}（${error instanceof Error ? error.message : '不是合法 JSON'}）`);
+  }
 }
 
 function writeJson(path: string, value: unknown): void {
@@ -338,13 +342,18 @@ function readRawSheetRows(projectId: string, table: JsonObject, sheet: JsonObjec
   if (!existsSync(source)) return (sheet.preview as Record<string, unknown>[]) || [];
   const extension = String(table.fileType || extname(table.fileName).slice(1)).toLowerCase();
   if (extension === 'json') {
-    const parsed = JSON.parse(readFileSync(source, 'utf8'));
-    const rows = Array.isArray(parsed)
-      ? parsed
-      : Array.isArray(parsed?.data) || Array.isArray(parsed?.rows)
-        ? parsed.data || parsed.rows
-        : parsed?.[sheet.name];
-    return Array.isArray(rows) ? rows : [];
+    try {
+      const parsed = JSON.parse(readFileSync(source, 'utf8'));
+      const rows = Array.isArray(parsed)
+        ? parsed
+        : Array.isArray(parsed?.data) || Array.isArray(parsed?.rows)
+          ? parsed.data || parsed.rows
+          : parsed?.[sheet.name];
+      return Array.isArray(rows) ? rows : [];
+    } catch {
+      // 数据文件损坏时回退到内联预览或空行，避免整包读取失败。
+      return (sheet.preview as Record<string, unknown>[]) || [];
+    }
   }
   const workbook = extension === 'csv'
     ? XLSX.read(readFileSync(source), { type: 'buffer', cellDates: true })

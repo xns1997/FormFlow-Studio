@@ -312,6 +312,7 @@ registerControl({
     { key: 'chartType', label: '图表类型', type: 'select', group: '基础', options: [
       { label: '柱状图', value: 'bar' }, { label: '折线图', value: 'line' }, { label: '饼图', value: 'pie' },
       { label: '环形图', value: 'doughnut' }, { label: '面积图', value: 'area' },
+      { label: '雷达图', value: 'radar' }, { label: '极区图', value: 'polarArea' }, { label: '散点图', value: 'scatter' },
     ]},
     { key: 'title', label: '标题', type: 'string', group: '基础' },
     { key: 'name', label: '字段名', type: 'string', editor: 'field-path', group: '基础', level: 'advanced', placeholder: 'field_name' },

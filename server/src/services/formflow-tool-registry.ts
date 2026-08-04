@@ -67,6 +67,7 @@ function inferredRole(name: string): McpRole {
   if (name.startsWith('behavior.') || name.startsWith('rule_')) return 'behavior';
   if (name.startsWith('mock_data.') || name.startsWith('project_test.') || name.startsWith('project.quality')) return 'quality';
   if (name.startsWith('output.') || name.startsWith('release.') || name === 'project.export' || name.startsWith('project.package.')) return 'delivery';
+  if (name.startsWith('catalog.form_templates')) return 'form';
   if (name.startsWith('catalog.components')) return 'form';
   if (name.startsWith('catalog.workflow_nodes')) return 'workflow';
   if (name.startsWith('catalog.events')) return 'behavior';
@@ -123,6 +124,7 @@ const helpers: ToolHelpers = {
 import { registerCatalogTools } from './tools/catalog';
 import { registerProjectTools } from './tools/project';
 import { registerDataTools } from './tools/data';
+import { registerDataTableTools } from './tools/data-table';
 import { registerFormTools } from './tools/form';
 import { registerWorkflowTools } from './tools/workflow';
 import { registerBehaviorTools } from './tools/behavior';
@@ -133,6 +135,7 @@ import { registerDeliveryTools } from './tools/delivery';
 registerCatalogTools(register, helpers, [...MCP_ROLES], (role?: string) => listFormFlowTools(role as McpRole));
 registerProjectTools(register, helpers);
 registerDataTools(register, helpers);
+registerDataTableTools(register, helpers);
 registerFormTools(register, helpers);
 registerWorkflowTools(register, helpers);
 registerBehaviorTools(register, helpers);
@@ -242,14 +245,19 @@ export async function executeFormFlowTool(name: string, argumentsValue: unknown,
 
 function validateInput(value: unknown, definition: FormFlowToolDefinition) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw toolError('INVALID_ARGUMENTS', '工具参数必须是对象');
-  for (const key of (definition.inputSchema.required as string[] || [])) if ((value as JsonObject)[key] === undefined || (value as JsonObject)[key] === '') throw toolError('REQUIRED_ARGUMENT', `缺少参数 ${key}`, key);
+  const guidance = '只修正本次工具参数，不要重启任务。缺少业务值时先调用对应 list/get 工具读取真实值，禁止猜测 ID。';
+  for (const key of (definition.inputSchema.required as string[] || [])) {
+    if ((value as JsonObject)[key] === undefined || (value as JsonObject)[key] === '') {
+      throw toolError('REQUIRED_ARGUMENT', `缺少参数 ${key}`, key, { correctionInstruction: guidance, expected: [...(definition.inputSchema.required as string[])], received: Object.keys(value) });
+    }
+  }
   const properties = definition.inputSchema.properties as Record<string, any> || {};
   for (const [key, property] of Object.entries(properties)) {
     const current = (value as JsonObject)[key]; if (current === undefined) continue;
-    if (property.type === 'string' && typeof current !== 'string') throw toolError('INVALID_ARGUMENT', `${key} 必须是字符串`, key);
-    if (property.type === 'array' && !Array.isArray(current)) throw toolError('INVALID_ARGUMENT', `${key} 必须是数组`, key);
-    if (property.type === 'object' && (!current || typeof current !== 'object' || Array.isArray(current))) throw toolError('INVALID_ARGUMENT', `${key} 必须是对象`, key);
-    if (property.type === 'boolean' && typeof current !== 'boolean') throw toolError('INVALID_ARGUMENT', `${key} 必须是布尔值`, key);
+    if (property.type === 'string' && typeof current !== 'string') throw toolError('INVALID_ARGUMENT', `${key} 必须是字符串`, key, { correctionInstruction: guidance, expected: `string`, received: typeof current });
+    if (property.type === 'array' && !Array.isArray(current)) throw toolError('INVALID_ARGUMENT', `${key} 必须是数组`, key, { correctionInstruction: guidance, expected: 'array', received: typeof current });
+    if (property.type === 'object' && (!current || typeof current !== 'object' || Array.isArray(current))) throw toolError('INVALID_ARGUMENT', `${key} 必须是对象`, key, { correctionInstruction: guidance, expected: 'object', received: typeof current });
+    if (property.type === 'boolean' && typeof current !== 'boolean') throw toolError('INVALID_ARGUMENT', `${key} 必须是布尔值`, key, { correctionInstruction: guidance, expected: 'boolean', received: typeof current });
   }
 }
 

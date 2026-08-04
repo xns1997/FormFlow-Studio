@@ -3,7 +3,7 @@ export type {
   FormLinkageOperator, FormLinkageCondition, FormLinkageAction, FormLinkageRule,
   DesignComponent, FormWindowConfig, SrcTableEntry, WorkflowFile,
   BehaviorDslDiagnosticSeverity, BehaviorDslDiagnostic, BehaviorDslCompileContext, BehaviorDslCompilation,
-  NaturalRuleTranslation,
+  NaturalRuleTranslation, FieldType,
 } from './types';
 
 export {
@@ -13,6 +13,28 @@ export {
   normalizeReference, isFieldReference, fieldRef, componentRef, parseRefs,
   inverseCondition, createRule, diagnostic,
 } from './parser';
+
+export {
+  compileBehaviorDslRegex, lintRules,
+} from './parserRegex';
+
+export {
+  parseLine, getDslGrammar, dslLexer, dslParser, DSL_TOKENS,
+} from './grammar';
+
+export {
+  runStaticAnalysis, findCrossRuleCycles, findWatchCoverageViolations,
+  findExpressionTypeErrors, findUnsatConditions, checkExpressionTypes,
+} from './staticAnalysis';
+
+export {
+  boundedModelCheck, verifyDeterminism, involvedFields, DEFAULT_DOMAIN,
+  type ModelCheckOptions, type ModelCheckResult,
+} from './modelChecker';
+
+export {
+  ACTION_SIGNATURES, validateActionCall, getActionSignature, isGuardOnlyAction,
+} from './signatures';
 
 export type { ParsedActions } from './parser';
 

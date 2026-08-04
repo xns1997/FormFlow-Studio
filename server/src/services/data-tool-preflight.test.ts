@@ -27,7 +27,10 @@ test('data preflight validates source, columns and initial key integrity', () =>
   assert.equal(missingSource.ok, false); if (!missingSource.ok) assert.equal(missingSource.error.code, 'DATA_SOURCE_INPUT_REQUIRED');
   const empty = compileDataToolArguments('data_source.create', { ...base, rows: [], config: { keyFields: ['id'] } });
   assert.equal(empty.ok, false); if (!empty.ok) assert.equal(empty.error.code, 'DATA_COLUMNS_REQUIRED');
-  const missingKey = compileDataToolArguments('data_source.create', { ...base, rows: [{ name: 'A' }], config: {} });
+  // 单列且可编辑时自动补主键；多列无主键特征时仍要求显式 keyFields。
+  const autoKey = compileDataToolArguments('data_source.create', { ...base, rows: [{ name: 'A' }], config: {} });
+  assert.equal(autoKey.ok, true); assert.deepEqual(autoKey.arguments.config.keyFields, ['name']);
+  const missingKey = compileDataToolArguments('data_source.create', { ...base, rows: [{ name: 'A', value: 'B' }], config: {} });
   assert.equal(missingKey.ok, false); if (!missingKey.ok) assert.equal(missingKey.error.code, 'DATA_KEY_REQUIRED');
   const unknownKey = compileDataToolArguments('data_source.create', { ...base, rows: [{ id: '1' }], config: { keyFields: ['missing'] } });
   assert.equal(unknownKey.ok, false); if (!unknownKey.ok) assert.equal(unknownKey.error.code, 'DATA_KEY_FIELD_MISSING');

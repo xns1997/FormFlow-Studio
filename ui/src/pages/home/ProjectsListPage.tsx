@@ -23,6 +23,8 @@ import type { ProjectStructure } from '../../project/types';
 import { ShareDialog } from '../../components/ShareDialog';
 import { getSession } from '../../services/io/auth';
 import { useAppInteraction } from '../../components/AppInteractionProvider';
+import ProjectAgentDrawer from '../../components/ProjectAgentDrawer';
+import { SectionErrorBoundary } from '../../components/SectionErrorBoundary';
 
 function createInitialDraft(): ProjectWizardDraft {
   return {
@@ -608,6 +610,7 @@ export default function ProjectsListPage() {
           onClose={() => setShareDialogProject(null)}
         />
       )}
+      <SectionErrorBoundary name="智能体面板"><ProjectAgentDrawer launcherVariant="floating" /></SectionErrorBoundary>
     </div>
   );
 }

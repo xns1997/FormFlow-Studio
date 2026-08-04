@@ -148,10 +148,14 @@ export interface BehaviorDslDiagnostic {
 
 export interface BehaviorDslCompileContext {
   fields?: string[];
+  /** 字段静态类型（供 FFR306 表达式类型检查；缺省按 unknown 处理，不产生误报） */
+  fieldTypes?: Record<string, FieldType>;
   components?: DesignComponent[];
   tables?: SrcTableEntry[];
   workflows?: WorkflowFile[];
 }
+
+export type FieldType = 'string' | 'number' | 'boolean' | 'date' | 'unknown';
 
 export interface BehaviorDslCompilation {
   rules: BehaviorRule[];

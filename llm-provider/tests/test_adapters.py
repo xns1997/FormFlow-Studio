@@ -4,12 +4,18 @@ import unittest
 from unittest.mock import patch
 
 from src.adapters import adapter_for
+from src.errors import ProviderError
 from src.models import ChatInput, ChatMessage, Connection, EmbedInput
 
 
 class FakeResponse:
     def __init__(self, payload): self.payload = payload
     def json(self): return self.payload
+
+
+class FakeStream:
+    def __init__(self, lines): self._lines = lines
+    def iter_lines(self, decode_unicode=True): yield from self._lines
 
 
 class AdapterContractTests(unittest.TestCase):
@@ -73,6 +79,36 @@ class AdapterContractTests(unittest.TestCase):
 
         adapter_for(request.connection).chat(request)
         self.assertEqual(call.call_args.kwargs["json"]["response_format"]["type"], "json_schema")
+
+    @patch("src.adapters._request")
+    def test_ollama_and_gemini_structured_failure_raises_provider_error(self, call):
+        cases = {
+            "gemini": {"candidates": [{"content": {"parts": [{"text": "抱歉，无法生成 JSON"}]}}]},
+            "ollama": {"message": {"content": "抱歉，无法生成 JSON"}, "model": "model"},
+        }
+        for provider, payload in cases.items():
+            with self.subTest(provider=provider):
+                call.return_value = FakeResponse(payload)
+                request = ChatInput(
+                    connection=Connection(provider=provider, model="model", api_key="secret"),
+                    messages=[ChatMessage(role="user", content="make a plan")],
+                    response_schema={"type": "object"},
+                    request_id=f"request-{provider}-bad",
+                )
+                with self.assertRaises(ProviderError) as ctx:
+                    adapter_for(request.connection).chat(request)
+                self.assertIn("结构化 JSON", str(ctx.exception))
+
+    @patch("src.adapters._request")
+    def test_ollama_stream_skips_malformed_lines(self, call):
+        call.return_value = FakeStream(["{broken", '{"message":{"content":"hi"}}', "not-json"])
+        request = ChatInput(
+            connection=Connection(provider="ollama", model="model", api_key="secret"),
+            messages=[ChatMessage(role="user", content="hello")],
+            request_id="request-ollama-stream",
+        )
+        chunks = list(adapter_for(request.connection).stream(request))
+        self.assertEqual(chunks, [{"type": "message_delta", "data": {"content": "hi"}}])
 
 
 if __name__ == "__main__":

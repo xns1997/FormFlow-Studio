@@ -8,7 +8,7 @@ import type {
 import { evaluatePropertyExpression } from './propertyExpression';
 import { validateField } from './validator';
 
-interface LinkageRuntimeContext {
+export interface LinkageRuntimeContext {
   eventName: string;
   field: string;
   value: unknown;
@@ -30,19 +30,7 @@ function isBlankValue(value: unknown) {
   return value == null || value === '' || (Array.isArray(value) && value.length === 0);
 }
 
-import { sameValue } from './valueUtils';
-
-function comparableValue(value: unknown): number | string | unknown {
-  if (typeof value === 'number') return value;
-  if (value instanceof Date) return value.getTime();
-  const text = typeof value === 'string' ? value.trim() : String(value ?? '').trim();
-  if (!text) return value;
-  const numeric = Number(text);
-  if (!Number.isNaN(numeric) && /^-?\d+(\.\d+)?$/.test(text)) return numeric;
-  const date = Date.parse(text);
-  if (!Number.isNaN(date)) return date;
-  return text;
-}
+import { comparableValue, sameValue } from './valueUtils';
 
 export interface LinkageExecutionResult {
   stages: FormEventExecutionStage[];
@@ -50,7 +38,7 @@ export interface LinkageExecutionResult {
   executedActions: number;
 }
 
-function compareValues(left: unknown, operator: FormLinkageCondition['operator'], right: unknown): boolean {
+export function compareValues(left: unknown, operator: FormLinkageCondition['operator'], right: unknown): boolean {
   const comparableLeft = comparableValue(left) as any;
   const comparableRight = comparableValue(right) as any;
   switch (operator) {
@@ -66,8 +54,10 @@ function compareValues(left: unknown, operator: FormLinkageCondition['operator']
     case 'notEndsWith': return !String(left ?? '').endsWith(String(right ?? ''));
     case 'greaterThan': return comparableLeft > comparableRight;
     case 'lessThan': return comparableLeft < comparableRight;
-    case 'greaterOrEqual': return comparableLeft >= comparableRight;
-    case 'lessOrEqual': return comparableLeft <= comparableRight;
+    // 文档 8/11.5：`>=` 与 `<`、`<=` 与 `>` 互为严格反向；
+    // 对 NaN/空值等不可比输入用“精确取反”保证 when/else 恰有一个分支命中。
+    case 'greaterOrEqual': return !(comparableLeft < comparableRight);
+    case 'lessOrEqual': return !(comparableLeft > comparableRight);
     default: return false;
   }
 }
@@ -80,8 +70,9 @@ function compareByOperator(left: unknown, operator: NonNullable<FormLinkageActio
     case '!=': return comparableLeft !== comparableRight;
     case '>': return comparableLeft > comparableRight;
     case '<': return comparableLeft < comparableRight;
-    case '>=': return comparableLeft >= comparableRight;
-    case '<=': return comparableLeft <= comparableRight;
+    // 与条件求值一致：`>=`/`<=` 为 `<`/`>` 的精确取反（文档 8/11.5）
+    case '>=': return !(comparableLeft < comparableRight);
+    case '<=': return !(comparableLeft > comparableRight);
     default: return false;
   }
 }

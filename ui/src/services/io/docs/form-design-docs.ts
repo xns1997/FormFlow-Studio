@@ -748,7 +748,7 @@ export const formDesignDocs: BehaviorTopicDocEntry[] = [
       {
         title: '属性说明',
         fields: [
-          { name: 'chartType', type: 'select', description: '图表类型：bar/line/pie/doughnut/area' },
+          { name: 'chartType', type: 'select', description: '图表类型：bar/line/pie/doughnut/area/radar/polarArea/scatter' },
           { name: 'title', type: 'string', description: '图表标题' },
           { name: 'name', type: 'string', description: '字段名' },
           { name: 'chartData', type: 'json', description: '自定义数据（JSON）' },

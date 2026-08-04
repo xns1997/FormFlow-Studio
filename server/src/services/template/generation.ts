@@ -2256,7 +2256,13 @@ export function planOperationTemplate(project: JsonObject, templateId: string, s
       if (workflow.nodes?.some((node: JsonObject) => node.id === 'submit' && node.specId === 'behavior:submit')) {
         const submitNode = workflow.nodes.find((node: JsonObject) => node.id === 'submit' && node.specId === 'behavior:submit') as JsonObject | undefined;
         if (submitNode?.data?.propertiesJson) {
-          const properties = JSON.parse(String(submitNode.data.propertiesJson || '{}'));
+          let properties: JsonObject;
+          try {
+            const parsed = JSON.parse(String(submitNode.data.propertiesJson || '{}'));
+            properties = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as JsonObject : {};
+          } catch {
+            properties = {};
+          }
           if (template.id === 'single-table-entry') {
             properties.writeBackMode = String(suppliedParameters.keyStrategy || 'upsert');
           }
@@ -2689,4 +2695,3 @@ export function planOperationTemplate(project: JsonObject, templateId: string, s
   const conflicts = resources.filter((item) => existing.some((current: JsonObject) => current.id === item.id)).map((item) => ({ code: 'RESOURCE_ID_CONFLICT', resourceId: item.id, message: `资源 ${item.id} 已存在` }));
   return { id: `plan_${randomUUID()}`, templateId, templateVersion: template.version, instanceId, selection, parameters: suppliedParameters, summary, artifacts, preview, conflicts };
 }
-

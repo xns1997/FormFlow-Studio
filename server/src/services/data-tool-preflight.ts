@@ -86,8 +86,17 @@ function compileSource(name: 'data_source.create' | 'data_source.import', origin
   if (!hasFile && !hasCsv && !hasRows && !columns.length) return failure(args, normalizations, 'DATA_SOURCE_INPUT_REQUIRED', '必须提供 fileId、csv、业务 rows 或 config.columns', 'rows', { oneOf: ['fileId', 'csv', 'rows', 'config.columns'] });
   if (hasRows && rows.length === 0 && !columns.length) return failure(args, normalizations, 'DATA_COLUMNS_REQUIRED', '空 rows 必须同时提供 config.columns', 'config.columns', { config: { columns: [{ name: 'id', type: 'string' }], keyFields: ['id'] } });
   const keys: string[] = Array.isArray(args.config.keyFields) ? args.config.keyFields.map(String) : [];
-  if (args.config.readOnly !== true && !keys.length) return failure(args, normalizations, 'DATA_KEY_REQUIRED', '可编辑 Sheet 必须配置 config.keyFields', 'config.keyFields', { config: { keyFields: ['id'], readOnly: false } });
   const available = new Set<string>([...columns.map((item: any) => String(item.name || '')).filter(Boolean), ...(hasRows ? rows.flatMap((row: any) => Object.keys(object(row))) : [])]);
+  if (args.config.readOnly !== true && !keys.length) {
+    const candidate = [...available].find((name) => /编号|id|code|号/i.test(name)) || ([...available].length === 1 ? [...available][0] : undefined);
+    if (candidate) {
+      // 可编辑表必须有主键；列名明显是主键（编号/id/code/号）或只有一列时自动补齐，避免模型反复失败。
+      args.config = { ...args.config, keyFields: [candidate], readOnly: false };
+      record(normalizations, 'config.keyFields', '（缺失）', candidate, '自动推断主键（可编辑表必须有主键）');
+    } else {
+      return failure(args, normalizations, 'DATA_KEY_REQUIRED', '可编辑 Sheet 必须配置 config.keyFields', 'config.keyFields', { availableColumns: [...available], config: { keyFields: [candidate || 'id'], readOnly: false } });
+    }
+  }
   const missing = keys.filter((key) => available.size > 0 && !available.has(key));
   if (missing.length) return failure(args, normalizations, 'DATA_KEY_FIELD_MISSING', `主键列不存在：${missing.join('、')}`, 'config.keyFields', { availableColumns: [...available], config: { ...args.config, keyFields: [...available].slice(0, 1) } });
   if (hasRows && keys.length) {

@@ -25,6 +25,8 @@ server/data/project-mutation-replays.json
 server/data/tool-mutation-replays.json
 server/data/configs/llm-management.json
 server/data/configs/project-agent-*.json
+server/data/configs/agent-threads.json
+server/data/configs/agent-capability-bundles.json
 server/data/docs/
 playwright-report/
 test-results/
@@ -35,6 +37,11 @@ docs/compose/
 .playwright-cli/
 .claude/
 projects/data/proj_*.formflow/
+projects/data/device_*.formflow/
+projects/data/employee_management_demo.formflow/
+projects/data/employee_mgmt_*.formflow/
+projects/data/smoke_e2e.formflow/
+projects/data/supplier_mgmt_auto.formflow/
 llm-provider/.venv/
 __pycache__/
 *.pyc

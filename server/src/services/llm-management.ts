@@ -132,7 +132,13 @@ function readStore(): StoreFile {
     writeStore(initial);
     return initial;
   }
-  const parsed = JSON.parse(readFileSync(STORE_PATH, 'utf8')) as Partial<StoreFile>;
+  let parsed: Partial<StoreFile>;
+  try {
+    parsed = JSON.parse(readFileSync(STORE_PATH, 'utf8')) as Partial<StoreFile>;
+  } catch {
+    // 存储文件损坏时回退到内置种子配置，不让服务不可用。
+    return seed();
+  }
   const agents = parsed.agents || [];
   if (!agents.some((item) => item.id === 'project-orchestrator-agent')) {
     const builtin = seed().agents.find((item) => item.id === 'project-orchestrator-agent');

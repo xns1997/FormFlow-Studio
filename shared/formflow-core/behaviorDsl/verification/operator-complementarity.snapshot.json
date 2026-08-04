@@ -1,0 +1,79 @@
+{
+  "allComplementaryOnFullDomain": true,
+  "pairCount": 14,
+  "pairs": [
+    {
+      "operator": "==",
+      "inverse": "!=",
+      "complementary": true
+    },
+    {
+      "operator": "!=",
+      "inverse": "==",
+      "complementary": true
+    },
+    {
+      "operator": ">",
+      "inverse": "<=",
+      "complementary": true
+    },
+    {
+      "operator": "<",
+      "inverse": ">=",
+      "complementary": true
+    },
+    {
+      "operator": ">=",
+      "inverse": "<",
+      "complementary": true
+    },
+    {
+      "operator": "<=",
+      "inverse": ">",
+      "complementary": true
+    },
+    {
+      "operator": "contains",
+      "inverse": "notContains",
+      "complementary": true
+    },
+    {
+      "operator": "notContains",
+      "inverse": "contains",
+      "complementary": true
+    },
+    {
+      "operator": "startsWith",
+      "inverse": "notStartsWith",
+      "complementary": true
+    },
+    {
+      "operator": "notStartsWith",
+      "inverse": "startsWith",
+      "complementary": true
+    },
+    {
+      "operator": "endsWith",
+      "inverse": "notEndsWith",
+      "complementary": true
+    },
+    {
+      "operator": "notEndsWith",
+      "inverse": "endsWith",
+      "complementary": true
+    },
+    {
+      "operator": "isEmpty",
+      "inverse": "isNotEmpty",
+      "complementary": true
+    },
+    {
+      "operator": "isNotEmpty",
+      "inverse": "isEmpty",
+      "complementary": true
+    }
+  ],
+  "findings": [
+    "全部 14 对反向运算符在文档值域（含 NaN/空值/数组）上严格互补；排序运算符采用精确取反语义（文档 8/11.5）。"
+  ]
+}

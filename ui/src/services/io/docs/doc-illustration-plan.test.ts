@@ -13,7 +13,7 @@ const STEP_SCREENSHOT_EXEMPTIONS = new Set([
 
 test('every document receives a stable illustration namespace without a generic hero', async () => {
   const entries = await loadDocCatalog();
-  assert.equal(entries.length, 324);
+  assert.equal(entries.length, 349);
   const plans = entries.map(buildDocIllustrationPlan);
   assert.equal(new Set(plans.map((plan) => plan.customizationId)).size, entries.length);
   for (const plan of plans) assert.equal('hero' in plan, false);

@@ -77,7 +77,7 @@ export async function runFieldChange(
 
   const result = await executeAllRules(state.behaviorRules, 'fieldChange', updated, (updater) => {
     setState((prev) => ({ ...prev, runtime: updater(prev.runtime) }));
-  });
+  }, undefined, undefined, undefined, fieldName);
   if (result.logs.length > 0) {
     setState((prev) => ({
       ...prev,

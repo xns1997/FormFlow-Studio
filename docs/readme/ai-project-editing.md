@@ -1,5 +1,15 @@
 # 智能体项目创建与编辑
 
+## 项目智能体（V4 单循环）
+
+在线智能体采用**单一主循环**（类 Codex 架构），端点挂载于 `/api/ai/project-agent/v4`：
+
+- `POST /threads` 建立线程，`POST /threads/:id/turns` 发起一轮（plan 或执行），`POST /threads/:id/plan/confirm|reject` 确认/拒绝目标契约，`POST /threads/:id/operations/:operationId/decision` 处理破坏性操作确认，`POST /threads/:id/control` 与 `/steer` 控制暂停/停止/转向，`GET /threads/:id/events` 以 SSE 或 JSON 读取带单调 `seq` 的事件流。
+- 线程持有单一活跃计划（goal、successCriteria、任务清单）。每个任务归属一个 MCP 角色作用域；智能体每次迭代选择一个作用域内的工具执行，写前自动刷新 revision，删除/覆盖等待用户确认。
+- 七个领域以 skill 形式组织（项目/数据/表单/流程/行为/质量/交付），决策提示词先展示 skill 目录，进入某领域后注入该 skill 全文与实时工具目录；能力包中的 agents 降级为作用域配置（指令 + 工具白名单 + 知识）。
+- 确定性门禁：写任务通过前必须 `project.validate`；线程完成必须通过结构校验与计划包含的质量/交付预检（`release.preview`）；`release.apply` 永远不可调用。
+- 终止语义：连续两步无进展暂停提问；同一阻塞条件连续三次标记 blocked；决策步预算超限暂停。
+
 ## 七领域 MCP
 
 在线项目创建与编辑由七个专职 MCP 提供：

@@ -18,6 +18,8 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--panel);
+  box-shadow: var(--card-shadow);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
 
 .behavior-doc-hero,
@@ -223,6 +225,14 @@
   padding: 14px;
   text-decoration: none;
   color: var(--text);
+}
+
+.docs-topic-card:hover,
+.docs-topic-card:focus-visible {
+  border-color: transparent;
+  background: linear-gradient(var(--panel), var(--panel)) padding-box, var(--card-border-gradient) border-box;
+  box-shadow: var(--card-shadow-hover), 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+  transform: translateY(-1px);
 }
 
 .docs-index-panel,
@@ -537,14 +547,17 @@ button.docs-breadcrumb-link {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--panel);
+  box-shadow: var(--card-shadow);
   text-decoration: none;
   color: var(--text);
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s, transform 0.15s;
 }
 
-.doc-event-card:hover {
-  border-color: var(--accent);
-  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.08);
+.doc-event-card:hover,
+.doc-event-card:focus-visible {
+  border-color: transparent;
+  background: linear-gradient(var(--panel), var(--panel)) padding-box, var(--card-border-gradient) border-box;
+  box-shadow: var(--card-shadow-hover), 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 .doc-event-card-title {

@@ -58,7 +58,12 @@ export function parseSourceBuffer(buffer: Buffer, originalName: string): { fileT
 
   // JSON
   if (fileType === 'json') {
-    const parsed = JSON.parse(buffer.toString('utf8'));
+    let parsed: any;
+    try {
+      parsed = JSON.parse(buffer.toString('utf8'));
+    } catch (error) {
+      throw new Error(`JSON 文件解析失败：${error instanceof Error ? error.message : '不是合法 JSON'}`);
+    }
     if (Array.isArray(parsed)) return { fileType, sheets: [rowsToSheet('Sheet1', parsed)] };
     if (Array.isArray(parsed?.data) || Array.isArray(parsed?.rows)) {
       return { fileType, sheets: [rowsToSheet('Sheet1', parsed.data || parsed.rows)] };
@@ -193,8 +198,12 @@ export function getStagedUpload(fileId: string): StagedUpload | null {
   cleanupExpiredUploads();
   const metaPath = metadataPath(fileId);
   if (!existsSync(metaPath)) return null;
-  const record = JSON.parse(readFileSync(metaPath, 'utf8')) as StagedUpload;
-  return existsSync(record.path) ? record : null;
+  try {
+    const record = JSON.parse(readFileSync(metaPath, 'utf8')) as StagedUpload;
+    return record && typeof record.path === 'string' && existsSync(record.path) ? record : null;
+  } catch {
+    return null;
+  }
 }
 
 export function consumeStagedUpload(fileId: string): void {

@@ -5,29 +5,28 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import express from 'express';
+import JSZip from 'jszip';
 
 process.env.FORMFLOW_DATABASE_REQUIRED = 'false';
 process.env.FORMFLOW_DATABASE_AUTO_START = 'false';
 const testRoot = mkdtempSync(join(tmpdir(), 'formflow-mcp-http-'));
-process.env.PROJECT_AGENT_STORE_PATH = join(testRoot, 'project-agent-sessions.json');
-process.env.PROJECT_AGENT_V2_STORE_PATH = join(testRoot, 'project-agent-v2.json');
-process.env.PROJECT_AGENT_BUNDLE_STORE_PATH = join(testRoot, 'project-agent-bundles.json');
+process.env.AGENT_THREAD_STORE_PATH = join(testRoot, 'agent-threads.json');
+process.env.AGENT_BUNDLE_STORE_PATH = join(testRoot, 'agent-bundles.json');
 process.env.FORMFLOW_PROJECTS_DIR = join(testRoot, 'projects');
 process.env.FORMFLOW_DATA_DIR = join(testRoot, 'server-data');
 
 const { mcpRouter } = await import('./mcp-server');
 const { aiRouter } = await import('./routes/ai');
-const { listProjectAgentTools, projectAgentToolArguments } = await import('./services/project-agent-tools');
-const projectAgentV2Store = await import('./services/project-agent-v2-store');
+const { listFormFlowTools } = await import('./services/formflow-tool-registry');
+const { stageUpload } = await import('./services/upload-staging');
+const agentCore = await import('./agent-core');
 
 test.after(() => rmSync(testRoot, { recursive: true, force: true }));
 
 test('MCP transport removes the aggregate endpoint and validates specialist roles', async () => {
-  assert.equal(listProjectAgentTools('delivery').some((tool) => tool.name === 'release.apply'), false);
-  assert.ok(listProjectAgentTools('delivery').some((tool) => tool.name === 'release.preview'));
-  assert.equal(projectAgentToolArguments('form.create', { baseRevision: 'stale' }, 'current').baseRevision, 'stale');
-  assert.equal(projectAgentToolArguments('form.create', {}, 'current').baseRevision, 'current');
-  assert.equal(projectAgentToolArguments('project.get', { projectId: 'demo' }, 'current').baseRevision, undefined);
+  assert.equal(listFormFlowTools('delivery').some((tool) => tool.name === 'release.apply'), true);
+  assert.equal(listFormFlowTools('delivery').filter((tool) => tool.name !== 'release.apply').some((tool) => tool.name === 'release.preview'), true);
+  assert.ok(listFormFlowTools('delivery').some((tool) => tool.name === 'release.preview'));
   const app = express(); app.use(express.json()); app.use('/mcp', mcpRouter); app.use('/api/ai', aiRouter);
   const server = createServer(app); await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const address = server.address(); assert.ok(address && typeof address === 'object'); const root = `http://127.0.0.1:${address.port}`;
@@ -61,14 +60,35 @@ test('MCP transport removes the aggregate endpoint and validates specialist role
     const loadedProject = await fetch(`${root}/api/ai/mcp-roles/project/tools/project.get/invoke`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ arguments: { projectId } }) });
     assert.match(JSON.stringify(await loadedProject.json()), /HTTP 首次创建/);
 
-    const legacy = await fetch(`${root}/api/ai/project-agent/sessions`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
-    assert.equal(legacy.status, 410);
-    const created = await fetch(`${root}/api/ai/project-agent/v2/sessions`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }); const v2 = await created.json() as any;
-    assert.equal(created.status, 201); assert.equal(v2.schemaVersion, 2); assert.equal(v2.phase, 'idle');
-    const snapshot = await fetch(`${root}/api/ai/project-agent/v2/sessions/${v2.id}`); assert.equal(snapshot.status, 200); assert.equal((await snapshot.json() as any).id, v2.id);
-    const stored = projectAgentV2Store.getAgentSessionV2(v2.id)!; projectAgentV2Store.appendAgentEvent(stored, 'task_started', { taskId: 'read-1' }); projectAgentV2Store.appendAgentEvent(stored, 'task_completed', { taskId: 'read-1' });
-    const replay = await fetch(`${root}/api/ai/project-agent/v2/sessions/${v2.id}/events?afterSeq=1`); const replayBody = await replay.json() as any; assert.deepEqual(replayBody.events.map((event: any) => event.seq), [2]);
-    const retryWithoutFailure = await fetch(`${root}/api/ai/project-agent/v2/sessions/${v2.id}/turns/retry`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }); assert.equal(retryWithoutFailure.status, 422); assert.match(JSON.stringify(await retryWithoutFailure.json()), /规划失败记录不存在/);
-    const bundles = await fetch(`${root}/api/ai/project-agent/v2/capability-bundles`); assert.equal(bundles.status, 200); assert.ok((await bundles.json() as any[]).some((item) => item.status === 'published'));
+    const created = await fetch(`${root}/api/ai/project-agent/v4/threads`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }); const thread = await created.json() as any;
+    assert.equal(created.status, 201); assert.equal(thread.schemaVersion, 1); assert.equal(thread.status, 'idle');
+    const snapshot = await fetch(`${root}/api/ai/project-agent/v4/threads/${thread.id}`); assert.equal(snapshot.status, 200); assert.equal((await snapshot.json() as any).id, thread.id);
+    const stored = agentCore.getAgentThread(thread.id)!; agentCore.appendAgentThreadEvent(stored, 'task_started', { taskId: 'read-1' }); agentCore.appendAgentThreadEvent(stored, 'task_completed', { taskId: 'read-1' });
+    const replay = await fetch(`${root}/api/ai/project-agent/v4/threads/${thread.id}/events?afterSeq=1`); const replayBody = await replay.json() as any; assert.deepEqual(replayBody.events.map((event: any) => event.seq), [2]);
+    const retryWithoutFailure = await fetch(`${root}/api/ai/project-agent/v4/threads/${thread.id}/turns/retry`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }); assert.equal(retryWithoutFailure.status, 422); assert.match(JSON.stringify(await retryWithoutFailure.json()), /规划失败记录不存在/);
+    const bundles = await fetch(`${root}/api/ai/project-agent/v4/capability-bundles`); assert.equal(bundles.status, 200); assert.ok((await bundles.json() as any[]).some((item) => item.status === 'published'));
   } finally { await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve())); }
+});
+
+test('project.import rejects malformed JSON inside a package with a friendly tool error', async () => {
+  const app = express(); app.use(express.json()); app.use('/mcp', mcpRouter); app.use('/api/ai', aiRouter);
+  const server = createServer(app); await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const address = server.address(); assert.ok(address && typeof address === 'object'); const root = `http://127.0.0.1:${address.port}`;
+  try {
+    const zip = new JSZip();
+    zip.file('project.json', '{broken json');
+    const buffer = await zip.generateAsync({ type: 'nodebuffer' });
+    const staged = stageUpload({ buffer, originalName: 'malformed.formflow' });
+    const res = await fetch(`${root}/api/ai/mcp-roles/project/tools/project.import/invoke`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ arguments: { fileId: staged.id, idempotencyKey: `import-malformed-${staged.id}` } }),
+    });
+    assert.equal(res.status, 422);
+    const body = await res.json() as any;
+    assert.equal(body.error.code, 'INVALID_PROJECT_PACKAGE');
+    assert.match(String(body.error.message || ''), /不是合法 JSON/);
+  } finally {
+    await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
 });

@@ -438,3 +438,134 @@ test('mock data and persisted project tests are deterministic and append-only', 
   assert.equal((history as any).data.fixtures.length, 1); assert.equal((history as any).data.runs.length, 1);
   assert.ok(existsSync(join(projectPackagePath('mock_demo'), 'testing', 'testing.json')));
 });
+
+test('form template catalog is discoverable and templateId backs form creation and table generation', async () => {
+  const listed = await executeFormFlowTool('catalog.form_templates.list', {}, actor);
+  assert.equal(listed.ok, true, JSON.stringify(listed));
+  assert.deepEqual((listed as any).data.map((item: any) => item.key), ['blank', 'basic-entry', 'lookup-edit', 'master-detail']);
+  const detail = await executeFormFlowTool('catalog.form_templates.get', { key: 'lookup-edit' }, actor);
+  assert.equal(detail.ok, true);
+  assert.equal((detail as any).data.formMode, 'lookup-edit');
+  assert.equal((detail as any).data.scaffoldFromTable, true);
+  const missingCatalog = await executeFormFlowTool('catalog.form_templates.get', { key: 'not-a-template' }, actor);
+  assert.equal(missingCatalog.ok, false);
+  assert.ok(listFormFlowTools('form').some((tool: any) => tool.name === 'catalog.form_templates.list'));
+
+  const created = await executeFormFlowTool('project.create', { id: 'template_demo', name: '模板测试', idempotencyKey: 'template-create' }, actor);
+  assert.equal(created.ok, true, JSON.stringify(created));
+  let loaded = await executeFormFlowTool('project.get', { projectId: 'template_demo' }, actor);
+  let revision = (loaded as any).data.revision;
+  const templateBaseRevision = revision;
+
+  const templated = await executeFormFlowTool('form.create', { projectId: 'template_demo', id: 'from_template', name: '按模板创建', templateId: 'lookup-edit', baseRevision: revision, idempotencyKey: 'template-form-1' }, { ...actor, mcpRole: 'form' });
+  assert.equal(templated.ok, true, JSON.stringify(templated)); revision = (templated as any).meta.revision;
+  const read = await executeFormFlowTool('form.get', { projectId: 'template_demo', id: 'from_template' }, actor);
+  assert.equal((read as any).data.design.formMode, 'lookup-edit');
+  assert.equal((read as any).data.design.templateKey, 'lookup-edit');
+  assert.equal((read as any).data.design.templateParameters?.formTemplate?.key, 'lookup-edit');
+  assert.ok(Array.isArray((read as any).data.design.components));
+  assert.equal((read as any).data.design.components.length, 0);
+
+  const imported = await executeFormFlowTool('data_source.import', { projectId: 'template_demo', id: 'records', rows: [{ id: 'R-1', name: '记录', amount: 10 }], config: { keyFields: ['id'] }, baseRevision: revision, idempotencyKey: 'template-import' }, actor);
+  assert.equal(imported.ok, true, JSON.stringify(imported)); revision = (imported as any).meta.revision;
+
+  const generated = await executeFormFlowTool('form.generate_from_table', { projectId: 'template_demo', tableId: 'records', sheetName: 'Sheet1', id: 'lookup_form', templateId: 'lookup-edit', baseRevision: revision, idempotencyKey: 'template-form-2' }, { ...actor, mcpRole: 'form' });
+  assert.equal(generated.ok, true, JSON.stringify(generated)); revision = (generated as any).meta.revision;
+  const generatedRead = await executeFormFlowTool('form.get', { projectId: 'template_demo', id: 'lookup_form' }, actor);
+  assert.equal((generatedRead as any).data.design.formMode, 'lookup-edit');
+  assert.equal((generatedRead as any).data.design.templateKey, 'lookup-edit');
+  assert.ok((generatedRead as any).data.design.components.length > 0);
+
+  const idempotent = await executeFormFlowTool('form.create', { projectId: 'template_demo', id: 'from_template', name: '按模板创建', templateId: 'lookup-edit', baseRevision: templateBaseRevision, idempotencyKey: 'template-form-1' }, { ...actor, mcpRole: 'form' });
+  assert.equal(idempotent.ok, true, JSON.stringify(idempotent));
+  assert.equal((idempotent as any).meta.revision, (templated as any).meta.revision);
+
+  const badTemplate = await executeFormFlowTool('form.create', { projectId: 'template_demo', id: 'bad', name: '坏模板', templateId: 'not-a-template', baseRevision: revision, idempotencyKey: 'template-form-3' }, actor);
+  assert.equal(badTemplate.ok, false); assert.equal((badTemplate as any).error.code, 'FORM_TEMPLATE_NOT_FOUND');
+  assert.equal((badTemplate as any).error.path, 'templateId');
+});
+
+test('rule_verify.model performs bounded model checking and determinism checks', async () => {
+  const created = await executeFormFlowTool('project.create', { id: 'rule_verify_demo', name: '形式化验证', idempotencyKey: 'verify-create' }, actor);
+  assert.equal(created.ok, true, JSON.stringify(created));
+  const loaded = await executeFormFlowTool('project.get', { projectId: 'rule_verify_demo' }, actor);
+  const form = await executeFormFlowTool('form.create', {
+    projectId: 'rule_verify_demo', id: 'calc', name: '计算', baseRevision: (loaded as any).data.revision, idempotencyKey: 'verify-form',
+    design: {
+      id: 'calc-design', name: '计算', formMode: 'edit',
+      components: [
+        { id: 'A', type: 'number', fieldBinding: 'A', props: { name: 'A' } },
+        { id: 'B', type: 'number', fieldBinding: 'B', props: { name: 'B' } },
+        { id: 'C', type: 'number', fieldBinding: 'C', props: { name: 'C' } },
+      ],
+      bindings: [],
+    },
+  }, { ...actor, mcpRole: 'form' });
+  assert.equal(form.ok, true, JSON.stringify(form));
+
+  const good = await executeFormFlowTool('rule_verify.model', { projectId: 'rule_verify_demo', formId: 'calc', code: 'compute $A = $B + 1 watch($B)\ncompute $C = $A + 1 watch($A)' }, { ...actor, mcpRole: 'behavior' });
+  assert.equal(good.ok, true, JSON.stringify(good));
+  assert.equal((good as any).data.passed, true);
+  assert.equal((good as any).data.acyclic, true);
+  assert.equal((good as any).data.deterministic, true);
+  assert.equal((good as any).data.ruleCount, 2);
+
+  const cyclic = await executeFormFlowTool('rule_verify.model', { projectId: 'rule_verify_demo', formId: 'calc', code: 'compute $A = $B + 1 watch($B)\ncompute $B = $A + 1 watch($A)' }, { ...actor, mcpRole: 'behavior' });
+  assert.equal(cyclic.ok, true, JSON.stringify(cyclic));
+  assert.equal((cyclic as any).data.passed, false);
+  assert.equal((cyclic as any).data.acyclic, false);
+  assert.ok(Array.isArray((cyclic as any).data.counterexample));
+
+  const empty = await executeFormFlowTool('rule_verify.model', { projectId: 'rule_verify_demo', formId: 'calc', code: '' }, { ...actor, mcpRole: 'behavior' });
+  assert.equal(empty.ok, true, JSON.stringify(empty));
+  assert.equal((empty as any).data.passed, true);
+  assert.equal((empty as any).data.ruleCount, 0);
+
+  const denied = await executeFormFlowTool('rule_verify.model', { projectId: 'rule_verify_demo', formId: 'calc' }, { ...actor, mcpRole: 'form' });
+  assert.equal(denied.ok, false); assert.equal((denied as any).error.code, 'TOOL_NOT_AVAILABLE_IN_ROLE');
+  assert.ok(listFormFlowTools('behavior').some((tool: any) => tool.name === 'rule_verify.model'));
+});
+
+test('data_table.create builds a table with columns, keyFields and seeded rows in one step', async () => {
+  const created = await executeFormFlowTool('project.create', { id: 'table_tool_demo', name: '建表工具', idempotencyKey: 'tbl-create' }, actor);
+  assert.equal(created.ok, true, JSON.stringify(created));
+  const loaded = await executeFormFlowTool('project.get', { projectId: 'table_tool_demo' }, actor);
+  const table = await executeFormFlowTool('data_table.create', {
+    projectId: 'table_tool_demo',
+    id: 'device',
+    baseRevision: (loaded as any).data.revision,
+    idempotencyKey: 'tbl-1',
+    columns: [
+      { name: '编号', type: 'string' },
+      { name: '名称', type: 'text' },
+      { name: '类型', type: 'enum', enum: ['机床', '泵', '阀门'] },
+      { name: '评分', type: 'number' },
+    ],
+    keyFields: ['编号'],
+    rows: [{ 编号: 'D-001', 名称: '机床A', 类型: '机床', 评分: 88 }],
+  }, { ...actor, mcpRole: 'data' });
+  assert.equal(table.ok, true, JSON.stringify(table));
+
+  const read = await executeFormFlowTool('data_source.get', { projectId: 'table_tool_demo', id: 'device' }, actor);
+  assert.equal(read.ok, true, JSON.stringify(read));
+  const sheet = (read as any).data.sheets[0];
+  assert.deepEqual(sheet.config.keyFields, ['编号']);
+  assert.equal(sheet.columns.find((column: any) => column.name === '类型').dataType, 'enum');
+  assert.deepEqual(sheet.columns.find((column: any) => column.name === '类型').enum, ['机床', '泵', '阀门']);
+  assert.equal(sheet.columns.find((column: any) => column.name === '名称').dataType, 'string');
+  assert.equal(sheet.rowCount, 1);
+
+  const duplicate = await executeFormFlowTool('data_table.create', {
+    projectId: 'table_tool_demo', id: 'device', baseRevision: (read as any).meta?.revision, idempotencyKey: 'tbl-2',
+    columns: [{ name: '编号', type: 'string' }], keyFields: ['编号'],
+  }, { ...actor, mcpRole: 'data' });
+  assert.equal(duplicate.ok, false); assert.equal((duplicate as any).error.code, 'TABLE_EXISTS');
+
+  const autoKey = await executeFormFlowTool('data_table.create', {
+    projectId: 'table_tool_demo', id: 'auto', baseRevision: (read as any).meta?.revision, idempotencyKey: 'tbl-3',
+    columns: [{ name: '编号', type: 'string' }, { name: '备注', type: 'string' }],
+  }, { ...actor, mcpRole: 'data' });
+  assert.equal(autoKey.ok, true, JSON.stringify(autoKey));
+  const autoRead = await executeFormFlowTool('data_source.get', { projectId: 'table_tool_demo', id: 'auto' }, actor);
+  assert.deepEqual((autoRead as any).data.sheets[0].config.keyFields, ['编号']);
+});

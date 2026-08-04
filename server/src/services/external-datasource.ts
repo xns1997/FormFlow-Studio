@@ -114,10 +114,11 @@ function cachePath(projectDir: string, id: string): string {
 export function saveDatasourceConfig(projectDir: string, config: DatasourceConfig): void {
   const dir = configDir(projectDir);
   mkdirSync(dir, { recursive: true });
-  // Encrypt connection info
+  // Encrypt connection info: encrypt() 返回 base64 字符串，直接存字符串；
+  // 之前对密文执行 JSON.parse 会在保存时必然抛错，导致配置无法写入。
   const encrypted = {
     ...config,
-    connection: JSON.parse(encrypt(JSON.stringify(config.connection))),
+    connection: encrypt(JSON.stringify(config.connection)),
     _encrypted: true,
   };
   writeFileSync(configPath(projectDir, config.id), JSON.stringify(encrypted, null, 2));
@@ -126,12 +127,19 @@ export function saveDatasourceConfig(projectDir: string, config: DatasourceConfi
 export function loadDatasourceConfig(projectDir: string, id: string): DatasourceConfig | null {
   const path = configPath(projectDir, id);
   if (!existsSync(path)) return null;
-  const raw = JSON.parse(readFileSync(path, 'utf8'));
-  if (raw._encrypted) {
-    raw.connection = JSON.parse(decrypt(JSON.stringify(raw.connection)));
-    delete raw._encrypted;
+  try {
+    const raw = JSON.parse(readFileSync(path, 'utf8'));
+    if (raw._encrypted) {
+      if (typeof raw.connection !== 'string') return null;
+      const decrypted = decrypt(raw.connection);
+      raw.connection = JSON.parse(decrypted);
+      delete raw._encrypted;
+    }
+    return raw as DatasourceConfig;
+  } catch {
+    // 配置文件损坏或密文无法解密（密钥变更/文件被篡改）时按不存在处理。
+    return null;
   }
-  return raw as DatasourceConfig;
 }
 
 export function listDatasourceConfigs(projectDir: string): DatasourceConfig[] {
@@ -144,7 +152,8 @@ export function listDatasourceConfigs(projectDir: string): DatasourceConfig[] {
       try {
         const raw = JSON.parse(readFileSync(join(dir, f), 'utf8'));
         if (raw._encrypted) {
-          raw.connection = JSON.parse(decrypt(JSON.stringify(raw.connection)));
+          if (typeof raw.connection !== 'string') return null;
+          raw.connection = JSON.parse(decrypt(raw.connection));
           delete raw._encrypted;
         }
         return raw as DatasourceConfig;

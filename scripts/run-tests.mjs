@@ -2,7 +2,7 @@ import { readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
 
-const roots = ['server/src', 'ui/src', 'ui/nodes'];
+const roots = ['shared', 'server/src', 'ui/src', 'ui/nodes'];
 const files = [];
 const visit = (directory) => {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {

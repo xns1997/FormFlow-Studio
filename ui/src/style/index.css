@@ -1,6 +1,7 @@
 @import './variables.css';
 @import './button-system.css';
 @import './layout.css';
+@import './agent-workbench.css';
 @import './sidebar.css';
 @import './inspector.css';
 @import './flow-nodes.css';

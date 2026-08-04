@@ -62,6 +62,8 @@ comment          = "#", { any-character } ;
 - 顶层句型合法，不代表整条规则就能应用；后面还会继续做引用与参数校验。
 - DSL 支持的是“规则句型”，不是通用脚本语法。
 - `ebnf` 这里描述的是结构约束，真正可执行边界以下面的“语法硬约束”和“表达式约束”为准。
+- 本 EBNF 由 `shared/formflow-core/behaviorDsl/grammar.ts`（Chevrotain 可执行文法）派生；
+  文档与编译器共享同一份文法事实，改动文法必须同步本段。
 
 ```mermaid
 flowchart TD
@@ -390,6 +392,22 @@ when $部门 == "技术部" -> show(@tech-stack); require($技术栈); message("
 | `FFR200–299` | 字段、控件、数据表或流程引用错误 |
 | `FFR300–399` | 可能循环或递归的行为语义 |
 
+本版本新增的静态检查（编译期前置，均为 error 级，FFR309 为 warning）：
+
+| 编号 | 检查 | 触发示例 |
+| --- | --- | --- |
+| `FFR304` | 跨规则回写/计算环（多条规则互相写回对方触发字段） | `compute $A = $B + 1 watch($B)` + `compute $B = $A + 1 watch($A)` |
+| `FFR305` | `compute` 表达式依赖字段未在 `watch(...)` 中声明 | `compute $合计 = $数量 * $单价 watch($数量)` |
+| `FFR306` | 表达式类型错误（在提供字段类型上下文中） | `compute $合计 = $数量 * $单价` 且 `$数量` 为文本字段 |
+| `FFR307` | 动作参数引用种类不匹配（`$字段` 传入控件槽等） | `show($技术栈)`、`run($流程ID)` |
+| `FFR308` | 动作语境违规（UI 动作出现在守卫语境） | `before submit -> show(@tech-stack)` |
+| `FFR309` | 条件不可满足（数值区间为空或相等值冲突，warning） | `$x > 5` 与 `$x < 3` 同时成立 |
+
+> [!NOTE]
+> FFR304-308 为新增静态检查，编译时在既有 lint 之后追加；FFR302 的单规则自写
+> 回写警告保持不变。类型检查（FFR306）只有在调用方提供 `fieldTypes` 时才启用，
+> 未知类型不产生误报。
+
 ### 11.9 什么时候该停在 DSL 之外
 
 下面这些不是 DSL 的强项，文档里要直接劝退：
@@ -543,3 +561,43 @@ compute $合计 = $数量 * $单价 watch($数量, $单价)
 | `save` / `submit` | 由表单提交；需运行配置流程时写 `run()` |
 
 编译器仍会读取这些旧格式并给出 `FFR1xx` 警告，便于逐步迁移；新建模板、补全和示例统一生成 1.0 规范格式。
+
+## 15. 形式化验证与质量门禁
+
+DSL 编译器采用**可执行文法 + 静态分析 + 自动化评价**闭环：
+
+- 语法单一事实来源：`shared/formflow-core/behaviorDsl/grammar.ts`（Chevrotain），
+  旧正则实现保留在 `parserRegex.ts` 仅作差分 golden；`parser.ts` 为生产入口。
+- 静态分析：`staticAnalysis.ts`（FFR304-309）+ `signatures.ts`（动作签名/语境矩阵）。
+- 参考语义：`referenceSemantics.ts`（文档 11.x 的可执行 oracle）与
+  `modelChecker.ts`（TS 有界显式状态模型检查器，检测触发链循环与确定性）。
+- 评价流水线：符合性套件（`conformance/`，锚定本文档每条 MUST/FFR 码）、
+  新旧差分、GAST 模糊测试（`scripts/fuzz-dsl.ts`）、性质测试（fast-check）、
+  DSL 级变异测试（`scripts/mutate-dsl.ts`）、运算符互补性机械化验证
+  （`verification/`，含快照）。
+- 统一门禁：`npx tsx scripts/dsl-gates.ts`（符合性 100%、差分分歧 0、
+  模糊 0 crash、变异得分 ≥90%、1000 规则 lint ≤2s、确定性哈希一致）。
+
+文档-实现关系：本文档为语义权威；实现与文档冲突时以本文档为准，
+冲突用例进入符合性套件锁定语义。已知的两处文档修复：
+字符串内允许 `->`（旧正则会把字符串里的箭头误当规则箭头）与
+一行两条规则会被拒绝（旧实现静默吞并）。
+
+运行时语义审计（参考语义差分驱动）已修复的缺陷：
+
+- `behaviorEngine` 字段变化不再触发所有 `fieldChange` 规则，只命中
+  `trigger.fieldName` 与被修改字段一致的规则（文档 11.4）；
+- `isEmpty` / `isNotEmpty` 按本文档把空数组视为空值（此前只认
+  `null` / `undefined` / 空串）；
+- `behaviorEngine` 补齐守卫动作实现（必填/任一/格式/范围/长度/脏/只读/比较），
+  与真实运行时 formLinkage 的校验与提示措辞一致；
+- 条件/守卫比较统一“可比化”语义（数字、日期字符串、文本），
+  formLinkage / behaviorEngine / 参考语义三处求值一致；
+- 排序运算符（`>`/`<=`、`<`/`>=`）改为精确取反语义（`<=` := 非 `>`，
+  `>=` := 非 `<`），对 NaN / 空值等不可比输入保证 when/else 恰有一个分支
+  命中（文档 8/11.5）；正常数值/文本排序结果不变。全值域 14 对反向运算符
+  严格互补，验证快照记录于 `verification/operator-complementarity.snapshot.json`。
+
+真实表单运行时（formLinkage）已纳入与参考语义的差分/模糊流水线
+（`ui/src/services/engine/runtimeDifferential.ts`，生成程序逐事件比较
+字段值/组件状态/消息/流程/选项/守卫失败），并在门禁中常驻执行。

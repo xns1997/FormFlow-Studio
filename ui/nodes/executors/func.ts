@@ -355,6 +355,119 @@ registerExecutor('func-protect-workbook', async (ctx) => {
   };
 });
 
+function renderChartSvg(chartType: string, labels: string[], values: number[], title: string): string {
+  const width = 400, height = 250, padding = 40;
+  const plotLeft = padding;
+  const plotRight = width - padding;
+  const plotTop = 30;
+  const plotBottom = height - padding;
+  const plotWidth = plotRight - plotLeft;
+  const plotHeight = plotBottom - plotTop;
+  const maxVal = Math.max(...values, 1);
+  const barWidth = Math.max(2, plotWidth / Math.max(labels.length, 1) - 4);
+  const xAt = (i: number) => labels.length <= 1 ? (plotLeft + plotRight) / 2 : plotLeft + i * (plotWidth / (labels.length - 1));
+  const yAt = (v: number) => plotBottom - (v / maxVal) * plotHeight;
+  const hue = (i: number) => labels.length > 1 ? (i * 360 / labels.length) % 360 : 220;
+
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
+  svg += `<rect width="${width}" height="${height}" fill="#f8fafc" rx="8"/>`;
+  svg += `<text x="${width / 2}" y="20" text-anchor="middle" font-size="12" font-weight="bold" fill="#1e293b">${title || '图表'}</text>`;
+
+  if (chartType === 'bar') {
+    labels.forEach((label, i) => {
+      const barHeight = (values[i] / maxVal) * plotHeight;
+      const x = plotLeft + i * (plotWidth / labels.length) + 2;
+      const y = plotBottom - barHeight;
+      svg += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" fill="hsl(${hue(i)}, 70%, 60%)" rx="2"/>`;
+      svg += `<text x="${x + barWidth / 2}" y="${plotBottom + 14}" text-anchor="middle" font-size="8" fill="#64748b">${label.substring(0, 6)}</text>`;
+    });
+  } else if (chartType === 'pie' || chartType === 'polarArea') {
+    const total = values.reduce((a, b) => a + Math.abs(b), 0) || 1;
+    const cx = width / 2, cy = height / 2 + 10, r = Math.min(width, height) / 2 - padding;
+    let start = -Math.PI / 2;
+    labels.forEach((label, i) => {
+      const sliceAngle = (Math.abs(values[i]) / total) * Math.PI * 2;
+      const end = start + sliceAngle;
+      const radius = chartType === 'polarArea' ? Math.max(0, values[i] / maxVal) * r : r;
+      const x1 = cx + radius * Math.cos(start);
+      const y1 = cy + radius * Math.sin(start);
+      const x2 = cx + radius * Math.cos(end);
+      const y2 = cy + radius * Math.sin(end);
+      const largeArc = sliceAngle > Math.PI ? 1 : 0;
+      svg += `<path d="M${cx},${cy} L${x1},${y1} A${radius},${radius} 0 ${largeArc} 1 ${x2},${y2} Z" fill="hsl(${hue(i)}, 70%, 60%)" stroke="white" stroke-width="1"/>`;
+      start = end;
+    });
+  } else if (chartType === 'doughnut') {
+    const total = values.reduce((a, b) => a + Math.abs(b), 0) || 1;
+    const cx = width / 2, cy = height / 2 + 10, outerR = Math.min(width, height) / 2 - padding, innerR = outerR * 0.6;
+    let start = -Math.PI / 2;
+    labels.forEach((label, i) => {
+      const sliceAngle = (Math.abs(values[i]) / total) * Math.PI * 2;
+      const end = start + sliceAngle;
+      const x1o = cx + outerR * Math.cos(start), y1o = cy + outerR * Math.sin(start);
+      const x2o = cx + outerR * Math.cos(end), y2o = cy + outerR * Math.sin(end);
+      const x1i = cx + innerR * Math.cos(start), y1i = cy + innerR * Math.sin(start);
+      const x2i = cx + innerR * Math.cos(end), y2i = cy + innerR * Math.sin(end);
+      const largeArc = sliceAngle > Math.PI ? 1 : 0;
+      svg += `<path d="M${x1o},${y1o} A${outerR},${outerR} 0 ${largeArc} 1 ${x2o},${y2o} L${x2i},${y2i} A${innerR},${innerR} 0 ${largeArc} 0 ${x1i},${y1i} Z" fill="hsl(${hue(i)}, 70%, 60%)" stroke="white" stroke-width="1"/>`;
+      start = end;
+    });
+  } else if (chartType === 'radar') {
+    const cx = width / 2, cy = height / 2 + 15;
+    const r = Math.min(plotWidth, plotHeight) / 2 - 10;
+    const point = (i: number, radius: number): [number, number] => {
+      const angle = (i / labels.length) * Math.PI * 2 - Math.PI / 2;
+      return [cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius];
+    };
+    for (let ring = 1; ring <= 3; ring++) {
+      const ringPts = labels.map((_, i) => point(i, r * ring / 3).join(',')).join(' ');
+      svg += `<polygon points="${ringPts}" fill="none" stroke="#cbd5e1" stroke-width="1"/>`;
+    }
+    labels.forEach((_, i) => {
+      const [px, py] = point(i, r);
+      svg += `<line x1="${cx}" y1="${cy}" x2="${px}" y2="${py}" stroke="#cbd5e1" stroke-width="1"/>`;
+    });
+    const dataPts = labels.map((_, i) => point(i, (values[i] / maxVal) * r).join(',')).join(' ');
+    svg += `<polygon points="${dataPts}" fill="#3b82f6" fill-opacity="0.25" stroke="#3b82f6" stroke-width="2"/>`;
+    labels.forEach((label, i) => {
+      const [px, py] = point(i, r);
+      const [dx, dy] = point(i, (values[i] / maxVal) * r);
+      svg += `<circle cx="${dx}" cy="${dy}" r="3" fill="#3b82f6"/>`;
+      svg += `<text x="${px}" y="${py}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="#334155">${label.substring(0, 6)}</text>`;
+    });
+  } else if (chartType === 'scatter') {
+    const numericX = labels.map((label, i) => {
+      const n = Number(label);
+      return String(label).trim() !== '' && Number.isFinite(n) ? n : i;
+    });
+    const minX = Math.min(...numericX), maxX = Math.max(...numericX);
+    const rangeX = maxX - minX || 1;
+    const sx = (v: number) => plotLeft + ((v - minX) / rangeX) * plotWidth;
+    svg += `<line x1="${plotLeft}" y1="${plotBottom}" x2="${plotRight}" y2="${plotBottom}" stroke="#cbd5e1" stroke-width="1"/>`;
+    svg += `<line x1="${plotLeft}" y1="${plotTop}" x2="${plotLeft}" y2="${plotBottom}" stroke="#cbd5e1" stroke-width="1"/>`;
+    numericX.forEach((x, i) => {
+      const px = sx(x), py = yAt(values[i]);
+      svg += `<circle cx="${px}" cy="${py}" r="5" fill="hsl(${hue(i)}, 70%, 60%)" stroke="white" stroke-width="1"/>`;
+      svg += `<text x="${px}" y="${plotBottom + 14}" text-anchor="middle" font-size="8" fill="#64748b">${labels[i].substring(0, 6)}</text>`;
+    });
+  } else {
+    // line / area
+    const pts = labels.map((_, i) => `${xAt(i)},${yAt(values[i])}`);
+    if (chartType === 'area') {
+      svg += `<polygon points="${plotLeft},${plotBottom} ${pts.join(' ')} ${plotRight},${plotBottom}" fill="#3b82f6" fill-opacity="0.25"/>`;
+    }
+    svg += `<polyline points="${pts.join(' ')}" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+    labels.forEach((label, i) => {
+      const x = xAt(i), y = yAt(values[i]);
+      svg += `<circle cx="${x}" cy="${y}" r="3" fill="#3b82f6"/>`;
+      svg += `<text x="${x}" y="${plotBottom + 14}" text-anchor="middle" font-size="8" fill="#64748b">${label.substring(0, 6)}</text>`;
+    });
+  }
+
+  svg += '</svg>';
+  return svg;
+}
+
 registerExecutor('func-create-chart', async (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const worksheet = inputs.worksheet as XLSX.WorkSheet | undefined;
@@ -385,56 +498,7 @@ registerExecutor('func-create-chart', async (ctx) => {
   const values = yField ? data.map(row => Number(row[yField]) || 0) : data.map(row => Number(Object.values(row)[0]) || 0);
 
   // 生成 SVG 图表
-  const width = 400, height = 250, padding = 40;
-  const maxVal = Math.max(...values, 1);
-  const barWidth = Math.max(2, (width - padding * 2) / labels.length - 4);
-
-  let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
-  svgContent += `<rect width="${width}" height="${height}" fill="#f8fafc" rx="8"/>`;
-  svgContent += `<text x="${width / 2}" y="20" text-anchor="middle" font-size="12" font-weight="bold" fill="#1e293b">${properties.title || '图表'}</text>`;
-
-  if (chartType === 'bar') {
-    labels.forEach((label, i) => {
-      const barHeight = (values[i] / maxVal) * (height - padding * 2);
-      const x = padding + i * ((width - padding * 2) / labels.length) + 2;
-      const y = height - padding - barHeight;
-      const hue = (i * 360 / labels.length) % 360;
-      svgContent += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" fill="hsl(${hue}, 70%, 60%)" rx="2"/>`;
-      svgContent += `<text x="${x + barWidth / 2}" y="${height - padding + 14}" text-anchor="middle" font-size="8" fill="#64748b">${label.substring(0, 6)}</text>`;
-    });
-  } else if (chartType === 'pie') {
-    const total = values.reduce((a, b) => a + Math.abs(b), 0) || 1;
-    let startAngle = -Math.PI / 2;
-    const cx = width / 2, cy = height / 2 + 10, r = Math.min(width, height) / 2 - padding;
-    labels.forEach((label, i) => {
-      const sliceAngle = (Math.abs(values[i]) / total) * Math.PI * 2;
-      const endAngle = startAngle + sliceAngle;
-      const x1 = cx + r * Math.cos(startAngle);
-      const y1 = cy + r * Math.sin(startAngle);
-      const x2 = cx + r * Math.cos(endAngle);
-      const y2 = cy + r * Math.sin(endAngle);
-      const largeArc = sliceAngle > Math.PI ? 1 : 0;
-      const hue = (i * 360 / labels.length) % 360;
-      svgContent += `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc} 1 ${x2},${y2} Z" fill="hsl(${hue}, 70%, 60%)" stroke="white" stroke-width="1"/>`;
-      startAngle = endAngle;
-    });
-  } else {
-    // 线图
-    const points = labels.map((_, i) => {
-      const x = padding + i * ((width - padding * 2) / Math.max(labels.length - 1, 1));
-      const y = height - padding - (values[i] / maxVal) * (height - padding * 2);
-      return `${x},${y}`;
-    });
-    svgContent += `<polyline points="${points.join(' ')}" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
-    labels.forEach((label, i) => {
-      const x = padding + i * ((width - padding * 2) / Math.max(labels.length - 1, 1));
-      const y = height - padding - (values[i] / maxVal) * (height - padding * 2);
-      svgContent += `<circle cx="${x}" cy="${y}" r="3" fill="#3b82f6"/>`;
-      svgContent += `<text x="${x}" y="${height - padding + 14}" text-anchor="middle" font-size="8" fill="#64748b">${label.substring(0, 6)}</text>`;
-    });
-  }
-
-  svgContent += '</svg>';
+  const svgContent = renderChartSvg(chartType, labels, values, String(properties.title || ''));
 
   return {
     chartCreated: true,

@@ -60,13 +60,22 @@ function aggregate(values: unknown[], kind = 'sum') {
   if (kind === 'min') return Math.min(...numbers); if (kind === 'max') return Math.max(...numbers); return numbers.reduce((sum, value) => sum + value, 0);
 }
 
+function groupKeyValue(key: string, index: number): unknown {
+  try {
+    const parts = JSON.parse(key) as unknown[];
+    return Array.isArray(parts) ? parts[index] : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function localAnalysis(templateId: string, rows: JsonObject[], parameters: JsonObject): JsonObject | undefined {
   const metrics = (parameters.metrics || []) as string[]; const dimensions = (parameters.dimensions || []) as string[]; const aggregation = String(parameters.aggregation || 'sum');
   if (templateId === 'kpi-dashboard') return { cards: Object.fromEntries(metrics.map((field) => [field, { sum: aggregate(rows.map((row) => row[field]), 'sum'), average: aggregate(rows.map((row) => row[field]), 'average'), min: aggregate(rows.map((row) => row[field]), 'min'), max: aggregate(rows.map((row) => row[field]), 'max'), count: aggregate(rows.map((row) => row[field]), 'count') }])), row_count: rows.length, detail: rows };
   if (templateId === 'group-comparison' || templateId === 'cross-table-summary') {
     const groups = new Map<string, JsonObject[]>();
     for (const row of rows) { const key = JSON.stringify(dimensions.map((field) => row[field])); groups.set(key, [...(groups.get(key) || []), row]); }
-    return { groups: [...groups.entries()].map(([key, members]) => ({ ...Object.fromEntries(dimensions.map((field, index) => [field, JSON.parse(key)[index]])), ...Object.fromEntries(metrics.map((field) => [`${aggregation}_${field}`, aggregate(members.map((row) => row[field]), aggregation)])), count: members.length })), detail: rows };
+    return { groups: [...groups.entries()].map(([key, members]) => ({ ...Object.fromEntries(dimensions.map((field, index) => [field, groupKeyValue(key, index)])), ...Object.fromEntries(metrics.map((field) => [`${aggregation}_${field}`, aggregate(members.map((row) => row[field]), aggregation)])), count: members.length })), detail: rows };
   }
   if (templateId === 'pivot-analysis') {
     const rowField = String(parameters.rowDimension); const columnField = String(parameters.columnDimension); const metric = String(parameters.metric);

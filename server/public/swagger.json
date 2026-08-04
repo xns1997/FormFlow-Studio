@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "FormFlow Studio API",
-    "version": "1.2.0",
+    "version": "2.0.0",
     "description": "FormFlow public HTTP API. Generated route coverage is enriched by curated operation descriptions."
   },
   "servers": [
@@ -397,216 +397,6 @@
           "ai"
         ],
         "summary": "DELETE /ai/profiles/{id}",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          }
-        }
-      }
-    },
-    "/ai/project-agent/sessions": {
-      "get": {
-        "tags": [
-          "ai"
-        ],
-        "summary": "GET /ai/project-agent/sessions",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "ai"
-        ],
-        "summary": "POST /ai/project-agent/sessions",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          }
-        }
-      }
-    },
-    "/ai/project-agent/sessions/{id}": {
-      "get": {
-        "tags": [
-          "ai"
-        ],
-        "summary": "GET /ai/project-agent/sessions/{id}",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "ai"
-        ],
-        "summary": "DELETE /ai/project-agent/sessions/{id}",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          }
-        }
-      }
-    },
-    "/ai/project-agent/sessions/{id}/confirm-blueprint": {
-      "post": {
-        "tags": [
-          "ai"
-        ],
-        "summary": "POST /ai/project-agent/sessions/{id}/confirm-blueprint",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          }
-        }
-      }
-    },
-    "/ai/project-agent/sessions/{id}/confirm-operation": {
-      "post": {
-        "tags": [
-          "ai"
-        ],
-        "summary": "POST /ai/project-agent/sessions/{id}/confirm-operation",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          }
-        }
-      }
-    },
-    "/ai/project-agent/sessions/{id}/confirm-plan": {
-      "post": {
-        "tags": [
-          "ai"
-        ],
-        "summary": "POST /ai/project-agent/sessions/{id}/confirm-plan",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          }
-        }
-      }
-    },
-    "/ai/project-agent/sessions/{id}/control": {
-      "post": {
-        "tags": [
-          "ai"
-        ],
-        "summary": "POST /ai/project-agent/sessions/{id}/control",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          }
-        }
-      }
-    },
-    "/ai/project-agent/sessions/{id}/turns": {
-      "post": {
-        "tags": [
-          "ai"
-        ],
-        "summary": "POST /ai/project-agent/sessions/{id}/turns",
         "parameters": [
           {
             "name": "id",
@@ -1693,6 +1483,206 @@
         }
       }
     },
+    "/datasources/api/datasources/{projectId}": {
+      "get": {
+        "tags": [
+          "datasources"
+        ],
+        "summary": "GET /datasources/api/datasources/{projectId}",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "datasources"
+        ],
+        "summary": "POST /datasources/api/datasources/{projectId}",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/datasources/api/datasources/{projectId}/{id}": {
+      "get": {
+        "tags": [
+          "datasources"
+        ],
+        "summary": "GET /datasources/api/datasources/{projectId}/{id}",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "datasources"
+        ],
+        "summary": "DELETE /datasources/api/datasources/{projectId}/{id}",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/datasources/api/datasources/{projectId}/{id}/query": {
+      "post": {
+        "tags": [
+          "datasources"
+        ],
+        "summary": "POST /datasources/api/datasources/{projectId}/{id}/query",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/datasources/api/datasources/{projectId}/{id}/test": {
+      "post": {
+        "tags": [
+          "datasources"
+        ],
+        "summary": "POST /datasources/api/datasources/{projectId}/{id}/test",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/datasources/api/datasources/test": {
+      "post": {
+        "tags": [
+          "datasources"
+        ],
+        "summary": "POST /datasources/api/datasources/test",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
     "/debug/logs": {
       "get": {
         "tags": [
@@ -1861,6 +1851,66 @@
           "docs"
         ],
         "summary": "PUT /docs/state",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/errors": {
+      "post": {
+        "tags": [
+          "errors"
+        ],
+        "summary": "POST /errors",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "errors"
+        ],
+        "summary": "GET /errors",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "errors"
+        ],
+        "summary": "DELETE /errors",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/errors/summary": {
+      "get": {
+        "tags": [
+          "errors"
+        ],
+        "summary": "GET /errors/summary",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -3263,6 +3313,485 @@
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/v4/threads": {
+      "get": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "GET /ai/project-agent/v4/threads",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "POST /ai/project-agent/v4/threads",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/v4/threads/history": {
+      "get": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "GET /ai/project-agent/v4/threads/history",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/v4/threads/{id}": {
+      "get": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "GET /ai/project-agent/v4/threads/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "PATCH /ai/project-agent/v4/threads/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "DELETE /ai/project-agent/v4/threads/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/v4/threads/{id}/restore": {
+      "post": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "POST /ai/project-agent/v4/threads/{id}/restore",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/v4/threads/{id}/projects": {
+      "put": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "PUT /ai/project-agent/v4/threads/{id}/projects",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/v4/threads/{id}/permanent": {
+      "delete": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "DELETE /ai/project-agent/v4/threads/{id}/permanent",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/v4/threads/{id}/turns": {
+      "post": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "POST /ai/project-agent/v4/threads/{id}/turns",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/v4/threads/{id}/turns/retry": {
+      "post": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "POST /ai/project-agent/v4/threads/{id}/turns/retry",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/v4/threads/{id}/plan/confirm": {
+      "post": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "POST /ai/project-agent/v4/threads/{id}/plan/confirm",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/v4/threads/{id}/plan/reject": {
+      "post": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "POST /ai/project-agent/v4/threads/{id}/plan/reject",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/v4/threads/{id}/operations/{operationId}/decision": {
+      "post": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "POST /ai/project-agent/v4/threads/{id}/operations/{operationId}/decision",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "operationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/v4/threads/{id}/control": {
+      "post": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "POST /ai/project-agent/v4/threads/{id}/control",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/v4/threads/{id}/steer": {
+      "post": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "POST /ai/project-agent/v4/threads/{id}/steer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/v4/threads/{id}/events": {
+      "get": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "GET /ai/project-agent/v4/threads/{id}/events",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/v4/capability-bundles": {
+      "get": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "GET /ai/project-agent/v4/capability-bundles",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "POST /ai/project-agent/v4/capability-bundles",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/v4/capability-bundles/{id}/scopes": {
+      "get": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "GET /ai/project-agent/v4/capability-bundles/{id}/scopes",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/v4/capability-bundles/{id}": {
+      "put": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "PUT /ai/project-agent/v4/capability-bundles/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/v4/capability-bundles/{id}/validate": {
+      "post": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "POST /ai/project-agent/v4/capability-bundles/{id}/validate",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/ai/project-agent/v4/capability-bundles/{id}/publish": {
+      "post": {
+        "tags": [
+          "project-agent-v4"
+        ],
+        "summary": "POST /ai/project-agent/v4/capability-bundles/{id}/publish",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
           }
         }
       }

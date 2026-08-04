@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { DataRelation, SrcSheetInfo, SrcTableEntry, TableConfig } from '../project/types';
-import { createDesignFromTemplate } from './designTemplates';
+import { createDesignFromTemplate, DESIGN_TEMPLATES } from './designTemplates';
+import { FORM_TEMPLATES } from '../../../shared/form-templates';
 
 const masterSheet: SrcSheetInfo = {
   name: '订单',
@@ -410,4 +411,11 @@ test('master-detail and skeleton templates expose runtime preview guidance even 
   });
   assert.equal(lookupSkeleton.templateParameters?.exactConfiguration?.runtime?.workflows?.length, 0);
   assert.match(String(lookupSkeleton.templateParameters?.exactConfiguration?.runtime?.diagnostics?.[0] || ''), /查询字段/);
+});
+
+test('designer template menu stays in sync with the shared form template catalog', () => {
+  assert.deepEqual(
+    DESIGN_TEMPLATES.map(({ key, label, description, formMode }) => ({ key, label, description, formMode })),
+    FORM_TEMPLATES.map(({ key, label, description, formMode }) => ({ key, label, description, formMode })),
+  );
 });

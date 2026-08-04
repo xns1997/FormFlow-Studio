@@ -150,7 +150,7 @@ button.nav-link { border-color: transparent; background: transparent; font: inhe
 .page-header h2 { font-size: clamp(24px, 2.4vw, 32px); font-weight: 720; letter-spacing: -0.035em; }
 .page-header p { margin-top: 6px; color: var(--muted); font-size: 13px; line-height: 1.45; }
 
-.projects-page { max-width: 1480px; margin: 0 auto; }
+.projects-page { width: 100%; max-width: none; margin: 0 auto; }
 
 .projects-toolbar {
   position: sticky;
@@ -190,6 +190,8 @@ button.nav-link { border-color: transparent; background: transparent; font: inhe
 .projects-view-toggle button.active { background: var(--panel); box-shadow: 0 2px 7px rgba(24, 24, 28, 0.1); }
 
 .projects-page .projects-grid { gap: 18px; }
+.projects-page .projects-list { gap: 10px; }
+.projects-page .projects-compact { gap: 14px; }
 
 .projects-page .project-card {
   overflow: hidden;
@@ -208,11 +210,12 @@ button.nav-link { border-color: transparent; background: transparent; font: inhe
 }
 
 .projects-page .card-cover { border-radius: 14px; }
-.projects-page .card-name { font-size: 15px; font-weight: 650; }
-.projects-page .project-card-grid { min-height: 154px; padding: 18px; }
+.projects-page .card-name { font-size: 15px; font-weight: 700; }
+.projects-page .project-card-grid { min-height: 164px; padding: 18px; }
 .projects-page .project-card-grid .card-footer { border-top-color: rgba(60, 60, 67, 0.1); }
 .projects-page .card-mode-btn { min-height: 32px; border: 0; border-radius: 10px; background: var(--accent-soft); }
 .projects-page .card-actions .ui-btn { min-height: 28px; border-radius: 8px; }
+.projects-page .project-card-compact { border-radius: 16px; }
 
 .modal-overlay,
 .ant-modal-mask { -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }

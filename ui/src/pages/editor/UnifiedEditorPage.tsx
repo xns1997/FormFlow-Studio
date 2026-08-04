@@ -30,7 +30,8 @@ import DataPreviewPage from './DataPreviewPage';
 import SettingsPage from './SettingsPage';
 import TemplateOperationCenter from './TemplateOperationCenter';
 import { getBehaviorEventDoc } from '../../services/io/behaviorDocs';
-import { diagnoseForm, findUnrepresentedColumns, summarizeFormDiagnostics } from '../../services/formGeneration/formDiagnostics';
+import { diagnoseForm, findUnrepresentedColumns, summarizeFormDiagnostics, type FormDiagnostic } from '../../services/formGeneration/formDiagnostics';
+import { applyDiagnosticFix, applyDiagnosticFixes, type FixOperations } from '../../services/formGeneration/fixApplier';
 import { generateMissingFieldComponents } from '../../services/formGeneration/formScaffold';
 import { applyBehaviorDslToComponents } from '../../services/engine/behaviorDsl';
 import { buildDevelopmentQuality } from '../../services/formGeneration/formQuality';
@@ -435,6 +436,55 @@ export default function UnifiedEditorPage() {
       return updated;
     }));
   }, [activeFormId, designer, store]);
+
+  const fixContext = useMemo(
+    () => ({ components: designer.components, tables: project?.srcTable || [], workflows: allWorkflows }),
+    [designer.components, project?.srcTable, allWorkflows],
+  );
+
+  const buildDiagnosticFixOps = useCallback((): FixOperations => {
+    const state = useProjectStore.getState();
+    return {
+      updateComponentProps: (componentId, patch) => designer.updateComponentProps(componentId, patch),
+      updateComponentField: (componentId, fieldName) => designer.updateComponentField(componentId, fieldName),
+      updateComponentGeometry: (componentId, geometry) => designer.updateComponentGeometry(componentId, geometry),
+      addComponent: (type, position) => designer.addComponent(type, position?.x ?? 16, position?.y ?? 16, undefined, { label: '字段' }),
+      updateWorkflow: (workflowId, patch) => { void state.updateWorkflow(workflowId, patch); },
+      updateTableSheetConfig: (tableId, sheetName, patch) => { void state.updateTableSheetConfig(tableId, sheetName, patch); },
+      navigateTo: (target) => { if (target === 'data') switchToData(); },
+    };
+  }, [designer, switchToData]);
+
+  const recheckFormDiagnostics = useCallback(() => {
+    const state = useProjectStore.getState();
+    return diagnoseForm(designer.components, state.project?.srcTable || [], state.project?.workflows || [], designer.formWindow);
+  }, [designer]);
+
+  const handleApplyDiagnosticFix = useCallback((diagnostic: FormDiagnostic) => {
+    structuredEditPendingRef.current = true;
+    const outcome = applyDiagnosticFix(diagnostic, fixContext, buildDiagnosticFixOps());
+    if (outcome.ok) notification.success({ message: '已尝试修复', description: outcome.message });
+    else notification.warning({ message: '无法自动修复', description: outcome.message });
+  }, [fixContext, buildDiagnosticFixOps]);
+
+  const handleFixAllDiagnostics = useCallback(() => {
+    if (!formDiagnostics.some((item) => item.quickFix)) return;
+    structuredEditPendingRef.current = true;
+    const summary = applyDiagnosticFixes(formDiagnostics, fixContext, buildDiagnosticFixOps(), { recheck: recheckFormDiagnostics });
+    if (summary.applied > 0) {
+      notification.success({
+        message: `已尝试修复 ${summary.applied} 个问题`,
+        description: summary.remainingCount ? `还有 ${summary.remainingCount} 个需要手动处理。` : '全部自动修复已应用。',
+      });
+    } else if (summary.remainingCount > 0 || summary.failed > 0) {
+      notification.warning({
+        message: '部分问题需要手动处理',
+        description: `${summary.messages[0] || ''}${summary.remainingCount ? `（剩余 ${summary.remainingCount} 个）` : ''}`,
+      });
+    } else {
+      notification.info({ message: '当前没有可自动修复的问题' });
+    }
+  }, [formDiagnostics, fixContext, buildDiagnosticFixOps, recheckFormDiagnostics]);
 
   useEffect(() => {
     if (!activeFormId || !designHydratedRef.current || !structuredEditPendingRef.current || editMode === 'data' || editMode === 'settings') return;
@@ -951,9 +1001,21 @@ export default function UnifiedEditorPage() {
 
         {/* 中间：行为模式保留只读可选择表单；流程模式使用纯流程画布 */}
         <div className="unified-center">
-          {editMode === 'design' && <SectionErrorBoundary name="表单设计区"><div className="chain-form-pane"><DesignCanvas designer={designer} formId={activeForm?.id} /></div></SectionErrorBoundary>}
+          {editMode === 'design' && <SectionErrorBoundary name="表单设计区"><div className="chain-form-pane"><DesignCanvas
+            designer={designer}
+            formId={activeForm?.id}
+            onNavigateToData={switchToData}
+            onBeforeDesignMutation={() => { structuredEditPendingRef.current = true; }}
+          /></div></SectionErrorBoundary>}
           {editMode === 'behavior' && <SectionErrorBoundary name="行为预览区"><div className="chain-form-pane behavior-readonly-pane">
-            <DesignCanvas designer={designer} formId={activeForm?.id} readOnly hideToolbar />
+            <DesignCanvas
+              designer={designer}
+              formId={activeForm?.id}
+              readOnly
+              hideToolbar
+              onNavigateToData={switchToData}
+              onBeforeDesignMutation={() => { structuredEditPendingRef.current = true; }}
+            />
             {designer.mode === 'design' && <SelectedControlInfo
               component={designer.selectedId ? designer.components.find((component) => component.id === designer.selectedId) || null : null}
             />}
@@ -1270,10 +1332,7 @@ export default function UnifiedEditorPage() {
                 <span style={{ color: 'var(--muted)', fontSize: 12 }}>{diagnostic.detail}</span>
               </div>
               {diagnostic.componentId && <button type="button" className="ui-btn ui-btn-xs" onClick={() => { designer.setSelectedId(diagnostic.componentId!); setShowDiagnostics(false); }}>定位</button>}
-              {diagnostic.componentId && diagnostic.quickFix && <button type="button" className="ui-btn ui-btn-primary ui-btn-xs" onClick={() => {
-                structuredEditPendingRef.current = true;
-                designer.updateComponentProps(diagnostic.componentId!, diagnostic.quickFix!.props);
-              }}>{diagnostic.quickFix.label}</button>}
+              {diagnostic.quickFix && <button type="button" className="ui-btn ui-btn-primary ui-btn-xs" onClick={() => handleApplyDiagnosticFix(diagnostic)}>尝试修复：{diagnostic.quickFix.label}</button>}
             </div>
           ))}
           {unrepresentedColumns.length > 0 && (
@@ -1293,6 +1352,12 @@ export default function UnifiedEditorPage() {
             </div>
           )}
         </div>
+        {formDiagnostics.some((diagnostic) => diagnostic.quickFix) && (
+          <div className="modal-footer">
+            <button type="button" className="ui-btn ui-btn-primary" onClick={handleFixAllDiagnostics}>✨ 一键尝试修复</button>
+            <button type="button" className="ui-btn" onClick={() => setShowDiagnostics(false)}>关闭</button>
+          </div>
+        )}
       </Modal>
 
     </div>

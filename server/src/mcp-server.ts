@@ -58,6 +58,10 @@ export function createMcpServer(role: McpRole, context: ToolContext) {
     const result = await executeFormFlowTool('catalog.components.list', {}, scopedContext);
     return { contents: [{ uri: uri.href, mimeType: 'application/json', text: JSON.stringify(result.ok ? result.data : result) }] };
   });
+  if (role === 'form') server.registerResource('form-template-catalog', 'formflow://catalog/form-templates', { mimeType: 'application/json', description: 'FormFlow 表单模板目录' }, async (uri) => {
+    const result = await executeFormFlowTool('catalog.form_templates.list', {}, scopedContext);
+    return { contents: [{ uri: uri.href, mimeType: 'application/json', text: JSON.stringify(result.ok ? result.data : result) }] };
+  });
   if (role === 'workflow') server.registerResource('workflow-node-catalog', 'formflow://catalog/workflow-nodes', { mimeType: 'application/json', description: 'FormFlow 工作流节点目录' }, async (uri) => {
     const result = await executeFormFlowTool('catalog.workflow_nodes.list', {}, scopedContext);
     return { contents: [{ uri: uri.href, mimeType: 'application/json', text: JSON.stringify(result.ok ? result.data : result) }] };

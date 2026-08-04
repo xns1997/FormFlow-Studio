@@ -119,6 +119,37 @@ const EXPLANATIONS: Record<string, DiagnosticExplanation> = {
       { label: '更换主键字段', description: '选择一个唯一且非空的字段作为主键' },
     ],
   },
+  'empty-form': {
+    cause: '表单还没有任何控件，无法录入或展示数据。',
+    impact: '预览时只有一个空表单，用户无法填写任何内容。',
+    fixes: [
+      { label: '添加默认输入框', description: '一键在表单顶部添加文本输入控件', auto: true },
+      { label: '从模板创建', description: '使用模板快速搭建完整表单' },
+    ],
+  },
+  'select-no-options': {
+    cause: '下拉/多选/单选控件没有配置任何选项。',
+    impact: '用户无法选择任何值，字段形同虚设。',
+    fixes: [
+      { label: '添加默认选项', description: '从数据列样本生成，或添加占位选项', auto: true },
+      { label: '配置动态选项', description: '绑定数据列作为动态选项来源' },
+    ],
+  },
+  'off-canvas': {
+    cause: '控件位于表单可视区域之外，可能被整体拖出或窗口缩小导致。',
+    impact: '预览时看不到或无法操作该控件。',
+    fixes: [
+      { label: '移回表单内', description: '自动将控件移入可视区域', auto: true },
+    ],
+  },
+  'missing-key': {
+    cause: '表单用到的数据表没有配置主键。',
+    impact: '写入数据时无法定位已有记录，可能导致重复或覆盖。',
+    fixes: [
+      { label: '自动选择主键', description: '从数据中挑选唯一且非空的列作为主键', auto: true },
+      { label: '前往数据工作区', description: '手动配置主键或修复数据' },
+    ],
+  },
 };
 
 export function getDiagnosticExplanation(diagnosticId: string): DiagnosticExplanation | undefined {
@@ -138,6 +169,10 @@ const CATEGORY_MAP: Record<string, string> = {
   'missing-flow': 'workflow',
   'broken-edge': 'workflow',
   'invalid-key': 'data-source',
+  'empty-form': 'layout',
+  'select-no-options': 'data-source',
+  'off-canvas': 'layout',
+  'missing-key': 'data-source',
 };
 
 export function getDiagnosticCategory(diagnosticId: string): DiagnosticCategory {

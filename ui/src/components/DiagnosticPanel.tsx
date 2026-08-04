@@ -5,7 +5,7 @@
 import React, { useMemo, useState } from 'react';
 import type { FormDiagnostic } from '../services/formGeneration/formDiagnostics';
 import { getDiagnosticExplanation, getDiagnosticCategory } from '../services/formGeneration/diagnosticCategories';
-import type { ManagedError, ErrorCategory } from '../services/engine/errorManager';
+import type { ManagedError, ErrorCategory, ErrorFix } from '../services/engine/errorManager';
 import CollapsiblePanel from './CollapsiblePanel';
 
 interface DiagnosticPanelProps {
@@ -14,7 +14,9 @@ interface DiagnosticPanelProps {
   open: boolean;
   onToggle: (next: boolean) => void;
   onJumpToComponent?: (componentId: string) => void;
-  onApplyFix?: (diagnosticId: string, props: Record<string, unknown>) => void;
+  onApplyFix?: (diagnostic: FormDiagnostic) => void;
+  onFixAll?: (diagnostics: FormDiagnostic[]) => void;
+  onRuntimeFix?: (error: ManagedError, fix: ErrorFix) => void;
 }
 
 type SeverityFilter = 'all' | 'error' | 'warning' | 'info';
@@ -31,8 +33,9 @@ interface UnifiedEntry {
   category?: string;
   cause?: string;
   impact?: string;
-  quickFix?: { label: string; props: Record<string, unknown> };
+  diagnostic?: FormDiagnostic;
   fixes?: Array<{ label: string; description: string }>;
+  runtimeError?: ManagedError;
 }
 
 const SEVERITY_META: Record<string, { label: string; color: string; bg: string }> = {
@@ -59,7 +62,7 @@ const CATEGORY_LABELS: Record<ErrorCategory, { label: string; icon: string }> = 
   unknown: { label: '其他', icon: '❓' },
 };
 
-export default function DiagnosticPanel({ diagnostics, runtimeErrors = [], open, onToggle, onJumpToComponent, onApplyFix }: DiagnosticPanelProps) {
+export default function DiagnosticPanel({ diagnostics, runtimeErrors = [], open, onToggle, onJumpToComponent, onApplyFix, onFixAll, onRuntimeFix }: DiagnosticPanelProps) {
   const [severity, setSeverity] = useState<SeverityFilter>('all');
   const [source, setSource] = useState<SourceFilter>('all');
   const [search, setSearch] = useState('');
@@ -78,7 +81,7 @@ export default function DiagnosticPanel({ diagnostics, runtimeErrors = [], open,
       category: getDiagnosticCategory(d.id).label,
       cause: getDiagnosticExplanation(d.id)?.cause,
       impact: getDiagnosticExplanation(d.id)?.impact,
-      quickFix: d.quickFix,
+      diagnostic: d,
       fixes: getDiagnosticExplanation(d.id)?.fixes,
     }));
 
@@ -94,6 +97,7 @@ export default function DiagnosticPanel({ diagnostics, runtimeErrors = [], open,
       cause: e.cause,
       impact: e.impact,
       fixes: e.fixes,
+      runtimeError: e,
     }));
 
     return [...designEntries, ...runtimeEntries].sort((a, b) => {
@@ -117,6 +121,7 @@ export default function DiagnosticPanel({ diagnostics, runtimeErrors = [], open,
 
   const errorCount = allEntries.filter((d) => d.severity === 'error').length;
   const warnCount = allEntries.filter((d) => d.severity === 'warning').length;
+  const fixableCount = diagnostics.filter((d) => d.quickFix && d.quickFix.auto !== false).length;
 
   const badge = (
     <>
@@ -134,6 +139,17 @@ export default function DiagnosticPanel({ diagnostics, runtimeErrors = [], open,
       open={open}
       onToggle={onToggle}
       className="diagnostic-panel"
+      actions={
+        <button
+          type="button"
+          className="ui-btn ui-btn-xs ui-btn-primary diagnostic-fix-all"
+          disabled={fixableCount === 0}
+          title="依次尝试应用所有可自动修复的问题，无法自动修复的会保留提示"
+          onClick={() => onFixAll?.(diagnostics)}
+        >
+          ✨ 一键尝试修复{fixableCount > 0 ? ` (${fixableCount})` : ''}
+        </button>
+      }
     >
       <div className="diagnostic-panel__filters">
         <input
@@ -231,23 +247,25 @@ export default function DiagnosticPanel({ diagnostics, runtimeErrors = [], open,
                           定位控件
                         </button>
                       )}
-                      {d.quickFix && (
+                      {d.diagnostic?.quickFix && (
                         <button
                           type="button"
                           className="ui-btn ui-btn-xs ui-btn-primary diagnostic-action"
-                          onClick={() => onApplyFix?.(d.id, d.quickFix!.props)}
+                          title={d.diagnostic.quickFix.description}
+                          onClick={() => onApplyFix?.(d.diagnostic!)}
                         >
-                          {d.quickFix.label}
+                          尝试修复：{d.diagnostic.quickFix.label}
                         </button>
                       )}
                       {d.fixes?.map((fix, i) => (
                         <button
                           key={i}
                           type="button"
-                          className="ui-btn ui-btn-xs diagnostic-action"
+                          className={`ui-btn ui-btn-xs diagnostic-action ${(fix as ErrorFix).auto ? 'diagnostic-action--auto' : ''}`}
                           title={fix.description}
+                          onClick={d.runtimeError ? () => onRuntimeFix?.(d.runtimeError!, fix as ErrorFix) : undefined}
                         >
-                          {fix.label}
+                          {fix.label}{(fix as ErrorFix).auto ? ' ✨' : ''}
                         </button>
                       ))}
                     </div>

@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { message } from 'antd';
 import { type ResizeHandle, useDesigner } from './useDesigner';
 import { DesignerIcon } from './icons';
 import { PreviewCanvas } from './PreviewCanvas';
 import { useProjectStore } from '../project/store';
 import Modal, { ModalFooter, ModalHeader } from '../components/Modal';
 import { AntdCompatSelect } from '../components/AntdFormControls';
-import { SectionErrorBoundary } from '../components/SectionErrorBoundary';
+import { SectionErrorBoundary, dispatchSectionRetry, getSectionNameFromError } from '../components/SectionErrorBoundary';
 import {
   controlOptionsFromSamples,
   FIELD_DROP_COMMITTED_EVENT,
@@ -15,12 +16,13 @@ import {
 } from '../services/formGeneration/fieldControlRecommendation';
 import { getCanvasToolbarAvailability } from './canvasToolbarModel';
 import { projectApi } from '../services/io/api';
-import { diagnoseForm } from '../services/formGeneration/formDiagnostics';
+import { diagnoseForm, type FormDiagnostic } from '../services/formGeneration/formDiagnostics';
+import { applyDiagnosticFix, applyDiagnosticFixes, type FixContext, type FixOperations } from '../services/formGeneration/fixApplier';
 import DiagnosticPanel from '../components/DiagnosticPanel';
 import ComponentInspector from '../components/ComponentInspector';
 import DataFlowTracer from '../components/DataFlowTracer';
 import OnboardingGuide, { hasCompletedOnboarding, markOnboardingCompleted } from '../components/OnboardingGuide';
-import { getErrors, onError, installGlobalErrorHandlers, type ManagedError } from '../services/engine/errorManager';
+import { dismissError, getErrors, onError, installGlobalErrorHandlers, type ErrorFix, type ManagedError } from '../services/engine/errorManager';
 import { parseJsonOrNull } from '../services/engine/safeJson';
 
 interface Props {
@@ -28,9 +30,11 @@ interface Props {
   readOnly?: boolean;
   hideToolbar?: boolean;
   formId?: string;
+  onNavigateToData?: () => void;
+  onBeforeDesignMutation?: () => void;
 }
 
-export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, formId }: Props) {
+export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, formId, onNavigateToData, onBeforeDesignMutation }: Props) {
   const { containerRef, initGraph, mode } = designer;
   const lastPlacementRef = useRef<{ type: string; x: number; y: number; at: number } | null>(null);
   const workflows = useProjectStore((state) => state.project?.workflows || []);
@@ -53,7 +57,10 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
   const toolbarAvailability = getCanvasToolbarAvailability(designer);
 
   // Diagnostic computation
-  const diagnostics = useMemo(() => diagnoseForm(designer.components, tables, workflows), [designer.components, tables, workflows]);
+  const diagnostics = useMemo(
+    () => diagnoseForm(designer.components, tables, workflows, designer.formWindow),
+    [designer.components, designer.formWindow, tables, workflows],
+  );
   const selectedComponent = designer.selectedIds.length === 1 ? designer.components.find((c) => c.id === designer.selectedIds[0]) ?? null : null;
 
   // Install global error handlers and subscribe to ErrorManager
@@ -64,12 +71,79 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
     return unsub;
   }, []);
 
-  // Quick Fix handler
-  const handleApplyFix = useCallback((diagnosticId: string, props: Record<string, unknown>) => {
-    const componentId = diagnosticId.split(':')[1];
-    if (!componentId) return;
-    designer.updateComponentProps(componentId, props);
+  const fixContext = useMemo<FixContext>(() => ({ components: designer.components, tables, workflows }), [designer.components, tables, workflows]);
+
+  const buildFixOperations = useCallback((): FixOperations => {
+    const store = useProjectStore.getState();
+    return {
+      updateComponentProps: (componentId, patch) => designer.updateComponentProps(componentId, patch),
+      updateComponentField: (componentId, fieldName) => designer.updateComponentField(componentId, fieldName),
+      updateComponentGeometry: (componentId, geometry) => designer.updateComponentGeometry(componentId, geometry),
+      addComponent: (type, position) => designer.addComponent(type, position?.x ?? 16, position?.y ?? 16, undefined, { label: '字段' }),
+      updateWorkflow: (workflowId, patch) => { void store.updateWorkflow(workflowId, patch); },
+      updateTableSheetConfig: (tableId, sheetName, patch) => { void store.updateTableSheetConfig(tableId, sheetName, patch); },
+      navigateTo: (target) => { if (target === 'data') onNavigateToData?.(); },
+    };
+  }, [designer, onNavigateToData]);
+
+  const recheckDiagnostics = useCallback(() => {
+    const state = useProjectStore.getState();
+    return diagnoseForm(designer.components, state.project?.srcTable || [], state.project?.workflows || [], designer.formWindow);
   }, [designer]);
+
+  // Quick Fix handler — applies a single diagnostic's quick fix.
+  const handleApplyFix = useCallback((diagnostic: FormDiagnostic) => {
+    if (readOnly) { message.info('预览模式下不能修改，请先切换到设计模式。'); return; }
+    onBeforeDesignMutation?.();
+    const outcome = applyDiagnosticFix(diagnostic, fixContext, buildFixOperations());
+    if (outcome.ok) message.success(outcome.message);
+    else message.warning(outcome.message);
+  }, [readOnly, onBeforeDesignMutation, fixContext, buildFixOperations]);
+
+  // One-click fix-all — repeatedly applies auto fixes, rechecking between
+  // applications so cascading issues are resolved too.
+  const handleFixAll = useCallback((items: FormDiagnostic[]) => {
+    if (readOnly) { message.info('预览模式下不能修改，请先切换到设计模式。'); return; }
+    if (!items.some((item) => item.quickFix)) return;
+    onBeforeDesignMutation?.();
+    const summary = applyDiagnosticFixes(items, fixContext, buildFixOperations(), { recheck: recheckDiagnostics });
+    if (summary.applied > 0) {
+      message.success(`已尝试修复 ${summary.applied} 个问题${summary.remainingCount ? `，还剩 ${summary.remainingCount} 个需要手动处理` : ''}`);
+    } else if (summary.navigated > 0) {
+      message.info(summary.messages[0]);
+    } else if (summary.failed > 0) {
+      message.warning(`有 ${summary.failed} 个问题无法自动修复，请按提示手动调整。`);
+    } else {
+      message.warning('当前没有可自动修复的问题。');
+    }
+  }, [readOnly, onBeforeDesignMutation, fixContext, buildFixOperations, recheckDiagnostics]);
+
+  // Runtime fix handler — 把诊断面板里的修复建议变成真实动作。
+  const handleRuntimeFix = useCallback((error: ManagedError, fix: ErrorFix) => {
+    switch (fix.action) {
+      case 'refresh':
+        window.location.reload();
+        return;
+      case 'ignore':
+        if (dismissError(error.id)) message.info('已忽略该错误');
+        return;
+      case 'retry': {
+        const section = getSectionNameFromError(error);
+        if (section) {
+          dispatchSectionRetry(section);
+          message.success(`已重试「${section}」`);
+        } else {
+          window.location.reload();
+        }
+        return;
+      }
+      case 'reconfigure':
+        message.info(fix.description || '请按提示调整运行环境后重试');
+        return;
+      default:
+        window.location.reload();
+    }
+  }, []);
 
   useEffect(() => {
     if (mode !== 'preview' || !projectId) { setRuntimeTables(tables); return; }
@@ -330,6 +404,8 @@ export function DesignCanvas({ designer, readOnly = false, hideToolbar = false, 
             onToggle={setDiagnosticOpen}
             onJumpToComponent={(id) => designer.setSelectedId?.(id)}
             onApplyFix={handleApplyFix}
+            onFixAll={handleFixAll}
+            onRuntimeFix={handleRuntimeFix}
           />
         </SectionErrorBoundary>
         {selectedComponent && (

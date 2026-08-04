@@ -16,6 +16,8 @@ export interface RetryPolicy {
 export interface TransportRequestInit extends RequestInit {
   queueWhenOffline?: boolean;
   baseRevision?: string;
+  /** Per-request timeout override; falls back to the transport default. */
+  timeoutMs?: number;
 }
 
 function abortableDelay(milliseconds: number, signal: AbortSignal) {
@@ -186,7 +188,7 @@ export function createHttpTransport(options: {
     let lastError: unknown;
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       try {
-        const response = await fetchOnce(path, init, options.timeoutMs);
+        const response = await fetchOnce(path, init, init.timeoutMs || options.timeoutMs);
         return response;
       } catch (error) {
         lastError = error;

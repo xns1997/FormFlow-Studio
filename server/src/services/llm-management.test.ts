@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -66,4 +66,11 @@ test('project agent profile follows the configured orchestrator agent', () => {
   assert.equal(llmManagement.getProjectAgentProfileId(context), 'default-cloud');
   llmManagement.saveAgent({ ...agent, name: agent.name, scope: agent.scope, modelProfileId: 'default-local', definition: agent.definition }, context);
   assert.equal(llmManagement.getProjectAgentProfileId(context), 'default-local');
+});
+
+test('corrupt store falls back to builtin seed configuration instead of crashing', () => {
+  writeFileSync(process.env.LLM_MANAGEMENT_STORE_PATH!, '{not valid json');
+  assert.doesNotThrow(() => llmManagement.listProviders({}));
+  assert.ok(llmManagement.listProviders({}).length > 0);
+  assert.ok(llmManagement.getAgent('project-orchestrator-agent', {}));
 });

@@ -44,6 +44,12 @@
   --shadow-lg: 0 24px 64px rgba(24, 24, 28, 0.16);
   --border: 1px solid var(--line);
   --border-subtle: 1px solid rgba(60, 60, 67, 0.1);
+
+  /* Card elevation & gradient accents — 阴影建立层级，渐变边框只用于交互/选中态 */
+  --card-shadow: 0 1px 2px rgba(24, 24, 28, 0.04), 0 2px 10px rgba(24, 24, 28, 0.05);
+  --card-shadow-hover: 0 2px 4px rgba(24, 24, 28, 0.05), 0 12px 32px rgba(24, 24, 28, 0.13);
+  --card-border-gradient: linear-gradient(135deg, rgba(0, 122, 255, 0.55), rgba(0, 143, 130, 0.38) 55%, rgba(137, 68, 171, 0.45));
+  --card-border-gradient-strong: linear-gradient(135deg, rgba(0, 122, 255, 0.85), rgba(0, 143, 130, 0.6) 55%, rgba(137, 68, 171, 0.72));
   --blur: blur(30px) saturate(180%);
 
   /* Consistent geometry and density. */
@@ -126,6 +132,10 @@
   --paused-soft: rgba(191, 90, 242, 0.16);
   --material-regular: rgba(36, 36, 38, 0.8);
   --material-thick: rgba(44, 44, 46, 0.92);
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 4px 18px rgba(0, 0, 0, 0.38);
+  --card-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.55), 0 18px 44px rgba(0, 0, 0, 0.6);
+  --card-border-gradient: linear-gradient(135deg, rgba(10, 132, 255, 0.72), rgba(64, 200, 183, 0.5) 55%, rgba(191, 90, 242, 0.6));
+  --card-border-gradient-strong: linear-gradient(135deg, rgba(10, 132, 255, 0.95), rgba(64, 200, 183, 0.72) 55%, rgba(191, 90, 242, 0.88));
 }
 
 /* Dark theme — system preference fallback (no data-theme attribute) */
@@ -165,6 +175,10 @@
     --paused-soft: rgba(191, 90, 242, 0.16);
     --material-regular: rgba(36, 36, 38, 0.8);
     --material-thick: rgba(44, 44, 46, 0.92);
+    --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 4px 18px rgba(0, 0, 0, 0.38);
+    --card-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.55), 0 18px 44px rgba(0, 0, 0, 0.6);
+    --card-border-gradient: linear-gradient(135deg, rgba(10, 132, 255, 0.72), rgba(64, 200, 183, 0.5) 55%, rgba(191, 90, 242, 0.6));
+    --card-border-gradient-strong: linear-gradient(135deg, rgba(10, 132, 255, 0.95), rgba(64, 200, 183, 0.72) 55%, rgba(191, 90, 242, 0.88));
   }
 }
 
@@ -189,6 +203,8 @@ h1, h2, h3, h4, p { margin: 0; }
     --text-tertiary: #545458;
     --accent-line: rgba(0, 122, 255, 0.62);
     --border-subtle: 1px solid var(--line);
+    --card-border-gradient: linear-gradient(135deg, var(--accent), var(--accent));
+    --card-border-gradient-strong: linear-gradient(135deg, var(--accent), var(--accent));
   }
 }
 
@@ -205,4 +221,19 @@ h1, h2, h3, h4, p { margin: 0; }
 :root[data-editor-font] .monaco-editor,
 :root[data-editor-font] textarea {
   font-family: var(--editor-font-family) !important;
+}
+
+/* 减少动态效果：卡片悬浮不位移、不追踪过渡 */
+@media (prefers-reduced-motion: reduce) {
+  .project-card,
+  .docs-topic-card,
+  .doc-event-card,
+  .project-wizard-mode-card,
+  .project-wizard-template-card,
+  .behavior-doc-hero,
+  .behavior-doc-section,
+  .docs-card {
+    transform: none !important;
+    transition-duration: 0.01ms !important;
+  }
 }

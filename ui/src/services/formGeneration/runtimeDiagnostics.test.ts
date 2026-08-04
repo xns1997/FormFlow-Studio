@@ -52,6 +52,42 @@ test('enrichDebugEntry handles unknown errors gracefully', () => {
   assert.ok(diag.fixes.length >= 1);
 });
 
+test('enrichDebugEntry categorizes URLSearchParams runtime errors', () => {
+  const entry: DebugEntry = { ...baseEntry, id: 'test-6b', message: 'defaultSearchParams.forEach is not a function' };
+  const diag = enrichDebugEntry(entry);
+  assert.equal(diag.category, 'runtime');
+  assert.ok(diag.cause.includes('URLSearchParams'));
+  assert.ok(diag.fixes.some((fix) => fix.label === '刷新页面'));
+});
+
+test('enrichDebugEntry categorizes chunk load failures as network', () => {
+  const entry: DebugEntry = { ...baseEntry, id: 'test-6c', message: 'Failed to fetch dynamically imported module' };
+  const diag = enrichDebugEntry(entry);
+  assert.equal(diag.category, 'network');
+  assert.ok(diag.fixes.some((fix) => fix.label === '刷新页面'));
+});
+
+test('enrichDebugEntry categorizes missing functions as runtime', () => {
+  const entry: DebugEntry = { ...baseEntry, id: 'test-6d', message: 'something is not a function' };
+  const diag = enrichDebugEntry(entry);
+  assert.equal(diag.category, 'runtime');
+});
+
+test('enrichDebugEntry categorizes ResizeObserver loop with an ignore action', () => {
+  const entry: DebugEntry = { ...baseEntry, id: 'test-6e', message: 'ResizeObserver loop limit exceeded' };
+  const diag = enrichDebugEntry(entry);
+  assert.equal(diag.category, 'runtime');
+  assert.ok(diag.fixes.some((fix) => fix.action === 'ignore'));
+});
+
+test('enrichDebugEntry unknown fallback includes refresh and retry', () => {
+  const entry: DebugEntry = { ...baseEntry, id: 'test-6f', message: 'a brand-new failure mode' };
+  const diag = enrichDebugEntry(entry);
+  assert.equal(diag.category, 'unknown');
+  assert.ok(diag.fixes.some((fix) => fix.label === '刷新页面'));
+  assert.ok(diag.fixes.some((fix) => fix.label === '重试'));
+});
+
 test('enrichDebugEntries processes multiple entries', () => {
   const entries: DebugEntry[] = [
     baseEntry,

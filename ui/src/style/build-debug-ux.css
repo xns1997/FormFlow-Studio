@@ -352,6 +352,16 @@
   border-radius: 8px;
 }
 
+.diagnostic-fix-all {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.diagnostic-fix-all:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* ── ComponentInspector ─────────────────────────────────────── */
 
 .component-inspector {

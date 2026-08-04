@@ -165,7 +165,12 @@ class OllamaAdapter(Adapter):
         payload = _request("POST", f"{self._base(request.connection)}/api/chat", request.connection, headers={"Content-Type": "application/json", **request.connection.headers}, json=body).json()
         message = payload.get("message") or {}
         content = message.get("content") or ""
-        structured = json.loads(content) if request.response_schema and content else None
+        structured = None
+        if request.response_schema and content:
+            try:
+                structured = _parse_structured_content(content)
+            except json.JSONDecodeError as exc:
+                raise ProviderError("模型未返回合法的结构化 JSON") from exc
         usage = {"prompt_tokens": payload.get("prompt_eval_count", 0), "completion_tokens": payload.get("eval_count", 0)}
         return ChatOutput(content=content, model=payload.get("model") or request.connection.model, usage=usage, tool_calls=message.get("tool_calls") or [], structured=structured, request_id=request.request_id)
 
@@ -175,7 +180,10 @@ class OllamaAdapter(Adapter):
         for raw in response.iter_lines(decode_unicode=True):
             if not raw:
                 continue
-            payload = json.loads(raw)
+            try:
+                payload = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
             message = payload.get("message") or {}
             if message.get("content"):
                 yield {"type": "message_delta", "data": {"content": message["content"]}}
@@ -213,7 +221,12 @@ class AnthropicAdapter(Adapter):
         blocks = payload.get("content") or []
         content = "".join(block.get("text", "") for block in blocks if block.get("type") == "text")
         tool_calls = [{"id": block.get("id"), "type": "function", "function": {"name": block.get("name"), "arguments": json.dumps(block.get("input") or {})}} for block in blocks if block.get("type") == "tool_use"]
-        structured = json.loads(content) if request.response_schema and content else None
+        structured = None
+        if request.response_schema and content:
+            try:
+                structured = _parse_structured_content(content)
+            except json.JSONDecodeError as exc:
+                raise ProviderError("模型未返回合法的结构化 JSON") from exc
         return ChatOutput(content=content, model=payload.get("model") or request.connection.model, usage=payload.get("usage") or {}, tool_calls=tool_calls, structured=structured, request_id=request.request_id)
 
 
@@ -238,7 +251,13 @@ class GeminiAdapter(Adapter):
         parts = (((payload.get("candidates") or [{}])[0].get("content") or {}).get("parts") or [])
         content = "".join(part.get("text", "") for part in parts)
         tool_calls = [{"type": "function", "function": {"name": part["functionCall"].get("name"), "arguments": json.dumps(part["functionCall"].get("args") or {})}} for part in parts if part.get("functionCall")]
-        return ChatOutput(content=content, model=request.connection.model, usage=payload.get("usageMetadata") or {}, tool_calls=tool_calls, structured=json.loads(content) if request.response_schema and content else None, request_id=request.request_id)
+        structured = None
+        if request.response_schema and content:
+            try:
+                structured = _parse_structured_content(content)
+            except json.JSONDecodeError as exc:
+                raise ProviderError("模型未返回合法的结构化 JSON") from exc
+        return ChatOutput(content=content, model=request.connection.model, usage=payload.get("usageMetadata") or {}, tool_calls=tool_calls, structured=structured, request_id=request.request_id)
 
     def embed(self, request: EmbedInput) -> EmbedOutput:
         embeddings: list[list[float]] = []
