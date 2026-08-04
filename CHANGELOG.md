@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.9.0...v1.10.0) (2026-08-04)
+
+
+### Features
+
+* 智能体 V4 单循环重写与执行稳定性增强，新增一步建表工具与全量工具示例 ([f542f78](https://github.com/xns1997/FormFlow-Studio/commit/f542f780a7f438f4ca004610c1ba311c1087b8b3))
+
 # [1.9.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.8.0...v1.9.0) (2026-08-02)
 
 # [2.6.0](https://github.com/xns1997/FormFlow-Studio/compare/v2.5.0...v2.6.0) (2026-08-04)
