@@ -7,6 +7,7 @@ import type { BehaviorEventDocEntry, BehaviorTopicDocEntry } from './types';
  * 三个文档页面共用，避免逐字复制后漂移。
  */
 
+/** 文档与关键词的匹配得分。 */
 export function computeMatchScore(doc: BehaviorEventDocEntry, keyword: string): number {
   const kw = keyword.toLowerCase();
   let score = 0;
@@ -18,6 +19,7 @@ export function computeMatchScore(doc: BehaviorEventDocEntry, keyword: string): 
   return score;
 }
 
+/** 文档模糊过滤（按标题/描述/关键词）。 */
 export function fuzzyFilter(docs: BehaviorEventDocEntry[], query: string): BehaviorEventDocEntry[] {
   const keywords = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   if (keywords.length === 0) return docs;
@@ -41,6 +43,7 @@ export function fuzzyFilter(docs: BehaviorEventDocEntry[], query: string): Behav
   return scored.map((item) => item.doc);
 }
 
+/** 推断文档所属分类。 */
 export function inferCategory(doc: BehaviorTopicDocEntry, categories: string[]) {
   if (doc.category) return doc.category;
   for (const category of categories) {

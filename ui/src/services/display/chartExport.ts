@@ -1,4 +1,6 @@
+/** 导出图表为 SVG 文件。 */
 export async function exportChartSvg(svg: SVGElement, fileName = 'chart.svg') { const content = new XMLSerializer().serializeToString(svg); const blob = new Blob([content], { type: 'image/svg+xml;charset=utf-8' }); download(blob, fileName); }
+/** 导出图表为 PNG 文件（SVG 先转画布）。 */
 export async function exportChartPng(element: HTMLCanvasElement | SVGElement, fileName = 'chart.png', scale = 2) {
   if (element instanceof HTMLCanvasElement) return new Promise<void>((resolve) => element.toBlob((blob) => { if (blob) download(blob, fileName); resolve(); }, 'image/png'));
   const content = new XMLSerializer().serializeToString(element); const blob = new Blob([content], { type: 'image/svg+xml' }); const url = URL.createObjectURL(blob); const image = new Image();

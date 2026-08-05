@@ -1,6 +1,7 @@
 export type LineageNode = { id: string; label: string; kind: 'source' | 'field' | 'transform' | 'output'; tableId?: string; field?: string };
 export type LineageEdge = { id: string; source: string; target: string; mapping?: string };
 export type LineageGraph = { nodes: LineageNode[]; edges: LineageEdge[] };
+/** 构建数据血缘图（表/字段依赖）。 */
 export function buildLineage(project: any): LineageGraph {
   const nodes: LineageNode[] = []; const edges: LineageEdge[] = [];
   for (const table of project?.srcTable || []) for (const sheet of table.sheets || []) {
@@ -13,4 +14,5 @@ export function buildLineage(project: any): LineageGraph {
   for (const workflow of project?.workflows || []) for (const edge of workflow.edges || []) edges.push({ id: `flow-edge:${workflow.id}:${edge.id}`, source: `flow:${workflow.id}:${edge.source}`, target: `flow:${workflow.id}:${edge.target}`, mapping: `${edge.sourceHandle || ''} → ${edge.targetHandle || ''}` });
   return { nodes, edges };
 }
+/** 影响分析：节点变更影响的下游节点。 */
 export function impactAnalysis(graph: LineageGraph, nodeId: string) { const impacted = new Set<string>(); const visit = (id: string) => graph.edges.filter((edge) => edge.source === id).forEach((edge) => { if (!impacted.has(edge.target)) { impacted.add(edge.target); visit(edge.target); } }); visit(nodeId); return [...impacted]; }

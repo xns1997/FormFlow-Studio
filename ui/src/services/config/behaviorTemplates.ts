@@ -10,6 +10,7 @@ export interface BehaviorTemplate {
   fields?: string[]; // 涉及的字段名示例
 }
 
+/** 行为模板列表（常用规则场景）。 */
 export const BEHAVIOR_TEMPLATES: BehaviorTemplate[] = [
   // ── 联动 ──────────────────────────────────────────
   {
@@ -345,6 +346,7 @@ ctx.showMessage(\`已加载: \${name}\`, 'info');`,
   },
 ];
 
+/** 按分类分组行为模板。 */
 export function getTemplatesByCategory(): Record<string, BehaviorTemplate[]> {
   const grouped: Record<string, BehaviorTemplate[]> = {};
   for (const tpl of BEHAVIOR_TEMPLATES) {

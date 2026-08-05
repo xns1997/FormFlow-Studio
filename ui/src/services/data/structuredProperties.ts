@@ -14,12 +14,14 @@ const OBJECT_STRUCTURED_TYPES = new Set([
 ]);
 const STRING_BACKED_STRUCTURED_TYPES = new Set(['json-string']);
 
+/** 是否为结构化属性（表/数组/对象）。 */
 export function isStructuredProperty(type: string | undefined, value: unknown): boolean {
   const normalized = String(type || '').toLowerCase();
   if (STRUCTURED_TYPES.has(normalized)) return true;
   return !OBJECT_VALUE_EXCLUSIONS.has(normalized) && value !== null && typeof value === 'object';
 }
 
+/** 结构化属性 → 可读文本。 */
 export function formatStructuredProperty(value: unknown, fallback: unknown = {}, expectedType?: string): string {
   const normalized = String(expectedType || '').toLowerCase();
   const source = value === '' || value === undefined ? fallback : value;
@@ -33,6 +35,7 @@ export function formatStructuredProperty(value: unknown, fallback: unknown = {},
   return JSON.stringify(source ?? fallback ?? {}, null, 2);
 }
 
+/** 解析结构化属性文本（JSON/CSV）。 */
 export function parseStructuredProperty(text: string, expectedType?: string): { value?: unknown; error?: string } {
   try {
     const value = JSON.parse(text);

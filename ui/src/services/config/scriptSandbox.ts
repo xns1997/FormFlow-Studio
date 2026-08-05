@@ -66,6 +66,7 @@ export interface SandboxContext {
   logDebug: (level: 'info' | 'warn' | 'error' | 'debug', message: string) => void;
 }
 
+/** 创建脚本沙箱上下文（受限全局 + 别名）。 */
 export function createSandboxContext(
   state: RuntimeState,
   setState: (updater: (prev: RuntimeState) => RuntimeState) => void,
@@ -315,6 +316,7 @@ export function createSandboxContext(
   };
 }
 
+/** 在沙箱中执行脚本（超时与错误包装）。 */
 export async function executeScript(
   code: string,
   context: SandboxContext,

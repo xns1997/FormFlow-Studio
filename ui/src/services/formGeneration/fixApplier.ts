@@ -85,6 +85,7 @@ function applyTableConfigFix(fix: QuickFix, ctx: FixContext, ops: FixOperations)
   return navigateOrFail(ops, `未找到唯一且非空的候选主键，已跳转到数据工作区处理：${fix.sheetName}`);
 }
 
+/** 应用单个诊断修复。 */
 export function applyDiagnosticFix(diagnostic: FormDiagnostic, ctx: FixContext, ops: FixOperations): FixOutcome {
   const fix = diagnostic.quickFix;
   if (!fix) return { ok: false, kind: 'skipped', message: `“${diagnostic.title}”暂无自动修复，请按建议手动调整。` };
@@ -147,6 +148,7 @@ export function applyDiagnosticFix(diagnostic: FormDiagnostic, ctx: FixContext, 
   }
 }
 
+/** 批量应用诊断修复（按修复顺序）。 */
 export function applyDiagnosticFixes(
   diagnostics: FormDiagnostic[],
   ctx: FixContext,

@@ -3,6 +3,7 @@ import { getDefaultComponentValue } from '../config/controlTypes';
 import { resolveDataBindingValue } from '../data/dataBinding';
 import { resolveDateDefaultValue } from '../data/dateConvenience';
 
+/** 预览初始值（默认值/表达式/当前值）。 */
 export function getPreviewInitialValue(component: DesignComponent, tables: SrcTableEntry[] = [], currentValues: Record<string, unknown> = {}): unknown {
   const resolved = resolveDataBindingValue(component, tables);
   if (resolved.found || resolved.value !== undefined) return resolved.value;
@@ -22,6 +23,7 @@ export function getPreviewInitialValue(component: DesignComponent, tables: SrcTa
   return getDefaultComponentValue(component);
 }
 
+/** 预览初始化签名（缓存键）。 */
 export function getPreviewInitializationSignature(component: DesignComponent): string {
   return JSON.stringify({
     content: component.type === 'text' ? component.props.content : undefined,

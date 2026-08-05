@@ -12,6 +12,7 @@ export interface HighlightToken {
   value: string;
 }
 
+/** 代码高亮（token 序列）。 */
 export function highlightJS(code: string): HighlightToken[] {
   const tokens: HighlightToken[] = [];
   let remaining = code;
@@ -52,6 +53,7 @@ export function highlightJS(code: string): HighlightToken[] {
   return tokens;
 }
 
+/** token 类型 → CSS 类名。 */
 export function getKeywordClass(type: HighlightToken['type']): string {
   switch (type) {
     case 'keyword': return 'hl-keyword';

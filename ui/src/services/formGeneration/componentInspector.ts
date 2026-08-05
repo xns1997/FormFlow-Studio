@@ -69,6 +69,7 @@ export interface DataFlowConnection {
   status: 'active' | 'broken';
 }
 
+/** 检查组件（绑定/校验/UX 问题）。 */
 export function inspectComponent(
   component: DesignComponent,
   allComponents: DesignComponent[],
@@ -209,6 +210,7 @@ export function inspectComponent(
   };
 }
 
+/** 构建组件数据流图。 */
 export function buildDataFlowGraph(
   components: DesignComponent[],
   tables: SrcTableEntry[],

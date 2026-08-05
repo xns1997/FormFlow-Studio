@@ -5,6 +5,7 @@
  */
 import type { FlowNodeDef, FlowEdgeDef } from './types';
 
+/** 拓扑排序节点（依赖在前）。 */
 export function topologicalSort(nodes: FlowNodeDef[], edges: FlowEdgeDef[]): FlowNodeDef[] {
   const inDegree = new Map<string, number>();
   const adjacency = new Map<string, string[]>();
@@ -42,6 +43,7 @@ export function topologicalSort(nodes: FlowNodeDef[], edges: FlowEdgeDef[]): Flo
   return sorted.map((id) => nodes.find((n) => n.id === id)!);
 }
 
+/** 选取上游节点集（含自身）。 */
 export function selectUpstreamFlow(
   nodes: FlowNodeDef[],
   edges: FlowEdgeDef[],
@@ -67,6 +69,7 @@ export function selectUpstreamFlow(
   };
 }
 
+/** 按拓扑层级分组。 */
 export function groupByTopologicalLevel(sorted: FlowNodeDef[], edges: FlowEdgeDef[]): FlowNodeDef[][] {
   const levels: FlowNodeDef[][] = [];
   const inDegree = new Map<string, number>();
