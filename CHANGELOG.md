@@ -1,3 +1,10 @@
+# [1.13.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.12.2...v1.13.0) (2026-08-05)
+
+
+### Features
+
+* 全量审计并修复流程节点端口契约与连线类型校验 ([c5e2d96](https://github.com/xns1997/FormFlow-Studio/commit/c5e2d9632e25bea343f7e6e34a423ddaba8cfe1b))
+
 ## [1.12.2](https://github.com/xns1997/FormFlow-Studio/compare/v1.12.1...v1.12.2) (2026-08-05)
 
 
