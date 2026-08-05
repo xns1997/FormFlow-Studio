@@ -50,10 +50,10 @@ function thread(): ProjectAgentThread {
 test('detail layer shows plan overview by default', () => {
   const html = renderToStaticMarkup(createElement(DetailLayer, { thread: thread(), active: null, onClose: () => undefined, onOpenTask: () => undefined, onRetryTask: () => undefined }));
   assert.match(html, /员工管理系统/);
-  assert.match(html, /如何判断完成/);
+  assert.match(html, /✓ 完成标准/);
   assert.match(html, /数据表存在/);
   assert.match(html, /建数据表/);
-  assert.match(html, /事件流水/);
+  assert.match(html, /≡ 事件/);
 });
 
 test('detail layer shows a task sheet with acceptance, evidence and error', () => {
@@ -64,7 +64,7 @@ test('detail layer shows a task sheet with acceptance, evidence and error', () =
     onOpenTask: () => undefined,
     onRetryTask: () => undefined,
   }));
-  assert.match(html, /任务详情/);
+  assert.match(html, /▸ 任务/);
   assert.match(html, /先建表/);
   assert.match(html, /主键缺失/);
   assert.match(html, /重试任务/);

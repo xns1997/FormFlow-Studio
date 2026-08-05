@@ -48,11 +48,12 @@ function buildColumns(headers: string[], data: Record<string, unknown>[]) {
 // POST /api/data/paginated - 项目表或已解析文件的统一分页入口
 router.post('/paginated', (req, res) => {
   try {
-    let headers: string[] = []; let data: Record<string, unknown>[] = []; let keyFields: string[] = [];
+    let headers: string[] = []; let data: Record<string, unknown>[] = []; let keyFields: string[] = []; let rowOrder: string[] = [];
     if (req.body.projectId) {
       const result = getTableSheetData(req.body.projectId, req.body.tableId || req.body.fileId, req.body.sheetName);
       if (!result) return res.status(404).json({ error: '项目数据不存在' });
       headers = result.headers; data = result.data; keyFields = result.keyFields;
+      rowOrder = result.rowOrder;
     } else {
       const staged = getStagedSheet(req.body.fileId, req.body.sheetName);
       if (!staged) return res.status(404).json({ error: '临时上传不存在或已过期' });
@@ -64,6 +65,7 @@ router.post('/paginated', (req, res) => {
         rows: data,
         headers,
         keyFields,
+        rowOrder,
         page: req.body.page,
         pageSize: req.body.pageSize,
         search: req.body.search,

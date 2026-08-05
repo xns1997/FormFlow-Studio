@@ -8,14 +8,14 @@ import ThreadSidebar, { type ThreadSidebarHandle } from './ThreadSidebar';
 import ConversationSurface from './ConversationSurface';
 import DetailLayer from './DetailLayer';
 import WorkbenchStatusBar from './WorkbenchStatusBar';
-import { modeLabels, statusLabels, type ProjectAgentConnectionState, type ProjectAgentMode, type ProjectAgentThread, type SurfaceItem } from './projectAgentUiModel';
+import { modeLabelsShort, statusLabels, statusLabelsShort, statusSymbols, type ProjectAgentConnectionState, type ProjectAgentMode, type ProjectAgentThread, type SurfaceItem } from './projectAgentUiModel';
 import { useAppInteraction } from './AppInteractionProvider';
 
 interface OperationError { title: string; message: string; }
 interface ProjectOption { id: string; name: string; updatedAt?: string; }
 
 const localMode = ((import.meta as any).env?.VITE_APP_MODE || 'local') !== 'cloud';
-const connectionLabels: Record<ProjectAgentConnectionState, string> = { connecting: '连接中', connected: '实时连接', reconnecting: '正在重连', disconnected: '连接已断开' };
+const connectionLabels: Record<ProjectAgentConnectionState, string> = { connecting: '连接中', connected: '已连接', reconnecting: '重连中', disconnected: '离线' };
 const WIDTH_KEY = 'formflow.projectAgent.width';
 const PENDING_THREAD_KEY_PREFIX = 'formflow.projectAgent.pendingThread.';
 
@@ -54,6 +54,7 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
   const [scopeOpen, setScopeOpen] = useState(false);
   const [scopeProjectIds, setScopeProjectIds] = useState<string[]>([]);
   const [scopeCurrentProjectId, setScopeCurrentProjectId] = useState<string | undefined>();
+  const [checkpoints, setCheckpoints] = useState<string[]>([]);
   const [drawerStyle, setDrawerStyle] = useState<CSSProperties>(() => ({ width: initialWidth() }));
 
   const loadThreadList = useCallback(async () => {
@@ -233,6 +234,34 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
     } catch (cause) { reportError(names[action], cause); } finally { setBusy(false); }
   }
 
+  const refreshCheckpoints = useCallback(async (id: string) => {
+    try {
+      const result = await llmApi.projectAgent.checkpoints(id) as { checkpoints?: string[] };
+      setCheckpoints(result?.checkpoints || []);
+    } catch {
+      setCheckpoints([]);
+    }
+  }, []);
+
+  async function restoreCheckpoint() {
+    if (!thread || busy) return;
+    if (!await confirm({ title: '恢复到最近检查点？', message: '项目将回滚到该写任务开始前的状态，当前未提交的修改会丢失。', detail: '恢复由你显式触发，智能体不会自动回滚。', confirmLabel: '恢复', destructive: true })) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await llmApi.projectAgent.restoreCheckpoint(thread.id, { projectId: thread.currentProjectId });
+      await loadThread(thread.id);
+      if (thread.currentProjectId) await refreshProject();
+      await refreshCheckpoints(thread.id);
+    } catch (cause) { reportError('恢复检查点失败', cause); } finally { setBusy(false); }
+  }
+
+  useEffect(() => {
+    if (!thread?.id) { setCheckpoints([]); return; }
+    if (!['paused', 'stopped', 'blocked', 'failed'].includes(thread.status)) { setCheckpoints([]); return; }
+    void refreshCheckpoints(thread.id);
+  }, [thread?.id, thread?.status, refreshCheckpoints]);
+
   async function setMode(mode: ProjectAgentMode) {
     if (!thread || busy) return;
     setBusy(true);
@@ -391,14 +420,14 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
   const pausedForQuestion = thread?.status === 'paused' && thread.messages.some((message) => message.kind === 'question');
   const launcherClassName = launcherVariant === 'nav' ? `project-agent-nav-trigger nav-link ${open ? 'active' : ''}` : `project-agent-launcher ${open ? 'active' : ''}`;
   const mergedDrawerStyle = useMemo(() => open ? drawerStyle : { width }, [drawerStyle, open, width]);
-  const composerLabel = awaitingPlan ? '提交修改意见' : running ? '请求转向' : pausedForQuestion ? '回答问题' : '发送';
+  const composerLabel = awaitingPlan ? '提交' : running ? '转向' : pausedForQuestion ? '回答' : '发送';
 
   const drawerNode = open ? (
     <aside className={`project-agent-drawer ${launcherVariant === 'nav' ? 'project-agent-drawer-anchored' : ''}`} style={mergedDrawerStyle} aria-label="项目智能体">
       <div className="project-agent-resize-handle" role="separator" aria-label="调整项目智能体工作台宽度" aria-orientation="vertical" aria-valuemin={860} aria-valuemax={1180} aria-valuenow={width} tabIndex={0} onPointerDown={beginResize} onKeyDown={resizeByKeyboard} />
       <div className="agent-workbench">
         <header className="agent-workbench-header">
-          <div className="agent-title"><strong>{thread?.title || '项目智能体'}</strong><small>{thread ? `项目智能体 · ${statusLabels[thread.status]}` : '先检查、再规划、确认后执行'}</small></div>
+          <div className="agent-title"><strong>{thread?.title || '项目智能体'}</strong><small>{thread ? `✦ ${statusSymbols[thread.status]} ${statusLabelsShort[thread.status]}` : '先检查、再规划、确认后执行'}</small></div>
           <span className={`agent-badge ${connection === 'connected' ? 'agent-badge-success' : connection === 'disconnected' ? 'agent-badge-danger' : 'agent-badge-warning'}`}>{thread ? connectionLabels[connection] : '未连接'}</span>
           <span className="agent-spacer" />
           {thread && (
@@ -407,12 +436,12 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
                 <button key={mode} type="button" className="agent-btn agent-btn-ghost" aria-pressed={thread.mode === mode}
                   style={thread.mode === mode ? { background: 'var(--fill)', color: 'var(--text)', fontWeight: 600 } : undefined}
                   onClick={() => { if (thread.mode !== mode) void setMode(mode); }}>
-                  {modeLabels[mode]}
+                  {modeLabelsShort[mode]}
                 </button>
               ))}
             </div>
           )}
-          {!thread && <button type="button" className="agent-btn agent-btn-primary" disabled={busy} onClick={() => void startNewThread(projectId)}>新建任务</button>}
+          {!thread && <button type="button" className="agent-btn agent-btn-primary" disabled={busy} onClick={() => void startNewThread(projectId)}>+ 新建</button>}
           {thread && <details className="agent-row-menu"><summary aria-label="更多操作">•••</summary><div className="agent-menu" role="menu">
             <button type="button" role="menuitem" disabled={busy} onClick={() => setScopeOpen(true)}>限定项目范围…</button>
             <button type="button" role="menuitem" disabled={busy} onClick={() => void startNewThread(undefined)}>创建新项目</button>
@@ -420,10 +449,10 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
           </div></details>}
           <button type="button" className="agent-btn agent-btn-ghost" onClick={closeDrawer} aria-label="关闭项目智能体">×</button>
         </header>
-        <WorkbenchStatusBar thread={thread} busy={busy} onControl={(action) => void control(action)} onInterrupt={() => composerRef.current?.focus()} />
+        <WorkbenchStatusBar thread={thread} busy={busy} onControl={(action) => void control(action)} onInterrupt={() => composerRef.current?.focus()} onRestoreCheckpoint={() => void restoreCheckpoint()} hasCheckpoints={checkpoints.length > 0} />
         {scopeOpen && thread && (
           <section className="project-agent-project-scope-card project-agent-floating-card" aria-label="限定项目范围">
-            <header><div><strong>限定项目范围</strong><span>智能体只能访问选中的项目，实心圆表示当前项目。</span></div><button type="button" onClick={() => setScopeOpen(false)} aria-label="关闭项目范围">×</button></header>
+            <header><div><strong>项目范围</strong><span>只能访问选中项目，实心圆=当前。</span></div><button type="button" onClick={() => setScopeOpen(false)} aria-label="关闭项目范围">×</button></header>
             <div className="project-agent-project-options">
               {projects.map((item) => {
                 const selected = scopeProjectIds.includes(item.id);
@@ -438,13 +467,13 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
               })}
               {!projects.length && <p>暂无可用项目。描述创建需求后，新项目会自动加入范围。</p>}
             </div>
-            <footer><span>{scopeProjectIds.length ? `已限定 ${scopeProjectIds.length} 个项目` : '未限定项目，可创建新项目'}</span><button type="button" disabled={busy} onClick={() => void saveProjectScope()}>应用范围</button></footer>
+            <footer><span>{scopeProjectIds.length ? `${scopeProjectIds.length} 个项目` : '未限定'}</span><button type="button" disabled={busy} onClick={() => void saveProjectScope()}>应用</button></footer>
           </section>
         )}
         {error && (
           <div className="project-agent-error" role="alert">
-            <div><strong>{error.title}</strong><span>{error.message}</span><small>系统不会自动重放写操作。可先刷新状态，再由你决定是否重新执行。</small></div>
-            <div><button type="button" onClick={() => thread && void loadThread(thread.id)}>刷新状态</button><button type="button" onClick={() => setError(null)} aria-label="关闭错误提示">×</button></div>
+            <div><strong>{error.title}</strong><span>{error.message}</span><small>写操作不自动重放；刷新后由你决定重试。</small></div>
+            <div><button type="button" onClick={() => thread && void loadThread(thread.id)}>↻ 刷新</button><button type="button" onClick={() => setError(null)} aria-label="关闭错误提示">×</button></div>
           </div>
         )}
         <div className="agent-workbench-body">
@@ -472,7 +501,7 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
         <footer className="agent-composer">
           <textarea ref={composerRef} rows={1} value={prompt} onChange={(event) => setPrompt(event.target.value)}
             onKeyDown={(event) => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') void send(); }}
-            placeholder={awaitingPlan ? '输入需求或计划修改意见' : running ? '输入新要求，在安全边界转向' : pausedForQuestion ? '回答智能体的问题，回答后自动继续' : '描述目标、约束和完成标准'} />
+            placeholder={awaitingPlan ? '需求或修改意见…' : running ? '新要求（安全边界转向）…' : pausedForQuestion ? '补充说明…' : '描述目标、约束…'} />
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
             <button type="button" className="agent-btn agent-btn-primary" disabled={busy || !prompt.trim()} onClick={() => void send()}>{composerLabel}</button>
             <span className="agent-composer-hint">⌘/Ctrl + Enter</span>

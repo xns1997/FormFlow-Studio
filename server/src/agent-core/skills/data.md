@@ -31,9 +31,9 @@
 ## 标准工作流
 
 1. 读取项目与现有数据源目录（`data_source.list/get`），确认目标表与 Sheet 名。
-2. 建表/导入：`data_source.create`（空表用 `config.columns`；业务数据用 `rows` 或 `csv`）或 `data_source.import`；`rows` 里的每个对象是一条业务记录，不是字段定义。
+2. 建表/导入：`data_source.create`（空表用 `config.columns`；业务数据用 `rows` 或 `csv`）或 `data_source.import`；`rows` 里的每个对象是一条业务记录，不是字段定义。**建表任务若已写入行数据，就不要再单独规划「写入示例数据」任务；若单独规划数据写入任务，建表必须只建空表，写入任务用 `data_rows.batch`/`data_source.import` 一次性写入，避免同一批行写两次导致主键重复。`data_table.create`/`data_source.create` 建表时可一步设置主键（keyFields）与列枚举，不要为同一张新表再规划「配置主键」任务。**
 3. 配置 Sheet：`data_sheet.configure` 设置主键/只读/冻结/筛选；随后 `data_keys.validate` 验证主键无空值、无重复。
-4. 写行数据：`data_rows.batch`（单表原子）或 `data_rows.transaction`（跨表原子）；`adds/updates/deletes` 按稳定 rowKey 定位；含 deletes 时需确认。
+4. 写行数据：`data_rows.batch`（单表原子）或 `data_rows.transaction`（跨表原子）；`adds/updates/deletes` 按稳定 rowKey 定位；含 deletes 时需确认。若 `data_rows.batch` 报主键重复，先读取表内已有行确认目标数据是否已存在，已存在就不要再重复写入。
 5. 声明关系：`data_relation.suggest` 先建议，`data_relation.validate` 校验后 `data_relation.upsert` 写入。
 6. 完成后运行 `project.validate`。
 

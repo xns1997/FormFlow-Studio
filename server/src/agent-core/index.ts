@@ -6,7 +6,9 @@ export type {
   FailureClass, LoopDecision, LoopObservation, LoopQuestion, PendingApproval,
   RunContext, ScopeConfig, ThreadEvent, ThreadHistoryPage, ThreadHistorySummary,
   ThreadHistoryStatus, ThreadMessage, ThreadStatus, TaskAccess, TaskStatus, AgentMode,
+  ArtifactMeta, LoopBatchRead, TestBaseline, ThreadContext, TurnMetrics,
 } from './types';
+export { MAX_BATCH_READS } from './types';
 
 export {
   acquireAgentThreadLease, addThreadMessage, appendAgentThreadEvent, archiveAgentThread,
@@ -16,15 +18,19 @@ export {
   releaseAgentThreadLease, renewAgentThreadLease, restoreAgentThread, saveAgentThread,
   saveCapabilityBundleDraft, setAgentThreadProjectScope, subscribeAgentThreadEvents,
   threadEventsAfter, threadProjectIds, updateAgentThreadMetadata, validateBundle, setAgentThreadMode,
+  bumpThreadMetric, compactThreadMessages, readAgentArtifact, resetThreadMetrics,
+  setThreadContext, storeAgentArtifact, flushThreadMetrics, listThreadMetrics,
 } from './store';
 
 export { chat, streamChat } from './llm';
-export { ground, planTurn, replanWithFeedback, confirmPlan, validatePlanTasks } from './planner';
+export { ground, planTurn, replanWithFeedback, replanRemaining, confirmPlan, validatePlanTasks } from './planner';
 export {
   appendToolObservation, classifyFailure, executeAction, executePlan, recordToolResult,
   shouldAutoApproveOperation,
 } from './loop';
-export { runFinalGates, verifyCompletedTask, GateFailure } from './gates';
+export { runFinalGates, verifyCompletedTask, captureTestBaseline, testGateApplies, GateFailure } from './gates';
+export { maybeCompactContext, structuredThreadContext, maxPromptChars } from './context';
+export { createProjectCheckpoint, listThreadCheckpoints, restoreProjectCheckpoint } from './checkpoints';
 export {
   evaluateToolPolicy, isReleaseApply, isWriteTool, resolveScope, stableIdempotencyKey,
   toolProjectId, toolRisk,

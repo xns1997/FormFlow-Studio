@@ -63,6 +63,8 @@ const docsExplicitlyWithoutMermaid = [
   'CHANGELOG.md',
   'docs/readme/README.md',
   'docs/readme/project-layout.md',
+  'docs/agent-eval/README.md',
+  'docs/agent-eval/baseline.md',
   'research-external-integration-visualization.md',
 ] as const;
 

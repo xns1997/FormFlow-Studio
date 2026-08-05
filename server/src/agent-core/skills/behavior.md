@@ -32,7 +32,7 @@
 1. 读取项目与目标表单/Sheet 现状，`behavior.list` 查看已有行为。
 2. 不确定语法时先 `rule_reference.search` 检索参考实现。
 3. `rule_syntax.lint` 检查代码/结构化规则语法；`rule_test.run` 在沙箱中跑场景验证。
-4. `behavior.upsert` 或 `rule_code.update` 写入（lint 通过后）。
+4. `behavior.upsert` 或 `rule_code.update` 写入（lint 通过后）。`behavior.upsert` 必须带 `scope`（global/sheet/form），scope=form 必须带 `formId`，scope=sheet 必须带 `tableId` 与 `sheetName`；表单字段联动优先用 `rule_code.update`。
 5. 形式化验证：对带规则的表单运行 `rule_verify.model`（有界显式状态模型检查），确认事件触发链终止（无无限循环）且迁移确定性一致；未通过时按反例路径修复规则。
 6. 完成后运行 `project.validate`，必要时用 `rule_test.run` 回归验证。
 

@@ -78,8 +78,22 @@
 .data-preview-sidebar-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex: 0 0 auto;
+  gap: 6px;
   margin-left: auto;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+.data-preview-sidebar-actions .ui-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: 4px 7px;
+}
+.data-preview-sidebar .page-section-header > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .data-preview-main-header {
@@ -97,7 +111,14 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
+  flex-wrap: nowrap;
 }
+
+.data-preview-tabbar { flex: 0 0 auto; }
+
+.data-preview-summary { flex: 0 0 auto; white-space: nowrap; }
+
+.data-preview-inspector-toggle { flex: 0 0 auto; white-space: nowrap; }
 
 .data-preview-tabbar {
   display: flex;
@@ -415,9 +436,17 @@
   margin-left: auto;
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
-.data-preview-inspector-toggle { flex: 0 0 auto; }
+.data-preview-inspector-toggle { flex: 0 0 auto; white-space: nowrap; }
+
+.data-preview-inspector .page-section-header > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .data-preview-inspector-close {
   display: grid;
@@ -1771,3 +1800,155 @@
 .lineage rect { fill: var(--bg-card); stroke: var(--border-color); }
 .lineage text { fill: var(--text-color); font-size: 12px; }
 .lineage-impacted rect { stroke: var(--accent); stroke-width: 2; }
+
+/* ── 数据预览右键菜单（自绘） ─────────────────────────── */
+
+.data-preview-context-menu {
+  position: fixed;
+  z-index: calc(var(--z-dropdown, 1000) + 10);
+  min-width: 176px;
+  max-width: 260px;
+  padding: 5px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transform: translateY(4px) scale(0.97);
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+.data-preview-context-menu.is-visible {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition:
+    opacity 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.data-preview-context-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.data-preview-context-item:hover,
+.data-preview-context-item:focus-visible {
+  outline: none;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.data-preview-context-item.has-separator {
+  margin-top: 4px;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  padding-top: 8px;
+}
+
+.data-preview-context-item.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.data-preview-context-item.is-danger:not(.is-disabled) {
+  color: var(--danger);
+}
+
+.data-preview-context-item.is-danger:hover:not(.is-disabled),
+.data-preview-context-item.is-danger:focus-visible:not(.is-disabled) {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.data-preview-context-item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── 行拖拽排序 ──────────────────────────────────────── */
+
+.data-preview-row-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  color: var(--text-tertiary);
+  user-select: none;
+}
+
+.data-preview-row-drag-handle.is-dragging {
+  cursor: grabbing;
+  color: var(--accent);
+}
+
+.data-preview-row-drag-handle.is-disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.ag-row.data-preview-row-drop-target {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.ag-row.data-preview-row-dragging {
+  opacity: 0.55;
+  outline: 1px dashed var(--accent);
+}
+
+/* ── 批量编辑弹窗 ────────────────────────────────────── */
+
+.data-preview-batch-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.data-preview-batch-edit-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.data-preview-batch-edit-form input,
+.data-preview-batch-edit-form select {
+  min-height: var(--control-height);
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel-soft);
+  color: var(--text);
+  font: inherit;
+}
+
+.data-preview-batch-edit-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .data-preview-context-menu.is-visible {
+    transition: none;
+  }
+}

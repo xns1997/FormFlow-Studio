@@ -148,7 +148,21 @@ export interface AgentThread {
   consecutiveNoProgress: number;
   blockedConditionFingerprint?: string;
   blockedCount: number;
+  /** 自动恢复周期计数：瞬时重试/冲突重算/门禁自动修复均消耗。 */
+  recoveryCycles: number;
   decisionSteps: number;
+  /** 结构化上下文契约（压缩后保留）。 */
+  context?: ThreadContext;
+  /** artifact 索引（payload 存文件/PG）。 */
+  artifacts?: Record<string, ArtifactMeta>;
+  /** 当前 turn 的运行指标。 */
+  turnMetrics?: TurnMetrics;
+  /** 每个写任务执行前自动建立的检查点引用。 */
+  checkpointRefs?: string[];
+  /** 执行开始时的测试基线（写计划）。 */
+  testBaseline?: TestBaseline;
+  /** 已完成自审的计划 revision（避免重复自审）。 */
+  selfReviewedPlanRevision?: number;
   pinnedAt?: string;
   archived: boolean;
   createdAt: string;
@@ -164,7 +178,17 @@ export interface RunContext {
 
 // ─── Loop decision / observation ──────────────────────────────────────────────
 
-export type LoopAction = 'act' | 'complete' | 'ask_user' | 'pause';
+export type LoopAction = 'act' | 'complete' | 'ask_user' | 'pause' | 'replan';
+
+/** 一步决策内最多允许的批量只读调用数（写/破坏性仍一步一个）。 */
+export const MAX_BATCH_READS = 3;
+
+export interface LoopBatchRead {
+  toolName: string;
+  scope?: McpRole;
+  arguments?: Record<string, any>;
+  taskId?: string;
+}
 
 export interface LoopQuestion {
   header: string;
@@ -172,6 +196,9 @@ export interface LoopQuestion {
   kind: 'choice' | 'text';
   /** 为什么需要用户补充：当前任务、最近失败、进度等上下文。 */
   context?: string;
+  /** 关联的计划步骤（任务），用于前端把提问与步骤交叉展示。 */
+  taskId?: string;
+  taskTitle?: string;
   options?: Array<{ label: string; description?: string }>;
 }
 
@@ -182,10 +209,56 @@ export interface LoopDecision {
   toolName?: string;
   scope?: McpRole;
   arguments?: Record<string, any>;
+  /** 批量只读（最多 MAX_BATCH_READS 个，全部必须是只读工具）。 */
+  batchReads?: LoopBatchRead[];
+  /** replan 动作的原因/约束（action=replan 时必填）。 */
+  replanReason?: string;
   taskId?: string;
   completeTaskIds?: string[];
   questions?: LoopQuestion[];
   finalAnswer?: string;
+}
+
+/** 结构化上下文契约：压缩后保留的关键状态（参考书 ContextManager 压缩建议）。 */
+export interface ThreadContext {
+  goal: string;
+  constraints: string[];
+  decisions: string[];
+  verification: string[];
+  remainingWork: string[];
+  userCorrections: string[];
+  updatedAt: string;
+}
+
+/** Artifact 索引条目；完整载荷存文件（本地）或 PG 表（云端）。 */
+export interface ArtifactMeta {
+  id: string;
+  kind: string;
+  size: number;
+  summary: string;
+  storedAt: string;
+}
+
+/** 每个 turn 的运行指标，用于「运行统计」与评测基线。 */
+export interface TurnMetrics {
+  modelCalls: number;
+  toolCalls: number;
+  invalidToolCalls: number;
+  approvals: number;
+  approvalRejections: number;
+  retries: number;
+  compactions: number;
+  pauses: number;
+  tokenUsage: { prompt: number; completion: number };
+  startedAt: string;
+  updatedAt: string;
+}
+
+/** 执行开始前的测试基线：区分「预存失败」（不阻塞）与「引入失败」（阻塞）。 */
+export interface TestBaseline {
+  capturedAt: string;
+  passed: boolean;
+  failures: string[];
 }
 
 export interface LoopObservation {
@@ -221,7 +294,7 @@ export interface CapabilityBundleVersion {
   description: string;
   status: 'draft' | 'published';
   scopes: ScopeConfig[];
-  context: { recentMessages: number; maxSummaryChars: number };
+  context: { recentMessages: number; maxSummaryChars: number; maxPromptChars?: number };
   budget: { maxDecisionSteps: number; maxAttempts: number; maxToolSteps: number; maxRecoveryCycles: number };
   createdAt: string;
   publishedAt?: string;

@@ -25,6 +25,7 @@ import { getSession } from '../../services/io/auth';
 import { useAppInteraction } from '../../components/AppInteractionProvider';
 import ProjectAgentDrawer from '../../components/ProjectAgentDrawer';
 import { SectionErrorBoundary } from '../../components/SectionErrorBoundary';
+import { useListAnimation } from '../../hooks/useListAnimation';
 
 function createInitialDraft(): ProjectWizardDraft {
   return {
@@ -115,6 +116,7 @@ export default function ProjectsListPage() {
     const q = searchQuery.toLowerCase();
     return source.filter((p) => p.name.toLowerCase().includes(q));
   }, [projectList, sharedList, searchQuery, projectTab]);
+  const animatedProjects = useListAnimation(filteredList, (p) => p.id);
 
   const closeWizard = useCallback(() => {
     setWizardOpen(false);
@@ -409,10 +411,11 @@ export default function ProjectsListPage() {
             <h3>{searchQuery ? '没有匹配的项目' : '还没有项目'}</h3>
             <p className="hint">{searchQuery ? '尝试其他关键词' : '点击「新建项目」开始，或「导入项目」加载已有项目'}</p>
           </div>
-        ) : filteredList.map((p) => (
+        ) : animatedProjects.map(({ key, item: p, style }) => (
           <article
-            key={p.id}
+            key={key}
             className={`project-card project-card-${viewMode}`}
+            style={style}
           >
             <div className="card-cover" style={{ background: getProjectGradient(p.name) }} aria-hidden="true">
               <span>{p.name.trim().slice(0, 1) || '项'}</span>

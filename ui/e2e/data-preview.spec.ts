@@ -154,4 +154,51 @@ test.describe('数据准备工作台', () => {
     expect(Number(afterRows[0].出生率)).toBeCloseTo(beforeBirthRate + 0.2);
     expect(afterRows.slice(1)).toEqual(beforeRows.slice(1));
   });
+
+  test('单元格右键菜单展示编辑能力并支持 Esc 关闭', async ({ page }) => {
+    await createDataProject(page);
+    await page.locator('.ag-center-cols-container .ag-cell').first().click({ button: 'right' });
+    const menu = page.locator('.data-preview-context-menu');
+    await expect(menu).toBeVisible();
+    await expect(menu.getByRole('menuitem', { name: '编辑' })).toBeVisible();
+    await expect(menu.getByRole('menuitem', { name: '复制' })).toBeVisible();
+    await expect(menu.getByRole('menuitem', { name: '粘贴' })).toBeVisible();
+    await expect(menu.getByRole('menuitem', { name: '插入行（上方）' })).toBeVisible();
+    await expect(menu.getByRole('menuitem', { name: '删除行' })).toBeVisible();
+    await expect(menu.getByRole('menuitem', { name: '批量修改列值' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+  });
+
+  test('列头右键菜单可隐藏列', async ({ page }) => {
+    await createDataProject(page);
+    await page.locator('.ag-header-cell[col-id="参数ID"]').click({ button: 'right' });
+    const menu = page.locator('.data-preview-context-menu');
+    await expect(menu).toBeVisible();
+    await expect(menu.getByRole('menuitem', { name: '升序排列' })).toBeVisible();
+    await expect(menu.getByRole('menuitem', { name: '重命名列' })).toBeVisible();
+    await expect(menu.getByRole('menuitem', { name: '删除列' })).toBeVisible();
+    await menu.getByRole('menuitem', { name: '隐藏此列' }).click();
+    await expect(page.locator('.ag-header-cell[col-id="参数ID"]')).toHaveCount(0);
+  });
+
+  test('多行批量修改列值并支持撤销恢复', async ({ page }) => {
+    await createDataProject(page);
+    const keyCells = page.locator('.ag-pinned-left-cols-container .ag-cell[col-id="参数ID"]');
+    await keyCells.nth(0).click();
+    await page.keyboard.down('Control');
+    await keyCells.nth(1).click();
+    await page.keyboard.up('Control');
+    await keyCells.nth(0).click({ button: 'right' });
+    await page.locator('.data-preview-context-menu').getByRole('menuitem', { name: '批量修改列值' }).click();
+    await page.getByLabel('新值').fill('E2E-批量值');
+    await page.getByRole('button', { name: '应用' }).click();
+    await expect(keyCells.nth(0)).toContainText('E2E-批量值');
+    await expect(keyCells.nth(1)).toContainText('E2E-批量值');
+    await expect(page.locator('.data-preview-save-state')).toContainText('未保存');
+    await keyCells.nth(0).click();
+    await page.keyboard.press('Control+Z');
+    await expect(keyCells.nth(0)).not.toContainText('E2E-批量值');
+    await expect(page.locator('.data-preview-save-state')).toContainText('已保存');
+  });
 });

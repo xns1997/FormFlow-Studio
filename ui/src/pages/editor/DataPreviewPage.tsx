@@ -5,6 +5,7 @@ import { AllCommunityModule, ModuleRegistry, type ColDef, type GridApi } from 'a
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import Modal, { ModalFooter, ModalHeader } from '../../components/Modal';
 import { AntdCompatSelect } from '../../components/AntdFormControls';
+import DataPreviewContextMenu, { type DataPreviewMenuItem } from '../../components/DataPreviewContextMenu';
 import { DesignerIcon } from '../../designer/icons';
 import { useProjectStore } from '../../project/store';
 import { useSharedDataStore } from '../../services/data/sharedDataStore';
@@ -20,6 +21,7 @@ import {
 import {
   appendColumnToSheet,
   createEmptyTableEntry,
+  insertColumnInSheet,
   removeColumnFromSheet,
   renameColumnInSheet,
   reorderColumnsInSheet,
@@ -28,12 +30,19 @@ import {
   countCellChanges,
   dataPreviewApi,
   defaultPreviewQuery,
+  emptyUndoEntry,
+  invertUndoEntry,
+  normalizeCellForType,
+  parseClipboardTable,
   serializeUpdates,
+  undoEntryToBatchPayload,
   validateCellValue,
   validateChanges,
+  type CellUndoChange,
   type PreviewQuery,
   type PreviewRow,
   type RowChanges,
+  type UndoEntry,
 } from '../../services/data/dataPreviewClient';
 import {
   formatSequenceValue,
@@ -72,12 +81,64 @@ type CreateTableDraft = {
   sheetName: string;
   columns: WizardColumnDraft[];
 };
+type ContextMenuState = {
+  x: number;
+  y: number;
+  menu: 'cell' | 'row' | 'header' | 'empty';
+  rowKey?: string;
+  field?: string;
+};
+type PasteOverflowState = {
+  matrix: string[][];
+  anchorRow: number;
+  anchorCol: number;
+  extraRows: number;
+  extraCols: number;
+};
+
 function withRowIds(data: Record<string, unknown>[], offset = 0): PreviewRow[] {
   return data.map((row, index) => ({
     ...row,
     __rowKey: `idx:${offset + index}`,
     __rowIndex: offset + index,
   }));
+}
+
+function DataPreviewRowNumberCell({ value, data, reorderEnabled, draggingRowKey, dragOverRowKey, onDragStart, onDragOver, onDrop }: any) {
+  const rowKey = data?.__rowKey as string | undefined;
+  return (
+    <span
+      className={[
+        'data-preview-row-drag-handle',
+        draggingRowKey === rowKey ? 'is-dragging' : '',
+        reorderEnabled ? '' : 'is-disabled',
+      ].filter(Boolean).join(' ')}
+      draggable={reorderEnabled}
+      title={reorderEnabled ? '拖拽调整行顺序（Alt+↑/↓ 也可）' : '有排序或筛选时不能调整行顺序'}
+      onDragStart={(event) => {
+        if (!reorderEnabled || !rowKey) { event.preventDefault(); return; }
+        event.stopPropagation();
+        event.dataTransfer.effectAllowed = 'move';
+        onDragStart(rowKey);
+      }}
+      onDragOver={(event) => {
+        if (!reorderEnabled || !rowKey) return;
+        event.preventDefault();
+        event.stopPropagation();
+        event.dataTransfer.dropEffect = 'move';
+        onDragOver(rowKey);
+      }}
+      onDrop={(event) => {
+        if (!reorderEnabled || !rowKey) return;
+        event.preventDefault();
+        event.stopPropagation();
+        onDrop(rowKey);
+      }}
+    >
+      <span className="data-preview-row-drag-grip" aria-hidden="true">⋮⋮</span>
+      <span className="data-preview-row-drag-value">{String(value ?? '')}</span>
+    </span>
+  );
 }
 
 function inferColumnInfo(
@@ -110,6 +171,23 @@ function inferColumnInfo(
     uniqueCount: new Set(nonEmpty.map(String)).size,
     sampleValues,
   };
+}
+
+function orderRowsBy(rows: PreviewRow[], order: string[]): PreviewRow[] {
+  const byKey = new Map(rows.map((row) => [row.__rowKey, row]));
+  const ordered: PreviewRow[] = [];
+  const seen = new Set<string>();
+  for (const key of order) {
+    const row = byKey.get(key);
+    if (row && !seen.has(key)) {
+      ordered.push(row);
+      seen.add(key);
+    }
+  }
+  for (const row of rows) {
+    if (!seen.has(row.__rowKey)) ordered.push(row);
+  }
+  return ordered;
 }
 
 function buildProjectWithUpdatedTable(project: ProjectStructure, tableId: string, updatedTable: SrcTableEntry): ProjectStructure {
@@ -225,6 +303,22 @@ export default function DataPreviewPage({
   const [externalDsTesting, setExternalDsTesting] = useState(false);
   const [externalDsTestResult, setExternalDsTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [manuallyResizedColumns, setManuallyResizedColumns] = useState<Set<string>>(new Set());
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [showBatchEdit, setShowBatchEdit] = useState<{ field: string } | null>(null);
+  const [batchEditValue, setBatchEditValue] = useState('');
+  const [showFillDialog, setShowFillDialog] = useState<{ field: string; rowKey: string; maxRows: number } | null>(null);
+  const [fillCount, setFillCount] = useState(1);
+  const [pasteOverflow, setPasteOverflow] = useState<PasteOverflowState | null>(null);
+  const [showInsertColumn, setShowInsertColumn] = useState<{ anchor: string; direction: 'left' | 'right' } | null>(null);
+  const [insertColumnName, setInsertColumnName] = useState('');
+  const [insertColumnType, setInsertColumnType] = useState<ColumnType>('string');
+  const [insertColumnDefault, setInsertColumnDefault] = useState('');
+  const [draggingRowKey, setDraggingRowKey] = useState<string | null>(null);
+  const [dragOverRowKey, setDragOverRowKey] = useState<string | null>(null);
+  const undoStacksRef = useRef<Map<string, { undo: UndoEntry[]; redo: UndoEntry[] }>>(new Map());
+  const autoSaveTimerRef = useRef<number | null>(null);
+  const pasteFallbackRef = useRef<HTMLTextAreaElement>(null);
+  const handleSaveRef = useRef<() => Promise<boolean>>(async () => true);
 
   const projectId = project?.config?.id;
   const selectedTable = project?.srcTable.find((table) => table.id === selectedTableId) || null;
@@ -244,11 +338,230 @@ export default function DataPreviewPage({
   const changedCellCount = countCellChanges(pendingChanges);
   const changeCount = changedCellCount + pendingAdds.length + pendingDeletes.size;
   const currentViewKey = selectedTable && activeSheet ? `${selectedTable.id}:${activeSheet.name}` : '';
+  const reorderEnabled = !query.sortModel.some((rule) => rule.sort)
+    && Object.keys(query.filterModel).length === 0
+    && !query.search.trim()
+    && !query.keySearch.trim();
+
+  const updateConfig = useCallback(async (patch: Partial<TableConfig>) => {
+    if (!selectedTable || !activeSheet || !currentConfig) return;
+    await saveSheetConfig(selectedTable.id, activeSheet.name, { ...currentConfig, ...patch });
+  }, [selectedTable, activeSheet, currentConfig, saveSheetConfig]);
 
   const guardAction = useCallback((action: () => void) => {
     if (changeCount > 0) setPendingNavigation(() => action);
     else action();
   }, [changeCount]);
+
+  const getSelectedRowsSnapshot = useCallback((): PreviewRow[] => {
+    const selected = gridApiRef.current?.getSelectedRows() as PreviewRow[] | undefined;
+    if (selected && selected.length > 0) return selected;
+    if (selectedRowKey) {
+      const row = rows.find((item) => item.__rowKey === selectedRowKey);
+      return row ? [row] : [];
+    }
+    return [];
+  }, [selectedRowKey, rows]);
+
+  const pushUndo = useCallback((entry: UndoEntry) => {
+    if (!currentViewKey) return;
+    let stacks = undoStacksRef.current.get(currentViewKey);
+    if (!stacks) {
+      stacks = { undo: [], redo: [] };
+      undoStacksRef.current.set(currentViewKey, stacks);
+    }
+    stacks.undo.push(entry);
+    stacks.redo = [];
+  }, [currentViewKey]);
+
+  const clearUndoForContext = useCallback(() => {
+    if (currentViewKey) undoStacksRef.current.delete(currentViewKey);
+  }, [currentViewKey]);
+
+  const scheduleAutoSave = useCallback(() => {
+    if (!currentConfig?.autoSave) return;
+    if (autoSaveTimerRef.current) window.clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = window.setTimeout(() => {
+      void handleSaveRef.current();
+    }, 600);
+  }, [currentConfig?.autoSave]);
+
+  /** 统一把一次编辑（含撤销/重做）应用到本地状态；recordUndo=false 用于撤销/重做路径（由调用方管理栈）。 */
+  const commitMutation = useCallback((entry: UndoEntry, recordUndo = true) => {
+    const pendingAddKeys = new Set(pendingAdds.map((row) => row.__rowKey));
+    const newRowKeys = new Set(entry.addedRows.map((row) => row.__rowKey));
+    setRows((prev) => {
+      let next = [...prev];
+      const removedKeys = new Set(entry.deletedRows.filter((row) => row.__isNew).map((row) => row.__rowKey));
+      next = next.filter((row) => !removedKeys.has(row.__rowKey));
+      for (const change of entry.changes) {
+        const index = next.findIndex((row) => row.__rowKey === change.rowKey);
+        if (index >= 0) next[index] = { ...next[index], [change.field]: change.newValue };
+      }
+      for (const add of entry.addedRows) {
+        if (!next.some((row) => row.__rowKey === add.__rowKey)) {
+          const insertAt = Math.min(Math.max(0, add.__rowIndex ?? next.length), next.length);
+          next.splice(insertAt, 0, add);
+        }
+      }
+      if (entry.rowOrderAfter) next = orderRowsBy(next, entry.rowOrderAfter);
+      return next;
+    });
+    setPendingChanges((prev) => {
+      const next = new Map(prev);
+      for (const change of entry.changes) {
+        if (pendingAddKeys.has(change.rowKey) || newRowKeys.has(change.rowKey)) continue;
+        const rowChanges = { ...(next.get(change.rowKey) || {}) };
+        rowChanges[change.field] = { oldValue: change.oldValue, newValue: change.newValue };
+        if (rowChanges[change.field].oldValue === rowChanges[change.field].newValue) delete rowChanges[change.field];
+        if (Object.keys(rowChanges).length > 0) next.set(change.rowKey, rowChanges);
+        else next.delete(change.rowKey);
+      }
+      return next;
+    });
+    setPendingAdds((prev) => {
+      const removedKeys = new Set(entry.deletedRows.filter((row) => row.__isNew).map((row) => row.__rowKey));
+      let next = prev.filter((row) => !removedKeys.has(row.__rowKey));
+      for (const change of entry.changes) {
+        if (!next.some((row) => row.__rowKey === change.rowKey)) continue;
+        next = next.map((row) => row.__rowKey === change.rowKey ? { ...row, [change.field]: change.newValue } : row);
+      }
+      for (const add of entry.addedRows) {
+        if (add.__isNew && !next.some((row) => row.__rowKey === add.__rowKey)) next.push(add);
+      }
+      return next;
+    });
+    setPendingDeletes((prev) => {
+      const next = new Set(prev);
+      for (const row of entry.deletedRows) if (!row.__isNew) next.add(row.__rowKey);
+      for (const row of entry.addedRows) next.delete(row.__rowKey);
+      return next;
+    });
+    setValidationErrors((prev) => {
+      const next = new Map(prev);
+      for (const change of entry.changes) next.delete(`${change.rowKey}:${change.field}`);
+      for (const row of entry.deletedRows) {
+        for (const key of next.keys()) {
+          if (key.startsWith(`${row.__rowKey}:`)) next.delete(key);
+        }
+      }
+      return next;
+    });
+    const hasDataEffect = entry.changes.length > 0 || entry.addedRows.length > 0 || entry.deletedRows.length > 0;
+    const hasEffect = hasDataEffect || !!entry.rowOrderAfter;
+    if (hasEffect) {
+      if (hasDataEffect) setSaveState('dirty');
+      if (recordUndo) pushUndo(entry);
+      scheduleAutoSave();
+    }
+  }, [pendingAdds, pushUndo, scheduleAutoSave]);
+
+  const isPureRowOrderEntry = useCallback((entry: UndoEntry) => {
+    return entry.changes.length === 0 && entry.addedRows.length === 0 && entry.deletedRows.length === 0
+      && (!!entry.rowOrderBefore || !!entry.rowOrderAfter);
+  }, []);
+
+  const performUndo = useCallback(async () => {
+    const stacks = currentViewKey ? undoStacksRef.current.get(currentViewKey) : undefined;
+    const entry = stacks?.undo.pop();
+    if (!stacks || !entry) {
+      setFeedback({ type: 'info', message: '没有可撤销的操作' });
+      return;
+    }
+    if (isPureRowOrderEntry(entry)) {
+      if (entry.rowOrderBefore) {
+        setRows(orderRowsBy(rows, entry.rowOrderBefore));
+        void updateConfig({ rowOrder: entry.rowOrderBefore });
+      }
+      stacks.redo.push(entry);
+      return;
+    }
+    if (entry.committed) {
+      if (!projectId || !selectedTable || !activeSheet) {
+        stacks.undo.push(entry);
+        return;
+      }
+      const payload = undoEntryToBatchPayload(invertUndoEntry(entry), currentConfig?.keyFields || []);
+      try {
+        setSaving(true);
+        await dataPreviewApi.batch({
+          projectId,
+          tableId: selectedTable.id,
+          sheetName: activeSheet.name,
+          baseVersion: dataVersion,
+          adds: payload.adds,
+          updates: payload.updates,
+          deletes: payload.deletes,
+        });
+        await refreshProject();
+        setReloadToken((value) => value + 1);
+        stacks.redo.push({ ...invertUndoEntry(entry), committed: true });
+        setSaveState(changeCount > 0 ? 'dirty' : 'saved');
+        if (payload.unresolved.length > 0) {
+          setFeedback({ type: 'info', message: `已撤销，但有 ${payload.unresolved.length} 项因缺少稳定主键未能自动处理` });
+        }
+      } catch (error) {
+        stacks.undo.push(entry);
+        setFeedback({ type: 'error', message: error instanceof Error ? error.message : '撤销失败，请重试' });
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+    commitMutation(invertUndoEntry(entry), false);
+    stacks.redo.push(entry);
+  }, [currentViewKey, isPureRowOrderEntry, rows, updateConfig, projectId, selectedTable, activeSheet, currentConfig, dataVersion, refreshProject, commitMutation, changeCount]);
+
+  const performRedo = useCallback(async () => {
+    const stacks = currentViewKey ? undoStacksRef.current.get(currentViewKey) : undefined;
+    const entry = stacks?.redo.pop();
+    if (!stacks || !entry) {
+      setFeedback({ type: 'info', message: '没有可重做的操作' });
+      return;
+    }
+    if (isPureRowOrderEntry(entry)) {
+      if (entry.rowOrderAfter) {
+        setRows(orderRowsBy(rows, entry.rowOrderAfter));
+        void updateConfig({ rowOrder: entry.rowOrderAfter });
+      }
+      stacks.undo.push(entry);
+      return;
+    }
+    if (entry.committed) {
+      if (!projectId || !selectedTable || !activeSheet) {
+        stacks.redo.push(entry);
+        return;
+      }
+      const payload = undoEntryToBatchPayload(entry, currentConfig?.keyFields || []);
+      try {
+        setSaving(true);
+        await dataPreviewApi.batch({
+          projectId,
+          tableId: selectedTable.id,
+          sheetName: activeSheet.name,
+          baseVersion: dataVersion,
+          adds: payload.adds,
+          updates: payload.updates,
+          deletes: payload.deletes,
+        });
+        await refreshProject();
+        setReloadToken((value) => value + 1);
+        stacks.undo.push({ ...invertUndoEntry(entry), committed: true });
+        setSaveState(changeCount > 0 ? 'dirty' : 'saved');
+        if (payload.unresolved.length > 0) {
+          setFeedback({ type: 'info', message: `已重做，但有 ${payload.unresolved.length} 项因缺少稳定主键未能自动处理` });
+        }
+      } catch (error) {
+        stacks.redo.push(entry);
+        setFeedback({ type: 'error', message: error instanceof Error ? error.message : '重做失败，请重试' });
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+    commitMutation(entry, false);
+    stacks.undo.push(entry);
+  }, [currentViewKey, isPureRowOrderEntry, rows, updateConfig, projectId, selectedTable, activeSheet, currentConfig, dataVersion, refreshProject, commitMutation, changeCount]);
 
   const derivedColumns = useMemo(() => {
     if (!activeSheet) return [];
@@ -310,6 +623,52 @@ export default function DataPreviewPage({
     [],
   );
 
+  const persistRowOrder = useCallback((order: string[]) => {
+    void updateConfig({ rowOrder: order });
+  }, [updateConfig]);
+
+  const handleRowDragStart = useCallback((rowKey: string) => {
+    setDraggingRowKey(rowKey);
+    setDragOverRowKey(null);
+  }, []);
+
+  const handleRowDragOver = useCallback((rowKey: string) => {
+    if (draggingRowKey && rowKey !== draggingRowKey) setDragOverRowKey(rowKey);
+  }, [draggingRowKey]);
+
+  const handleRowDrop = useCallback((targetRowKey: string) => {
+    const sourceKey = draggingRowKey;
+    setDraggingRowKey(null);
+    setDragOverRowKey(null);
+    if (!sourceKey || sourceKey === targetRowKey || !reorderEnabled) return;
+    const before = rows.map((row) => row.__rowKey);
+    const sourceIndex = before.indexOf(sourceKey);
+    const targetIndex = before.indexOf(targetRowKey);
+    if (sourceIndex === -1 || targetIndex === -1) return;
+    const next = [...before];
+    const [moved] = next.splice(sourceIndex, 1);
+    next.splice(next.indexOf(targetRowKey), 0, moved);
+    setRows(orderRowsBy(rows, next));
+    persistRowOrder(next);
+    pushUndo({ changes: [], addedRows: [], deletedRows: [], rowOrderBefore: before, rowOrderAfter: next, committed: false });
+  }, [draggingRowKey, reorderEnabled, rows, persistRowOrder, pushUndo]);
+
+  const moveSelectedRow = useCallback((direction: 'up' | 'down') => {
+    const keys = getSelectedRowsSnapshot().map((row) => row.__rowKey);
+    if (keys.length !== 1) return;
+    const key = keys[0];
+    const before = rows.map((row) => row.__rowKey);
+    const index = before.indexOf(key);
+    const target = direction === 'up' ? index - 1 : index + 1;
+    if (index === -1 || target < 0 || target >= before.length) return;
+    const next = [...before];
+    const [moved] = next.splice(index, 1);
+    next.splice(target, 0, moved);
+    setRows(orderRowsBy(rows, next));
+    persistRowOrder(next);
+    pushUndo({ changes: [], addedRows: [], deletedRows: [], rowOrderBefore: before, rowOrderAfter: next, committed: false });
+  }, [getSelectedRowsSnapshot, rows, persistRowOrder, pushUndo]);
+
   const colDefs = useMemo<ColDef[]>(() => {
     if (!activeSheet || !currentConfig) return [];
     const rowNumberCol: ColDef[] = currentConfig.showRowNumbers !== false
@@ -329,6 +688,15 @@ export default function DataPreviewPage({
           resizable: false,
           cellClass: 'data-preview-row-number-cell',
           headerClass: 'data-preview-row-number-header',
+          cellRenderer: DataPreviewRowNumberCell,
+          cellRendererParams: {
+            reorderEnabled,
+            draggingRowKey,
+            dragOverRowKey,
+            onDragStart: handleRowDragStart,
+            onDragOver: handleRowDragOver,
+            onDrop: handleRowDrop,
+          },
         }]
       : [];
 
@@ -390,12 +758,7 @@ export default function DataPreviewPage({
         } satisfies ColDef;
       }),
     ];
-  }, [activeSheet, currentConfig, keyFieldSet, saving, pendingChanges, selectedTemplateFields, validationErrors]);
-
-  const updateConfig = useCallback(async (patch: Partial<TableConfig>) => {
-    if (!selectedTable || !activeSheet || !currentConfig) return;
-    await saveSheetConfig(selectedTable.id, activeSheet.name, { ...currentConfig, ...patch });
-  }, [selectedTable, activeSheet, currentConfig, saveSheetConfig]);
+  }, [activeSheet, currentConfig, keyFieldSet, saving, pendingChanges, selectedTemplateFields, validationErrors, reorderEnabled, draggingRowKey, dragOverRowKey, handleRowDragStart, handleRowDragOver, handleRowDrop]);
 
   const updateKeyFields = useCallback(async (keyFields: string[]) => {
     if (!activeSheet) return;
@@ -427,56 +790,463 @@ export default function DataPreviewPage({
     const newValue = event.newValue;
     if (oldValue === newValue) return;
     const rowKey = event.data?.__rowKey as string | undefined;
-    if (!rowKey || event.data?.__isNew) {
-      if (event.data?.__isNew) setPendingAdds((current) => current.map((row) => row.__rowKey === rowKey ? { ...row, [field]: newValue } : row));
-      setSaveState('dirty');
-      return;
-    }
-    setPendingChanges((prev) => {
-      const next = new Map(prev);
-      const rowChanges = { ...(next.get(rowKey) || {}) };
-      rowChanges[field] = { oldValue, newValue };
-      next.set(rowKey, rowChanges);
-      return next;
+    if (!rowKey) return;
+    commitMutation({
+      changes: [{ rowKey, field, oldValue, newValue }],
+      addedRows: [],
+      deletedRows: [],
+      committed: false,
     });
-    setSaveState('dirty');
-  }, [selectedTableId, activeSheet]);
+  }, [selectedTableId, activeSheet, commitMutation]);
 
-  const handleAddRow = useCallback(() => {
-    if (!activeSheet || !currentConfig) return;
-    const newRow: PreviewRow = { __rowKey: `new:${Date.now()}`, __rowIndex: totalRows + pendingAdds.length, __isNew: true };
+  const buildNewRow = useCallback((position?: number): PreviewRow => {
+    const newRow: PreviewRow = {
+      __rowKey: `new:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
+      __rowIndex: position ?? rows.length,
+      __isNew: true,
+    };
+    if (!activeSheet || !currentConfig) return newRow;
     activeSheet.headers.forEach((header) => { newRow[header] = ''; });
-    const referenceRows = rows;
     for (const header of activeSheet.headers) {
       const rule = currentConfig.sequenceRules?.[header];
       if (!rule) continue;
       if (rule.onlyWhenEmpty !== false && newRow[header] !== '') continue;
-      const nextNumber = getNextSequenceNumber(referenceRows, header, rule);
+      const nextNumber = getNextSequenceNumber(rows, header, rule);
       newRow[header] = formatSequenceValue(nextNumber, rule.formatter);
     }
-    setPendingAdds((prev) => [...prev, newRow]);
-    setRows((prev) => [...prev, newRow]);
-    setSaveState('dirty');
-  }, [activeSheet, currentConfig, totalRows, pendingAdds, rows]);
+    return newRow;
+  }, [activeSheet, currentConfig, rows]);
 
-  const handleDeleteRow = useCallback(() => {
-    if (!selectedRowKey) return;
-    const row = rows.find((item) => item.__rowKey === selectedRowKey);
-    if (!row) return;
-    if (row.__isNew) {
-      setPendingAdds((prev) => prev.filter((item) => item.__rowKey !== row.__rowKey));
-      setRows((prev) => prev.filter((item) => item.__rowKey !== row.__rowKey));
-      setSelectedRowIdx(null);
-      setSelectedRowKey(null);
-      setSaveState(changeCount > 1 ? 'dirty' : 'saved');
-      return;
-    }
-    setPendingDeletes((prev) => new Set(prev).add(row.__rowKey));
+  const handleAddRow = useCallback(() => {
+    if (!activeSheet || !currentConfig) return;
+    commitMutation({ changes: [], addedRows: [buildNewRow()], deletedRows: [], committed: false });
+  }, [activeSheet, currentConfig, buildNewRow, commitMutation]);
+
+  const handleDeleteRows = useCallback((rowKeys: string[]) => {
+    const snapshots = rowKeys
+      .map((key) => rows.find((row) => row.__rowKey === key))
+      .filter((row): row is PreviewRow => !!row);
+    if (snapshots.length === 0) return;
+    commitMutation({ changes: [], addedRows: [], deletedRows: snapshots, committed: false });
     setSelectedRowIdx(null);
     setSelectedRowKey(null);
     setShowDeleteRowConfirm(false);
-    setSaveState('dirty');
-  }, [selectedRowKey, rows, changeCount]);
+  }, [rows, commitMutation]);
+
+  const handleDeleteRow = useCallback(() => {
+    const keys = getSelectedRowsSnapshot().map((row) => row.__rowKey);
+    handleDeleteRows(keys.length > 0 ? keys : (selectedRowKey ? [selectedRowKey] : []));
+  }, [getSelectedRowsSnapshot, selectedRowKey, handleDeleteRows]);
+
+  const handleInsertRow = useCallback((rowKey: string, above: boolean) => {
+    const row = rows.find((item) => item.__rowKey === rowKey);
+    const position = row ? rows.indexOf(row) + (above ? 0 : 1) : rows.length;
+    commitMutation({ changes: [], addedRows: [buildNewRow(position)], deletedRows: [], committed: false });
+  }, [rows, buildNewRow, commitMutation]);
+
+  const handleDuplicateRow = useCallback((rowKey: string) => {
+    const source = rows.find((row) => row.__rowKey === rowKey);
+    if (!source) return;
+    const sourceIndex = rows.indexOf(source);
+    const clone: PreviewRow = {
+      ...Object.fromEntries(Object.entries(source).filter(([key]) => !key.startsWith('__'))),
+      __rowKey: `new:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
+      __rowIndex: sourceIndex + 1,
+      __isNew: true,
+    };
+    commitMutation({ changes: [], addedRows: [clone], deletedRows: [], committed: false });
+  }, [rows, commitMutation]);
+
+  const handleBatchEdit = useCallback(() => {
+    if (!showBatchEdit || !activeSheet || !activeSheetData) return;
+    const field = showBatchEdit.field;
+    const column = activeSheetData.columns.find((col) => col.name === field);
+    const targetRows = getSelectedRowsSnapshot();
+    const targetKeys = targetRows.length > 0
+      ? targetRows.map((row) => row.__rowKey)
+      : (contextMenu?.rowKey ? [contextMenu.rowKey] : []);
+    if (targetKeys.length === 0) {
+      setFeedback({ type: 'info', message: '请先选择要批量修改的行' });
+      return;
+    }
+    const locked = currentConfig?.lockedColumns.includes(field) || false;
+    const changes: CellUndoChange[] = [];
+    let skipped = 0;
+    for (const rowKey of targetKeys) {
+      const row = rows.find((item) => item.__rowKey === rowKey);
+      if (!row) continue;
+      if (locked) { skipped += 1; continue; }
+      const newValue = normalizeCellForType(batchEditValue, column?.dataType || 'string');
+      if (String(row[field] ?? '') === String(newValue ?? '')) continue;
+      changes.push({ rowKey, field, oldValue: row[field], newValue });
+    }
+    if (changes.length === 0) {
+      setFeedback({ type: 'info', message: locked ? '目标列已锁定，未修改任何值' : '没有需要修改的值' });
+      return;
+    }
+    commitMutation({ changes, addedRows: [], deletedRows: [], committed: false });
+    setShowBatchEdit(null);
+    setBatchEditValue('');
+    setFeedback({ type: 'success', message: `已更新 ${changes.length} 个单元格${skipped > 0 ? `，跳过 ${skipped} 个锁定单元格` : ''}` });
+  }, [showBatchEdit, activeSheet, activeSheetData, getSelectedRowsSnapshot, contextMenu, currentConfig, rows, batchEditValue, commitMutation]);
+
+  const handleFillDown = useCallback(() => {
+    if (!showFillDialog || !activeSheet) return;
+    const { field, rowKey, maxRows } = showFillDialog;
+    const count = Math.max(1, Math.min(fillCount, maxRows));
+    const source = rows.find((row) => row.__rowKey === rowKey);
+    if (!source) return;
+    const sourceValue = source[field];
+    const changes: CellUndoChange[] = [];
+    let skipped = 0;
+    const startIndex = rows.indexOf(source);
+    for (let i = 1; i <= count; i += 1) {
+      const target = rows[startIndex + i];
+      if (!target) break;
+      if (currentConfig?.lockedColumns.includes(field)) { skipped += 1; continue; }
+      if (String(target[field] ?? '') === String(sourceValue ?? '')) continue;
+      changes.push({ rowKey: target.__rowKey, field, oldValue: target[field], newValue: sourceValue });
+    }
+    if (changes.length === 0) {
+      setFeedback({ type: 'info', message: '没有需要填充的值' });
+      return;
+    }
+    commitMutation({ changes, addedRows: [], deletedRows: [], committed: false });
+    setShowFillDialog(null);
+    setFillCount(1);
+    setFeedback({ type: 'success', message: `已向下填充 ${changes.length} 个单元格${skipped > 0 ? `，跳过 ${skipped} 个锁定单元格` : ''}` });
+  }, [showFillDialog, fillCount, rows, currentConfig, commitMutation]);
+
+  const handleClearCells = useCallback((field: string, rowKey?: string) => {
+    if (!field) return;
+    const targets = rowKey
+      ? [rows.find((row) => row.__rowKey === rowKey)].filter((row): row is PreviewRow => !!row)
+      : getSelectedRowsSnapshot();
+    const locked = currentConfig?.lockedColumns.includes(field) || false;
+    const changes: CellUndoChange[] = [];
+    for (const target of targets) {
+      if (locked) continue;
+      if (target[field] == null || target[field] === '') continue;
+      changes.push({ rowKey: target.__rowKey, field, oldValue: target[field], newValue: '' });
+    }
+    if (changes.length === 0) {
+      setFeedback({ type: 'info', message: locked ? '该列已锁定编辑' : '没有需要清除的内容' });
+      return;
+    }
+    commitMutation({ changes, addedRows: [], deletedRows: [], committed: false });
+    setFeedback({ type: 'success', message: `已清除 ${changes.length} 个单元格` });
+  }, [rows, getSelectedRowsSnapshot, currentConfig, commitMutation]);
+
+  const readClipboardText = useCallback(async (): Promise<string | null> => {
+    try {
+      if (navigator.clipboard?.readText) return await navigator.clipboard.readText();
+    } catch {
+      // 剪贴板读取被拒绝或不可用，回退到隐藏 textarea 粘贴
+    }
+    return null;
+  }, []);
+
+  const applyPasteMatrix = useCallback((matrix: string[][], anchorRow: number, anchorCol: number, mode: 'append' | 'discard') => {
+    if (!activeSheet || !currentConfig || !activeSheetData) return;
+    const headers = activeSheet.headers;
+    const changes: CellUndoChange[] = [];
+    const addedRows: PreviewRow[] = [];
+    let skippedLocked = 0;
+    let droppedCols = 0;
+    let droppedRows = 0;
+    let nextRows = [...rows];
+    matrix.forEach((line, r) => {
+      const rowIndex = anchorRow + r;
+      let row: PreviewRow;
+      if (rowIndex < nextRows.length) {
+        row = nextRows[rowIndex];
+      } else {
+        if (mode === 'discard') { droppedRows += 1; return; }
+        row = {
+          __rowKey: `new:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
+          __rowIndex: rowIndex,
+          __isNew: true,
+        };
+        headers.forEach((header) => { row[header] = ''; });
+        nextRows.push(row);
+        addedRows.push(row);
+      }
+      line.forEach((cellText, c) => {
+        const colIndex = anchorCol + c;
+        if (colIndex >= headers.length) { droppedCols += 1; return; }
+        const field = headers[colIndex];
+        if (currentConfig.lockedColumns.includes(field)) { skippedLocked += 1; return; }
+        const column = activeSheetData.columns.find((col) => col.name === field);
+        const newValue = normalizeCellForType(cellText, column?.dataType || 'string');
+        if (String(row[field] ?? '') === String(newValue ?? '')) return;
+        changes.push({ rowKey: row.__rowKey, field, oldValue: row[field], newValue });
+        row = { ...row, [field]: newValue };
+        nextRows[rowIndex] = row;
+      });
+    });
+    if (changes.length === 0 && addedRows.length === 0) {
+      setFeedback({ type: 'info', message: '粘贴内容没有产生变化' });
+      return;
+    }
+    commitMutation({ changes, addedRows, deletedRows: [], committed: false });
+    const parts = [`已粘贴 ${changes.length} 个单元格`];
+    if (addedRows.length) parts.push(`新增 ${addedRows.length} 行`);
+    if (skippedLocked) parts.push(`跳过 ${skippedLocked} 个锁定单元格`);
+    if (droppedCols) parts.push(`丢弃 ${droppedCols} 个越界列`);
+    if (droppedRows) parts.push(`丢弃 ${droppedRows} 个越界行`);
+    setFeedback({ type: 'success', message: parts.join('；') });
+  }, [activeSheet, activeSheetData, currentConfig, rows, commitMutation]);
+
+  const runPasteText = useCallback((text: string, anchorRow: number, anchorCol: number) => {
+    const matrix = parseClipboardTable(text);
+    if (matrix.length === 0) {
+      setFeedback({ type: 'info', message: '剪贴板没有可粘贴的数据' });
+      return;
+    }
+    const maxCols = matrix.reduce((max, line) => Math.max(max, line.length), 0);
+    const extraRows = Math.max(0, anchorRow + matrix.length - rows.length);
+    const extraCols = Math.max(0, anchorCol + maxCols - (activeSheet?.headers.length || 0));
+    if (extraRows > 0 || extraCols > 0) {
+      setPasteOverflow({ matrix, anchorRow, anchorCol, extraRows, extraCols });
+      return;
+    }
+    applyPasteMatrix(matrix, anchorRow, anchorCol, 'discard');
+  }, [rows, activeSheet, applyPasteMatrix]);
+
+  const startPaste = useCallback(async () => {
+    const focused = gridApiRef.current?.getFocusedCell();
+    const selected = getSelectedRowsSnapshot();
+    const anchorRow = focused?.rowIndex ?? selected[0]?.__rowIndex ?? 0;
+    const focusedField = focused && focused.column.getColDef().field ? focused.column.getColDef().field : undefined;
+    const anchorCol = focusedField && activeSheet ? Math.max(0, activeSheet.headers.indexOf(focusedField)) : 0;
+    const text = await readClipboardText();
+    if (text == null) {
+      const textarea = pasteFallbackRef.current;
+      if (textarea) {
+        textarea.focus();
+        setFeedback({ type: 'info', message: '无法直接读取剪贴板，请在弹出的输入框内按 Ctrl+V 粘贴' });
+      } else {
+        setFeedback({ type: 'error', message: '无法读取剪贴板，请手动编辑单元格' });
+      }
+      return;
+    }
+    runPasteText(text, anchorRow, anchorCol);
+  }, [activeSheet, getSelectedRowsSnapshot, readClipboardText, runPasteText]);
+
+  const copySelection = useCallback(async () => {
+    if (!activeSheet) return;
+    const selected = getSelectedRowsSnapshot();
+    const focused = gridApiRef.current?.getFocusedCell();
+    const focusedField = focused ? focused.column.getColDef().field : undefined;
+    if (selected.length <= 1 && focused && focusedField && focusedField !== '__rowNumber') {
+      const row = rows[focused.rowIndex];
+      await navigator.clipboard.writeText(String(row?.[focusedField] ?? ''));
+      setFeedback({ type: 'success', message: '已复制单元格内容' });
+      return;
+    }
+    if (selected.length === 0) return;
+    const lines = selected.map((row) => activeSheet.headers.map((header) => String(row[header] ?? '')).join('\t'));
+    await navigator.clipboard.writeText(lines.join('\n'));
+    setFeedback({ type: 'success', message: `已复制 ${selected.length} 行 × ${activeSheet.headers.length} 列` });
+  }, [activeSheet, getSelectedRowsSnapshot, rows]);
+
+  const handleColumnMenuAction = useCallback((field: string, action: string) => {
+    const index = activeSheet?.headers.indexOf(field) ?? -1;
+    if (index < 0) return;
+    switch (action) {
+      case 'sortAsc':
+      case 'sortDesc':
+      case 'clearSort':
+        gridApiRef.current?.applyColumnState({ state: [{ colId: field, sort: action === 'sortAsc' ? 'asc' : action === 'sortDesc' ? 'desc' : null }] });
+        break;
+      case 'insertLeft':
+      case 'insertRight':
+        setInsertColumnName(`${field}_新列`);
+        setInsertColumnType('string');
+        setInsertColumnDefault('');
+        setShowInsertColumn({ anchor: field, direction: action === 'insertLeft' ? 'left' : 'right' });
+        break;
+      case 'rename':
+      case 'type':
+      case 'settings':
+        setSelectedColIdx(index);
+        setInspectorOpen(true);
+        break;
+      case 'delete':
+        setSelectedColIdx(index);
+        setShowDeleteColumnConfirm(true);
+        break;
+      case 'hide':
+        void updateConfig({ hiddenColumns: [...(currentConfig?.hiddenColumns || []), field] });
+        break;
+      case 'show':
+        void updateConfig({ hiddenColumns: (currentConfig?.hiddenColumns || []).filter((name) => name !== field) });
+        break;
+      case 'freeze':
+        void updateConfig({ frozenColumns: index + 1 });
+        break;
+      case 'lock':
+        void updateConfig({ lockedColumns: [...(currentConfig?.lockedColumns || []), field] });
+        break;
+      case 'unlock':
+        void updateConfig({ lockedColumns: (currentConfig?.lockedColumns || []).filter((name) => name !== field) });
+        break;
+    }
+  }, [activeSheet, currentConfig, updateConfig]);
+
+  const contextMenuItems = useMemo<DataPreviewMenuItem[]>(() => {
+    if (!contextMenu) return [];
+    const field = contextMenu.field;
+    const rowKey = contextMenu.rowKey;
+    const row = rowKey ? rows.find((item) => item.__rowKey === rowKey) : undefined;
+    const rowIndex = row ? rows.indexOf(row) : -1;
+    const fieldIndex = field && activeSheet ? activeSheet.headers.indexOf(field) : -1;
+    const locked = !!field && (currentConfig?.lockedColumns.includes(field) || false);
+    const lockedReason = locked ? '该列已锁定编辑，可在列头右键解锁' : '';
+    const selectedRows = getSelectedRowsSnapshot();
+    const selectedCount = selectedRows.length;
+    const items: DataPreviewMenuItem[] = [];
+
+    if (contextMenu.menu === 'row') {
+      items.push({
+        key: 'selectRow',
+        label: '选择整行',
+        onSelect: () => {
+          if (!rowKey) return;
+          const node = gridApiRef.current?.getRowNode(rowKey);
+          node?.setSelected(true, false);
+        },
+      });
+    }
+
+    if (contextMenu.menu === 'cell' && field) {
+      items.push({
+        key: 'edit',
+        label: '编辑',
+        disabled: locked,
+        disabledReason: lockedReason,
+        onSelect: () => {
+          if (rowIndex >= 0) gridApiRef.current?.startEditingCell({ rowIndex, colKey: field });
+        },
+      });
+      items.push({ key: 'copy', label: '复制', onSelect: () => void copySelection() });
+      items.push({ key: 'paste', label: '粘贴', onSelect: () => void startPaste() });
+      items.push({
+        key: 'clear',
+        label: '清除内容',
+        disabled: locked,
+        disabledReason: lockedReason,
+        onSelect: () => handleClearCells(field, rowKey),
+      });
+      const maxRows = rowIndex >= 0 ? Math.max(0, rows.length - rowIndex - 1) : 0;
+      items.push({
+        key: 'fill',
+        label: '填充下方',
+        disabled: locked || maxRows === 0,
+        disabledReason: locked ? lockedReason : maxRows === 0 ? '下方没有可填充的行' : '',
+        onSelect: () => {
+          if (!rowKey) return;
+          setFillCount(1);
+          setShowFillDialog({ field, rowKey, maxRows });
+        },
+      });
+    }
+
+    if (rowKey) {
+      items.push({
+        key: 'insertAbove',
+        label: '插入行（上方）',
+        separatorBefore: true,
+        onSelect: () => handleInsertRow(rowKey, true),
+      });
+      items.push({ key: 'insertBelow', label: '插入行（下方）', onSelect: () => handleInsertRow(rowKey, false) });
+      items.push({ key: 'duplicate', label: '复制行', onSelect: () => handleDuplicateRow(rowKey) });
+      items.push({
+        key: 'delete',
+        label: selectedCount > 1 ? `删除选中 ${selectedCount} 行` : '删除行',
+        danger: true,
+        onSelect: () => setShowDeleteRowConfirm(true),
+      });
+    }
+
+    if (contextMenu.menu === 'cell' && field) {
+      items.push({
+        key: 'batchEdit',
+        label: '批量修改列值',
+        separatorBefore: true,
+        disabled: locked || selectedCount === 0,
+        disabledReason: locked ? lockedReason : selectedCount === 0 ? '请先选择要批量修改的行' : '',
+        onSelect: () => {
+          setBatchEditValue(String(row?.[field] ?? ''));
+          setShowBatchEdit({ field });
+        },
+      });
+      items.push({
+        key: 'columnSettings',
+        label: '列设置',
+        disabled: fieldIndex < 0,
+        onSelect: () => {
+          if (fieldIndex >= 0) {
+            setSelectedColIdx(fieldIndex);
+            setInspectorOpen(true);
+          }
+        },
+      });
+    }
+
+    if (contextMenu.menu === 'header' && field) {
+      items.push(
+        { key: 'sortAsc', label: '升序排列', onSelect: () => handleColumnMenuAction(field, 'sortAsc') },
+        { key: 'sortDesc', label: '降序排列', onSelect: () => handleColumnMenuAction(field, 'sortDesc') },
+        { key: 'clearSort', label: '清除排序', onSelect: () => handleColumnMenuAction(field, 'clearSort') },
+        { key: 'insertLeft', label: '插入列（左侧）', separatorBefore: true, onSelect: () => handleColumnMenuAction(field, 'insertLeft') },
+        { key: 'insertRight', label: '插入列（右侧）', onSelect: () => handleColumnMenuAction(field, 'insertRight') },
+        { key: 'rename', label: '重命名列', onSelect: () => handleColumnMenuAction(field, 'rename') },
+        { key: 'type', label: '修改列类型', onSelect: () => handleColumnMenuAction(field, 'type') },
+        { key: 'delete', label: '删除列', danger: true, onSelect: () => handleColumnMenuAction(field, 'delete') },
+        {
+          key: 'visibility',
+          label: currentConfig?.hiddenColumns.includes(field) ? '显示此列' : '隐藏此列',
+          separatorBefore: true,
+          onSelect: () => handleColumnMenuAction(field, currentConfig?.hiddenColumns.includes(field) ? 'show' : 'hide'),
+        },
+        { key: 'freeze', label: '冻结到该列', onSelect: () => handleColumnMenuAction(field, 'freeze') },
+        {
+          key: 'lock',
+          label: locked ? '解锁编辑' : '锁定编辑',
+          onSelect: () => handleColumnMenuAction(field, locked ? 'unlock' : 'lock'),
+        },
+        { key: 'settings', label: '列设置', separatorBefore: true, onSelect: () => handleColumnMenuAction(field, 'settings') },
+      );
+    }
+
+    if (contextMenu.menu === 'empty') {
+      items.push(
+        { key: 'paste', label: '粘贴', onSelect: () => void startPaste() },
+        { key: 'addRow', label: '新增行', onSelect: handleAddRow },
+        { key: 'import', label: '导入数据', onSelect: () => fileRef.current?.click() },
+      );
+    }
+
+    return items;
+  }, [contextMenu, rows, activeSheet, currentConfig, getSelectedRowsSnapshot, copySelection, startPaste, handleClearCells, handleInsertRow, handleDuplicateRow, handleAddRow, handleColumnMenuAction]);
+
+  const handleGridContextMenu = useCallback((event: React.MouseEvent) => {
+    const target = event.target as HTMLElement;
+    if (target.closest('.ag-cell')) return;
+    event.preventDefault();
+    const headerCell = target.closest<HTMLElement>('.ag-header-cell');
+    if (headerCell) {
+      const colId = headerCell.getAttribute('col-id');
+      if (colId && colId !== '__rowNumber') {
+        setContextMenu({ x: event.clientX, y: event.clientY, menu: 'header', field: colId });
+        return;
+      }
+      setContextMenu(null);
+      return;
+    }
+    setContextMenu({ x: event.clientX, y: event.clientY, menu: 'empty' });
+  }, []);
 
   const discardChanges = useCallback(() => {
     setPendingChanges(new Map());
@@ -547,6 +1317,9 @@ export default function DataPreviewPage({
       setPendingDeletes(new Set());
       setValidationErrors(new Map());
       setSaveState('saved');
+      const stacks = currentViewKey ? undoStacksRef.current.get(currentViewKey) : undefined;
+      stacks?.undo.forEach((entry) => { entry.committed = true; });
+      stacks?.redo.forEach((entry) => { entry.committed = true; });
       setFeedback({ type: 'success', message: '数据修改已保存' });
       setDescribeReport(null);
       void describeApi.delete(selectedTable.id, activeSheet.name, projectId).catch(() => undefined);
@@ -560,7 +1333,7 @@ export default function DataPreviewPage({
     } finally {
       setSaving(false);
     }
-  }, [projectId, selectedTable, activeSheet, activeSheetData, changeCount, pendingAdds, pendingChanges, pendingDeletes, currentConfig, dataVersion, refreshProject]);
+  }, [projectId, selectedTable, activeSheet, activeSheetData, changeCount, pendingAdds, pendingChanges, pendingDeletes, currentConfig, dataVersion, refreshProject, currentViewKey]);
 
   const syncLocalSheet = useCallback((table: SrcTableEntry, sheetName: string) => {
     const sheet = table.sheets.find((entry) => entry.name === sheetName);
@@ -595,6 +1368,29 @@ export default function DataPreviewPage({
       setSaving(false);
     }
   }, [project, selectedTable, activeSheet, changeCount, handleSave, setProject, syncLocalSheet]);
+
+  const handleInsertColumn = useCallback(async () => {
+    if (!selectedTable || !activeSheet || !showInsertColumn || !insertColumnName.trim()) return;
+    await applyTableMutation(
+      (table) => insertColumnInSheet(table, activeSheet.name, showInsertColumn.anchor, showInsertColumn.direction, {
+        name: insertColumnName,
+        dataType: insertColumnType,
+        defaultValue: insertColumnDefault,
+      }),
+      (updatedTable) => {
+        const updatedSheet = updatedTable.sheets.find((sheet) => sheet.name === activeSheet.name);
+        const nextIndex = updatedSheet?.headers.findIndex((header) => header === insertColumnName.trim()) ?? -1;
+        if (nextIndex >= 0) {
+          setSelectedColIdx(nextIndex);
+          setInspectorOpen(true);
+        }
+        setShowInsertColumn(null);
+        setInsertColumnName('');
+        setInsertColumnType('string');
+        setInsertColumnDefault('');
+      },
+    );
+  }, [selectedTable, activeSheet, showInsertColumn, insertColumnName, insertColumnType, insertColumnDefault, applyTableMutation]);
 
   const handleUpload = useCallback(async (file: File, displayName = file.name, replaceTableId?: string) => {
     setLoading(true);
@@ -796,22 +1592,48 @@ export default function DataPreviewPage({
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       const editingText = target?.matches('input, textarea, [contenteditable="true"]');
-      if ((event.metaKey || event.ctrlKey) && event.key.toLocaleLowerCase() === 's') {
+      const mod = event.metaKey || event.ctrlKey;
+      const key = event.key.toLocaleLowerCase();
+      if (mod && key === 's') {
         event.preventDefault();
         void handleSave();
-      } else if ((event.metaKey || event.ctrlKey) && event.key.toLocaleLowerCase() === 'z' && !editingText) {
+      } else if (mod && key === 'z' && !editingText) {
         event.preventDefault();
-        discardChanges();
-      } else if (event.key === 'Delete' && selectedRowKey && !editingText) {
+        if (event.shiftKey) void performRedo();
+        else void performUndo();
+      } else if (mod && key === 'v' && !editingText) {
+        event.preventDefault();
+        void startPaste();
+      } else if (mod && key === 'c' && !editingText) {
+        event.preventDefault();
+        void copySelection();
+      } else if (event.key === 'Delete' && !editingText && (selectedRowKey || (gridApiRef.current?.getSelectedRows().length ?? 0) > 0)) {
         event.preventDefault();
         setShowDeleteRowConfirm(true);
+      } else if (event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown') && !editingText && reorderEnabled) {
+        event.preventDefault();
+        moveSelectedRow(event.key === 'ArrowUp' ? 'up' : 'down');
       } else if (event.key === 'Escape') {
         setShowDeleteRowConfirm(false);
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [handleSave, discardChanges, selectedRowKey]);
+  }, [handleSave, performUndo, performRedo, startPaste, copySelection, selectedRowKey, reorderEnabled, moveSelectedRow]);
+
+  useEffect(() => {
+    handleSaveRef.current = handleSave;
+  }, [handleSave]);
+
+  useEffect(() => {
+    if (changeCount === 0 && saveState === 'dirty') setSaveState('saved');
+  }, [changeCount, saveState]);
+
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) window.clearTimeout(autoSaveTimerRef.current);
+    };
+  }, []);
 
   const handleCreateTable = useCallback(async () => {
     const table = createEmptyTableEntry({
@@ -1047,7 +1869,8 @@ export default function DataPreviewPage({
                     <span>编辑</span>
                     <button type="button" className="ui-btn ui-btn-xs" onClick={handleAddRow} disabled={saving}>+ 新增行</button>
                     <button type="button" className="ui-btn ui-btn-xs" onClick={() => setShowDeleteRowConfirm(true)} disabled={!selectedRowKey || saving}>删除行</button>
-                    <button type="button" className="ui-btn ui-btn-xs" onClick={discardChanges} disabled={changeCount === 0 || saving}>撤销</button>
+                    <button type="button" className="ui-btn ui-btn-xs" onClick={() => void performUndo()} disabled={saving}>撤销</button>
+                    <button type="button" className="ui-btn ui-btn-xs" onClick={() => void performRedo()} disabled={saving}>重做</button>
                     <button type="button" className="ui-btn ui-btn-primary ui-btn-xs" onClick={() => void handleSave()} disabled={changeCount === 0 || saving}>{saving ? '保存中…' : '保存'}</button>
                   </div>
                   <div className="data-preview-tool-group">
@@ -1188,6 +2011,7 @@ export default function DataPreviewPage({
                   role="region"
                   aria-label={`${activeSheet.name} 数据表格`}
                   aria-busy={loading}
+                  onContextMenu={handleGridContextMenu}
                 >
                   <AgGridReact
                     rowData={rows}
@@ -1199,16 +2023,44 @@ export default function DataPreviewPage({
                     }}
                     rowHeight={currentConfig?.rowHeight}
                     headerHeight={currentConfig?.headerHeight}
-                    rowSelection={{ mode: 'singleRow' }}
+                    rowSelection={{ mode: 'multiRow', enableClickSelection: true, checkboxes: false }}
+                    suppressContextMenu
+                    preventDefaultOnContextMenu
                     getRowId={(params) => String(params.data.__rowKey)}
                     onGridReady={(event) => {
                       gridApiRef.current = event.api;
                       if (gridContainerRef.current?.clientWidth && currentConfig?.autoFitColumns && Object.keys(currentConfig.columnWidths).length === 0) event.api.sizeColumnsToFit();
                     }}
                     getRowClass={(params) => {
-                      if (params.data.__isNew) return 'ag-row-new';
-                      if (pendingDeletes.has(params.data.__rowKey)) return 'ag-row-deleted';
-                      return '';
+                      const classes: string[] = [];
+                      if (params.data.__isNew) classes.push('ag-row-new');
+                      if (pendingDeletes.has(params.data.__rowKey)) classes.push('ag-row-deleted');
+                      if (draggingRowKey === params.data.__rowKey) classes.push('data-preview-row-dragging');
+                      if (dragOverRowKey === params.data.__rowKey) classes.push('data-preview-row-drop-target');
+                      return classes.join(' ');
+                    }}
+                    onCellContextMenu={(event) => {
+                      const mouseEvent = event.event as MouseEvent | null;
+                      mouseEvent?.preventDefault();
+                      const field = event.colDef.field;
+                      setContextMenu({
+                        x: mouseEvent?.clientX ?? 0,
+                        y: mouseEvent?.clientY ?? 0,
+                        menu: !field || field === '__rowNumber' ? 'row' : 'cell',
+                        rowKey: event.data?.__rowKey,
+                        field: field && field !== '__rowNumber' ? field : undefined,
+                      });
+                    }}
+                    onRowDragEnd={() => {
+                      setDraggingRowKey(null);
+                      setDragOverRowKey(null);
+                    }}
+                    onDragStopped={() => {
+                      setDraggingRowKey(null);
+                      setDragOverRowKey(null);
+                    }}
+                    onCellMouseDown={(event) => {
+                      if (event.colDef.field === '__rowNumber') event.event?.stopPropagation();
                     }}
                     onColumnResized={onColumnResized}
                     onColumnHeaderClicked={(event) => {
@@ -1230,9 +2082,10 @@ export default function DataPreviewPage({
                       setSelectedRowKey(event.data?.__rowKey || null);
                     }}
                     onSelectionChanged={(event) => {
-                      const selected = event.api.getSelectedRows()[0] as PreviewRow | undefined;
-                      setSelectedRowIdx(selected?.__rowIndex ?? null);
-                      setSelectedRowKey(selected?.__rowKey || null);
+                      const selected = event.api.getSelectedRows() as PreviewRow[];
+                      const last = selected[selected.length - 1];
+                      setSelectedRowIdx(last?.__rowIndex ?? null);
+                      setSelectedRowKey(last?.__rowKey || null);
                     }}
                     onFilterChanged={(event) => {
                       const filterModel = event.api.getFilterModel();
@@ -1460,6 +2313,7 @@ export default function DataPreviewPage({
                         <label className="settings-option-item"><input type="checkbox" checked={currentConfig.showGridLines} onChange={(event) => void updateConfig({ showGridLines: event.target.checked })} /><span>显示网格线</span></label>
                         <label className="settings-option-item"><input type="checkbox" checked={currentConfig.filterEnabled} onChange={(event) => void updateConfig({ filterEnabled: event.target.checked })} /><span>启用筛选</span></label>
                         <label className="settings-option-item"><input type="checkbox" checked={currentConfig.sortEnabled} onChange={(event) => void updateConfig({ sortEnabled: event.target.checked })} /><span>启用排序</span></label>
+                        <label className="settings-option-item"><input type="checkbox" checked={currentConfig.autoSave === true} onChange={(event) => void updateConfig({ autoSave: event.target.checked })} /><span>自动保存数据修改</span></label>
                       </div>
                     </section>
 
@@ -1676,6 +2530,108 @@ export default function DataPreviewPage({
         </div>
       </div>
 
+      <textarea
+        ref={pasteFallbackRef}
+        tabIndex={-1}
+        aria-hidden="true"
+        style={{ position: 'fixed', left: -9999, top: 0, width: 1, height: 1, opacity: 0 }}
+        onPaste={(event) => {
+          const text = event.clipboardData?.getData('text') || '';
+          event.preventDefault();
+          const focused = gridApiRef.current?.getFocusedCell();
+          const focusedField = focused && focused.column.getColDef().field ? focused.column.getColDef().field : undefined;
+          const anchorRow = focused?.rowIndex ?? 0;
+          const anchorCol = focusedField && activeSheet ? Math.max(0, activeSheet.headers.indexOf(focusedField)) : 0;
+          pasteFallbackRef.current?.blur();
+          runPasteText(text, anchorRow, anchorCol);
+        }}
+      />
+
+      {contextMenu && (
+        <DataPreviewContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={contextMenuItems}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
+
+      <Modal open={!!showBatchEdit} onClose={() => setShowBatchEdit(null)} maxWidth={420}>
+        <ModalHeader title="批量修改列值" onClose={() => setShowBatchEdit(null)} />
+        <div className="modal-body">
+          <div className="data-preview-batch-edit-form">
+            <p className="data-preview-batch-edit-hint">将「{showBatchEdit?.field}」设置为统一值，应用到当前选中的 {getSelectedRowsSnapshot().length} 行（锁定列会被跳过）。</p>
+            <label><span>新值</span><input value={batchEditValue} onChange={(event) => setBatchEditValue(event.target.value)} autoFocus /></label>
+          </div>
+        </div>
+        <ModalFooter>
+          <button type="button" className="ui-btn" onClick={() => setShowBatchEdit(null)}>取消</button>
+          <button type="button" className="ui-btn ui-btn-primary" onClick={handleBatchEdit}>应用</button>
+        </ModalFooter>
+      </Modal>
+
+      <Modal open={!!showFillDialog} onClose={() => setShowFillDialog(null)} maxWidth={380}>
+        <ModalHeader title="填充下方" onClose={() => setShowFillDialog(null)} />
+        <div className="modal-body">
+          <div className="data-preview-batch-edit-form">
+            <p className="data-preview-batch-edit-hint">把「{showFillDialog?.field}」当前单元格的值向下填充（最多 {showFillDialog?.maxRows ?? 0} 行）。</p>
+            <label><span>填充行数</span><input type="number" min={1} max={showFillDialog?.maxRows ?? 1} value={fillCount} onChange={(event) => setFillCount(Math.max(1, Math.min(Number(event.target.value) || 1, showFillDialog?.maxRows ?? 1)))} /></label>
+          </div>
+        </div>
+        <ModalFooter>
+          <button type="button" className="ui-btn" onClick={() => setShowFillDialog(null)}>取消</button>
+          <button type="button" className="ui-btn ui-btn-primary" onClick={handleFillDown}>填充</button>
+        </ModalFooter>
+      </Modal>
+
+      <Modal open={!!pasteOverflow} onClose={() => setPasteOverflow(null)} maxWidth={480}>
+        <ModalHeader title="粘贴内容超出表格范围" onClose={() => setPasteOverflow(null)} />
+        <div className="modal-body">
+          <p>要粘贴的内容超出当前表格
+            {pasteOverflow?.extraRows ? `，多出 ${pasteOverflow.extraRows} 行` : ''}
+            {pasteOverflow?.extraCols ? `，多出 ${pasteOverflow.extraCols} 列` : ''}。请选择处理方式：</p>
+        </div>
+        <ModalFooter>
+          <button type="button" className="ui-btn" onClick={() => setPasteOverflow(null)}>取消</button>
+          <button type="button" className="ui-btn" onClick={() => {
+            if (!pasteOverflow) return;
+            const pending = pasteOverflow;
+            setPasteOverflow(null);
+            applyPasteMatrix(pending.matrix, pending.anchorRow, pending.anchorCol, 'discard');
+          }}>丢弃越界内容</button>
+          <button type="button" className="ui-btn ui-btn-primary" onClick={() => {
+            if (!pasteOverflow) return;
+            const pending = pasteOverflow;
+            setPasteOverflow(null);
+            applyPasteMatrix(pending.matrix, pending.anchorRow, pending.anchorCol, 'append');
+          }}>追加为新行</button>
+        </ModalFooter>
+      </Modal>
+
+      <Modal open={!!showInsertColumn} onClose={() => setShowInsertColumn(null)} maxWidth={420}>
+        <ModalHeader title={`在「${showInsertColumn?.anchor}」${showInsertColumn?.direction === 'left' ? '左侧' : '右侧'}插入列`} onClose={() => setShowInsertColumn(null)} />
+        <div className="modal-body">
+          <div className="data-preview-column-form">
+            <label><span>列名</span><input value={insertColumnName} onChange={(event) => setInsertColumnName(event.target.value)} autoFocus /></label>
+            <label>
+              <span>数据类型</span>
+              <AntdCompatSelect value={insertColumnType} onChange={(event) => setInsertColumnType(event.target.value as ColumnType)}>
+                <option value="string">string</option>
+                <option value="number">number</option>
+                <option value="boolean">boolean</option>
+                <option value="date">date</option>
+                <option value="enum">enum</option>
+              </AntdCompatSelect>
+            </label>
+            <label><span>默认值</span><input value={insertColumnDefault} onChange={(event) => setInsertColumnDefault(event.target.value)} /></label>
+          </div>
+        </div>
+        <ModalFooter>
+          <button type="button" className="ui-btn" onClick={() => setShowInsertColumn(null)}>取消</button>
+          <button type="button" className="ui-btn ui-btn-primary" onClick={handleInsertColumn} disabled={!insertColumnName.trim() || saving}>插入列</button>
+        </ModalFooter>
+      </Modal>
+
       {feedback && (
         <div className={`data-preview-feedback is-${feedback.type}`} role={feedback.type === 'error' ? 'alert' : 'status'} aria-live={feedback.type === 'error' ? 'assertive' : 'polite'}>
           <span className="data-preview-feedback-icon" aria-hidden="true">{feedback.type === 'success' ? '✓' : feedback.type === 'error' ? '!' : 'i'}</span>
@@ -1692,7 +2648,7 @@ export default function DataPreviewPage({
         <div className="modal-body"><p>当前有 {changeCount} 项修改。保存后继续，或放弃这些修改。</p></div>
         <ModalFooter>
           <button type="button" className="ui-btn" onClick={() => setPendingNavigation(null)}>留在当前页</button>
-          <button type="button" className="ui-btn ui-btn-danger" onClick={() => { const action = pendingNavigation; setPendingNavigation(null); discardChanges(); action?.(); }}>放弃修改</button>
+          <button type="button" className="ui-btn ui-btn-danger" onClick={() => { const action = pendingNavigation; setPendingNavigation(null); discardChanges(); clearUndoForContext(); action?.(); }}>放弃修改</button>
           <button type="button" className="ui-btn ui-btn-primary" disabled={saving} onClick={async () => { const action = pendingNavigation; if (await handleSave()) { setPendingNavigation(null); action?.(); } }}>保存并继续</button>
         </ModalFooter>
       </Modal>

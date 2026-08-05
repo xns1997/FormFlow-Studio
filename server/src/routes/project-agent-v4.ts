@@ -25,6 +25,8 @@ import {
   setAgentThreadMode,
   type AgentThread, type RunContext,
   classifyFailure,
+  listThreadCheckpoints, restoreProjectCheckpoint,
+  listThreadMetrics,
 } from '../agent-core';
 
 const router = Router();
@@ -585,6 +587,83 @@ router.post('/threads/:id/steer', (req: AuthRequest, res) => {
     res.status(202).json({ thread });
   } catch (error) {
     errorResponse(res, error, id);
+  }
+});
+
+// ─── Checkpoints（写前自动快照 + 用户回滚） ──────────────────────────────────
+
+router.get('/threads/:id/checkpoints', (req: AuthRequest, res) => {
+  try {
+    const thread = threadFor(req);
+    res.json({ checkpoints: listThreadCheckpoints(thread.id) });
+  } catch (error) {
+    errorResponse(res, error, requestId(req));
+  }
+});
+
+router.post('/threads/:id/checkpoints/restore', async (req: AuthRequest, res) => {
+  const id = requestId(req);
+  try {
+    const thread = threadFor(req);
+    if (['executing', 'awaiting_operation_approval'].includes(thread.status) || hasAgentThreadLease(thread.id)) {
+      throw new Error('任务仍在执行，请先暂停或停止后再恢复');
+    }
+    const available = listThreadCheckpoints(thread.id);
+    const requested = String(req.body.checkpointPath || available[0] || '');
+    if (!requested) throw new Error('没有可恢复的检查点');
+    const match = requested.match(/([A-Za-z0-9_-]+)__([\w.-]+)__(\d+)$/);
+    if (!match) throw new Error('检查点路径无效');
+    const [, projectId, taskId, attemptText] = match;
+    const restored = restoreProjectCheckpoint(thread.id, projectId, taskId, Number(attemptText));
+    if (!restored) throw new Error('检查点不存在');
+    thread.projectRevisions = {};
+    thread.status = 'paused';
+    appendAgentThreadEvent(thread, 'checkpoint.restored', { projectId, taskId, attempt: Number(attemptText), by: 'user' });
+    saveAgentThread(thread);
+    res.json({ success: true, thread });
+  } catch (error) {
+    errorResponse(res, error, id);
+  }
+});
+
+// ─── Metrics（运行统计） ───────────────────────────────────────────────────────
+
+router.get('/threads/:id/metrics', (req: AuthRequest, res) => {
+  try {
+    const thread = threadFor(req);
+    res.json({ metrics: thread.turnMetrics || null });
+  } catch (error) {
+    errorResponse(res, error, requestId(req));
+  }
+});
+
+router.get('/metrics', (req: AuthRequest, res) => {
+  try {
+    if (env.mode === 'cloud' && req.user?.role !== 'admin') {
+      res.status(403).json({ error: '需要管理员权限', requestId: requestId(req) });
+      return;
+    }
+    const rows = listThreadMetrics();
+    const summary = rows.reduce((acc, row) => {
+      const metrics = row.metrics;
+      if (!metrics) return acc;
+      acc.threads += 1;
+      acc.modelCalls += metrics.modelCalls;
+      acc.toolCalls += metrics.toolCalls;
+      acc.invalidToolCalls += metrics.invalidToolCalls;
+      acc.approvals += metrics.approvals;
+      acc.approvalRejections += metrics.approvalRejections;
+      acc.retries += metrics.retries;
+      acc.compactions += metrics.compactions;
+      acc.pauses += metrics.pauses;
+      acc.tokenPrompt += metrics.tokenUsage.prompt;
+      acc.tokenCompletion += metrics.tokenUsage.completion;
+      return acc;
+    }, { threads: 0, modelCalls: 0, toolCalls: 0, invalidToolCalls: 0, approvals: 0, approvalRejections: 0, retries: 0, compactions: 0, pauses: 0, tokenPrompt: 0, tokenCompletion: 0 });
+    const invalidRatio = summary.toolCalls ? Math.round((summary.invalidToolCalls / summary.toolCalls) * 100) : 0;
+    res.json({ summary: { ...summary, invalidRatioPct: invalidRatio }, threads: rows.map((row) => ({ threadId: row.threadId, title: row.title, status: row.status, metrics: row.metrics })) });
+  } catch (error) {
+    errorResponse(res, error, requestId(req));
   }
 });
 

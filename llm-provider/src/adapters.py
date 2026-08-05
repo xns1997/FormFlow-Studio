@@ -47,6 +47,12 @@ def _request(method: str, url: str, connection: Connection, **kwargs: Any) -> re
     return response
 
 
+def _unsupported_structured(error: ProviderError) -> bool:
+    """判断端点是否因为不支持 response_format/json_schema 而报错（用于回退提示词模式）。"""
+    message = str(error).lower()
+    return any(token in message for token in ("response_format", "json_schema", "unsupported", "not supported", "不支持"))
+
+
 class Adapter(ABC):
     capabilities = {"chat", "stream", "tools", "structured_output"}
 
@@ -83,9 +89,10 @@ class OpenAIAdapter(Adapter):
             headers["Authorization"] = f"Bearer {connection.api_key}"
         return headers
 
-    def _payload(self, request: ChatInput, stream: bool = False) -> dict[str, Any]:
+    def _payload(self, request: ChatInput, stream: bool = False, structured: bool | None = None) -> dict[str, Any]:
         messages = [message.model_dump(exclude_none=True) for message in request.messages]
-        if request.response_schema and request.connection.provider == "openai_compatible":
+        use_structured = request.response_schema is not None and (structured if structured is not None else request.connection.provider != "openai_compatible")
+        if request.response_schema and not use_structured:
             messages = [{
                 "role": "system",
                 "content": f"只返回符合以下 JSON Schema 的 JSON，不要 Markdown：{json.dumps(request.response_schema, ensure_ascii=False)}",
@@ -100,14 +107,21 @@ class OpenAIAdapter(Adapter):
             payload["max_tokens"] = request.max_tokens
         if request.tools:
             payload["tools"] = request.tools
-        if request.response_schema and request.connection.provider != "openai_compatible":
+        if use_structured:
             payload["response_format"] = {"type": "json_schema", "json_schema": {"name": "formflow_response", "strict": True, "schema": request.response_schema}}
         if stream:
             payload["stream_options"] = {"include_usage": True}
         return payload
 
     def chat(self, request: ChatInput) -> ChatOutput:
-        payload = _request("POST", f"{self._base(request.connection)}/chat/completions", request.connection, headers=self._headers(request.connection), json=self._payload(request)).json()
+        structured = None if request.connection.provider != "openai_compatible" else True
+        try:
+            payload = _request("POST", f"{self._base(request.connection)}/chat/completions", request.connection, headers=self._headers(request.connection), json=self._payload(request, structured=structured)).json()
+        except ProviderError as error:
+            # openai_compatible 端点可能不支持 response_format/json_schema：回退到提示词约束。
+            if request.connection.provider != "openai_compatible" or request.response_schema is None or not _unsupported_structured(error):
+                raise
+            payload = _request("POST", f"{self._base(request.connection)}/chat/completions", request.connection, headers=self._headers(request.connection), json=self._payload(request, structured=False)).json()
         choice = (payload.get("choices") or [{}])[0]
         message = choice.get("message") or {}
         content = message.get("content") or ""
@@ -120,7 +134,13 @@ class OpenAIAdapter(Adapter):
         return ChatOutput(content=content, model=payload.get("model") or request.connection.model, usage=payload.get("usage") or {}, tool_calls=message.get("tool_calls") or [], structured=structured, request_id=request.request_id)
 
     def stream(self, request: ChatInput) -> Iterator[dict[str, Any]]:
-        response = _request("POST", f"{self._base(request.connection)}/chat/completions", request.connection, headers=self._headers(request.connection), json=self._payload(request, True), stream=True)
+        structured = None if request.connection.provider != "openai_compatible" else True
+        try:
+            response = _request("POST", f"{self._base(request.connection)}/chat/completions", request.connection, headers=self._headers(request.connection), json=self._payload(request, True, structured), stream=True)
+        except ProviderError as error:
+            if request.connection.provider != "openai_compatible" or request.response_schema is None or not _unsupported_structured(error):
+                raise
+            response = _request("POST", f"{self._base(request.connection)}/chat/completions", request.connection, headers=self._headers(request.connection), json=self._payload(request, True, False), stream=True)
         for raw in response.iter_lines(decode_unicode=True):
             if not raw or not raw.startswith("data:"):
                 continue

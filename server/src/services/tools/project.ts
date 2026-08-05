@@ -24,6 +24,46 @@ export function registerProjectTools(register: RegisterFn, h: ToolHelpers) {
   register({ name: 'project.list', title: '项目列表', description: '列出可见 FormFlow 项目。', inputSchema: h.schema(), risk: 'read', examples: [{ summary: '列出全部项目', arguments: {} }], handler: (_input, context) => listProjectPackages().filter((item) => { try { return canAccessProject(user(context), requireProject(item.id), 'view'); } catch { return false; } }) });
   register({ name: 'project.get', title: '读取项目', description: '读取完整项目模型和 revision。', inputSchema: h.schema(['projectId'], { projectId: h.string }), risk: 'read', requiredAccess: 'view', examples: [{ summary: '读取项目并取最新 revision', arguments: { projectId: 'device_mgmt' }, success: { project: { config: { id: 'device_mgmt', name: '设备巡检管理' }, srcTable: [], forms: [], workflows: [] }, summary: { data: [], forms: [], workflows: [] }, revision: '…' }, errors: [{ code: 'PROJECT_NOT_FOUND', message: '项目不存在' }] }], handler: (input, context) => { const project = requireProject(projectId(input, context)); return { project, summary: projectSummary(project), revision: projectRevision(project) }; } });
   register({ name: 'project.inspect', title: '检查项目', description: '返回适合大模型消费的项目摘要。', inputSchema: h.schema(['projectId'], { projectId: h.string }), risk: 'read', requiredAccess: 'view', examples: [{ summary: '查看项目摘要（表/表单/流程/行为）', arguments: { projectId: 'device_mgmt' } }], handler: (input, context) => projectSummary(requireProject(projectId(input, context))) });
+  register({ name: 'project.map', title: '项目结构地图', description: '返回数据表/表单/流程/规则的结构化索引与交叉引用摘要（表单绑定到哪张表、规则挂在哪个表单、流程引用哪些表单），适合大模型快速定位而不必读取整包。', inputSchema: h.schema(['projectId'], { projectId: h.string }), risk: 'read', requiredAccess: 'view', examples: [{ summary: '查看项目结构地图', arguments: { projectId: 'device_mgmt' } }], handler: (input, context) => {
+    const project = requireProject(projectId(input, context));
+    const tables = (project.srcTable || []).map((table: any) => ({
+      id: table.id,
+      name: table.name || table.id,
+      sheets: (table.sheets || []).map((sheet: any) => ({ name: sheet.name, columns: (sheet.headers || []).length, keyFields: sheet.config?.keyFields || [], readOnly: !!sheet.config?.readOnly })),
+    }));
+    const tableIds = new Set(tables.map((table: any) => table.id));
+    const forms = (project.forms || []).map((form: any) => {
+      const boundTables = [...new Set((form.design?.bindings || [])
+        .map((binding: any) => binding?.config?.tableId)
+        .filter((tableId: string | undefined): tableId is string => Boolean(tableId) && tableIds.has(tableId)))];
+      return {
+        id: form.id,
+        name: form.name || form.id,
+        mode: form.design?.formMode || 'edit',
+        components: form.design?.components?.length || 0,
+        hasRuleCode: Boolean(String(form.ruleCode || '').trim()),
+        behaviors: form.behaviors?.length || 0,
+        boundTables,
+      };
+    });
+    const workflows = (project.workflows || []).map((flow: any) => ({ id: flow.id, name: flow.name || flow.id, nodes: flow.nodes?.length || 0, edges: flow.edges?.length || 0 }));
+    const behaviors = { global: project.globalBehaviors?.length || 0, sheets: project.sheetBehaviors?.length || 0, forms: (project.forms || []).reduce((count: number, form: any) => count + (form.behaviors?.length || 0), 0) };
+    const relations = (project.dataRelations || []).map((relation: any) => ({ id: relation.id, from: relation.fromTable || relation.sourceTable, to: relation.toTable || relation.targetTable }));
+    return {
+      tables,
+      forms,
+      workflows,
+      behaviors,
+      relations,
+      counts: {
+        tables: tables.length,
+        forms: forms.length,
+        workflows: workflows.length,
+        behaviors: behaviors.global + behaviors.sheets + behaviors.forms,
+        relations: relations.length,
+      },
+    };
+  } });
   register({ name: 'project.validate', title: '校验项目', description: '运行 FormFlow v2 结构、引用和主键校验。', inputSchema: h.schema(['projectId'], { projectId: h.string }), risk: 'read', requiredAccess: 'view', examples: [{ summary: '校验项目结构', arguments: { projectId: 'device_mgmt' }, success: { valid: true, errors: [], counts: { forms: 2, dataSources: 1, workflows: 1, behaviors: 2, outputs: 0 } }, errors: [{ code: 'MISSING_KEY', message: '可编辑 Sheet 必须配置主键' }] }], handler: (input, context) => validateProjectModel(requireProject(projectId(input, context))) });
   register({ name: 'project.create', title: '创建项目', description: '创建空 FormFlow v2 项目。', inputSchema: h.schema(['id', 'name', 'idempotencyKey'], { id: h.string, name: h.string, idempotencyKey: h.string }), risk: 'write', examples: [{ summary: '创建空项目', arguments: { id: 'device_mgmt', name: '设备巡检管理', idempotencyKey: 'dev-init-1' }, success: { revision: '…' }, errors: [{ code: 'PROJECT_EXISTS', message: '项目已存在' }] }], handler: (input, context) => h.commitProject(createEmptyProject({ ...input, ownerId: context.userId })) });
   register({ name: 'project.initialize', title: '初始化项目', description: '创建项目并按模板生成基础表单骨架。', inputSchema: h.schema(['id', 'name', 'idempotencyKey'], { id: h.string, name: h.string, description: h.string, author: h.string, tags: { type: 'array', items: h.string }, templateId: h.string, idempotencyKey: h.string }), risk: 'write', examples: [{ summary: '用游戏数据分析模板初始化项目', arguments: { id: 'device_mgmt', name: '设备巡检管理', templateId: 'game_analytics', idempotencyKey: 'init-1' } }], handler: (input, context) => {

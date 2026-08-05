@@ -24,7 +24,9 @@ export interface ProviderConfig {
   updatedAt: string;
 }
 
-export interface ModelRoute { providerId: string; model: string; }
+export type ModelPurpose = 'plan' | 'decision' | 'summarize' | 'verify';
+
+export interface ModelRoute { providerId: string; model: string; purpose?: ModelPurpose; }
 export interface ModelProfile {
   id: string;
   name: string;
@@ -221,4 +223,11 @@ export const llmManagement = {
   removeAgent(id: string, context: ScopeContext) { const store = readStore(); const target = store.agents.find((item) => item.id === id && visible(item, context)); if (!target) return false; store.agents = store.agents.filter((item) => item.id !== id); writeStore(store); return true; },
   resolveProfile(id: string, context: ScopeContext) { const profile = this.getProfile(id, context); if (!profile?.enabled) throw new Error(`模型 Profile 不存在或已禁用：${id}`); return profile; },
   resolveConnection(route: ModelRoute, context: ScopeContext) { const provider = this.getProvider(route.providerId, context); if (!provider?.enabled) throw new Error(`Provider 不存在或已禁用：${route.providerId}`); return { provider: provider.kind, baseUrl: provider.baseUrl, apiKey: decryptLlmSecret(provider.encryptedApiKey), model: route.model, timeoutMs: provider.timeoutMs, headers: provider.headers || {} }; },
+  /** 按用途选路：优先 purpose 匹配的路由，其次无 purpose 的通用路由，最后任意路由。 */
+  resolvePurposeRoute(profile: ModelProfile, purpose: ModelPurpose, _context: ScopeContext) {
+    const preferred = profile.routes.find((route) => route.purpose === purpose);
+    if (preferred) return preferred;
+    const generic = profile.routes.find((route) => !route.purpose);
+    return generic || profile.routes[0];
+  },
 };

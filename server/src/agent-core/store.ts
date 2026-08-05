@@ -16,10 +16,12 @@ import { env } from '../config/env';
 import type {
   AgentThread, AgentMode, CapabilityBundleVersion, PendingApproval, ThreadEvent,
   ThreadHistoryPage, ThreadHistorySummary, ThreadHistoryStatus, ThreadMessage, ThreadStatus,
+  ArtifactMeta, ThreadContext, TurnMetrics,
 } from './types';
 
 const THREAD_STORE_PATH = process.env.AGENT_THREAD_STORE_PATH || serverDataPath('configs', 'agent-threads.json');
 const BUNDLE_STORE_PATH = process.env.AGENT_BUNDLE_STORE_PATH || serverDataPath('configs', 'agent-capability-bundles.json');
+const ARTIFACT_DIR = process.env.AGENT_ARTIFACT_STORE_PATH || serverDataPath('agent-artifacts');
 
 const listeners = new Map<string, Set<(event: ThreadEvent) => void>>();
 const liveThreads = new Map<string, AgentThread>();
@@ -65,7 +67,7 @@ export function defaultCapabilityBundle(ownerId = 'system'): CapabilityBundleVer
       toolMode: 'all' as const,
       knowledge: [],
     })),
-    context: { recentMessages: 8, maxSummaryChars: 6000 },
+    context: { recentMessages: 8, maxSummaryChars: 6000, maxPromptChars: 40000 },
     budget: { maxDecisionSteps: 40, maxAttempts: 3, maxToolSteps: 24, maxRecoveryCycles: 6 },
     createdAt: now,
     publishedAt: now,
@@ -98,6 +100,9 @@ export function validateBundle(bundle: CapabilityBundleVersion) {
       knowledgeIds.add(item.id);
     }
   }
+  if (bundle.context.maxPromptChars != null && (bundle.context.maxPromptChars < 8000 || bundle.context.maxPromptChars > 120000)) {
+    throw new Error('maxPromptChars 必须在 8000 到 120000 之间');
+  }
   return { valid: true };
 }
 
@@ -125,7 +130,7 @@ export function saveCapabilityBundleDraft(input: Partial<CapabilityBundleVersion
     description: String(input.description || ''),
     status: 'draft',
     scopes: input.scopes?.length ? input.scopes : defaultCapabilityBundle(ownerId).scopes,
-    context: input.context || { recentMessages: 8, maxSummaryChars: 6000 },
+    context: input.context || { recentMessages: 8, maxSummaryChars: 6000, maxPromptChars: 40000 },
     budget: input.budget || { maxDecisionSteps: 40, maxAttempts: 3, maxToolSteps: 24, maxRecoveryCycles: 6 },
     createdAt: existing?.createdAt || now,
   };
@@ -175,6 +180,17 @@ export function initializeAgentStore() {
       await candidate.query(`CREATE TABLE IF NOT EXISTS formflow_agent_approvals (
         thread_id TEXT PRIMARY KEY REFERENCES formflow_agent_threads(id) ON DELETE CASCADE,
         id TEXT NOT NULL, payload JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
+      await candidate.query(`CREATE TABLE IF NOT EXISTS formflow_agent_artifacts (
+        thread_id TEXT NOT NULL REFERENCES formflow_agent_threads(id) ON DELETE CASCADE,
+        artifact_id TEXT NOT NULL, kind TEXT NOT NULL, payload JSONB NOT NULL,
+        size INTEGER NOT NULL DEFAULT 0, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (thread_id, artifact_id))`);
+      await candidate.query(`CREATE TABLE IF NOT EXISTS formflow_agent_turn_metrics (
+        thread_id TEXT NOT NULL REFERENCES formflow_agent_threads(id) ON DELETE CASCADE,
+        turn_id TEXT NOT NULL, payload JSONB NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (thread_id, turn_id))`);
+      await candidate.query(`CREATE INDEX IF NOT EXISTS formflow_agent_turn_metrics_created_idx ON formflow_agent_turn_metrics (created_at DESC)`);
       await candidate.query(`CREATE TABLE IF NOT EXISTS formflow_agent_capability_versions (
         id TEXT PRIMARY KEY, bundle_id TEXT NOT NULL, version INTEGER NOT NULL, owner_id TEXT NOT NULL,
         status TEXT NOT NULL, payload JSONB NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -191,6 +207,7 @@ export function initializeAgentStore() {
     let changed = false;
     for (const thread of recovered) {
       if (!thread.mode) { thread.mode = 'plan'; changed = true; }
+      if (typeof thread.recoveryCycles !== 'number') { thread.recoveryCycles = 0; changed = true; }
       if (['planning', 'executing'].includes(thread.status)) {
         thread.status = 'paused';
         for (const task of thread.plan?.tasks || []) if (task.status === 'running') task.status = 'pending';
@@ -285,6 +302,7 @@ export function createAgentThread(input: { tenantId: string; userId: string; pro
     events: [],
     consecutiveNoProgress: 0,
     blockedCount: 0,
+    recoveryCycles: 0,
     decisionSteps: 0,
     archived: false,
     createdAt: now,
@@ -525,6 +543,101 @@ export function compactThreadMessages(value: AgentThread, maxChars: number, rece
   value.summary = `${value.summary}\n${addition}`.trim().slice(-maxChars);
   value.messages = value.messages.slice(-recentMessages);
   appendAgentThreadEvent(value, 'context_compacted', { summarizedMessages: old.length, summaryChars: value.summary.length });
+}
+
+/** 写入结构化上下文契约（压缩后保留的关键状态）。 */
+export function setThreadContext(value: AgentThread, context: ThreadContext) {
+  value.context = { ...context, updatedAt: new Date().toISOString() };
+}
+
+// ─── Artifacts（完整工具结果，本地文件 / 云端 PG） ──────────────────────────────
+
+function artifactFilePath(threadId: string, artifactId: string) {
+  return joinSafeArtifact(threadId, artifactId);
+}
+
+function joinSafeArtifact(threadId: string, artifactId: string) {
+  if (!/^[\w-]+$/.test(threadId) || !/^[\w-]+$/.test(artifactId)) throw new Error('无效的 artifact 路径');
+  return `${ARTIFACT_DIR}/${threadId}/${artifactId}.json`;
+}
+
+export async function storeAgentArtifact(threadId: string, kind: string, payload: unknown, summary: string): Promise<ArtifactMeta> {
+  const artifactId = `art_${randomUUID()}`;
+  const meta: ArtifactMeta = { id: artifactId, kind, size: JSON.stringify(payload).length, summary, storedAt: new Date().toISOString() };
+  if (pool) {
+    await pool.query(
+      'INSERT INTO formflow_agent_artifacts(thread_id,artifact_id,kind,payload,size) VALUES($1,$2,$3,$4,$5) ON CONFLICT(thread_id,artifact_id) DO NOTHING',
+      [threadId, artifactId, kind, JSON.stringify(payload), meta.size],
+    );
+  } else {
+    const path = artifactFilePath(threadId, artifactId);
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, JSON.stringify({ ...meta, payload }, null, 2));
+  }
+  return meta;
+}
+
+export async function readAgentArtifact(threadId: string, artifactId: string): Promise<{ meta: ArtifactMeta; payload: unknown } | null> {
+  if (pool) {
+    const result = await pool.query(
+      'SELECT kind,size,payload,created_at FROM formflow_agent_artifacts WHERE thread_id=$1 AND artifact_id=$2',
+      [threadId, artifactId],
+    );
+    const row = result.rows[0];
+    if (!row) return null;
+    return {
+      meta: { id: artifactId, kind: row.kind, size: Number(row.size), summary: '', storedAt: row.created_at.toISOString?.() || new Date(row.created_at).toISOString() },
+      payload: row.payload,
+    };
+  }
+  const path = artifactFilePath(threadId, artifactId);
+  if (!existsSync(path)) return null;
+  const value = JSON.parse(readFileSync(path, 'utf8'));
+  return { meta: { id: artifactId, kind: value.kind, size: value.size, summary: value.summary, storedAt: value.storedAt }, payload: value.payload };
+}
+
+// ─── Turn metrics ─────────────────────────────────────────────────────────────
+
+export function resetThreadMetrics(value: AgentThread) {
+  value.turnMetrics = {
+    modelCalls: 0, toolCalls: 0, invalidToolCalls: 0, approvals: 0, approvalRejections: 0,
+    retries: 0, compactions: 0, pauses: 0,
+    tokenUsage: { prompt: 0, completion: 0 },
+    startedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export function bumpThreadMetric(value: AgentThread, patch: Partial<TurnMetrics> & { tokenUsage?: Partial<TurnMetrics['tokenUsage']> }) {
+  if (!value.turnMetrics) resetThreadMetrics(value);
+  const metrics = value.turnMetrics!;
+  const keys = ['modelCalls', 'toolCalls', 'invalidToolCalls', 'approvals', 'approvalRejections', 'retries', 'compactions', 'pauses'] as const;
+  for (const key of keys) {
+    const amount = (patch as any)[key];
+    if (typeof amount === 'number') (metrics as any)[key] = ((metrics as any)[key] || 0) + amount;
+  }
+  if (patch.tokenUsage) {
+    metrics.tokenUsage.prompt += patch.tokenUsage.prompt || 0;
+    metrics.tokenUsage.completion += patch.tokenUsage.completion || 0;
+  }
+  metrics.updatedAt = new Date().toISOString();
+}
+
+/** 把当前 turn 指标镜像到 PG（云端模式）；本地模式随线程 payload 持久化。 */
+export async function flushThreadMetrics(thread: AgentThread) {
+  if (!thread.turnMetrics || !pool) return;
+  const turnId = thread.turnId || `turn_${thread.id}`;
+  await pool.query(
+    `INSERT INTO formflow_agent_turn_metrics(thread_id,turn_id,payload)
+     VALUES($1,$2,$3)
+     ON CONFLICT(thread_id,turn_id) DO UPDATE SET payload=EXCLUDED.payload`,
+    [thread.id, turnId, JSON.stringify(thread.turnMetrics)],
+  );
+}
+
+/** 汇总所有线程的运行指标（供管理端点/统计面板）。 */
+export function listThreadMetrics(): Array<{ threadId: string; title: string; status: string; metrics: TurnMetrics | undefined }> {
+  return threads().map((thread) => ({ threadId: thread.id, title: thread.title, status: thread.status, metrics: thread.turnMetrics }));
 }
 
 export type { PendingApproval };

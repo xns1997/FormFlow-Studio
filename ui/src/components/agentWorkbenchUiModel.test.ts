@@ -62,11 +62,11 @@ test('surface items are concise one-liners covering messages, plan and tasks', (
   assert.equal(kinds.filter((kind) => kind === 'task').length, 2);
   for (const item of items) {
     assert.ok(item.title.length > 0);
-    assert.ok(item.meta.length > 0);
+    if (item.kind !== 'message') assert.ok(item.meta.length > 0);
   }
   const task = items.find((item) => item.ref.taskId === 't2')!;
   assert.equal(task.state, 'running');
-  assert.match(task.meta, /已试 1 次/);
+  assert.match(task.meta, /×1/);
 });
 
 test('plan progress counts passed tasks', () => {

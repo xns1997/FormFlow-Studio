@@ -1,37 +1,40 @@
 import React from 'react';
-import { modeLabels, planProgress, statusLabels, type ProjectAgentThread } from './projectAgentUiModel';
+import { modeLabelsShort, planProgress, statusLabelsShort, statusSymbols, type ProjectAgentThread } from './projectAgentUiModel';
 
 export default function WorkbenchStatusBar({
-  thread, busy, onControl, onInterrupt,
+  thread, busy, onControl, onInterrupt, onRestoreCheckpoint, hasCheckpoints,
 }: {
   thread: ProjectAgentThread | null;
   busy?: boolean;
   onControl: (action: 'pause' | 'continue' | 'stop' | 'retry') => void;
   onInterrupt: () => void;
+  onRestoreCheckpoint?: () => void;
+  hasCheckpoints?: boolean;
 }) {
   if (!thread) return null;
   const progress = planProgress(thread);
   const running = ['planning', 'executing'].includes(thread.status);
-  const label = thread.status === 'planning' ? '正在生成目标契约'
-    : thread.status === 'executing' ? (thread.plan?.tasks.some((task) => task.status === 'running') ? '正在执行任务' : '正在判断下一步')
-      : thread.status === 'awaiting_operation_approval' ? '等待操作确认'
-        : thread.status === 'awaiting_plan_approval' ? '等待确认计划'
-          : thread.status === 'blocked' ? '执行受阻'
-            : statusLabels[thread.status];
+  const label = statusLabelsShort[thread.status];
+  const symbol = statusSymbols[thread.status];
   const detail = thread.plan?.tasks.find((task) => task.status === 'running')?.title
-    || (thread.blockedCount ? `同一阻塞条件出现 ${thread.blockedCount} 次` : thread.consecutiveNoProgress ? `连续 ${thread.consecutiveNoProgress} 步无进展` : thread.plan?.goal || '');
+    || (thread.blockedCount ? `×${thread.blockedCount}` : thread.consecutiveNoProgress ? `无进展 ×${thread.consecutiveNoProgress}` : thread.plan?.goal || '');
+  const metrics = thread.turnMetrics;
+  const metricsText = metrics
+    ? `模型 ${metrics.modelCalls} · 工具 ${metrics.toolCalls}${metrics.retries ? ` · 重试 ${metrics.retries}` : ''}${metrics.compactions ? ` · 压缩 ${metrics.compactions}` : ''}${metrics.pauses ? ` · 暂停 ${metrics.pauses}` : ''}`
+    : '';
   return (
     <section className="agent-statusbar" aria-label="会话状态">
-      {thread.mode && <span className={`agent-badge ${thread.mode === 'goal' ? 'agent-badge-accent' : 'agent-badge-muted'}`}>{modeLabels[thread.mode]}</span>}
-      <span className={`agent-badge ${thread.status === 'blocked' || thread.status === 'failed' ? 'agent-badge-danger' : thread.status === 'awaiting_operation_approval' || thread.status === 'awaiting_plan_approval' || thread.status === 'paused' ? 'agent-badge-warning' : thread.status === 'completed' ? 'agent-badge-success' : 'agent-badge-accent'}`}>{label}</span>
-      <span className="agent-status-copy"><strong>{detail || '等待你描述目标'}</strong><small>{progress.total ? `${progress.passed}/${progress.total} 项任务完成` : '尚未生成计划'}</small></span>
+      {thread.mode && <span className={`agent-badge ${thread.mode === 'goal' ? 'agent-badge-accent' : 'agent-badge-muted'}`}>{modeLabelsShort[thread.mode]}</span>}
+      <span className={`agent-badge ${thread.status === 'blocked' || thread.status === 'failed' ? 'agent-badge-danger' : thread.status === 'awaiting_operation_approval' || thread.status === 'awaiting_plan_approval' || thread.status === 'paused' ? 'agent-badge-warning' : thread.status === 'completed' ? 'agent-badge-success' : 'agent-badge-accent'}`} title={label} aria-label={label}>{symbol}</span>
+      <span className="agent-status-copy"><strong>{detail || '等待你描述目标'}</strong><small>{progress.total ? `${progress.passed}/${progress.total} 步` : '无计划'}{metricsText ? ` · ${metricsText}` : ''}</small></span>
       {progress.total > 0 && <div className="agent-progress" style={{ width: 96, flex: '0 0 auto' }} aria-label={`任务完成度 ${progress.percent}%`}><span style={{ width: `${progress.percent}%` }} /></div>}
       <span className="agent-status-actions">
-        {thread.status === 'executing' && <button type="button" className="agent-btn" disabled={busy} onClick={() => onControl('pause')}>暂停</button>}
-        {thread.status === 'executing' && <button type="button" className="agent-btn" disabled={busy} onClick={onInterrupt}>打断</button>}
-        {['paused', 'stopped'].includes(thread.status) && <button type="button" className="agent-btn" disabled={busy} onClick={() => onControl('continue')}>继续</button>}
-        {thread.status === 'blocked' && <button type="button" className="agent-btn" disabled={busy} onClick={() => onControl('retry')}>重试</button>}
-        {running && <button type="button" className="agent-btn agent-btn-danger" disabled={busy} onClick={() => onControl('stop')}>停止</button>}
+        {thread.status === 'executing' && <button type="button" className="agent-btn agent-icon-btn" title="暂停" aria-label="暂停" disabled={busy} onClick={() => onControl('pause')}>⏸</button>}
+        {thread.status === 'executing' && <button type="button" className="agent-btn agent-icon-btn" title="打断" aria-label="打断" disabled={busy} onClick={onInterrupt}>✋</button>}
+        {['paused', 'stopped'].includes(thread.status) && <button type="button" className="agent-btn agent-icon-btn" title="继续" aria-label="继续" disabled={busy} onClick={() => onControl('continue')}>▶</button>}
+        {thread.status === 'blocked' && <button type="button" className="agent-btn agent-icon-btn" title="重试" aria-label="重试" disabled={busy} onClick={() => onControl('retry')}>↻</button>}
+        {hasCheckpoints && ['paused', 'stopped', 'blocked', 'failed'].includes(thread.status) && <button type="button" className="agent-btn agent-icon-btn" title="恢复检查点" aria-label="恢复检查点" disabled={busy} onClick={onRestoreCheckpoint}>↩</button>}
+        {running && <button type="button" className="agent-btn agent-btn-danger agent-icon-btn" title="停止" aria-label="停止" disabled={busy} onClick={() => onControl('stop')}>⏹</button>}
       </span>
     </section>
   );

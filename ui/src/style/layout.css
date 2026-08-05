@@ -337,7 +337,7 @@
 .project-agent-project-scope > summary { min-height: 30px; display: flex; align-items: center; gap: 5px; list-style: none; border: 1px solid var(--accent-line); border-radius: 7px; padding: 5px 9px; background: var(--accent-soft); color: var(--accent); cursor: pointer; font-size: 11px; white-space: nowrap; }
 .project-agent-project-scope > summary::-webkit-details-marker { display: none; }
 .project-agent-project-scope > summary b { display: grid; min-width: 16px; height: 16px; place-items: center; border-radius: 999px; background: var(--accent); color: #fff; font-size: 10px; }
-.project-agent-project-scope-card { position: absolute; z-index: 12; top: 36px; right: 0; width: 360px; max-height: min(520px, 72vh); overflow: hidden; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); box-shadow: var(--shadow-md); }
+.project-agent-project-scope-card { position: absolute; z-index: 12; top: 36px; right: 0; width: min(360px, calc(100% - 8px)); max-width: calc(100vw - 16px); max-height: min(520px, 72vh); overflow: hidden; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); box-shadow: var(--shadow-md); }
 .project-agent-project-scope-card > header { display: grid; gap: 2px; border-bottom: 1px solid var(--line); padding: 11px 12px; }
 .project-agent-project-scope-card > header strong { color: var(--text); font-size: 12px; }
 .project-agent-project-scope-card > header span { color: var(--text-secondary); font-size: 10px; }
@@ -354,7 +354,7 @@
 .project-agent-project-options > p { margin: 18px 8px; color: var(--text-secondary); font-size: 10px; text-align: center; }
 .project-agent-project-scope-card > footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--line); padding: 9px 11px; }
 .project-agent-project-scope-card > footer span { color: var(--text-secondary); font-size: 10px; }
-.project-agent-project-scope-card > footer button { border: 1px solid var(--accent); border-radius: 7px; padding: 6px 9px; background: var(--accent); color: #fff; cursor: pointer; font-size: 10px; }
+.project-agent-project-scope-card > footer button { border: 1px solid var(--accent); border-radius: 7px; padding: 7px 11px; min-height: 28px; background: var(--accent); color: #fff; cursor: pointer; font-size: 11px; white-space: nowrap; }
 .project-agent-stagebar { flex: 0 0 auto; display: flex; gap: 0; padding: 8px 16px; background: var(--panel); }
 .project-agent-stagebar span { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 0; padding: 3px 4px; box-shadow: none; background: transparent; }
 .project-agent-stagebar span:not(:last-child)::after { content: ''; position: absolute; left: calc(50% + 30px); right: calc(-50% + 30px); top: 50%; height: 1px; background: var(--line); }

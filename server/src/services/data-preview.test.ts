@@ -19,6 +19,27 @@ test('query filters and sorts globally before pagination while preserving source
   assert.equal(result.rows[0].__rowIndex, 2);
 });
 
+test('row order reorders matched keys and appends unmatched rows in original relative order', () => {
+  const result = queryRows({
+    rows: [{ id: '1' }, { id: '2' }, { id: '3' }, { id: '4' }],
+    headers: ['id'], keyFields: ['id'],
+    rowOrder: ['key:3', 'key:1'],
+    page: 1, pageSize: 10,
+  });
+  assert.deepEqual(result.rows.map((row) => row.id), ['3', '1', '2', '4']);
+});
+
+test('row order is ignored when a sort is active', () => {
+  const result = queryRows({
+    rows: [{ id: '1', n: 1 }, { id: '2', n: 2 }],
+    headers: ['id', 'n'], keyFields: ['id'],
+    rowOrder: ['key:2', 'key:1'],
+    sortModel: [{ colId: 'n', sort: 'asc' }],
+    page: 1, pageSize: 10,
+  });
+  assert.deepEqual(result.rows.map((row) => row.id), ['1', '2']);
+});
+
 test('batch changes update and delete by stable keys then append rows', () => {
   const rows = [{ id: 'A', value: 1 }, { id: 'B', value: 2 }];
   const next = applyBatchChanges(rows, ['id'], {

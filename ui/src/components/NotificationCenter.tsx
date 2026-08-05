@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Badge, Button, Drawer, Switch, Tabs, message } from 'antd';
 import { request } from '../services/io/api';
 import { getSession } from '../services/io/auth';
+import { useListAnimation } from '../hooks/useListAnimation';
 
 type Notice = { id: string; title: string; message: string; level: string; read: boolean; createdAt: string };
 
@@ -49,12 +50,13 @@ export function NotificationCenter() {
   }
 
   const unreadCount = items.filter((item) => !item.read).length;
+  const animatedItems = useListAnimation(items, (item) => item.id);
 
   return <>
     <Badge count={unreadCount} size="small"><Button type="text" onClick={() => { setOpen(true); refresh(); }}>通知</Button></Badge>
     <Drawer title="通知中心" open={open} onClose={() => setOpen(false)} size="large">
       <Tabs items={[
-        { key: 'list', label: '通知', children: <div className="notification-list">{items.map((item) => <button type="button" key={item.id} onClick={() => mark(item)} className={`notification-item ${item.read ? '' : 'notification-unread'}`}><strong>{item.title}</strong><span>{item.message} · {new Date(item.createdAt).toLocaleString()}</span></button>)}</div> },
+        { key: 'list', label: '通知', children: <div className="notification-list">{animatedItems.map(({ key, item, style }) => <button type="button" key={key} onClick={() => mark(item)} style={style} className={`notification-item ${item.read ? '' : 'notification-unread'}`}><strong>{item.title}</strong><span>{item.message} · {new Date(item.createdAt).toLocaleString()}</span></button>)}</div> },
         { key: 'settings', label: '设置', children: <div className="notification-settings"><label>站内信 <Switch checked={settings.inApp} onChange={(inApp) => save({ ...settings, inApp })}/></label><label>邮件 <Switch checked={settings.email} onChange={(email) => save({ ...settings, email })}/></label><label>Webhook <Switch checked={settings.webhook} onChange={(webhook) => save({ ...settings, webhook })}/></label></div> },
       ]}/>
     </Drawer>

@@ -1,0 +1,106 @@
+[
+  {
+    "id": "build-device-project",
+    "title": "从零构建设备巡检项目",
+    "mode": "goal",
+    "prompt": "新建一个设备巡检管理项目（id: device_mgmt）。建一张设备数据表：列包括 编号(string)、名称(string)、类型(enum: 机床/泵/阀门)、状态(enum: 正常/待检/停用)、评分(number)，主键为 编号，并写入 3 行示例数据；再为数据表生成一个录入表单 device_edit；给表单加一条规则：提交时评分低于 60 提示。完成后运行项目回归测试。",
+    "successCriteria": [
+      "项目 device_mgmt 存在且结构校验通过",
+      "数据表 device 存在，主键为 编号，包含 3 行数据",
+      "表单 device_edit 存在且绑定 device 表",
+      "表单存在评分校验规则且通过形式化验证",
+      "完成前执行过 project_test.run",
+      "线程最终状态 completed"
+    ],
+    "assertions": [
+      "events 包含 plan_proposed、task_completed、gate_evidence(scenario_result)",
+      "events 包含 tool_call(project_test.run)",
+      "无效工具调用比 ≤ 15%"
+    ],
+    "tags": ["write-plan", "data", "form", "behavior", "test-gate"]
+  },
+  {
+    "id": "fix-validation-error",
+    "title": "修复结构校验错误",
+    "mode": "plan",
+    "prompt": "项目 repair_demo 当前结构校验未通过：可编辑 Sheet 缺少主键。请读取项目，定位问题，补齐主键配置并让 project.validate 通过，最后运行回归测试确认没有新增失败。",
+    "successCriteria": [
+      "project.validate 通过",
+      "Sheet 主键已配置且 data_keys.validate 通过",
+      "完成前执行过 project_test.run",
+      "线程最终状态 completed"
+    ],
+    "assertions": [
+      "事件含 tool_call(data_sheet.configure) 或 data_keys.validate",
+      "事件含 tool_call(project.validate) 至少两次（修复前后）",
+      "无 no_progress 暂停超过 1 次"
+    ],
+    "tags": ["read-write-plan", "data", "recovery"]
+  },
+  {
+    "id": "import-batch-data",
+    "title": "批量导入业务数据",
+    "mode": "goal",
+    "prompt": "把 sample-data.csv 的数据导入到项目 import_demo 的 sales 表（按文件表头建表），配置主键后运行 data_keys.validate，再跑一次项目回归。",
+    "successCriteria": [
+      "sales 表存在且行数与 CSV 一致",
+      "主键校验通过",
+      "完成前执行过 project_test.run",
+      "线程最终状态 completed"
+    ],
+    "assertions": [
+      "事件含 tool_call(data_source.import) 或 data_source.create",
+      "事件含 tool_call(data_keys.validate)"
+    ],
+    "tags": ["data", "import", "test-gate"]
+  },
+  {
+    "id": "multi-resource-read-before-write",
+    "title": "批量只读后写配置",
+    "mode": "goal",
+    "prompt": "项目 multi_demo 已有多张表和多个表单。先并行读取项目现状（一次决策里批量读取数据表目录、表单目录和项目校验），再为缺主键的表补齐主键，最后通过全部门禁完成。",
+    "successCriteria": [
+      "事件含 batch_reads_completed（ok≥2）",
+      "缺少主键的 Sheet 已补齐",
+      "线程最终状态 completed"
+    ],
+    "assertions": [
+      "存在 batch_reads_completed 事件",
+      "写任务顺序正确（无写顺序错误观察）"
+    ],
+    "tags": ["batch-read", "data"]
+  },
+  {
+    "id": "self-review-catches-missing-acceptance",
+    "title": "自审拦截缺验收",
+    "mode": "plan",
+    "prompt": "在项目 review_demo 中为 sales 表生成一个查询修改表单 sales_edit。完成后自审：确认表单绑定、查询入口与验收标准一致，发现问题就修复，最后跑回归与门禁。",
+    "successCriteria": [
+      "表单 sales_edit 存在且可查询修改",
+      "事件含 self_review_passed（或先 self_review_failed 后修复）",
+      "完成前执行过 project_test.run",
+      "线程最终状态 completed"
+    ],
+    "assertions": [
+      "事件含 self_review_passed",
+      "事件含 tool_call(form.generate_from_table) 或 form.create"
+    ],
+    "tags": ["self-review", "form", "test-gate"]
+  },
+  {
+    "id": "replan-on-new-constraint",
+    "title": "中途重规划",
+    "mode": "goal",
+    "prompt": "在项目 replan_demo 建表和建表单。执行中新增约束：表单必须使用查询修改模板（lookup-edit），发现方向不对就重规划剩余任务再继续。",
+    "successCriteria": [
+      "最终表单为 lookup-edit 模式",
+      "事件含 replan 相关（plan_proposed 出现两次或 goal_mode_auto_started reason=replan）",
+      "线程最终状态 completed"
+    ],
+    "assertions": [
+      "plan revision ≥2",
+      "旧计划 pending 任务被 superseded"
+    ],
+    "tags": ["replan", "form"]
+  }
+]

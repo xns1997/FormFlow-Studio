@@ -114,7 +114,10 @@ function plannerSystemPrompt(thread: AgentThread, bundle: ReturnType<typeof getC
     '目标契约必须包含：goal（一句目标）、successCriteria（如何判断完成）、summary（实施概述）、assumptions（假设）、risks（风险）、tasks（最少且完整的任务清单）。',
     '任务按领域 skill 分配 scope（每个任务只能属于一个领域），access 标明 read/write；同项目的写任务按执行顺序排列，后面的写任务不得先于前面的写任务完成。',
     '任务必须「单一职责、一次完成」：每个任务只创建一个资源或完成一个动作；同一个资源（项目/数据表/表单/流程/规则）只能由一个任务负责创建，禁止重复创建。',
+    '任务 id 统一使用小写 t 前缀递增（t1、t2、t3…），不要使用纯数字或大写 T，保证执行循环能按 id 稳定引用任务。',
     '后续任务只能做增量修改：instruction 必须写明「该资源已由前序任务创建，先读取确认现状，只补齐缺失项，不要重复创建」。例如数据表创建任务负责建表与字段，紧随其后的配置任务只调用 data_sheet.configure 设置主键/枚举等缺失配置，绝不再次 data_source.create。',
+    '数据写入与建表去重：若建表任务（data_source.create/data_table.create）的 instruction 已包含示例/业务行数据，就不要再单独规划「写入示例数据」任务；若用户要求单独写入数据，建表任务必须只建空表、不写行，由数据写入任务（data_rows.batch/data_source.import）一次性写入，禁止两边写同一批行导致主键重复。',
+    '主键配置去重：data_table.create/data_source.create 建表时可一步设置主键（keyFields）与列枚举；不要为同一张新表再规划「配置主键」任务。只有明确要求「补齐已有表的缺失配置」时才规划 data_sheet.configure 任务。',
     '列的枚举值在建表时通过 config.columns[].enum 定义；data_sheet.configure 没有修改列枚举的字段，配置任务不要为枚举反复调用或确认。',
     '用户没有要求模板时，不要规划 project.initialize 或「初始化项目模板」任务：项目创建任务（project.create）之后直接规划数据表创建。',
     '只规划真实可执行的工作，不要规划自动发布：不得出现 release.apply；发布只做到 delivery 领域的 release.preview 预检。',
@@ -150,6 +153,7 @@ export async function planTurn(thread: AgentThread, prompt: string, run: RunCont
     ],
     responseSchema: plannerSchema(),
     temperature: 0.2,
+    purpose: 'plan',
   });
 
   const structured = response.structured;
@@ -215,6 +219,18 @@ export async function replanWithFeedback(thread: AgentThread, feedback: string, 
   appendAgentThreadEvent(thread, 'plan_rejected', { planId: plan?.id, feedback });
   await planTurn(thread, `${plan?.request || ''}\n\n反馈：${feedback}`, run);
   return thread.plan;
+}
+
+/** 执行中重规划：仅重规划剩余任务，保留已完成任务证据与原始目标。 */
+export async function replanRemaining(thread: AgentThread, reason: string, run: RunContext) {
+  const plan = thread.plan;
+  if (!plan) throw new Error('当前没有计划可重规划');
+  const remaining = plan.tasks
+    .filter((task) => ['pending', 'running', 'failed'].includes(task.status))
+    .map((task) => `[${task.status}] ${task.scope}/${task.access} ${task.title}（${task.id}）：${task.instruction}${task.error ? `（最近错误：${task.error}）` : ''}`)
+    .join('\n');
+  const request = `${plan.request}\n\n[执行中重规划] ${reason || '请调整剩余任务'}\n当前未完成任务：\n${remaining || '（无）'}`;
+  return planTurn(thread, request, run);
 }
 
 export function confirmPlan(thread: AgentThread) {

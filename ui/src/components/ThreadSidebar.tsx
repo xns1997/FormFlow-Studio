@@ -1,5 +1,6 @@
 import React, { forwardRef, useMemo, useState } from 'react';
-import { statusLabels, threadGroups, threadProjectScope, type ProjectAgentThread } from './projectAgentUiModel';
+import { statusLabelsShort, threadGroups, threadProjectScope, type ProjectAgentThread } from './projectAgentUiModel';
+import { useListAnimation } from '../hooks/useListAnimation';
 
 type Filter = 'all' | 'active' | 'attention' | 'completed';
 
@@ -40,6 +41,12 @@ const ThreadSidebar = forwardRef<ThreadSidebarHandle, {
       return `${thread.title}\n${thread.plan?.goal || ''}\n${threadProjectScope(thread).join(' ')}`.toLocaleLowerCase().includes(q);
     });
   }, [threads, query, filter]);
+  const animatedRows = useListAnimation(filtered, (thread) => thread.id);
+  const rowStyleByThread = useMemo(() => {
+    const map = new Map<string, React.CSSProperties>();
+    for (const row of animatedRows) map.set(String(row.key), row.style);
+    return map;
+  }, [animatedRows]);
   const groups = threadGroups(filtered, currentProjectId);
 
   const groupEntries: Array<[string, ProjectAgentThread[]]> = [
@@ -56,12 +63,12 @@ const ThreadSidebar = forwardRef<ThreadSidebarHandle, {
           onKeyDown={(event) => { if (event.key === 'ArrowDown') event.currentTarget.nextElementSibling?.querySelector<HTMLButtonElement>('button')?.focus(); }} />
       </div>
       <div className="agent-sidebar-filters" role="group" aria-label="按状态筛选">
-        {([['all', '全部'], ['active', '进行中'], ['attention', '需处理'], ['completed', '已完成']] as const).map(([value, label]) => (
+        {([['all', '全部'], ['active', '执行'], ['attention', '待处理'], ['completed', '完成']] as const).map(([value, label]) => (
           <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>
         ))}
       </div>
       <div className="agent-sidebar-actions" style={{ padding: '0 10px 8px' }}>
-        <button type="button" className="agent-btn agent-btn-primary" style={{ width: '100%' }} disabled={busy} onClick={onNew}>新建线程</button>
+        <button type="button" className="agent-btn agent-btn-primary" style={{ width: '100%' }} disabled={busy} onClick={onNew}>+ 新建</button>
       </div>
       <div className="agent-thread-groups">
         {!groupEntries.length && <div className="agent-empty-state" style={{ padding: '24px 12px' }}><strong>没有匹配的线程</strong><p>调整筛选条件，或新建一个线程。</p></div>}
@@ -71,7 +78,7 @@ const ThreadSidebar = forwardRef<ThreadSidebarHandle, {
             {items.map((thread) => {
               const pinned = Boolean(thread.pinnedAt);
               return (
-                <div key={thread.id} className="agent-list-item" style={{ position: 'relative' }}>
+                <div key={thread.id} className="agent-list-item" style={{ position: 'relative', ...(rowStyleByThread.get(thread.id) || {}) }}>
                   {renamingId === thread.id ? (
                     <input
                       autoFocus
@@ -87,10 +94,10 @@ const ThreadSidebar = forwardRef<ThreadSidebarHandle, {
                       }} />
                   ) : (
                     <button type="button" className="agent-list-row" aria-current={thread.id === activeId ? 'true' : undefined} onClick={() => onSelect(thread.id)}>
-                      <span className={`agent-badge ${threadFilterStatus(thread) === 'attention' ? 'agent-badge-warning' : threadFilterStatus(thread) === 'completed' ? 'agent-badge-muted' : 'agent-badge-accent'}`}>{statusLabels[thread.status]}</span>
+                      <span className={`agent-badge ${threadFilterStatus(thread) === 'attention' ? 'agent-badge-warning' : threadFilterStatus(thread) === 'completed' ? 'agent-badge-muted' : 'agent-badge-accent'}`} title={thread.status}>{statusLabelsShort[thread.status]}</span>
                       <span className="agent-row-copy">
                         <strong>{thread.title}</strong>
-                        <small>{thread.plan?.goal || '尚未形成目标'}{pinned ? ' · 已置顶' : ''}</small>
+                        <small>{thread.plan?.goal || '无目标'}{pinned ? ' · 📌' : ''}</small>
                       </span>
                     </button>
                   )}

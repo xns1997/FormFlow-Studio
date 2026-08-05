@@ -234,6 +234,40 @@ export function appendColumnToSheet(table: SrcTableEntry, sheetName: string, inp
   });
 }
 
+export function insertColumnInSheet(
+  table: SrcTableEntry,
+  sheetName: string,
+  anchorName: string,
+  direction: 'left' | 'right',
+  input: AppendColumnInput,
+): SrcTableEntry {
+  return updateSheet(table, sheetName, (sheet) => {
+    const anchorIndex = sheet.headers.indexOf(anchorName);
+    if (anchorIndex === -1) return sheet;
+    const insertAt = anchorIndex + (direction === 'right' ? 1 : 0);
+    const nextHeader = normalizeColumnName(input.name, insertAt);
+    const nextHeaders = [...sheet.headers];
+    nextHeaders.splice(insertAt, 0, nextHeader);
+    const nextPreview = toPlainRows(sheet).map((row) =>
+      Object.fromEntries(
+        nextHeaders.map((header) => [header, header === nextHeader ? input.defaultValue ?? '' : row[header] ?? '']),
+      ),
+    );
+    return rebuildSheet(
+      sheet,
+      nextHeaders,
+      nextPreview,
+      {
+        columnDescriptions: sheet.config?.columnDescriptions || {},
+        columnTags: sheet.config?.columnTags || {},
+      },
+      {
+        [nextHeader]: { dataType: input.dataType || 'string' },
+      },
+    );
+  });
+}
+
 export function renameColumnInSheet(table: SrcTableEntry, sheetName: string, oldName: string, newName: string): SrcTableEntry {
   return updateSheet(table, sheetName, (sheet) => {
     const nextName = normalizeColumnName(newName, sheet.headers.indexOf(oldName));

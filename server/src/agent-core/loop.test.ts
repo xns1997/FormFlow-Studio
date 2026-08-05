@@ -60,7 +60,10 @@ test('single loop executes write tasks, verifies and completes', async () => {
     { action: 'complete', summary: '全部完成', completeTaskIds: ['t1', 't2'], finalAnswer: '完成' },
   ];
   let index = 0;
-  await executePlan(thread, run, { decide: async () => steps[Math.min(index++, steps.length - 1)] });
+  await executePlan(thread, run, {
+    decide: async () => steps[Math.min(index++, steps.length - 1)],
+    selfReview: async () => ({ issues: [] }),
+  });
 
   const final = getAgentThread(thread.id)!;
   assert.equal(final.status, 'completed');
@@ -103,6 +106,7 @@ test('repeated no-progress pauses the loop and asks the user', async () => {
 
   await executePlan(thread, run, {
     decide: async () => ({ action: 'act', summary: '尝试写入', toolName: 'form.create', scope: 'form', arguments: { projectId: 'missing', id: 'f2', name: 'x' }, taskId: 'bad' }),
+    selfReview: async () => ({ issues: [] }),
   });
   const final = getAgentThread(thread.id)!;
   assert.equal(final.status, 'paused');
@@ -110,6 +114,8 @@ test('repeated no-progress pauses the loop and asks the user', async () => {
   assert.ok(question);
   assert.ok(question!.questions?.length, '暂停提问必须携带结构化问题');
   assert.match(question!.questions![0].question, /连续失败/);
+  assert.equal(question!.questions![0].taskId, 'bad', '提问必须携带关联任务 id');
+  assert.equal(question!.questions![0].taskTitle, '写入不存在的项目', '提问必须携带关联任务标题');
   assert.ok(question!.questions![0].context?.includes('当前任务'), '问题需说明当前卡在哪个任务');
   assert.ok(question!.questions![0].context?.includes('最近失败'), '问题需说明最近一次失败原因');
   assert.ok(question!.questions![0].options?.some((option) => option.label.includes('继续')), '问题需提供可一键回复的选项');
@@ -130,6 +136,7 @@ test('user steer after a stall resets no-progress and the loop completes', async
 
   await executePlan(thread, run, {
     decide: async () => ({ action: 'complete', summary: '核对完成', completeTaskIds: ['read1'], finalAnswer: '完成' }),
+    selfReview: async () => ({ issues: [] }),
   });
 
   const final = getAgentThread(thread.id)!;
@@ -196,6 +203,7 @@ test('write task with cyclic rule code fails formal verification and cannot comp
       }
       return { action: 'pause', summary: '停止', questions: [] };
     },
+    selfReview: async () => ({ issues: [] }),
   });
 
   const final = getAgentThread(thread.id)!;

@@ -385,7 +385,7 @@ function serializeRawTable(projectId: string, table: JsonObject, changedSheetNam
   return Buffer.from(XLSX.write(workbook, { type: 'buffer', bookType: extension === 'xls' ? 'xls' : 'xlsx' }));
 }
 
-export function getTableSheetData(projectId: string, tableId: string, sheetName: string): { headers: string[]; data: Record<string, unknown>[]; keyFields: string[] } | null {
+export function getTableSheetData(projectId: string, tableId: string, sheetName: string): { headers: string[]; data: Record<string, unknown>[]; keyFields: string[]; rowOrder: string[] } | null {
   const project = readProjectPackage(projectId);
   if (!project) return null;
   const table = (project.srcTable as JsonObject[]).find((t) => t.id === tableId);
@@ -396,6 +396,7 @@ export function getTableSheetData(projectId: string, tableId: string, sheetName:
     headers: sheet.headers as string[],
     data: readRawSheetRows(projectId, table, sheet),
     keyFields: Array.isArray(sheet.config?.keyFields) ? sheet.config.keyFields : [],
+    rowOrder: Array.isArray(sheet.config?.rowOrder) ? sheet.config.rowOrder : [],
   };
 }
 

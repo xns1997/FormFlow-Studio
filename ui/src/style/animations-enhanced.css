@@ -72,28 +72,15 @@
   transition-duration: var(--duration-instant);
 }
 
-/* Card entrance animation */
-@keyframes card-enter {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+/* 线性/网格列表的 JS 驱动动效关键帧（由 useListAnimation 注入内联样式） */
+@keyframes list-enter {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to { opacity: 1; transform: none; }
 }
-
-.projects-grid .project-card {
-  animation: card-enter 0.4s var(--spring-snappy) backwards;
+@keyframes list-leave {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(-8px) scale(0.98); }
 }
-
-.projects-grid .project-card:nth-child(1) { animation-delay: 0.05s; }
-.projects-grid .project-card:nth-child(2) { animation-delay: 0.1s; }
-.projects-grid .project-card:nth-child(3) { animation-delay: 0.15s; }
-.projects-grid .project-card:nth-child(4) { animation-delay: 0.2s; }
-.projects-grid .project-card:nth-child(5) { animation-delay: 0.25s; }
-.projects-grid .project-card:nth-child(6) { animation-delay: 0.3s; }
 
 /* ── Sidebar Item Interactions ──────────────────────────────────────── */
 .sidebar-item {
@@ -281,11 +268,6 @@
   }
 }
 
-.notification-item:nth-child(2) { animation-delay: 0.05s; }
-.notification-item:nth-child(3) { animation-delay: 0.1s; }
-.notification-item:nth-child(4) { animation-delay: 0.15s; }
-.notification-item:nth-child(5) { animation-delay: 0.2s; }
-
 /* ── Dropdown Animations ───────────────────────────────────────────── */
 @keyframes dropdown-enter {
   from {
@@ -447,6 +429,8 @@
 .stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
 .stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
 .stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+/* 超过六个的子项同样入场，延迟封顶。 */
+.stagger-children > *:nth-child(n+7) { animation-delay: 0.35s; }
 
 @keyframes stagger-fade-in {
   from {

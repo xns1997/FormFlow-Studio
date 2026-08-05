@@ -22,12 +22,33 @@ import {
 } from '../../services/io/docs/catalog';
 import { loadDocUserState, recordRecentSearch, saveDocUserState, sendDocEvent } from '../../services/io/docs/user-state';
 import { isImeKeyboardEvent } from '../../services/io/docs/ime';
+import { useListAnimation } from '../../hooks/useListAnimation';
 
 hljs.registerLanguage('json', json);
 hljs.registerLanguage('javascript', javascript);
 hljs.registerLanguage('text', plaintext);
 hljs.registerLanguage('plaintext', plaintext);
 hljs.registerLanguage('plain', plaintext);
+
+function DocsHomeGrids({
+  tasks, refs, entries, domainLabels, state, setParams,
+}: {
+  tasks: DocEntry[];
+  refs: string[];
+  entries: DocEntry[];
+  domainLabels: Record<string, string>;
+  state: DocUserState;
+  setParams: (next: URLSearchParams) => void;
+}) {
+  const animatedTasks = useListAnimation(tasks, (entry) => entry.id);
+  const animatedRefs = useListAnimation(refs, (value) => value);
+  return (
+    <>
+      <section className="docs-v2-home-section"><div><span className="docs-v2-kicker">按任务学习</span><h2>项目全生命周期</h2></div><div className="docs-v2-task-grid">{animatedTasks.map(({ key, item: entry, style }, indexTask) => <Link to={entry.canonicalPath} key={key} style={style}><span>{String(indexTask + 1).padStart(2, '0')}</span><strong>{entry.title}</strong><p>{entry.summary}</p>{state.taskProgress[entry.id] && <b>✓ 已完成</b>}</Link>)}</div></section>
+      <section className="docs-v2-home-section"><div><span className="docs-v2-kicker">查功能参考</span><h2>控件、节点、事件与 API</h2></div><div className="docs-v2-reference-grid">{animatedRefs.map(({ key, item: value, style }) => { const count = entries.filter((entry) => entry.domain === value).length; return <button type="button" key={key} style={style} onClick={() => { const next = new URLSearchParams(); next.set('q', domainLabels[value] || value); next.set('domain', value); setParams(next); }}><strong>{domainLabels[value]}</strong><span>{count} 个可检索条目</span></button>; })}</div></section>
+    </>
+  );
+}
 hljs.registerLanguage('txt', plaintext);
 hljs.registerLanguage('ebnf', plaintext);
 
@@ -242,8 +263,7 @@ export default function DocsPlatformPage({ home = false }: { home?: boolean }) {
         </div>
       </header>
       {query ? <section className="docs-v2-results" aria-live="polite"><h2>{results.length} 个结果</h2>{results.slice(0, 60).map((result) => <Link to={result.entry.canonicalPath} key={result.entry.id}><span>{kindLabels[result.entry.kind]} · {domainLabels[result.entry.domain]}</span><strong><HighlightText text={result.entry.title} query={query} /></strong><p><HighlightText text={result.snippet} query={query} /></p></Link>)}</section> : <>
-        <section className="docs-v2-home-section"><div><span className="docs-v2-kicker">按任务学习</span><h2>项目全生命周期</h2></div><div className="docs-v2-task-grid">{tasks.map((entry, indexTask) => <Link to={entry.canonicalPath} key={entry.id}><span>{String(indexTask + 1).padStart(2, '0')}</span><strong>{entry.title}</strong><p>{entry.summary}</p>{state.taskProgress[entry.id] && <b>✓ 已完成</b>}</Link>)}</div></section>
-        <section className="docs-v2-home-section"><div><span className="docs-v2-kicker">查功能参考</span><h2>控件、节点、事件与 API</h2></div><div className="docs-v2-reference-grid">{refs.map((value) => { const count = entries.filter((entry) => entry.domain === value).length; return <button type="button" key={value} onClick={() => { const next = new URLSearchParams(); next.set('q', domainLabels[value] || value); next.set('domain', value); setParams(next); }}><strong>{domainLabels[value]}</strong><span>{count} 个可检索条目</span></button>; })}</div></section>
+        <DocsHomeGrids tasks={tasks} refs={refs} entries={entries} domainLabels={domainLabels} state={state} setParams={setParams} />
       </>}
       </div>
     </DocsScrollRoot>

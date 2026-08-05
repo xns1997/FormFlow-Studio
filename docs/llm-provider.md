@@ -33,6 +33,20 @@ flowchart TD
 
 支持 `openai`、`openai_compatible`、`anthropic`、`gemini`、`ollama` 和 `lmstudio`。LM Studio 使用 OpenAI-compatible 协议。
 
+## 结构化输出强制校验与修复
+
+对声明了 `responseSchema` 的请求，Provider 在 `InferenceRuntime._invoke_with_repair` 中做**后置 JSON Schema 校验**：
+openai_compatible（如 mimo）等只靠提示词约束 JSON 的 provider，解析失败或不符合 Schema 时会把错误回灌模型
+修复重试（默认最多 2 次，`LLM_PROVIDER_STRUCTURED_REPAIR_MAX_ATTEMPTS` 可调），仍失败才抛 `ValidationError`，
+保证智能体规划/决策调用拿到合法结构化结果。
+
+## 模型路由用途（purpose）
+
+`ModelRoute` 支持 `purpose`（`plan` / `decision` / `summarize` / `verify`，缺省 `decision`）。
+选路规则：优先 purpose 匹配的路由，其次无 purpose 的通用路由，最后任意路由。
+项目智能体规划走高能力路由（可配）、决策步用默认路由、上下文压缩用 `summarize` 路由、自审用 `verify` 路由；
+没有配置对应用途时自动回退通用路由，不影响既有配置。
+
 ## 系统设置
 
 管理员可从左侧导航进入 **系统设置 → 大模型** 完成全局配置，无需直接编辑配置文件：

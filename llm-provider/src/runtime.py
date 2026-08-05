@@ -19,6 +19,7 @@ from .run_store import run_store
 
 logger = logging.getLogger("formflow.llm-provider")
 TOOL_RESULT_MAX_CHARS = int(os.getenv("LLM_PROVIDER_TOOL_RESULT_MAX_CHARS", "32000"))
+STRUCTURED_REPAIR_MAX_ATTEMPTS = int(os.getenv("LLM_PROVIDER_STRUCTURED_REPAIR_MAX_ATTEMPTS", "2"))
 
 
 def _compact_tool_result(value: Any, max_chars: int = TOOL_RESULT_MAX_CHARS) -> Any:
@@ -50,12 +51,10 @@ class InferenceRuntime:
     def __init__(self) -> None:
         graph = StateGraph(InferenceState)
         graph.add_node("validate", self._validate)
-        graph.add_node("invoke", self._invoke)
-        graph.add_node("normalize", self._normalize)
+        graph.add_node("invoke", self._invoke_with_repair)
         graph.set_entry_point("validate")
         graph.add_edge("validate", "invoke")
-        graph.add_edge("invoke", "normalize")
-        graph.add_edge("normalize", END)
+        graph.add_edge("invoke", END)
         self._graph = graph.compile()
 
     @staticmethod
@@ -71,25 +70,61 @@ class InferenceRuntime:
         return {"adapter": adapter}
 
     @staticmethod
-    def _invoke(state: InferenceState) -> InferenceState:
+    def _adapter_chat(adapter: Any, request: ChatInput) -> ChatOutput:
         for attempt in range(2):
             try:
-                return {"response": state["adapter"].chat(state["request"])}
+                return adapter.chat(request)
             except ProviderError as error:
                 if not error.retryable or attempt == 1:
                     raise
         raise ProviderError("模型调用失败")
 
-    @staticmethod
-    def _normalize(state: InferenceState) -> InferenceState:
-        response = state["response"]
-        schema = state["request"].response_schema
-        if schema:
+    @classmethod
+    def _invoke_with_repair(cls, state: InferenceState) -> InferenceState:
+        """调用模型，并对结构化输出做强制 Schema 校验 + 修复重试。
+
+        openai_compatible（如 mimo）等 provider 只靠提示词约束 JSON，
+        解析失败或不符合 Schema 时把错误回灌模型重试（≤ max attempts），
+        仍失败才抛 ValidationError，保证决策/规划调用拿到合法结构化结果。
+        """
+        adapter = state["adapter"]
+        request = state["request"]
+        schema = request.response_schema
+        repairs = 0
+        error_message: str | None = None
+        while True:
             try:
-                validate_json(instance=response.structured, schema=schema)
-            except JsonSchemaValidationError as exc:
-                raise ValidationError(f"结构化输出不符合 Schema：{exc.message}") from exc
-        return {"response": response}
+                response = cls._adapter_chat(adapter, request)
+            except ProviderError as error:
+                if "合法的结构化 JSON" in str(error):
+                    # 适配器解析失败：进入修复循环而不是直接失败。
+                    response = ChatOutput(content="", model=request.connection.model, usage={}, tool_calls=[], structured=None, request_id=request.request_id)
+                    error_message = str(error)
+                else:
+                    raise
+            if not schema:
+                return {"response": response}
+            if response.structured is None:
+                error_message = error_message or "模型未返回合法的结构化 JSON"
+            else:
+                try:
+                    validate_json(instance=response.structured, schema=schema)
+                    return {"response": response}
+                except JsonSchemaValidationError as exc:
+                    error_message = f"结构化输出不符合 Schema：{exc.message}"
+            if repairs >= STRUCTURED_REPAIR_MAX_ATTEMPTS:
+                raise ValidationError(f"{error_message}（修复重试 {repairs} 次后仍失败）")
+            repairs += 1
+            request = request.model_copy(update={
+                "messages": [
+                    *request.messages,
+                    ChatMessage(role="user", content=(
+                        f"上次输出不合法：{error_message}\n"
+                        f"请只返回符合以下 JSON Schema 的 JSON，不要 Markdown，不要解释：\n"
+                        f"{json.dumps(schema, ensure_ascii=False)}"
+                    )),
+                ]
+            })
 
     def chat(self, request: ChatInput) -> ChatOutput:
         started = time.monotonic()

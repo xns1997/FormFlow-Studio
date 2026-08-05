@@ -3151,22 +3151,6 @@ mark.docs-search-highlight {
   animation: docs-fadeIn 0.35s ease both;
 }
 
-.docs-v2-task-grid > a,
-.docs-v2-reference-grid button {
-  animation: docs-slideUp 0.4s ease both;
-}
-
-.docs-v2-task-grid > a:nth-child(2),
-.docs-v2-reference-grid button:nth-child(2) { animation-delay: 0.04s; }
-.docs-v2-task-grid > a:nth-child(3),
-.docs-v2-reference-grid button:nth-child(3) { animation-delay: 0.08s; }
-.docs-v2-task-grid > a:nth-child(4),
-.docs-v2-reference-grid button:nth-child(4) { animation-delay: 0.12s; }
-.docs-v2-task-grid > a:nth-child(5) { animation-delay: 0.16s; }
-.docs-v2-task-grid > a:nth-child(6) { animation-delay: 0.20s; }
-.docs-v2-task-grid > a:nth-child(7) { animation-delay: 0.24s; }
-.docs-v2-task-grid > a:nth-child(8) { animation-delay: 0.28s; }
-
 .docs-playground-scenario-tab {
   animation: docs-scaleIn 0.2s ease both;
 }

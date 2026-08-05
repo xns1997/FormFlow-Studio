@@ -13,7 +13,7 @@ os.environ.setdefault("LLM_PROVIDER_DATABASE_URL", "")
 
 from src.models import ChatOutput, Connection
 from src.plugins import PluginRegistry
-from src.runtime import agents
+from src.runtime import InferenceRuntime, agents
 
 
 class AgentRuntimeTests(unittest.TestCase):
@@ -120,6 +120,49 @@ class AgentRuntimeTests(unittest.TestCase):
         self.assertEqual(run["status"], "completed")
         self.assertTrue(any(event["type"] == "tool_rejected" and event["data"]["tool_name"] == "secret" for event in run["events"]))
         self.assertIn("不属于当前角色", chat.call_args_list[1].args[0].messages[-1].content)
+
+    def test_structured_output_repair_loop_feeds_schema_error_back(self):
+        """openai_compatible 类 provider 返回不合法 JSON 时，把错误回灌重试而非直接失败。"""
+        schema = {"type": "object", "required": ["goal"], "properties": {"goal": {"type": "string"}}}
+        calls = []
+
+        class FakeAdapter:
+            def chat(self, request):
+                calls.append(request)
+                if len(calls) == 1:
+                    return ChatOutput(content="not json at all", model="fake", usage={}, request_id="r1")
+                return ChatOutput(content=json.dumps({"goal": "ok"}), model="fake", usage={}, structured={"goal": "ok"}, request_id="r1")
+
+        state = {"adapter": FakeAdapter(), "request": Connection(provider="openai_compatible", base_url="http://x", model="m").model_copy(update={})}
+        # 构造 ChatInput 请求
+        from src.models import ChatInput, ChatMessage
+        request = ChatInput(
+            connection=Connection(provider="openai_compatible", base_url="http://x", model="m"),
+            messages=[ChatMessage(role="user", content="hi")],
+            response_schema=schema,
+            request_id="r1",
+        )
+        result = InferenceRuntime()._invoke_with_repair({"adapter": FakeAdapter(), "request": request})
+        self.assertEqual(result["response"].structured, {"goal": "ok"})
+        self.assertGreaterEqual(len(calls), 2)
+        self.assertIn("Schema", calls[-1].messages[-1].content)
+
+    def test_structured_output_repair_exhausted_raises(self):
+        schema = {"type": "object", "required": ["goal"], "properties": {"goal": {"type": "string"}}}
+
+        class BadAdapter:
+            def chat(self, request):
+                return ChatOutput(content="still invalid", model="fake", usage={}, request_id="r2")
+
+        from src.models import ChatInput, ChatMessage
+        request = ChatInput(
+            connection=Connection(provider="ollama", base_url="http://x", model="m"),
+            messages=[ChatMessage(role="user", content="hi")],
+            response_schema=schema,
+            request_id="r2",
+        )
+        with self.assertRaisesRegex(Exception, "结构化输出不符合 Schema|合法的结构化 JSON"):
+            InferenceRuntime()._invoke_with_repair({"adapter": BadAdapter(), "request": request})
 
     @patch("src.runtime.inference.chat")
     def test_repeated_unlisted_native_tool_fails_with_bounded_report(self, chat):

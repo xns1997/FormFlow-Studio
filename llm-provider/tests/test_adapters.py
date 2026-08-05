@@ -52,8 +52,8 @@ class AdapterContractTests(unittest.TestCase):
         self.assertEqual(adapter_for(request.connection).embed(request).embeddings, [[5.0, 6.0]])
 
     @patch("src.adapters._request")
-    def test_openai_compatible_structured_output_uses_prompt_fallback(self, call):
-        call.return_value = FakeResponse({"choices": [{"message": {"content": "方案如下：\n```json\n{\"summary\":\"ok\"}\n```\n请确认。"}}], "model": "model"})
+    def test_openai_compatible_structured_output_prefers_native_json_schema(self, call):
+        call.return_value = FakeResponse({"choices": [{"message": {"content": "{\"summary\":\"ok\"}"}}], "model": "model"})
         request = ChatInput(
             connection=Connection(provider="openai_compatible", model="model", api_key="secret"),
             messages=[ChatMessage(role="user", content="make a plan")],
@@ -63,9 +63,30 @@ class AdapterContractTests(unittest.TestCase):
 
         result = adapter_for(request.connection).chat(request)
         payload = call.call_args.kwargs["json"]
-        self.assertNotIn("response_format", payload)
-        self.assertIn("JSON Schema", payload["messages"][0]["content"])
+        self.assertEqual(payload["response_format"]["type"], "json_schema")
+        self.assertNotIn("JSON Schema", payload["messages"][0]["content"])
         self.assertEqual(result.structured, {"summary": "ok"})
+
+    @patch("src.adapters._request")
+    def test_openai_compatible_structured_output_falls_back_when_unsupported(self, call):
+        def fake_request(method, url, connection, **kwargs):
+            payload = kwargs.get("json") or {}
+            if "response_format" in payload:
+                raise ProviderError("模型服务返回 400: {'error': 'response_format is not supported'}")
+            return FakeResponse({"choices": [{"message": {"content": "方案如下：\n```json\n{\"summary\":\"ok\"}\n```\n请确认。"}}], "model": "model"})
+        call.side_effect = fake_request
+        request = ChatInput(
+            connection=Connection(provider="openai_compatible", model="model", api_key="secret"),
+            messages=[ChatMessage(role="user", content="make a plan")],
+            response_schema={"type": "object", "required": ["summary"], "properties": {"summary": {"type": "string"}}},
+            request_id="request-compatible-fallback",
+        )
+
+        result = adapter_for(request.connection).chat(request)
+        self.assertEqual(result.structured, {"summary": "ok"})
+        fallback_payload = call.call_args_list[-1].kwargs["json"]
+        self.assertNotIn("response_format", fallback_payload)
+        self.assertIn("JSON Schema", fallback_payload["messages"][0]["content"])
 
     @patch("src.adapters._request")
     def test_openai_keeps_native_json_schema_response_format(self, call):

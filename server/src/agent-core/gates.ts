@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { executeLlmTool } from '../services/llm-tools';
 import { requireProject } from '../services/project-authoring';
 import type { McpRole } from '../services/tool-shared';
+import { stableIdempotencyKey } from './policy';
 import { threadProjectIds } from './store';
 import type { AgentEvidence, AgentTask, AgentThread, RunContext } from './types';
 
@@ -29,25 +30,44 @@ export function missingTaskDeliverables(project: Record<string, any>, task: Agen
   const text = `${task.title}\n${task.instruction}`;
   const missing: string[] = [];
   const ids = (pattern: RegExp) => [...text.matchAll(pattern)].map((match) => match[1]).filter((id) => /^[a-zA-Z][\w-]*$/.test(id));
+  // 兼容「创建 department 数据表」这类 id 在名词前的写法；仅在主体模式无命中时兜底。
+  const fallbackIds = (noun: string) => ids(new RegExp(`创建\\s*[\`'"“]?([a-zA-Z][\\w-]*)(?=\\s*${noun})`, 'g'));
   const forms = new Set((project.forms || []).map((form: any) => form.id));
-  for (const id of ids(/(?:表单|form)\s*[：: ]+([a-zA-Z][\w-]*)/g)) {
+  const formIdCandidates = ids(/(?:表单|form)\s*[：: ]+([a-zA-Z][\w-]*)/g);
+  for (const id of formIdCandidates.length ? formIdCandidates : fallbackIds('表单')) {
     if (!forms.has(id)) missing.push(`表单 ${id}`);
   }
   const flows = new Set((project.workflows || []).map((flow: any) => flow.id));
-  for (const id of ids(/(?:工作流|流程)\s*[：: ]+([a-zA-Z][\w-]*)/g)) {
+  const flowIdCandidates = ids(/(?:工作流|流程)\s*[：: ]+([a-zA-Z][\w-]*)/g);
+  for (const id of flowIdCandidates.length ? flowIdCandidates : fallbackIds('(?:流程|工作流)')) {
     if (!flows.has(id)) missing.push(`工作流 ${id}`);
   }
   const tables = new Set((project.srcTable || []).map((table: any) => table.id));
-  for (const id of ids(/(?:数据表|数据源)\s*[：: ]+([a-zA-Z][\w-]*)/g)) {
+  const tableIdCandidates = ids(/(?:数据表|数据源)\s*[：: ]+([a-zA-Z][\w-]*)/g);
+  for (const id of tableIdCandidates.length ? tableIdCandidates : fallbackIds('(?:数据表|数据源)')) {
     if (!tables.has(id)) missing.push(`数据表 ${id}`);
   }
   if (/主键|keyFields/.test(text)) {
-    const keyTableIds = ids(/(?:数据表|数据源|表)\s*[：: ]+([a-zA-Z][\w-]*)/g);
+    const keyTableIds = tableIdCandidates;
     for (const tableId of keyTableIds) {
       const table = (project.srcTable || []).find((item: any) => item.id === tableId);
       if (table) {
         const keys = (table.sheets || []).flatMap((sheet: any) => sheet.config?.keyFields || []);
         if (!keys.length) missing.push(`数据表 ${tableId} 的主键`);
+      }
+    }
+  }
+  const wantsEmptyTable = /空数据表|空表|只建空|不写行|不写入|先不写|暂不写|不要写/.test(text);
+  if (!wantsEmptyTable && /写入|示例数据|数据行|导入|写行数据/.test(text)) {
+    const dataTableIds = [
+      ...tableIdCandidates,
+      ...ids(/(?:写入|导入)\s*(?:到|至|进)?\s*[`'"“]?([a-zA-Z][\w-]*)/g),
+    ];
+    for (const tableId of [...new Set(dataTableIds)]) {
+      const table = (project.srcTable || []).find((item: any) => item.id === tableId);
+      if (table) {
+        const rows = (table.sheets || []).reduce((total: number, sheet: any) => total + Number(sheet.rowCount || sheet.rows?.length || 0), 0);
+        if (!rows) missing.push(`数据表 ${tableId} 的行数据`);
       }
     }
   }
@@ -58,6 +78,18 @@ export function missingTaskDeliverables(project: Record<string, any>, task: Agen
       if (tokens.has(String(form.id)) && !String(form.ruleCode || '').trim() && !(form.behaviors || []).length) {
         missing.push(`表单 ${form.id} 的规则/行为`);
       }
+    }
+  }
+  if (/控件|组件/.test(text)) {
+    for (const id of formIdCandidates) {
+      const form = (project.forms || []).find((item: any) => item.id === id);
+      if (form && !(form.design?.components || []).length) missing.push(`表单 ${id} 的控件`);
+    }
+  }
+  if (/绑定|binding/i.test(text)) {
+    for (const id of formIdCandidates) {
+      const form = (project.forms || []).find((item: any) => item.id === id);
+      if (form && !(form.design?.bindings || []).length) missing.push(`表单 ${id} 的绑定`);
     }
   }
   return missing;
@@ -73,6 +105,123 @@ async function validateProject(thread: AgentThread, run: RunContext, projectId: 
     mcpRole: scope,
   });
   return result;
+}
+
+/** 写计划（data/form/behavior/workflow 任一写任务）或 quality 作用域计划需要测试入闸。 */
+export function testGateApplies(thread: AgentThread): boolean {
+  const tasks = thread.plan?.tasks || [];
+  return tasks.some((task) => task.scope === 'quality')
+    || tasks.some((task) => task.access === 'write' && ['data', 'form', 'behavior', 'workflow'].includes(task.scope));
+}
+
+function testFailures(data: any): string[] {
+  const errors: string[] = [];
+  for (const item of data?.results || []) {
+    if (!item.passed) errors.push(`用例「${item.title || item.id}」：${(item.errors || []).join('；')}`);
+  }
+  for (const item of data?.ruleResults || []) {
+    if (!item.passed) errors.push(`规则「${item.formId}」：${item.error || '未通过'}`);
+  }
+  for (const item of data?.validation?.errors || []) {
+    errors.push(`结构校验：${item.message || item.code || ''}`);
+  }
+  return errors;
+}
+
+const normalizeFailure = (value: string) => value.replace(/\s+/g, ' ').trim();
+
+function blockerText(blockers: Array<string | { code?: string; title?: string; message?: string }>): string {
+  return blockers.map((item) => (typeof item === 'string' ? item : (item.message || item.code || item.title || ''))).filter(Boolean).join('、');
+}
+
+/**
+ * 质量门禁按计划作用域过滤无关阻塞项：
+ * - 只有计划包含 data/form 领域写任务时，才因「项目尚未配置数据源/表单」阻塞；
+ * - 回归测试类阻塞交给独立测试门禁（区分预存/引入），不在质量门禁重复判死。
+ */
+function scopeRelevantBlockers(thread: AgentThread, blockers: Array<string | { code?: string; title?: string; message?: string }>): string[] {
+  const tasks = thread.plan?.tasks || [];
+  const hasScope = (role: McpRole) => tasks.some((task) => task.scope === role);
+  return blockers.filter((item) => {
+    const text = typeof item === 'string' ? item : (item.message || item.code || item.title || '');
+    if (/尚未配置数据源/.test(text)) return hasScope('data');
+    if (/尚未配置表单/.test(text)) return hasScope('form');
+    if (/回归测试|测试套件/.test(text)) return false;
+    return true;
+  }).map((item) => typeof item === 'string' ? item : (item.message || item.code || item.title || '')).filter(Boolean);
+}
+
+async function runProjectTestOnce(thread: AgentThread, run: RunContext, projectId: string, generateIfMissing: boolean) {
+  const base = { tenantId: run.tenantId, projectId, userId: run.userId, user: run.user, requestId: run.requestId, mcpRole: 'quality' as McpRole };
+  const revision = thread.projectRevisions[projectId];
+  const runKey = stableIdempotencyKey(thread.id, `test-gate:${revision || 'none'}`, 1, 'project_test.run', { projectId });
+  let result = await executeLlmTool('project_test.run', {
+    projectId,
+    baseRevision: revision,
+    idempotencyKey: runKey,
+  }, base);
+  if (!result.ok && generateIfMissing && /TEST_SUITE_NOT_FOUND|套件不存在/.test('error' in result ? result.error?.message || '' : '')) {
+    const generate = await executeLlmTool('project_test.generate', {
+      projectId,
+      baseRevision: revision,
+      idempotencyKey: stableIdempotencyKey(thread.id, 'test-gate', 1, 'project_test.generate', { projectId }),
+    }, base);
+    if (generate.ok && generate.meta?.revision) thread.projectRevisions[projectId] = generate.meta.revision;
+    result = await executeLlmTool('project_test.run', {
+      projectId,
+      baseRevision: thread.projectRevisions[projectId],
+      idempotencyKey: stableIdempotencyKey(thread.id, `test-gate:${thread.projectRevisions[projectId] || 'none'}`, 1, 'project_test.run', { projectId }),
+    }, base);
+  }
+  return result;
+}
+
+/** 捕获执行开始前的测试基线（预存失败不阻塞，引入失败必须修复）。 */
+export async function captureTestBaseline(thread: AgentThread, run: RunContext) {
+  if (!testGateApplies(thread)) return;
+  const projects = threadProjectIds(thread);
+  if (!projects.length) return;
+  const failures: string[] = [];
+  for (const projectId of projects) {
+    try {
+      const result = await runProjectTestOnce(thread, run, projectId, false);
+      if (result.ok) {
+        failures.push(...testFailures(result.data as any));
+        if (result.meta?.revision) thread.projectRevisions[projectId] = result.meta.revision;
+      }
+    } catch {
+      // 基线捕获失败不阻断执行；完成门禁会重新运行测试。
+    }
+  }
+  thread.testBaseline = {
+    capturedAt: new Date().toISOString(),
+    passed: failures.length === 0,
+    failures: [...new Set(failures)],
+  };
+}
+
+async function runTestGate(thread: AgentThread, run: RunContext, projectId: string): Promise<{ failures: string[]; evidence: AgentEvidence[] }> {
+  const failures: string[] = [];
+  const evidenceList: AgentEvidence[] = [];
+  const result = await runProjectTestOnce(thread, run, projectId, true);
+  if (!result.ok) {
+    failures.push(`项目 ${projectId} 回归测试执行失败：${'error' in result ? result.error?.message || '未知错误' : '需要确认'}`);
+    return { failures, evidence: evidenceList };
+  }
+  if (result.meta?.revision) thread.projectRevisions[projectId] = result.meta.revision;
+  const current = testFailures(result.data as any);
+  const baseline = new Set((thread.testBaseline?.failures || []).map(normalizeFailure));
+  const introduced = current.filter((failure) => !baseline.has(normalizeFailure(failure)));
+  const preexisting = current.filter((failure) => baseline.has(normalizeFailure(failure)));
+  if (preexisting.length) {
+    evidenceList.push(evidence('scenario_result', `项目 ${projectId} 回归：${preexisting.length} 项为执行前已存在失败（不阻塞）`));
+  }
+  if (introduced.length) {
+    failures.push(`项目 ${projectId} 回归测试新增失败：${introduced.slice(0, 5).join('；')}`);
+  } else {
+    evidenceList.push(evidence('scenario_result', `项目 ${projectId} 回归测试通过（覆盖率 ${((result.data as any)?.coverage ?? 0)}%）`));
+  }
+  return { failures, evidence: evidenceList };
 }
 
 /**
@@ -180,6 +329,13 @@ export async function runFinalGates(thread: AgentThread, run: RunContext, planSc
       failures.push(error instanceof GateFailure ? error.message : String(error));
     }
 
+    // 测试是系统协议的一部分：写计划完成前必须运行回归，预存失败不阻塞、引入失败必须修复。
+    if (testGateApplies(thread)) {
+      const test = await runTestGate(thread, run, projectId);
+      failures.push(...test.failures);
+      evidenceList.push(...test.evidence);
+    }
+
     if (planScopeRoles.includes('quality')) {
       const quality = await executeLlmTool('project.quality.inspect', { projectId }, {
         tenantId: run.tenantId,
@@ -192,12 +348,10 @@ export async function runFinalGates(thread: AgentThread, run: RunContext, planSc
       if (!quality.ok) {
         failures.push(`项目 ${projectId} 质量检查失败：${'error' in quality ? quality.error?.message || '未知错误' : '需要确认'}`);
       } else {
-        const blockers = ((quality.data as any)?.blockers || []) as Array<string>;
-        const nonTestBlockers = blockers.filter((blocker) => !/test|测试|回归/i.test(String(blocker)));
-        const ready = (quality.data as any)?.ready === true || nonTestBlockers.length === 0;
+        const blockers = scopeRelevantBlockers(thread, ((quality.data as any)?.blockers || []) as Array<string | { code?: string; title?: string; message?: string }>);
+        const ready = (quality.data as any)?.ready === true || blockers.length === 0;
         if (!ready) {
-        const summary = (quality.data as any)?.summary || (quality.data as any)?.quality || {};
-        failures.push(`项目 ${projectId} 质量门禁未通过：${JSON.stringify(summary).slice(0, 400)}${nonTestBlockers.length ? `；阻塞项：${nonTestBlockers.map((item: any) => item.code || item.title || item.message).join('、')}` : ''}`);
+        failures.push(`项目 ${projectId} 质量门禁未通过：${blockerText(blockers).slice(0, 400)}`);
         } else {
         evidenceList.push(evidence('semantic_validation', `项目 ${projectId} 质量门禁通过`));
         }
@@ -216,12 +370,10 @@ export async function runFinalGates(thread: AgentThread, run: RunContext, planSc
       if (!preview.ok) {
         failures.push(`项目 ${projectId} 发布预检失败：${'error' in preview ? preview.error?.message || '未知错误' : '需要确认'}`);
       } else {
-        const blockers = ((preview.data as any)?.quality?.blockers || []) as Array<string>;
-        const nonTestBlockers = blockers.filter((blocker) => !/test|测试|回归/i.test(String(blocker)));
-        const ready = (preview.data as any)?.ready === true || nonTestBlockers.length === 0;
+        const blockers = scopeRelevantBlockers(thread, ((preview.data as any)?.quality?.blockers || []) as Array<string | { code?: string; title?: string; message?: string }>);
+        const ready = (preview.data as any)?.ready === true || blockers.length === 0;
         if (!ready) {
-          const validation = (preview.data as any)?.validation || {};
-          failures.push(`项目 ${projectId} 发布预检未就绪：${JSON.stringify(validation).slice(0, 400)}${nonTestBlockers.length ? `；阻塞项：${nonTestBlockers.map((item: any) => item.code || item.title || item.message).join('、')}` : ''}`);
+          failures.push(`项目 ${projectId} 发布预检未就绪：${blockerText(blockers).slice(0, 400)}`);
         } else {
           evidenceList.push(evidence('delivery_preview', `项目 ${projectId} 发布预检就绪`));
         }

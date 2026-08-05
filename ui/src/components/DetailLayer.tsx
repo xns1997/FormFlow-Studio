@@ -54,34 +54,34 @@ export default function DetailLayer({
     <div className="agent-detail-scroll">
       {plan ? <>
         <section className="agent-detail-section">
-          <h4>目标</h4>
+          <h4>◎ 目标</h4>
           <p>{plan.goal}</p>
           <p style={{ marginTop: 6, color: 'var(--text-secondary)' }}>{thread?.mode ? `${modeLabels[thread.mode]} · ` : ''}{plan.summary}</p>
         </section>
         <section className="agent-detail-section">
-          <h4>如何判断完成</h4>
+          <h4>✓ 完成标准</h4>
           <ul className="agent-checks">{plan.successCriteria.map((item) => <li key={item}>✓ {item}</li>)}</ul>
         </section>
         <section className="agent-detail-section">
-          <h4>假设与风险</h4>
+          <h4>⚠ 假设/风险</h4>
           <ul>{plan.assumptions.map((item) => <li key={`a:${item}`}>假设：{item}</li>)}</ul>
           <ul>{plan.risks.map((item) => <li key={`r:${item}`}>风险：{item}</li>)}</ul>
         </section>
         <section className="agent-detail-section">
-          <h4>任务清单（{progress.passed}/{progress.total}）</h4>
+          <h4>☰ 步骤（{progress.passed}/{progress.total}）</h4>
           <div className="agent-progress" aria-label={`任务完成度 ${progress.percent}%`}><span style={{ width: `${progress.percent}%` }} /></div>
           <div className="agent-event-log" style={{ marginTop: 8 }}>
             {plan.tasks.map((task) => (
               <button key={task.id} type="button" className="agent-event-row" style={{ width: '100%', textAlign: 'left', cursor: 'pointer' }} onClick={() => onOpenTask(task.id)} aria-label={`任务详情：${task.title}`}>
                 <span className={`agent-status-icon`} data-state={task.status === 'passed' ? 'passed' : task.status === 'failed' ? 'failed' : task.status === 'running' ? 'running' : task.status === 'blocked' ? 'blocked' : 'idle'}>{task.status === 'passed' ? '✓' : task.status === 'failed' ? '!' : task.status === 'running' ? '↻' : '·'}</span>
-                <span className="agent-event-copy"><strong>{task.title}</strong><span>{taskStatusLabels[task.status]}{task.attempt ? ` · 已试 ${task.attempt} 次` : ''}{task.evidence.length ? ` · ${task.evidence.length} 条证据` : ''}</span></span>
+                <span className="agent-event-copy"><strong>{task.title}</strong><span>{taskStatusLabels[task.status]}{task.attempt ? ` · ×${task.attempt}` : ''}{task.evidence.length ? ` · ▦${task.evidence.length}` : ''}</span></span>
               </button>
             ))}
           </div>
         </section>
       </> : <div className="agent-empty-state"><strong>暂无计划</strong><p>发送需求后，这里会展示目标契约与任务清单。</p></div>}
       <section className="agent-detail-section">
-        <h4>事件流水（最近 {events.length} 条）</h4>
+        <h4>≡ 事件（{events.length}）</h4>
         <div className="agent-event-log">
           {events.slice(-12).reverse().map((event) => (
             <div key={event.seq} className="agent-event-row">
@@ -99,54 +99,66 @@ export default function DetailLayer({
   if (active && thread) {
     if (active.kind === 'message' || active.kind === 'completion' || active.kind === 'question') {
       const message = messageById(thread, active.ref.messageId);
-      sheetTitle = active.kind === 'completion' ? '完成说明' : active.kind === 'question' ? '需要你决定' : '消息详情';
+      sheetTitle = active.kind === 'completion' ? '✓ 完成' : active.kind === 'question' ? '? 决定' : 'ℹ';
       sheet = (
         <div className="agent-detail-scroll">
-          <section className="agent-detail-section"><h4>{message?.kind === 'prompt' ? '你的需求' : '内容'}</h4><p>{message?.content || active.title}</p></section>
+          <section className="agent-detail-section"><h4>{message?.kind === 'prompt' ? '◎ 你' : 'ℹ 内容'}</h4><p>{message?.content || active.title}</p></section>
           {active.kind === 'question' && message?.questions?.[0] && (
             <>
-              {message.questions[0].context && <section className="agent-detail-section"><h4>为什么需要你补充</h4><p>{message.questions[0].context}</p></section>}
+              {message.questions[0].taskId ? (() => {
+                const task = taskById(thread, message!.questions![0].taskId!);
+                return task ? (
+                  <section className="agent-detail-section">
+                    <h4>▸ 步骤</h4>
+                    <button type="button" className="agent-event-row" style={{ width: '100%', textAlign: 'left', cursor: 'pointer' }} onClick={() => onOpenTask(task.id)} aria-label={`打开任务详情：${task.title}`}>
+                      <span className="agent-status-icon" data-state={task.status === 'passed' ? 'passed' : task.status === 'failed' ? 'failed' : task.status === 'running' ? 'running' : task.status === 'blocked' ? 'blocked' : 'idle'}>{task.status === 'passed' ? '✓' : task.status === 'failed' ? '!' : task.status === 'running' ? '↻' : '·'}</span>
+                      <span className="agent-event-copy"><strong>{task.title}</strong><span>{taskStatusLabels[task.status]}{task.attempt ? ` · ×${task.attempt}` : ''}</span></span>
+                    </button>
+                  </section>
+                ) : null;
+              })() : null}
+              {message.questions[0].context && <section className="agent-detail-section"><h4>ℹ 原因</h4><p>{message.questions[0].context}</p></section>}
               {message.questions[0].options?.length ? (
-                <section className="agent-detail-section"><h4>可以直接回复</h4><ul>{message.questions[0].options.map((option) => <li key={option.label}><strong>{option.label}</strong>{option.description ? `：${option.description}` : ''}</li>)}</ul></section>
+                <section className="agent-detail-section"><h4>▸ 可回复</h4><ul>{message.questions[0].options.map((option) => <li key={option.label}><strong>{option.label}</strong>{option.description ? `：${option.description}` : ''}</li>)}</ul></section>
               ) : null}
             </>
           )}
-          {message && <section className="agent-detail-section"><h4>时间</h4><p>{new Date(message.createdAt).toLocaleString('zh-CN')}</p></section>}
+          {message && <section className="agent-detail-section"><h4>◷ 时间</h4><p>{new Date(message.createdAt).toLocaleString('zh-CN')}</p></section>}
         </div>
       );
     } else if (active.kind === 'task') {
       const task = taskById(thread, active.ref.taskId);
-      sheetTitle = '任务详情';
+      sheetTitle = '▸ 任务';
       sheet = task ? (
         <div className="agent-detail-scroll">
-          <section className="agent-detail-section"><h4>任务</h4><p>{task.title}</p><p style={{ marginTop: 4, color: 'var(--text-secondary)' }}>{task.scope} · {taskStatusLabels[task.status]}{task.attempt ? ` · 已试 ${task.attempt} 次` : ''}</p></section>
-          <section className="agent-detail-section"><h4>说明</h4><p>{task.instruction}</p></section>
-          <section className="agent-detail-section"><h4>验收标准</h4><ul className="agent-checks">{task.acceptance.map((item, index) => <li key={item} className={index < task.evidence.length ? 'passed' : ''}><i>{index < task.evidence.length ? '✓' : '○'}</i><span>{item}</span></li>)}</ul></section>
-          {task.evidence.length > 0 && <section className="agent-detail-section"><h4>证据（{task.evidence.length}）</h4><EvidenceList items={task.evidence} /></section>}
-          {task.error && <section className="agent-detail-section"><h4>错误</h4><p style={{ color: 'var(--danger)' }}>{task.error}</p></section>}
+          <section className="agent-detail-section"><h4>▸ 任务</h4><p>{task.title}</p><p style={{ marginTop: 4, color: 'var(--text-secondary)' }}>{task.scope} · {taskStatusLabels[task.status]}{task.attempt ? ` · ×${task.attempt}` : ''}</p></section>
+          <section className="agent-detail-section"><h4>ℹ 说明</h4><p>{task.instruction}</p></section>
+          <section className="agent-detail-section"><h4>✓ 验收</h4><ul className="agent-checks">{task.acceptance.map((item, index) => <li key={item} className={index < task.evidence.length ? 'passed' : ''}><i>{index < task.evidence.length ? '✓' : '○'}</i><span>{item}</span></li>)}</ul></section>
+          {task.evidence.length > 0 && <section className="agent-detail-section"><h4>▦ 证据（{task.evidence.length}）</h4><EvidenceList items={task.evidence} /></section>}
+          {task.error && <section className="agent-detail-section"><h4>✕ 错误</h4><p style={{ color: 'var(--danger)' }}>{task.error}</p></section>}
           {task.status === 'failed' && <div className="agent-approval-actions"><button type="button" className="agent-btn" onClick={() => onRetryTask(task.id)}>重试任务</button></div>}
         </div>
       ) : null;
     } else if (active.kind === 'approval') {
       const approval = thread.pendingApproval;
-      sheetTitle = '待确认操作';
+      sheetTitle = '⚠ 待确认';
       sheet = approval ? (
         <div className="agent-detail-scroll">
-          <section className="agent-detail-section"><h4>操作</h4><p>{approval.confirmation.summary || approval.toolName}</p></section>
-          <section className="agent-detail-section"><h4>影响范围</h4><pre style={{ fontSize: 11, whiteSpace: 'pre-wrap', background: 'var(--panel-soft)', borderRadius: 8, padding: 10, margin: 0 }}>{JSON.stringify(approval.confirmation.impact ?? {}, null, 2)}</pre></section>
-          <section className="agent-detail-section"><h4>工具与参数</h4><p>{approval.toolName}</p><pre style={{ fontSize: 11, whiteSpace: 'pre-wrap', background: 'var(--panel-soft)', borderRadius: 8, padding: 10, margin: 0 }}>{JSON.stringify(approval.arguments, null, 2)}</pre></section>
+          <section className="agent-detail-section"><h4>⚙ 操作</h4><p>{approval.confirmation.summary || approval.toolName}</p></section>
+          <section className="agent-detail-section"><h4>⚠ 影响</h4><pre style={{ fontSize: 11, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', background: 'var(--panel-soft)', borderRadius: 8, padding: 10, margin: 0 }}>{JSON.stringify(approval.confirmation.impact ?? {}, null, 2)}</pre></section>
+          <section className="agent-detail-section"><h4>⚙ 参数</h4><p>{approval.toolName}</p><pre style={{ fontSize: 11, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', background: 'var(--panel-soft)', borderRadius: 8, padding: 10, margin: 0 }}>{JSON.stringify(approval.arguments, null, 2)}</pre></section>
         </div>
       ) : null;
     } else if (active.kind === 'blocked') {
-      sheetTitle = '受阻详情';
+      sheetTitle = '✕ 受阻';
       sheet = (
         <div className="agent-detail-scroll">
-          <section className="agent-detail-section"><h4>状态</h4><p>{thread.blockedConditionFingerprint || '同一问题重复出现'}</p></section>
-          <section className="agent-detail-section"><h4>连续尝试</h4><p>{thread.blockedCount} 次相同阻塞条件</p></section>
+          <section className="agent-detail-section"><h4>⚙ 状态</h4><p>{thread.blockedConditionFingerprint || '同一问题重复出现'}</p></section>
+          <section className="agent-detail-section"><h4>↻ 连续</h4><p>×{thread.blockedCount}</p></section>
         </div>
       );
     } else if (active.kind === 'plan') {
-      sheetTitle = '计划详情';
+      sheetTitle = '◎ 计划';
       sheet = planDetail;
     }
   }

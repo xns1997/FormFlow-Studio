@@ -404,9 +404,13 @@ export const TOOL_CALL_GUIDANCE: Record<string, ToolCallGuidance> = {
     ],
   },
   'behavior.upsert': {
+    examples: [
+      { summary: '表单作用域保存行为（必须带 scope=form 与 formId）', arguments: { projectId: 'device_mgmt', scope: 'form', formId: 'device_edit', baseRevision: '<revision>', idempotencyKey: 'beh-1', behavior: { id: 'beh_score_guard', name: '评分低于60提示', trigger: { type: 'submit' }, conditions: [], actions: [{ type: 'showMessage', messageType: 'warning', message: '评分过低' }] } } },
+    ],
     wrong: [
       { summary: 'actions 至少一项，空数组会被 schema 拒绝。', arguments: { projectId: 'device_mgmt', scope: 'form', formId: 'device_edit', baseRevision: '<revision>', idempotencyKey: 'beh-1', behavior: { id: 'b1', name: '空行为', trigger: { type: 'submit' }, conditions: [], actions: [] } }, expectedError: 'ARRAY_TOO_SHORT（actions 至少 1 项）' },
       { summary: 'trigger.type 必须来自事件目录。', arguments: { projectId: 'device_mgmt', scope: 'form', formId: 'device_edit', baseRevision: '<revision>', idempotencyKey: 'beh-2', behavior: { id: 'b2', name: '坏触发器', trigger: { type: 'onSave' }, conditions: [], actions: [{ type: 'showMessage', message: 'x' }] } }, expectedError: 'INVALID_ARGUMENT_ENUM' },
+      { summary: '缺少 scope 会被 schema 拒绝；scope 只接受 global/sheet/form。', arguments: { projectId: 'device_mgmt', formId: 'device_edit', baseRevision: '<revision>', idempotencyKey: 'beh-3', behavior: { id: 'b3', name: '缺作用域', trigger: { type: 'submit' }, conditions: [], actions: [{ type: 'showMessage', message: 'x' }] } }, expectedError: 'REQUIRED_ARGUMENT（scope）' },
     ],
   },
   'behavior.delete': {

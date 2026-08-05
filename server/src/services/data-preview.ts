@@ -83,6 +83,8 @@ export function queryRows(input: {
   rows: DataRow[];
   headers: string[];
   keyFields?: string[];
+  /** 自定义行顺序（稳定 rowKey 数组）；仅无排序时生效，未匹配行按原相对顺序排在末尾 */
+  rowOrder?: string[];
   page?: number;
   pageSize?: number;
   search?: string;
@@ -123,6 +125,22 @@ export function queryRows(input: {
 
   const keys = buildRowKeys(input.rows, input.keyFields);
   let keyed = input.rows.map((row, index) => ({ ...row, __rowKey: keys[index], __rowIndex: index })) as KeyedRow[];
+
+  // Custom row order (only when no sort is active; unmatched rows keep original relative order at the end)
+  const rowOrder = input.rowOrder?.length && !(input.sortModel || []).some((rule) => rule.sort)
+    ? input.rowOrder
+    : undefined;
+  if (rowOrder) {
+    const orderIndex = new Map(rowOrder.map((key, index) => [key, index]));
+    keyed = [...keyed].sort((left, right) => {
+      const leftIndex = orderIndex.get(left.__rowKey);
+      const rightIndex = orderIndex.get(right.__rowKey);
+      if (leftIndex == null && rightIndex == null) return left.__rowIndex - right.__rowIndex;
+      if (leftIndex == null) return 1;
+      if (rightIndex == null) return -1;
+      return leftIndex - rightIndex;
+    });
+  }
 
   // Key search
   const keySearch = input.keySearch?.trim().toLocaleLowerCase();

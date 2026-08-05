@@ -15,6 +15,8 @@ export interface ProjectAgentQuestion {
   question: string;
   kind: 'choice' | 'text';
   context?: string;
+  taskId?: string;
+  taskTitle?: string;
   options?: Array<{ label: string; description?: string }>;
 }
 
@@ -33,6 +35,20 @@ export interface ProjectAgentEvidence {
   kind: string;
   summary: string;
   createdAt: string;
+}
+
+export interface ProjectAgentTurnMetrics {
+  modelCalls: number;
+  toolCalls: number;
+  invalidToolCalls: number;
+  approvals: number;
+  approvalRejections: number;
+  retries: number;
+  compactions: number;
+  pauses: number;
+  tokenUsage: { prompt: number; completion: number };
+  startedAt: string;
+  updatedAt: string;
 }
 
 export interface ProjectAgentTask {
@@ -112,6 +128,20 @@ export interface ProjectAgentThread {
   blockedConditionFingerprint?: string;
   blockedCount: number;
   decisionSteps: number;
+  recoveryCycles?: number;
+  checkpointRefs?: string[];
+  turnMetrics?: ProjectAgentTurnMetrics;
+  context?: {
+    goal: string;
+    constraints: string[];
+    decisions: string[];
+    verification: string[];
+    remainingWork: string[];
+    userCorrections: string[];
+    updatedAt: string;
+  };
+  testBaseline?: { capturedAt: string; passed: boolean; failures: string[] };
+  selfReviewedPlanRevision?: number;
   pinnedAt?: string;
   archived: boolean;
   createdAt: string;
@@ -178,7 +208,18 @@ export const statusLabels: Record<ProjectAgentStatus, string> = {
   idle: '等待输入', planning: '生成计划', awaiting_plan_approval: '等待确认计划', executing: '执行中',
   awaiting_operation_approval: '等待操作确认', paused: '已暂停', completed: '已完成', blocked: '已受阻', stopped: '已停止', failed: '失败',
 };
+/** 状态栏等紧凑场景使用的短标签。 */
+export const statusLabelsShort: Record<ProjectAgentStatus, string> = {
+  idle: '待', planning: '规划', awaiting_plan_approval: '待确认', executing: '执行',
+  awaiting_operation_approval: '待批准', paused: '暂停', completed: '完成', blocked: '受阻', stopped: '停止', failed: '失败',
+};
+/** 状态符号：配合 title 提示使用，减少视觉文字。 */
+export const statusSymbols: Record<ProjectAgentStatus, string> = {
+  idle: '·', planning: '…', awaiting_plan_approval: '◎', executing: '⚙',
+  awaiting_operation_approval: '⚠', paused: '⏸', completed: '✓', blocked: '✕', stopped: '⏹', failed: '!',
+};
 export const modeLabels: Record<ProjectAgentMode, string> = { plan: '计划模式', goal: '目标模式' };
+export const modeLabelsShort: Record<ProjectAgentMode, string> = { plan: '计划', goal: '目标' };
 export const taskStatusLabels: Record<ProjectAgentTask['status'], string> = {
   pending: '待执行', running: '执行中', passed: '已完成', failed: '失败', blocked: '受阻', superseded: '已替代', cancelled: '已取消',
 };
@@ -408,21 +449,21 @@ export function buildSurfaceItems(thread: ProjectAgentThread): SurfaceItem[] {
   const items: SurfaceItem[] = [];
   for (const message of thread.messages) {
     if (message.role === 'user') {
-      items.push({ key: `message:${message.id}`, kind: 'message', state: 'idle', title: message.content.split('\n')[0].slice(0, 80), meta: '你的需求', ref: { messageId: message.id } });
+      items.push({ key: `message:${message.id}`, kind: 'message', state: 'idle', title: message.content.split('\n')[0].slice(0, 80), meta: '', ref: { messageId: message.id } });
     } else if (message.kind === 'answer') {
-      items.push({ key: `message:${message.id}`, kind: 'completion', state: 'passed', title: message.content.split('\n')[0].slice(0, 80), meta: '完成说明', ref: { messageId: message.id } });
+      items.push({ key: `message:${message.id}`, kind: 'completion', state: 'passed', title: message.content.split('\n')[0].slice(0, 80), meta: '完成', ref: { messageId: message.id } });
     } else if (message.kind === 'question') {
       const question = message.questions?.[0];
       items.push({ key: `message:${message.id}`, kind: 'question', state: 'attention', title: question?.question?.split('\n')[0].slice(0, 80) || message.content.split('\n')[0].slice(0, 80), meta: question?.header || '需要你决定', ref: { messageId: message.id } });
     } else if (message.kind === 'commentary') {
-      items.push({ key: `message:${message.id}`, kind: 'message', state: 'idle', title: message.content.split('\n')[0].slice(0, 80), meta: '智能体', ref: { messageId: message.id } });
+      items.push({ key: `message:${message.id}`, kind: 'message', state: 'idle', title: message.content.split('\n')[0].slice(0, 80), meta: '', ref: { messageId: message.id } });
     }
   }
   const plan = thread.plan;
   if (plan) {
     const progress = planProgress(thread);
     const statusText = plan.status === 'pending' ? '待确认' : plan.status === 'confirmed' ? '执行中' : plan.status === 'executed' ? '已完成' : plan.status === 'rejected' ? '已拒绝' : '已修订';
-    items.push({ key: `plan:${plan.id}`, kind: 'plan', state: plan.status === 'pending' ? 'attention' : plan.status === 'executed' ? 'passed' : 'running', title: plan.goal, meta: `${statusText} · ${progress.passed}/${progress.total} 项任务`, ref: {} });
+    items.push({ key: `plan:${plan.id}`, kind: 'plan', state: plan.status === 'pending' ? 'attention' : plan.status === 'executed' ? 'passed' : 'running', title: plan.goal, meta: `${statusText} · ${progress.passed}/${progress.total} 步`, ref: {} });
   }
   for (const task of plan?.tasks || []) {
     items.push({
@@ -430,7 +471,7 @@ export function buildSurfaceItems(thread: ProjectAgentThread): SurfaceItem[] {
       kind: 'task',
       state: taskState(task.status),
       title: task.title,
-      meta: `${roleLabels[task.scope]} · ${taskStatusLabels[task.status]}${task.attempt ? ` · 已试 ${task.attempt} 次` : ''}${task.evidence.length ? ` · ${task.evidence.length} 条证据` : ''}`,
+      meta: `${roleLabels[task.scope]} · ${taskStatusLabels[task.status]}${task.attempt ? ` · ×${task.attempt}` : ''}${task.evidence.length ? ` · ▦${task.evidence.length}` : ''}`,
       ref: { taskId: task.id },
     });
   }

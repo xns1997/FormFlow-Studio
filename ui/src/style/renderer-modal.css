@@ -162,15 +162,6 @@
   }
 }
 
-.notification-item {
-  animation: notification-enter 0.2s ease-out forwards;
-}
-
-.notification-item:nth-child(2) { animation-delay: 0.03s; }
-.notification-item:nth-child(3) { animation-delay: 0.06s; }
-.notification-item:nth-child(4) { animation-delay: 0.09s; }
-.notification-item:nth-child(5) { animation-delay: 0.12s; }
-
 /* 使用态表单是一个完整任务空间，不继承设计器工具栏的布局占位。 */
 .form-runtime-overlay {
   padding: 24px;

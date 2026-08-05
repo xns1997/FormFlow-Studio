@@ -24,6 +24,7 @@ function thread(): AgentThread {
     events: [],
     consecutiveNoProgress: 0,
     blockedCount: 0,
+    recoveryCycles: 0,
     decisionSteps: 0,
     archived: false,
     createdAt: new Date().toISOString(),

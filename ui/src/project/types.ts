@@ -383,6 +383,10 @@ export interface TableConfig {
   filterEnabled: boolean;
   sortEnabled: boolean;
   groupByColumn: number | null;
+  /** 自定义行顺序（稳定 rowKey 数组）；未配置时按数据原始顺序展示 */
+  rowOrder?: string[];
+  /** 开启后每个编辑手势完成后自动保存；默认 false 使用手动保存 */
+  autoSave?: boolean;
   sequenceRules?: Record<string, {
     start: number;
     step: number;
@@ -413,6 +417,7 @@ export function createDefaultTableConfig(id: string, tableName: string): TableCo
     filterEnabled: true,
     sortEnabled: true,
     groupByColumn: null,
+    autoSave: false,
     sequenceRules: {},
   };
 }
