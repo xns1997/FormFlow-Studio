@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.11.2...v1.12.0) (2026-08-05)
+
+
+### Features
+
+* 筛选入口移入列头，顶栏仅展示/编辑/删除已有筛选且无筛选时隐藏 ([ec56d11](https://github.com/xns1997/FormFlow-Studio/commit/ec56d114f5a5a242fc06465ad230f84ce01c2a96))
+
 ## [1.11.2](https://github.com/xns1997/FormFlow-Studio/compare/v1.11.1...v1.11.2) (2026-08-05)
 
 
