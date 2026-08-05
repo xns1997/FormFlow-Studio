@@ -1,3 +1,10 @@
+## [1.12.1](https://github.com/xns1997/FormFlow-Studio/compare/v1.12.0...v1.12.1) (2026-08-05)
+
+
+### Bug Fixes
+
+* 筛选器按数据类型提供专用输入与快捷操作，运算类型下拉不再关闭筛选弹窗 ([eb0cde7](https://github.com/xns1997/FormFlow-Studio/commit/eb0cde7589a6e9717de3fd71237e84e47fabcc4d))
+
 # [1.12.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.11.2...v1.12.0) (2026-08-05)
 
 
