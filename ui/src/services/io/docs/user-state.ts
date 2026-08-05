@@ -6,6 +6,7 @@ const SEARCH_KEY = 'formflow.docs.search-history.v2';
 const cloudMode = ((import.meta as any).env?.VITE_APP_MODE || 'local') === 'cloud';
 const emptyState = (): DocUserState => ({ version: 1, favorites: [], recent: [], taskProgress: {}, updatedAt: new Date().toISOString() });
 
+/** 读取本地文档用户状态（localStorage）。 */
 export function readLocalDocState(): DocUserState {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
@@ -13,15 +14,18 @@ export function readLocalDocState(): DocUserState {
   } catch { return emptyState(); }
 }
 
+/** 写入本地文档用户状态。 */
 export function writeLocalDocState(state: DocUserState) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, updatedAt: state.updatedAt || new Date().toISOString() })); } catch { /* ignore */ }
 }
 
+/** 加载文档用户状态（本地 + 服务端合并）。 */
 export async function loadDocUserState(): Promise<DocUserState> {
   if (!cloudMode) return readLocalDocState();
   try { return await request<DocUserState>('/docs/state'); } catch { return readLocalDocState(); }
 }
 
+/** 保存文档用户状态（本地 + 服务端）。 */
 export async function saveDocUserState(state: DocUserState): Promise<DocUserState> {
   const next = { ...state, version: Math.max(0, state.version || 0), updatedAt: state.updatedAt || new Date().toISOString() };
   writeLocalDocState(next);
@@ -31,6 +35,7 @@ export async function saveDocUserState(state: DocUserState): Promise<DocUserStat
   } catch { return next; }
 }
 
+/** 记录最近搜索词。 */
 export function recordRecentSearch(query: string) {
   const value = query.trim();
   if (!value) return;
@@ -40,10 +45,12 @@ export function recordRecentSearch(query: string) {
   } catch { /* optional device-only history */ }
 }
 
+/** 读取最近搜索词列表。 */
 export function readRecentSearches(): string[] {
   try { return JSON.parse(localStorage.getItem(SEARCH_KEY) || '[]'); } catch { return []; }
 }
 
+/** 上报文档反馈事件（有用/无用）。 */
 export async function sendDocEvent(event: DocFeedbackEvent) {
   if (!cloudMode) return;
   const safe = { ...event } as Record<string, unknown>;

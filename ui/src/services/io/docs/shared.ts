@@ -7,6 +7,7 @@ import type {
 } from './types';
 import { FORM_EVENT_CONTRACT } from '../../../../../shared/formflow-core/formEventContract';
 
+/** 全部事件共享的上下文字段（文档与补全共用）。 */
 export const sharedContextFields: BehaviorReferenceField[] = [
   { name: 'field', type: 'string', description: 'ctx.field 的顶层别名；推荐在脚本里直接使用。' },
   { name: 'value', type: 'unknown', description: 'ctx.value 的顶层别名；推荐在脚本里直接使用。' },
@@ -22,6 +23,7 @@ export const sharedContextFields: BehaviorReferenceField[] = [
   { name: 'ctx.detail', type: 'unknown', description: '事件专属附加数据。具体结构取决于事件类型。' },
 ];
 
+/** 仅控件事件暴露的上下文字段。 */
 export const controlOnlyContextFields: BehaviorReferenceField[] = FORM_EVENT_CONTRACT
   .filter((member) => member.kind === 'value' && !member.internal)
   .map((member) => ({
@@ -30,6 +32,7 @@ export const controlOnlyContextFields: BehaviorReferenceField[] = FORM_EVENT_CON
     description: member.description,
   }));
 
+/** 仅脚本事件暴露的上下文字段。 */
 export const scriptOnlyContextFields: BehaviorReferenceField[] = [
   { name: 'getValue(fieldId)', type: 'unknown', description: '读取行为脚本当前看到的字段值；推荐优先使用这个顶层 API。' },
   { name: 'setValue(fieldId, value)', type: 'Promise<void>', description: '修改字段值的顶层 API。' },
@@ -55,6 +58,7 @@ export const scriptOnlyContextFields: BehaviorReferenceField[] = [
   { name: 'ctx.originalData', type: 'Record<string, unknown>', description: '测试面板和行为脚本中可读取的原始数据快照。' },
 ];
 
+/** 流程参数快捷引用。 */
 export const flowParameterShortcuts: BehaviorReferenceShortcut[] = [
   { path: '$value', description: '当前事件值。' },
   { path: '$field', description: '当前字段名。' },
@@ -72,6 +76,7 @@ export const flowParameterShortcuts: BehaviorReferenceShortcut[] = [
   { path: '$context', description: '完整事件上下文对象。' },
 ];
 
+/** 脚本 API 参考（方法/值）。 */
 export const scriptApis: BehaviorApiReference[] = [
   { name: 'getValue', signature: 'getValue(fieldId)', description: '获取字段当前值。推荐优先使用顶层 API。' },
   { name: 'getValues', signature: 'getValues(fieldIds)', description: '批量读取字段值。' },
@@ -129,6 +134,7 @@ const printApis: BehaviorApiReference[] = [
   { name: 'PrintGroup', signature: 'PrintGroup(label, data?)', description: '输出阶段性分组调试日志。' },
 ];
 
+/** 控件 API 参考。 */
 export const controlApis: BehaviorApiReference[] = [
   ...FORM_EVENT_CONTRACT
     .filter((member) => member.kind === 'method' && member.topLevelAlias && !member.internal)
@@ -147,12 +153,14 @@ export const controlApis: BehaviorApiReference[] = [
     })),
 ];
 
+/** 按作用域合并上下文字段（共享 + 专属）。 */
 export function mergeContextFields(scope: BehaviorDocScope) {
   return scope === 'control'
     ? [...sharedContextFields, ...controlOnlyContextFields]
     : [...sharedContextFields, ...scriptOnlyContextFields];
 }
 
+/** 构造事件文档条目（自动填充上下文字段与 API）。 */
 export function createEventDoc(entry: Omit<BehaviorEventDocEntry, 'contextFields' | 'apis'> & {
   contextFields?: BehaviorReferenceField[];
   apis?: BehaviorApiReference[];

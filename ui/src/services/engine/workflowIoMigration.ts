@@ -78,6 +78,7 @@ function hasPortSchemaProperty(node: WorkflowNode, key: 'inputPorts' | 'outputPo
 
 // ─── Public migration functions ───────────────────────────────────────────────
 
+/** 查找旧版流程的结果来源节点。 */
 export function findLegacyResultSource(workflow: WorkflowFile, legacyTargetNodeId?: string) {
   const preferNode = legacyTargetNodeId
     ? workflow.nodes.find((node) => node.id === legacyTargetNodeId)
@@ -92,6 +93,7 @@ export function findLegacyResultSource(workflow: WorkflowFile, legacyTargetNodeI
   return null;
 }
 
+/** 迁移旧版导入端口字段到新 IO 模型。 */
 export function migrateImportFields(
   workflow: WorkflowFile,
   importNode: WorkflowNode,
@@ -141,6 +143,7 @@ export function migrateImportFields(
   };
 }
 
+/** 迁移旧版导出端口字段到新 IO 模型。 */
 export function migrateExportFields(
   exportNode: WorkflowNode,
   options: { nodeWasAdded: boolean; hasLegacyResultSource: boolean },
@@ -169,6 +172,7 @@ export function migrateExportFields(
   };
 }
 
+/** 持久化稳定 IO 字段（幂等写入节点属性）。 */
 export function persistStableIoFields(node: WorkflowNode, property: 'inputPorts' | 'outputPorts', fields: WorkflowIoField[]) {
   const properties = parseProperties(node);
   const raw = parseCustomJsPortDefinitions(properties[property]);
@@ -191,6 +195,7 @@ export function persistStableIoFields(node: WorkflowNode, property: 'inputPorts'
   };
 }
 
+/** 接线旧版导入边到新导入节点。 */
 export function wireLegacyImportEdges(
   workflow: { nodes: WorkflowNode[]; edges: WorkflowEdge[] },
   importNode: WorkflowNode,
@@ -224,6 +229,7 @@ export function wireLegacyImportEdges(
   return { edges: nextEdges, changed };
 }
 
+/** 接线旧版导出边到新导出节点。 */
 export function wireLegacyExportEdge(
   workflow: { edges: WorkflowEdge[] },
   exportNode: WorkflowNode,

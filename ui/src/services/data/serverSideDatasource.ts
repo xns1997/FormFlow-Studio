@@ -7,6 +7,7 @@
  */
 import type { IServerSideDatasource, IServerSideGetRowsParams, IServerSideGetRowsRequest } from 'ag-grid-community';
 import { dataPreviewApi, type PreviewQuery } from './dataPreviewClient';
+import type { FilterRule } from '../../../../shared/formflow-core/previewFilter';
 
 export interface ServerSideDatasourceOptions {
   projectId: string;
@@ -35,10 +36,10 @@ export function createServerSideDatasource(options: ServerSideDatasourceOptions)
       const request: IServerSideGetRowsRequest = params.request;
 
       // Build filter model from AG Grid's request
-      const filterModel: Record<string, unknown> = {};
+      const filterModel: Record<string, FilterRule> = {};
       if (request.filterModel) {
         for (const [key, filter] of Object.entries(request.filterModel)) {
-          filterModel[key] = filter;
+          filterModel[key] = filter as FilterRule;
         }
       }
 

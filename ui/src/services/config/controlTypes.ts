@@ -112,26 +112,32 @@ const CHROMELESS_TYPES = new Set<ExtendedComponentType>([
   'animatedNumber',
 ]);
 
+/** 控件类型 → 运行时类型（含别名归一）。 */
 export function getRuntimeComponentType(type: string): ExtendedComponentType {
   return DESIGN_TO_RUNTIME_TYPE[type] || 'input';
 }
 
+/** 控件类型 → 设计值端口类型。 */
 export function getDesignValuePortType(type: string): string {
   return VALUE_TYPES[getRuntimeComponentType(type)] || 'any';
 }
 
+/** 是否交互控件类型。 */
 export function isInteractiveComponentType(type: string): boolean {
   return INTERACTIVE_TYPES.has(getRuntimeComponentType(type));
 }
 
+/** 是否可编辑控件类型。 */
 export function isEditableComponentType(type: string): boolean {
   return EDITABLE_TYPES.has(getRuntimeComponentType(type));
 }
 
+/** 是否显示字段外壳（标签/必填标记）。 */
 export function shouldShowFieldChrome(type: string): boolean {
   return !CHROMELESS_TYPES.has(getRuntimeComponentType(type));
 }
 
+/** 组件默认值（按类型与 props 推断）。 */
 export function getDefaultComponentValue(component: Pick<DesignComponent, 'type' | 'props'>): unknown {
   if (component.props.value !== undefined) return component.props.value;
   if (component.props.defaultValue !== undefined) return component.props.defaultValue;
@@ -163,6 +169,7 @@ export function getDefaultComponentValue(component: Pick<DesignComponent, 'type'
   }
 }
 
+/** 归一化日期时间值为标准字符串。 */
 export function normalizeDateTimeValue(value: unknown, mode: 'date' | 'datetime' | 'time'): string {
   const raw = String(value ?? '').trim();
   if (!raw) return '';
@@ -202,6 +209,7 @@ function zoneOffsetMinutes(date: Date, timezone: string) {
 }
 
 /** Convert a wall-clock datetime in the chosen timezone to a stable UTC storage value. */
+/** 编码日期时间值用于存储（时区偏移）。 */
 export function encodeDateTimeForStorage(value: unknown, timezone?: string, mode: 'date' | 'datetime' | 'time' = 'datetime') {
   const normalized = normalizeDateTimeValue(value, mode);
   if (!normalized || mode !== 'datetime' || !timezone || timezone === 'local') return normalized;
@@ -214,6 +222,7 @@ export function encodeDateTimeForStorage(value: unknown, timezone?: string, mode
 }
 
 /** Convert a stored ISO datetime back to the user's wall-clock value. */
+/** 解码存储的日期时间值用于展示。 */
 export function decodeDateTimeForDisplay(value: unknown, timezone?: string, mode: 'date' | 'datetime' | 'time' = 'datetime') {
   const raw = String(value ?? '').trim();
   if (!raw || mode !== 'datetime' || !timezone || timezone === 'local' || !/[zZ]|[+-]\d{2}:?\d{2}$/.test(raw)) return normalizeDateTimeValue(raw, mode);

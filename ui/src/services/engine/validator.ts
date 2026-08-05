@@ -5,6 +5,7 @@ export interface ValidationResult {
   errors: Record<string, string>;
 }
 
+/** 按规则校验字段值，返回错误消息（通过返回 null）。 */
 export function validateField(value: unknown, rules: ValidationRule[], values: Record<string, unknown> = {}): string | null {
   for (const rule of rules) {
     const error = applyRule(value, rule, values);
@@ -97,6 +98,7 @@ function applyRule(value: unknown, rule: ValidationRule, values: Record<string, 
   return null;
 }
 
+/** 由控件属性编译校验规则。 */
 export function compileComponentValidation(props: Record<string, unknown>): ValidationRule[] {
   const rules: ValidationRule[] = Array.isArray(props.validationRules)
     ? (props.validationRules as ValidationRule[]).map((rule) => ({ ...rule }))
@@ -123,6 +125,7 @@ export function compileComponentValidation(props: Record<string, unknown>): Vali
   return rules;
 }
 
+/** 由样本值推断列数据类型。 */
 export function inferDataType(values: unknown[]): ColumnSchema['dataType'] {
   const nonEmpty = values.filter((v) => v !== null && v !== undefined && v !== '');
   if (nonEmpty.length === 0) return 'unknown';
@@ -149,12 +152,14 @@ export function inferDataType(values: unknown[]): ColumnSchema['dataType'] {
   return 'string';
 }
 
+/** 由样本值推断枚举选项（值种类 ≤ 上限时）。 */
 export function inferEnumOptions(values: unknown[]): string[] | undefined {
   const unique = [...new Set(values.map(String).filter(Boolean))];
   if (unique.length > 0 && unique.length <= 20) return unique.sort();
   return undefined;
 }
 
+/** 批量校验全部字段，返回错误字典与是否通过。 */
 export function validateAllFields(formValues: Record<string, unknown>, columns: Array<{ name: string; required?: boolean; validationRules?: ValidationRule[] }>): ValidationResult {
   const errors: Record<string, string> = {};
   for (const col of columns) {

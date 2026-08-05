@@ -1,3 +1,4 @@
+/** DSL 版本标识。 */
 export const BEHAVIOR_DSL_VERSION = '1.0';
 
 export const BEHAVIOR_DSL_STATEMENTS = [

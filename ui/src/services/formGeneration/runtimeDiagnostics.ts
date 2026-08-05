@@ -249,6 +249,7 @@ function matchCategory(message: string): { category: RuntimeDiagnosticCategory; 
   };
 }
 
+/** 调试条目 → 运行时诊断（分类/严重级/来源）。 */
 export function enrichDebugEntry(entry: DebugEntry): RuntimeDiagnostic {
   const message = String(entry.message || entry.title || '');
   const match = matchCategory(message);
@@ -273,18 +274,22 @@ export function enrichDebugEntry(entry: DebugEntry): RuntimeDiagnostic {
   };
 }
 
+/** 批量转换调试条目为诊断。 */
 export function enrichDebugEntries(entries: DebugEntry[]): RuntimeDiagnostic[] {
   return entries.map(enrichDebugEntry);
 }
 
+/** 按分类分组诊断。 */
 export function groupByCategory(diagnostics: RuntimeDiagnostic[]): Map<string, RuntimeDiagnostic[]> {
   return groupBy(diagnostics, (d) => d.category);
 }
 
+/** 按严重级分组诊断。 */
 export function groupBySeverity(diagnostics: RuntimeDiagnostic[]): Map<string, RuntimeDiagnostic[]> {
   return groupBy(diagnostics, (d) => d.severity);
 }
 
+/** 分类 → 中文标签与图标。 */
 export const CATEGORY_LABELS: Record<RuntimeDiagnosticCategory, { label: string; icon: string }> = {
   'data-binding': { label: '数据绑定', icon: '🔗' },
   'expression': { label: '表达式', icon: '📝' },

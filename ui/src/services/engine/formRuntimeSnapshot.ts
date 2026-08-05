@@ -25,6 +25,7 @@ const listeners = new Set<() => void>();
 
 const sensitive = /(password|passwd|pwd|token|secret|api.?key|access.?key|id.?card|身份证|手机|电话|phone|mobile|email|邮箱)/i;
 
+/** 运行时值脱敏（隐藏敏感字段）。 */
 export function maskRuntimeValues(values: Record<string, unknown>) {
   return Object.fromEntries(Object.entries(values).map(([field, value]) => {
     if (!sensitive.test(field)) return [field, value];
@@ -33,19 +34,24 @@ export function maskRuntimeValues(values: Record<string, unknown>) {
   }));
 }
 
+/** 发布表单运行时快照并通知订阅者。 */
 export function publishFormRuntimeSnapshot(snapshot: FormRuntimeSnapshot) {
   snapshots.set(snapshot.formId, snapshot);
   listeners.forEach((listener) => listener());
 }
 
+/** 移除表单运行时快照。 */
 export function removeFormRuntimeSnapshot(formId: string) {
   snapshots.delete(formId);
   listeners.forEach((listener) => listener());
 }
 
+/** 读取表单运行时快照。 */
 export function getFormRuntimeSnapshot(formId: string) { return snapshots.get(formId); }
+/** 订阅快照变更（返回退订函数）。 */
 export function subscribeFormRuntimeSnapshots(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
 
+/** 由设计稿构造合成运行时快照（无真实运行时）。 */
 export function createSyntheticRuntimeSnapshot(formId: string, components: DesignComponent[], tables: SrcTableEntry[]): FormRuntimeSnapshot {
   const rawValues = Object.fromEntries(components.map((component) => [String(component.fieldBinding || component.props?.name || component.id), getPreviewInitialValue(component, tables)]));
   return {

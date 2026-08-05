@@ -9,38 +9,15 @@
  */
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { AntdCompatSelect } from './AntdFormControls';
+import {
+  FILTER_TYPE_LABELS,
+  FILTER_TYPES_BY_DATA_TYPE,
+  filterTypesForDataType,
+  type FilterRule,
+} from '../../../shared/formflow-core/previewFilter';
 
 // ── Filter Type Labels (Chinese) ───────────────────────
-
-const FILTER_TYPE_LABELS: Record<string, string> = {
-  contains: '包含',
-  notContains: '不包含',
-  equals: '等于',
-  notEqual: '不等于',
-  startsWith: '开头是',
-  endsWith: '结尾是',
-  blank: '为空',
-  notBlank: '不为空',
-  greaterThan: '大于',
-  greaterThanOrEqual: '大于等于',
-  lessThan: '小于',
-  lessThanOrEqual: '小于等于',
-  inRange: '区间内',
-};
-
-// Filter types grouped by data type
-const FILTER_TYPES_BY_DATA_TYPE: Record<string, string[]> = {
-  string: ['contains', 'equals', 'notEqual', 'startsWith', 'endsWith', 'notContains', 'blank', 'notBlank'],
-  number: ['equals', 'notEqual', 'greaterThan', 'greaterThanOrEqual', 'lessThan', 'lessThanOrEqual', 'inRange', 'blank', 'notBlank'],
-  date: ['equals', 'notEqual', 'greaterThan', 'greaterThanOrEqual', 'lessThan', 'lessThanOrEqual', 'inRange', 'blank', 'notBlank'],
-  boolean: ['equals', 'blank', 'notBlank'],
-  enum: ['equals', 'notEqual', 'blank', 'notBlank'],
-  unknown: ['contains', 'equals', 'notEqual', 'blank', 'notBlank'],
-};
-
-function getFilterTypesForDataType(dataType?: string): string[] {
-  return FILTER_TYPES_BY_DATA_TYPE[dataType || 'unknown'] || FILTER_TYPES_BY_DATA_TYPE.unknown;
-}
+const getFilterTypesForDataType = filterTypesForDataType;
 
 /** 返回今天（或偏移 N 天）的 YYYY-MM-DD。 */
 function isoDate(offsetDays: number): string {
@@ -51,19 +28,6 @@ function isoDate(offsetDays: number): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
-}
-
-// ── Types ──────────────────────────────────────────────
-
-export interface FilterRule {
-  filterType?: string;
-  type?: string;
-  filter?: unknown;
-  filterTo?: unknown;
-  values?: unknown[];
-  operator?: 'AND' | 'OR';
-  condition1?: FilterRule;
-  condition2?: FilterRule;
 }
 
 export interface FilterChip {
@@ -339,3 +303,4 @@ function buildFilterLabel(field: string, rule: FilterRule): string {
 }
 
 export { FILTER_TYPE_LABELS, FILTER_TYPES_BY_DATA_TYPE, getFilterTypesForDataType };
+export type { FilterRule };

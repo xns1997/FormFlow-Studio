@@ -10,6 +10,7 @@ export interface BindingError {
   componentId?: string;
 }
 
+/** 检查未绑定字段的组件。 */
 export function checkUnboundFields(
   columns: ColumnSchema[],
   bindings: BindingEdge[],
@@ -38,6 +39,7 @@ export function checkUnboundFields(
   return errors;
 }
 
+/** 检查重复字段绑定。 */
 export function checkDuplicateBindings(
   bindings: BindingEdge[],
 ): BindingError[] {
@@ -61,6 +63,7 @@ export function checkDuplicateBindings(
   return errors;
 }
 
+/** 检查端口/字段类型不匹配。 */
 export function checkTypeMismatches(
   columns: ColumnSchema[],
   bindings: BindingEdge[],
@@ -100,6 +103,7 @@ export function checkTypeMismatches(
   return errors;
 }
 
+/** 检查非法连线（悬空/重复/自环）。 */
 export function checkInvalidConnections(
   bindings: BindingEdge[],
   components: ComponentNode[],
@@ -145,6 +149,7 @@ export function checkInvalidConnections(
   return errors;
 }
 
+/** 检查行为触发链循环。 */
 export function checkBehaviorCycles(
   rules: Array<{ id: string; name: string; trigger: { type: string; fieldName?: string }; actions: Array<{ type: string; targetField?: string }> }>,
 ): BindingError[] {
@@ -174,6 +179,7 @@ export function checkBehaviorCycles(
   return errors;
 }
 
+/** 运行全部错误检查并汇总。 */
 export function runAllChecks(
   columns: ColumnSchema[],
   components: ComponentNode[],

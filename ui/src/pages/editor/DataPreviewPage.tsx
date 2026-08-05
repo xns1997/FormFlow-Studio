@@ -27,23 +27,16 @@ import {
   reorderColumnsInSheet,
 } from '../../services/data/tableEditor';
 import {
-  countCellChanges,
   dataPreviewApi,
   defaultPreviewQuery,
-  emptyUndoEntry,
-  invertUndoEntry,
   normalizeCellForType,
   parseClipboardTable,
-  serializeUpdates,
-  undoEntryToBatchPayload,
   validateCellValue,
-  validateChanges,
   type CellUndoChange,
   type PreviewQuery,
   type PreviewRow,
-  type RowChanges,
-  type UndoEntry,
 } from '../../services/data/dataPreviewClient';
+import { useDataWorkbench } from '../../services/data/workbench';
 import {
   formatSequenceValue,
   getNextSequenceNumber,
@@ -245,20 +238,12 @@ export default function DataPreviewPage({
 
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [activeSheetIdx, setActiveSheetIdx] = useState(0);
-  const [selectedColIdx, setSelectedColIdx] = useState<number | null>(null);
-  const [selectedRowIdx, setSelectedRowIdx] = useState<number | null>(null);
-  const [selectedRowKey, setSelectedRowKey] = useState<string | null>(null);
-  const [rows, setRows] = useState<PreviewRow[]>([]);
   const [totalRows, setTotalRows] = useState(0);
   const [queryTotal, setQueryTotal] = useState(0);
-  const [query, setQuery] = useState<PreviewQuery>(defaultPreviewQuery);
   const [searchDraft, setSearchDraft] = useState('');
   const [keyJumpDraft, setKeyJumpDraft] = useState('');
-  const [dataVersion, setDataVersion] = useState('');
   const [reloadToken, setReloadToken] = useState(0);
   const [feedback, setFeedback] = useState<DataPreviewFeedback | null>(null);
-  const [saveState, setSaveState] = useState<'saved' | 'dirty' | 'saving' | 'error'>('saved');
-  const [validationErrors, setValidationErrors] = useState<Map<string, string>>(new Map());
   const [describeReport, setDescribeReport] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [describeLoading, setDescribeLoading] = useState(false);
@@ -268,10 +253,6 @@ export default function DataPreviewPage({
   const gridContainerRef = useRef<HTMLDivElement>(null);
   const gridApiRef = useRef<GridApi | null>(null);
 
-  const [pendingChanges, setPendingChanges] = useState<Map<string, RowChanges>>(new Map());
-  const [pendingAdds, setPendingAdds] = useState<PreviewRow[]>([]);
-  const [pendingDeletes, setPendingDeletes] = useState<Set<string>>(new Set());
-  const [saving, setSaving] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<null | (() => void)>(null);
   const [showDeleteRowConfirm, setShowDeleteRowConfirm] = useState(false);
   const [showDeleteTableConfirm, setShowDeleteTableConfirm] = useState<SrcTableEntry | null>(null);
@@ -319,10 +300,7 @@ export default function DataPreviewPage({
   const [isRangeDragging, setIsRangeDragging] = useState(false);
   const [headerFilterField, setHeaderFilterField] = useState<string | null>(null);
   const [headerFilterPos, setHeaderFilterPos] = useState<{ left: number; top: number } | null>(null);
-  const undoStacksRef = useRef<Map<string, { undo: UndoEntry[]; redo: UndoEntry[] }>>(new Map());
-  const autoSaveTimerRef = useRef<number | null>(null);
   const pasteFallbackRef = useRef<HTMLTextAreaElement>(null);
-  const handleSaveRef = useRef<() => Promise<boolean>>(async () => true);
   const rangeAnchorRef = useRef<{ row: number; col: number; x: number; y: number } | null>(null);
   const rangeDraggingRef = useRef(false);
   const headerFilterPopupRef = useRef<HTMLDivElement>(null);
@@ -342,18 +320,91 @@ export default function DataPreviewPage({
   const currentKeyFields = currentConfig?.keyFields || [];
   const keyFieldSet = useMemo(() => new Set(currentKeyFields), [currentKeyFields]);
 
-  const changedCellCount = countCellChanges(pendingChanges);
-  const changeCount = changedCellCount + pendingAdds.length + pendingDeletes.size;
   const currentViewKey = selectedTable && activeSheet ? `${selectedTable.id}:${activeSheet.name}` : '';
-  const reorderEnabled = !query.sortModel.some((rule) => rule.sort)
-    && Object.keys(query.filterModel).length === 0
-    && !query.search.trim()
-    && !query.keySearch.trim();
 
   const updateConfig = useCallback(async (patch: Partial<TableConfig>) => {
     if (!selectedTable || !activeSheet || !currentConfig) return;
     await saveSheetConfig(selectedTable.id, activeSheet.name, { ...currentConfig, ...patch });
   }, [selectedTable, activeSheet, currentConfig, saveSheetConfig]);
+
+  const workbench = useDataWorkbench({
+    viewKey: currentViewKey,
+    autoSave: currentConfig?.autoSave === true,
+    keyFields: currentKeyFields,
+    projectId,
+    tableId: selectedTable?.id,
+    sheetName: activeSheet?.name,
+    getColumns: () => activeSheetData?.columns || [],
+    onCommitted: async () => {
+      setFeedback({ type: 'success', message: '数据修改已保存' });
+      setDescribeReport(null);
+      if (selectedTable && activeSheet) void describeApi.delete(selectedTable.id, activeSheet.name, projectId).catch(() => undefined);
+      await refreshProject();
+      setReloadToken((value) => value + 1);
+    },
+    onRefreshed: async () => {
+      await refreshProject();
+      setReloadToken((value) => value + 1);
+    },
+    onError: (message) => setFeedback({ type: 'error', message }),
+    onApplyRowOrder: (order) => { void updateConfig({ rowOrder: order }); },
+  });
+  const {
+    query,
+    setQuery,
+    rows,
+    setRows,
+    selectedColIdx,
+    setSelectedColIdx,
+    selectedRowIdx,
+    setSelectedRowIdx,
+    selectedRowKey,
+    setSelectedRowKey,
+    pendingChanges,
+    setPendingChanges,
+    pendingAdds,
+    setPendingAdds,
+    pendingDeletes,
+    setPendingDeletes,
+    validationErrors,
+    setValidationErrors,
+    saveState,
+    setSaveState,
+    saving,
+    setSaving,
+    dataVersion,
+    setDataVersion,
+    changeCount,
+    changedCellCount,
+    commitMutation,
+    pushUndo,
+    clearUndoForContext,
+    scheduleAutoSave,
+    performUndo: workbenchPerformUndo,
+    performRedo: workbenchPerformRedo,
+    commit: workbenchCommit,
+    resetPending: workbenchResetPending,
+    loadRows: workbenchLoadRows,
+  } = workbench;
+
+  const performUndo = useCallback(async () => {
+    const outcome = await workbenchPerformUndo();
+    if (!outcome.ok) setFeedback({ type: 'info', message: '没有可撤销的操作' });
+    else if (outcome.error) setFeedback({ type: 'error', message: outcome.error });
+    else if (outcome.unresolved) setFeedback({ type: 'info', message: `已撤销，但有 ${outcome.unresolved} 项因缺少稳定主键未能自动处理` });
+  }, [workbenchPerformUndo]);
+
+  const performRedo = useCallback(async () => {
+    const outcome = await workbenchPerformRedo();
+    if (!outcome.ok) setFeedback({ type: 'info', message: '没有可重做的操作' });
+    else if (outcome.error) setFeedback({ type: 'error', message: outcome.error });
+    else if (outcome.unresolved) setFeedback({ type: 'info', message: `已重做，但有 ${outcome.unresolved} 项因缺少稳定主键未能自动处理` });
+  }, [workbenchPerformRedo]);
+
+  const reorderEnabled = !query.sortModel.some((rule) => rule.sort)
+    && Object.keys(query.filterModel).length === 0
+    && !query.search.trim()
+    && !query.keySearch.trim();
 
   const safeGridApi = useCallback((): GridApi | null => {
     const api = gridApiRef.current;
@@ -387,209 +438,6 @@ export default function DataPreviewPage({
     }
     return [];
   }, [selectedRowKey, rows, safeGridApi]);
-
-  const pushUndo = useCallback((entry: UndoEntry) => {
-    if (!currentViewKey) return;
-    let stacks = undoStacksRef.current.get(currentViewKey);
-    if (!stacks) {
-      stacks = { undo: [], redo: [] };
-      undoStacksRef.current.set(currentViewKey, stacks);
-    }
-    stacks.undo.push(entry);
-    stacks.redo = [];
-  }, [currentViewKey]);
-
-  const clearUndoForContext = useCallback(() => {
-    if (currentViewKey) undoStacksRef.current.delete(currentViewKey);
-  }, [currentViewKey]);
-
-  const scheduleAutoSave = useCallback(() => {
-    if (!currentConfig?.autoSave) return;
-    if (autoSaveTimerRef.current) window.clearTimeout(autoSaveTimerRef.current);
-    autoSaveTimerRef.current = window.setTimeout(() => {
-      void handleSaveRef.current();
-    }, 600);
-  }, [currentConfig?.autoSave]);
-
-  /** 统一把一次编辑（含撤销/重做）应用到本地状态；recordUndo=false 用于撤销/重做路径（由调用方管理栈）。 */
-  const commitMutation = useCallback((entry: UndoEntry, recordUndo = true) => {
-    const pendingAddKeys = new Set(pendingAdds.map((row) => row.__rowKey));
-    const newRowKeys = new Set(entry.addedRows.map((row) => row.__rowKey));
-    setRows((prev) => {
-      let next = [...prev];
-      const removedKeys = new Set(entry.deletedRows.filter((row) => row.__isNew).map((row) => row.__rowKey));
-      next = next.filter((row) => !removedKeys.has(row.__rowKey));
-      for (const change of entry.changes) {
-        const index = next.findIndex((row) => row.__rowKey === change.rowKey);
-        if (index >= 0) next[index] = { ...next[index], [change.field]: change.newValue };
-      }
-      for (const add of entry.addedRows) {
-        if (!next.some((row) => row.__rowKey === add.__rowKey)) {
-          const insertAt = Math.min(Math.max(0, add.__rowIndex ?? next.length), next.length);
-          next.splice(insertAt, 0, add);
-        }
-      }
-      if (entry.rowOrderAfter) next = orderRowsBy(next, entry.rowOrderAfter);
-      return next;
-    });
-    setPendingChanges((prev) => {
-      const next = new Map(prev);
-      for (const change of entry.changes) {
-        if (pendingAddKeys.has(change.rowKey) || newRowKeys.has(change.rowKey)) continue;
-        const rowChanges = { ...(next.get(change.rowKey) || {}) };
-        const existing = rowChanges[change.field];
-        rowChanges[change.field] = existing
-          ? { ...existing, newValue: change.newValue }
-          : { oldValue: change.oldValue, newValue: change.newValue };
-        if (rowChanges[change.field].oldValue === rowChanges[change.field].newValue) delete rowChanges[change.field];
-        if (Object.keys(rowChanges).length > 0) next.set(change.rowKey, rowChanges);
-        else next.delete(change.rowKey);
-      }
-      return next;
-    });
-    setPendingAdds((prev) => {
-      const removedKeys = new Set(entry.deletedRows.filter((row) => row.__isNew).map((row) => row.__rowKey));
-      let next = prev.filter((row) => !removedKeys.has(row.__rowKey));
-      for (const change of entry.changes) {
-        if (!next.some((row) => row.__rowKey === change.rowKey)) continue;
-        next = next.map((row) => row.__rowKey === change.rowKey ? { ...row, [change.field]: change.newValue } : row);
-      }
-      for (const add of entry.addedRows) {
-        if (add.__isNew && !next.some((row) => row.__rowKey === add.__rowKey)) next.push(add);
-      }
-      return next;
-    });
-    setPendingDeletes((prev) => {
-      const next = new Set(prev);
-      for (const row of entry.deletedRows) if (!row.__isNew) next.add(row.__rowKey);
-      for (const row of entry.addedRows) next.delete(row.__rowKey);
-      return next;
-    });
-    setValidationErrors((prev) => {
-      const next = new Map(prev);
-      for (const change of entry.changes) next.delete(`${change.rowKey}:${change.field}`);
-      for (const row of entry.deletedRows) {
-        for (const key of next.keys()) {
-          if (key.startsWith(`${row.__rowKey}:`)) next.delete(key);
-        }
-      }
-      return next;
-    });
-    const hasDataEffect = entry.changes.length > 0 || entry.addedRows.length > 0 || entry.deletedRows.length > 0;
-    const hasEffect = hasDataEffect || !!entry.rowOrderAfter;
-    if (hasEffect) {
-      if (hasDataEffect) setSaveState('dirty');
-      if (recordUndo) pushUndo(entry);
-      scheduleAutoSave();
-    }
-  }, [pendingAdds, pushUndo, scheduleAutoSave]);
-
-  const isPureRowOrderEntry = useCallback((entry: UndoEntry) => {
-    return entry.changes.length === 0 && entry.addedRows.length === 0 && entry.deletedRows.length === 0
-      && (!!entry.rowOrderBefore || !!entry.rowOrderAfter);
-  }, []);
-
-  const performUndo = useCallback(async () => {
-    const stacks = currentViewKey ? undoStacksRef.current.get(currentViewKey) : undefined;
-    const entry = stacks?.undo.pop();
-    if (!stacks || !entry) {
-      setFeedback({ type: 'info', message: '没有可撤销的操作' });
-      return;
-    }
-    if (isPureRowOrderEntry(entry)) {
-      if (entry.rowOrderBefore) {
-        setRows(orderRowsBy(rows, entry.rowOrderBefore));
-        void updateConfig({ rowOrder: entry.rowOrderBefore });
-      }
-      stacks.redo.push(entry);
-      return;
-    }
-    if (entry.committed) {
-      if (!projectId || !selectedTable || !activeSheet) {
-        stacks.undo.push(entry);
-        return;
-      }
-      const payload = undoEntryToBatchPayload(invertUndoEntry(entry), currentConfig?.keyFields || []);
-      try {
-        setSaving(true);
-        await dataPreviewApi.batch({
-          projectId,
-          tableId: selectedTable.id,
-          sheetName: activeSheet.name,
-          baseVersion: dataVersion,
-          adds: payload.adds,
-          updates: payload.updates,
-          deletes: payload.deletes,
-        });
-        await refreshProject();
-        setReloadToken((value) => value + 1);
-        stacks.redo.push({ ...invertUndoEntry(entry), committed: true });
-        setSaveState(changeCount > 0 ? 'dirty' : 'saved');
-        if (payload.unresolved.length > 0) {
-          setFeedback({ type: 'info', message: `已撤销，但有 ${payload.unresolved.length} 项因缺少稳定主键未能自动处理` });
-        }
-      } catch (error) {
-        stacks.undo.push(entry);
-        setFeedback({ type: 'error', message: error instanceof Error ? error.message : '撤销失败，请重试' });
-      } finally {
-        setSaving(false);
-      }
-      return;
-    }
-    commitMutation(invertUndoEntry(entry), false);
-    stacks.redo.push(entry);
-  }, [currentViewKey, isPureRowOrderEntry, rows, updateConfig, projectId, selectedTable, activeSheet, currentConfig, dataVersion, refreshProject, commitMutation, changeCount]);
-
-  const performRedo = useCallback(async () => {
-    const stacks = currentViewKey ? undoStacksRef.current.get(currentViewKey) : undefined;
-    const entry = stacks?.redo.pop();
-    if (!stacks || !entry) {
-      setFeedback({ type: 'info', message: '没有可重做的操作' });
-      return;
-    }
-    if (isPureRowOrderEntry(entry)) {
-      if (entry.rowOrderAfter) {
-        setRows(orderRowsBy(rows, entry.rowOrderAfter));
-        void updateConfig({ rowOrder: entry.rowOrderAfter });
-      }
-      stacks.undo.push(entry);
-      return;
-    }
-    if (entry.committed) {
-      if (!projectId || !selectedTable || !activeSheet) {
-        stacks.redo.push(entry);
-        return;
-      }
-      const payload = undoEntryToBatchPayload(entry, currentConfig?.keyFields || []);
-      try {
-        setSaving(true);
-        await dataPreviewApi.batch({
-          projectId,
-          tableId: selectedTable.id,
-          sheetName: activeSheet.name,
-          baseVersion: dataVersion,
-          adds: payload.adds,
-          updates: payload.updates,
-          deletes: payload.deletes,
-        });
-        await refreshProject();
-        setReloadToken((value) => value + 1);
-        stacks.undo.push({ ...invertUndoEntry(entry), committed: true });
-        setSaveState(changeCount > 0 ? 'dirty' : 'saved');
-        if (payload.unresolved.length > 0) {
-          setFeedback({ type: 'info', message: `已重做，但有 ${payload.unresolved.length} 项因缺少稳定主键未能自动处理` });
-        }
-      } catch (error) {
-        stacks.redo.push(entry);
-        setFeedback({ type: 'error', message: error instanceof Error ? error.message : '重做失败，请重试' });
-      } finally {
-        setSaving(false);
-      }
-      return;
-    }
-    commitMutation(entry, false);
-    stacks.undo.push(entry);
-  }, [currentViewKey, isPureRowOrderEntry, rows, updateConfig, projectId, selectedTable, activeSheet, currentConfig, dataVersion, refreshProject, commitMutation, changeCount]);
 
   const derivedColumns = useMemo(() => {
     if (!activeSheet) return [];
@@ -1417,15 +1265,9 @@ export default function DataPreviewPage({
   }, [rangeCellFromPoint]);
 
   const discardChanges = useCallback(() => {
-    setPendingChanges(new Map());
-    setPendingAdds([]);
-    setPendingDeletes(new Set());
-    setValidationErrors(new Map());
-    setSelectedRowIdx(null);
-    setSelectedRowKey(null);
-    setSaveState('saved');
+    workbenchResetPending();
     setReloadToken((value) => value + 1);
-  }, []);
+  }, [workbenchResetPending]);
 
   const switchDataContext = useCallback((tableId: string, sheetIndex: number) => {
     guardAction(() => {
@@ -1449,71 +1291,13 @@ export default function DataPreviewPage({
     });
   }, [guardAction, currentViewKey, query, project, projectId, discardChanges]);
 
-  const handleSave = useCallback(async (): Promise<boolean> => {
-    if (!projectId || !selectedTable || !activeSheet || changeCount === 0) return true;
-    const errors = validateChanges(pendingChanges, pendingAdds, activeSheetData?.columns || []);
-    setValidationErrors(errors);
-    if (errors.size > 0) {
-      setFeedback({ type: 'error', message: `发现 ${errors.size} 个类型错误，已在表格中标记` });
-      setSaveState('error');
-      return false;
-    }
-    const additions = pendingAdds.map((row) => {
-      const { __rowKey: _rowKey, __rowIndex: _rowIndex, __isNew: _isNew, ...clean } = row;
-      return clean;
-    });
-    const keyFields = currentConfig?.keyFields || [];
-    const invalidKey = additions.find((row) => keyFields.some((field) => row[field] == null || row[field] === ''));
-    if (invalidKey) {
-      setFeedback({ type: 'error', message: `新增记录必须填写 Key 字段：${keyFields.join('、')}` });
-      setSaveState('error');
-      return false;
-    }
-    setSaving(true);
-    setSaveState('saving');
-    try {
-      await dataPreviewApi.batch({
-        projectId,
-        tableId: selectedTable.id,
-        sheetName: activeSheet.name,
-        baseVersion: dataVersion,
-        adds: additions,
-        updates: serializeUpdates(pendingChanges),
-        deletes: [...pendingDeletes],
-      });
-      setPendingChanges(new Map());
-      setPendingAdds([]);
-      setPendingDeletes(new Set());
-      setValidationErrors(new Map());
-      setSaveState('saved');
-      const stacks = currentViewKey ? undoStacksRef.current.get(currentViewKey) : undefined;
-      stacks?.undo.forEach((entry) => { entry.committed = true; });
-      stacks?.redo.forEach((entry) => { entry.committed = true; });
-      setFeedback({ type: 'success', message: '数据修改已保存' });
-      setDescribeReport(null);
-      void describeApi.delete(selectedTable.id, activeSheet.name, projectId).catch(() => undefined);
-      await refreshProject();
-      setReloadToken((value) => value + 1);
-      return true;
-    } catch (error) {
-      setSaveState('error');
-      setFeedback({ type: 'error', message: error instanceof Error ? error.message : '保存失败，请重试' });
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  }, [projectId, selectedTable, activeSheet, activeSheetData, changeCount, pendingAdds, pendingChanges, pendingDeletes, currentConfig, dataVersion, refreshProject, currentViewKey]);
-
   const syncLocalSheet = useCallback((table: SrcTableEntry, sheetName: string) => {
     const sheet = table.sheets.find((entry) => entry.name === sheetName);
     if (!sheet) return;
     setRows(withRowIds(sheet.preview || []));
     setTotalRows(sheet.rowCount || 0);
-    setPendingChanges(new Map());
-    setPendingAdds([]);
-    setPendingDeletes(new Set());
-    setSaveState('saved');
-  }, []);
+    workbenchResetPending();
+  }, [workbenchResetPending]);
 
   const applyTableMutation = useCallback(async (
     mutate: (table: SrcTableEntry) => SrcTableEntry,
@@ -1522,7 +1306,7 @@ export default function DataPreviewPage({
     if (!project || !selectedTable || !activeSheet) return;
     setSaving(true);
     try {
-      if (changeCount > 0 && !(await handleSave())) return;
+      if (changeCount > 0 && !(await workbenchCommit())) return;
       const baseProject = useProjectStore.getState().project || project;
       if (!baseProject) return;
       const baseTable = baseProject.srcTable.find((table) => table.id === selectedTable.id);
@@ -1536,7 +1320,7 @@ export default function DataPreviewPage({
     } finally {
       setSaving(false);
     }
-  }, [project, selectedTable, activeSheet, changeCount, handleSave, setProject, syncLocalSheet]);
+  }, [project, selectedTable, activeSheet, changeCount, workbenchCommit, setProject, syncLocalSheet]);
 
   const handleInsertColumn = useCallback(async () => {
     if (!selectedTable || !activeSheet || !showInsertColumn || !insertColumnName.trim()) return;
@@ -1641,28 +1425,14 @@ export default function DataPreviewPage({
       setTotalRows(0);
       return;
     }
-    // Server-side datasource handles data loading automatically
-    if (!projectId || !selectedTable || !activeSheet || !selectedTableId) {
-      setRows([]);
-      setTotalRows(0);
-      return;
-    }
     let cancelled = false;
     const loadRows = async () => {
       setLoading(true);
       try {
-        const data = await dataPreviewApi.page({ projectId, tableId: selectedTable.id, sheetName: activeSheet.name, ...query });
+        const data = await workbenchLoadRows(projectId, selectedTable.id, activeSheet.name, query);
         if (cancelled) return;
-        const loadedRows = (data.rows || []).map((row) => {
-          const changes = pendingChanges.get(row.__rowKey);
-          return changes
-            ? { ...row, ...Object.fromEntries(Object.entries(changes).map(([field, change]) => [field, change.newValue])) }
-            : row;
-        });
-        setRows(query.page === 1 ? [...loadedRows, ...pendingAdds] : loadedRows);
         setTotalRows(data.total ?? data.rows?.length ?? 0);
         setQueryTotal(data.queryTotal ?? data.total ?? 0);
-        setDataVersion(data.dataVersion || '');
       } catch (error) {
         if (cancelled) return;
         setRows([]);
@@ -1681,7 +1451,7 @@ export default function DataPreviewPage({
     setDragRange(null);
     setDescribeReport(null);
     return () => { cancelled = true; };
-  }, [projectId, selectedTableId, activeSheetIdx, activeSheet?.name, query, reloadToken]);
+  }, [projectId, selectedTableId, activeSheetIdx, activeSheet?.name, query, reloadToken, workbenchLoadRows]);
 
   useEffect(() => {
     if (!selectedTable || !activeSheet || activeTab !== 'describe') return;
@@ -1765,7 +1535,7 @@ export default function DataPreviewPage({
       const key = event.key.toLocaleLowerCase();
       if (mod && key === 's') {
         event.preventDefault();
-        void handleSave();
+        void workbenchCommit();
       } else if (mod && key === 'z' && !editingText) {
         event.preventDefault();
         if (event.shiftKey) void performRedo();
@@ -1789,11 +1559,7 @@ export default function DataPreviewPage({
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [handleSave, performUndo, performRedo, startPaste, copySelection, selectedRowKey, reorderEnabled, moveSelectedRow]);
-
-  useEffect(() => {
-    handleSaveRef.current = handleSave;
-  }, [handleSave]);
+  }, [workbenchCommit, performUndo, performRedo, startPaste, copySelection, selectedRowKey, reorderEnabled, moveSelectedRow]);
 
   useEffect(() => {
     if (changeCount === 0 && saveState === 'dirty') setSaveState('saved');
@@ -1848,12 +1614,6 @@ export default function DataPreviewPage({
       cancelAnimationFrame(frame);
     };
   }, [headerFilterField]);
-
-  useEffect(() => {
-    return () => {
-      if (autoSaveTimerRef.current) window.clearTimeout(autoSaveTimerRef.current);
-    };
-  }, []);
 
   const handleCreateTable = useCallback(async () => {
     const table = createEmptyTableEntry({
@@ -2091,7 +1851,7 @@ export default function DataPreviewPage({
                     <button type="button" className="ui-btn ui-btn-xs" onClick={() => setShowDeleteRowConfirm(true)} disabled={!selectedRowKey || saving}>删除行</button>
                     <button type="button" className="ui-btn ui-btn-xs" onClick={() => void performUndo()} disabled={saving}>撤销</button>
                     <button type="button" className="ui-btn ui-btn-xs" onClick={() => void performRedo()} disabled={saving}>重做</button>
-                    <button type="button" className="ui-btn ui-btn-primary ui-btn-xs" onClick={() => void handleSave()} disabled={changeCount === 0 || saving}>{saving ? '保存中…' : '保存'}</button>
+                    <button type="button" className="ui-btn ui-btn-primary ui-btn-xs" onClick={() => void workbenchCommit()} disabled={changeCount === 0 || saving}>{saving ? '保存中…' : '保存'}</button>
                   </div>
                   <div className="data-preview-tool-group">
                     <span>使用</span>
@@ -2889,7 +2649,7 @@ export default function DataPreviewPage({
         <ModalFooter>
           <button type="button" className="ui-btn" onClick={() => setPendingNavigation(null)}>留在当前页</button>
           <button type="button" className="ui-btn ui-btn-danger" onClick={() => { const action = pendingNavigation; setPendingNavigation(null); discardChanges(); clearUndoForContext(); action?.(); }}>放弃修改</button>
-          <button type="button" className="ui-btn ui-btn-primary" disabled={saving} onClick={async () => { const action = pendingNavigation; if (await handleSave()) { setPendingNavigation(null); action?.(); } }}>保存并继续</button>
+          <button type="button" className="ui-btn ui-btn-primary" disabled={saving} onClick={async () => { const action = pendingNavigation; if (await workbenchCommit()) { setPendingNavigation(null); action?.(); } }}>保存并继续</button>
         </ModalFooter>
       </Modal>
 
@@ -3042,7 +2802,7 @@ export default function DataPreviewPage({
           fields={selectedTemplateFields}
           hasUnsavedChanges={changeCount > 0}
           onSaveData={async () => {
-            const saved = await handleSave();
+            const saved = await workbenchCommit();
             if (!saved) throw new Error('请先修正表格中的类型错误');
           }}
           onOpenAdvanced={onOpenTemplateCenter}

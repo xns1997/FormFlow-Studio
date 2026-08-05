@@ -11,10 +11,12 @@ export interface FormInteractionMetrics {
   byControlType: Record<string, { changes: number; submitSuccesses: number; submitFailures: number; repairSuccesses: number; retries: number; undos: number }>;
 }
 
+/** 创建空表单交互指标。 */
 export function createFormInteractionMetrics(now = Date.now()): FormInteractionMetrics {
   return { startedAt: now, successfulSubmits: 0, failedSubmits: 0, fieldChanges: 0, repairSuccesses: 0, undoCount: 0, retryCount: 0, byControlType: {} };
 }
 
+/** 记录一次表单交互事件到指标。 */
 export function recordFormMetric(metrics: FormInteractionMetrics, event: 'configure' | 'change' | 'submit-success' | 'submit-failure' | 'repair-success' | 'undo' | 'retry', now = Date.now(), controlType?: string) {
   const next = { ...metrics };
   next.byControlType = Object.fromEntries(Object.entries(metrics.byControlType || {}).map(([key, value]) => [key, { ...value }])) as FormInteractionMetrics['byControlType'];
@@ -38,6 +40,7 @@ export function recordFormMetric(metrics: FormInteractionMetrics, event: 'config
   return next;
 }
 
+/** 汇总表单交互指标。 */
 export function summarizeFormMetrics(metrics: FormInteractionMetrics) {
   const attempts = metrics.successfulSubmits + metrics.failedSubmits;
   return {
@@ -51,12 +54,14 @@ export function summarizeFormMetrics(metrics: FormInteractionMetrics) {
   };
 }
 
+/** 持久化表单交互指标。 */
 export function persistFormInteractionMetrics(formId: string, metrics: FormInteractionMetrics, storage?: Pick<Storage, 'setItem'>) {
   if (!formId) return;
   const target = storage || (typeof localStorage !== 'undefined' ? localStorage : undefined);
   try { target?.setItem(`formflow:metrics:${formId}`, JSON.stringify(metrics)); } catch { /* private mode/quota: metrics remain in memory */ }
 }
 
+/** 恢复表单交互指标（无记录返回 null）。 */
 export function restoreFormInteractionMetrics(formId: string, storage?: Pick<Storage, 'getItem'>): FormInteractionMetrics | null {
   if (!formId) return null;
   const target = storage || (typeof localStorage !== 'undefined' ? localStorage : undefined);

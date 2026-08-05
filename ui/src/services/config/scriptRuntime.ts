@@ -27,6 +27,7 @@ const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor as
 // 遗留别名由行为脚本沙箱（SandboxContext）放入 ctx 后经本清单暴露为顶层变量；
 // 控件事件运行时 ctx 不含这些键，因此不会被意外绑定。
 const LEGACY_SCRIPT_ALIAS_KEYS = ['setField', 'validateField', 'updateRow', 'submit', 'getState', 'originalData'];
+/** 脚本顶层别名键（规范 + 旧兼容）。 */
 export const SCRIPT_ALIAS_KEYS = [...new Set([...FORM_EVENT_SCRIPT_ALIAS_KEYS, ...LEGACY_SCRIPT_ALIAS_KEYS])];
 
 function stringifyDebugValue(value: unknown): string {
@@ -46,6 +47,7 @@ function stringifyDebugValue(value: unknown): string {
   }
 }
 
+/** 格式化调试参数为可读文本。 */
 export function formatScriptDebugArgs(args: unknown[]): string {
   return args.map((arg) => stringifyDebugValue(arg)).join(' ');
 }
@@ -71,6 +73,7 @@ function buildLogEntry(level: ScriptPrintLevel, args: unknown[], format: DebugEn
   };
 }
 
+/** 获取原生控制台（脚本调试用）。 */
 export function getNativeConsole(): Pick<Console, 'log' | 'warn' | 'error' | 'debug'> {
   if (typeof globalThis !== 'undefined' && globalThis.console) {
     return {
@@ -115,6 +118,7 @@ function createPrintFunctions(writeLog: (entry: ScriptLogEntry) => void) {
   };
 }
 
+/** 判断代码是否为函数表达式。 */
 export function isFunctionExpression(code: string): boolean {
   const source = code.trim();
   return /^(async\s+)?function\b/.test(source)
@@ -122,6 +126,7 @@ export function isFunctionExpression(code: string): boolean {
     || /^(async\s+)?[A-Za-z_$][\w$]*\s*=>/.test(source);
 }
 
+/** 创建脚本执行作用域（上下文别名 + 方法）。 */
 export function createScriptExecutionScope(
   ctx: Record<string, unknown>,
   options: {
@@ -200,6 +205,7 @@ function writeConsole(
   else nativeConsole.log('[Script Console]', ...args);
 }
 
+/** 执行注入脚本（异步包装 + 调试记录）。 */
 export async function executeInjectedScript(
   code: string,
   scope: ScriptExecutionScope,

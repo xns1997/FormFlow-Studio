@@ -1,4 +1,5 @@
 import { request, requestRaw } from '../io/api';
+import type { FilterRule, SortRule } from '../../../../shared/formflow-core/previewFilter';
 
 export type PreviewRow = Record<string, unknown> & { __rowKey: string; __rowIndex: number; __isNew?: boolean };
 export type PreviewQuery = {
@@ -6,8 +7,8 @@ export type PreviewQuery = {
   pageSize: number;
   search: string;
   keySearch: string;
-  sortModel: Array<{ colId?: string; sort?: 'asc' | 'desc' }>;
-  filterModel: Record<string, unknown>;
+  sortModel: SortRule[];
+  filterModel: Record<string, FilterRule>;
 };
 export type CellChange = { oldValue: unknown; newValue: unknown };
 export type RowChanges = Record<string, CellChange>;
