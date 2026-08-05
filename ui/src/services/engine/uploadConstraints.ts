@@ -17,6 +17,7 @@ function matchesAccept(file: UploadCandidate, accept: string) {
   return rules.some((rule) => rule === '*/*' || (rule.endsWith('/*') && type.startsWith(rule.slice(0, -1))) || (rule.startsWith('.') && name.endsWith(rule)) || type === rule);
 }
 
+/** 校验上传候选（类型/数量/大小）。 */
 export function validateUploadCandidate(file: UploadCandidate, currentCount: number, constraints: UploadConstraints): string | null {
   if (constraints.accept && !matchesAccept(file, constraints.accept)) return `文件类型不符合 ${constraints.accept}`;
   if (constraints.maxFileSizeMb && file.size > constraints.maxFileSizeMb * 1024 * 1024) return `单文件不能超过 ${constraints.maxFileSizeMb} MB`;
@@ -24,6 +25,7 @@ export function validateUploadCandidate(file: UploadCandidate, currentCount: num
   return null;
 }
 
+/** 校验图片尺寸约束。 */
 export function validateImageDimensions(width: number, height: number, constraints: UploadConstraints): string | null {
   if (constraints.minImageWidth && width < constraints.minImageWidth) return `图片宽度不能小于 ${constraints.minImageWidth}px`;
   if (constraints.maxImageWidth && width > constraints.maxImageWidth) return `图片宽度不能大于 ${constraints.maxImageWidth}px`;

@@ -27,6 +27,7 @@ function getHostDocument(hostRoot?: HTMLElement | null): Document | null {
   return null;
 }
 
+/** 创建浏览器 DOM 适配器（真实渲染）。 */
 export function createBrowserDomAdapter(hostRoot?: HTMLElement | null): DomAdapter {
   return {
     findComponentElement(componentId: string) {
@@ -47,6 +48,7 @@ export function createBrowserDomAdapter(hostRoot?: HTMLElement | null): DomAdapt
   };
 }
 
+/** 创建空操作 DOM 适配器（测试/服务端渲染）。 */
 export function createNoopDomAdapter(): DomAdapter {
   return {
     findComponentElement() { return null; },

@@ -38,6 +38,7 @@ export interface LinkageExecutionResult {
   executedActions: number;
 }
 
+/** 联动条件值比较。 */
 export function compareValues(left: unknown, operator: FormLinkageCondition['operator'], right: unknown): boolean {
   const comparableLeft = comparableValue(left) as any;
   const comparableRight = comparableValue(right) as any;
@@ -295,6 +296,7 @@ async function executeAction(action: FormLinkageAction, ctx: LinkageRuntimeConte
   }
 }
 
+/** 执行联动规则（按条件批量应用动作）。 */
 export async function executeLinkageRules(
   rules: FormLinkageRule[],
   ctx: LinkageRuntimeContext,

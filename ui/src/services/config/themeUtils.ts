@@ -8,6 +8,7 @@ const FONT_FAMILY_MAP: Record<string, string> = {
   Consolas: "'Consolas', 'Courier New', monospace",
 };
 
+/** 应用主题（浅色/深色/跟随系统）。 */
 export function applyTheme(theme: ThemeMode): void {
   const root = document.documentElement;
   if (theme === 'system') {
@@ -17,6 +18,7 @@ export function applyTheme(theme: ThemeMode): void {
   }
 }
 
+/** 应用编辑器字体。 */
 export function applyEditorFont(fontFamily: string, custom: string): void {
   const root = document.documentElement;
   if (fontFamily === 'default') {
@@ -29,6 +31,7 @@ export function applyEditorFont(fontFamily: string, custom: string): void {
   }
 }
 
+/** 字体选项列表。 */
 export function getFontFamilyOptions(): Array<{ value: string; label: string }> {
   return [
     { value: 'default', label: '系统默认' },

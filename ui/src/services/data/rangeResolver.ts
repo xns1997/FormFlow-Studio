@@ -2,6 +2,7 @@ import type { RangeRef, RangeValue } from '../../models';
 import type { SrcTableEntry } from '../../project/types';
 import { formatRangeAddress, getRangeAreas, type RangeArea } from './rangeGeometry';
 
+/** 范围引用 → 地址文本。 */
 export function rangeToAddress(ref: RangeRef): string {
   return formatRangeAddress(getRangeAreas(ref), ref.sheetName);
 }
@@ -21,6 +22,7 @@ function looksLikeHeaderRow(firstRow: unknown[], restRows: unknown[][]): boolean
   return false;
 }
 
+/** 解析范围引用为实际数据（表/Sheet 定位）。 */
 export function resolveRange(ref: RangeRef, tables: SrcTableEntry[]): RangeValue | null {
   const table = tables.find(t => t.id === ref.tableId);
   if (!table) return null;
@@ -82,6 +84,7 @@ export function resolveRange(ref: RangeRef, tables: SrcTableEntry[]): RangeValue
   };
 }
 
+/** 范围数据预览（限行）。 */
 export function getRangePreview(ref: RangeRef, tables: SrcTableEntry[], maxRows = 5): string[][] {
   const resolved = resolveRange(ref, tables);
   if (!resolved) return [];

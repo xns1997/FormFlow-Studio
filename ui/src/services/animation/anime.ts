@@ -16,6 +16,7 @@ import { animate, stagger, Timeline, set } from 'animejs';
 // iOS Spring Physics Presets
 // ══════════════════════════════════════════════════════════════════════
 
+/** 弹簧物理参数预设。 */
 export const SPRING = {
   /** Bouncy spring for interactive elements */
   bounce: 'spring(1, 80, 10, 0)',
@@ -27,6 +28,7 @@ export const SPRING = {
   gentle: 'spring(1, 60, 14, 0)',
 } as const;
 
+/** 缓动函数预设。 */
 export const EASE = {
   /** iOS standard ease-out */
   out: 'easeOutExpo',
@@ -36,6 +38,7 @@ export const EASE = {
   inOut: 'easeInOutExpo',
 } as const;
 
+/** 动画时长预设（ms）。 */
 export const DURATION = {
   instant: 100,
   fast: 200,
@@ -59,6 +62,7 @@ interface AnimationOptions {
 /**
  * Fade in an element
  */
+/** 淡入动画。 */
 export function fadeIn(
   target: string | HTMLElement | HTMLElement[] | NodeList | null,
   options: AnimationOptions = {}
@@ -74,6 +78,7 @@ export function fadeIn(
 /**
  * Fade out an element
  */
+/** 淡出动画。 */
 export function fadeOut(
   target: string | HTMLElement | HTMLElement[] | NodeList | null,
   options: AnimationOptions = {}
@@ -89,6 +94,7 @@ export function fadeOut(
 /**
  * Slide in from direction
  */
+/** 滑入动画（方向可选）。 */
 export function slideIn(
   target: string | HTMLElement | HTMLElement[] | NodeList | null,
   direction: 'up' | 'down' | 'left' | 'right' = 'up',
@@ -114,6 +120,7 @@ export function slideIn(
 /**
  * Scale bounce animation (for buttons, cards)
  */
+/** 缩放弹跳动画。 */
 export function scaleBounce(
   target: string | HTMLElement | HTMLElement[] | NodeList | null,
   scaleFrom = 0.95,
@@ -131,6 +138,7 @@ export function scaleBounce(
 /**
  * Stagger children animation
  */
+/** 交错入场动画（列表）。 */
 export function staggerIn(
   target: string | HTMLElement | HTMLElement[] | NodeList | null,
   options: AnimationOptions & { stagger?: number } = {}
@@ -148,6 +156,7 @@ export function staggerIn(
 /**
  * Shake animation (for errors)
  */
+/** 抖动动画（错误提示）。 */
 export function shake(
   target: string | HTMLElement | HTMLElement[] | NodeList | null,
   options: AnimationOptions = {}
@@ -167,6 +176,7 @@ export function shake(
 /**
  * Pulse animation (for loading, attention)
  */
+/** 脉冲强调动画。 */
 export function pulse(
   target: string | HTMLElement | HTMLElement[] | NodeList | null,
   options: AnimationOptions = {}
@@ -183,6 +193,7 @@ export function pulse(
 /**
  * Rotate animation (for spinners)
  */
+/** 旋转动画。 */
 export function rotate(
   target: string | HTMLElement | HTMLElement[] | NodeList | null,
   options: AnimationOptions = {}
@@ -202,6 +213,7 @@ export function rotate(
 /**
  * Modal enter animation
  */
+/** 模态框入场动画。 */
 export function modalEnter(
   overlay: string | HTMLElement | null,
   content: string | HTMLElement | null
@@ -226,6 +238,7 @@ export function modalEnter(
 /**
  * Modal exit animation
  */
+/** 模态框退场动画。 */
 export function modalExit(
   overlay: string | HTMLElement | null,
   content: string | HTMLElement | null,
@@ -250,6 +263,7 @@ export function modalExit(
 /**
  * Toast enter animation
  */
+/** Toast 入场动画。 */
 export function toastEnter(
   target: string | HTMLElement | null,
   options: AnimationOptions = {}
@@ -267,6 +281,7 @@ export function toastEnter(
 /**
  * Toast exit animation
  */
+/** Toast 退场动画。 */
 export function toastExit(
   target: string | HTMLElement | null,
   options: AnimationOptions = {}
@@ -283,6 +298,7 @@ export function toastExit(
 /**
  * Card hover animation
  */
+/** 卡片悬停动画。 */
 export function cardHover(
   target: string | HTMLElement | null,
   isHovering: boolean
@@ -301,6 +317,7 @@ export function cardHover(
 /**
  * Button press animation
  */
+/** 按钮按压动画。 */
 export function buttonPress(
   target: string | HTMLElement | null,
   isPressed: boolean
@@ -316,6 +333,7 @@ export function buttonPress(
 /**
  * Form field focus animation
  */
+/** 字段聚焦动画。 */
 export function fieldFocus(
   target: string | HTMLElement | null,
   isFocused: boolean
@@ -333,6 +351,7 @@ export function fieldFocus(
 /**
  * Tab activation animation
  */
+/** 页签激活动画。 */
 export function tabActivate(
   target: string | HTMLElement | null
 ) {
@@ -346,6 +365,7 @@ export function tabActivate(
 /**
  * Dropdown enter animation
  */
+/** 下拉菜单入场动画。 */
 export function dropdownEnter(
   target: string | HTMLElement | null,
   options: AnimationOptions = {}
@@ -363,6 +383,7 @@ export function dropdownEnter(
 /**
  * Dropdown exit animation
  */
+/** 下拉菜单退场动画。 */
 export function dropdownExit(
   target: string | HTMLElement | null,
   options: AnimationOptions = {}
@@ -379,6 +400,7 @@ export function dropdownExit(
 /**
  * Sidebar item hover animation
  */
+/** 侧栏项悬停动画。 */
 export function sidebarItemHover(
   target: string | HTMLElement | null,
   isHovering: boolean

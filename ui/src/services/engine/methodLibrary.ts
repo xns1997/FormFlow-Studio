@@ -19,6 +19,7 @@ const list = (value: string) => value.split(/[、,，]/).map((item) => item.trim
 const quotedList = (value: string) => JSON.stringify(list(value));
 const json = (value: string, fallback: unknown = {}) => { try { return JSON.parse(value); } catch { return fallback; } };
 
+/** 方法库条目（编辑器提示）。 */
 export const METHOD_LIBRARY: MethodLibraryEntry[] = [
   { id: 'setValues', name: '批量赋值', description: '一次写入多个表单字段。', parameters: [{ name: 'values', label: '字段和值（JSON）', placeholder: '{"姓名":"张三"}', defaultValue: '{"姓名":"张三"}' }], preview: (p) => `把 ${Object.keys(json(p.values)).join('、') || '指定字段'} 一次写入表单。`, code: (p) => `await ctx.setValues(${p.values || '{}'});`, sample: (p) => json(p.values) },
   { id: 'clearValues', name: '批量清空', description: '清空一组字段。', parameters: [{ name: 'fields', label: '字段', placeholder: '备注, 附件', defaultValue: '备注, 附件' }], preview: (p) => `清空 ${list(p.fields).join('、')}。`, code: (p) => `await ctx.clearValues(${quotedList(p.fields)});`, sample: (p) => Object.fromEntries(list(p.fields).map((field) => [field, ''])) },
@@ -30,6 +31,7 @@ export const METHOD_LIBRARY: MethodLibraryEntry[] = [
   { id: 'resetForm', name: '重置并准备下一条', description: '清空表单并保留指定字段。', parameters: [{ name: 'keep', label: '保留字段', placeholder: '部门, 日期', defaultValue: '部门' }], preview: (p) => `重置表单，保留 ${list(p.keep).join('、') || '无'}。`, code: (p) => `await ctx.resetForm({ keep: ${quotedList(p.keep)} });`, sample: (p) => ({ reset: true, keep: list(p.keep) }) },
 ];
 
+/** 创建方法默认参数。 */
 export function createMethodDefaults(entry: MethodLibraryEntry) {
   return Object.fromEntries(entry.parameters.map((item) => [item.name, item.defaultValue]));
 }

@@ -30,6 +30,7 @@ export interface DesignPreviewEventResult {
   error?: Error;
 }
 
+/** 设计组件绑定字段名。 */
 export function getDesignComponentField(component: DesignComponent): string {
   return String(component.fieldBinding || component.props.name || component.id);
 }
@@ -38,6 +39,7 @@ function asComponentNode(component: DesignComponent): ComponentNode {
   return exportToComponentNodes([component])[0];
 }
 
+/** 在设计预览运行时执行事件（模拟表单运行）。 */
 export async function executeDesignPreviewEvent(
   context: DesignPreviewEventContext,
   options: {

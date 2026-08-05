@@ -16,6 +16,7 @@ export interface FlowRecipeParams {
   keyField?: string;
 }
 
+/** 流程模板配方定义。 */
 export const FLOW_RECIPES: FlowRecipeDefinition[] = [
   { id: 'lookup-fill', name: '查询并回填', description: '接收查询条件，查找唯一记录并回填表单。', required: ['tableId', 'sheetName'] },
   { id: 'validate-save', name: '校验、保存与提示', description: '校验表单后按主键写回，并返回保存结果。', required: ['tableId', 'sheetName', 'keyField'] },
@@ -42,11 +43,13 @@ function io(input: Array<{ name: string; type: string; label: string }>, output:
   };
 }
 
+/** 校验配方参数（缺失/类型），返回错误。 */
 export function validateFlowRecipeParams(recipeId: FlowRecipeId, params: FlowRecipeParams) {
   const recipe = FLOW_RECIPES.find((item) => item.id === recipeId);
   return (recipe?.required || []).filter((field) => !String(params[field] || '').trim());
 }
 
+/** 按配方创建工作流。 */
 export function createFlowRecipe(recipeId: FlowRecipeId, params: FlowRecipeParams = {}): WorkflowFile {
   const missing = validateFlowRecipeParams(recipeId, params);
   if (missing.length) throw new Error(`请先填写：${missing.join('、')}`);
