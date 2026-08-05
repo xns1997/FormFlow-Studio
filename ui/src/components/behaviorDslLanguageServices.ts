@@ -50,6 +50,7 @@ const GUARD_ACTION_NAMES = new Set(['requireany', 'requiredirty', 'keepreadonly'
 /**
  * 扫描一行 DSL 源码，返回字符串感知的 token 片段（0-based 偏移，按位置排序）。
  */
+/** 扫描 DSL 行，返回 token 跨度（高亮/诊断定位）。 */
 export function scanDslLine(line: string): DslTokenSpan[] {
   const result: DslTokenSpan[] = [];
   if (line.trimStart().startsWith('#')) {
@@ -105,6 +106,7 @@ export function scanDslLine(line: string): DslTokenSpan[] {
 }
 
 /** 行内最外层调用上下文：`name(...)` 中光标所在参数下标（0-based）。 */
+/** 定位列所在的函数调用上下文（函数名与参数序号）。 */
 export function callContextAt(line: string, column: number): { name: string; index: number } | null {
   let depth = 0;
   let quote = '';
@@ -332,6 +334,7 @@ function componentRefSet(ctx: BehaviorDslServicesContext) {
 /**
  * 收集一行内的无效引用及其候选替换项（与 lintRules 的 FFR202-205 同源判定）。
  */
+/** 生成引用修复候选（字段/组件名纠错）。 */
 export function dslReferenceFixCandidates(line: string, ctx: BehaviorDslServicesContext): DslReferenceFixCandidate[] {
   const result: DslReferenceFixCandidate[] = [];
   const hasContext = ctx.fields.length || ctx.components.length || ctx.tables.length || ctx.workflows.length;
@@ -498,6 +501,7 @@ function statementName(line: string): { name: string; kind: languages.SymbolKind
 }
 
 /** 大纲符号：规则条目 + 注释段落。 */
+/** 收集 DSL 符号（文档大纲用）。 */
 export function collectDslSymbols(source: string): Array<{ name: string; kind: number; startLine: number; endLine: number }> {
   const symbols: Array<{ name: string; kind: number; startLine: number; endLine: number }> = [];
   const lines = source.split(/\r?\n/);
@@ -533,6 +537,7 @@ function isStatementLine(line: string): boolean {
 }
 
 /** 折叠区间：连续注释块与规则块（到下一个语句/注释/空行前）。 */
+/** 收集折叠区间。 */
 export function collectDslFoldingRanges(source: string): Array<{ start: number; end: number }> {
   const ranges: Array<{ start: number; end: number }> = [];
   const lines = source.split(/\r?\n/);
@@ -569,6 +574,7 @@ export function collectDslFoldingRanges(source: string): Array<{ start: number; 
  * - 规则块/注释块之间最多一空行（when/else 保持相邻）；
  * - 注释保留，行尾空白清除。
  */
+/** 整文档格式化（空行压缩与注释保留）。 */
 export function normalizeBehaviorDslDocument(source: string): string {
   const blocks: string[][] = [];
   let current: string[] | null = null;
@@ -593,6 +599,7 @@ export function normalizeBehaviorDslDocument(source: string): string {
   return `${output}\n`;
 }
 
+/** 单行格式化。 */
 export function normalizeBehaviorDslLine(line: string): string {
   const trimmed = line.trim();
   if (!trimmed) return '';
@@ -739,6 +746,7 @@ function registerFolding(monaco: Monaco): Disposable {
 }
 
 /** 规则驱动的 DSL 内联 ghost text。 */
+/** 行内补全文本（参数/引用提示）。 */
 export function dslInlineCompletionText(linePrefix: string, ctx: BehaviorDslServicesContext): string {
   const bare = linePrefix.replace(/\s+/g, ' ').trim();
   const firstField = ctx.fields[0];
@@ -822,6 +830,7 @@ function registerSemanticTokens(monaco: Monaco): Disposable {
  * 注册 DSL 全部语言服务。上下文按 model URI 绑定，多个编辑器实例
  * （内联/全屏/不同表单）互不串扰；Provider 本身按语言共享。
  */
+/** 注册 DSL 语言服务（补全/悬停/诊断/格式化）。 */
 export function registerBehaviorDslLanguageServices(
   monaco: Monaco,
   instance: editor.IStandaloneCodeEditor,
@@ -848,6 +857,7 @@ export function registerBehaviorDslLanguageServices(
 }
 
 /** 测试辅助：清空 URI 上下文。 */
+/** 重置语言服务上下文（测试用）。 */
 export function resetBehaviorDslContextForTest() {
   contextByUri.clear();
 }

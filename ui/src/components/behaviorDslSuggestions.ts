@@ -3,6 +3,7 @@ import type { CodeEditorSuggestion } from './CodeEditor';
 import type { DesignComponent, SrcTableEntry, WorkflowFile } from '../project/types';
 import { BEHAVIOR_DSL_ACTIONS, BEHAVIOR_DSL_KEYWORDS, BEHAVIOR_DSL_MESSAGE_LEVELS, BEHAVIOR_DSL_OPERATORS, BEHAVIOR_DSL_STATEMENTS } from '../services/engine/behaviorDslLanguage';
 
+/** Monaco 语言 ID。 */
 export const BEHAVIOR_DSL_LANGUAGE_ID = 'formflow-behavior-dsl';
 
 export interface BehaviorDslSuggestionOptions { fields?: string[]; components?: DesignComponent[]; tables?: SrcTableEntry[]; workflows?: WorkflowFile[]; }
@@ -15,6 +16,7 @@ function currentCallArgument(line: string) {
   return { name: match[1].toLowerCase(), index: match[2].split(',').length - 1 };
 }
 
+/** 解析补全上下文（语句位置/动作/条件）。 */
 export function resolveBehaviorDslCompletionContext({ linePrefix }: { fullPrefix: string; linePrefix: string; completionPrefix: string }): DslCompletionContext {
   const line = linePrefix.trimStart();
   const call = currentCallArgument(line);
@@ -42,6 +44,7 @@ const syntaxSuggestions: CodeEditorSuggestion[] = [
   ...BEHAVIOR_DSL_MESSAGE_LEVELS.map((level, index) => ({ label: level, insertText: level, kind: 'EnumMember', detail: `${level} 消息级别`, sortText: `30${index}`, scope: 'message-level' })),
 ];
 
+/** 生成 DSL 补全建议（关键词/事件/动作）。 */
 export function createBehaviorDslSuggestions(options: BehaviorDslSuggestionOptions = {}): CodeEditorSuggestion[] {
   const fields = [...new Set((options.fields || []).filter(Boolean))];
   return [
@@ -56,6 +59,7 @@ export function createBehaviorDslSuggestions(options: BehaviorDslSuggestionOptio
   ];
 }
 
+/** 注册 DSL 语言（高亮/补全/提示）。 */
 export function registerBehaviorDslLanguage(monaco: Monaco) {
   if (!monaco.languages.getLanguages().some((language: { id: string }) => language.id === BEHAVIOR_DSL_LANGUAGE_ID)) monaco.languages.register({ id: BEHAVIOR_DSL_LANGUAGE_ID });
   monaco.languages.setMonarchTokensProvider(BEHAVIOR_DSL_LANGUAGE_ID, {

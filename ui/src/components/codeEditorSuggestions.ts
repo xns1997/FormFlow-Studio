@@ -66,6 +66,7 @@ const topLevelApiSuggestions: CodeEditorSuggestion[] = [
   { label: 'PrintGroup', insertText: "PrintGroup('阶段标题', data)", kind: 'Function', detail: '输出分组调试日志', documentation: "PrintGroup('before submit', data)", sortText: '019', scope: 'top-level' },
 ];
 
+/** 事件上下文补全条目（ctx.*）。 */
 export const ctxSuggestions: CodeEditorSuggestion[] = [
   { label: 'ctx.getValue', insertText: 'ctx.getValue(fieldId)', kind: 'Function', detail: '获取字段值', documentation: 'ctx.getValue(fieldId)', scope: 'ctx-member' },
   ...ctxBatchMethodSuggestions,
@@ -83,6 +84,7 @@ export const ctxSuggestions: CodeEditorSuggestion[] = [
   { label: 'ctx.submit', insertText: 'ctx.submit()', kind: 'Function', detail: '提交当前表单', documentation: 'ctx.submit()', scope: 'ctx-member' },
 ];
 
+/** JSON 属性补全条目。 */
 export const jsonSuggestions: CodeEditorSuggestion[] = [
   {
     label: '{}',
@@ -188,6 +190,7 @@ function toTsType(type?: string) {
   }
 }
 
+/** 生成事件上下文补全（含动态字段/方法）。 */
 export function createEventContextSuggestions(options: {
   fields?: Array<string | EventFieldDescriptor>;
   components?: DesignComponent[];
@@ -383,6 +386,7 @@ function createHandwrittenEventContextExtraLib(options: EventContextExtraLibOpti
   };
 }
 
+/** 生成事件上下文 Monaco extra lib（类型声明）。 */
 export function createEventContextExtraLib(options: EventContextExtraLibOptions): CodeEditorExtraLib {
   const library = createHandwrittenEventContextExtraLib(options);
   let specialized = library.content.replace(
@@ -415,6 +419,7 @@ export function createEventContextExtraLib(options: EventContextExtraLibOptions)
   };
 }
 
+/** 生成流程参数补全（表单字段/输出值）。 */
 export function createFlowParameterSuggestions(
   workflow: WorkflowFile | undefined,
   fields: string[] = [],
@@ -527,6 +532,7 @@ export function createFlowParameterSuggestions(
   ];
 }
 
+/** 生成链式 API 的 Monaco extra lib（类型声明）。 */
 export function createChainApiExtraLib(filePath = 'inmemory://formflow-chain-api.d.ts'): CodeEditorExtraLib {
   return {
     filePath,

@@ -203,23 +203,30 @@ export interface ProjectAgentActivityState {
   stale: boolean;
 }
 
+/** MCP 角色 → 中文名。 */
 export const roleLabels: Record<ProjectAgentRole, string> = { project: '项目', data: '数据', form: '表单', workflow: '流程', behavior: '行为', quality: '质量', delivery: '交付' };
+/** 线程状态 → 中文名。 */
 export const statusLabels: Record<ProjectAgentStatus, string> = {
   idle: '等待输入', planning: '生成计划', awaiting_plan_approval: '等待确认计划', executing: '执行中',
   awaiting_operation_approval: '等待操作确认', paused: '已暂停', completed: '已完成', blocked: '已受阻', stopped: '已停止', failed: '失败',
 };
 /** 状态栏等紧凑场景使用的短标签。 */
+/** 线程状态 → 短中文名。 */
 export const statusLabelsShort: Record<ProjectAgentStatus, string> = {
   idle: '待', planning: '规划', awaiting_plan_approval: '待确认', executing: '执行',
   awaiting_operation_approval: '待批准', paused: '暂停', completed: '完成', blocked: '受阻', stopped: '停止', failed: '失败',
 };
 /** 状态符号：配合 title 提示使用，减少视觉文字。 */
+/** 线程状态 → 符号。 */
 export const statusSymbols: Record<ProjectAgentStatus, string> = {
   idle: '·', planning: '…', awaiting_plan_approval: '◎', executing: '⚙',
   awaiting_operation_approval: '⚠', paused: '⏸', completed: '✓', blocked: '✕', stopped: '⏹', failed: '!',
 };
+/** 模式 → 中文名。 */
 export const modeLabels: Record<ProjectAgentMode, string> = { plan: '计划模式', goal: '目标模式' };
+/** 模式 → 短中文名。 */
 export const modeLabelsShort: Record<ProjectAgentMode, string> = { plan: '计划', goal: '目标' };
+/** 任务状态 → 中文名。 */
 export const taskStatusLabels: Record<ProjectAgentTask['status'], string> = {
   pending: '待执行', running: '执行中', passed: '已完成', failed: '失败', blocked: '受阻', superseded: '已替代', cancelled: '已取消',
 };
@@ -231,6 +238,7 @@ function eventTimestamp(value?: string) {
   return Number.isFinite(timestamp) ? timestamp : undefined;
 }
 
+/** 计算线程当前活动状态（运行/等待/暂停/完成）。 */
 export function projectAgentActivityState(thread: ProjectAgentThread | null, now = Date.now()): ProjectAgentActivityState {
   if (!thread || !activeStatuses.has(thread.status)) return { active: false, label: '', detail: '', stale: false };
   const runningTask = thread.plan?.tasks.find((task) => task.status === 'running');
@@ -259,6 +267,7 @@ function sentence(value?: string) {
  * be objects or JSON strings (older threads), so we never let React render a
  * raw object (which would show `[object Object]`).
  */
+/** 摘要文本截断：返回短版与全文。 */
 export function formatSummaryText(value: unknown, maxShort = 140): { short: string; full: string } {
   let full = '';
   if (typeof value === 'string') {
@@ -299,10 +308,12 @@ const EVIDENCE_KIND_LABELS: Record<string, string> = {
   requirement_coverage: '需求覆盖',
 };
 
+/** 证据种类 → 中文标签。 */
 export function evidenceKindLabel(kind?: string) {
   return (kind && EVIDENCE_KIND_LABELS[kind]) || '证据';
 }
 
+/** 事件 → 人类可读摘要。 */
 export function humanEventSummary(event: ProjectAgentEvent) {
   const exact: Record<string, string> = {
     turn_started: '请求已提交。', grounding_completed: '项目现状已查看。', plan_proposed: '目标契约已生成，等待确认。', plan_confirmed: '目标契约已确认，开始执行。',
@@ -319,27 +330,33 @@ export function humanEventSummary(event: ProjectAgentEvent) {
   return sentence(formatSummaryText(value).short);
 }
 
+/** 事件摘要（供日志列表展示）。 */
 export function summarizeProjectAgentEvent(event: ProjectAgentEvent) {
   return humanEventSummary(event);
 }
 
+/** 归一化任务状态字符串。 */
 export function taskStatus(value: string): ProjectAgentTask['status'] {
   if (['pending', 'running', 'passed', 'failed', 'blocked', 'superseded', 'cancelled'].includes(value)) return value as ProjectAgentTask['status'];
   return 'pending';
 }
 
+/** 会话切换前是否需要暂停（运行中状态需要）。 */
 export function requiresPauseBeforeSessionSwitch(status: ProjectAgentStatus) {
   return status === 'executing';
 }
 
+/** 线程绑定的项目 ID 集合。 */
 export function threadProjectScope(thread: Pick<ProjectAgentThread, 'projectIds' | 'currentProjectId'>) {
   return [...new Set([...(thread.projectIds || []), ...(thread.currentProjectId ? [thread.currentProjectId] : [])])];
 }
 
+/** 会话绑定的项目 ID 集合。 */
 export function sessionProjectScope(session: { projectIds?: string[]; currentProjectId?: string }) {
   return [...new Set([...(session.projectIds || []), ...(session.currentProjectId ? [session.currentProjectId] : [])])];
 }
 
+/** 历史项按时间分组（今天/本周/更早）。 */
 export function groupProjectAgentHistoryByTime<T extends { pinnedAt?: string; updatedAt: string }>(items: T[], now = Date.now()) {
   const startToday = new Date(now); startToday.setHours(0, 0, 0, 0);
   const sevenDaysAgo = startToday.getTime() - 6 * 86_400_000;
@@ -351,19 +368,23 @@ export function groupProjectAgentHistoryByTime<T extends { pinnedAt?: string; up
   };
 }
 
+/** 选择初始会话（记忆的 id 优先，否则首个）。 */
 export function chooseInitialProjectAgentSession<T extends { id: string }>(sessions: T[], rememberedId?: string | null) {
   return sessions.find((item) => item.id === rememberedId) || sessions[0];
 }
 
+/** 会话记忆的 localStorage 键。 */
 export function projectAgentSessionStorageKey(projectId?: string) {
   return `formflow.projectAgent.activeThread.${projectId || 'global'}`;
 }
 
+/** 面板宽度钳制到视口允许范围。 */
 export function clampProjectAgentWidth(width: number, viewportWidth: number) {
   const available = Math.max(320, viewportWidth - 24);
   return Math.round(Math.min(920, available, Math.max(viewportWidth <= 760 ? 320 : 520, width)));
 }
 
+/** 选择当前活动任务 ID（进行中的任务优先）。 */
 export function chooseCurrentTaskId(thread: ProjectAgentThread): string | undefined {
   const tasks = thread.plan?.tasks || [];
   if (thread.pendingApproval && tasks.some((task) => task.id === thread.pendingApproval!.taskId)) return thread.pendingApproval!.taskId;
@@ -382,6 +403,7 @@ export interface ProjectAgentActivityItem {
   createdAt: string;
 }
 
+/** 事件流 → 活动列表（去重、排序、聚合）。 */
 export function buildProjectAgentActivity(events: ProjectAgentEvent[]): ProjectAgentActivityItem[] {
   const mapping: Record<string, [ProjectAgentActivityItem['kind'], ProjectAgentActivityItem['status'], string]> = {
     task_started: ['task', 'running', '任务开始'],
@@ -432,6 +454,7 @@ export interface SurfaceItem {
   ref: { messageId?: string; taskId?: string; approvalId?: string };
 }
 
+/** 计划进度（完成/总数）。 */
 export function planProgress(thread: ProjectAgentThread) {
   const tasks = thread.plan?.tasks || [];
   const passed = tasks.filter((task) => task.status === 'passed').length;
@@ -445,6 +468,7 @@ function taskState(status: ProjectAgentTask['status']): SurfaceState {
   return 'idle';
 }
 
+/** 构建会话界面条目（卡片/消息/问答）。 */
 export function buildSurfaceItems(thread: ProjectAgentThread): SurfaceItem[] {
   const items: SurfaceItem[] = [];
   for (const message of thread.messages) {
@@ -492,6 +516,7 @@ export function buildSurfaceItems(thread: ProjectAgentThread): SurfaceItem[] {
   return items;
 }
 
+/** 构建事件日志（最新在前，限长）。 */
 export function buildEventLog(thread: ProjectAgentThread, limit = 40) {
   return [...thread.events].slice(-limit).map((event) => ({
     seq: event.seq,
@@ -503,14 +528,17 @@ export function buildEventLog(thread: ProjectAgentThread, limit = 40) {
   }));
 }
 
+/** 按 ID 查找消息。 */
 export function messageById(thread: ProjectAgentThread, id?: string) {
   return thread.messages.find((message) => message.id === id);
 }
 
+/** 按 ID 查找任务。 */
 export function taskById(thread: ProjectAgentThread, id?: string) {
   return thread.plan?.tasks.find((task) => task.id === id);
 }
 
+/** 线程按项目分组（当前项目在前）。 */
 export function threadGroups(threads: ProjectAgentThread[], currentProjectId?: string) {
   return {
     current: currentProjectId ? threads.filter((thread) => threadProjectScope(thread).includes(currentProjectId)) : [],
