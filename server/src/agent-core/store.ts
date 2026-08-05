@@ -47,6 +47,7 @@ function bundles() { return readJson<CapabilityBundleVersion[]>(BUNDLE_STORE_PAT
 
 // ─── Default capability bundle ────────────────────────────────────────────────
 
+/** 构造默认能力包（全角色工具清单，版本固定 1.0.0）。 */
 export function defaultCapabilityBundle(ownerId = 'system'): CapabilityBundleVersion {
   const now = new Date().toISOString();
   return {
@@ -78,6 +79,7 @@ function ensureDefaultBundle() {
   if (!items.some((item) => item.id === 'cap_default_v1')) writeJson(BUNDLE_STORE_PATH, [defaultCapabilityBundle(), ...items]);
 }
 
+/** 校验能力包结构（版本、作用域、工具引用），返回诊断列表。 */
 export function validateBundle(bundle: CapabilityBundleVersion) {
   if (!bundle.name?.trim()) throw new Error('能力包名称不能为空');
   const { budget } = bundle;
@@ -105,15 +107,18 @@ export function validateBundle(bundle: CapabilityBundleVersion) {
   return { valid: true };
 }
 
+/** 列出某租户的能力包（含草稿与已发布）。 */
 export function listCapabilityBundles(ownerId: string) {
   ensureDefaultBundle();
   return bundles().filter((item) => item.ownerId === ownerId || item.ownerId === 'system');
 }
 
+/** 按 ID 读取能力包（草稿仅属主可读）。 */
 export function getCapabilityBundle(id: string, ownerId: string) {
   return listCapabilityBundles(ownerId).find((item) => item.id === id);
 }
 
+/** 保存能力包草稿（新包生成 ID，旧包覆写草稿）。 */
 export function saveCapabilityBundleDraft(input: Partial<CapabilityBundleVersion> & { name: string }, ownerId: string) {
   ensureDefaultBundle();
   const items = bundles();
@@ -139,6 +144,7 @@ export function saveCapabilityBundleDraft(input: Partial<CapabilityBundleVersion
   return value;
 }
 
+/** 发布能力包：校验通过后标记 published 并落盘。 */
 export function publishCapabilityBundle(id: string, ownerId: string) {
   const items = bundles();
   const draft = items.find((item) => item.id === id && item.ownerId === ownerId && item.status === 'draft');
@@ -160,6 +166,7 @@ function mirrorBundle(value: CapabilityBundleVersion) {
 
 // ─── Boot / PG mirror ─────────────────────────────────────────────────────────
 
+/** 初始化线程/能力包存储目录与默认能力包。 */
 export function initializeAgentStore() {
   if (initialization) return initialization;
   initialization = (async () => {
@@ -274,10 +281,12 @@ function mirrorThread(value: AgentThread) {
 
 // ─── Thread CRUD ──────────────────────────────────────────────────────────────
 
+/** 线程涉及的项目 ID 集合（显式列表 + 当前项目去重）。 */
 export function threadProjectIds(thread: Pick<AgentThread, 'projectIds' | 'currentProjectId'>) {
   return [...new Set([...(thread.projectIds || []), ...(thread.currentProjectId ? [thread.currentProjectId] : [])].map(String).filter(Boolean))];
 }
 
+/** 创建线程：初始化状态机、事件与消息历史。 */
 export function createAgentThread(input: { tenantId: string; userId: string; projectIds?: string[]; currentProjectId?: string; title?: string; profileId: string; capabilityBundleVersionId?: string }) {
   ensureDefaultBundle();
   const bundle = getCapabilityBundle(input.capabilityBundleVersionId || 'cap_default_v1', input.userId);
@@ -313,6 +322,7 @@ export function createAgentThread(input: { tenantId: string; userId: string; pro
   return value;
 }
 
+/** 读取线程（不存在返回 undefined）。 */
 export function getAgentThread(id: string) {
   const live = liveThreads.get(id);
   if (live) return live;
@@ -321,6 +331,7 @@ export function getAgentThread(id: string) {
   return value;
 }
 
+/** 持久化线程（校验 revision 并递增）。 */
 export function saveAgentThread(value: AgentThread) {
   value.updatedAt = new Date().toISOString();
   liveThreads.set(value.id, value);
@@ -332,6 +343,7 @@ export function saveAgentThread(value: AgentThread) {
   return value;
 }
 
+/** 按租户/用户/项目/范围列出线程。 */
 export function listAgentThreads(scope: { tenantId: string; userId: string; projectId?: string; scopeKind?: 'project' | 'unbound' | 'all' }) {
   const kind = scope.scopeKind || (scope.projectId ? 'project' : 'unbound');
   if (kind === 'project' && !scope.projectId) throw new Error('按项目查询线程时 projectId 不能为空');
@@ -346,6 +358,7 @@ export function listAgentThreads(scope: { tenantId: string; userId: string; proj
     .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
 }
 
+/** 线程状态 → 历史页展示状态。 */
 export function threadHistoryStatus(status: ThreadStatus): ThreadHistoryStatus {
   if (['awaiting_plan_approval', 'awaiting_operation_approval', 'paused', 'blocked', 'failed'].includes(status)) return 'attention';
   if (['completed', 'stopped'].includes(status)) return 'completed';
@@ -396,6 +409,7 @@ function decodeHistoryCursor(value?: string) {
   }
 }
 
+/** 分页列出线程历史（支持关键词/状态/项目过滤与游标）。 */
 export function listThreadHistory(input: { tenantId: string; userId: string; q?: string; status?: ThreadHistoryStatus; projectId?: string; archived?: boolean; cursor?: string; limit?: number }, canInclude?: (thread: AgentThread) => boolean): ThreadHistoryPage {
   const query = String(input.q || '').trim().toLocaleLowerCase();
   const limit = Math.max(1, Math.min(100, Number(input.limit) || 30));
@@ -417,22 +431,26 @@ export function listThreadHistory(input: { tenantId: string; userId: string; q?:
   return { items: page, nextCursor: start + limit < items.length && page.length ? historyCursor(page.at(-1)!) : undefined };
 }
 
+/** 查找项目的活动线程（可排除指定线程）。 */
 export function findActiveProjectThread(scope: { tenantId: string; userId: string; projectId: string }, excludeId?: string) {
   return listAgentThreads({ ...scope, scopeKind: 'project' }).find(
     (item) => item.id !== excludeId && ['executing', 'awaiting_operation_approval'].includes(item.status),
   );
 }
 
+/** 归档线程（历史保留、不再活动）。 */
 export function archiveAgentThread(value: AgentThread) {
   value.archived = true;
   return saveAgentThread(value);
 }
 
+/** 恢复已归档线程。 */
 export function restoreAgentThread(value: AgentThread) {
   value.archived = false;
   return saveAgentThread(value);
 }
 
+/** 删除线程（含事件文件与产物）。 */
 export async function deleteAgentThread(value: AgentThread) {
   if (leases.has(value.id)) throw new Error('任务仍在执行，请先等待安全暂停');
   await mirrorQueues.get(value.id)?.catch(() => undefined);
@@ -446,6 +464,7 @@ export async function deleteAgentThread(value: AgentThread) {
   return { deleted: true as const, id: value.id };
 }
 
+/** 更新线程元数据（标题/置顶）。 */
 export function updateAgentThreadMetadata(value: AgentThread, input: { title?: string; pinned?: boolean }) {
   if (input.title !== undefined) {
     const title = input.title.trim();
@@ -456,12 +475,14 @@ export function updateAgentThreadMetadata(value: AgentThread, input: { title?: s
   return saveAgentThread(value);
 }
 
+/** 切换线程模式（plan / goal）。 */
 export function setAgentThreadMode(value: AgentThread, mode: AgentMode) {
   if (!['plan', 'goal'].includes(mode)) throw new Error('执行模式必须是 plan 或 goal');
   value.mode = mode;
   return saveAgentThread(value);
 }
 
+/** 设置线程项目范围（项目绑定）。 */
 export function setAgentThreadProjectScope(value: AgentThread, projectIds: string[], currentProjectId?: string) {
   const normalized = [...new Set(projectIds.map(String).map((id) => id.trim()).filter(Boolean))];
   if (currentProjectId && !normalized.includes(currentProjectId)) throw new Error('当前项目必须包含在限定项目范围内');
@@ -473,6 +494,7 @@ export function setAgentThreadProjectScope(value: AgentThread, projectIds: strin
 
 // ─── Events / SSE ─────────────────────────────────────────────────────────────
 
+/** 追加线程事件（自动递增 seq）。 */
 export function appendAgentThreadEvent(value: AgentThread, type: string, data: any) {
   const event = appendEventRaw(value, type, data);
   saveAgentThread(value);
@@ -480,6 +502,7 @@ export function appendAgentThreadEvent(value: AgentThread, type: string, data: a
   return event;
 }
 
+/** 订阅线程事件流（返回取消订阅函数）。 */
 export function subscribeAgentThreadEvents(id: string, listener: (event: ThreadEvent) => void) {
   const set = listeners.get(id) || new Set();
   set.add(listener);
@@ -490,10 +513,12 @@ export function subscribeAgentThreadEvents(id: string, listener: (event: ThreadE
   };
 }
 
+/** 读取 seq 之后的事件（用于 SSE 增量推送）。 */
 export function threadEventsAfter(value: AgentThread, afterSeq = 0) {
   return value.events.filter((event) => event.seq > afterSeq);
 }
 
+/** 追加一条线程消息（用户/智能体）。 */
 export function addThreadMessage(value: AgentThread, role: 'user' | 'assistant', kind: ThreadMessage['kind'], content: string, turnId?: string, questions?: ThreadMessage['questions']) {
   const message = { id: `amsg_${randomUUID()}`, role, kind, content, turnId, ...(questions?.length ? { questions } : {}), createdAt: new Date().toISOString() };
   value.messages.push(message);
@@ -502,6 +527,7 @@ export function addThreadMessage(value: AgentThread, role: 'user' | 'assistant',
 
 // ─── Lease ────────────────────────────────────────────────────────────────────
 
+/** 获取线程租约（防止并发执行，返回是否成功）。 */
 export async function acquireAgentThreadLease(id: string) {
   if (leases.has(id)) return false;
   const owner = `${process.pid}:${randomUUID()}`;
@@ -517,11 +543,13 @@ export async function acquireAgentThreadLease(id: string) {
   return true;
 }
 
+/** 续期线程租约。 */
 export async function renewAgentThreadLease(id: string) {
   const owner = leaseOwners.get(id);
   if (pool && owner) await pool.query('UPDATE formflow_agent_threads SET lease_expires_at=NOW()+INTERVAL \'45 seconds\' WHERE id=$1 AND lease_owner=$2', [id, owner]);
 }
 
+/** 释放线程租约。 */
 export async function releaseAgentThreadLease(id: string) {
   const owner = leaseOwners.get(id);
   leases.delete(id);
@@ -529,12 +557,14 @@ export async function releaseAgentThreadLease(id: string) {
   if (pool && owner) await pool.query('UPDATE formflow_agent_threads SET lease_owner=NULL,lease_expires_at=NULL WHERE id=$1 AND lease_owner=$2', [id, owner]);
 }
 
+/** 线程是否持有有效租约。 */
 export function hasAgentThreadLease(id: string) {
   return leases.has(id);
 }
 
 // ─── Context compaction ───────────────────────────────────────────────────────
 
+/** 消息压缩：超出字符上限时丢弃最旧消息。 */
 export function compactThreadMessages(value: AgentThread, maxChars: number, recentMessages: number) {
   const old = value.messages.slice(0, Math.max(0, value.messages.length - recentMessages));
   if (!old.length) return;
@@ -545,6 +575,7 @@ export function compactThreadMessages(value: AgentThread, maxChars: number, rece
 }
 
 /** 写入结构化上下文契约（压缩后保留的关键状态）。 */
+/** 写入线程结构化上下文。 */
 export function setThreadContext(value: AgentThread, context: ThreadContext) {
   value.context = { ...context, updatedAt: new Date().toISOString() };
 }
@@ -560,6 +591,7 @@ function joinSafeArtifact(threadId: string, artifactId: string) {
   return `${ARTIFACT_DIR}/${threadId}/${artifactId}.json`;
 }
 
+/** 将大工具结果转存为 artifact，返回元数据。 */
 export async function storeAgentArtifact(threadId: string, kind: string, payload: unknown, summary: string): Promise<ArtifactMeta> {
   const artifactId = `art_${randomUUID()}`;
   const meta: ArtifactMeta = { id: artifactId, kind, size: JSON.stringify(payload).length, summary, storedAt: new Date().toISOString() };
@@ -576,6 +608,7 @@ export async function storeAgentArtifact(threadId: string, kind: string, payload
   return meta;
 }
 
+/** 分段回读 artifact（大结果读取）。 */
 export async function readAgentArtifact(threadId: string, artifactId: string): Promise<{ meta: ArtifactMeta; payload: unknown } | null> {
   if (pool) {
     const result = await pool.query(
@@ -597,6 +630,7 @@ export async function readAgentArtifact(threadId: string, artifactId: string): P
 
 // ─── Turn metrics ─────────────────────────────────────────────────────────────
 
+/** 重置线程本轮运行指标。 */
 export function resetThreadMetrics(value: AgentThread) {
   value.turnMetrics = {
     modelCalls: 0, toolCalls: 0, invalidToolCalls: 0, approvals: 0, approvalRejections: 0,
@@ -607,6 +641,7 @@ export function resetThreadMetrics(value: AgentThread) {
   };
 }
 
+/** 累加线程运行指标（调用/决策/令牌）。 */
 export function bumpThreadMetric(value: AgentThread, patch: Partial<TurnMetrics> & { tokenUsage?: Partial<TurnMetrics['tokenUsage']> }) {
   if (!value.turnMetrics) resetThreadMetrics(value);
   const metrics = value.turnMetrics!;
@@ -623,6 +658,7 @@ export function bumpThreadMetric(value: AgentThread, patch: Partial<TurnMetrics>
 }
 
 /** 把当前 turn 指标镜像到 PG（云端模式）；本地模式随线程 payload 持久化。 */
+/** 将线程指标写入持久化日志。 */
 export async function flushThreadMetrics(thread: AgentThread) {
   if (!thread.turnMetrics || !pool) return;
   const turnId = thread.turnId || `turn_${thread.id}`;
@@ -635,6 +671,7 @@ export async function flushThreadMetrics(thread: AgentThread) {
 }
 
 /** 汇总所有线程的运行指标（供管理端点/统计面板）。 */
+/** 列出全部线程的最新指标（管理面）。 */
 export function listThreadMetrics(): Array<{ threadId: string; title: string; status: string; metrics: TurnMetrics | undefined }> {
   return threads().map((thread) => ({ threadId: thread.id, title: thread.title, status: thread.status, metrics: thread.turnMetrics }));
 }

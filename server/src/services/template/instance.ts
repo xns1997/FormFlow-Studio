@@ -1,4 +1,3 @@
-import { queryRows, type FilterRule, type SortRule } from '../data-preview';
 import { createHash } from 'node:crypto';
 import {
   batchProjectRows,
@@ -11,6 +10,7 @@ import {
 import { OperationTemplateDefinition, extractBehaviorArtifacts } from './shared';
 import { GenerationPlan, planOperationTemplate } from './generation';
 
+/** 将操作模板生成计划应用到项目模型（幂等，含 revision 递增）。 */
 export function applyOperationPlan(project: JsonObject, plan: GenerationPlan): JsonObject {
   if (plan.conflicts.length) throw toolError('GENERATION_CONFLICT', plan.conflicts[0].message, 'plan.conflicts', plan.conflicts);
   const next = structuredClone(project); const now = new Date().toISOString();
@@ -50,6 +50,7 @@ function stable(value: unknown): unknown {
 export function resourceFingerprint(resource: JsonObject) { return createHash('sha256').update(JSON.stringify(stable(resource))).digest('hex'); }
 
 
+/** 检查模板实例与模板定义之间的漂移（字段/结构差异）。 */
 export function inspectTemplateInstanceDrift(project: JsonObject, instanceId: string) {
   const instance = (project.templateInstances || []).find((item: JsonObject) => item.id === instanceId);
   if (!instance) throw toolError('TEMPLATE_INSTANCE_NOT_FOUND', `模板实例 ${instanceId} 不存在`, 'id');
@@ -72,6 +73,7 @@ export function inspectTemplateInstanceDrift(project: JsonObject, instanceId: st
 }
 
 
+/** 删除模板实例产生的资源（表单/行为/工作流/数据）。 */
 export function deleteTemplateInstanceResources(project: JsonObject, instanceId: string) {
   const instance = (project.templateInstances || []).find((item: JsonObject) => item.id === instanceId);
   if (!instance) throw toolError('TEMPLATE_INSTANCE_NOT_FOUND', `模板实例 ${instanceId} 不存在`, 'id');
@@ -94,6 +96,7 @@ function replaceGeneratedInstanceId(resource: JsonObject, instanceId: string) {
 
 /** Rebuilds only resources still owned by a managed instance; manual drift is blocked unless explicitly overridden. */
 
+/** 重新生成模板实例（默认不覆盖用户修改，返回冲突列表）。 */
 export function regenerateTemplateInstance(project: JsonObject, instanceId: string, overwriteModified = false) {
   const instance = (project.templateInstances || []).find((item: JsonObject) => item.id === instanceId);
   if (!instance) throw toolError('TEMPLATE_INSTANCE_NOT_FOUND', `模板实例 ${instanceId} 不存在`, 'id');
@@ -165,6 +168,7 @@ function addGeneratedKeys(project: JsonObject, operation: DataTransactionOperati
 
 /** Apply all table mutations to an isolated project clone; callers persist it once after this succeeds. */
 
+/** 以事务方式应用数据行变更（校验主键与类型后写入）。 */
 export function applyDataRowsTransaction(project: JsonObject, operations: DataTransactionOperation[]): DataTransactionResult {
   if (!operations.length) throw toolError('EMPTY_TRANSACTION', '事务至少需要一项操作', 'operations');
   const totalChanges = operations.reduce((total, item) => total + (item.adds?.length || 0) + (item.updates?.length || 0) + (item.deletes?.length || 0), 0);
@@ -182,4 +186,3 @@ export function applyDataRowsTransaction(project: JsonObject, operations: DataTr
   }
   return { project: next, applied, totalChanges };
 }
-

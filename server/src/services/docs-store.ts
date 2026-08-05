@@ -24,6 +24,7 @@ const metricsFile = `${root}/metrics.json`;
 const emptyState = (): DocsState => ({ version: 0, favorites: [], recent: [], taskProgress: {}, updatedAt: new Date(0).toISOString() });
 const safeKey = (tenantId: string, userId: string) => createHash('sha256').update(`${tenantId}:${userId}`).digest('hex');
 
+/** 读取用户的文档阅读状态。 */
 export function readDocsState(tenantId: string, userId: string): DocsState {
   const file = `${stateDir}/${safeKey(tenantId, userId)}.json`;
   if (!existsSync(file)) return emptyState();
@@ -33,6 +34,7 @@ export function readDocsState(tenantId: string, userId: string): DocsState {
   } catch { return emptyState(); }
 }
 
+/** 保存用户文档阅读状态。 */
 export function saveDocsState(tenantId: string, userId: string, input: Partial<DocsState>): DocsState {
   const current = readDocsState(tenantId, userId);
   const incomingVersion = Math.max(0, Number(input.version) || 0);
@@ -52,6 +54,7 @@ export function saveDocsState(tenantId: string, userId: string, input: Partial<D
   return next;
 }
 
+/** 聚合一次文档事件（浏览/搜索），更新统计。 */
 export function aggregateDocsEvent(event: DocsEvent) {
   const allowed = new Set(['search', 'open', 'feedback']);
   if (!allowed.has(event.type)) throw new Error('不支持的文档事件');

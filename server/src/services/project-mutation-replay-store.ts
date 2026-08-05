@@ -13,6 +13,7 @@ export interface ProjectMutationReplayStore {
   set<T>(key: string, replay: ProjectMutationReplay<T>): void;
 }
 
+/** 创建内存版变更回放存储（测试用）。 */
 export function createMemoryProjectMutationReplayStore(): ProjectMutationReplayStore {
   const entries = new Map<string, ProjectMutationReplay>();
   return {
@@ -26,6 +27,7 @@ export function createMemoryProjectMutationReplayStore(): ProjectMutationReplayS
  * server processes observe the same replay ledger rather than keeping divergent
  * process-local maps.
  */
+/** 创建文件版变更回放存储（持久化全部写操作）。 */
 export function createFileProjectMutationReplayStore(
   filePath = serverDataPath('project-mutation-replays.json'),
   options: { ttlMs?: number; maxEntries?: number } = {},
@@ -71,4 +73,5 @@ export function createFileProjectMutationReplayStore(
   };
 }
 
+/** 全局变更回放存储实例。 */
 export const projectMutationReplayStore = createFileProjectMutationReplayStore();

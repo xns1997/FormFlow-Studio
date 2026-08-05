@@ -7,6 +7,7 @@ function validate(config: DbConfig) {
   if (!config.connectionString) throw new Error('连接字符串不能为空');
 }
 
+/** 测试数据库连接。 */
 export async function testConnection(config: DbConfig) {
   validate(config);
   if (config.driver === 'mysql') {
@@ -26,6 +27,7 @@ export async function testConnection(config: DbConfig) {
   return { ok: true, driver: config.driver };
 }
 
+/** 执行只读查询，返回列与行。 */
 export async function queryDatabase(config: DbConfig, query: string, params: unknown[] = []): Promise<DbResult> {
   validate(config);
   if (!query.trim()) throw new Error('SQL 不能为空');
@@ -63,6 +65,7 @@ function identifier(value: string) {
   return value;
 }
 
+/** 批量写入数据表（insert/upsert）。 */
 export async function writeDatabase(config: DbConfig, table: string, rows: Record<string, unknown>[], mode: 'insert' | 'upsert' = 'insert', keys: string[] = []) {
   validate(config);
   identifier(table);

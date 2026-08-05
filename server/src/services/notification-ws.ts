@@ -6,6 +6,7 @@ type WsClient = { ws: WebSocket; userId?: string };
 
 const clients = new Set<WsClient>();
 
+/** 初始化通知 WebSocket（广播通知事件）。 */
 export function initNotificationWs(server: Server) {
   const wss = new WebSocketServer({ server, path: '/ws/notifications' });
 
@@ -25,6 +26,7 @@ export function initNotificationWs(server: Server) {
   });
 }
 
+/** 向在线客户端广播通知。 */
 export function broadcastNotification(notification: Notification) {
   const payload = JSON.stringify({ type: 'notification', data: notification });
   for (const client of clients) {

@@ -11,6 +11,7 @@ import {
 
 type Project = Record<string, any>;
 
+/** 项目变更错误（含业务错误码）。 */
 export class ProjectMutationError extends Error {
   constructor(
     public readonly code: 'PROJECT_NOT_FOUND' | 'FORBIDDEN' | 'BASE_REVISION_REQUIRED' | 'IDEMPOTENCY_KEY_REQUIRED' | 'IDEMPOTENCY_KEY_REUSED' | 'PROJECT_REVISION_CONFLICT' | 'RESOURCE_NOT_FOUND' | 'RESOURCE_IN_USE',
@@ -49,6 +50,7 @@ export interface ProjectMutationAdapters {
   remove?(projectId: string): void;
 }
 
+/** 创建项目变更模块：包装读改写 + 快照回放 + 校验门禁。 */
 export function createProjectMutationModule(
   adapters: ProjectMutationAdapters,
   replayStore: ProjectMutationReplayStore = createMemoryProjectMutationReplayStore(),
@@ -169,6 +171,7 @@ export function createProjectMutationModule(
   };
 }
 
+/** 全局项目变更模块实例。 */
 export const projectMutation = createProjectMutationModule({
   read: readProjectPackage,
   revision: projectRevision,

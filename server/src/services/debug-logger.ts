@@ -22,6 +22,7 @@ function emitToConsole(entry: ServerDebugEntry) {
   else console.log(payload, entry.context || '');
 }
 
+/** 写一条结构化调试日志。 */
 export function logDebug(
   level: ServerDebugLevel,
   source: string,
@@ -48,6 +49,7 @@ export function logDebug(
   return entry;
 }
 
+/** 按过滤条件读取调试日志。 */
 export function getDebugLogs(filters: {
   level?: ServerDebugLevel;
   source?: string;
@@ -62,6 +64,7 @@ export function getDebugLogs(filters: {
   return result.slice(-limit).reverse();
 }
 
+/** 清空调试日志。 */
 export function clearDebugLogs() {
   buffer.splice(0, buffer.length);
 }

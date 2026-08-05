@@ -10,6 +10,7 @@ type Confirmation = {
 const memory = new Map<string, Confirmation>();
 let schemaReady = false;
 
+/** 生成操作指纹（工具+参数+上下文），用于幂等确认。 */
 export function operationHash(toolName: string, input: unknown, context: { userId?: string; tenantId?: string; projectId?: string }) {
   const sanitized = input && typeof input === 'object' ? { ...(input as Record<string, unknown>), confirmationToken: undefined } : input;
   return createHash('sha256').update(JSON.stringify({ toolName, input: sanitized, userId: context.userId || '', tenantId: context.tenantId || '', projectId: context.projectId || '' })).digest('hex');
@@ -35,6 +36,7 @@ async function database<T>(action: (client: Client) => Promise<T>): Promise<T | 
   } finally { await client.end().catch(() => undefined); }
 }
 
+/** 签发一次性确认令牌。 */
 export async function issueConfirmation(input: Omit<Confirmation, 'token' | 'expiresAt' | 'used'>) {
   const value: Confirmation = { ...input, token: `confirm_${randomUUID()}`, expiresAt: Date.now() + 5 * 60_000, used: false };
   const saved = await database(async (client) => {
@@ -45,6 +47,7 @@ export async function issueConfirmation(input: Omit<Confirmation, 'token' | 'exp
   return { token: value.token, expiresAt: new Date(value.expiresAt).toISOString() };
 }
 
+/** 消费确认令牌：参数必须与签发时完全一致。 */
 export async function consumeConfirmation(token: string, expected: Omit<Confirmation, 'token' | 'expiresAt' | 'used'>) {
   if (!token) return false;
   const consumed = await database(async (client) => {

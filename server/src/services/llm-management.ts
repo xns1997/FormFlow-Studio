@@ -75,6 +75,7 @@ function masterKey() {
   return createHash('sha256').update(raw).digest();
 }
 
+/** 加密 LLM 密钥（应用级密钥派生）。 */
 export function encryptLlmSecret(value: string) {
   if (!value) return undefined;
   const iv = randomBytes(12);
@@ -84,6 +85,7 @@ export function encryptLlmSecret(value: string) {
   return `v1.${iv.toString('base64url')}.${tag.toString('base64url')}.${ciphertext.toString('base64url')}`;
 }
 
+/** 解密 LLM 密钥（失败返回 undefined）。 */
 export function decryptLlmSecret(value?: string) {
   if (!value) return '';
   const [version, iv, tag, ciphertext] = value.split('.');
@@ -177,11 +179,13 @@ function validateAgentDefinition(definition: AgentDefinition['definition']) {
   for (const edge of definition.edges || []) if (!ids.includes(edge.source) || !ids.includes(edge.target)) throw new Error(`Agent 边引用不存在的节点：${edge.source} -> ${edge.target}`);
 }
 
+/** 脱敏后的 Provider 配置（不含密钥）。 */
 export function publicProvider(provider: ProviderConfig) {
   const { encryptedApiKey, ...safe } = provider;
   return { ...safe, apiKeyConfigured: !!encryptedApiKey, apiKeyMasked: encryptedApiKey ? '••••••••' : '' };
 }
 
+/** LLM Provider 配置管理（列表/增删改/连接测试）。 */
 export const llmManagement = {
   getRuleAgentSettings(context: ScopeContext) { const settings = readStore().ruleAgent; if (!this.getProfile(settings.profileId, context)?.enabled) return { ...settings, profileId: 'default-cloud' }; return settings; },
   saveRuleAgentSettings(input: Partial<RuleAgentSettings>, context: ScopeContext) { const store = readStore(); const profileId = String(input.profileId || store.ruleAgent.profileId); if (!this.getProfile(profileId, context)?.enabled) throw new Error('规则智能体引用的模型 Profile 不存在或已禁用'); store.ruleAgent = { enabled: input.enabled ?? store.ruleAgent.enabled, profileId, maxIterations: Math.min(Math.max(Number(input.maxIterations || store.ruleAgent.maxIterations), 2), 32), updatedAt: now() }; writeStore(store); return store.ruleAgent; },

@@ -12,6 +12,7 @@ export interface RuleAgentSession {
 let pool: Pool | undefined;
 const memory = new Map<string, RuleAgentSession>();
 
+/** 初始化规则智能体会话存储。 */
 export async function initRuleAgentStore() {
   if (!env.databaseUrl || pool) return Boolean(pool);
   const candidate = new Pool({ connectionString: env.databaseUrl, max: 4, connectionTimeoutMillis: 3_000 });
@@ -35,6 +36,7 @@ function rowToSession(row: any): RuleAgentSession {
   return { id: row.id, tenantId: row.tenant_id, userId: row.user_id, projectId: row.project_id, formId: row.form_id, title: row.title, profileId: row.profile_id, messages: row.messages || [], proposals: row.proposals || [], archived: row.archived, createdAt: new Date(row.created_at).toISOString(), updatedAt: new Date(row.updated_at).toISOString() };
 }
 
+/** 创建规则智能体会话。 */
 export async function createRuleAgentSession(input: Pick<RuleAgentSession, 'tenantId' | 'userId' | 'projectId' | 'formId' | 'profileId'> & { title?: string }) {
   const now = new Date().toISOString();
   const session: RuleAgentSession = { ...input, id: `ras_${randomUUID()}`, title: input.title || '新对话', messages: [], proposals: [], archived: false, createdAt: now, updatedAt: now };
@@ -43,6 +45,7 @@ export async function createRuleAgentSession(input: Pick<RuleAgentSession, 'tena
   return session;
 }
 
+/** 列出表单下的规则会话。 */
 export async function listRuleAgentSessions(scope: { tenantId: string; userId: string; projectId: string; formId: string }) {
   if (pool) {
     const result = await pool.query('SELECT * FROM formflow_rule_agent_sessions WHERE tenant_id=$1 AND user_id=$2 AND project_id=$3 AND form_id=$4 AND archived=FALSE ORDER BY updated_at DESC LIMIT 50', [scope.tenantId, scope.userId, scope.projectId, scope.formId]);
@@ -51,11 +54,13 @@ export async function listRuleAgentSessions(scope: { tenantId: string; userId: s
   return [...memory.values()].filter((item) => !item.archived && item.tenantId === scope.tenantId && item.userId === scope.userId && item.projectId === scope.projectId && item.formId === scope.formId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
+/** 读取规则会话。 */
 export async function getRuleAgentSession(id: string) {
   if (pool) { const result = await pool.query('SELECT * FROM formflow_rule_agent_sessions WHERE id=$1', [id]); return result.rows[0] ? rowToSession(result.rows[0]) : undefined; }
   return memory.get(id);
 }
 
+/** 保存规则会话（含消息历史）。 */
 export async function saveRuleAgentSession(session: RuleAgentSession) {
   session.updatedAt = new Date().toISOString();
   if (pool) await pool.query('UPDATE formflow_rule_agent_sessions SET title=$2, profile_id=$3, messages=$4, proposals=$5, archived=$6, updated_at=NOW() WHERE id=$1', [session.id, session.title, session.profileId, JSON.stringify(session.messages), JSON.stringify(session.proposals), session.archived]);

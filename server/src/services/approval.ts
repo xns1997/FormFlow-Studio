@@ -42,6 +42,7 @@ function writeInstances(instances: ApprovalInstance[]) {
   writeFileSync(file, JSON.stringify(instances, null, 2));
 }
 
+/** 创建审批实例（状态机初始为 pending）。 */
 export function createApprovalInstance(input: {
   projectId: string;
   workflowId: string;
@@ -69,6 +70,7 @@ export function createApprovalInstance(input: {
   return instance;
 }
 
+/** 处理审批动作（approve/reject），推进状态机并记录历史。 */
 export function processApprovalAction(instanceId: string, userId: string, username: string, action: 'approve' | 'reject', comment?: string): ApprovalInstance | null {
   const instances = readInstances();
   const instance = instances.find((i) => i.id === instanceId);
@@ -101,10 +103,12 @@ export function processApprovalAction(instanceId: string, userId: string, userna
   return instance;
 }
 
+/** 读取审批实例。 */
 export function getApprovalInstance(id: string): ApprovalInstance | null {
   return readInstances().find((i) => i.id === id) || null;
 }
 
+/** 列出审批实例（可按项目过滤）。 */
 export function listApprovalInstances(projectId?: string): ApprovalInstance[] {
   let instances = readInstances();
   if (projectId) instances = instances.filter((i) => i.projectId === projectId);

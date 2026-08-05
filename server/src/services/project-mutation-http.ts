@@ -8,6 +8,7 @@ function header(req: AuthRequest, name: string): string {
   return Array.isArray(value) ? value[0] || '' : String(value || '');
 }
 
+/** 从请求提取写操作元数据（用户/租户/请求 ID）。 */
 export function projectWriteMetadata(req: AuthRequest) {
   return {
     baseRevision: header(req, 'if-match').replace(/^W\//, '').replace(/^"|"$/g, '') || String(req.body?.baseRevision || ''),
@@ -15,11 +16,13 @@ export function projectWriteMetadata(req: AuthRequest) {
   };
 }
 
+/** 在响应头写入最新 revision。 */
 export function setProjectRevision(res: Response, revision: string) {
   res.setHeader('etag', `"${revision}"`);
   res.setHeader('x-project-revision', revision);
 }
 
+/** 破坏性操作确认中间件：首次返回 confirmation_required，带 token 重试时放行。 */
 export async function requireDestructiveConfirmation(
   req: AuthRequest,
   res: Response,
@@ -57,6 +60,7 @@ export async function requireDestructiveConfirmation(
   return false;
 }
 
+/** 将项目变更错误映射为 HTTP 错误响应。 */
 export function sendProjectMutationError(res: Response, error: unknown) {
   if (error instanceof ProjectMutationError) {
     return res.status(error.status).json({ error: error.message, code: error.code, ...error.details });

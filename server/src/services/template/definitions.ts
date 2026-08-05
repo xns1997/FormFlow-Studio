@@ -73,6 +73,7 @@ const previewParameters = {
 };
 
 
+/** 内置操作模板定义（表单生成/数据导入等）。 */
 export const OPERATION_TEMPLATES: readonly OperationTemplateDefinition[] = [
   base({ id: 'single-table-entry', category: 'entry', name: '单表数据录入', description: '按字段生成校验、保存和重置表单。', selectionContract: { accepts: ['table', 'field'], minTables: 1, maxTables: 1, minFields: 1, requiresWritable: true }, parameterSchema: parameters(entryTemplateParameters), generation: { forms: 1, workflows: 1, behaviors: 2, outputs: 0, tests: 3, modifiesData: false, destructive: false } }),
   base({ id: 'single-table-lookup-edit', category: 'maintenance', name: '单表查询修改', description: '生成查询、回填、并发检查和更新能力。', selectionContract: { accepts: ['table', 'field'], minTables: 1, maxTables: 1, minFields: 1, requiresKey: true, requiresWritable: true }, parameterSchema: parameters(lookupEditTemplateParameters, ['queryFields', 'editableFields']), generation: { forms: 1, workflows: 2, behaviors: 2, outputs: 0, tests: 7, modifiesData: false, destructive: false } }),
@@ -137,6 +138,7 @@ export const OPERATION_TEMPLATES: readonly OperationTemplateDefinition[] = [
 ];
 
 
+/** 按 ID 查找操作模板（支持项目级覆写）。 */
 export function getOperationTemplate(id: string, project?: JsonObject): OperationTemplateDefinition {
   const template = [...OPERATION_TEMPLATES, ...(project?.customOperationTemplates || [])].find((item) => item.id === id);
   if (!template) throw toolError('TEMPLATE_NOT_FOUND', `模板 ${id} 不存在`, 'templateId');
@@ -144,6 +146,7 @@ export function getOperationTemplate(id: string, project?: JsonObject): Operatio
 }
 
 
+/** 校验并归一化导入的操作模板。 */
 export function validateImportedOperationTemplate(value: JsonObject): OperationTemplateDefinition {
   const categories = new Set(['entry', 'maintenance', 'cross-table', 'analysis', 'prediction', 'fragment', 'workflow']);
   if (!/^[A-Za-z0-9][A-Za-z0-9_-]{2,63}$/.test(String(value.id || ''))) throw toolError('INVALID_TEMPLATE_ID', '模板 ID 必须为 3～64 位 ASCII 字母、数字、下划线或连字符', 'templates.id');
@@ -157,8 +160,8 @@ export function validateImportedOperationTemplate(value: JsonObject): OperationT
 }
 
 
+/** 导出操作模板包（JSON 序列化）。 */
 export function exportOperationTemplatePackage(project: JsonObject, templateIds: string[]) {
   const templates = templateIds.map((id) => getOperationTemplate(id, project)); const payload = { kind: 'formflow-operation-template-package', formatVersion: 1, exportedAt: new Date().toISOString(), templates };
   return { ...payload, checksum: createHash('sha256').update(JSON.stringify(payload)).digest('hex') };
 }
-

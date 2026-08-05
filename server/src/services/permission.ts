@@ -8,8 +8,10 @@ const implied: Record<ProjectAccess, ProjectAccess[]> = {
   view: ['view'], run: ['view', 'run'], edit: ['view', 'run', 'edit'], manage: ['view', 'run', 'edit', 'manage'],
 };
 
+/** 读取项目的 ACL（兼容新旧字段位置）。 */
 export function projectAcl(project: any): ProjectAcl { return project?.config?.access || project?.access || {}; }
 
+/** 按 ACL 判断用户是否具备指定权限。 */
 export function canAccessProjectAcl(user: AuthUser | undefined, project: any, access: ProjectAccess) {
   const acl = projectAcl(project);
   if (!acl.ownerId && !acl.members) return true; // 兼容升级前的本地项目
@@ -19,10 +21,12 @@ export function canAccessProjectAcl(user: AuthUser | undefined, project: any, ac
   return grants.some((grant) => implied[grant].includes(access));
 }
 
+/** 项目访问判断：owner 放行，其余按 ACL 成员授权。 */
 export function canAccessProject(user: AuthUser | undefined, project: any, access: ProjectAccess) {
   return env.mode === 'local' || canAccessProjectAcl(user, project, access);
 }
 
+/** 设置项目成员授权（owner 不可被降级）。 */
 export function setProjectMember(project: any, userId: string, grants: ProjectAccess[]) {
   project.config.access ||= {};
   project.config.access.members ||= {};

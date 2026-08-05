@@ -61,6 +61,7 @@ async function connect(databaseUrl: string) {
   try { await client.query('SELECT 1'); } finally { await client.end(); }
 }
 
+/** 数据库连通性探针（返回版本与延迟）。 */
 export async function probeDatabase(databaseUrl = env.databaseUrl) {
   if (!databaseUrl) throw new Error('未配置 FORMFLOW_DATABASE_URL');
   const startedAt = Date.now();
@@ -103,6 +104,7 @@ function userInfoName() {
   return process.env.USER || process.env.USERNAME || 'formflow';
 }
 
+/** 确保数据库存在并初始化（含迁移与扩展）。 */
 export async function ensureDatabase(options: DatabaseBootstrapOptions = {}): Promise<DatabaseBootstrapResult> {
   const startedAt = Date.now();
   const databaseUrl = options.databaseUrl || env.databaseUrl;
