@@ -1,4 +1,5 @@
 import type { PropertyType, SchemaProperty, SchemaPort } from './excel-api-types';
+import * as executorRegistry from './executor-registry';
 
 export type UnifiedNodeKind = 'xlsx-method' | 'scenario' | 'generic' | 'behavior';
 
@@ -894,10 +895,10 @@ export async function loadNodeRegistry(): Promise<NodeRegistry> {
   if (registryPromise) return registryPromise;
 
   registryPromise = (async () => {
-    const [xlsxRoot, , executorRegistry, packageModules, nodePackageApi, pluginLoader] = await Promise.all([
+    const [xlsxRoot, , , packageModules, nodePackageApi, pluginLoader] = await Promise.all([
       loadXlsxModule(),
       import('./executors'),
-      import('./executor-registry'),
+      Promise.resolve(executorRegistry),
       import('./package-modules').catch(() => ({ schemaModules: {}, executorLoaders: {} })),
       import('./node-packages'),
       import('../src/services/config/pluginLoader'),

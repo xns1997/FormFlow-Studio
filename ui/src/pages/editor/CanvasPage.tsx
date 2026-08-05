@@ -23,7 +23,7 @@ import {
 import { loadNodeRegistry, type FlowNodeSpec, type NodeRegistry, type SchemaPort } from '../../flowRegistry';
 import type { SchemaProperty } from '../../../nodes/excel-api-types';
 import { useProjectStore } from '../../project/store';
-import { executeFlow, type FlowExecutionResult } from '../../services/engine/flowEngine';
+import { executeFlow, topologicalSort, type FlowExecutionResult, type NodeExecutionResult } from '../../services/engine/flowEngine';
 import { rangeToAddress } from '../../services/data/rangeResolver';
 import type { SrcTableEntry } from '../../project/types';
 import type { RangeRef } from '../../models';
@@ -870,7 +870,7 @@ export default function CanvasPage() {
   const [flowRunning, setFlowRunning] = useState(false);
   const [flowResult, setFlowResult] = useState<FlowExecutionResult | null>(null);
   const [debugNodeId, setDebugNodeId] = useState<string | null>(null);
-  const [stepResults, setStepResults] = useState<Map<string, import('../../services/engine/flowEngine').NodeExecutionResult>>(new Map());
+  const [stepResults, setStepResults] = useState<Map<string, NodeExecutionResult>>(new Map());
   const [rangeSelectorOpen, setRangeSelectorOpen] = useState(false);
   const [expandedOutput, setExpandedOutput] = useState<OutputPreviewTarget | null>(null);
   const [quickPicker, setQuickPicker] = useState<{
@@ -1511,7 +1511,6 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
 
   const stepFlow = useCallback(async () => {
     // Get topological order
-    const { topologicalSort } = await import('../../services/engine/flowEngine');
     const nodeDefs = nodes.map((n) => ({ id: n.id, specId: n.data.specId, position: n.position, data: n.data as Record<string, unknown> }));
     const edgeDefs = edges.map((e) => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle ?? undefined, targetHandle: e.targetHandle ?? undefined }));
     let sorted: typeof nodeDefs;
@@ -1525,9 +1524,7 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
     setDebugNodeId(nextNode.id);
     setNodes((prev) => prev.map((n) => ({ ...n, data: { ...n.data, debugActive: n.id === nextNode.id } })));
     // Execute just this node using upstream data
-    const result = await import('../../services/engine/flowEngine').then((m) =>
-      m.executeFlow(nodeDefs, edgeDefs, project?.srcTable || [], { targetNodeId: nextNode.id })
-    );
+    const result = await executeFlow(nodeDefs, edgeDefs, project?.srcTable || [], { targetNodeId: nextNode.id });
     const nr = result.nodeResults.get(nextNode.id);
     if (nr) {
       setStepResults((prev) => new Map(prev).set(nextNode.id, nr));
