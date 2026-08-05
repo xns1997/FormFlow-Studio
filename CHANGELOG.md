@@ -1,3 +1,10 @@
+## [1.11.2](https://github.com/xns1997/FormFlow-Studio/compare/v1.11.1...v1.11.2) (2026-08-05)
+
+
+### Bug Fixes
+
+* 添加筛选弹窗锚定到筛选栏，避免掉到表格区域下方 ([7595834](https://github.com/xns1997/FormFlow-Studio/commit/7595834258d6e511337dc5891f95b512cdfadb14))
+
 ## [1.11.1](https://github.com/xns1997/FormFlow-Studio/compare/v1.11.0...v1.11.1) (2026-08-05)
 
 
