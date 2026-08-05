@@ -9,6 +9,7 @@ export interface BehaviorExportData {
   behaviors: BehaviorFile[];
 }
 
+/** 行为导出为 JSON 文本。 */
 export function exportBehaviors(behaviors: BehaviorFile[]): string {
   const data: BehaviorExportData = {
     version: '1.0',
@@ -18,6 +19,7 @@ export function exportBehaviors(behaviors: BehaviorFile[]): string {
   return JSON.stringify(data, null, 2);
 }
 
+/** 从 JSON 导入行为（容错 + 错误收集）。 */
 export function importBehaviors(json: string): { behaviors: BehaviorFile[]; errors: string[] } {
   const errors: string[] = [];
   let behaviors: BehaviorFile[] = [];
@@ -69,6 +71,7 @@ export function importBehaviors(json: string): { behaviors: BehaviorFile[]; erro
   return { behaviors: validBehaviors, errors };
 }
 
+/** 下载行为 JSON 文件。 */
 export function downloadBehaviors(behaviors: BehaviorFile[], filename?: string): void {
   const json = exportBehaviors(behaviors);
   const blob = new Blob([json], { type: 'application/json' });
@@ -80,6 +83,7 @@ export function downloadBehaviors(behaviors: BehaviorFile[], filename?: string):
   URL.revokeObjectURL(url);
 }
 
+/** 读取文件为文本。 */
 export function readFileAsText(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

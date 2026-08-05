@@ -108,10 +108,12 @@ function applyProjectTableEffects(project: ProjectStructure, effects: TableRowSi
   };
 }
 
+/** 收集流程执行结果中的表行写回。 */
 export function collectTableRowWriteBacks(result: FlowExecutionResult): TableRowWriteBack[] {
   return collectFlowSideEffects(result).filter((effect): effect is TableRowWriteBack => effect.kind === 'upsert-table-row');
 }
 
+/** 应用预览流程副作用（仅内存，不落盘）。 */
 export function applyPreviewFlowSideEffects(project: ProjectStructure, effects: FlowSideEffect[]): PreviewFlowSideEffectResult {
   const tableEffects = effects.filter(isTableRowEffect);
   const formValuePatches = Object.fromEntries(
@@ -147,10 +149,12 @@ export function applyPreviewFlowSideEffects(project: ProjectStructure, effects: 
   };
 }
 
+/** 应用项目写回（表行变更到项目模型）。 */
 export function applyProjectWriteBacks(project: ProjectStructure, result: FlowExecutionResult) {
   return applyPreviewFlowSideEffects(project, collectFlowSideEffects(result));
 }
 
+/** 持久化表副作用（写回服务端）。 */
 export async function persistProjectTableSideEffects(
   projectId: string,
   effects: FlowSideEffect[],

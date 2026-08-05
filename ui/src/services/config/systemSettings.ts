@@ -90,6 +90,7 @@ export interface SystemSettings {
 
 const STORAGE_KEY = 'formflow_system_settings';
 
+/** 创建默认系统设置。 */
 export function createDefaultSystemSettings(): SystemSettings {
   return {
     general: {
@@ -168,6 +169,7 @@ export function createDefaultSystemSettings(): SystemSettings {
   };
 }
 
+/** 归一化系统设置（补默认值与校验）。 */
 export function normalizeSystemSettings(value: Partial<SystemSettings> | undefined): SystemSettings {
   const defaults = createDefaultSystemSettings();
   return {
@@ -203,6 +205,7 @@ function readStorage() {
   try { return localStorage.getItem(STORAGE_KEY); } catch { return null; }
 }
 
+/** 加载系统设置（localStorage）。 */
 export function loadSystemSettings(): SystemSettings {
   const raw = readStorage();
   if (!raw) return createDefaultSystemSettings();
@@ -214,6 +217,7 @@ export function loadSystemSettings(): SystemSettings {
   }
 }
 
+/** 保存系统设置。 */
 export function saveSystemSettings(settings: SystemSettings): SystemSettings {
   const next = normalizeSystemSettings({ ...settings, updatedAt: new Date().toISOString() });
   if (typeof localStorage !== 'undefined') {

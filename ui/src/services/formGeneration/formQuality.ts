@@ -46,6 +46,7 @@ function empty(value: unknown) {
   return value == null || value === '' || (Array.isArray(value) && value.length === 0);
 }
 
+/** 校验生成表单的值（类型/必填/约束）。 */
 export function validateGeneratedValues(components: DesignComponent[], values: Record<string, unknown>) {
   const errors: string[] = [];
   for (const component of components.filter((item) => FIELD_TYPES.has(item.type))) {
@@ -69,6 +70,7 @@ export function validateGeneratedValues(components: DesignComponent[], values: R
   return { valid: errors.length === 0, errors };
 }
 
+/** 由设计稿生成表单测试用例。 */
 export function generateFormTestCases(components: DesignComponent[], tables: SrcTableEntry[] = []): GeneratedFormTest[] {
   const fields = components.filter((item) => FIELD_TYPES.has(item.type) && fieldOf(item));
   const base = Object.fromEntries(fields.map((component) => [fieldOf(component), normalValue(component)]));
@@ -100,6 +102,7 @@ export function generateFormTestCases(components: DesignComponent[], tables: Src
   return cases;
 }
 
+/** 运行生成的表单测试。 */
 export function runGeneratedFormTests(components: DesignComponent[], tests: GeneratedFormTest[], tables: SrcTableEntry[] = []): GeneratedTestResult[] {
   return tests.map((item) => {
     const validation = validateGeneratedValues(components, item.values);
@@ -109,6 +112,7 @@ export function runGeneratedFormTests(components: DesignComponent[], tests: Gene
   });
 }
 
+/** 构建开发质量评分（绑定/校验/流程覆盖）。 */
 export function buildDevelopmentQuality(components: DesignComponent[], tables: SrcTableEntry[], workflows: WorkflowFile[]) {
   const diagnostics = diagnoseForm(components, tables, workflows);
   const tests = generateFormTestCases(components, tables);

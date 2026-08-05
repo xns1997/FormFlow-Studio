@@ -2,6 +2,7 @@ import type { BindingEdge, RuntimeState } from '../../models';
 import { setFormValue, getFormValue, setValidationError, clearValidationError } from './runtime';
 import { validateField } from './validator';
 
+/** 将表数据绑定到表单（按字段映射）。 */
 export function bindDataToForm(
   state: RuntimeState,
   bindings: BindingEdge[],
@@ -19,6 +20,7 @@ export function bindDataToForm(
   return next;
 }
 
+/** 收集表单相对原始值的变更。 */
 export function collectFormChanges(
   state: RuntimeState,
   bindings: BindingEdge[],
@@ -37,6 +39,7 @@ export function collectFormChanges(
   return changes;
 }
 
+/** 应用值转换函数（按名称）。 */
 export function applyTransform(value: unknown, transformFn?: string): unknown {
   if (!transformFn) return value;
   try {
@@ -47,6 +50,7 @@ export function applyTransform(value: unknown, transformFn?: string): unknown {
   }
 }
 
+/** 校验绑定完整性（字段/表/列存在）。 */
 export function validateBindings(
   state: RuntimeState,
   bindings: BindingEdge[],

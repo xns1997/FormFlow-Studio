@@ -1,5 +1,6 @@
 import type { SrcColumnInfo } from '../../project/types';
 
+/** 字段拖放提交事件名。 */
 export const FIELD_DROP_COMMITTED_EVENT = 'formflow:field-drop-committed';
 
 export interface DataFieldDragItem {
@@ -26,6 +27,7 @@ function option(type: string, reason: string): ControlRecommendation {
   return { type, label: LABELS[type] || type, reason };
 }
 
+/** 按列类型推荐控件列表。 */
 export function recommendControls(column: DataFieldDragItem['column']): ControlRecommendation[] {
   const samples = [...new Set((column.sampleValues || []).filter((value) => value != null && value !== '').map(String))];
   let candidates: ControlRecommendation[];
@@ -38,10 +40,12 @@ export function recommendControls(column: DataFieldDragItem['column']): ControlR
   return candidates;
 }
 
+/** 推荐首选控件。 */
 export function recommendedControl(column: DataFieldDragItem['column']) {
   return recommendControls(column)[0];
 }
 
+/** 由样本值生成控件选项。 */
 export function controlOptionsFromSamples(item: DataFieldDragItem, controlType: string) {
   if (!['select', 'radio', 'checkbox'].includes(controlType)) return undefined;
   return [...new Set((item.column.sampleValues || []).filter((value) => value != null && value !== ''))].map((value) => ({ label: String(value), value }));

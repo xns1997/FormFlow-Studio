@@ -9,6 +9,7 @@ export interface DocScreenshotDescriptor {
 
 export type LegacyDocSectionId = 'overview' | 'behavior' | 'form-design' | 'flow-nodes' | 'backend';
 
+/** 旧文档区块 → 新文档域映射。 */
 export const LEGACY_DOC_DOMAINS: Record<LegacyDocSectionId, DocDomain> = {
   overview: 'getting-started',
   behavior: 'behavior',
@@ -17,6 +18,7 @@ export const LEGACY_DOC_DOMAINS: Record<LegacyDocSectionId, DocDomain> = {
   backend: 'api',
 };
 
+/** 文档域 → 截图描述。 */
 export const DOC_SCREENSHOTS: Record<DocDomain, DocScreenshotDescriptor> = {
   'getting-started': { src: '/docs/screenshots/project-create.png', label: '创建项目向导' },
   data: { src: '/docs/screenshots/data-workspace.png', label: '数据工作区' },
@@ -32,6 +34,7 @@ export const DOC_SCREENSHOTS: Record<DocDomain, DocScreenshotDescriptor> = {
   api: { src: '/docs/screenshots/api-settings.png', label: 'Swagger API 参考' },
 };
 
+/** 特殊截图（登录/引导等非域截图）。 */
 export const DOC_SPECIAL_SCREENSHOTS = {
   'project-create': { src: '/docs/screenshots/project-create.png', label: '创建项目向导' },
   'project-details': { src: '/docs/screenshots/project-details.png', label: '项目基础信息' },
@@ -40,6 +43,7 @@ export const DOC_SPECIAL_SCREENSHOTS = {
   'release-check': { src: '/docs/screenshots/release-check.png', label: '发布门禁检查' },
 } satisfies Record<string, DocScreenshotDescriptor>;
 
+/** 获取文档条目截图描述。 */
 export function getDocScreenshot(entry: DocScreenshotEntry): DocScreenshotDescriptor {
   return DOC_SCREENSHOTS[entry.domain];
 }

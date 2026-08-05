@@ -5,11 +5,13 @@
  */
 import type { FlowEdgeDef } from './types';
 
+/** 从端口 handle 提取端口名（去除方向前缀）。 */
 export function extractPortName(handle: string | undefined, direction: 'in' | 'out'): string {
   if (!handle) return direction === 'in' ? '_args' : 'result';
   return handle.replace(/^(in:|out:)/, '');
 }
 
+/** 构建作用域映射（节点输出 → 变量）。 */
 export function buildScopeMap(
   nodeId: string,
   edges: FlowEdgeDef[],
@@ -26,6 +28,7 @@ export function buildScopeMap(
   return scope;
 }
 
+/** 收集节点输入（连线值 + 输入覆盖）。 */
 export function collectInputs(
   nodeId: string,
   edges: FlowEdgeDef[],
@@ -64,6 +67,7 @@ export function collectInputs(
   return inputs;
 }
 
+/** 解析端口的输入选择（edgeId）。 */
 export function resolveInputSelections(properties: Record<string, unknown>) {
   const raw = properties.__inputSelections;
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};

@@ -372,6 +372,7 @@ function openapiEntries(): DocEntry[] {
 }
 
 let cached: DocEntry[] | null = null;
+/** 加载文档目录（远程 + 缓存）。 */
 export async function loadDocCatalog(): Promise<DocEntry[]> {
   if (cached) return cached;
   const registry = await loadNodeRegistry();
@@ -408,6 +409,7 @@ function flatten(entry: DocEntry) {
     ...entry.blocks.flatMap((block) => [block.title, block.body || '', ...(block.fields || []).flatMap((field) => [field.name, field.type, field.description]), ...(block.examples || []).flatMap((example) => [example.title, example.code])]),
   ].join(' ');
 }
+/** 构建文档搜索索引。 */
 export function buildSearchIndex(entries: DocEntry[]): DocSearchDocument[] {
   return entries.map((entry) => {
     const searchableText = normalize(flatten(entry));
@@ -426,6 +428,7 @@ function fuzzyIncludes(haystack: string, needle: string) {
   for (const char of haystack) if (char === needle[cursor]) cursor += 1;
   return cursor === needle.length;
 }
+/** 搜索文档（关键词 + 类型/域过滤）。 */
 export function searchDocs(index: DocSearchDocument[], query: string, filters?: { kind?: DocKind; domain?: DocDomain }): DocSearchResult[] {
   const terms = normalize(query).split(' ').filter(Boolean);
   if (!terms.length) return [];
@@ -450,6 +453,7 @@ export function searchDocs(index: DocSearchDocument[], query: string, filters?: 
   return results;
 }
 
+/** 按类型/域与 slug 查找文档条目。 */
 export function findDoc(entries: DocEntry[], kindOrDomain: string | undefined, slug: string | undefined) {
   if (!slug) return undefined;
   const decoded = decodeURIComponent(slug);
