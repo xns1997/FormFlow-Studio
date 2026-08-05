@@ -20,7 +20,7 @@
   "outputs": [
     {
       "name": "result",
-      "type": "void",
+      "type": "any",
       "description": "加载完成"
     }
   ],
@@ -30,5 +30,22 @@
     "load",
     "加载自定义数字格式表",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "table",
+      "label": "table",
+      "type": "string",
+      "direction": "input",
+      "required": true,
+      "description": "格式表 JSON 字符串"
+    },
+    {
+      "name": "result",
+      "label": "result",
+      "type": "any",
+      "direction": "output",
+      "description": "加载完成"
+    }
   ]
 }

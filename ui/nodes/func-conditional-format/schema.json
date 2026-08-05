@@ -75,6 +75,25 @@
       "type": "color",
       "default": "#9C0006",
       "description": "满足条件时的字体颜色"
+    },
+    {
+      "name": "field",
+      "label": "field",
+      "type": "string",
+      "default": "",
+      "description": "配置项：field"
+    },
+    {
+      "name": "value",
+      "label": "value",
+      "type": "any",
+      "description": "配置项：value"
+    },
+    {
+      "name": "condition",
+      "label": "condition",
+      "type": "object",
+      "description": "配置项：condition"
     }
   ],
   "inputs": [

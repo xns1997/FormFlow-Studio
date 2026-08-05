@@ -50,6 +50,20 @@
       "type": "number",
       "default": 320,
       "description": "图表高度（像素）"
+    },
+    {
+      "name": "xField",
+      "label": "xField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：xField"
+    },
+    {
+      "name": "yField",
+      "label": "yField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：yField"
     }
   ],
   "inputs": [
@@ -70,6 +84,12 @@
       "type": "string",
       "required": false,
       "description": "标题覆盖"
+    },
+    {
+      "name": "data",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：data"
     }
   ],
   "outputs": [
@@ -120,6 +140,14 @@
       "type": "string",
       "direction": "output",
       "description": "图表名"
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：data"
     }
   ],
   "keywords": [

@@ -12,7 +12,7 @@
   "inputs": [
     {
       "name": "data",
-      "type": "unknown[][]",
+      "type": "array",
       "required": true,
       "description": "二维数组，每行是一个数组"
     }
@@ -20,7 +20,7 @@
   "outputs": [
     {
       "name": "worksheet",
-      "type": "Worksheet",
+      "type": "worksheet",
       "description": "生成的工作表对象"
     }
   ],
@@ -68,5 +68,22 @@
     "sheet",
     "to",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "data",
+      "label": "data",
+      "type": "array",
+      "direction": "input",
+      "required": true,
+      "description": "二维数组，每行是一个数组"
+    },
+    {
+      "name": "worksheet",
+      "label": "worksheet",
+      "type": "worksheet",
+      "direction": "output",
+      "description": "生成的工作表对象"
+    }
   ]
 }

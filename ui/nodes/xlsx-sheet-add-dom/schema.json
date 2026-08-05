@@ -12,13 +12,13 @@
   "inputs": [
     {
       "name": "worksheet",
-      "type": "Worksheet",
+      "type": "worksheet",
       "required": true,
       "description": "目标工作表"
     },
     {
       "name": "table",
-      "type": "HTMLTableElement",
+      "type": "object",
       "required": true,
       "description": "要追加的 DOM Table 元素"
     }
@@ -26,7 +26,7 @@
   "outputs": [
     {
       "name": "worksheet",
-      "type": "Worksheet",
+      "type": "worksheet",
       "description": "追加后的工作表"
     }
   ],
@@ -62,5 +62,30 @@
     "table",
     "dom",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "worksheet",
+      "label": "worksheet",
+      "type": "worksheet",
+      "direction": "input",
+      "required": true,
+      "description": "目标工作表"
+    },
+    {
+      "name": "table",
+      "label": "table",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "要追加的 DOM Table 元素"
+    },
+    {
+      "name": "worksheet",
+      "label": "worksheet",
+      "type": "worksheet",
+      "direction": "output",
+      "description": "追加后的工作表"
+    }
   ]
 }

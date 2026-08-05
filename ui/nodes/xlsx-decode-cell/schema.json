@@ -20,7 +20,7 @@
   "outputs": [
     {
       "name": "cell",
-      "type": "CellAddress",
+      "type": "cell",
       "description": "单元格坐标 {r: 行号, c: 列号}，从 0 开始"
     }
   ],
@@ -33,5 +33,22 @@
     "a",
     "格式的单元格地址解析成坐标对象",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "address",
+      "label": "address",
+      "type": "string",
+      "direction": "input",
+      "required": true,
+      "description": "A1 格式的单元格地址，如 'A1', 'C5'"
+    },
+    {
+      "name": "cell",
+      "label": "cell",
+      "type": "cell",
+      "direction": "output",
+      "description": "单元格坐标 {r: 行号, c: 列号}，从 0 开始"
+    }
   ]
 }

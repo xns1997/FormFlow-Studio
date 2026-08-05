@@ -5,13 +5,51 @@
   "category": "行为 · 事件",
   "kind": "generic",
   "methods": [],
-  "properties": [],
+  "properties": [
+    {
+      "name": "sheetName",
+      "label": "sheetName",
+      "type": "string",
+      "default": "",
+      "description": "配置项：sheetName"
+    }
+  ],
   "inputs": [
     {
       "name": "trigger",
       "type": "trigger",
       "required": true,
       "description": "触发信号"
+    },
+    {
+      "name": "sheetName",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：sheetName"
+    },
+    {
+      "name": "rowIndex",
+      "type": "number",
+      "required": false,
+      "description": "数据输入：rowIndex"
+    },
+    {
+      "name": "formData",
+      "type": "object",
+      "required": false,
+      "description": "数据输入：formData"
+    },
+    {
+      "name": "data",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "fields",
+      "type": "array",
+      "required": false,
+      "description": "数据输入：fields"
     }
   ],
   "outputs": [
@@ -52,6 +90,54 @@
       "type": "string",
       "direction": "output",
       "description": "Sheet 名"
+    },
+    {
+      "name": "trigger",
+      "label": "trigger",
+      "type": "trigger",
+      "direction": "input",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "sheetName",
+      "label": "sheetName",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：sheetName"
+    },
+    {
+      "name": "rowIndex",
+      "label": "rowIndex",
+      "type": "number",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：rowIndex"
+    },
+    {
+      "name": "formData",
+      "label": "formData",
+      "type": "object",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：formData"
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "fields",
+      "label": "fields",
+      "type": "array",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：fields"
     }
   ],
   "keywords": [

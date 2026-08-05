@@ -42,5 +42,22 @@
     "parse",
     "code",
     "SSF"
+  ],
+  "ports": [
+    {
+      "name": "num",
+      "label": "num",
+      "type": "number",
+      "direction": "input",
+      "required": true,
+      "description": "Excel 日期序列号"
+    },
+    {
+      "name": "date",
+      "label": "date",
+      "type": "object",
+      "direction": "output",
+      "description": "解析后的日期对象 {y, m, d, D, T}"
+    }
   ]
 }

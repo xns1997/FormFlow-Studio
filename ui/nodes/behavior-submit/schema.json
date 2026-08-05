@@ -37,7 +37,12 @@
       "name": "writeBackMode",
       "label": "元数据写回",
       "type": "enum",
-      "enum": ["none", "insert", "update", "upsert"],
+      "enum": [
+        "none",
+        "insert",
+        "update",
+        "upsert"
+      ],
       "default": "none",
       "description": "按主键更新或新增项目数据表行"
     },
@@ -71,6 +76,40 @@
       "type": "json",
       "default": {},
       "description": "表单字段名到数据表列名的映射"
+    },
+    {
+      "name": "refreshOriginalFieldMap",
+      "label": "refreshOriginalFieldMap",
+      "type": "boolean",
+      "default": false,
+      "description": "配置项：refreshOriginalFieldMap"
+    },
+    {
+      "name": "dirtyOnly",
+      "label": "dirtyOnly",
+      "type": "boolean",
+      "default": false,
+      "description": "配置项：dirtyOnly"
+    },
+    {
+      "name": "conflictPolicy",
+      "label": "conflictPolicy",
+      "type": "string",
+      "default": "",
+      "description": "配置项：conflictPolicy"
+    },
+    {
+      "name": "conflictCheckFields",
+      "label": "conflictCheckFields",
+      "type": "array",
+      "description": "配置项：conflictCheckFields"
+    },
+    {
+      "name": "refetchAfterSave",
+      "label": "refetchAfterSave",
+      "type": "boolean",
+      "default": false,
+      "description": "配置项：refetchAfterSave"
     }
   ],
   "inputs": [

@@ -27,6 +27,12 @@
       "type": "trigger",
       "required": true,
       "description": "触发信号"
+    },
+    {
+      "name": "tabName",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：tabName"
     }
   ],
   "outputs": [
@@ -63,6 +69,14 @@
       "type": "string",
       "direction": "output",
       "description": "目标 Tab"
+    },
+    {
+      "name": "tabName",
+      "label": "tabName",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：tabName"
     }
   ],
   "keywords": [

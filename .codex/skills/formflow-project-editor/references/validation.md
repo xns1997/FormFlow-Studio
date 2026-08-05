@@ -10,7 +10,8 @@
 ## Reference gates
 
 - Require edge endpoints to exist in the same workflow.
-- Validate catalogued source/target handles against `node-ports-v2.json`.
+- Validate catalogued source/target handles against `node-ports-v2.json`（含端口类型；同族类型/`any` 视为兼容，否则报 `INVALID_EDGE_TYPE`）。
+- 动态端口节点（`workflow:import`/`workflow:export`/`generic:custom-js`）按节点 `data` 中的 `outputPorts`/`inputPorts`/`ports` 解析额外端口，不误判为不存在。
 - Require form flow triggers and linkage `runWorkflow` actions to reference existing workflows.
 - Require `release.defaultFormId` and sheet behavior table/sheet pairs to exist.
 - Require component `parentId` and `children` references to remain inside the same form.

@@ -1,1242 +1,5390 @@
 {
   "behavior-api-request": {
     "inputs": [
-      "body",
-      "trigger",
-      "url"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "url",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "body",
+        "type": "object",
+        "required": false
+      }
     ],
     "outputs": [
-      "error",
-      "response",
-      "status",
-      "success"
+      {
+        "name": "success",
+        "type": "any"
+      },
+      {
+        "name": "error",
+        "type": "any"
+      },
+      {
+        "name": "response",
+        "type": "object"
+      },
+      {
+        "name": "status",
+        "type": "number"
+      }
     ]
   },
   "behavior-calculate": {
     "inputs": [
-      "a",
-      "b",
-      "c",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "a",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "b",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "c",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "result",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "result",
+        "type": "any"
+      }
     ]
   },
   "behavior-clear-field": {
     "inputs": [
-      "fieldName",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "fieldName",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "fieldName",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "fieldName",
+        "type": "string"
+      }
     ]
   },
   "behavior-compose-message": {
     "inputs": [
-      "record"
+      {
+        "name": "record",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "template",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "values",
+        "type": "object",
+        "required": false
+      }
     ],
     "outputs": [
-      "message"
+      {
+        "name": "message",
+        "type": "string"
+      }
     ]
   },
   "behavior-condition": {
     "inputs": [
-      "compareValue",
-      "trigger",
-      "value"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "value",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "compareValue",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "false",
-      "true"
+      {
+        "name": "true",
+        "type": "any"
+      },
+      {
+        "name": "false",
+        "type": "any"
+      },
+      {
+        "name": "value",
+        "type": "any"
+      }
     ]
   },
   "behavior-data-query": {
     "inputs": [
-      "sheetName",
-      "trigger",
-      "workbook"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "workbook",
+        "type": "workbook",
+        "required": true
+      },
+      {
+        "name": "sheetName",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "tableId",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "filter",
+        "type": "filter",
+        "required": false
+      }
     ],
     "outputs": [
-      "count",
-      "data",
-      "headers",
-      "result",
-      "sheetName",
-      "tableId",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "data",
+        "type": "json-rows"
+      },
+      {
+        "name": "result",
+        "type": "json-rows"
+      },
+      {
+        "name": "count",
+        "type": "number"
+      },
+      {
+        "name": "headers",
+        "type": "array"
+      },
+      {
+        "name": "tableId",
+        "type": "string"
+      },
+      {
+        "name": "sheetName",
+        "type": "string"
+      }
     ]
   },
   "behavior-delay": {
     "inputs": [
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      }
     ],
     "outputs": [
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any"
+      }
     ]
   },
   "behavior-fill-form": {
     "inputs": [
-      "record"
+      {
+        "name": "record",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "fieldMap",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "originalFieldMap",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "enableComponentIds",
+        "type": "array",
+        "required": false
+      }
     ],
     "outputs": [
-      "appliedFields",
-      "matched"
+      {
+        "name": "matched",
+        "type": "boolean"
+      },
+      {
+        "name": "appliedFields",
+        "type": "array"
+      }
     ]
+  },
+  "behavior-js-script": {
+    "inputs": [
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": false
+      }
+    ],
+    "outputs": []
   },
   "behavior-log": {
     "inputs": [
-      "data",
-      "message",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "message",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any"
+      }
     ]
   },
   "behavior-loop": {
     "inputs": [
-      "items",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "items",
+        "type": "array",
+        "required": false
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "done",
-      "each",
-      "index",
-      "item"
+      {
+        "name": "each",
+        "type": "any"
+      },
+      {
+        "name": "done",
+        "type": "any"
+      },
+      {
+        "name": "item",
+        "type": "any"
+      },
+      {
+        "name": "index",
+        "type": "number"
+      }
     ]
   },
   "behavior-next-sequence": {
     "inputs": [
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "trigger",
+        "required": false
+      }
     ],
     "outputs": [
-      "value"
+      {
+        "name": "value",
+        "type": "number"
+      }
     ]
   },
   "behavior-notify": {
     "inputs": [
-      "data",
-      "status"
+      {
+        "name": "status",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "data",
+        "type": "object",
+        "required": false
+      }
     ],
     "outputs": [
-      "sent"
+      {
+        "name": "sent",
+        "type": "object"
+      }
     ]
   },
   "behavior-on-button-click": {
-    "inputs": [],
+    "inputs": [
+      {
+        "name": "trigger",
+        "type": "trigger",
+        "required": true
+      },
+      {
+        "name": "buttonName",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "formData",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "rowIndex",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "sheetName",
+        "type": "string",
+        "required": false
+      }
+    ],
     "outputs": [
-      "buttonName",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "buttonName",
+        "type": "string"
+      }
     ]
   },
   "behavior-on-field-change": {
-    "inputs": [],
+    "inputs": [
+      {
+        "name": "trigger",
+        "type": "trigger",
+        "required": true
+      },
+      {
+        "name": "fieldName",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "value",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "oldValue",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "rowIndex",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "sheetName",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "formData",
+        "type": "object",
+        "required": false
+      }
+    ],
     "outputs": [
-      "fieldName",
-      "newValue",
-      "oldValue",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "oldValue",
+        "type": "any"
+      },
+      {
+        "name": "newValue",
+        "type": "any"
+      },
+      {
+        "name": "fieldName",
+        "type": "string"
+      }
     ]
   },
   "behavior-on-form-load": {
-    "inputs": [],
+    "inputs": [
+      {
+        "name": "trigger",
+        "type": "trigger",
+        "required": true
+      },
+      {
+        "name": "sheetName",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "rowIndex",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "formData",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "fields",
+        "type": "array",
+        "required": false
+      }
+    ],
     "outputs": [
-      "rowData",
-      "sheetName",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "rowData",
+        "type": "object"
+      },
+      {
+        "name": "sheetName",
+        "type": "string"
+      }
     ]
   },
   "behavior-on-row-load": {
-    "inputs": [],
+    "inputs": [
+      {
+        "name": "trigger",
+        "type": "trigger",
+        "required": true
+      },
+      {
+        "name": "rowIndex",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "rowData",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "sheetName",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "totalRows",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "formData",
+        "type": "object",
+        "required": false
+      }
+    ],
     "outputs": [
-      "rowData",
-      "rowIndex",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "rowData",
+        "type": "object"
+      },
+      {
+        "name": "rowIndex",
+        "type": "number"
+      }
     ]
   },
   "behavior-on-submit": {
-    "inputs": [],
+    "inputs": [
+      {
+        "name": "trigger",
+        "type": "trigger",
+        "required": true
+      },
+      {
+        "name": "formData",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "rowIndex",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "sheetName",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "changedFields",
+        "type": "array",
+        "required": false
+      }
+    ],
     "outputs": [
-      "formData",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "formData",
+        "type": "object"
+      }
     ]
   },
   "behavior-on-validate": {
     "inputs": [
-      "value"
+      {
+        "name": "value",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "trigger",
+        "type": "trigger",
+        "required": true
+      },
+      {
+        "name": "formData",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "errors",
+        "type": "array",
+        "required": false
+      },
+      {
+        "name": "rowIndex",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "sheetName",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "isValid",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "isValid",
+        "type": "boolean"
+      },
+      {
+        "name": "value",
+        "type": "any"
+      }
     ]
   },
   "behavior-query-list": {
     "inputs": [
-      "criteria"
+      {
+        "name": "criteria",
+        "type": "object",
+        "required": false
+      }
     ],
     "outputs": [
-      "count",
-      "message",
-      "rows"
+      {
+        "name": "rows",
+        "type": "json-rows"
+      },
+      {
+        "name": "count",
+        "type": "number"
+      },
+      {
+        "name": "message",
+        "type": "string"
+      }
     ]
   },
   "behavior-refresh-data": {
     "inputs": [
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      }
     ],
     "outputs": [
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any"
+      }
     ]
   },
   "behavior-require-fields": {
     "inputs": [
-      "formData",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "trigger",
+        "required": false
+      },
+      {
+        "name": "formData",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "fields",
+        "type": "array",
+        "required": false
+      },
+      {
+        "name": "values",
+        "type": "object",
+        "required": false
+      }
     ],
     "outputs": [
-      "firstMissingField",
-      "missingFields",
-      "valid"
+      {
+        "name": "valid",
+        "type": "boolean"
+      },
+      {
+        "name": "missingFields",
+        "type": "array"
+      },
+      {
+        "name": "firstMissingField",
+        "type": "string"
+      }
     ]
   },
   "behavior-reset-form": {
     "inputs": [
-      "formData",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "trigger",
+        "required": false
+      },
+      {
+        "name": "formData",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "clearFields",
+        "type": "array",
+        "required": false
+      },
+      {
+        "name": "preserveFields",
+        "type": "array",
+        "required": false
+      },
+      {
+        "name": "defaults",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "values",
+        "type": "object",
+        "required": false
+      }
     ],
     "outputs": [
-      "patch"
+      {
+        "name": "patch",
+        "type": "json"
+      }
     ]
   },
   "behavior-row-lookup": {
     "inputs": [
-      "filter"
+      {
+        "name": "filter",
+        "type": "object",
+        "required": true
+      }
     ],
     "outputs": [
-      "matched",
-      "message",
-      "row"
+      {
+        "name": "matched",
+        "type": "boolean"
+      },
+      {
+        "name": "row",
+        "type": "object"
+      },
+      {
+        "name": "message",
+        "type": "string"
+      }
     ]
   },
   "behavior-schedule-trigger": {
     "inputs": [],
     "outputs": [
-      "scheduledAt",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "scheduledAt",
+        "type": "string"
+      }
     ]
   },
   "behavior-set-default": {
     "inputs": [
-      "defaultValue",
-      "fieldName",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "fieldName",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "defaultValue",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "fieldName",
-      "trigger",
-      "value"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "fieldName",
+        "type": "string"
+      },
+      {
+        "name": "value",
+        "type": "any"
+      }
     ]
   },
   "behavior-set-disabled": {
     "inputs": [
-      "componentId",
-      "disabled",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "componentId",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
+        "required": false
+      }
     ],
     "outputs": [
-      "componentId",
-      "disabled",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "componentId",
+        "type": "string"
+      },
+      {
+        "name": "disabled",
+        "type": "boolean"
+      }
     ]
   },
   "behavior-set-required": {
     "inputs": [
-      "fieldName",
-      "required",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "fieldName",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "required",
+        "type": "boolean",
+        "required": false
+      }
     ],
     "outputs": [
-      "fieldName",
-      "required",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "fieldName",
+        "type": "string"
+      },
+      {
+        "name": "required",
+        "type": "boolean"
+      }
     ]
   },
   "behavior-set-value": {
     "inputs": [
-      "fieldName",
-      "trigger",
-      "value"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "value",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "fieldName",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "fieldName",
-      "trigger",
-      "value"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "fieldName",
+        "type": "string"
+      },
+      {
+        "name": "value",
+        "type": "any"
+      }
     ]
   },
   "behavior-set-values": {
     "inputs": [
-      "count",
-      "message",
-      "record",
-      "records"
+      {
+        "name": "record",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "records",
+        "type": "json-rows",
+        "required": false
+      },
+      {
+        "name": "count",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "message",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "fieldMap",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "staticPatch",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "emptyPatch",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "appliedFields",
-      "patch"
+      {
+        "name": "appliedFields",
+        "type": "array"
+      },
+      {
+        "name": "patch",
+        "type": "json"
+      }
     ]
   },
   "behavior-set-visible": {
     "inputs": [
-      "componentId",
-      "trigger",
-      "visible"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "componentId",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "visible",
+        "type": "boolean",
+        "required": false
+      }
     ],
     "outputs": [
-      "componentId",
-      "trigger",
-      "visible"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "componentId",
+        "type": "string"
+      },
+      {
+        "name": "visible",
+        "type": "boolean"
+      }
     ]
   },
   "behavior-show-message": {
     "inputs": [
-      "message",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "message",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "message",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "message",
+        "type": "string"
+      }
     ]
   },
   "behavior-stop": {
     "inputs": [
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      }
     ],
     "outputs": []
   },
   "behavior-switch-tab": {
     "inputs": [
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "tabName",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "tabName",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "tabName",
+        "type": "string"
+      }
     ]
   },
   "behavior-upsert-table-row": {
     "inputs": [
-      "row"
+      {
+        "name": "row",
+        "type": "object",
+        "required": true
+      },
+      {
+        "name": "tableId",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "sheetName",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "keyField",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "keyValueExpr",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "keyValue",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "keyValue",
-      "writeBack"
+      {
+        "name": "writeBack",
+        "type": "object"
+      },
+      {
+        "name": "keyValue",
+        "type": "any"
+      }
     ]
   },
   "behavior-validate": {
     "inputs": [
-      "fieldName",
-      "trigger",
-      "value"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "value",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "fieldName",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "errorMessage",
-      "failed",
-      "passed"
+      {
+        "name": "passed",
+        "type": "any"
+      },
+      {
+        "name": "failed",
+        "type": "any"
+      },
+      {
+        "name": "errorMessage",
+        "type": "string"
+      }
     ]
   },
   "behavior:submit": {
     "inputs": [
-      "formData",
-      "originalData",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "formData",
+        "type": "object",
+        "required": true
+      },
+      {
+        "name": "originalData",
+        "type": "object",
+        "required": false
+      }
     ],
     "outputs": [
-      "changeLog",
-      "error",
-      "fileData",
-      "success",
-      "writeBack"
+      {
+        "name": "success",
+        "type": "any"
+      },
+      {
+        "name": "error",
+        "type": "any"
+      },
+      {
+        "name": "changeLog",
+        "type": "object"
+      },
+      {
+        "name": "fileData",
+        "type": "any"
+      },
+      {
+        "name": "writeBack",
+        "type": "object"
+      }
+    ]
+  },
+  "data:anomaly-score": {
+    "inputs": [
+      {
+        "name": "rows",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "fields",
+        "type": "array",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "rows",
+        "type": "json-rows"
+      },
+      {
+        "name": "result",
+        "type": "any"
+      },
+      {
+        "name": "chart",
+        "type": "object"
+      },
+      {
+        "name": "summary",
+        "type": "object"
+      },
+      {
+        "name": "message",
+        "type": "string"
+      }
+    ]
+  },
+  "data:correlation-matrix": {
+    "inputs": [
+      {
+        "name": "rows",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "fields",
+        "type": "array",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "rows",
+        "type": "json-rows"
+      },
+      {
+        "name": "result",
+        "type": "any"
+      },
+      {
+        "name": "chart",
+        "type": "object"
+      },
+      {
+        "name": "summary",
+        "type": "object"
+      },
+      {
+        "name": "message",
+        "type": "string"
+      }
+    ]
+  },
+  "data:group-aggregate": {
+    "inputs": [
+      {
+        "name": "rows",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "dimensions",
+        "type": "array",
+        "required": false
+      },
+      {
+        "name": "metrics",
+        "type": "array",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "rows",
+        "type": "json-rows"
+      },
+      {
+        "name": "result",
+        "type": "any"
+      },
+      {
+        "name": "chart",
+        "type": "object"
+      },
+      {
+        "name": "summary",
+        "type": "object"
+      },
+      {
+        "name": "message",
+        "type": "string"
+      }
+    ]
+  },
+  "data:kpi-dashboard": {
+    "inputs": [
+      {
+        "name": "rows",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "metrics",
+        "type": "array",
+        "required": false
+      },
+      {
+        "name": "dimensions",
+        "type": "array",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "summaryRows",
+        "type": "json-rows"
+      },
+      {
+        "name": "groupedRows",
+        "type": "json-rows"
+      },
+      {
+        "name": "summary",
+        "type": "object"
+      },
+      {
+        "name": "chart",
+        "type": "object"
+      },
+      {
+        "name": "message",
+        "type": "string"
+      },
+      {
+        "name": "result",
+        "type": "any"
+      }
+    ]
+  },
+  "data:lookup-join": {
+    "inputs": [
+      {
+        "name": "left",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "right",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "rows",
+        "type": "json-rows",
+        "required": false
+      },
+      {
+        "name": "reference",
+        "type": "json-rows",
+        "required": false
+      },
+      {
+        "name": "criteria",
+        "type": "any",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "rows",
+        "type": "json-rows"
+      },
+      {
+        "name": "matchedCount",
+        "type": "number"
+      }
+    ]
+  },
+  "data:map-fields": {
+    "inputs": [
+      {
+        "name": "record",
+        "type": "object",
+        "required": true
+      },
+      {
+        "name": "fieldMap",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "defaults",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "transforms",
+        "type": "array",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "record",
+        "type": "object"
+      },
+      {
+        "name": "result",
+        "type": "object"
+      },
+      {
+        "name": "fields",
+        "type": "array"
+      }
+    ]
+  },
+  "data:master-detail": {
+    "inputs": [
+      {
+        "name": "masters",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "details",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "left",
+        "type": "json-rows",
+        "required": false
+      },
+      {
+        "name": "right",
+        "type": "json-rows",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "rows",
+        "type": "json-rows"
+      },
+      {
+        "name": "detailCount",
+        "type": "number"
+      }
+    ]
+  },
+  "data:pivot-matrix": {
+    "inputs": [
+      {
+        "name": "rows",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "rowDimension",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "columnDimension",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "metric",
+        "type": "string",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "rows",
+        "type": "json-rows"
+      },
+      {
+        "name": "result",
+        "type": "any"
+      },
+      {
+        "name": "chart",
+        "type": "object"
+      },
+      {
+        "name": "summary",
+        "type": "object"
+      },
+      {
+        "name": "message",
+        "type": "string"
+      }
+    ]
+  },
+  "data:profile-overview": {
+    "inputs": [
+      {
+        "name": "rows",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "fields",
+        "type": "array",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "profile",
+        "type": "array"
+      },
+      {
+        "name": "summary",
+        "type": "object"
+      },
+      {
+        "name": "chart",
+        "type": "object"
+      },
+      {
+        "name": "message",
+        "type": "string"
+      },
+      {
+        "name": "result",
+        "type": "any"
+      },
+      {
+        "name": "rows",
+        "type": "json-rows"
+      }
+    ]
+  },
+  "data:qualified-join-group": {
+    "inputs": [
+      {
+        "name": "left",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "right",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "rows",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "reference",
+        "type": "any",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "rows",
+        "type": "json-rows"
+      },
+      {
+        "name": "result",
+        "type": "any"
+      },
+      {
+        "name": "joinedRows",
+        "type": "json-rows"
+      },
+      {
+        "name": "chart",
+        "type": "object"
+      },
+      {
+        "name": "summary",
+        "type": "object"
+      },
+      {
+        "name": "message",
+        "type": "string"
+      }
+    ]
+  },
+  "data:transaction-write": {
+    "inputs": [
+      {
+        "name": "formData",
+        "type": "object",
+        "required": true
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "targets",
+        "type": "array",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "result",
+        "type": "array"
+      },
+      {
+        "name": "success",
+        "type": "boolean"
+      },
+      {
+        "name": "diff",
+        "type": "array"
+      },
+      {
+        "name": "conflicts",
+        "type": "array"
+      }
+    ]
+  },
+  "flow:try-catch": {
+    "inputs": [
+      {
+        "name": "value",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "error",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "fallback",
+        "type": "any",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "result",
+        "type": "any"
+      },
+      {
+        "name": "success",
+        "type": "any"
+      },
+      {
+        "name": "failure",
+        "type": "any"
+      },
+      {
+        "name": "failed",
+        "type": "boolean"
+      },
+      {
+        "name": "attempts",
+        "type": "number"
+      },
+      {
+        "name": "timedOut",
+        "type": "boolean"
+      },
+      {
+        "name": "compensated",
+        "type": "boolean"
+      }
+    ]
+  },
+  "form:cascade-options": {
+    "inputs": [
+      {
+        "name": "rows",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "parentValue",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "options",
+        "type": "array"
+      },
+      {
+        "name": "values",
+        "type": "array"
+      },
+      {
+        "name": "first",
+        "type": "any"
+      }
+    ]
+  },
+  "form:computed-field": {
+    "inputs": [
+      {
+        "name": "formData",
+        "type": "object",
+        "required": true
+      },
+      {
+        "name": "row",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "flow",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "values",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "expression",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "event",
+        "type": "string",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "value",
+        "type": "any"
+      },
+      {
+        "name": "result",
+        "type": "any"
+      }
+    ]
+  },
+  "form:conditional-state": {
+    "inputs": [
+      {
+        "name": "formData",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "value",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "compareValue",
+        "type": "any",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "matched",
+        "type": "boolean"
+      },
+      {
+        "name": "active",
+        "type": "boolean"
+      }
+    ]
+  },
+  "form:lookup-fill": {
+    "inputs": [
+      {
+        "name": "criteria",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "tableId",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "sheetName",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "fieldMap",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "originalFieldMap",
+        "type": "object",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "matched",
+        "type": "boolean"
+      },
+      {
+        "name": "unique",
+        "type": "boolean"
+      },
+      {
+        "name": "matchCount",
+        "type": "number"
+      },
+      {
+        "name": "record",
+        "type": "object"
+      },
+      {
+        "name": "patch",
+        "type": "object"
+      }
+    ]
+  },
+  "form:save": {
+    "inputs": [
+      {
+        "name": "formData",
+        "type": "object",
+        "required": true
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "requiredFields",
+        "type": "array",
+        "required": false
+      },
+      {
+        "name": "rules",
+        "type": "array",
+        "required": false
+      },
+      {
+        "name": "conditionalRequired",
+        "type": "array",
+        "required": false
+      },
+      {
+        "name": "foreignKeys",
+        "type": "array",
+        "required": false
+      },
+      {
+        "name": "tableId",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "sheetName",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "keyField",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "fieldMap",
+        "type": "object",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "saved",
+        "type": "boolean"
+      },
+      {
+        "name": "status",
+        "type": "string"
+      },
+      {
+        "name": "row",
+        "type": "object"
+      },
+      {
+        "name": "missingFields",
+        "type": "array"
+      },
+      {
+        "name": "writeBack",
+        "type": "object"
+      }
+    ]
+  },
+  "form:validate-all": {
+    "inputs": [
+      {
+        "name": "formData",
+        "type": "object",
+        "required": true
+      },
+      {
+        "name": "rules",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "values",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "requiredFields",
+        "type": "array",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "valid",
+        "type": "boolean"
+      },
+      {
+        "name": "missingFields",
+        "type": "array"
+      },
+      {
+        "name": "errors",
+        "type": "object"
+      }
     ]
   },
   "func-add-comment": {
     "inputs": [
-      "cellAddress",
-      "content",
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "cellAddress",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "content",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      }
     ]
   },
   "func-apply-style": {
     "inputs": [
-      "rangeAddress",
-      "style",
-      "workbook",
-      "worksheet"
+      {
+        "name": "workbook",
+        "type": "workbook",
+        "required": true
+      },
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": false
+      },
+      {
+        "name": "style",
+        "type": "object",
+        "required": true
+      },
+      {
+        "name": "rangeAddress",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "workbook"
+      {
+        "name": "workbook",
+        "type": "workbook"
+      }
+    ]
+  },
+  "func-checkbox-input": {
+    "inputs": [
+      {
+        "name": "value",
+        "type": "any",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "value",
+        "type": "any"
+      },
+      {
+        "name": "options",
+        "type": "array"
+      }
     ]
   },
   "func-column-bind": {
     "inputs": [
-      "dataValue",
-      "trigger",
-      "uiValue"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "uiValue",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "dataValue",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "dataField",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "dataValue",
-      "trigger",
-      "uiValue"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "uiValue",
+        "type": "any"
+      },
+      {
+        "name": "dataValue",
+        "type": "any"
+      }
     ]
   },
   "func-conditional-format": {
     "inputs": [
-      "rangeAddress",
-      "ruleType",
-      "value1",
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "rangeAddress",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "ruleType",
+        "type": "enum",
+        "required": false
+      },
+      {
+        "name": "value1",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      }
     ]
   },
   "func-copy-range": {
     "inputs": [
-      "sourceRange",
-      "targetCell",
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "sourceRange",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "targetCell",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      }
     ]
   },
   "func-create-chart": {
     "inputs": [
-      "dataRange",
-      "title",
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "dataRange",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "title",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "chartName",
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      },
+      {
+        "name": "chartName",
+        "type": "string"
+      }
     ]
   },
   "func-create-table": {
     "inputs": [
-      "rangeAddress",
-      "tableName",
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "tableName",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "rangeAddress",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "tableName",
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      },
+      {
+        "name": "tableName",
+        "type": "string"
+      }
     ]
   },
   "func-data-validation": {
     "inputs": [
-      "listValues",
-      "rangeAddress",
-      "validationType",
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "rangeAddress",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "validationType",
+        "type": "enum",
+        "required": false
+      },
+      {
+        "name": "listValues",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      }
     ]
   },
   "func-date-input": {
     "inputs": [
-      "trigger",
-      "value"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "value",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "fieldName",
-      "trigger",
-      "value"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "value",
+        "type": "string"
+      },
+      {
+        "name": "fieldName",
+        "type": "string"
+      }
     ]
   },
   "func-find-replace": {
     "inputs": [
-      "findText",
-      "replaceText",
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "findText",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "replaceText",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "replacedCount",
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      },
+      {
+        "name": "replacedCount",
+        "type": "number"
+      }
     ]
   },
   "func-form-validate": {
     "inputs": [
-      "formData",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "formData",
+        "type": "object",
+        "required": true
+      }
     ],
     "outputs": [
-      "errors",
-      "failed",
-      "isValid",
-      "passed"
+      {
+        "name": "passed",
+        "type": "any"
+      },
+      {
+        "name": "failed",
+        "type": "any"
+      },
+      {
+        "name": "errors",
+        "type": "object"
+      },
+      {
+        "name": "isValid",
+        "type": "boolean"
+      }
     ]
   },
   "func-merge-cells": {
     "inputs": [
-      "merge",
-      "rangeAddress",
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "rangeAddress",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "merge",
+        "type": "boolean",
+        "required": false
+      }
     ],
     "outputs": [
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      }
     ]
   },
   "func-modify-range": {
     "inputs": [
-      "address",
-      "values",
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "values",
+        "type": "array",
+        "required": true
+      },
+      {
+        "name": "address",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      }
     ]
   },
   "func-named-item": {
     "inputs": [
-      "formula",
-      "name",
-      "workbook"
+      {
+        "name": "workbook",
+        "type": "workbook",
+        "required": true
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "formula",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": false
+      }
     ],
     "outputs": [
-      "name",
-      "workbook"
+      {
+        "name": "workbook",
+        "type": "workbook"
+      },
+      {
+        "name": "name",
+        "type": "string"
+      }
     ]
   },
   "func-protect-sheet": {
     "inputs": [
-      "password",
-      "protect",
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "protect",
+        "type": "boolean",
+        "required": false
+      },
+      {
+        "name": "password",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      }
     ]
   },
   "func-protect-workbook": {
     "inputs": [
-      "password",
-      "protectStructure",
-      "workbook"
+      {
+        "name": "workbook",
+        "type": "workbook",
+        "required": true
+      },
+      {
+        "name": "protectStructure",
+        "type": "boolean",
+        "required": false
+      },
+      {
+        "name": "password",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "workbook"
+      {
+        "name": "workbook",
+        "type": "workbook"
+      }
+    ]
+  },
+  "func-radio-input": {
+    "inputs": [
+      {
+        "name": "value",
+        "type": "any",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "value",
+        "type": "any"
+      },
+      {
+        "name": "options",
+        "type": "array"
+      }
+    ]
+  },
+  "func-rating-input": {
+    "inputs": [
+      {
+        "name": "value",
+        "type": "number",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "value",
+        "type": "number"
+      }
     ]
   },
   "func-remove-duplicates": {
     "inputs": [
-      "columns",
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "columns",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "removedCount",
-      "worksheet"
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      },
+      {
+        "name": "removedCount",
+        "type": "number"
+      }
     ]
   },
   "func-row-navigator": {
     "inputs": [
-      "currentRow",
-      "totalRows",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "currentRow",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "totalRows",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "currentIndex",
+        "type": "number",
+        "required": false
+      }
     ],
     "outputs": [
-      "canNavigate",
-      "targetRow",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "targetRow",
+        "type": "number"
+      },
+      {
+        "name": "canNavigate",
+        "type": "boolean"
+      }
+    ]
+  },
+  "func-select-input": {
+    "inputs": [
+      {
+        "name": "value",
+        "type": "any",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "value",
+        "type": "any"
+      },
+      {
+        "name": "options",
+        "type": "array"
+      }
     ]
   },
   "func-sheet-operation": {
     "inputs": [
-      "newName",
-      "operation",
-      "sheetName",
-      "workbook"
+      {
+        "name": "workbook",
+        "type": "workbook",
+        "required": true
+      },
+      {
+        "name": "operation",
+        "type": "enum",
+        "required": false
+      },
+      {
+        "name": "sheetName",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "newName",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "sheetNames",
-      "workbook"
+      {
+        "name": "workbook",
+        "type": "workbook"
+      },
+      {
+        "name": "sheetNames",
+        "type": "array"
+      }
     ]
   },
   "func-style": {
     "inputs": [
-      "override"
+      {
+        "name": "override",
+        "type": "object",
+        "required": false
+      }
     ],
     "outputs": [
-      "style"
+      {
+        "name": "style",
+        "type": "object"
+      }
     ]
   },
   "generic:ai-insight": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "insight"
+      {
+        "name": "insight",
+        "type": "string"
+      }
     ]
   },
   "generic:ai-query": {
     "inputs": [
-      "question",
-      "schema"
+      {
+        "name": "question",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "schema",
+        "type": "array",
+        "required": false
+      }
     ],
     "outputs": [
-      "sql"
+      {
+        "name": "sql",
+        "type": "string"
+      }
     ]
   },
   "generic:append": {
     "inputs": [
-      "data",
-      "extra"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "extra",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "data",
-      "rowCount"
+      {
+        "name": "data",
+        "type": "json-rows"
+      },
+      {
+        "name": "rowCount",
+        "type": "number"
+      }
     ]
   },
   "generic:array-enrich": {
     "inputs": [
-      "context",
-      "referenceRows",
-      "rows"
+      {
+        "name": "rows",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "referenceRows",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "context",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "fieldMap",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "referenceData",
+        "type": "json-rows",
+        "required": false
+      },
+      {
+        "name": "leftKey",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "rightKey",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "enrichRules",
+        "type": "array",
+        "required": false
+      }
     ],
     "outputs": [
-      "count",
-      "result",
-      "rows"
+      {
+        "name": "rows",
+        "type": "json-rows"
+      },
+      {
+        "name": "result",
+        "type": "json-rows"
+      },
+      {
+        "name": "count",
+        "type": "number"
+      }
     ]
   },
   "generic:array-lookup": {
     "inputs": [
-      "context",
-      "rows"
+      {
+        "name": "rows",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "context",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "keyField",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "keyValue",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "criteria",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "count",
-      "first",
-      "matched",
-      "rows"
+      {
+        "name": "first",
+        "type": "object"
+      },
+      {
+        "name": "rows",
+        "type": "json-rows"
+      },
+      {
+        "name": "matched",
+        "type": "json-rows"
+      },
+      {
+        "name": "count",
+        "type": "number"
+      }
     ]
   },
   "generic:call-workflow": {
     "inputs": [
-      "input"
+      {
+        "name": "input",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "result",
-      "success"
+      {
+        "name": "result",
+        "type": "any"
+      },
+      {
+        "name": "success",
+        "type": "boolean"
+      }
     ]
   },
   "generic:choice-input": {
     "inputs": [
-      "options",
-      "value"
+      {
+        "name": "value",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "options",
+        "type": "options",
+        "required": false
+      }
     ],
     "outputs": [
-      "selectedOption",
-      "selectedOptions",
-      "value",
-      "values"
+      {
+        "name": "value",
+        "type": "any"
+      },
+      {
+        "name": "values",
+        "type": "array"
+      },
+      {
+        "name": "selectedOption",
+        "type": "object"
+      },
+      {
+        "name": "selectedOptions",
+        "type": "array"
+      }
     ]
   },
   "generic:compare": {
     "inputs": [
-      "dataA",
-      "dataB"
+      {
+        "name": "dataA",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "dataB",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "different",
-      "onlyA",
-      "onlyB",
-      "same"
+      {
+        "name": "onlyA",
+        "type": "json-rows"
+      },
+      {
+        "name": "same",
+        "type": "json-rows"
+      },
+      {
+        "name": "different",
+        "type": "json-rows"
+      },
+      {
+        "name": "onlyB",
+        "type": "json-rows"
+      }
     ]
   },
   "generic:condition-branch": {
     "inputs": [
-      "value"
+      {
+        "name": "value",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "falseBranch",
-      "result",
-      "trueBranch"
+      {
+        "name": "result",
+        "type": "boolean"
+      },
+      {
+        "name": "trueBranch",
+        "type": "any"
+      },
+      {
+        "name": "falseBranch",
+        "type": "any"
+      }
     ]
   },
   "generic:criteria-filter": {
     "inputs": [
-      "criteria",
-      "data"
+      {
+        "name": "data",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "criteria",
+        "type": "json",
+        "required": false
+      },
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "context",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "appliedCriteria",
-      "count",
-      "emptyReason",
-      "result",
-      "rows"
+      {
+        "name": "result",
+        "type": "any"
+      },
+      {
+        "name": "rows",
+        "type": "json-rows"
+      },
+      {
+        "name": "count",
+        "type": "number"
+      },
+      {
+        "name": "appliedCriteria",
+        "type": "json"
+      },
+      {
+        "name": "emptyReason",
+        "type": "string"
+      }
     ]
+  },
+  "generic:custom-js": {
+    "inputs": [],
+    "outputs": []
   },
   "generic:data-quality": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "issues",
-      "score",
-      "validRows"
+      {
+        "name": "validRows",
+        "type": "json-rows"
+      },
+      {
+        "name": "issues",
+        "type": "array"
+      },
+      {
+        "name": "score",
+        "type": "number"
+      }
     ]
   },
   "generic:database-query": {
     "inputs": [
-      "params"
+      {
+        "name": "params",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "data",
-      "rowCount"
+      {
+        "name": "data",
+        "type": "json-rows"
+      },
+      {
+        "name": "rowCount",
+        "type": "number"
+      }
     ]
   },
   "generic:date-time": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows"
+      }
     ]
   },
   "generic:db-connect": {
     "inputs": [
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "connected",
-      "connection"
+      {
+        "name": "connection",
+        "type": "object"
+      },
+      {
+        "name": "connected",
+        "type": "boolean"
+      }
     ]
   },
   "generic:db-query": {
     "inputs": [
-      "connection",
-      "params"
+      {
+        "name": "connection",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "params",
+        "type": "array",
+        "required": false
+      }
     ],
     "outputs": [
-      "data",
-      "rowCount"
+      {
+        "name": "data",
+        "type": "json-rows"
+      },
+      {
+        "name": "rowCount",
+        "type": "number"
+      }
     ]
   },
   "generic:db-write": {
     "inputs": [
-      "connection",
-      "rows"
+      {
+        "name": "connection",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "rows",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "rowCount"
+      {
+        "name": "rowCount",
+        "type": "number"
+      }
+    ]
+  },
+  "generic:delete-columns": {
+    "inputs": [
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "index",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "count",
+        "type": "number",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      },
+      {
+        "name": "affectedCount",
+        "type": "number"
+      },
+      {
+        "name": "rowCount",
+        "type": "number"
+      },
+      {
+        "name": "colCount",
+        "type": "number"
+      }
+    ]
+  },
+  "generic:delete-rows": {
+    "inputs": [
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "index",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "count",
+        "type": "number",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      },
+      {
+        "name": "affectedCount",
+        "type": "number"
+      },
+      {
+        "name": "rowCount",
+        "type": "number"
+      },
+      {
+        "name": "colCount",
+        "type": "number"
+      }
     ]
   },
   "generic:display-stats": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "any",
+        "required": true
+      }
     ],
     "outputs": [
-      "colCount",
-      "headers",
-      "rowCount",
-      "stats"
+      {
+        "name": "stats",
+        "type": "object"
+      },
+      {
+        "name": "rowCount",
+        "type": "number"
+      },
+      {
+        "name": "colCount",
+        "type": "number"
+      },
+      {
+        "name": "headers",
+        "type": "headers"
+      }
     ]
   },
   "generic:display-table": {
     "inputs": [
-      "data",
-      "title"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "title",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "colCount",
-      "data",
-      "rowCount"
+      {
+        "name": "data",
+        "type": "json-rows"
+      },
+      {
+        "name": "rowCount",
+        "type": "number"
+      },
+      {
+        "name": "colCount",
+        "type": "number"
+      }
     ]
   },
   "generic:email-send": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "error",
-      "sent"
+      {
+        "name": "sent",
+        "type": "boolean"
+      },
+      {
+        "name": "error",
+        "type": "string"
+      }
     ]
   },
   "generic:encode": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows"
+      }
+    ]
+  },
+  "generic:export": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "fileName",
+        "type": "string",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "result",
+        "type": "any"
+      },
+      {
+        "name": "fileName",
+        "type": "string"
+      },
+      {
+        "name": "mimeType",
+        "type": "string"
+      }
     ]
   },
   "generic:field-classifier": {
     "inputs": [
-      "context",
-      "record"
+      {
+        "name": "record",
+        "type": "object",
+        "required": true
+      },
+      {
+        "name": "context",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "rules",
+        "type": "array",
+        "required": false
+      }
     ],
     "outputs": [
-      "labels",
-      "result",
-      "values"
+      {
+        "name": "values",
+        "type": "object"
+      },
+      {
+        "name": "labels",
+        "type": "array"
+      },
+      {
+        "name": "result",
+        "type": "object"
+      }
     ]
   },
   "generic:file-source": {
     "inputs": [
-      "accept",
-      "multiple",
-      "trigger"
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "accept",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "multiple",
+        "type": "boolean",
+        "required": false
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "file",
+        "type": "file-data",
+        "required": false
+      }
     ],
     "outputs": [
-      "data",
-      "file",
-      "name",
-      "size"
+      {
+        "name": "file",
+        "type": "object"
+      },
+      {
+        "name": "data",
+        "type": "file-data"
+      },
+      {
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "name": "size",
+        "type": "number"
+      }
+    ]
+  },
+  "generic:filter": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "result",
+        "type": "any"
+      },
+      {
+        "name": "rows",
+        "type": "json-rows"
+      },
+      {
+        "name": "count",
+        "type": "number"
+      },
+      {
+        "name": "trigger",
+        "type": "any"
+      }
     ]
   },
   "generic:flatten": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows"
+      }
     ]
   },
   "generic:for-each": {
     "inputs": [
-      "items"
+      {
+        "name": "items",
+        "type": "json-rows",
+        "required": false
+      }
     ],
     "outputs": [
-      "currentItem",
-      "index",
-      "isLast",
-      "items"
+      {
+        "name": "items",
+        "type": "json-rows"
+      },
+      {
+        "name": "currentItem",
+        "type": "any"
+      },
+      {
+        "name": "index",
+        "type": "number"
+      },
+      {
+        "name": "isLast",
+        "type": "boolean"
+      }
     ]
   },
   "generic:graphql-query": {
     "inputs": [
-      "variables"
+      {
+        "name": "variables",
+        "type": "object",
+        "required": false
+      }
     ],
     "outputs": [
-      "data",
-      "errors"
+      {
+        "name": "data",
+        "type": "object"
+      },
+      {
+        "name": "errors",
+        "type": "array"
+      }
     ]
   },
   "generic:group-by": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows"
+      }
     ]
   },
   "generic:handle-missing": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "data",
-      "removedCount"
+      {
+        "name": "data",
+        "type": "json-rows"
+      },
+      {
+        "name": "removedCount",
+        "type": "number"
+      }
     ]
   },
   "generic:hash": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows"
+      }
     ]
   },
   "generic:incremental-sync": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "changes",
-      "previousWatermark",
-      "watermark"
+      {
+        "name": "changes",
+        "type": "json-rows"
+      },
+      {
+        "name": "watermark",
+        "type": "any"
+      },
+      {
+        "name": "previousWatermark",
+        "type": "any"
+      }
+    ]
+  },
+  "generic:insert-columns": {
+    "inputs": [
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "index",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "count",
+        "type": "number",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      },
+      {
+        "name": "affectedCount",
+        "type": "number"
+      },
+      {
+        "name": "rowCount",
+        "type": "number"
+      },
+      {
+        "name": "colCount",
+        "type": "number"
+      }
+    ]
+  },
+  "generic:insert-rows": {
+    "inputs": [
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "index",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "count",
+        "type": "number",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      },
+      {
+        "name": "affectedCount",
+        "type": "number"
+      },
+      {
+        "name": "rowCount",
+        "type": "number"
+      },
+      {
+        "name": "colCount",
+        "type": "number"
+      }
     ]
   },
   "generic:merge": {
     "inputs": [
-      "leftData",
-      "rightData"
+      {
+        "name": "leftData",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "rightData",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "data",
-      "rowCount"
+      {
+        "name": "data",
+        "type": "json-rows"
+      },
+      {
+        "name": "rowCount",
+        "type": "number"
+      }
     ]
   },
   "generic:olap-crosstab": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "drilldown",
-      "table"
+      {
+        "name": "table",
+        "type": "object"
+      },
+      {
+        "name": "drilldown",
+        "type": "json-rows"
+      }
     ]
   },
   "generic:output-display": {
     "inputs": [
-      "label",
-      "value"
+      {
+        "name": "value",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "label",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "value"
+      {
+        "name": "value",
+        "type": "any"
+      }
     ]
   },
   "generic:pdf-report": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "fileData",
-      "fileName"
+      {
+        "name": "fileData",
+        "type": "file-data"
+      },
+      {
+        "name": "fileName",
+        "type": "string"
+      }
     ]
   },
   "generic:pick-record": {
     "inputs": [
-      "data",
-      "sorts"
+      {
+        "name": "data",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "sorts",
+        "type": "json",
+        "required": false
+      },
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "pickMode",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "topN",
+        "type": "number",
+        "required": false
+      }
     ],
     "outputs": [
-      "count",
-      "first",
-      "result",
-      "rows"
+      {
+        "name": "first",
+        "type": "object"
+      },
+      {
+        "name": "rows",
+        "type": "json-rows"
+      },
+      {
+        "name": "result",
+        "type": "any"
+      },
+      {
+        "name": "count",
+        "type": "number"
+      }
     ]
   },
   "generic:pivot": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows"
+      }
     ]
   },
   "generic:range-check": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "failed",
-      "passRate",
-      "passed"
+      {
+        "name": "passed",
+        "type": "json-rows"
+      },
+      {
+        "name": "failed",
+        "type": "json-rows"
+      },
+      {
+        "name": "passRate",
+        "type": "number"
+      }
+    ]
+  },
+  "generic:range-intersection": {
+    "inputs": [
+      {
+        "name": "left",
+        "type": "range",
+        "required": true
+      },
+      {
+        "name": "right",
+        "type": "range",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "range",
+        "type": "range"
+      },
+      {
+        "name": "address",
+        "type": "address"
+      },
+      {
+        "name": "areas",
+        "type": "array"
+      },
+      {
+        "name": "areaCount",
+        "type": "number"
+      },
+      {
+        "name": "cellCount",
+        "type": "number"
+      },
+      {
+        "name": "isEmpty",
+        "type": "boolean"
+      }
+    ]
+  },
+  "generic:range-select": {
+    "inputs": [
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "rangeMode",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "address",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "rowIndex",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "colIndex",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "rows",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "cols",
+        "type": "number",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "range",
+        "type": "object"
+      },
+      {
+        "name": "address",
+        "type": "string"
+      },
+      {
+        "name": "areas",
+        "type": "array"
+      },
+      {
+        "name": "values",
+        "type": "array"
+      },
+      {
+        "name": "areaValues",
+        "type": "array"
+      },
+      {
+        "name": "areaCount",
+        "type": "number"
+      },
+      {
+        "name": "cellCount",
+        "type": "number"
+      },
+      {
+        "name": "rowCount",
+        "type": "number"
+      },
+      {
+        "name": "colCount",
+        "type": "number"
+      }
     ]
   },
   "generic:record-transform": {
     "inputs": [
-      "context",
-      "record"
+      {
+        "name": "record",
+        "type": "object",
+        "required": true
+      },
+      {
+        "name": "context",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "fieldMap",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "defaults",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "includeSource",
+        "type": "boolean",
+        "required": false
+      },
+      {
+        "name": "valueRules",
+        "type": "array",
+        "required": false
+      }
     ],
     "outputs": [
-      "fields",
-      "record",
-      "result"
+      {
+        "name": "result",
+        "type": "object"
+      },
+      {
+        "name": "record",
+        "type": "object"
+      },
+      {
+        "name": "fields",
+        "type": "array"
+      }
     ]
   },
   "generic:regex-extract": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows"
+      }
     ]
   },
   "generic:rename-columns": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows"
+      }
     ]
   },
   "generic:rest-api": {
     "inputs": [
-      "body"
+      {
+        "name": "body",
+        "type": "object",
+        "required": false
+      }
     ],
     "outputs": [
-      "data",
-      "response",
-      "status"
+      {
+        "name": "response",
+        "type": "any"
+      },
+      {
+        "name": "data",
+        "type": "json-rows"
+      },
+      {
+        "name": "status",
+        "type": "number"
+      }
     ]
   },
   "generic:sample": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "data",
-      "rowCount"
+      {
+        "name": "data",
+        "type": "json-rows"
+      },
+      {
+        "name": "rowCount",
+        "type": "number"
+      }
     ]
   },
   "generic:score-records": {
     "inputs": [
-      "context",
-      "rows"
+      {
+        "name": "rows",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "context",
+        "type": "object",
+        "required": false
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "scoreRules",
+        "type": "array",
+        "required": false
+      },
+      {
+        "name": "totalField",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "sorts",
+        "type": "array",
+        "required": false
+      }
     ],
     "outputs": [
-      "count",
-      "first",
-      "rows"
+      {
+        "name": "rows",
+        "type": "json-rows"
+      },
+      {
+        "name": "first",
+        "type": "object"
+      },
+      {
+        "name": "count",
+        "type": "number"
+      }
+    ]
+  },
+  "generic:sheet-source": {
+    "inputs": [
+      {
+        "name": "workbook",
+        "type": "workbook",
+        "required": false
+      },
+      {
+        "name": "sourceMode",
+        "type": "enum",
+        "required": false
+      },
+      {
+        "name": "worksheetMode",
+        "type": "enum",
+        "required": false
+      },
+      {
+        "name": "sheetName",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "sheetIndex",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": false
+      },
+      {
+        "name": "address",
+        "type": "address",
+        "required": false
+      },
+      {
+        "name": "rowIndex",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "colIndex",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "rowCount",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "colCount",
+        "type": "number",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "workbook",
+        "type": "workbook"
+      },
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      },
+      {
+        "name": "sheetName",
+        "type": "string"
+      },
+      {
+        "name": "sheetNames",
+        "type": "array"
+      },
+      {
+        "name": "headers",
+        "type": "headers"
+      },
+      {
+        "name": "range",
+        "type": "range"
+      },
+      {
+        "name": "address",
+        "type": "address"
+      },
+      {
+        "name": "areas",
+        "type": "array"
+      },
+      {
+        "name": "values",
+        "type": "array"
+      },
+      {
+        "name": "areaValues",
+        "type": "array"
+      },
+      {
+        "name": "areaCount",
+        "type": "number"
+      },
+      {
+        "name": "cellCount",
+        "type": "number"
+      },
+      {
+        "name": "rowCount",
+        "type": "number"
+      },
+      {
+        "name": "colCount",
+        "type": "number"
+      }
+    ]
+  },
+  "generic:sort": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "result",
+        "type": "any"
+      },
+      {
+        "name": "rows",
+        "type": "json-rows"
+      },
+      {
+        "name": "count",
+        "type": "number"
+      },
+      {
+        "name": "trigger",
+        "type": "any"
+      }
     ]
   },
   "generic:string-manip": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows"
+      }
     ]
   },
   "generic:type-cast": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows"
+      }
     ]
   },
   "generic:unique-check": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "duplicateCount",
-      "duplicates",
-      "isUnique"
+      {
+        "name": "isUnique",
+        "type": "boolean"
+      },
+      {
+        "name": "duplicates",
+        "type": "json-rows"
+      },
+      {
+        "name": "duplicateCount",
+        "type": "number"
+      }
     ]
   },
   "generic:unpivot": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows"
+      }
     ]
   },
   "generic:validate-csv": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "csv-string",
+        "required": true
+      }
     ],
     "outputs": [
-      "errors",
-      "valid"
+      {
+        "name": "valid",
+        "type": "boolean"
+      },
+      {
+        "name": "errors",
+        "type": "json-rows"
+      }
     ]
   },
   "generic:validate-json": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "any",
+        "required": true
+      }
     ],
     "outputs": [
-      "errors",
-      "valid"
+      {
+        "name": "valid",
+        "type": "boolean"
+      },
+      {
+        "name": "errors",
+        "type": "json-rows"
+      }
     ]
   },
   "generic:validate-xml": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "string",
+        "required": true
+      }
     ],
     "outputs": [
-      "errors",
-      "valid"
+      {
+        "name": "valid",
+        "type": "boolean"
+      },
+      {
+        "name": "errors",
+        "type": "json-rows"
+      }
     ]
   },
   "generic:value-input": {
-    "inputs": [],
+    "inputs": [
+      {
+        "name": "override",
+        "type": "any",
+        "required": false
+      }
+    ],
     "outputs": [
-      "value"
+      {
+        "name": "value",
+        "type": "any"
+      },
+      {
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "name": "valueType",
+        "type": "string"
+      }
     ]
   },
   "generic:websocket": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "received",
-      "status"
+      {
+        "name": "received",
+        "type": "any"
+      },
+      {
+        "name": "status",
+        "type": "string"
+      }
     ]
   },
-  "ml-anomaly-detect": {
+  "generic:workbook-save": {
     "inputs": [
-      "data"
+      {
+        "name": "workbook",
+        "type": "workbook",
+        "required": true
+      },
+      {
+        "name": "fileName",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "anomaly_count",
-      "data",
-      "normal_count"
+      {
+        "name": "workbook",
+        "type": "workbook"
+      },
+      {
+        "name": "fileData",
+        "type": "file-data"
+      },
+      {
+        "name": "fileName",
+        "type": "string"
+      },
+      {
+        "name": "mimeType",
+        "type": "string"
+      }
     ]
   },
-  "ml-auto-feature": {
+  "generic:worksheet-commit": {
     "inputs": [
-      "data"
+      {
+        "name": "workbook",
+        "type": "workbook",
+        "required": true
+      },
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "sheetName",
+        "type": "string",
+        "required": false
+      }
     ],
     "outputs": [
-      "data",
-      "features"
+      {
+        "name": "workbook",
+        "type": "workbook"
+      },
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      },
+      {
+        "name": "sheetName",
+        "type": "string"
+      },
+      {
+        "name": "sheetNames",
+        "type": "array"
+      }
     ]
   },
-  "ml-correlation": {
+  "logic:match": {
     "inputs": [
-      "data"
+      {
+        "name": "value",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "cases",
+        "type": "array",
+        "required": false
+      },
+      {
+        "name": "default",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "trigger",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "columns",
-      "matrix"
+      {
+        "name": "result",
+        "type": "any"
+      },
+      {
+        "name": "matched",
+        "type": "boolean"
+      }
     ]
   },
-  "ml-decision-tree": {
+  "method:XLSX.read": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "file-data",
+        "required": true
+      }
     ],
     "outputs": [
-      "accuracy",
-      "predictions"
+      {
+        "name": "workbook",
+        "type": "workbook"
+      }
     ]
   },
-  "ml-descriptive-stats": {
+  "method:XLSX.utils.aoa_to_sheet": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "array",
+        "required": true
+      }
     ],
     "outputs": [
-      "shape",
-      "stats"
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      }
     ]
   },
-  "ml-feature-select": {
+  "method:XLSX.utils.book_append_sheet": {
     "inputs": [
-      "data"
+      {
+        "name": "workbook",
+        "type": "workbook",
+        "required": true
+      },
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      }
     ],
     "outputs": [
-      "removed",
-      "selected"
+      {
+        "name": "workbook",
+        "type": "workbook"
+      }
     ]
   },
-  "ml-hypothesis-test": {
-    "inputs": [
-      "data"
-    ],
+  "method:XLSX.utils.book_new": {
+    "inputs": [],
     "outputs": [
-      "p_value",
-      "significant",
-      "statistic"
+      {
+        "name": "workbook",
+        "type": "workbook"
+      }
     ]
   },
-  "ml-kmeans": {
+  "method:XLSX.utils.cell_set_hyperlink": {
     "inputs": [
-      "data"
+      {
+        "name": "_args",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "centers",
-      "data",
-      "labels"
+      {
+        "name": "result",
+        "type": "any"
+      }
     ]
   },
-  "ml-knn": {
+  "method:XLSX.utils.cell_set_internal_link": {
     "inputs": [
-      "data"
+      {
+        "name": "_args",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "accuracy",
-      "predictions"
+      {
+        "name": "result",
+        "type": "any"
+      }
     ]
   },
-  "ml-label-encode": {
+  "method:XLSX.utils.format_cell": {
     "inputs": [
-      "data"
+      {
+        "name": "_args",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "data",
-      "mapping"
+      {
+        "name": "result",
+        "type": "any"
+      }
     ]
   },
-  "ml-linear-regression": {
+  "method:XLSX.utils.json_to_sheet": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "array",
+        "required": true
+      }
     ],
     "outputs": [
-      "intercept",
-      "predictions",
-      "r2",
-      "slope"
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      }
     ]
   },
-  "ml-naive-bayes": {
+  "method:XLSX.utils.sheet_add_aoa": {
     "inputs": [
-      "data"
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "data",
+        "type": "array",
+        "required": true
+      }
     ],
     "outputs": [
-      "accuracy",
-      "predictions"
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      }
     ]
   },
-  "ml-normalize": {
+  "method:XLSX.utils.sheet_add_json": {
     "inputs": [
-      "data"
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "data",
+        "type": "array",
+        "required": true
+      }
     ],
     "outputs": [
-      "data",
-      "params"
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      }
     ]
   },
-  "ml-onehot-encode": {
+  "method:XLSX.utils.sheet_get_cell": {
     "inputs": [
-      "data"
+      {
+        "name": "_args",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "data"
+      {
+        "name": "result",
+        "type": "any"
+      }
     ]
   },
-  "ml-pca": {
+  "method:XLSX.utils.sheet_set_array_formula": {
     "inputs": [
-      "data"
+      {
+        "name": "_args",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "data",
-      "explained_variance"
+      {
+        "name": "result",
+        "type": "any"
+      }
     ]
   },
-  "ml-random-forest": {
+  "method:XLSX.utils.sheet_to_formulae": {
     "inputs": [
-      "data"
+      {
+        "name": "_args",
+        "type": "any",
+        "required": false
+      }
     ],
     "outputs": [
-      "accuracy",
-      "importances",
-      "predictions"
+      {
+        "name": "result",
+        "type": "any"
+      }
     ]
   },
-  "ml-standardize": {
+  "method:XLSX.utils.sheet_to_json": {
     "inputs": [
-      "data"
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      }
     ],
     "outputs": [
-      "data",
-      "params"
+      {
+        "name": "rows",
+        "type": "array"
+      },
+      {
+        "name": "headers",
+        "type": "headers"
+      }
     ]
   },
-  "ml-svm": {
+  "ml:anomaly-detect": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "accuracy",
-      "predictions",
-      "support_vectors"
+      {
+        "name": "data",
+        "type": "json-rows"
+      },
+      {
+        "name": "anomaly_count",
+        "type": "number"
+      },
+      {
+        "name": "normal_count",
+        "type": "number"
+      }
     ]
   },
-  "ml-time-series": {
+  "ml:auto-feature": {
     "inputs": [
-      "data"
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
     ],
     "outputs": [
-      "moving_average",
-      "trend_slope"
+      {
+        "name": "data",
+        "type": "json-rows"
+      },
+      {
+        "name": "features",
+        "type": "array"
+      }
     ]
+  },
+  "ml:classification-evaluate": {
+    "inputs": [
+      {
+        "name": "rows",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "target",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "features",
+        "type": "array",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "rows",
+        "type": "json-rows"
+      },
+      {
+        "name": "result",
+        "type": "any"
+      },
+      {
+        "name": "summary",
+        "type": "object"
+      },
+      {
+        "name": "chart",
+        "type": "object"
+      },
+      {
+        "name": "usable",
+        "type": "boolean"
+      },
+      {
+        "name": "predictions",
+        "type": "array"
+      }
+    ]
+  },
+  "ml:correlation": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "matrix",
+        "type": "object"
+      },
+      {
+        "name": "columns",
+        "type": "headers"
+      }
+    ]
+  },
+  "ml:decision-tree": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "accuracy",
+        "type": "number"
+      },
+      {
+        "name": "predictions",
+        "type": "array"
+      }
+    ]
+  },
+  "ml:descriptive-stats": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "stats",
+        "type": "object"
+      },
+      {
+        "name": "shape",
+        "type": "array"
+      }
+    ]
+  },
+  "ml:feature-select": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "selected",
+        "type": "headers"
+      },
+      {
+        "name": "removed",
+        "type": "headers"
+      }
+    ]
+  },
+  "ml:hypothesis-test": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "statistic",
+        "type": "number"
+      },
+      {
+        "name": "p_value",
+        "type": "number"
+      },
+      {
+        "name": "significant",
+        "type": "boolean"
+      }
+    ]
+  },
+  "ml:kmeans": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "data",
+        "type": "json-rows"
+      },
+      {
+        "name": "centers",
+        "type": "array"
+      },
+      {
+        "name": "labels",
+        "type": "array"
+      },
+      {
+        "name": "features",
+        "type": "array"
+      },
+      {
+        "name": "error",
+        "type": "any"
+      }
+    ]
+  },
+  "ml:knn": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "accuracy",
+        "type": "number"
+      },
+      {
+        "name": "predictions",
+        "type": "array"
+      }
+    ]
+  },
+  "ml:label-encode": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "data",
+        "type": "json-rows"
+      },
+      {
+        "name": "mapping",
+        "type": "object"
+      }
+    ]
+  },
+  "ml:linear-regression": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "slope",
+        "type": "number"
+      },
+      {
+        "name": "intercept",
+        "type": "number"
+      },
+      {
+        "name": "r2",
+        "type": "number"
+      },
+      {
+        "name": "predictions",
+        "type": "array"
+      }
+    ]
+  },
+  "ml:naive-bayes": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "accuracy",
+        "type": "number"
+      },
+      {
+        "name": "predictions",
+        "type": "array"
+      }
+    ]
+  },
+  "ml:normalize": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "data",
+        "type": "json-rows"
+      },
+      {
+        "name": "params",
+        "type": "object"
+      }
+    ]
+  },
+  "ml:onehot-encode": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "data",
+        "type": "json-rows"
+      }
+    ]
+  },
+  "ml:pca": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "data",
+        "type": "json-rows"
+      },
+      {
+        "name": "explained_variance",
+        "type": "array"
+      }
+    ]
+  },
+  "ml:random-forest": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "accuracy",
+        "type": "number"
+      },
+      {
+        "name": "importances",
+        "type": "object"
+      },
+      {
+        "name": "predictions",
+        "type": "array"
+      }
+    ]
+  },
+  "ml:regression-evaluate": {
+    "inputs": [
+      {
+        "name": "rows",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "target",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "features",
+        "type": "array",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "rows",
+        "type": "json-rows"
+      },
+      {
+        "name": "result",
+        "type": "any"
+      },
+      {
+        "name": "summary",
+        "type": "object"
+      },
+      {
+        "name": "chart",
+        "type": "object"
+      },
+      {
+        "name": "usable",
+        "type": "boolean"
+      },
+      {
+        "name": "predictions",
+        "type": "array"
+      }
+    ]
+  },
+  "ml:standardize": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "data",
+        "type": "json-rows"
+      },
+      {
+        "name": "params",
+        "type": "object"
+      }
+    ]
+  },
+  "ml:svm": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "accuracy",
+        "type": "number"
+      },
+      {
+        "name": "predictions",
+        "type": "array"
+      },
+      {
+        "name": "support_vectors",
+        "type": "number"
+      }
+    ]
+  },
+  "ml:time-series": {
+    "inputs": [
+      {
+        "name": "data",
+        "type": "json-rows",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "moving_average",
+        "type": "array"
+      },
+      {
+        "name": "trend_slope",
+        "type": "number"
+      }
+    ]
+  },
+  "ml:time-series-backtest": {
+    "inputs": [
+      {
+        "name": "rows",
+        "type": "json-rows",
+        "required": true
+      },
+      {
+        "name": "data",
+        "type": "any",
+        "required": false
+      },
+      {
+        "name": "timeField",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "target",
+        "type": "string",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "rows",
+        "type": "json-rows"
+      },
+      {
+        "name": "result",
+        "type": "any"
+      },
+      {
+        "name": "summary",
+        "type": "object"
+      },
+      {
+        "name": "chart",
+        "type": "object"
+      },
+      {
+        "name": "usable",
+        "type": "boolean"
+      }
+    ]
+  },
+  "scenario:append-rows": {
+    "inputs": [
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      },
+      {
+        "name": "rows",
+        "type": "array",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "worksheet",
+        "type": "worksheet"
+      }
+    ]
+  },
+  "scenario:cell-address-toolkit": {
+    "inputs": [
+      {
+        "name": "value",
+        "type": "any",
+        "required": true
+      },
+      {
+        "name": "operation",
+        "type": "string",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "result",
+        "type": "any"
+      },
+      {
+        "name": "address",
+        "type": "string"
+      },
+      {
+        "name": "coords",
+        "type": "object"
+      }
+    ]
+  },
+  "scenario:excel-to-json-schema": {
+    "inputs": [
+      {
+        "name": "fileData",
+        "type": "any",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "workbook",
+        "type": "workbook"
+      },
+      {
+        "name": "jsonData",
+        "type": "array"
+      },
+      {
+        "name": "schema",
+        "type": "object"
+      }
+    ]
+  },
+  "scenario:json-to-xlsx-export": {
+    "inputs": [
+      {
+        "name": "jsonData",
+        "type": "array",
+        "required": true
+      },
+      {
+        "name": "fileName",
+        "type": "string",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "fileData",
+        "type": "any"
+      }
+    ]
+  },
+  "scenario:sheet-preview": {
+    "inputs": [
+      {
+        "name": "worksheet",
+        "type": "worksheet",
+        "required": true
+      }
+    ],
+    "outputs": [
+      {
+        "name": "jsonPreview",
+        "type": "array"
+      },
+      {
+        "name": "csvPreview",
+        "type": "string"
+      },
+      {
+        "name": "htmlPreview",
+        "type": "string"
+      }
+    ]
+  },
+  "workflow:export": {
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "result",
+        "type": "object"
+      }
+    ]
+  },
+  "workflow:import": {
+    "inputs": [],
+    "outputs": []
   }
 }

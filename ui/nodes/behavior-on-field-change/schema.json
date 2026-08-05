@@ -13,6 +13,12 @@
       "default": "",
       "required": true,
       "description": "监听的字段名"
+    },
+    {
+      "name": "value",
+      "label": "value",
+      "type": "any",
+      "description": "配置项：value"
     }
   ],
   "inputs": [
@@ -27,6 +33,36 @@
       "type": "string",
       "required": false,
       "description": "字段名覆盖"
+    },
+    {
+      "name": "value",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：value"
+    },
+    {
+      "name": "oldValue",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：oldValue"
+    },
+    {
+      "name": "rowIndex",
+      "type": "number",
+      "required": false,
+      "description": "数据输入：rowIndex"
+    },
+    {
+      "name": "sheetName",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：sheetName"
+    },
+    {
+      "name": "formData",
+      "type": "object",
+      "required": false,
+      "description": "数据输入：formData"
     }
   ],
   "outputs": [
@@ -79,6 +115,62 @@
       "type": "string",
       "direction": "output",
       "description": "字段名"
+    },
+    {
+      "name": "trigger",
+      "label": "trigger",
+      "type": "trigger",
+      "direction": "input",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "fieldName",
+      "label": "fieldName",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "字段名覆盖"
+    },
+    {
+      "name": "value",
+      "label": "value",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：value"
+    },
+    {
+      "name": "oldValue",
+      "label": "oldValue",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：oldValue"
+    },
+    {
+      "name": "rowIndex",
+      "label": "rowIndex",
+      "type": "number",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：rowIndex"
+    },
+    {
+      "name": "sheetName",
+      "label": "sheetName",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：sheetName"
+    },
+    {
+      "name": "formData",
+      "label": "formData",
+      "type": "object",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：formData"
     }
   ],
   "keywords": [

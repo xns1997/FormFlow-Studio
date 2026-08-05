@@ -38,7 +38,7 @@ test('auto-discovered registry has the expected executable nodes with unique IDs
     .filter((entry) => entry.isDirectory() && /^(func-|behavior-|generic-|ml-|form-|data-|logic-|flow-)/.test(entry.name))
     .filter((entry) => existsSync(join(root, 'nodes', entry.name, 'schema.json')))
     .map((entry) => entry.name);
-  assert.equal(packageDirs.length, 139);
+  assert.equal(packageDirs.length, 154);
   assert.equal(new Set(packageDirs).size, packageDirs.length);
   assert.equal(CURATED_XLSX_METHODS.size, 14);
 

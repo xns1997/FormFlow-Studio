@@ -12,7 +12,7 @@
   "inputs": [
     {
       "name": "table",
-      "type": "HTMLTableElement",
+      "type": "object",
       "required": true,
       "description": "DOM Table 元素"
     }
@@ -20,7 +20,7 @@
   "outputs": [
     {
       "name": "workbook",
-      "type": "Workbook",
+      "type": "workbook",
       "description": "生成的完整工作簿"
     }
   ],
@@ -56,5 +56,22 @@
     "table",
     "dom",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "table",
+      "label": "table",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "DOM Table 元素"
+    },
+    {
+      "name": "workbook",
+      "label": "workbook",
+      "type": "workbook",
+      "direction": "output",
+      "description": "生成的完整工作簿"
+    }
   ]
 }

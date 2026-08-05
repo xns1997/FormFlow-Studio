@@ -27,6 +27,13 @@
       "default": 0,
       "min": 0,
       "description": "goto 模式的目标行号"
+    },
+    {
+      "name": "currentIndex",
+      "label": "currentIndex",
+      "type": "number",
+      "default": 0,
+      "description": "配置项：currentIndex"
     }
   ],
   "inputs": [
@@ -47,6 +54,18 @@
       "type": "number",
       "required": false,
       "description": "总行数"
+    },
+    {
+      "name": "data",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "currentIndex",
+      "type": "number",
+      "required": false,
+      "description": "数据输入：currentIndex"
     }
   ],
   "outputs": [
@@ -109,6 +128,22 @@
       "type": "boolean",
       "direction": "output",
       "description": "是否可导航"
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "currentIndex",
+      "label": "currentIndex",
+      "type": "number",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：currentIndex"
     }
   ],
   "keywords": [

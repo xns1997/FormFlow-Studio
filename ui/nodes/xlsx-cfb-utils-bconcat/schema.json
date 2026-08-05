@@ -13,7 +13,7 @@
   "inputs": [
     {
       "name": "bufs",
-      "type": "ArrayBuffer[]",
+      "type": "array",
       "required": true,
       "description": "要合并的缓冲区数组"
     }
@@ -21,7 +21,7 @@
   "outputs": [
     {
       "name": "result",
-      "type": "Uint8Array",
+      "type": "file-data",
       "description": "合并后的缓冲区"
     }
   ],
@@ -35,5 +35,22 @@
     "uint",
     "array",
     "CFB"
+  ],
+  "ports": [
+    {
+      "name": "bufs",
+      "label": "bufs",
+      "type": "array",
+      "direction": "input",
+      "required": true,
+      "description": "要合并的缓冲区数组"
+    },
+    {
+      "name": "result",
+      "label": "result",
+      "type": "file-data",
+      "direction": "output",
+      "description": "合并后的缓冲区"
+    }
   ]
 }

@@ -1,0 +1,93 @@
+{
+  "id": "func-rating-input",
+  "label": "func-rating-input",
+  "description": "节点 func-rating-input",
+  "category": "功能 · 表单控件",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "defaultValue",
+      "label": "defaultValue",
+      "type": "number",
+      "default": 0,
+      "description": "配置项：defaultValue"
+    },
+    {
+      "name": "max",
+      "label": "max",
+      "type": "number",
+      "default": 0,
+      "description": "配置项：max"
+    },
+    {
+      "name": "allowHalf",
+      "label": "allowHalf",
+      "type": "boolean",
+      "default": false,
+      "description": "配置项：allowHalf"
+    },
+    {
+      "name": "label",
+      "label": "label",
+      "type": "string",
+      "default": "",
+      "description": "配置项：label"
+    },
+    {
+      "name": "name",
+      "label": "name",
+      "type": "string",
+      "default": "",
+      "description": "配置项：name"
+    },
+    {
+      "name": "required",
+      "label": "required",
+      "type": "boolean",
+      "default": false,
+      "description": "配置项：required"
+    },
+    {
+      "name": "disabled",
+      "label": "disabled",
+      "type": "boolean",
+      "default": false,
+      "description": "配置项：disabled"
+    }
+  ],
+  "inputs": [
+    {
+      "name": "value",
+      "type": "number",
+      "required": false,
+      "description": "数据输入：value"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "value",
+      "type": "number",
+      "description": "输出：value"
+    }
+  ],
+  "ports": [
+    {
+      "name": "value",
+      "label": "value",
+      "type": "number",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：value"
+    },
+    {
+      "name": "value",
+      "label": "value",
+      "type": "number",
+      "direction": "output",
+      "description": "输出：value"
+    }
+  ],
+  "keywords": [
+    "func-rating-input"
+  ]
+}

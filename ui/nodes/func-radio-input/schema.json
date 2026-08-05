@@ -1,0 +1,97 @@
+{
+  "id": "func-radio-input",
+  "label": "func-radio-input",
+  "description": "节点 func-radio-input",
+  "category": "功能 · 表单控件",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "defaultValue",
+      "label": "defaultValue",
+      "type": "string",
+      "default": "",
+      "description": "配置项：defaultValue"
+    },
+    {
+      "name": "options",
+      "label": "options",
+      "type": "array",
+      "description": "配置项：options"
+    },
+    {
+      "name": "label",
+      "label": "label",
+      "type": "string",
+      "default": "",
+      "description": "配置项：label"
+    },
+    {
+      "name": "name",
+      "label": "name",
+      "type": "string",
+      "default": "",
+      "description": "配置项：name"
+    },
+    {
+      "name": "required",
+      "label": "required",
+      "type": "boolean",
+      "default": false,
+      "description": "配置项：required"
+    },
+    {
+      "name": "disabled",
+      "label": "disabled",
+      "type": "boolean",
+      "default": false,
+      "description": "配置项：disabled"
+    }
+  ],
+  "inputs": [
+    {
+      "name": "value",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：value"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "value",
+      "type": "any",
+      "description": "输出：value"
+    },
+    {
+      "name": "options",
+      "type": "array",
+      "description": "输出：options"
+    }
+  ],
+  "ports": [
+    {
+      "name": "value",
+      "label": "value",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：value"
+    },
+    {
+      "name": "value",
+      "label": "value",
+      "type": "any",
+      "direction": "output",
+      "description": "输出：value"
+    },
+    {
+      "name": "options",
+      "label": "options",
+      "type": "array",
+      "direction": "output",
+      "description": "输出：options"
+    }
+  ],
+  "keywords": [
+    "func-radio-input"
+  ]
+}

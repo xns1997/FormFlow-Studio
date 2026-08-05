@@ -1,0 +1,96 @@
+{
+  "id": "func-checkbox-input",
+  "label": "func-checkbox-input",
+  "description": "节点 func-checkbox-input",
+  "category": "功能 · 表单控件",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "defaultValue",
+      "label": "defaultValue",
+      "type": "array",
+      "description": "配置项：defaultValue"
+    },
+    {
+      "name": "label",
+      "label": "label",
+      "type": "string",
+      "default": "",
+      "description": "配置项：label"
+    },
+    {
+      "name": "name",
+      "label": "name",
+      "type": "string",
+      "default": "",
+      "description": "配置项：name"
+    },
+    {
+      "name": "required",
+      "label": "required",
+      "type": "boolean",
+      "default": false,
+      "description": "配置项：required"
+    },
+    {
+      "name": "disabled",
+      "label": "disabled",
+      "type": "boolean",
+      "default": false,
+      "description": "配置项：disabled"
+    },
+    {
+      "name": "options",
+      "label": "options",
+      "type": "array",
+      "description": "配置项：options"
+    }
+  ],
+  "inputs": [
+    {
+      "name": "value",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：value"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "value",
+      "type": "any",
+      "description": "输出：value"
+    },
+    {
+      "name": "options",
+      "type": "array",
+      "description": "输出：options"
+    }
+  ],
+  "ports": [
+    {
+      "name": "value",
+      "label": "value",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：value"
+    },
+    {
+      "name": "value",
+      "label": "value",
+      "type": "any",
+      "direction": "output",
+      "description": "输出：value"
+    },
+    {
+      "name": "options",
+      "label": "options",
+      "type": "array",
+      "direction": "output",
+      "description": "输出：options"
+    }
+  ],
+  "keywords": [
+    "func-checkbox-input"
+  ]
+}

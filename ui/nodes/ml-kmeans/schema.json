@@ -46,6 +46,20 @@
       "label": "标签",
       "type": "array",
       "direction": "output"
+    },
+    {
+      "name": "features",
+      "label": "features",
+      "type": "array",
+      "direction": "output",
+      "description": "输出：features"
+    },
+    {
+      "name": "error",
+      "label": "error",
+      "type": "any",
+      "direction": "output",
+      "description": "输出：error"
     }
   ],
   "keywords": [
@@ -54,5 +68,30 @@
     "k-means",
     "cluster",
     "unsupervised"
+  ],
+  "outputs": [
+    {
+      "name": "data",
+      "type": "json-rows",
+      "description": "输出：data"
+    },
+    {
+      "name": "features",
+      "type": "array",
+      "description": "输出：features"
+    },
+    {
+      "name": "error",
+      "type": "any",
+      "description": "输出：error"
+    }
+  ],
+  "inputs": [
+    {
+      "name": "data",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：data"
+    }
   ]
 }

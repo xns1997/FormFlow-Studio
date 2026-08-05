@@ -12,7 +12,7 @@
   "inputs": [
     {
       "name": "worksheet",
-      "type": "Worksheet",
+      "type": "worksheet",
       "required": true,
       "description": "要转换的工作表对象"
     }
@@ -77,5 +77,22 @@
     "csv",
     "to",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "worksheet",
+      "label": "worksheet",
+      "type": "worksheet",
+      "direction": "input",
+      "required": true,
+      "description": "要转换的工作表对象"
+    },
+    {
+      "name": "csv",
+      "label": "csv",
+      "type": "string",
+      "direction": "output",
+      "description": "CSV 格式文本"
+    }
   ]
 }

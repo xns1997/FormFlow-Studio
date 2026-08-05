@@ -356,7 +356,7 @@ async function loadModel(path) {
       const sourceBuffer = await readFile(sourcePath);
       const actualHash = createHash('sha256').update(sourceBuffer).digest('hex');
       if (meta.dataHash && meta.dataHash !== actualHash) fail('SOURCE_HASH_MISMATCH', `data/${entry.fileName}`, 'source SHA-256 does not match metadata');
-      for (const sheet of arr(meta.sheets)) if (arr(sheet.preview).length > 100) fail('PREVIEW_LIMIT_EXCEEDED', `data/${entry.metaFile}.${sheet.name}.preview`, 'persisted preview must contain at most 100 rows');
+      for (const sheet of arr(meta.sheets)) if (arr(sheet.preview).length > 1000) fail('PREVIEW_LIMIT_EXCEEDED', `data/${entry.metaFile}.${sheet.name}.preview`, 'persisted preview must contain at most 1000 rows');
       data.push({ ...meta, sourcePath });
     }
     const global = await readJson(join(root, 'global-behaviors.json')).catch(() => ({ behaviors: [], exportedAt: pkg.config?.updatedAt }));
@@ -374,6 +374,54 @@ function collectWorkflowRefs(value, refs = []) {
   return refs;
 }
 async function portCatalog() { return JSON.parse(await readFile(PORT_CATALOG_PATH, 'utf8')); }
+
+function workflowNodeProperties(node) {
+  if (!node || typeof node !== 'object') return {};
+  if (node.data && typeof node.data.properties === 'object' && node.data.properties) return node.data.properties;
+  const raw = node.data?.propertiesJson;
+  if (typeof raw === 'string' && raw.trim()) {
+    try { return JSON.parse(raw); } catch { return {}; }
+  }
+  return {};
+}
+
+function customPorts(raw) {
+  let source = raw;
+  if (typeof source === 'string') {
+    const text = source.trim();
+    if (!text) return [];
+    try { source = JSON.parse(text); } catch { return []; }
+  }
+  if (Array.isArray(source)) {
+    return source
+      .filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry))
+      .filter((entry) => typeof entry.name === 'string' && String(entry.name).trim())
+      .map((entry) => ({ name: String(entry.name).trim(), type: String(entry.type || 'any').trim() || 'any' }));
+  }
+  if (source && typeof source === 'object') {
+    return Object.entries(source)
+      .filter(([name]) => Boolean(String(name).trim()))
+      .map(([name, value]) => ({ name, type: value && typeof value === 'object' ? String(value.type || 'any').trim() || 'any' : String(value || 'any').trim() || 'any' }));
+  }
+  return [];
+}
+
+function mergePorts(staticPorts, dynamicPorts) {
+  const byName = new Map();
+  for (const port of [...staticPorts, ...dynamicPorts]) if (!byName.has(port.name)) byName.set(port.name, port);
+  return byName;
+}
+
+function portTypesCompatible(source, target) {
+  if (source === 'any' || target === 'any' || source === target) return true;
+  const families = [
+    new Set(['object', 'workbook', 'worksheet', 'cell', 'range', 'cell-ref', 'options', 'filter', 'sort-config', 'style', 'validation-rule']),
+    new Set(['array', 'json-rows', 'aoa', 'headers']),
+    new Set(['string', 'address', 'csv-string', 'html-string', 'json-string']),
+  ];
+  return families.some((family) => family.has(source) && family.has(target));
+}
+
 async function validateModel(model) {
   const errors = []; const add = (code, path, message) => errors.push({ code, path, message });
   auditFrozenFields(model, errors);
@@ -401,8 +449,17 @@ async function validateModel(model) {
       if (!source) add('MISSING_REFERENCE', `workflows.${flow.id}.edges.${edge.id}.source`, edge.source);
       if (!target) add('MISSING_REFERENCE', `workflows.${flow.id}.edges.${edge.id}.target`, edge.target);
       const sourcePort = edge.sourceHandle?.replace(/^out:/, ''); const targetPort = edge.targetHandle?.replace(/^in:/, '');
-      if (source && sourcePort && catalog[source.specId] && !catalog[source.specId].outputs.includes(sourcePort)) add('INVALID_PORT', `workflows.${flow.id}.edges.${edge.id}.sourceHandle`, sourcePort);
-      if (target && targetPort && catalog[target.specId] && !catalog[target.specId].inputs.includes(targetPort)) add('INVALID_PORT', `workflows.${flow.id}.edges.${edge.id}.targetHandle`, targetPort);
+      const sourceProps = workflowNodeProperties(source);
+      const sourceOutputs = source ? mergePorts(catalog[source.specId]?.outputs || [], [...customPorts(sourceProps.outputPorts), ...(source.specId === 'workflow:import' ? customPorts(sourceProps.ports) : [])]) : null;
+      const targetProps = workflowNodeProperties(target);
+      const targetInputs = target ? mergePorts(catalog[target.specId]?.inputs || [], [...customPorts(targetProps.inputPorts), ...(target.specId === 'workflow:export' ? customPorts(targetProps.ports) : [])]) : null;
+      const sourceEntry = source && sourcePort ? sourceOutputs?.get(sourcePort) : undefined;
+      const targetEntry = target && targetPort ? targetInputs?.get(targetPort) : undefined;
+      if (source && sourcePort && sourceOutputs && !sourceEntry) add('INVALID_PORT', `workflows.${flow.id}.edges.${edge.id}.sourceHandle`, sourcePort);
+      if (target && targetPort && targetInputs && !targetEntry) add('INVALID_PORT', `workflows.${flow.id}.edges.${edge.id}.targetHandle`, targetPort);
+      if (sourceEntry && targetEntry && !portTypesCompatible(sourceEntry.type, targetEntry.type)) {
+        add('INVALID_EDGE_TYPE', `workflows.${flow.id}.edges.${edge.id}`, `${sourcePort}(${sourceEntry.type}) → ${targetPort}(${targetEntry.type})`);
+      }
     }
   }
   for (const entry of model.sheetBehaviors) if (!tableMap.get(entry.tableId)?.has(entry.sheetName)) add('MISSING_REFERENCE', `sheetBehaviors.${entry.tableId}/${entry.sheetName}`, 'table or sheet does not exist');
@@ -482,15 +539,21 @@ async function walk(root, current = root) {
   return files;
 }
 async function snapshotCatalog(nodesDirectory, output) {
-  const catalog = { 'generic:value-input': { inputs: [], outputs: ['value'] } };
+  const catalog = { 'generic:value-input': { inputs: [], outputs: [{ name: 'value', type: 'any' }, { name: 'name', type: 'string' }, { name: 'valueType', type: 'string' }] } };
   for (const file of await walk(nodesDirectory)) {
     if (!file.name.endsWith('/schema.json')) continue;
     const schema = await readJson(file.path); if (!schema.id || !Array.isArray(schema.ports)) continue;
     if (arr(schema.properties).some((property) => property.type === 'port-definition')) continue;
-    const id = schema.id.startsWith('generic-') ? `generic:${schema.id.slice(8)}` : schema.id;
+    const id = schema.id.startsWith('generic-') ? `generic:${schema.id.slice(8)}` : schema.id.startsWith('ml-') ? `ml:${schema.id.slice(3)}` : schema.id;
     catalog[id] = {
-      inputs: schema.ports.filter((port) => port.direction === 'input' || port.direction === 'both').map((port) => port.name).sort(),
-      outputs: schema.ports.filter((port) => port.direction === 'output' || port.direction === 'both').map((port) => port.name).sort(),
+      inputs: schema.ports
+        .filter((port) => port.direction === 'input' || port.direction === 'both')
+        .map((port) => ({ name: port.name, type: port.type, required: !!port.required }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+      outputs: schema.ports
+        .filter((port) => port.direction === 'output' || port.direction === 'both')
+        .map((port) => ({ name: port.name, type: port.type }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
     };
   }
   await writeFile(output, json(catalog));

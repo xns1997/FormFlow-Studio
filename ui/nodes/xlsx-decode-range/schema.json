@@ -20,7 +20,7 @@
   "outputs": [
     {
       "name": "range",
-      "type": "Range",
+      "type": "range",
       "description": "范围对象 {s: {r,c}, e: {r,c}}"
     }
   ],
@@ -33,5 +33,22 @@
     "a",
     "格式的范围地址解析成坐标对象",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "address",
+      "label": "address",
+      "type": "string",
+      "direction": "input",
+      "required": true,
+      "description": "A1 格式的范围地址，如 'A1:C5'"
+    },
+    {
+      "name": "range",
+      "label": "range",
+      "type": "range",
+      "direction": "output",
+      "description": "范围对象 {s: {r,c}, e: {r,c}}"
+    }
   ]
 }

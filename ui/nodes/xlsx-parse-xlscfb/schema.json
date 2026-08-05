@@ -11,7 +11,7 @@
   "inputs": [
     {
       "name": "cfb",
-      "type": "CFB",
+      "type": "object",
       "required": true,
       "description": "CFB 对象"
     }
@@ -19,7 +19,7 @@
   "outputs": [
     {
       "name": "workbook",
-      "type": "Workbook",
+      "type": "workbook",
       "description": "工作簿对象"
     }
   ],
@@ -40,5 +40,22 @@
     "解析",
     "格式的",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "cfb",
+      "label": "cfb",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "CFB 对象"
+    },
+    {
+      "name": "workbook",
+      "label": "workbook",
+      "type": "workbook",
+      "direction": "output",
+      "description": "工作簿对象"
+    }
   ]
 }

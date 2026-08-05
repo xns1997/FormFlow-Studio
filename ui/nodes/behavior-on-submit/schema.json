@@ -12,6 +12,36 @@
       "type": "trigger",
       "required": true,
       "description": "触发信号"
+    },
+    {
+      "name": "formData",
+      "type": "object",
+      "required": false,
+      "description": "数据输入：formData"
+    },
+    {
+      "name": "data",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "rowIndex",
+      "type": "number",
+      "required": false,
+      "description": "数据输入：rowIndex"
+    },
+    {
+      "name": "sheetName",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：sheetName"
+    },
+    {
+      "name": "changedFields",
+      "type": "array",
+      "required": false,
+      "description": "数据输入：changedFields"
     }
   ],
   "outputs": [
@@ -40,6 +70,54 @@
       "type": "object",
       "direction": "output",
       "description": "表单数据"
+    },
+    {
+      "name": "trigger",
+      "label": "trigger",
+      "type": "trigger",
+      "direction": "input",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "formData",
+      "label": "formData",
+      "type": "object",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：formData"
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "rowIndex",
+      "label": "rowIndex",
+      "type": "number",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：rowIndex"
+    },
+    {
+      "name": "sheetName",
+      "label": "sheetName",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：sheetName"
+    },
+    {
+      "name": "changedFields",
+      "label": "changedFields",
+      "type": "array",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：changedFields"
     }
   ],
   "keywords": [

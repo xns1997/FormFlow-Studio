@@ -13,7 +13,7 @@
   "inputs": [
     {
       "name": "data",
-      "type": "Uint8Array | string",
+      "type": "file-data",
       "required": true,
       "description": "要解压的数据"
     }
@@ -21,7 +21,7 @@
   "outputs": [
     {
       "name": "decompressed",
-      "type": "Uint8Array",
+      "type": "file-data",
       "description": "解压后的数据"
     }
   ],
@@ -35,5 +35,22 @@
     "inflateRaw",
     "zlib",
     "CFB"
+  ],
+  "ports": [
+    {
+      "name": "data",
+      "label": "data",
+      "type": "file-data",
+      "direction": "input",
+      "required": true,
+      "description": "要解压的数据"
+    },
+    {
+      "name": "decompressed",
+      "label": "decompressed",
+      "type": "file-data",
+      "direction": "output",
+      "description": "解压后的数据"
+    }
   ]
 }

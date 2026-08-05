@@ -12,13 +12,13 @@
   "inputs": [
     {
       "name": "worksheet",
-      "type": "Worksheet",
+      "type": "worksheet",
       "required": true,
       "description": "目标工作表对象"
     },
     {
       "name": "data",
-      "type": "unknown[][]",
+      "type": "array",
       "required": true,
       "description": "要追加的二维数组数据"
     }
@@ -26,7 +26,7 @@
   "outputs": [
     {
       "name": "worksheet",
-      "type": "Worksheet",
+      "type": "worksheet",
       "description": "追加后的工作表"
     }
   ],
@@ -68,5 +68,30 @@
     "向已有",
     "追加二维数组数据",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "worksheet",
+      "label": "worksheet",
+      "type": "worksheet",
+      "direction": "input",
+      "required": true,
+      "description": "目标工作表对象"
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "array",
+      "direction": "input",
+      "required": true,
+      "description": "要追加的二维数组数据"
+    },
+    {
+      "name": "worksheet",
+      "label": "worksheet",
+      "type": "worksheet",
+      "direction": "output",
+      "description": "追加后的工作表"
+    }
   ]
 }

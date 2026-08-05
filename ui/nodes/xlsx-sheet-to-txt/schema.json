@@ -12,7 +12,7 @@
   "inputs": [
     {
       "name": "worksheet",
-      "type": "Worksheet",
+      "type": "worksheet",
       "required": true,
       "description": "工作表对象"
     }
@@ -48,5 +48,22 @@
     "txt",
     "to",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "worksheet",
+      "label": "worksheet",
+      "type": "worksheet",
+      "direction": "input",
+      "required": true,
+      "description": "工作表对象"
+    },
+    {
+      "name": "text",
+      "label": "text",
+      "type": "string",
+      "direction": "output",
+      "description": "制表符分隔的纯文本"
+    }
   ]
 }

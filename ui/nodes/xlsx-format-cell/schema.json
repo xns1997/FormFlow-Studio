@@ -12,7 +12,7 @@
   "inputs": [
     {
       "name": "cell",
-      "type": "CellObject",
+      "type": "object",
       "required": true,
       "description": "单元格对象"
     }
@@ -46,5 +46,22 @@
     "utils",
     "cell",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "cell",
+      "label": "cell",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "单元格对象"
+    },
+    {
+      "name": "text",
+      "label": "text",
+      "type": "string",
+      "direction": "output",
+      "description": "格式化后的文本"
+    }
   ]
 }

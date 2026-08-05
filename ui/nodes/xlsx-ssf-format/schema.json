@@ -44,5 +44,30 @@
     "format",
     "使用数字格式代码格式化数值",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "fmt",
+      "label": "fmt",
+      "type": "string",
+      "direction": "input",
+      "required": true,
+      "description": "格式代码，如 '#,##0.00'"
+    },
+    {
+      "name": "value",
+      "label": "value",
+      "type": "number",
+      "direction": "input",
+      "required": true,
+      "description": "要格式化的数值"
+    },
+    {
+      "name": "text",
+      "label": "text",
+      "type": "string",
+      "direction": "output",
+      "description": "格式化后的文本"
+    }
   ]
 }

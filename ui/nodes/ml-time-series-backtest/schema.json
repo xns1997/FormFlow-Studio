@@ -1,0 +1,190 @@
+{
+  "id": "ml:time-series-backtest",
+  "label": "time-series-backtest",
+  "description": "节点 ml:time-series-backtest",
+  "category": "机器学习 · 评估",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "timeField",
+      "label": "timeField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：timeField"
+    },
+    {
+      "name": "target",
+      "label": "target",
+      "type": "string",
+      "default": "",
+      "description": "配置项：target"
+    },
+    {
+      "name": "validationRatio",
+      "label": "validationRatio",
+      "type": "number",
+      "default": 0,
+      "description": "配置项：validationRatio"
+    },
+    {
+      "name": "resultField",
+      "label": "resultField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：resultField"
+    },
+    {
+      "name": "summaryField",
+      "label": "summaryField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：summaryField"
+    },
+    {
+      "name": "chartField",
+      "label": "chartField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：chartField"
+    },
+    {
+      "name": "messageField",
+      "label": "messageField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：messageField"
+    },
+    {
+      "name": "horizon",
+      "label": "horizon",
+      "type": "number",
+      "default": 0,
+      "description": "配置项：horizon"
+    }
+  ],
+  "inputs": [
+    {
+      "name": "rows",
+      "type": "json-rows",
+      "required": true,
+      "description": "数据输入：rows"
+    },
+    {
+      "name": "data",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "timeField",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：timeField"
+    },
+    {
+      "name": "target",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：target"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "rows",
+      "type": "json-rows",
+      "description": "输出：rows"
+    },
+    {
+      "name": "result",
+      "type": "any",
+      "description": "输出：result"
+    },
+    {
+      "name": "summary",
+      "type": "object",
+      "description": "输出：summary"
+    },
+    {
+      "name": "chart",
+      "type": "object",
+      "description": "输出：chart"
+    },
+    {
+      "name": "usable",
+      "type": "boolean",
+      "description": "输出：usable"
+    }
+  ],
+  "ports": [
+    {
+      "name": "rows",
+      "label": "rows",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true,
+      "description": "数据输入：rows"
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "timeField",
+      "label": "timeField",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：timeField"
+    },
+    {
+      "name": "target",
+      "label": "target",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：target"
+    },
+    {
+      "name": "rows",
+      "label": "rows",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "输出：rows"
+    },
+    {
+      "name": "result",
+      "label": "result",
+      "type": "any",
+      "direction": "output",
+      "description": "输出：result"
+    },
+    {
+      "name": "summary",
+      "label": "summary",
+      "type": "object",
+      "direction": "output",
+      "description": "输出：summary"
+    },
+    {
+      "name": "chart",
+      "label": "chart",
+      "type": "object",
+      "direction": "output",
+      "description": "输出：chart"
+    },
+    {
+      "name": "usable",
+      "label": "usable",
+      "type": "boolean",
+      "direction": "output",
+      "description": "输出：usable"
+    }
+  ],
+  "keywords": [
+    "ml:time-series-backtest"
+  ]
+}

@@ -1,0 +1,235 @@
+{
+  "id": "data:qualified-join-group",
+  "label": "qualified-join-group",
+  "description": "节点 data:qualified-join-group",
+  "category": "数据处理 · 分析",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "leftKey",
+      "label": "leftKey",
+      "type": "string",
+      "default": "",
+      "description": "配置项：leftKey"
+    },
+    {
+      "name": "rightKey",
+      "label": "rightKey",
+      "type": "string",
+      "default": "",
+      "description": "配置项：rightKey"
+    },
+    {
+      "name": "leftPrefix",
+      "label": "leftPrefix",
+      "type": "string",
+      "default": "",
+      "description": "配置项：leftPrefix"
+    },
+    {
+      "name": "rightPrefix",
+      "label": "rightPrefix",
+      "type": "string",
+      "default": "",
+      "description": "配置项：rightPrefix"
+    },
+    {
+      "name": "dimensions",
+      "label": "dimensions",
+      "type": "array",
+      "description": "配置项：dimensions"
+    },
+    {
+      "name": "metrics",
+      "label": "metrics",
+      "type": "array",
+      "description": "配置项：metrics"
+    },
+    {
+      "name": "aggregation",
+      "label": "aggregation",
+      "type": "string",
+      "default": "",
+      "description": "配置项：aggregation"
+    },
+    {
+      "name": "joinType",
+      "label": "joinType",
+      "type": "string",
+      "default": "",
+      "description": "配置项：joinType"
+    },
+    {
+      "name": "chartLimit",
+      "label": "chartLimit",
+      "type": "number",
+      "default": 0,
+      "description": "配置项：chartLimit"
+    },
+    {
+      "name": "resultField",
+      "label": "resultField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：resultField"
+    },
+    {
+      "name": "summaryField",
+      "label": "summaryField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：summaryField"
+    },
+    {
+      "name": "chartField",
+      "label": "chartField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：chartField"
+    },
+    {
+      "name": "messageField",
+      "label": "messageField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：messageField"
+    }
+  ],
+  "inputs": [
+    {
+      "name": "left",
+      "type": "json-rows",
+      "required": true,
+      "description": "数据输入：left"
+    },
+    {
+      "name": "right",
+      "type": "json-rows",
+      "required": true,
+      "description": "数据输入：right"
+    },
+    {
+      "name": "rows",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：rows"
+    },
+    {
+      "name": "reference",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：reference"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "rows",
+      "type": "json-rows",
+      "description": "输出：rows"
+    },
+    {
+      "name": "result",
+      "type": "any",
+      "description": "输出：result"
+    },
+    {
+      "name": "joinedRows",
+      "type": "json-rows",
+      "description": "输出：joinedRows"
+    },
+    {
+      "name": "chart",
+      "type": "object",
+      "description": "输出：chart"
+    },
+    {
+      "name": "summary",
+      "type": "object",
+      "description": "输出：summary"
+    },
+    {
+      "name": "message",
+      "type": "string",
+      "description": "输出：message"
+    }
+  ],
+  "ports": [
+    {
+      "name": "left",
+      "label": "left",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true,
+      "description": "数据输入：left"
+    },
+    {
+      "name": "right",
+      "label": "right",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true,
+      "description": "数据输入：right"
+    },
+    {
+      "name": "rows",
+      "label": "rows",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：rows"
+    },
+    {
+      "name": "reference",
+      "label": "reference",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：reference"
+    },
+    {
+      "name": "rows",
+      "label": "rows",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "输出：rows"
+    },
+    {
+      "name": "result",
+      "label": "result",
+      "type": "any",
+      "direction": "output",
+      "description": "输出：result"
+    },
+    {
+      "name": "joinedRows",
+      "label": "joinedRows",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "输出：joinedRows"
+    },
+    {
+      "name": "chart",
+      "label": "chart",
+      "type": "object",
+      "direction": "output",
+      "description": "输出：chart"
+    },
+    {
+      "name": "summary",
+      "label": "summary",
+      "type": "object",
+      "direction": "output",
+      "description": "输出：summary"
+    },
+    {
+      "name": "message",
+      "label": "message",
+      "type": "string",
+      "direction": "output",
+      "description": "输出：message"
+    }
+  ],
+  "keywords": [
+    "data:qualified-join-group"
+  ]
+}

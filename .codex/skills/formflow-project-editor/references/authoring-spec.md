@@ -138,7 +138,7 @@ outputs:
     format: xlsx
 ```
 
-Node positions and edge IDs are optional. `data.properties` is converted to the runtime `propertiesJson` form. Node port names are checked against the frozen catalog in `references/node-ports-v2.json` when the node is catalogued.
+Node positions and edge IDs are optional. `data.properties` is converted to the runtime `propertiesJson` form. Node port names and types are checked against the frozen catalog in `references/node-ports-v2.json` when the node is catalogued; `workflow:import`/`workflow:export`/`generic:custom-js` 的额外端口从节点 `data` 的 `outputPorts`/`inputPorts`/`ports` 解析，连线端口类型按同族规则校验。
 
 ## Normalization patches
 

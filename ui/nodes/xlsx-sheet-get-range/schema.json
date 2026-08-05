@@ -12,13 +12,13 @@
   "inputs": [
     {
       "name": "worksheet",
-      "type": "Worksheet",
+      "type": "worksheet",
       "required": true,
       "description": "工作表对象"
     },
     {
       "name": "range",
-      "type": "string | Range",
+      "type": "any",
       "required": true,
       "description": "范围地址如 'A1:C5' 或范围对象"
     }
@@ -26,7 +26,7 @@
   "outputs": [
     {
       "name": "cells",
-      "type": "CellObject[]",
+      "type": "array",
       "description": "范围内的单元格对象数组"
     }
   ],
@@ -39,5 +39,30 @@
     "get",
     "获取",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "worksheet",
+      "label": "worksheet",
+      "type": "worksheet",
+      "direction": "input",
+      "required": true,
+      "description": "工作表对象"
+    },
+    {
+      "name": "range",
+      "label": "range",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "范围地址如 'A1:C5' 或范围对象"
+    },
+    {
+      "name": "cells",
+      "label": "cells",
+      "type": "array",
+      "direction": "output",
+      "description": "范围内的单元格对象数组"
+    }
   ]
 }

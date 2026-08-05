@@ -5,17 +5,108 @@
   "category": "高阶 · 数据",
   "kind": "generic",
   "properties": [
-    { "name": "masterKey", "label": "主表键", "type": "string", "default": "id", "required": true },
-    { "name": "detailKey", "label": "明细外键", "type": "string", "default": "masterId", "required": true },
-    { "name": "detailField", "label": "明细字段名", "type": "string", "default": "明细" },
-    { "name": "resultField", "label": "结果回填字段", "type": "string", "default": "" },
-    { "name": "messageField", "label": "状态回填字段", "type": "string", "default": "" }
+    {
+      "name": "masterKey",
+      "label": "主表键",
+      "type": "string",
+      "default": "id",
+      "required": true
+    },
+    {
+      "name": "detailKey",
+      "label": "明细外键",
+      "type": "string",
+      "default": "masterId",
+      "required": true
+    },
+    {
+      "name": "detailField",
+      "label": "明细字段名",
+      "type": "string",
+      "default": "明细"
+    },
+    {
+      "name": "resultField",
+      "label": "结果回填字段",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "messageField",
+      "label": "状态回填字段",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "joinType",
+      "label": "joinType",
+      "type": "string",
+      "default": "",
+      "description": "配置项：joinType"
+    }
   ],
   "ports": [
-    { "name": "masters", "label": "主记录", "type": "json-rows", "direction": "input", "required": true },
-    { "name": "details", "label": "明细记录", "type": "json-rows", "direction": "input", "required": true },
-    { "name": "rows", "label": "主从结果", "type": "json-rows", "direction": "output" },
-    { "name": "detailCount", "label": "明细数量", "type": "number", "direction": "output" }
+    {
+      "name": "masters",
+      "label": "主记录",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true
+    },
+    {
+      "name": "details",
+      "label": "明细记录",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true
+    },
+    {
+      "name": "rows",
+      "label": "主从结果",
+      "type": "json-rows",
+      "direction": "output"
+    },
+    {
+      "name": "detailCount",
+      "label": "明细数量",
+      "type": "number",
+      "direction": "output"
+    },
+    {
+      "name": "left",
+      "label": "left",
+      "type": "json-rows",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：left"
+    },
+    {
+      "name": "right",
+      "label": "right",
+      "type": "json-rows",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：right"
+    }
   ],
-  "keywords": ["主从", "master detail", "一对多", "详情"]
+  "keywords": [
+    "主从",
+    "master detail",
+    "一对多",
+    "详情"
+  ],
+  "inputs": [
+    {
+      "name": "left",
+      "type": "json-rows",
+      "required": false,
+      "description": "数据输入：left"
+    },
+    {
+      "name": "right",
+      "type": "json-rows",
+      "required": false,
+      "description": "数据输入：right"
+    }
+  ]
 }

@@ -5,17 +5,121 @@
   "category": "高阶 · 数据",
   "kind": "generic",
   "properties": [
-    { "name": "targets", "label": "写回目标", "type": "json", "default": [] },
-    { "name": "statusField", "label": "状态回填字段", "type": "string", "default": "_事务状态" },
-    { "name": "diffField", "label": "差异回填字段", "type": "string", "default": "_变更差异" },
-    { "name": "clearSourceFieldsOnSuccess", "label": "成功后清空变更集", "type": "boolean", "default": false }
+    {
+      "name": "targets",
+      "label": "写回目标",
+      "type": "json",
+      "default": []
+    },
+    {
+      "name": "statusField",
+      "label": "状态回填字段",
+      "type": "string",
+      "default": "_事务状态"
+    },
+    {
+      "name": "diffField",
+      "label": "差异回填字段",
+      "type": "string",
+      "default": "_变更差异"
+    },
+    {
+      "name": "clearSourceFieldsOnSuccess",
+      "label": "成功后清空变更集",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "name": "resultField",
+      "label": "resultField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：resultField"
+    },
+    {
+      "name": "maxChanges",
+      "label": "maxChanges",
+      "type": "number",
+      "default": 0,
+      "description": "配置项：maxChanges"
+    },
+    {
+      "name": "successMessage",
+      "label": "successMessage",
+      "type": "string",
+      "default": "",
+      "description": "配置项：successMessage"
+    }
   ],
   "ports": [
-    { "name": "formData", "label": "复合表单数据", "type": "object", "direction": "input", "required": true },
-    { "name": "result", "label": "事务结果", "type": "array", "direction": "output" },
-    { "name": "success", "label": "提交成功", "type": "boolean", "direction": "output" },
-    { "name": "diff", "label": "变更差异", "type": "array", "direction": "output" },
-    { "name": "conflicts", "label": "冲突", "type": "array", "direction": "output" }
+    {
+      "name": "formData",
+      "label": "复合表单数据",
+      "type": "object",
+      "direction": "input",
+      "required": true
+    },
+    {
+      "name": "result",
+      "label": "事务结果",
+      "type": "array",
+      "direction": "output"
+    },
+    {
+      "name": "success",
+      "label": "提交成功",
+      "type": "boolean",
+      "direction": "output"
+    },
+    {
+      "name": "diff",
+      "label": "变更差异",
+      "type": "array",
+      "direction": "output"
+    },
+    {
+      "name": "conflicts",
+      "label": "冲突",
+      "type": "array",
+      "direction": "output"
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "targets",
+      "label": "targets",
+      "type": "array",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：targets"
+    }
   ],
-  "keywords": ["事务", "跨表", "原子", "差异", "冲突", "writeback"]
+  "keywords": [
+    "事务",
+    "跨表",
+    "原子",
+    "差异",
+    "冲突",
+    "writeback"
+  ],
+  "inputs": [
+    {
+      "name": "data",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "targets",
+      "type": "array",
+      "required": false,
+      "description": "数据输入：targets"
+    }
+  ]
 }

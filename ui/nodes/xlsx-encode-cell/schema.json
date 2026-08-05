@@ -12,7 +12,7 @@
   "inputs": [
     {
       "name": "cell",
-      "type": "CellAddress",
+      "type": "cell",
       "required": true,
       "description": "单元格坐标 {r: 行号, c: 列号}，从 0 开始"
     }
@@ -33,5 +33,22 @@
     "a",
     "地址字符串",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "cell",
+      "label": "cell",
+      "type": "cell",
+      "direction": "input",
+      "required": true,
+      "description": "单元格坐标 {r: 行号, c: 列号}，从 0 开始"
+    },
+    {
+      "name": "address",
+      "label": "address",
+      "type": "string",
+      "direction": "output",
+      "description": "A1 格式的单元格地址，如 'A1', 'C5'"
+    }
   ]
 }

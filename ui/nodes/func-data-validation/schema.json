@@ -54,6 +54,20 @@
       "type": "string",
       "default": "输入无效",
       "description": "验证失败时的提示"
+    },
+    {
+      "name": "field",
+      "label": "field",
+      "type": "string",
+      "default": "",
+      "description": "配置项：field"
+    },
+    {
+      "name": "formula1",
+      "label": "formula1",
+      "type": "string",
+      "default": "",
+      "description": "配置项：formula1"
     }
   ],
   "inputs": [

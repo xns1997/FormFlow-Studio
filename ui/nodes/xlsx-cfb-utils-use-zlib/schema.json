@@ -21,7 +21,7 @@
   "outputs": [
     {
       "name": "result",
-      "type": "void",
+      "type": "any",
       "description": "设置完成"
     }
   ],
@@ -35,5 +35,22 @@
     "use",
     "zlib",
     "CFB"
+  ],
+  "ports": [
+    {
+      "name": "zlib",
+      "label": "zlib",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "zlib 实现对象"
+    },
+    {
+      "name": "result",
+      "label": "result",
+      "type": "any",
+      "direction": "output",
+      "description": "设置完成"
+    }
   ]
 }

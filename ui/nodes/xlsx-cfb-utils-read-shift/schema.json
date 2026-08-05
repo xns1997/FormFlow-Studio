@@ -40,5 +40,30 @@
     "ReadShift",
     "CFB",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "sz",
+      "label": "sz",
+      "type": "number",
+      "direction": "input",
+      "required": true,
+      "description": "要读取的字节数"
+    },
+    {
+      "name": "type",
+      "label": "type",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据类型：str, utf16, hex, etc."
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "any",
+      "direction": "output",
+      "description": "读取到的数据"
+    }
   ]
 }

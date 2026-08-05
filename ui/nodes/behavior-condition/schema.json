@@ -32,6 +32,13 @@
       "type": "string",
       "default": "",
       "description": "要比较的值"
+    },
+    {
+      "name": "fieldName",
+      "label": "fieldName",
+      "type": "string",
+      "default": "",
+      "description": "配置项：fieldName"
     }
   ],
   "inputs": [
@@ -52,6 +59,12 @@
       "type": "any",
       "required": false,
       "description": "比较值覆盖"
+    },
+    {
+      "name": "data",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：data"
     }
   ],
   "outputs": [
@@ -108,6 +121,21 @@
       "type": "any",
       "direction": "output",
       "description": "条件不成立"
+    },
+    {
+      "name": "value",
+      "label": "value",
+      "type": "any",
+      "direction": "output",
+      "description": "透传的值"
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：data"
     }
   ],
   "keywords": [

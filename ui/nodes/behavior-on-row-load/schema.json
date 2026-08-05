@@ -12,6 +12,42 @@
       "type": "trigger",
       "required": true,
       "description": "触发信号"
+    },
+    {
+      "name": "rowIndex",
+      "type": "number",
+      "required": false,
+      "description": "数据输入：rowIndex"
+    },
+    {
+      "name": "rowData",
+      "type": "object",
+      "required": false,
+      "description": "数据输入：rowData"
+    },
+    {
+      "name": "data",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "sheetName",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：sheetName"
+    },
+    {
+      "name": "totalRows",
+      "type": "number",
+      "required": false,
+      "description": "数据输入：totalRows"
+    },
+    {
+      "name": "formData",
+      "type": "object",
+      "required": false,
+      "description": "数据输入：formData"
     }
   ],
   "outputs": [
@@ -52,6 +88,62 @@
       "type": "number",
       "direction": "output",
       "description": "行索引"
+    },
+    {
+      "name": "trigger",
+      "label": "trigger",
+      "type": "trigger",
+      "direction": "input",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "rowIndex",
+      "label": "rowIndex",
+      "type": "number",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：rowIndex"
+    },
+    {
+      "name": "rowData",
+      "label": "rowData",
+      "type": "object",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：rowData"
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "sheetName",
+      "label": "sheetName",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：sheetName"
+    },
+    {
+      "name": "totalRows",
+      "label": "totalRows",
+      "type": "number",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：totalRows"
+    },
+    {
+      "name": "formData",
+      "label": "formData",
+      "type": "object",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：formData"
     }
   ],
   "keywords": [

@@ -12,13 +12,13 @@
   "inputs": [
     {
       "name": "workbook",
-      "type": "Workbook",
+      "type": "workbook",
       "required": true,
       "description": "目标工作簿"
     },
     {
       "name": "names",
-      "type": "string[]",
+      "type": "array",
       "required": true,
       "description": "新的 Sheet 名称顺序"
     }
@@ -26,7 +26,7 @@
   "outputs": [
     {
       "name": "workbook",
-      "type": "Workbook",
+      "type": "workbook",
       "description": "重排后的工作簿"
     }
   ],
@@ -39,5 +39,30 @@
     "的顺序",
     "move",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "workbook",
+      "label": "workbook",
+      "type": "workbook",
+      "direction": "input",
+      "required": true,
+      "description": "目标工作簿"
+    },
+    {
+      "name": "names",
+      "label": "names",
+      "type": "array",
+      "direction": "input",
+      "required": true,
+      "description": "新的 Sheet 名称顺序"
+    },
+    {
+      "name": "workbook",
+      "label": "workbook",
+      "type": "workbook",
+      "direction": "output",
+      "description": "重排后的工作簿"
+    }
   ]
 }

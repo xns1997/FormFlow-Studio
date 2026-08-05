@@ -31,5 +31,22 @@
     "is",
     "判断格式代码是否为日期格式",
     "SSF"
+  ],
+  "ports": [
+    {
+      "name": "fmt",
+      "label": "fmt",
+      "type": "string",
+      "direction": "input",
+      "required": true,
+      "description": "格式代码"
+    },
+    {
+      "name": "isDate",
+      "label": "isDate",
+      "type": "boolean",
+      "direction": "output",
+      "description": "是否为日期格式"
+    }
   ]
 }

@@ -20,6 +20,13 @@
       "type": "string",
       "default": "",
       "description": "命名项引用的公式/地址"
+    },
+    {
+      "name": "range",
+      "label": "range",
+      "type": "string",
+      "default": "",
+      "description": "配置项：range"
     }
   ],
   "inputs": [
@@ -40,6 +47,12 @@
       "type": "string",
       "required": false,
       "description": "公式覆盖"
+    },
+    {
+      "name": "worksheet",
+      "type": "worksheet",
+      "required": false,
+      "description": "数据输入：worksheet"
     }
   ],
   "outputs": [
@@ -90,6 +103,14 @@
       "type": "string",
       "direction": "output",
       "description": "命名项名"
+    },
+    {
+      "name": "worksheet",
+      "label": "worksheet",
+      "type": "worksheet",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：worksheet"
     }
   ],
   "keywords": [

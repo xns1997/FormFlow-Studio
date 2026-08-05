@@ -32,5 +32,22 @@
     "encode",
     "indexed",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "row",
+      "label": "row",
+      "type": "number",
+      "direction": "input",
+      "required": true,
+      "description": "行号，从 0 开始"
+    },
+    {
+      "name": "label",
+      "label": "label",
+      "type": "string",
+      "direction": "output",
+      "description": "1-indexed 的行号字符串"
+    }
   ]
 }

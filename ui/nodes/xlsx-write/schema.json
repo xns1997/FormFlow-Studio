@@ -11,7 +11,7 @@
   "inputs": [
     {
       "name": "workbook",
-      "type": "Workbook",
+      "type": "workbook",
       "required": true,
       "description": "要序列化的工作簿对象"
     }
@@ -19,7 +19,7 @@
   "outputs": [
     {
       "name": "data",
-      "type": "ArrayBuffer | string",
+      "type": "file-data",
       "description": "序列化后的二进制数据或文本"
     }
   ],
@@ -104,5 +104,22 @@
     "write",
     "把工作簿序列化为指定格式的二进制数据",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "workbook",
+      "label": "workbook",
+      "type": "workbook",
+      "direction": "input",
+      "required": true,
+      "description": "要序列化的工作簿对象"
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "file-data",
+      "direction": "output",
+      "description": "序列化后的二进制数据或文本"
+    }
   ]
 }

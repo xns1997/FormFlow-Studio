@@ -47,6 +47,13 @@
       "type": "string",
       "default": "",
       "description": "筛选值"
+    },
+    {
+      "name": "tableId",
+      "label": "tableId",
+      "type": "string",
+      "default": "",
+      "description": "配置项：tableId"
     }
   ],
   "inputs": [
@@ -67,6 +74,18 @@
       "type": "string",
       "required": false,
       "description": "Sheet 名覆盖"
+    },
+    {
+      "name": "tableId",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：tableId"
+    },
+    {
+      "name": "filter",
+      "type": "filter",
+      "required": false,
+      "description": "数据输入：filter"
     }
   ],
   "outputs": [
@@ -178,6 +197,22 @@
       "type": "string",
       "direction": "output",
       "description": "命中的 Sheet 名"
+    },
+    {
+      "name": "tableId",
+      "label": "tableId",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：tableId"
+    },
+    {
+      "name": "filter",
+      "label": "filter",
+      "type": "filter",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：filter"
     }
   ],
   "keywords": [

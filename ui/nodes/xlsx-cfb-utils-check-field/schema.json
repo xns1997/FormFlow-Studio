@@ -13,7 +13,7 @@
   "inputs": [
     {
       "name": "header",
-      "type": "Uint8Array",
+      "type": "file-data",
       "required": true,
       "description": "要验证的头部数据"
     },
@@ -38,5 +38,30 @@
     "CFB",
     "CheckField",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "header",
+      "label": "header",
+      "type": "file-data",
+      "direction": "input",
+      "required": true,
+      "description": "要验证的头部数据"
+    },
+    {
+      "name": "offset",
+      "label": "offset",
+      "type": "number",
+      "direction": "input",
+      "required": true,
+      "description": "偏移量"
+    },
+    {
+      "name": "valid",
+      "label": "valid",
+      "type": "boolean",
+      "direction": "output",
+      "description": "是否有效"
+    }
   ]
 }

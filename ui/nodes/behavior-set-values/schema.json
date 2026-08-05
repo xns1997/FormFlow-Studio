@@ -69,6 +69,38 @@
       "type": "json",
       "direction": "output",
       "description": "最终字段补丁"
+    },
+    {
+      "name": "fieldMap",
+      "label": "fieldMap",
+      "type": "object",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：fieldMap"
+    },
+    {
+      "name": "staticPatch",
+      "label": "staticPatch",
+      "type": "object",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：staticPatch"
+    },
+    {
+      "name": "emptyPatch",
+      "label": "emptyPatch",
+      "type": "object",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：emptyPatch"
+    },
+    {
+      "name": "trigger",
+      "label": "trigger",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：trigger"
     }
   ],
   "keywords": [
@@ -77,5 +109,31 @@
     "推荐结果回填",
     "set values",
     "patch"
+  ],
+  "inputs": [
+    {
+      "name": "fieldMap",
+      "type": "object",
+      "required": false,
+      "description": "数据输入：fieldMap"
+    },
+    {
+      "name": "staticPatch",
+      "type": "object",
+      "required": false,
+      "description": "数据输入：staticPatch"
+    },
+    {
+      "name": "emptyPatch",
+      "type": "object",
+      "required": false,
+      "description": "数据输入：emptyPatch"
+    },
+    {
+      "name": "trigger",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：trigger"
+    }
   ]
 }

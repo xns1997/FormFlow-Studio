@@ -444,7 +444,31 @@ function collectXlsxMethods(namespace: string, value: unknown, prefix: string[] 
 }
 
 function normalizeSchemaType(type: string): PropertyType {
-  const normalized = type.toLowerCase();
+  const exact: Record<string, PropertyType> = {
+    cfb: 'object',
+    cellobject: 'object',
+    'cellobject[]': 'array',
+    celladdress: 'cell',
+    htmltableelement: 'object',
+    readablestream: 'object',
+    blob: 'file-data',
+    arraybuffer: 'file-data',
+    uint8array: 'file-data',
+    'uint8array | string': 'file-data',
+    'arraybuffer | string': 'file-data',
+    'arraybuffer | uint8array': 'file-data',
+    'arraybuffer[]': 'array',
+    'unknown[][]': 'array',
+    'string[]': 'array',
+    'object[]': 'array',
+    'string|number': 'any',
+    'string | celladdress': 'any',
+    'string | range': 'any',
+    function: 'any',
+    void: 'any',
+  };
+  const normalized = type.toLowerCase().trim();
+  if (exact[normalized]) return exact[normalized];
   if (normalized === 'json') return 'json';
   if (normalized.includes('arraybuffer') || normalized.includes('uint8array') || normalized.includes('buffer') || normalized.includes('binary')) return 'file-data';
   if (normalized.includes('[]') || normalized.includes('array')) return 'array';
@@ -815,7 +839,7 @@ let registryInstance: NodeRegistry | null = null;
 let registryPromise: Promise<NodeRegistry> | null = null;
 let pluginHotReloadInitialized = false;
 
-export const EXPECTED_NODE_COUNT = 172;
+export const EXPECTED_NODE_COUNT = 187;
 
 export const CURATED_XLSX_METHODS = new Set([
   'XLSX.read',

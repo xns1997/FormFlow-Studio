@@ -1,27 +1,214 @@
 {
-  "id": "form:lookup-fill", "label": "查询并回填", "description": "按条件查询唯一记录并按映射回填表单", "category": "高阶 · 表单", "kind": "generic", "macro": { "version": 1, "expansion": "runtime-composite", "debugMapping": "node-output", "snapshot": [] },
+  "id": "form:lookup-fill",
+  "label": "查询并回填",
+  "description": "按条件查询唯一记录并按映射回填表单",
+  "category": "高阶 · 表单",
+  "kind": "generic",
+  "macro": {
+    "version": 1,
+    "expansion": "runtime-composite",
+    "debugMapping": "node-output",
+    "snapshot": []
+  },
   "properties": [
-    { "name": "tableId", "label": "数据表", "type": "string", "default": "" },
-    { "name": "sheetName", "label": "工作表", "type": "string", "default": "" },
-    { "name": "criteria", "label": "查询条件", "type": "json", "default": {} },
-    { "name": "fieldMap", "label": "回填映射", "type": "json", "default": {} },
-    { "name": "originalFieldMap", "label": "原始值映射", "type": "json", "default": {} },
-    { "name": "requireUniqueMatch", "label": "要求唯一命中", "type": "boolean", "default": true },
-    { "name": "maxMatches", "label": "最多允许命中数", "type": "number", "default": 1 },
-    { "name": "enableComponentIds", "label": "命中后解锁控件", "type": "json", "default": [] },
-    { "name": "disableComponentIds", "label": "未命中时禁用控件", "type": "json", "default": [] },
-    { "name": "matchedField", "label": "命中标记字段", "type": "string", "default": "_lookupMatched" },
-    { "name": "uniqueField", "label": "唯一命中字段", "type": "string", "default": "_lookupUnique" },
-    { "name": "matchCountField", "label": "命中数量字段", "type": "string", "default": "_lookupMatchCount" },
-    { "name": "notFoundMessage", "label": "未找到提示", "type": "string", "default": "未找到记录" },
-    { "name": "multipleMatchMessage", "label": "多结果提示", "type": "string", "default": "查询结果不唯一，请收窄条件" }
+    {
+      "name": "tableId",
+      "label": "数据表",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "sheetName",
+      "label": "工作表",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "criteria",
+      "label": "查询条件",
+      "type": "json",
+      "default": {}
+    },
+    {
+      "name": "fieldMap",
+      "label": "回填映射",
+      "type": "json",
+      "default": {}
+    },
+    {
+      "name": "originalFieldMap",
+      "label": "原始值映射",
+      "type": "json",
+      "default": {}
+    },
+    {
+      "name": "requireUniqueMatch",
+      "label": "要求唯一命中",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "name": "maxMatches",
+      "label": "最多允许命中数",
+      "type": "number",
+      "default": 1
+    },
+    {
+      "name": "enableComponentIds",
+      "label": "命中后解锁控件",
+      "type": "json",
+      "default": []
+    },
+    {
+      "name": "disableComponentIds",
+      "label": "未命中时禁用控件",
+      "type": "json",
+      "default": []
+    },
+    {
+      "name": "matchedField",
+      "label": "命中标记字段",
+      "type": "string",
+      "default": "_lookupMatched"
+    },
+    {
+      "name": "uniqueField",
+      "label": "唯一命中字段",
+      "type": "string",
+      "default": "_lookupUnique"
+    },
+    {
+      "name": "matchCountField",
+      "label": "命中数量字段",
+      "type": "string",
+      "default": "_lookupMatchCount"
+    },
+    {
+      "name": "notFoundMessage",
+      "label": "未找到提示",
+      "type": "string",
+      "default": "未找到记录"
+    },
+    {
+      "name": "multipleMatchMessage",
+      "label": "多结果提示",
+      "type": "string",
+      "default": "查询结果不唯一，请收窄条件"
+    },
+    {
+      "name": "queryFields",
+      "label": "queryFields",
+      "type": "array",
+      "description": "配置项：queryFields"
+    },
+    {
+      "name": "queryMode",
+      "label": "queryMode",
+      "type": "string",
+      "default": "",
+      "description": "配置项：queryMode"
+    }
   ],
   "ports": [
-    { "name": "criteria", "label": "查询条件", "type": "object", "direction": "input" },
-    { "name": "matched", "label": "是否命中", "type": "boolean", "direction": "output" },
-    { "name": "unique", "label": "是否唯一", "type": "boolean", "direction": "output" },
-    { "name": "matchCount", "label": "命中数量", "type": "number", "direction": "output" },
-    { "name": "record", "label": "记录", "type": "object", "direction": "output" },
-    { "name": "patch", "label": "表单补丁", "type": "object", "direction": "output" }
-  ], "keywords": ["查询回填", "lookup", "fill form", "编辑加载"]
+    {
+      "name": "criteria",
+      "label": "查询条件",
+      "type": "object",
+      "direction": "input"
+    },
+    {
+      "name": "matched",
+      "label": "是否命中",
+      "type": "boolean",
+      "direction": "output"
+    },
+    {
+      "name": "unique",
+      "label": "是否唯一",
+      "type": "boolean",
+      "direction": "output"
+    },
+    {
+      "name": "matchCount",
+      "label": "命中数量",
+      "type": "number",
+      "direction": "output"
+    },
+    {
+      "name": "record",
+      "label": "记录",
+      "type": "object",
+      "direction": "output"
+    },
+    {
+      "name": "patch",
+      "label": "表单补丁",
+      "type": "object",
+      "direction": "output"
+    },
+    {
+      "name": "tableId",
+      "label": "tableId",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：tableId"
+    },
+    {
+      "name": "sheetName",
+      "label": "sheetName",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：sheetName"
+    },
+    {
+      "name": "fieldMap",
+      "label": "fieldMap",
+      "type": "object",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：fieldMap"
+    },
+    {
+      "name": "originalFieldMap",
+      "label": "originalFieldMap",
+      "type": "object",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：originalFieldMap"
+    }
+  ],
+  "keywords": [
+    "查询回填",
+    "lookup",
+    "fill form",
+    "编辑加载"
+  ],
+  "inputs": [
+    {
+      "name": "tableId",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：tableId"
+    },
+    {
+      "name": "sheetName",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：sheetName"
+    },
+    {
+      "name": "fieldMap",
+      "type": "object",
+      "required": false,
+      "description": "数据输入：fieldMap"
+    },
+    {
+      "name": "originalFieldMap",
+      "type": "object",
+      "required": false,
+      "description": "数据输入：originalFieldMap"
+    }
+  ]
 }

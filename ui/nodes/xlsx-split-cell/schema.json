@@ -20,7 +20,7 @@
   "outputs": [
     {
       "name": "cells",
-      "type": "string[]",
+      "type": "array",
       "description": "单个单元格地址数组"
     }
   ],
@@ -31,5 +31,22 @@
     "utils",
     "cell",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "range",
+      "label": "range",
+      "type": "string",
+      "direction": "input",
+      "required": true,
+      "description": "合并区域地址，如 'A1:C5'"
+    },
+    {
+      "name": "cells",
+      "label": "cells",
+      "type": "array",
+      "direction": "output",
+      "description": "单个单元格地址数组"
+    }
   ]
 }

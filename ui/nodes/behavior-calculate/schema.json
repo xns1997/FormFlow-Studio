@@ -13,6 +13,13 @@
       "default": "",
       "required": true,
       "description": "JS 表达式，如 a + b * 2"
+    },
+    {
+      "name": "targetField",
+      "label": "targetField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：targetField"
     }
   ],
   "inputs": [

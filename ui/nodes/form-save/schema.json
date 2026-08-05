@@ -1,27 +1,310 @@
 {
-  "id": "form:save", "label": "表单保存", "description": "一次完成必填校验、字段映射、按主键写回和成功提示", "category": "高阶 · 表单", "kind": "generic", "macro": { "version": 1, "expansion": "runtime-composite", "debugMapping": "node-output", "snapshot": [] },
+  "id": "form:save",
+  "label": "表单保存",
+  "description": "一次完成必填校验、字段映射、按主键写回和成功提示",
+  "category": "高阶 · 表单",
+  "kind": "generic",
+  "macro": {
+    "version": 1,
+    "expansion": "runtime-composite",
+    "debugMapping": "node-output",
+    "snapshot": []
+  },
   "properties": [
-    { "name": "tableId", "label": "数据表", "type": "string", "default": "" },
-    { "name": "sheetName", "label": "工作表", "type": "string", "default": "" },
-    { "name": "keyField", "label": "主键字段", "type": "string", "default": "" },
-    { "name": "requiredFields", "label": "必填字段", "type": "array", "default": [] },
-    { "name": "fieldMap", "label": "字段映射", "type": "json", "default": {} },
-    { "name": "rules", "label": "字段规则", "type": "json", "default": {} },
-    { "name": "conditionalRequired", "label": "条件必填", "type": "json", "default": [] },
-    { "name": "foreignKeys", "label": "外键校验", "type": "json", "default": [] },
-    { "name": "duplicatePolicy", "label": "重复主键策略", "type": "select", "default": "upsert", "options": [{ "label": "新增或更新", "value": "upsert" }, { "label": "拒绝重复", "value": "reject" }] },
-    { "name": "protectedUpdate", "label": "受保护更新", "type": "json", "default": {} },
-    { "name": "deriveFirstPurchase", "label": "计算首充标记", "type": "boolean", "default": false },
-    { "name": "successMessage", "label": "成功提示", "type": "string", "default": "保存成功" },
-    { "name": "resetAfterSave", "label": "保存后重置", "type": "boolean", "default": false },
-    { "name": "resetFields", "label": "重置字段", "type": "array", "default": [] }
+    {
+      "name": "tableId",
+      "label": "数据表",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "sheetName",
+      "label": "工作表",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "keyField",
+      "label": "主键字段",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "requiredFields",
+      "label": "必填字段",
+      "type": "array",
+      "default": []
+    },
+    {
+      "name": "fieldMap",
+      "label": "字段映射",
+      "type": "json",
+      "default": {}
+    },
+    {
+      "name": "rules",
+      "label": "字段规则",
+      "type": "json",
+      "default": {}
+    },
+    {
+      "name": "conditionalRequired",
+      "label": "条件必填",
+      "type": "json",
+      "default": []
+    },
+    {
+      "name": "foreignKeys",
+      "label": "外键校验",
+      "type": "json",
+      "default": []
+    },
+    {
+      "name": "duplicatePolicy",
+      "label": "重复主键策略",
+      "type": "select",
+      "default": "upsert",
+      "options": [
+        {
+          "label": "新增或更新",
+          "value": "upsert"
+        },
+        {
+          "label": "拒绝重复",
+          "value": "reject"
+        }
+      ]
+    },
+    {
+      "name": "protectedUpdate",
+      "label": "受保护更新",
+      "type": "json",
+      "default": {}
+    },
+    {
+      "name": "deriveFirstPurchase",
+      "label": "计算首充标记",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "name": "successMessage",
+      "label": "成功提示",
+      "type": "string",
+      "default": "保存成功"
+    },
+    {
+      "name": "resetAfterSave",
+      "label": "保存后重置",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "name": "resetFields",
+      "label": "重置字段",
+      "type": "array",
+      "default": []
+    },
+    {
+      "name": "playerField",
+      "label": "playerField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：playerField"
+    },
+    {
+      "name": "statusField",
+      "label": "statusField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：statusField"
+    },
+    {
+      "name": "paidValue",
+      "label": "paidValue",
+      "type": "string",
+      "default": "",
+      "description": "配置项：paidValue"
+    },
+    {
+      "name": "firstPurchaseField",
+      "label": "firstPurchaseField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：firstPurchaseField"
+    }
   ],
   "ports": [
-    { "name": "formData", "label": "表单数据", "type": "object", "direction": "input", "required": true },
-    { "name": "saved", "label": "保存成功", "type": "boolean", "direction": "output" },
-    { "name": "status", "label": "保存状态", "type": "string", "direction": "output" },
-    { "name": "row", "label": "写入记录", "type": "object", "direction": "output" },
-    { "name": "missingFields", "label": "缺失字段", "type": "array", "direction": "output" },
-    { "name": "writeBack", "label": "写回动作", "type": "object", "direction": "output" }
-  ], "keywords": ["保存表单", "CRUD", "upsert", "校验并保存"]
+    {
+      "name": "formData",
+      "label": "表单数据",
+      "type": "object",
+      "direction": "input",
+      "required": true
+    },
+    {
+      "name": "saved",
+      "label": "保存成功",
+      "type": "boolean",
+      "direction": "output"
+    },
+    {
+      "name": "status",
+      "label": "保存状态",
+      "type": "string",
+      "direction": "output"
+    },
+    {
+      "name": "row",
+      "label": "写入记录",
+      "type": "object",
+      "direction": "output"
+    },
+    {
+      "name": "missingFields",
+      "label": "缺失字段",
+      "type": "array",
+      "direction": "output"
+    },
+    {
+      "name": "writeBack",
+      "label": "写回动作",
+      "type": "object",
+      "direction": "output"
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "requiredFields",
+      "label": "requiredFields",
+      "type": "array",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：requiredFields"
+    },
+    {
+      "name": "rules",
+      "label": "rules",
+      "type": "array",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：rules"
+    },
+    {
+      "name": "conditionalRequired",
+      "label": "conditionalRequired",
+      "type": "array",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：conditionalRequired"
+    },
+    {
+      "name": "foreignKeys",
+      "label": "foreignKeys",
+      "type": "array",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：foreignKeys"
+    },
+    {
+      "name": "tableId",
+      "label": "tableId",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：tableId"
+    },
+    {
+      "name": "sheetName",
+      "label": "sheetName",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：sheetName"
+    },
+    {
+      "name": "keyField",
+      "label": "keyField",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：keyField"
+    },
+    {
+      "name": "fieldMap",
+      "label": "fieldMap",
+      "type": "object",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：fieldMap"
+    }
+  ],
+  "keywords": [
+    "保存表单",
+    "CRUD",
+    "upsert",
+    "校验并保存"
+  ],
+  "inputs": [
+    {
+      "name": "data",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "requiredFields",
+      "type": "array",
+      "required": false,
+      "description": "数据输入：requiredFields"
+    },
+    {
+      "name": "rules",
+      "type": "array",
+      "required": false,
+      "description": "数据输入：rules"
+    },
+    {
+      "name": "conditionalRequired",
+      "type": "array",
+      "required": false,
+      "description": "数据输入：conditionalRequired"
+    },
+    {
+      "name": "foreignKeys",
+      "type": "array",
+      "required": false,
+      "description": "数据输入：foreignKeys"
+    },
+    {
+      "name": "tableId",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：tableId"
+    },
+    {
+      "name": "sheetName",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：sheetName"
+    },
+    {
+      "name": "keyField",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：keyField"
+    },
+    {
+      "name": "fieldMap",
+      "type": "object",
+      "required": false,
+      "description": "数据输入：fieldMap"
+    }
+  ]
 }

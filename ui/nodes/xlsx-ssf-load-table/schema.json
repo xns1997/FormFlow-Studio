@@ -32,5 +32,22 @@
     "table",
     "加载数字格式表",
     "SSF"
+  ],
+  "ports": [
+    {
+      "name": "str",
+      "label": "str",
+      "type": "string",
+      "direction": "input",
+      "required": true,
+      "description": "格式表 JSON 字符串"
+    },
+    {
+      "name": "table",
+      "label": "table",
+      "type": "object",
+      "direction": "output",
+      "description": "加载后的格式表"
+    }
   ]
 }

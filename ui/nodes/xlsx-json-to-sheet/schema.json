@@ -12,7 +12,7 @@
   "inputs": [
     {
       "name": "data",
-      "type": "object[]",
+      "type": "array",
       "required": true,
       "description": "JSON 行对象数组"
     }
@@ -20,7 +20,7 @@
   "outputs": [
     {
       "name": "worksheet",
-      "type": "Worksheet",
+      "type": "worksheet",
       "description": "生成的工作表对象"
     }
   ],
@@ -76,5 +76,22 @@
     "json",
     "行对象数组转成",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "data",
+      "label": "data",
+      "type": "array",
+      "direction": "input",
+      "required": true,
+      "description": "JSON 行对象数组"
+    },
+    {
+      "name": "worksheet",
+      "label": "worksheet",
+      "type": "worksheet",
+      "direction": "output",
+      "description": "生成的工作表对象"
+    }
   ]
 }

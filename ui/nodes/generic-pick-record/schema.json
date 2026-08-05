@@ -75,6 +75,30 @@
       "type": "number",
       "direction": "output",
       "description": "排序后总候选数"
+    },
+    {
+      "name": "trigger",
+      "label": "trigger",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：trigger"
+    },
+    {
+      "name": "pickMode",
+      "label": "pickMode",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：pickMode"
+    },
+    {
+      "name": "topN",
+      "label": "topN",
+      "type": "number",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：topN"
     }
   ],
   "keywords": [
@@ -83,5 +107,25 @@
     "首选项",
     "pick",
     "sort"
+  ],
+  "inputs": [
+    {
+      "name": "trigger",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：trigger"
+    },
+    {
+      "name": "pickMode",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：pickMode"
+    },
+    {
+      "name": "topN",
+      "type": "number",
+      "required": false,
+      "description": "数据输入：topN"
+    }
   ]
 }

@@ -12,7 +12,7 @@
   "inputs": [
     {
       "name": "worksheet",
-      "type": "Worksheet",
+      "type": "worksheet",
       "required": true,
       "description": "要转换的工作表对象"
     }
@@ -20,7 +20,7 @@
   "outputs": [
     {
       "name": "formulae",
-      "type": "string[]",
+      "type": "array",
       "description": "公式文本数组，每项格式为 'CellAddr=Formula'"
     }
   ],
@@ -62,5 +62,22 @@
     "sheet",
     "to",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "worksheet",
+      "label": "worksheet",
+      "type": "worksheet",
+      "direction": "input",
+      "required": true,
+      "description": "要转换的工作表对象"
+    },
+    {
+      "name": "formulae",
+      "label": "formulae",
+      "type": "array",
+      "direction": "output",
+      "description": "公式文本数组，每项格式为 'CellAddr=Formula'"
+    }
   ]
 }

@@ -24,7 +24,11 @@
       "name": "readAs",
       "label": "读取方式",
       "type": "enum",
-      "enum": ["arrayBuffer", "text", "dataURL"],
+      "enum": [
+        "arrayBuffer",
+        "text",
+        "dataURL"
+      ],
       "default": "arrayBuffer",
       "description": "文件读取方式"
     },
@@ -54,6 +58,24 @@
       "type": "boolean",
       "required": false,
       "description": "允许多选"
+    },
+    {
+      "name": "data",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：name"
+    },
+    {
+      "name": "file",
+      "type": "file-data",
+      "required": false,
+      "description": "数据输入：file"
     }
   ],
   "outputs": [
@@ -130,6 +152,30 @@
       "type": "number",
       "direction": "output",
       "description": "文件大小"
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "name",
+      "label": "name",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：name"
+    },
+    {
+      "name": "file",
+      "label": "file",
+      "type": "file-data",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：file"
     }
   ],
   "keywords": [

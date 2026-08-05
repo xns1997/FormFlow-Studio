@@ -12,7 +12,7 @@
   "inputs": [
     {
       "name": "range",
-      "type": "Range",
+      "type": "range",
       "required": true,
       "description": "范围对象 {s: {r,c}, e: {r,c}}"
     }
@@ -33,5 +33,22 @@
     "encode",
     "a",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "range",
+      "label": "range",
+      "type": "range",
+      "direction": "input",
+      "required": true,
+      "description": "范围对象 {s: {r,c}, e: {r,c}}"
+    },
+    {
+      "name": "address",
+      "label": "address",
+      "type": "string",
+      "direction": "output",
+      "description": "A1 格式的范围地址，如 'A1:C5'"
+    }
   ]
 }

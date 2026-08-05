@@ -12,7 +12,7 @@
   "inputs": [
     {
       "name": "worksheet",
-      "type": "Worksheet",
+      "type": "worksheet",
       "required": true,
       "description": "工作表对象"
     }
@@ -20,7 +20,7 @@
   "outputs": [
     {
       "name": "rows",
-      "type": "object[]",
+      "type": "array",
       "description": "行对象数组"
     }
   ],
@@ -55,5 +55,22 @@
     "sheet",
     "to",
     "array"
+  ],
+  "ports": [
+    {
+      "name": "worksheet",
+      "label": "worksheet",
+      "type": "worksheet",
+      "direction": "input",
+      "required": true,
+      "description": "工作表对象"
+    },
+    {
+      "name": "rows",
+      "label": "rows",
+      "type": "array",
+      "direction": "output",
+      "description": "行对象数组"
+    }
   ]
 }

@@ -12,13 +12,13 @@
   "inputs": [
     {
       "name": "worksheet",
-      "type": "Worksheet",
+      "type": "worksheet",
       "required": true,
       "description": "目标工作表对象"
     },
     {
       "name": "data",
-      "type": "object[]",
+      "type": "array",
       "required": true,
       "description": "要追加的 JSON 行数据"
     }
@@ -26,7 +26,7 @@
   "outputs": [
     {
       "name": "worksheet",
-      "type": "Worksheet",
+      "type": "worksheet",
       "description": "追加后的工作表"
     }
   ],
@@ -76,5 +76,30 @@
     "json",
     "追加",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "worksheet",
+      "label": "worksheet",
+      "type": "worksheet",
+      "direction": "input",
+      "required": true,
+      "description": "目标工作表对象"
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "array",
+      "direction": "input",
+      "required": true,
+      "description": "要追加的 JSON 行数据"
+    },
+    {
+      "name": "worksheet",
+      "label": "worksheet",
+      "type": "worksheet",
+      "direction": "output",
+      "description": "追加后的工作表"
+    }
   ]
 }

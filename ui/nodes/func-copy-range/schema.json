@@ -19,6 +19,13 @@
       "type": "string",
       "default": "E1",
       "description": "目标起始单元格"
+    },
+    {
+      "name": "targetRange",
+      "label": "targetRange",
+      "type": "string",
+      "default": "",
+      "description": "配置项：targetRange"
     }
   ],
   "inputs": [

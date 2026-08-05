@@ -13,7 +13,7 @@
   "inputs": [
     {
       "name": "cfb",
-      "type": "CFB",
+      "type": "object",
       "required": true,
       "description": "复合文件对象"
     },
@@ -27,7 +27,7 @@
   "outputs": [
     {
       "name": "cfb",
-      "type": "CFB",
+      "type": "object",
       "description": "修改后的复合文件"
     }
   ],
@@ -39,5 +39,30 @@
     "从复合文件删除指定条目",
     "CFB",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "cfb",
+      "label": "cfb",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "复合文件对象"
+    },
+    {
+      "name": "name",
+      "label": "name",
+      "type": "string",
+      "direction": "input",
+      "required": true,
+      "description": "要删除的条目名称"
+    },
+    {
+      "name": "cfb",
+      "label": "cfb",
+      "type": "object",
+      "direction": "output",
+      "description": "修改后的复合文件"
+    }
   ]
 }

@@ -26,5 +26,14 @@
     "get",
     "获取当前数字格式表的",
     "SSF"
+  ],
+  "ports": [
+    {
+      "name": "table",
+      "label": "table",
+      "type": "object",
+      "direction": "output",
+      "description": "数字格式表 JSON 对象"
+    }
   ]
 }

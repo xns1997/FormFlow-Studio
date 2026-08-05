@@ -46,6 +46,12 @@
       "type": "array",
       "required": false,
       "description": "要遍历的数组"
+    },
+    {
+      "name": "data",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：data"
     }
   ],
   "outputs": [
@@ -113,6 +119,14 @@
       "type": "number",
       "direction": "output",
       "description": "当前索引"
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：data"
     }
   ],
   "keywords": [

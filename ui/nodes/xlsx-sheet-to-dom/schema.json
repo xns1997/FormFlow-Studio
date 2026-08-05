@@ -12,7 +12,7 @@
   "inputs": [
     {
       "name": "worksheet",
-      "type": "Worksheet",
+      "type": "worksheet",
       "required": true,
       "description": "要转换的工作表"
     }
@@ -20,7 +20,7 @@
   "outputs": [
     {
       "name": "table",
-      "type": "HTMLTableElement",
+      "type": "object",
       "description": "生成的 DOM Table 元素"
     }
   ],
@@ -63,5 +63,22 @@
     "to",
     "table",
     "dom"
+  ],
+  "ports": [
+    {
+      "name": "worksheet",
+      "label": "worksheet",
+      "type": "worksheet",
+      "direction": "input",
+      "required": true,
+      "description": "要转换的工作表"
+    },
+    {
+      "name": "table",
+      "label": "table",
+      "type": "object",
+      "direction": "output",
+      "description": "生成的 DOM Table 元素"
+    }
   ]
 }

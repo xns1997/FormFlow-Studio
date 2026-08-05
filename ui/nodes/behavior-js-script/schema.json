@@ -29,9 +29,25 @@
       "description": "函数体，可直接使用 inputs / properties / ctx"
     }
   ],
-  "inputs": [],
+  "inputs": [
+    {
+      "name": "trigger",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：trigger"
+    }
+  ],
   "outputs": [],
-  "ports": [],
+  "ports": [
+    {
+      "name": "trigger",
+      "label": "trigger",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：trigger"
+    }
+  ],
   "keywords": [
     "脚本",
     "javascript",

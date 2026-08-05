@@ -27,6 +27,19 @@
       "type": "string",
       "default": "",
       "description": "作者名称"
+    },
+    {
+      "name": "comment",
+      "label": "comment",
+      "type": "string",
+      "default": "",
+      "description": "配置项：comment"
+    },
+    {
+      "name": "cell",
+      "label": "cell",
+      "type": "address",
+      "description": "配置项：cell"
     }
   ],
   "inputs": [

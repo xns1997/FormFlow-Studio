@@ -112,7 +112,7 @@ registerExecutor('behavior-condition', (ctx) => {
   const { inputs, properties, checkType } = ctx;
   const fieldName = ctx.assertType('string', properties.fieldName || '', 'fieldName') as string;
   const operator = ctx.assertType('string', properties.operator || '==', 'operator') as string;
-  const compareValue = properties.value;
+  const compareValue = properties.compareValue ?? inputs.compareValue ?? properties.value;
   const fieldValue = inputs[fieldName] ?? inputs.data ?? inputs.value;
 
   let result = false;
@@ -523,7 +523,7 @@ registerExecutor('behavior-js-script', (ctx) => {
 
 registerExecutor('behavior-loop', (ctx) => {
   const items = ctx.inputs.items || ctx.inputs.data;
-  const count = ctx.assertType('number', Array.isArray(items) ? items.length : Number(ctx.properties.count || 0), 'count') as number;
+  const count = ctx.assertType('number', Array.isArray(items) ? items.length : Number(ctx.properties.repeatCount ?? ctx.properties.count ?? 0), 'repeatCount') as number;
   return { trigger: ctx.inputs.trigger, items, count, index: 0 };
 });
 
@@ -746,12 +746,12 @@ registerExecutor('behavior-refresh-data', (ctx) => {
 
 registerExecutor('behavior-log', (ctx) => {
   const message = ctx.assertType('string', ctx.properties.message || ctx.inputs.message || '', 'message') as string;
-  const level = ctx.assertType('string', ctx.properties.level || 'info', 'level') as string;
+  const level = ctx.assertType('string', ctx.properties.logLevel || ctx.properties.level || 'info', 'logLevel') as string;
   return { trigger: ctx.inputs.trigger, message, level };
 });
 
 registerExecutor('behavior-delay', (ctx) => {
-  const ms = ctx.assertType('number', ctx.properties.ms || ctx.properties.delay || 0, 'ms') as number;
+  const ms = ctx.assertType('number', ctx.properties.delayMs ?? ctx.properties.ms ?? ctx.properties.delay ?? 0, 'delayMs') as number;
   return { trigger: ctx.inputs.trigger, delay: ms };
 });
 

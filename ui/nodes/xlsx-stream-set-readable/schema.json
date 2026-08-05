@@ -12,7 +12,7 @@
   "inputs": [
     {
       "name": "Readable",
-      "type": "Function",
+      "type": "any",
       "required": true,
       "description": "可读流构造函数"
     }
@@ -20,7 +20,7 @@
   "outputs": [
     {
       "name": "result",
-      "type": "void",
+      "type": "any",
       "description": "设置完成"
     }
   ],
@@ -31,5 +31,22 @@
     "set",
     "readable",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "Readable",
+      "label": "Readable",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "可读流构造函数"
+    },
+    {
+      "name": "result",
+      "label": "result",
+      "type": "any",
+      "direction": "output",
+      "description": "设置完成"
+    }
   ]
 }

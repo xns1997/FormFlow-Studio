@@ -12,7 +12,7 @@
   "inputs": [
     {
       "name": "workbook",
-      "type": "Workbook",
+      "type": "workbook",
       "required": true,
       "description": "目标工作簿"
     },
@@ -26,7 +26,7 @@
   "outputs": [
     {
       "name": "workbook",
-      "type": "Workbook",
+      "type": "workbook",
       "description": "删除后的工作簿"
     }
   ],
@@ -38,5 +38,30 @@
     "sheet",
     "remove",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "workbook",
+      "label": "workbook",
+      "type": "workbook",
+      "direction": "input",
+      "required": true,
+      "description": "目标工作簿"
+    },
+    {
+      "name": "name",
+      "label": "name",
+      "type": "string",
+      "direction": "input",
+      "required": true,
+      "description": "要删除的 Sheet 名称"
+    },
+    {
+      "name": "workbook",
+      "label": "workbook",
+      "type": "workbook",
+      "direction": "output",
+      "description": "删除后的工作簿"
+    }
   ]
 }

@@ -40,6 +40,12 @@
       ],
       "default": "TableStyleMedium2",
       "description": "预定义表格样式"
+    },
+    {
+      "name": "style",
+      "label": "style",
+      "type": "object",
+      "description": "配置项：style"
     }
   ],
   "inputs": [

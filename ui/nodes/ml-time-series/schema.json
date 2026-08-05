@@ -18,6 +18,19 @@
       "label": "周期",
       "type": "number",
       "default": 10
+    },
+    {
+      "name": "fields",
+      "label": "fields",
+      "type": "array",
+      "description": "配置项：fields"
+    },
+    {
+      "name": "n_clusters",
+      "label": "n_clusters",
+      "type": "number",
+      "default": 0,
+      "description": "配置项：n_clusters"
     }
   ],
   "ports": [
@@ -49,5 +62,6 @@
     "series",
     "trend",
     "moving"
-  ]
+  ],
+  "inputs": []
 }

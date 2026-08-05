@@ -1,0 +1,194 @@
+{
+  "id": "ml:classification-evaluate",
+  "label": "classification-evaluate",
+  "description": "节点 ml:classification-evaluate",
+  "category": "机器学习 · 评估",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "target",
+      "label": "target",
+      "type": "string",
+      "default": "",
+      "description": "配置项：target"
+    },
+    {
+      "name": "features",
+      "label": "features",
+      "type": "array",
+      "description": "配置项：features"
+    },
+    {
+      "name": "validationRatio",
+      "label": "validationRatio",
+      "type": "number",
+      "default": 0,
+      "description": "配置项：validationRatio"
+    },
+    {
+      "name": "resultField",
+      "label": "resultField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：resultField"
+    },
+    {
+      "name": "summaryField",
+      "label": "summaryField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：summaryField"
+    },
+    {
+      "name": "chartField",
+      "label": "chartField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：chartField"
+    },
+    {
+      "name": "messageField",
+      "label": "messageField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：messageField"
+    }
+  ],
+  "inputs": [
+    {
+      "name": "rows",
+      "type": "json-rows",
+      "required": true,
+      "description": "数据输入：rows"
+    },
+    {
+      "name": "data",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "target",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：target"
+    },
+    {
+      "name": "features",
+      "type": "array",
+      "required": false,
+      "description": "数据输入：features"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "rows",
+      "type": "json-rows",
+      "description": "输出：rows"
+    },
+    {
+      "name": "result",
+      "type": "any",
+      "description": "输出：result"
+    },
+    {
+      "name": "summary",
+      "type": "object",
+      "description": "输出：summary"
+    },
+    {
+      "name": "chart",
+      "type": "object",
+      "description": "输出：chart"
+    },
+    {
+      "name": "usable",
+      "type": "boolean",
+      "description": "输出：usable"
+    },
+    {
+      "name": "predictions",
+      "type": "array",
+      "description": "输出：predictions"
+    }
+  ],
+  "ports": [
+    {
+      "name": "rows",
+      "label": "rows",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true,
+      "description": "数据输入：rows"
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "target",
+      "label": "target",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：target"
+    },
+    {
+      "name": "features",
+      "label": "features",
+      "type": "array",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：features"
+    },
+    {
+      "name": "rows",
+      "label": "rows",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "输出：rows"
+    },
+    {
+      "name": "result",
+      "label": "result",
+      "type": "any",
+      "direction": "output",
+      "description": "输出：result"
+    },
+    {
+      "name": "summary",
+      "label": "summary",
+      "type": "object",
+      "direction": "output",
+      "description": "输出：summary"
+    },
+    {
+      "name": "chart",
+      "label": "chart",
+      "type": "object",
+      "direction": "output",
+      "description": "输出：chart"
+    },
+    {
+      "name": "usable",
+      "label": "usable",
+      "type": "boolean",
+      "direction": "output",
+      "description": "输出：usable"
+    },
+    {
+      "name": "predictions",
+      "label": "predictions",
+      "type": "array",
+      "direction": "output",
+      "description": "输出：predictions"
+    }
+  ],
+  "keywords": [
+    "ml:classification-evaluate"
+  ]
+}

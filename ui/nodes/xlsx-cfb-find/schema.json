@@ -12,7 +12,7 @@
   "inputs": [
     {
       "name": "cfb",
-      "type": "CFB",
+      "type": "object",
       "required": true,
       "description": "复合文件对象"
     },
@@ -36,5 +36,30 @@
     "CFB",
     "find",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "cfb",
+      "label": "cfb",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "复合文件对象"
+    },
+    {
+      "name": "path",
+      "label": "path",
+      "type": "string",
+      "direction": "input",
+      "required": true,
+      "description": "要查找的条目路径"
+    },
+    {
+      "name": "entry",
+      "label": "entry",
+      "type": "object",
+      "direction": "output",
+      "description": "找到的条目对象"
+    }
   ]
 }

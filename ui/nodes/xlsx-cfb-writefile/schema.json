@@ -12,7 +12,7 @@
   "inputs": [
     {
       "name": "cfb",
-      "type": "CFB",
+      "type": "object",
       "required": true,
       "description": "复合文件对象"
     },
@@ -26,7 +26,7 @@
   "outputs": [
     {
       "name": "result",
-      "type": "void",
+      "type": "any",
       "description": "写出完成"
     }
   ],
@@ -36,5 +36,30 @@
     "将复合文件写出为文件",
     "CFB",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "cfb",
+      "label": "cfb",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "复合文件对象"
+    },
+    {
+      "name": "filename",
+      "label": "filename",
+      "type": "string",
+      "direction": "input",
+      "required": true,
+      "description": "输出文件名"
+    },
+    {
+      "name": "result",
+      "label": "result",
+      "type": "any",
+      "direction": "output",
+      "description": "写出完成"
+    }
   ]
 }

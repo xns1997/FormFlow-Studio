@@ -13,7 +13,7 @@
   "outputs": [
     {
       "name": "workbook",
-      "type": "Workbook",
+      "type": "workbook",
       "description": "新创建的空工作簿对象"
     }
   ],
@@ -24,5 +24,14 @@
     "book",
     "XLSX",
     "new"
+  ],
+  "ports": [
+    {
+      "name": "workbook",
+      "label": "workbook",
+      "type": "workbook",
+      "direction": "output",
+      "description": "新创建的空工作簿对象"
+    }
   ]
 }

@@ -12,7 +12,7 @@
   "inputs": [
     {
       "name": "worksheet",
-      "type": "Worksheet",
+      "type": "worksheet",
       "required": true,
       "description": "要转换的工作表对象"
     }
@@ -20,7 +20,7 @@
   "outputs": [
     {
       "name": "array",
-      "type": "unknown[][]",
+      "type": "array",
       "description": "二维数组，每行是一个数组"
     }
   ],
@@ -55,5 +55,22 @@
     "转成二维数组",
     "to",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "worksheet",
+      "label": "worksheet",
+      "type": "worksheet",
+      "direction": "input",
+      "required": true,
+      "description": "要转换的工作表对象"
+    },
+    {
+      "name": "array",
+      "label": "array",
+      "type": "array",
+      "direction": "output",
+      "description": "二维数组，每行是一个数组"
+    }
   ]
 }

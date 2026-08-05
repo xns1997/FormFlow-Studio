@@ -12,7 +12,7 @@
   "inputs": [
     {
       "name": "cfb",
-      "type": "CFB",
+      "type": "object",
       "required": true,
       "description": "复合文件对象"
     }
@@ -20,7 +20,7 @@
   "outputs": [
     {
       "name": "data",
-      "type": "ArrayBuffer",
+      "type": "file-data",
       "description": "二进制数据"
     }
   ],
@@ -44,5 +44,22 @@
     "write",
     "CFB",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "cfb",
+      "label": "cfb",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "复合文件对象"
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "file-data",
+      "direction": "output",
+      "description": "二进制数据"
+    }
   ]
 }

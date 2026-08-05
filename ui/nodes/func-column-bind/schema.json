@@ -66,6 +66,12 @@
       "type": "any",
       "required": false,
       "description": "数据端的值"
+    },
+    {
+      "name": "dataField",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：dataField"
     }
   ],
   "outputs": [
@@ -128,6 +134,14 @@
       "type": "any",
       "direction": "output",
       "description": "数据值"
+    },
+    {
+      "name": "dataField",
+      "label": "dataField",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：dataField"
     }
   ],
   "keywords": [

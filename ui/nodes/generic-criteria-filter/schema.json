@@ -25,6 +25,18 @@
       "type": "json",
       "required": false,
       "description": "运行时覆盖筛选条件"
+    },
+    {
+      "name": "trigger",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：trigger"
+    },
+    {
+      "name": "context",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：context"
     }
   ],
   "outputs": [
@@ -104,6 +116,22 @@
       "type": "string",
       "direction": "output",
       "description": "空结果提示"
+    },
+    {
+      "name": "trigger",
+      "label": "trigger",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：trigger"
+    },
+    {
+      "name": "context",
+      "label": "context",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：context"
     }
   ],
   "keywords": [

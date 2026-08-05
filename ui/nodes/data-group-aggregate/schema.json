@@ -1,0 +1,188 @@
+{
+  "id": "data:group-aggregate",
+  "label": "group-aggregate",
+  "description": "节点 data:group-aggregate",
+  "category": "数据处理 · 分析",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "dimensions",
+      "label": "dimensions",
+      "type": "array",
+      "description": "配置项：dimensions"
+    },
+    {
+      "name": "metrics",
+      "label": "metrics",
+      "type": "array",
+      "description": "配置项：metrics"
+    },
+    {
+      "name": "aggregation",
+      "label": "aggregation",
+      "type": "string",
+      "default": "",
+      "description": "配置项：aggregation"
+    },
+    {
+      "name": "chartLimit",
+      "label": "chartLimit",
+      "type": "number",
+      "default": 0,
+      "description": "配置项：chartLimit"
+    },
+    {
+      "name": "resultField",
+      "label": "resultField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：resultField"
+    },
+    {
+      "name": "summaryField",
+      "label": "summaryField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：summaryField"
+    },
+    {
+      "name": "chartField",
+      "label": "chartField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：chartField"
+    },
+    {
+      "name": "messageField",
+      "label": "messageField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：messageField"
+    }
+  ],
+  "inputs": [
+    {
+      "name": "rows",
+      "type": "json-rows",
+      "required": true,
+      "description": "数据输入：rows"
+    },
+    {
+      "name": "data",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "dimensions",
+      "type": "array",
+      "required": false,
+      "description": "数据输入：dimensions"
+    },
+    {
+      "name": "metrics",
+      "type": "array",
+      "required": false,
+      "description": "数据输入：metrics"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "rows",
+      "type": "json-rows",
+      "description": "输出：rows"
+    },
+    {
+      "name": "result",
+      "type": "any",
+      "description": "输出：result"
+    },
+    {
+      "name": "chart",
+      "type": "object",
+      "description": "输出：chart"
+    },
+    {
+      "name": "summary",
+      "type": "object",
+      "description": "输出：summary"
+    },
+    {
+      "name": "message",
+      "type": "string",
+      "description": "输出：message"
+    }
+  ],
+  "ports": [
+    {
+      "name": "rows",
+      "label": "rows",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true,
+      "description": "数据输入：rows"
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "dimensions",
+      "label": "dimensions",
+      "type": "array",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：dimensions"
+    },
+    {
+      "name": "metrics",
+      "label": "metrics",
+      "type": "array",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：metrics"
+    },
+    {
+      "name": "rows",
+      "label": "rows",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "输出：rows"
+    },
+    {
+      "name": "result",
+      "label": "result",
+      "type": "any",
+      "direction": "output",
+      "description": "输出：result"
+    },
+    {
+      "name": "chart",
+      "label": "chart",
+      "type": "object",
+      "direction": "output",
+      "description": "输出：chart"
+    },
+    {
+      "name": "summary",
+      "label": "summary",
+      "type": "object",
+      "direction": "output",
+      "description": "输出：summary"
+    },
+    {
+      "name": "message",
+      "label": "message",
+      "type": "string",
+      "direction": "output",
+      "description": "输出：message"
+    }
+  ],
+  "keywords": [
+    "data:group-aggregate"
+  ]
+}

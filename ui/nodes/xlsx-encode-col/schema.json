@@ -34,5 +34,22 @@
     "encode",
     "把列号编码成字母",
     "a"
+  ],
+  "ports": [
+    {
+      "name": "col",
+      "label": "col",
+      "type": "number",
+      "direction": "input",
+      "required": true,
+      "description": "列号，从 0 开始"
+    },
+    {
+      "name": "letter",
+      "label": "letter",
+      "type": "string",
+      "direction": "output",
+      "description": "列字母"
+    }
   ]
 }

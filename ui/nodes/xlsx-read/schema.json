@@ -95,6 +95,13 @@
       "type": "boolean",
       "default": false,
       "description": "为 true 时使用稀疏数组存储行数据"
+    },
+    {
+      "name": "bookType",
+      "label": "bookType",
+      "type": "string",
+      "default": "",
+      "description": "配置项：bookType"
     }
   ],
   "keywords": [
@@ -103,5 +110,22 @@
     "从",
     "read",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "data",
+      "label": "data",
+      "type": "file-data",
+      "direction": "input",
+      "required": true,
+      "description": "要读取的数据源"
+    },
+    {
+      "name": "workbook",
+      "label": "workbook",
+      "type": "workbook",
+      "direction": "output",
+      "description": "解析后的工作簿对象，包含 SheetNames 和 Sheets"
+    }
   ]
 }

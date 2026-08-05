@@ -12,7 +12,7 @@
   "inputs": [
     {
       "name": "cell",
-      "type": "CellObject",
+      "type": "object",
       "required": true,
       "description": "单元格对象"
     },
@@ -32,7 +32,7 @@
   "outputs": [
     {
       "name": "cell",
-      "type": "CellObject",
+      "type": "object",
       "description": "修改后的单元格"
     }
   ],
@@ -44,5 +44,38 @@
     "为单元格设置超链接",
     "set",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "cell",
+      "label": "cell",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "单元格对象"
+    },
+    {
+      "name": "target",
+      "label": "target",
+      "type": "string",
+      "direction": "input",
+      "required": true,
+      "description": "链接目标 URL"
+    },
+    {
+      "name": "tooltip",
+      "label": "tooltip",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "链接提示文本"
+    },
+    {
+      "name": "cell",
+      "label": "cell",
+      "type": "object",
+      "direction": "output",
+      "description": "修改后的单元格"
+    }
   ]
 }

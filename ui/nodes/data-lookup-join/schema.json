@@ -1,16 +1,191 @@
 {
-  "id": "data:lookup-join", "label": "主数据关联", "description": "按键关联参考表并把字段补充到主记录", "category": "高阶 · 数据", "kind": "generic", "macro": { "version": 1, "expansion": "runtime-composite", "debugMapping": "node-output", "snapshot": [] },
+  "id": "data:lookup-join",
+  "label": "主数据关联",
+  "description": "按键关联参考表并把字段补充到主记录",
+  "category": "高阶 · 数据",
+  "kind": "generic",
+  "macro": {
+    "version": 1,
+    "expansion": "runtime-composite",
+    "debugMapping": "node-output",
+    "snapshot": []
+  },
   "properties": [
-    { "name": "leftKey", "label": "主表键", "type": "string", "default": "id" },
-    { "name": "rightKey", "label": "参考表键", "type": "string", "default": "id" },
-    { "name": "prefix", "label": "关联字段前缀", "type": "string", "default": "" },
-    { "name": "resultField", "label": "结果回填字段", "type": "string", "default": "" },
-    { "name": "messageField", "label": "状态回填字段", "type": "string", "default": "" }
+    {
+      "name": "leftKey",
+      "label": "主表键",
+      "type": "string",
+      "default": "id"
+    },
+    {
+      "name": "rightKey",
+      "label": "参考表键",
+      "type": "string",
+      "default": "id"
+    },
+    {
+      "name": "prefix",
+      "label": "关联字段前缀",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "resultField",
+      "label": "结果回填字段",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "messageField",
+      "label": "状态回填字段",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "key",
+      "label": "key",
+      "type": "string",
+      "default": "",
+      "description": "配置项：key"
+    },
+    {
+      "name": "leftPrefix",
+      "label": "leftPrefix",
+      "type": "string",
+      "default": "",
+      "description": "配置项：leftPrefix"
+    },
+    {
+      "name": "rightPrefix",
+      "label": "rightPrefix",
+      "type": "string",
+      "default": "",
+      "description": "配置项：rightPrefix"
+    },
+    {
+      "name": "joinType",
+      "label": "joinType",
+      "type": "string",
+      "default": "",
+      "description": "配置项：joinType"
+    },
+    {
+      "name": "maxMatches",
+      "label": "maxMatches",
+      "type": "number",
+      "default": 0,
+      "description": "配置项：maxMatches"
+    },
+    {
+      "name": "queryLimit",
+      "label": "queryLimit",
+      "type": "number",
+      "default": 0,
+      "description": "配置项：queryLimit"
+    },
+    {
+      "name": "emptyMessage",
+      "label": "emptyMessage",
+      "type": "string",
+      "default": "",
+      "description": "配置项：emptyMessage"
+    },
+    {
+      "name": "multipleMessage",
+      "label": "multipleMessage",
+      "type": "string",
+      "default": "",
+      "description": "配置项：multipleMessage"
+    },
+    {
+      "name": "criteria",
+      "label": "criteria",
+      "type": "any",
+      "description": "配置项：criteria"
+    },
+    {
+      "name": "sourceKeyFields",
+      "label": "sourceKeyFields",
+      "type": "array",
+      "description": "配置项：sourceKeyFields"
+    }
   ],
   "ports": [
-    { "name": "left", "label": "主记录", "type": "json-rows", "direction": "input", "required": true },
-    { "name": "right", "label": "参考记录", "type": "json-rows", "direction": "input", "required": true },
-    { "name": "rows", "label": "关联结果", "type": "json-rows", "direction": "output" },
-    { "name": "matchedCount", "label": "匹配数量", "type": "number", "direction": "output" }
-  ], "keywords": ["join", "lookup", "主数据", "参考表"]
+    {
+      "name": "left",
+      "label": "主记录",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true
+    },
+    {
+      "name": "right",
+      "label": "参考记录",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true
+    },
+    {
+      "name": "rows",
+      "label": "关联结果",
+      "type": "json-rows",
+      "direction": "output"
+    },
+    {
+      "name": "matchedCount",
+      "label": "匹配数量",
+      "type": "number",
+      "direction": "output"
+    },
+    {
+      "name": "rows",
+      "label": "rows",
+      "type": "json-rows",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：rows"
+    },
+    {
+      "name": "reference",
+      "label": "reference",
+      "type": "json-rows",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：reference"
+    },
+    {
+      "name": "criteria",
+      "label": "criteria",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：criteria"
+    }
+  ],
+  "keywords": [
+    "join",
+    "lookup",
+    "主数据",
+    "参考表"
+  ],
+  "inputs": [
+    {
+      "name": "rows",
+      "type": "json-rows",
+      "required": false,
+      "description": "数据输入：rows"
+    },
+    {
+      "name": "reference",
+      "type": "json-rows",
+      "required": false,
+      "description": "数据输入：reference"
+    },
+    {
+      "name": "criteria",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：criteria"
+    }
+  ]
 }

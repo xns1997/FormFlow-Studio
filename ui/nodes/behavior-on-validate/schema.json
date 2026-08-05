@@ -26,6 +26,36 @@
       "type": "any",
       "required": true,
       "description": "要校验的值"
+    },
+    {
+      "name": "formData",
+      "type": "object",
+      "required": false,
+      "description": "数据输入：formData"
+    },
+    {
+      "name": "data",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "errors",
+      "type": "array",
+      "required": false,
+      "description": "数据输入：errors"
+    },
+    {
+      "name": "rowIndex",
+      "type": "number",
+      "required": false,
+      "description": "数据输入：rowIndex"
+    },
+    {
+      "name": "sheetName",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：sheetName"
     }
   ],
   "outputs": [
@@ -67,6 +97,61 @@
       "type": "boolean",
       "direction": "output",
       "description": "是否有效"
+    },
+    {
+      "name": "trigger",
+      "label": "trigger",
+      "type": "trigger",
+      "direction": "input",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "value",
+      "label": "value",
+      "type": "any",
+      "direction": "output",
+      "description": "当前值"
+    },
+    {
+      "name": "formData",
+      "label": "formData",
+      "type": "object",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：formData"
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "errors",
+      "label": "errors",
+      "type": "array",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：errors"
+    },
+    {
+      "name": "rowIndex",
+      "label": "rowIndex",
+      "type": "number",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：rowIndex"
+    },
+    {
+      "name": "sheetName",
+      "label": "sheetName",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：sheetName"
     }
   ],
   "keywords": [

@@ -13,7 +13,7 @@
   "inputs": [
     {
       "name": "cfb",
-      "type": "CFB",
+      "type": "object",
       "required": true,
       "description": "复合文件对象"
     },
@@ -33,7 +33,7 @@
   "outputs": [
     {
       "name": "cfb",
-      "type": "CFB",
+      "type": "object",
       "description": "修改后的复合文件"
     }
   ],
@@ -45,5 +45,38 @@
     "cfb",
     "CFB",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "cfb",
+      "label": "cfb",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "复合文件对象"
+    },
+    {
+      "name": "old_name",
+      "label": "old_name",
+      "type": "string",
+      "direction": "input",
+      "required": true,
+      "description": "原条目名称"
+    },
+    {
+      "name": "new_name",
+      "label": "new_name",
+      "type": "string",
+      "direction": "input",
+      "required": true,
+      "description": "新条目名称"
+    },
+    {
+      "name": "cfb",
+      "label": "cfb",
+      "type": "object",
+      "direction": "output",
+      "description": "修改后的复合文件"
+    }
   ]
 }

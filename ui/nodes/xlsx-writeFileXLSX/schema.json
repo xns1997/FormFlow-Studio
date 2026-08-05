@@ -11,7 +11,7 @@
   "inputs": [
     {
       "name": "workbook",
-      "type": "Workbook",
+      "type": "workbook",
       "required": true,
       "description": "工作簿对象"
     },
@@ -25,7 +25,7 @@
   "outputs": [
     {
       "name": "result",
-      "type": "void",
+      "type": "any",
       "description": "写出完成"
     }
   ],
@@ -57,5 +57,30 @@
     "writeFileXLSX",
     "xlsx",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "workbook",
+      "label": "workbook",
+      "type": "workbook",
+      "direction": "input",
+      "required": true,
+      "description": "工作簿对象"
+    },
+    {
+      "name": "filename",
+      "label": "filename",
+      "type": "string",
+      "direction": "input",
+      "required": true,
+      "description": "输出文件名"
+    },
+    {
+      "name": "result",
+      "label": "result",
+      "type": "any",
+      "direction": "output",
+      "description": "写出完成"
+    }
   ]
 }

@@ -1,0 +1,211 @@
+{
+  "id": "data:pivot-matrix",
+  "label": "pivot-matrix",
+  "description": "节点 data:pivot-matrix",
+  "category": "数据处理 · 分析",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "rowDimension",
+      "label": "rowDimension",
+      "type": "string",
+      "default": "",
+      "description": "配置项：rowDimension"
+    },
+    {
+      "name": "columnDimension",
+      "label": "columnDimension",
+      "type": "string",
+      "default": "",
+      "description": "配置项：columnDimension"
+    },
+    {
+      "name": "metric",
+      "label": "metric",
+      "type": "string",
+      "default": "",
+      "description": "配置项：metric"
+    },
+    {
+      "name": "aggregation",
+      "label": "aggregation",
+      "type": "string",
+      "default": "",
+      "description": "配置项：aggregation"
+    },
+    {
+      "name": "chartLimit",
+      "label": "chartLimit",
+      "type": "number",
+      "default": 0,
+      "description": "配置项：chartLimit"
+    },
+    {
+      "name": "resultField",
+      "label": "resultField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：resultField"
+    },
+    {
+      "name": "summaryField",
+      "label": "summaryField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：summaryField"
+    },
+    {
+      "name": "chartField",
+      "label": "chartField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：chartField"
+    },
+    {
+      "name": "messageField",
+      "label": "messageField",
+      "type": "string",
+      "default": "",
+      "description": "配置项：messageField"
+    }
+  ],
+  "inputs": [
+    {
+      "name": "rows",
+      "type": "json-rows",
+      "required": true,
+      "description": "数据输入：rows"
+    },
+    {
+      "name": "data",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "rowDimension",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：rowDimension"
+    },
+    {
+      "name": "columnDimension",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：columnDimension"
+    },
+    {
+      "name": "metric",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：metric"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "rows",
+      "type": "json-rows",
+      "description": "输出：rows"
+    },
+    {
+      "name": "result",
+      "type": "any",
+      "description": "输出：result"
+    },
+    {
+      "name": "chart",
+      "type": "object",
+      "description": "输出：chart"
+    },
+    {
+      "name": "summary",
+      "type": "object",
+      "description": "输出：summary"
+    },
+    {
+      "name": "message",
+      "type": "string",
+      "description": "输出：message"
+    }
+  ],
+  "ports": [
+    {
+      "name": "rows",
+      "label": "rows",
+      "type": "json-rows",
+      "direction": "input",
+      "required": true,
+      "description": "数据输入：rows"
+    },
+    {
+      "name": "data",
+      "label": "data",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：data"
+    },
+    {
+      "name": "rowDimension",
+      "label": "rowDimension",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：rowDimension"
+    },
+    {
+      "name": "columnDimension",
+      "label": "columnDimension",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：columnDimension"
+    },
+    {
+      "name": "metric",
+      "label": "metric",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：metric"
+    },
+    {
+      "name": "rows",
+      "label": "rows",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "输出：rows"
+    },
+    {
+      "name": "result",
+      "label": "result",
+      "type": "any",
+      "direction": "output",
+      "description": "输出：result"
+    },
+    {
+      "name": "chart",
+      "label": "chart",
+      "type": "object",
+      "direction": "output",
+      "description": "输出：chart"
+    },
+    {
+      "name": "summary",
+      "label": "summary",
+      "type": "object",
+      "direction": "output",
+      "description": "输出：summary"
+    },
+    {
+      "name": "message",
+      "label": "message",
+      "type": "string",
+      "direction": "output",
+      "description": "输出：message"
+    }
+  ],
+  "keywords": [
+    "data:pivot-matrix"
+  ]
+}

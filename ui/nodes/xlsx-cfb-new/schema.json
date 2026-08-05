@@ -14,7 +14,7 @@
   "outputs": [
     {
       "name": "cfb",
-      "type": "CFB",
+      "type": "object",
       "description": "新的复合文件对象"
     }
   ],
@@ -33,5 +33,14 @@
     "cfb",
     "CFB",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "cfb",
+      "label": "cfb",
+      "type": "object",
+      "direction": "output",
+      "description": "新的复合文件对象"
+    }
   ]
 }

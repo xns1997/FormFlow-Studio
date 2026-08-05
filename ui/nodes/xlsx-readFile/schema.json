@@ -19,7 +19,7 @@
   "outputs": [
     {
       "name": "workbook",
-      "type": "Workbook",
+      "type": "workbook",
       "description": "工作簿对象"
     }
   ],
@@ -94,5 +94,22 @@
     "js",
     "readFile",
     "XLSX"
+  ],
+  "ports": [
+    {
+      "name": "filename",
+      "label": "filename",
+      "type": "string",
+      "direction": "input",
+      "required": true,
+      "description": "文件路径"
+    },
+    {
+      "name": "workbook",
+      "label": "workbook",
+      "type": "workbook",
+      "direction": "output",
+      "description": "工作簿对象"
+    }
   ]
 }

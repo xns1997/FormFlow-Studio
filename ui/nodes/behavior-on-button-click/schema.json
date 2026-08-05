@@ -20,6 +20,30 @@
       "type": "trigger",
       "required": true,
       "description": "触发信号"
+    },
+    {
+      "name": "buttonName",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：buttonName"
+    },
+    {
+      "name": "formData",
+      "type": "object",
+      "required": false,
+      "description": "数据输入：formData"
+    },
+    {
+      "name": "rowIndex",
+      "type": "number",
+      "required": false,
+      "description": "数据输入：rowIndex"
+    },
+    {
+      "name": "sheetName",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：sheetName"
     }
   ],
   "outputs": [
@@ -48,6 +72,46 @@
       "type": "string",
       "direction": "output",
       "description": "按钮名"
+    },
+    {
+      "name": "trigger",
+      "label": "trigger",
+      "type": "trigger",
+      "direction": "input",
+      "required": true,
+      "description": "触发信号"
+    },
+    {
+      "name": "buttonName",
+      "label": "buttonName",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：buttonName"
+    },
+    {
+      "name": "formData",
+      "label": "formData",
+      "type": "object",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：formData"
+    },
+    {
+      "name": "rowIndex",
+      "label": "rowIndex",
+      "type": "number",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：rowIndex"
+    },
+    {
+      "name": "sheetName",
+      "label": "sheetName",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：sheetName"
     }
   ],
   "keywords": [

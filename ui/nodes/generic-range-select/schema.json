@@ -1,0 +1,266 @@
+{
+  "id": "generic:range-select",
+  "label": "range-select",
+  "description": "节点 generic:range-select",
+  "category": "功能 · 数据操作",
+  "kind": "generic",
+  "properties": [
+    {
+      "name": "rangeMode",
+      "label": "rangeMode",
+      "type": "string",
+      "default": "",
+      "description": "配置项：rangeMode"
+    },
+    {
+      "name": "address",
+      "label": "address",
+      "type": "string",
+      "default": "",
+      "description": "配置项：address"
+    },
+    {
+      "name": "rowIndex",
+      "label": "rowIndex",
+      "type": "number",
+      "default": 0,
+      "description": "配置项：rowIndex"
+    },
+    {
+      "name": "colIndex",
+      "label": "colIndex",
+      "type": "number",
+      "default": 0,
+      "description": "配置项：colIndex"
+    },
+    {
+      "name": "rows",
+      "label": "rows",
+      "type": "number",
+      "default": 0,
+      "description": "配置项：rows"
+    },
+    {
+      "name": "cols",
+      "label": "cols",
+      "type": "number",
+      "default": 0,
+      "description": "配置项：cols"
+    }
+  ],
+  "inputs": [
+    {
+      "name": "worksheet",
+      "type": "worksheet",
+      "required": true,
+      "description": "数据输入：worksheet"
+    },
+    {
+      "name": "rangeMode",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：rangeMode"
+    },
+    {
+      "name": "address",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：address"
+    },
+    {
+      "name": "rowIndex",
+      "type": "number",
+      "required": false,
+      "description": "数据输入：rowIndex"
+    },
+    {
+      "name": "colIndex",
+      "type": "number",
+      "required": false,
+      "description": "数据输入：colIndex"
+    },
+    {
+      "name": "rows",
+      "type": "number",
+      "required": false,
+      "description": "数据输入：rows"
+    },
+    {
+      "name": "cols",
+      "type": "number",
+      "required": false,
+      "description": "数据输入：cols"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "range",
+      "type": "object",
+      "description": "输出：range"
+    },
+    {
+      "name": "address",
+      "type": "string",
+      "description": "输出：address"
+    },
+    {
+      "name": "areas",
+      "type": "array",
+      "description": "输出：areas"
+    },
+    {
+      "name": "values",
+      "type": "array",
+      "description": "输出：values"
+    },
+    {
+      "name": "areaValues",
+      "type": "array",
+      "description": "输出：areaValues"
+    },
+    {
+      "name": "areaCount",
+      "type": "number",
+      "description": "输出：areaCount"
+    },
+    {
+      "name": "cellCount",
+      "type": "number",
+      "description": "输出：cellCount"
+    },
+    {
+      "name": "rowCount",
+      "type": "number",
+      "description": "输出：rowCount"
+    },
+    {
+      "name": "colCount",
+      "type": "number",
+      "description": "输出：colCount"
+    }
+  ],
+  "ports": [
+    {
+      "name": "worksheet",
+      "label": "worksheet",
+      "type": "worksheet",
+      "direction": "input",
+      "required": true,
+      "description": "数据输入：worksheet"
+    },
+    {
+      "name": "rangeMode",
+      "label": "rangeMode",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：rangeMode"
+    },
+    {
+      "name": "address",
+      "label": "address",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：address"
+    },
+    {
+      "name": "rowIndex",
+      "label": "rowIndex",
+      "type": "number",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：rowIndex"
+    },
+    {
+      "name": "colIndex",
+      "label": "colIndex",
+      "type": "number",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：colIndex"
+    },
+    {
+      "name": "rows",
+      "label": "rows",
+      "type": "number",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：rows"
+    },
+    {
+      "name": "cols",
+      "label": "cols",
+      "type": "number",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：cols"
+    },
+    {
+      "name": "range",
+      "label": "range",
+      "type": "object",
+      "direction": "output",
+      "description": "输出：range"
+    },
+    {
+      "name": "address",
+      "label": "address",
+      "type": "string",
+      "direction": "output",
+      "description": "输出：address"
+    },
+    {
+      "name": "areas",
+      "label": "areas",
+      "type": "array",
+      "direction": "output",
+      "description": "输出：areas"
+    },
+    {
+      "name": "values",
+      "label": "values",
+      "type": "array",
+      "direction": "output",
+      "description": "输出：values"
+    },
+    {
+      "name": "areaValues",
+      "label": "areaValues",
+      "type": "array",
+      "direction": "output",
+      "description": "输出：areaValues"
+    },
+    {
+      "name": "areaCount",
+      "label": "areaCount",
+      "type": "number",
+      "direction": "output",
+      "description": "输出：areaCount"
+    },
+    {
+      "name": "cellCount",
+      "label": "cellCount",
+      "type": "number",
+      "direction": "output",
+      "description": "输出：cellCount"
+    },
+    {
+      "name": "rowCount",
+      "label": "rowCount",
+      "type": "number",
+      "direction": "output",
+      "description": "输出：rowCount"
+    },
+    {
+      "name": "colCount",
+      "label": "colCount",
+      "type": "number",
+      "direction": "output",
+      "description": "输出：colCount"
+    }
+  ],
+  "keywords": [
+    "generic:range-select"
+  ]
+}

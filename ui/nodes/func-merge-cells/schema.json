@@ -19,6 +19,20 @@
       "type": "boolean",
       "default": true,
       "description": "true=合并，false=取消合并"
+    },
+    {
+      "name": "startCell",
+      "label": "startCell",
+      "type": "string",
+      "default": "",
+      "description": "配置项：startCell"
+    },
+    {
+      "name": "endCell",
+      "label": "endCell",
+      "type": "string",
+      "default": "",
+      "description": "配置项：endCell"
     }
   ],
   "inputs": [

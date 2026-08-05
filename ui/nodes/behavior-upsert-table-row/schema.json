@@ -5,16 +5,143 @@
   "category": "行为 · 动作",
   "kind": "generic",
   "properties": [
-    { "name": "tableId", "label": "数据表 ID", "type": "string", "default": "", "description": "目标数据表 ID" },
-    { "name": "sheetName", "label": "工作表", "type": "string", "default": "", "description": "目标工作表名称" },
-    { "name": "keyField", "label": "主键字段", "type": "string", "default": "", "description": "写回使用的主键字段" },
-    { "name": "keyValue", "label": "主键值", "type": "string", "default": "", "description": "固定主键值，可被运行时覆盖" },
-    { "name": "keyValueExpr", "label": "主键表达式", "type": "string", "default": "", "description": "支持 $row.xxx 形式从记录取主键值" }
+    {
+      "name": "tableId",
+      "label": "数据表 ID",
+      "type": "string",
+      "default": "",
+      "description": "目标数据表 ID"
+    },
+    {
+      "name": "sheetName",
+      "label": "工作表",
+      "type": "string",
+      "default": "",
+      "description": "目标工作表名称"
+    },
+    {
+      "name": "keyField",
+      "label": "主键字段",
+      "type": "string",
+      "default": "",
+      "description": "写回使用的主键字段"
+    },
+    {
+      "name": "keyValue",
+      "label": "主键值",
+      "type": "string",
+      "default": "",
+      "description": "固定主键值，可被运行时覆盖"
+    },
+    {
+      "name": "keyValueExpr",
+      "label": "主键表达式",
+      "type": "string",
+      "default": "",
+      "description": "支持 $row.xxx 形式从记录取主键值"
+    }
   ],
   "ports": [
-    { "name": "row", "label": "记录", "type": "object", "direction": "input", "required": true, "description": "待写回的记录对象" },
-    { "name": "writeBack", "label": "写回动作", "type": "object", "direction": "output", "description": "生成的 upsert sideEffect" },
-    { "name": "keyValue", "label": "主键值", "type": "any", "direction": "output", "description": "最终使用的主键值" }
+    {
+      "name": "row",
+      "label": "记录",
+      "type": "object",
+      "direction": "input",
+      "required": true,
+      "description": "待写回的记录对象"
+    },
+    {
+      "name": "writeBack",
+      "label": "写回动作",
+      "type": "object",
+      "direction": "output",
+      "description": "生成的 upsert sideEffect"
+    },
+    {
+      "name": "keyValue",
+      "label": "主键值",
+      "type": "any",
+      "direction": "output",
+      "description": "最终使用的主键值"
+    },
+    {
+      "name": "tableId",
+      "label": "tableId",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：tableId"
+    },
+    {
+      "name": "sheetName",
+      "label": "sheetName",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：sheetName"
+    },
+    {
+      "name": "keyField",
+      "label": "keyField",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：keyField"
+    },
+    {
+      "name": "keyValueExpr",
+      "label": "keyValueExpr",
+      "type": "string",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：keyValueExpr"
+    },
+    {
+      "name": "keyValue",
+      "label": "keyValue",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：keyValue"
+    }
   ],
-  "keywords": ["upsert", "写回", "保存记录", "table row", "crud"]
+  "keywords": [
+    "upsert",
+    "写回",
+    "保存记录",
+    "table row",
+    "crud"
+  ],
+  "inputs": [
+    {
+      "name": "tableId",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：tableId"
+    },
+    {
+      "name": "sheetName",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：sheetName"
+    },
+    {
+      "name": "keyField",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：keyField"
+    },
+    {
+      "name": "keyValueExpr",
+      "type": "string",
+      "required": false,
+      "description": "数据输入：keyValueExpr"
+    },
+    {
+      "name": "keyValue",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：keyValue"
+    }
+  ]
 }

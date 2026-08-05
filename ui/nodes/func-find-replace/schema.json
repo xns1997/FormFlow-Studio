@@ -34,6 +34,20 @@
       "type": "boolean",
       "default": false,
       "description": "是否要求整个单元格匹配"
+    },
+    {
+      "name": "find",
+      "label": "find",
+      "type": "string",
+      "default": "",
+      "description": "配置项：find"
+    },
+    {
+      "name": "replace",
+      "label": "replace",
+      "type": "string",
+      "default": "",
+      "description": "配置项：replace"
     }
   ],
   "inputs": [

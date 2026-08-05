@@ -127,6 +127,20 @@ export function toolError(code: string, message: string, path?: string, details?
   return Object.assign(new Error(message), { code, path, details });
 }
 
+/**
+ * 端口类型兼容性规则（与客户端 ui/src/services/config/nodeDiscovery.ts 保持一致）。
+ * any 与任意类型兼容；精确相同或同族类型兼容。
+ */
+export function serverPortTypesCompatible(source: string, target: string): boolean {
+  if (source === 'any' || target === 'any' || source === target) return true;
+  const families = [
+    new Set(['object', 'workbook', 'worksheet', 'cell', 'range', 'cell-ref', 'options', 'filter', 'sort-config', 'style', 'validation-rule']),
+    new Set(['array', 'json-rows', 'aoa', 'headers']),
+    new Set(['string', 'address', 'csv-string', 'html-string', 'json-string']),
+  ];
+  return families.some((family) => family.has(source) && family.has(target));
+}
+
 function duplicateIds(items: any[], path: string, errors: ValidationIssue[]) {
   const seen = new Set<string>();
   items.forEach((item, index) => {
@@ -141,6 +155,59 @@ function workflowReferences(value: any, result: string[] = []): string[] {
   if (typeof value.workflowId === 'string') result.push(value.workflowId);
   Object.values(value).forEach((child) => workflowReferences(child, result));
   return result;
+}
+
+/** 解析节点 data.propertiesJson（容错）。 */
+function workflowNodeProperties(node: any): Record<string, any> {
+  try {
+    const raw = node?.data?.propertiesJson;
+    if (typeof raw !== 'string' || !raw.trim()) return {};
+    return JSON.parse(raw) as Record<string, any>;
+  } catch {
+    return {};
+  }
+}
+
+/** 解析自定义端口定义（与客户端 parseCustomJsPortDefinitions 兼容的最小实现，支持数组/JSON 字符串/对象映射）。 */
+function workflowCustomPorts(raw: unknown): Array<{ name: string; type: string }> {
+  let source = raw;
+  if (typeof source === 'string') {
+    const text = source.trim();
+    if (!text) return [];
+    try {
+      source = JSON.parse(text);
+    } catch {
+      return [];
+    }
+  }
+  if (Array.isArray(source)) {
+    return source
+      .filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry))
+      .map((entry) => entry as Record<string, unknown>)
+      .filter((entry) => typeof entry.name === 'string' && String(entry.name).trim())
+      .map((entry) => ({ name: String(entry.name).trim(), type: String(entry.type || 'any').trim() || 'any' }));
+  }
+  if (source && typeof source === 'object') {
+    return Object.entries(source as Record<string, unknown>)
+      .filter(([name]) => Boolean(String(name).trim()))
+      .map(([name, value]) => {
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          const entry = value as Record<string, unknown>;
+          return { name, type: String(entry.type || 'any').trim() || 'any' };
+        }
+        return { name, type: String(value || 'any').trim() || 'any' };
+      });
+  }
+  return [];
+}
+
+/** 合并静态目录端口与节点自定义端口，按名称取首个命中。 */
+function mergePorts(staticPorts: Array<{ name: string; type: string }>, customPorts: Array<{ name: string; type: string }>) {
+  const byName = new Map<string, { name: string; type: string }>();
+  for (const port of [...staticPorts, ...customPorts]) {
+    if (!byName.has(port.name)) byName.set(port.name, port);
+  }
+  return byName;
 }
 
 /** The server and package CLI intentionally share the same frozen-v2 field policy. */
@@ -213,8 +280,29 @@ export function validateProjectModel(project: JsonObject): ValidationReport {
         try {
           const catalog = JSON.parse(readFileSync(catalogPath, 'utf8')); const source = nodes.find((item: any) => item.id === edge.source); const target = nodes.find((item: any) => item.id === edge.target);
           const sourcePort = edge.sourceHandle?.replace(/^out:/, ''); const targetPort = edge.targetHandle?.replace(/^in:/, '');
-          if (source && sourcePort && catalog[source.specId] && !catalog[source.specId].outputs.includes(sourcePort)) errors.push({ code: 'INVALID_PORT', path: `workflows.${workflow.id}.edges.${edge.id}.sourceHandle`, message: `输出端口 ${sourcePort} 不存在` });
-          if (target && targetPort && catalog[target.specId] && !catalog[target.specId].inputs.includes(targetPort)) errors.push({ code: 'INVALID_PORT', path: `workflows.${workflow.id}.edges.${edge.id}.targetHandle`, message: `输入端口 ${targetPort} 不存在` });
+          const sourceProperties = workflowNodeProperties(source);
+          const sourceOutputs = source ? mergePorts(
+            catalog[source.specId]?.outputs || [],
+            [
+              ...workflowCustomPorts(sourceProperties.outputPorts),
+              ...(source.specId === 'workflow:import' ? workflowCustomPorts(sourceProperties.ports) : []),
+            ],
+          ) : null;
+          const targetProperties = workflowNodeProperties(target);
+          const targetInputs = target ? mergePorts(
+            catalog[target.specId]?.inputs || [],
+            [
+              ...workflowCustomPorts(targetProperties.inputPorts),
+              ...(target.specId === 'workflow:export' ? workflowCustomPorts(targetProperties.ports) : []),
+            ],
+          ) : null;
+          const sourceEntry = source && sourcePort ? sourceOutputs?.get(sourcePort) : undefined;
+          const targetEntry = target && targetPort ? targetInputs?.get(targetPort) : undefined;
+          if (source && sourcePort && sourceOutputs && !sourceEntry) errors.push({ code: 'INVALID_PORT', path: `workflows.${workflow.id}.edges.${edge.id}.sourceHandle`, message: `输出端口 ${sourcePort} 不存在` });
+          if (target && targetPort && targetInputs && !targetEntry) errors.push({ code: 'INVALID_PORT', path: `workflows.${workflow.id}.edges.${edge.id}.targetHandle`, message: `输入端口 ${targetPort} 不存在` });
+          if (sourceEntry && targetEntry && !serverPortTypesCompatible(sourceEntry.type, targetEntry.type)) {
+            errors.push({ code: 'INVALID_EDGE_TYPE', path: `workflows.${workflow.id}.edges.${edge.id}`, message: `端口类型不兼容: ${sourcePort}(${sourceEntry.type}) → ${targetPort}(${targetEntry.type})` });
+          }
         } catch {
           // 端口目录缺失或损坏时不阻断其余结构校验。
         }
