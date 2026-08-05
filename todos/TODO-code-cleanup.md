@@ -138,6 +138,10 @@
 ## 待确认
 
 - [x] 用户已确认 A + B 批删除（C 批保留），2026-08-05 执行完成：git rm A 批 7 文件 + B 批未使用 import 清理 → `npm run verify` 全绿 → 单独提交。
+- [x] 全库导出 API 中文 TSDoc 覆盖完成（shared / server / ui / ui/nodes / python / scripts 缺口清零）。
+- [x] 原在途 WIP 文件已随批次提交，并按同一标准补齐注释。
+- [x] 集中回归检查：`npm run verify` 全绿；e2e 冒烟 27/28（唯一失败为 onboarding 引导层遮挡的既有环境级 flake，与本次改动无关）。
+- [x] 已同步到 main。
 
 执行备注：
 - B 批中 `import React from 'react'` 在 `.tsx` 文件中**保留**——tsx 测试/开发运行时按经典 JSX 编译需要 React 在作用域内，tsc 的 `react-jsx` 设置会误报为未使用；实际清理范围为其余未使用 import 与 `.ts` 文件。
