@@ -91,6 +91,7 @@ const DECISION_SCHEMA = {
 
 const READ_BEFORE_WRITE_LIMIT = 5;
 
+/** 按错误信息/代码归类失败类型（阻塞、可重试、预算等）。 */
 export function classifyFailure(message: string, code?: string): FailureClass {
   if (code === 'PROJECT_REVISION_CONFLICT' || /REVISION_CONFLICT|revision 冲突|项目在.*更新/i.test(message)) return 'revision_conflict';
   if (/FORBIDDEN|无权|权限/.test(message)) return 'permission';
@@ -102,6 +103,7 @@ export function classifyFailure(message: string, code?: string): FailureClass {
   return 'unknown';
 }
 
+/** 将一次工具调用的观察追加到线程事件流（供上下文与指纹使用）。 */
 export function appendToolObservation(thread: AgentThread, observation: LoopObservation) {
   appendAgentThreadEvent(thread, 'tool_observation', {
     taskId: observation.taskId,
@@ -260,7 +262,7 @@ function markBlocked(thread: AgentThread, reason: string) {
   saveAgentThread(thread);
 }
 
-function decisionPrompt(thread: AgentThread, bundle: NonNullable<ReturnType<typeof getCapabilityBundle>>, run: RunContext) {
+function decisionPrompt(thread: AgentThread, bundle: NonNullable<ReturnType<typeof getCapabilityBundle>>) {
   const catalog = skillCatalog(bundle);
   const catalogText = catalog.map((item) => `- ${item.role}（${item.name}）：${item.description}\n  工具：${item.tools.map((toolName) => {
     const def = getFormFlowTool(toolName);
@@ -354,7 +356,7 @@ async function decideNext(thread: AgentThread, run: RunContext, bundle: NonNulla
   try {
     response = await chat(thread, run, {
       messages: [
-        { role: 'system', content: decisionPrompt(thread, bundle, run) },
+        { role: 'system', content: decisionPrompt(thread, bundle) },
         { role: 'user', content: '请根据当前状态输出下一步决策（结构化）。' },
       ],
       responseSchema: DECISION_SCHEMA,
@@ -395,6 +397,9 @@ export type ActionOutcome = 'succeeded' | 'failed' | 'waiting' | 'refreshed';
  * Executes one tool action with deterministic preflight. Returns the outcome;
  * 'waiting' means a confirmation is pending and the loop must stop.
  */
+/**
+ * 执行单个决策动作（工具调用或提问）：按策略放行、幂等键注入、结果观察与事件发布。
+ */
 export async function executeAction(
   thread: AgentThread,
   run: RunContext,
@@ -411,7 +416,7 @@ export async function executeAction(
     appendAgentThreadEvent(thread, 'task_started', { taskId: task.id });
   }
   let args = { ...(decision.arguments || {}) };
-  const projectId = toolProjectId(decision.toolName!, args) || thread.currentProjectId;
+  const projectId = toolProjectId(args) || thread.currentProjectId;
   const write = isWriteTool(decision.toolName!);
   const createsProject = projectToolCreatesProject(decision.toolName!);
 
@@ -529,17 +534,17 @@ export async function executeAction(
     }
     const nodes = (args.item.nodes as any[]).map((node: any) => ({ id: node.id, specId: node.specId }));
     const nodeById = new Map(nodes.map((node) => [node.id, node]));
-    const pick = (ports: string[], kind: string) => ports.includes('trigger') ? 'trigger' : ports[0];
+    const pick = (ports: string[]) => ports.includes('trigger') ? 'trigger' : ports[0];
     for (const edge of (args.item.edges as any[])) {
       const source = nodeById.get(edge.source);
       const target = nodeById.get(edge.target);
       if (source && !edge.sourceHandle) {
         const outputs = bySpec.get(source.specId)?.outputs || [];
-        edge.sourceHandle = `out:${pick(outputs, 'output') || 'trigger'}`;
+        edge.sourceHandle = `out:${pick(outputs) || 'trigger'}`;
       }
       if (target && !edge.targetHandle) {
         const inputs = bySpec.get(target.specId)?.inputs || [];
-        edge.targetHandle = `in:${pick(inputs, 'input') || 'trigger'}`;
+        edge.targetHandle = `in:${pick(inputs) || 'trigger'}`;
       }
     }
     appendAgentThreadEvent(thread, 'workflow_handles_resolved', { edges: (args.item.edges as any[]).map((edge) => `${edge.sourceHandle}->${edge.targetHandle}`) });
@@ -602,6 +607,7 @@ export async function executeAction(
  * Records a tool result (used by the loop and by the approval-decision route),
  * updates revisions/evidence and returns the outcome.
  */
+/** 记录工具结果：观察、事件、证据与指标更新。 */
 export async function recordToolResult(
   thread: AgentThread,
   run: RunContext,
@@ -611,7 +617,7 @@ export async function recordToolResult(
   effectiveArguments?: Record<string, any>,
 ): Promise<ActionOutcome> {
   const task = taskById(thread, decision.taskId);
-  const projectId = toolProjectId(decision.toolName!, decision.arguments || {}) || thread.currentProjectId;
+  const projectId = toolProjectId(decision.arguments || {}) || thread.currentProjectId;
 
   // 幂等创建：资源已存在即目标状态达成，只记成功观察，不先记失败再记成功。
   const errorValue = 'error' in result ? result.error : undefined;
@@ -825,7 +831,7 @@ async function executeActionWithRecovery(
     const eligible = failureClass === 'transient' || failureClass === 'revision_conflict';
     if (!eligible || retries >= MAX_AUTO_RECOVERY_RETRIES || thread.recoveryCycles >= recoveryBudget(bundle)) return outcome;
     if (failureClass === 'revision_conflict') {
-      const projectId = toolProjectId(decision.toolName!, decision.arguments || {}) || thread.currentProjectId;
+      const projectId = toolProjectId(decision.arguments || {}) || thread.currentProjectId;
       if (projectId) await refreshRevision(thread, run, projectId);
     }
     retries += 1;
@@ -855,7 +861,7 @@ async function executeBatchReads(
     const toolName = String(read.toolName || '');
     const scope = resolveScope({ toolName, scope: read.scope, arguments: read.arguments } as LoopDecision, bundle);
     if (isWriteTool(toolName)) throw new Error(`${toolName} 不是只读工具，不能进入批量只读`);
-    const projectId = toolProjectId(toolName, read.arguments || {}) || thread.currentProjectId;
+    const projectId = toolProjectId(read.arguments || {}) || thread.currentProjectId;
     let args = { ...(read.arguments || {}) };
     const def = getFormFlowTool(toolName);
     const acceptsProjectId = Boolean((def?.inputSchema as any)?.properties?.projectId);
@@ -923,6 +929,10 @@ export interface ExecutePlanHooks {
   selfReview?: (thread: AgentThread, run: RunContext) => Promise<{ issues: string[] }>;
 }
 
+/**
+ * 主循环：规划 → 决策 → 执行 → 观察，直到计划完成、阻塞或预算耗尽。
+ * 确定性门禁（测试基线/形式化验证/最终门禁）在对应阶段强制执行。
+ */
 export async function executePlan(thread: AgentThread, run: RunContext, hooks: ExecutePlanHooks = {}) {
   if (!thread.plan || thread.plan.status !== 'confirmed') return;
   if (thread.status === 'executing' || thread.status === 'awaiting_operation_approval') return;

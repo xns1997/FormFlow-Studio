@@ -15,11 +15,13 @@ const DEFAULT_MAX_PROMPT_CHARS = 40_000;
 /** 注入的当前 scope skill 文档 + 目录的估算字符数（保守值）。 */
 const SKILL_DOCS_ALLOWANCE = 16_000;
 
+/** 提示词最大字符数（来自能力包配置，默认 40000）。 */
 export function maxPromptChars(bundle: CapabilityBundleVersion) {
   return bundle.context?.maxPromptChars ?? DEFAULT_MAX_PROMPT_CHARS;
 }
 
 /** 从线程现有结构化状态确定性提取压缩契约。 */
+/** 构造线程的结构化上下文（目标/约束/决策/验证/剩余工作）。 */
 export function structuredThreadContext(thread: AgentThread): ThreadContext {
   const plan = thread.plan;
   const tasks = plan?.tasks || [];
@@ -51,6 +53,7 @@ export function structuredThreadContext(thread: AgentThread): ThreadContext {
 
 /** 粗略估算当前 Prompt 大小（最近消息 + 最近观察 + 注入 skill 文档 + 摘要）。
  *  事件流是审计日志、不在 Prompt 内全量注入，因此不参与估算，避免每步误触发压缩。 */
+/** 估算当前提示词字符数（用于触发压缩）。 */
 export function estimatePromptChars(thread: AgentThread): number {
   const recentMessagesChars = thread.messages.slice(-8).reduce((total, message) => total + (message.content?.length || 0), 0);
   const recentObservationChars = thread.events.slice(-12).reduce((total, event) => total + JSON.stringify(event.data || {}).length, 0);
@@ -91,6 +94,7 @@ async function summarizeOldMessages(thread: AgentThread, run: RunContext, oldTex
  * 2) 旧消息折叠进 summary（有 summarize 路由时先做 LLM 摘要，否则确定性折叠）；
  * 3) 记录 context_compacted 事件与指标。
  */
+/** 提示词超限时触发结构化上下文压缩。 */
 export async function maybeCompactContext(thread: AgentThread, bundle: CapabilityBundleVersion, run: RunContext) {
   const threshold = maxPromptChars(bundle);
   if (estimatePromptChars(thread) <= threshold) return;

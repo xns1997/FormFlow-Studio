@@ -14,19 +14,23 @@ export type PolicyOutcome = {
   userMessage: string;
 };
 
+/** 本地模式自动确认、云端模式需要用户确认。 */
 export function shouldAutoApproveOperation(mode: 'local' | 'cloud') {
   return mode === 'local';
 }
 
+/** 工具风险级别：read / write / destructive。 */
 export function toolRisk(toolName: string) {
   return getFormFlowTool(toolName)?.risk || 'read';
 }
 
+/** 是否为写工具（需要 revision 与幂等键）。 */
 export function isWriteTool(toolName: string) {
   return toolRisk(toolName) !== 'read';
 }
 
 /** Returns the resolved scope for a decision, validating whitelist membership. */
+/** 解析决策应使用的 MCP 角色作用域（project/data/form/workflow/...）。 */
 export function resolveScope(decision: LoopDecision, bundle: CapabilityBundleVersion): McpRole {
   const tool = decision.toolName;
   if (!tool) throw new Error('决策缺少 toolName');
@@ -46,6 +50,7 @@ export function resolveScope(decision: LoopDecision, bundle: CapabilityBundleVer
   return scope;
 }
 
+/** 工具策略评估：确认必要性、风险级别与是否自动放行。 */
 export function evaluateToolPolicy(toolName: string, request: string, task?: AgentTask): PolicyOutcome {
   const risk = toolRisk(toolName);
   if (risk === 'read') return { level: 'allowed', reason: 'read_only', userMessage: '只读操作，不会修改项目。' };
@@ -65,12 +70,14 @@ export function evaluateToolPolicy(toolName: string, request: string, task?: Age
 }
 
 /** Stable, retry-safe idempotency key derived from thread/task/tool/args. */
+/** 生成稳定幂等键：同一线程/任务/尝试/工具/参数重试保持一致。 */
 export function stableIdempotencyKey(threadId: string, taskId: string | undefined, attempt: number, toolName: string, argumentsValue: Record<string, any>) {
   const sanitized = { ...argumentsValue, idempotencyKey: undefined, confirmationToken: undefined };
   const digest = createHash('sha256').update(JSON.stringify({ threadId, taskId: taskId || '', attempt, toolName, args: sanitized })).digest('hex').slice(0, 24);
   return `idp_${digest}`;
 }
 
+/** 写工具参数规范化：注入 baseRevision / idempotencyKey / confirmationToken。 */
 export function normalizeWriteArguments(threadId: string, task: AgentTask | undefined, toolName: string, argumentsValue: Record<string, any>) {
   const next = { ...argumentsValue };
   // 始终注入系统计算的稳定幂等键：同参数重试保持同键（可重放），参数变化自动换键；
@@ -79,18 +86,22 @@ export function normalizeWriteArguments(threadId: string, task: AgentTask | unde
   return next;
 }
 
+/** 该工具是否会创建新项目（影响 projectId 解析与作用域）。 */
 export function projectToolCreatesProject(toolName: string) {
   return ['project.create', 'project.initialize', 'project.build_from_data', 'project.import'].includes(toolName);
 }
 
-export function toolProjectId(toolName: string, argumentsValue: Record<string, any>) {
+/** 从工具参数中提取 projectId（缺失返回 undefined）。 */
+export function toolProjectId(argumentsValue: Record<string, any>) {
   return String(argumentsValue.projectId || '').trim() || undefined;
 }
 
+/** release.apply 永远不可调用（硬门禁）。 */
 export function isReleaseApply(toolName: string) {
   return toolName === 'release.apply';
 }
 
+/** 指定角色可调用的工具名列表（排除 release.apply）。 */
 export function scopeToolNames(scope: McpRole) {
   return listFormFlowTools(scope).filter((tool) => tool.name !== 'release.apply').map((tool) => tool.name);
 }

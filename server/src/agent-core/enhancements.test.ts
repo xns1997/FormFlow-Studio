@@ -19,7 +19,7 @@ const { projectPackagePath } = await import('../services/project-package-store')
 const { llmProviderClient } = await import('../services/llm-provider-client');
 const {
   createAgentThread, executePlan, getAgentThread, initializeAgentStore, saveAgentThread,
-  storeAgentArtifact, readAgentArtifact, getCapabilityBundle,
+  storeAgentArtifact, readAgentArtifact,
 } = await import('./index');
 const { maybeCompactContext, maxPromptChars } = await import('./context');
 const { runFinalGates, missingTaskDeliverables } = await import('./gates');

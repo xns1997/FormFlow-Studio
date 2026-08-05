@@ -25,6 +25,7 @@ function connectionFor(thread: AgentThread, run: RunContext, routeIndex: number,
   return { profile, route, connection: llmManagement.resolveConnection(route, { tenantId: run.tenantId, projectId: thread.currentProjectId }) };
 }
 
+/** 一次 LLM 对话（非流式），返回消息与消耗统计。 */
 export async function chat(thread: AgentThread, run: RunContext, options: ChatOptions) {
   const profile = llmManagement.resolveProfile(thread.profileId, { tenantId: run.tenantId, projectId: thread.currentProjectId });
   const purpose = options.purpose ?? 'decision';
@@ -51,6 +52,7 @@ export async function chat(thread: AgentThread, run: RunContext, options: ChatOp
   throw lastError || new Error('没有可用模型路由');
 }
 
+/** 流式 LLM 对话：通过 onEvent 回调逐事件推送（决策/进度/错误）。 */
 export function streamChat(thread: AgentThread, run: RunContext, options: ChatOptions, onEvent: (event: { type: string; data: any; requestId: string }) => void) {
   const { profile, connection } = connectionFor(thread, run, 0, options.purpose ?? 'decision');
   return llmProviderClient.chatStream({

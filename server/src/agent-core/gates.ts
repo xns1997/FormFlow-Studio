@@ -26,6 +26,7 @@ function evidence(kind: AgentEvidence['kind'], summary: string, data?: unknown):
  * Task instructions often name the resources they must create; a task may not
  * be marked passed until those resources are present.
  */
+/** 检查任务声明的交付物在项目模型中是否齐备，返回缺失项。 */
 export function missingTaskDeliverables(project: Record<string, any>, task: AgentTask): string[] {
   const text = `${task.title}\n${task.instruction}`;
   const missing: string[] = [];
@@ -95,7 +96,7 @@ export function missingTaskDeliverables(project: Record<string, any>, task: Agen
   return missing;
 }
 
-async function validateProject(thread: AgentThread, run: RunContext, projectId: string, scope: McpRole) {
+async function validateProject(run: RunContext, projectId: string, scope: McpRole) {
   const result = await executeLlmTool('project.validate', { projectId }, {
     tenantId: run.tenantId,
     projectId,
@@ -108,6 +109,7 @@ async function validateProject(thread: AgentThread, run: RunContext, projectId: 
 }
 
 /** 写计划（data/form/behavior/workflow 任一写任务）或 quality 作用域计划需要测试入闸。 */
+/** 当前线程是否适用回归测试门禁（存在需生成/运行的测试任务）。 */
 export function testGateApplies(thread: AgentThread): boolean {
   const tasks = thread.plan?.tasks || [];
   return tasks.some((task) => task.scope === 'quality')
@@ -177,6 +179,7 @@ async function runProjectTestOnce(thread: AgentThread, run: RunContext, projectI
 }
 
 /** 捕获执行开始前的测试基线（预存失败不阻塞，引入失败必须修复）。 */
+/** 捕获回归测试基线：预存失败不阻塞，引入失败必须修复。 */
 export async function captureTestBaseline(thread: AgentThread, run: RunContext) {
   if (!testGateApplies(thread)) return;
   const projects = threadProjectIds(thread);
@@ -230,7 +233,7 @@ async function runTestGate(thread: AgentThread, run: RunContext, projectId: stri
  * non-deterministic transition, or a static error block task completion.
  * Projects without rule code are skipped (no rules to verify).
  */
-async function verifyFormalRules(thread: AgentThread, run: RunContext, projectId: string): Promise<AgentEvidence[]> {
+async function verifyFormalRules(run: RunContext, projectId: string): Promise<AgentEvidence[]> {
   const project = requireProject(projectId);
   const ruleForms = (project.forms || []).filter((form: any) => form && String(form.ruleCode || '').trim().length > 0);
   if (!ruleForms.length) return [];
@@ -264,11 +267,12 @@ async function verifyFormalRules(thread: AgentThread, run: RunContext, projectId
  * Verifies a task the agent claims is complete. Runs project.validate for
  * write tasks and attaches structural evidence; throws GateFailure otherwise.
  */
+/** 验证单个已完成任务：结构校验、质量检查与形式化规则门禁。 */
 export async function verifyCompletedTask(thread: AgentThread, task: AgentTask, run: RunContext) {
   const evidenceList: AgentEvidence[] = [];
   const projectId = task.projectId || thread.currentProjectId;
   if (task.access === 'write' && projectId) {
-    const result = await validateProject(thread, run, projectId, 'project');
+    const result = await validateProject(run, projectId, 'project');
     if (!result.ok) {
       const message = 'error' in result ? result.error?.message || '项目结构校验失败' : '项目校验需要确认';
       throw new GateFailure(`任务「${task.title}」写入后的项目校验未通过：${message}`, 'error' in result ? result.error : undefined);
@@ -288,7 +292,7 @@ export async function verifyCompletedTask(thread: AgentThread, task: AgentTask, 
     }
   }
   if (projectId) {
-    evidenceList.push(...await verifyFormalRules(thread, run, projectId));
+    evidenceList.push(...await verifyFormalRules(run, projectId));
   }
   return evidenceList;
 }
@@ -303,6 +307,7 @@ export interface FinalGateResult {
  * Thread-level completion gates: per-project structural + quality checks and a
  * delivery preview for delivery-scope plans. release.apply is never offered.
  */
+/** 线程最终门禁：结构校验 + 质量/交付预检（release.preview），不自动发布。 */
 export async function runFinalGates(thread: AgentThread, run: RunContext, planScopeRoles: McpRole[]): Promise<FinalGateResult> {
   const failures: string[] = [];
   const evidenceList: AgentEvidence[] = [];
@@ -311,7 +316,7 @@ export async function runFinalGates(thread: AgentThread, run: RunContext, planSc
     return { passed: true, failures, evidence: evidenceList };
   }
   for (const projectId of projects) {
-    const validation = await validateProject(thread, run, projectId, 'project');
+    const validation = await validateProject(run, projectId, 'project');
     if (!validation.ok) {
       failures.push(`项目 ${projectId} 结构校验失败：${'error' in validation ? validation.error?.message || '未知错误' : '需要确认'}`);
       continue;
@@ -324,7 +329,7 @@ export async function runFinalGates(thread: AgentThread, run: RunContext, planSc
     evidenceList.push(evidence('structural_validation', `项目 ${projectId} 结构校验通过`));
 
     try {
-      evidenceList.push(...await verifyFormalRules(thread, run, projectId));
+      evidenceList.push(...await verifyFormalRules(run, projectId));
     } catch (error) {
       failures.push(error instanceof GateFailure ? error.message : String(error));
     }

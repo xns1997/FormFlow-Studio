@@ -19,7 +19,7 @@ export interface GroundingSummary {
   text: string;
 }
 
-async function inspectProject(thread: AgentThread, run: RunContext, projectId: string) {
+async function inspectProject(run: RunContext, projectId: string) {
   const base = { tenantId: run.tenantId, projectId, userId: run.userId, user: run.user, requestId: run.requestId };
   const [inspect, validation] = await Promise.all([
     executeLlmTool('project.inspect', { projectId }, { ...base, mcpRole: 'project' as McpRole }),
@@ -34,11 +34,14 @@ async function inspectProject(thread: AgentThread, run: RunContext, projectId: s
   return { projectId, summary: inspectText, validation: validationText };
 }
 
+/**
+ * 环境摸底：只读检查项目并生成目标契约（goal / successCriteria / 项目摘要）。
+ */
 export async function ground(thread: AgentThread, run: RunContext): Promise<GroundingSummary> {
   const projects = threadProjectIds(thread);
   const results: Array<{ projectId: string; summary: string; validation: string }> = [];
   for (let index = 0; index < projects.length; index += 4) {
-    const batch = await Promise.all(projects.slice(index, index + 4).map((projectId) => inspectProject(thread, run, projectId)));
+    const batch = await Promise.all(projects.slice(index, index + 4).map((projectId) => inspectProject(run, projectId)));
     results.push(...batch);
   }
   const text = results.length
@@ -82,6 +85,7 @@ function plannerSchema() {
   };
 }
 
+/** 校验任务清单结构（id/scope/access 合法、acceptance 非空），返回诊断文本。 */
 export function validatePlanTasks(tasks: Array<{ id: string; title: string; instruction: string; scope: string; access: string; projectId?: string; acceptance: string[] }>) {
   const ids = new Set(tasks.map((task) => task.id));
   if (ids.size !== tasks.length) throw new Error('任务 ID 必须唯一');
@@ -131,6 +135,9 @@ function plannerSystemPrompt(thread: AgentThread, bundle: ReturnType<typeof getC
   ].join('\n');
 }
 
+/**
+ * 规划一轮：基于目标契约生成/确认任务清单；计划模式等待用户确认，目标模式自动确认。
+ */
 export async function planTurn(thread: AgentThread, prompt: string, run: RunContext) {
   thread.status = 'planning';
   thread.controlSignal = undefined;
@@ -209,6 +216,7 @@ export async function planTurn(thread: AgentThread, prompt: string, run: RunCont
   return plan;
 }
 
+/** 依据用户反馈修订计划（新增/调整剩余任务）。 */
 export async function replanWithFeedback(thread: AgentThread, feedback: string, run: RunContext) {
   const plan = thread.plan;
   if (plan && plan.status === 'pending') {
@@ -222,6 +230,7 @@ export async function replanWithFeedback(thread: AgentThread, feedback: string, 
 }
 
 /** 执行中重规划：仅重规划剩余任务，保留已完成任务证据与原始目标。 */
+/** 仅重规划剩余任务（goal 模式自动确认）。 */
 export async function replanRemaining(thread: AgentThread, reason: string, run: RunContext) {
   const plan = thread.plan;
   if (!plan) throw new Error('当前没有计划可重规划');
@@ -233,6 +242,7 @@ export async function replanRemaining(thread: AgentThread, reason: string, run: 
   return planTurn(thread, request, run);
 }
 
+/** 将待确认的计划置为已确认（计划模式用户批准后调用）。 */
 export function confirmPlan(thread: AgentThread) {
   const plan = thread.plan;
   if (!plan || plan.status !== 'pending') throw new Error('待确认计划不存在');
