@@ -187,13 +187,6 @@ registerExecutor('form:save', (ctx) => {
   const tableId = String(ctx.inputs.tableId ?? ctx.properties.tableId ?? '');
   const sheetName = String(ctx.inputs.sheetName ?? ctx.properties.sheetName ?? '');
   const keyField = String(ctx.inputs.keyField ?? ctx.properties.keyField ?? '');
-  if (ctx.properties.deriveFirstPurchase) {
-    const playerField = String(ctx.properties.playerField || 'player_id');
-    const statusField = String(ctx.properties.statusField || 'payment_status');
-    const paidValue = ctx.properties.paidValue ?? '已支付';
-    formData[String(ctx.properties.firstPurchaseField || 'is_first_purchase')] = !findSheetRows(ctx, tableId, sheetName)
-      .some((row) => row[playerField] === formData[playerField] && row[statusField] === paidValue && row[keyField] !== formData[keyField]);
-  }
   const fieldMap = objectValue(ctx.inputs.fieldMap ?? ctx.properties.fieldMap);
   const row = Object.keys(fieldMap).length
     ? Object.fromEntries(Object.entries(fieldMap).map(([formField, column]) => [String(column), formData[formField]]))
@@ -933,7 +926,6 @@ registerExecutor('ml:regression-evaluate', (ctx) => {
   const summaryField = String(ctx.properties.summaryField || '');
   const chartField = String(ctx.properties.chartField || '');
   const messageField = String(ctx.properties.messageField || '');
-  const usableThreshold = Number(ctx.properties.usableThreshold ?? 0.95);
   const usableRows = rows.filter((row) => Number.isFinite(Number(row[target])) && features.every((feature) => Number.isFinite(Number(row[feature]))));
   const { train, validation } = trainTestSplit(usableRows, validationRatio);
   const targetTrain = train.map((row) => Number(row[target]));
@@ -952,7 +944,7 @@ registerExecutor('ml:regression-evaluate', (ctx) => {
   const baselinePredicted = validation.map(() => targetMean);
   const modelMae = mae(validationActual, validationPredicted);
   const baselineMae = mae(validationActual, baselinePredicted);
-  const usable = modelMae <= baselineMae * usableThreshold;
+  const usable = modelMae <= baselineMae * 0.95;
   const result = [
     { 指标: 'MAE', 模型值: modelMae, 基线值: baselineMae, 结论: usable ? '优于基线' : '未优于基线' },
     { 指标: '训练样本', 模型值: train.length, 基线值: validation.length, 结论: `特征 ${features.join('、')}` },

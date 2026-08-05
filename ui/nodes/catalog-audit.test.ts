@@ -245,6 +245,20 @@ test('每个 schema 属性与输入端口都被执行器消费（无死字段）
   assert.ok(asserted >= 150, `至少检查 150 个注册表节点，实际 ${asserted}`);
 });
 
+test('通用节点不携带行业定制字段（无玩家/付费/首充等泄漏）', () => {
+  const INDUSTRY_PATTERN = /^(player|paid|purchase|payment|revenue|dau|mau|campaign)|首充|玩家|付费|支付|关卡|游戏/i;
+  const schemas = readSchemas();
+  for (const schema of schemas) {
+    if (schema.id.startsWith('analytics:') || /game/.test(schema.id)) continue;
+    for (const prop of schema.properties || []) {
+      assert.ok(
+        !INDUSTRY_PATTERN.test(prop.name) && !INDUSTRY_PATTERN.test(String(prop.label || '')),
+        `${schema.id}: 疑似行业定制字段 ${prop.name}（${prop.label || prop.name}）`,
+      );
+    }
+  }
+});
+
 test('服务端端口参考目录与注册表/节点包同步（含类型）', async () => {
   const registry = await loadNodeRegistry();
   const reference = JSON.parse(readFileSync(referencePath, 'utf8'));

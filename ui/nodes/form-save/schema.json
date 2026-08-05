@@ -86,12 +86,6 @@
       "default": {}
     },
     {
-      "name": "deriveFirstPurchase",
-      "label": "计算首充标记",
-      "type": "boolean",
-      "default": false
-    },
-    {
       "name": "successMessage",
       "label": "成功提示",
       "type": "string",
@@ -108,34 +102,6 @@
       "label": "重置字段",
       "type": "array",
       "default": []
-    },
-    {
-      "name": "playerField",
-      "label": "playerField",
-      "type": "string",
-      "default": "",
-      "description": "配置项：playerField"
-    },
-    {
-      "name": "statusField",
-      "label": "statusField",
-      "type": "string",
-      "default": "",
-      "description": "配置项：statusField"
-    },
-    {
-      "name": "paidValue",
-      "label": "paidValue",
-      "type": "string",
-      "default": "",
-      "description": "配置项：paidValue"
-    },
-    {
-      "name": "firstPurchaseField",
-      "label": "firstPurchaseField",
-      "type": "string",
-      "default": "",
-      "description": "配置项：firstPurchaseField"
     }
   ],
   "ports": [

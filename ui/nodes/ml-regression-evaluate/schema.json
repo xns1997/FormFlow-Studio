@@ -52,13 +52,6 @@
       "type": "string",
       "default": "",
       "description": "配置项：messageField"
-    },
-    {
-      "name": "usableThreshold",
-      "label": "usableThreshold",
-      "type": "number",
-      "default": 0,
-      "description": "配置项：usableThreshold"
     }
   ],
   "inputs": [
