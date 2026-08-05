@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+/** 工作台布局档位。 */
 export type WorkbenchLayout = 'wide' | 'medium' | 'compact';
+/** 工作台抽屉方向。 */
 export type WorkbenchDrawer = 'left' | 'right' | null;
 
 const STORAGE_KEY = 'formflow.editor.panels.v1';
 
+/** 按视口宽度解析布局档位。 */
 export function resolveWorkbenchLayout(width: number): WorkbenchLayout {
   // Keep both inspector columns docked for ordinary desktop windows. This
   // matches the toolbar breakpoint and avoids hiding the property panel on a
@@ -24,6 +27,7 @@ function readPreference() {
   }
 }
 
+/** 工作台面板状态：布局、左右展开偏好与抽屉控制。 */
 export function useWorkbenchPanels(enabled: boolean) {
   const initialPreference = useRef(readPreference());
   const [layout, setLayout] = useState<WorkbenchLayout>(() => resolveWorkbenchLayout(typeof window === 'undefined' ? 1440 : window.innerWidth));

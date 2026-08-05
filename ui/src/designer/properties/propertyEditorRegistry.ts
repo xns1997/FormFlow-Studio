@@ -59,14 +59,17 @@ export function registerPropertyEditor(
   editors.set(descriptor.kind, descriptor);
 }
 
+/** 按类型获取属性编辑器描述。 */
 export function getPropertyEditorDescriptor(kind: PropertyEditorKind | string): PropertyEditorDescriptor | undefined {
   return editors.get(kind);
 }
 
+/** 按类型获取属性编辑器组件。 */
 export function getPropertyEditor(kind: PropertyEditorKind | string): PropertyEditorComponent | undefined {
   return editors.get(kind)?.component;
 }
 
+/** 由属性 schema 解析编辑器类型（含类型推断）。 */
 export function resolvePropertyEditorKind(def: PropSchemaEntry): PropertyEditorKind {
   if (def.editor) return def.editor;
   if ('kind' in def) return 'json';
@@ -104,6 +107,7 @@ function matchesCondition(condition: PropCondition, values: Record<string, unkno
   }
 }
 
+/** 求值属性显隐条件（基于组件属性与上下文）。 */
 export function evaluatePropCondition(
   condition: PropDef['visibleWhen'] | CompositePropDef['visibleWhen'],
   values: Record<string, unknown>,
@@ -113,6 +117,7 @@ export function evaluatePropCondition(
   return conditions.every((item) => matchesCondition(item, values));
 }
 
+/** 将复合属性补丁按键路径展开为扁平对象。 */
 export function mergeCompositePatch(keys: string[], value: unknown): Record<string, unknown> {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     const record = value as Record<string, unknown>;
@@ -121,6 +126,7 @@ export function mergeCompositePatch(keys: string[], value: unknown): Record<stri
   return {};
 }
 
+/** 清空注册表（测试用）。 */
 export function clearPropertyEditorsForTest() {
   editors.clear();
 }

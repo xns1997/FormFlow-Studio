@@ -26,10 +26,12 @@ function inferPropertyContract(def: ControlDef) {
   return result;
 }
 
+/** 注册控件定义。 */
 export function registerControl(def: ControlDef) {
   controls.set(def.type, { ...def, propertyContract: inferPropertyContract(def) });
 }
 
+/** 按类型获取控件定义。 */
 export function getControl(type: string): ControlDef | undefined {
   return controls.get(type);
 }
@@ -38,6 +40,7 @@ export function getControl(type: string): ControlDef | undefined {
  * 统一补齐新建与历史组件的属性初始值。
  * 已保存值（包括 false、0 和空字符串）始终优先，不改写旧项目的语义。
  */
+/** 将设计组件补充为控件实例（默认属性/渲染注册）。 */
 export function hydrateControlComponent(component: DesignComponent): DesignComponent {
   const control = getControl(component.type);
   if (!control) return component;
@@ -45,18 +48,22 @@ export function hydrateControlComponent(component: DesignComponent): DesignCompo
   return { ...component, x: finite(component.x, 0), y: finite(component.y, 0), width: finite(component.width, control.defaultSize.w, true), height: finite(component.height, control.defaultSize.h, true), zIndex: finite(component.zIndex, 0), props: { ...control.defaultProps, ...(component.props || {}) } };
 }
 
+/** 按分类列出控件。 */
 export function getControlsByCategory(cat: string): ControlDef[] {
   return [...controls.values()].filter((c) => c.category === cat);
 }
 
+/** 列出全部控件。 */
 export function getAllControls(): ControlDef[] {
   return [...controls.values()];
 }
 
+/** 控件分类列表。 */
 export function getCategories(): readonly string[] {
   return categories;
 }
 
+/** 分类 → 中文名。 */
 export const CATEGORY_LABELS: Record<string, string> = {
   basic: '基础输入',
   select: '选择',

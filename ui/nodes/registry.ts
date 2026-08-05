@@ -840,8 +840,10 @@ let registryInstance: NodeRegistry | null = null;
 let registryPromise: Promise<NodeRegistry> | null = null;
 let pluginHotReloadInitialized = false;
 
+/** 节点注册表预期条目数（回归断言用）。 */
 export const EXPECTED_NODE_COUNT = 187;
 
+/** 精选 XLSX 方法集合（生成的 spec 白名单）。 */
 export const CURATED_XLSX_METHODS = new Set([
   'XLSX.read',
   'XLSX.utils.json_to_sheet',
@@ -890,6 +892,7 @@ const DISCOVERY_KEYWORDS: Record<string, string[]> = {
   'generic:call-workflow': ['调用流程', '子流程', 'sub-workflow', 'call', 'invoke'],
 };
 
+/** 加载节点注册表（xlsx 方法发现 + 包/插件合并）。 */
 export async function loadNodeRegistry(): Promise<NodeRegistry> {
   if (registryInstance) return registryInstance;
   if (registryPromise) return registryPromise;
@@ -1002,10 +1005,12 @@ export async function loadNodeRegistry(): Promise<NodeRegistry> {
   return registryPromise;
 }
 
+/** 同步读取已加载的注册表（未加载返回 null）。 */
 export function getRegistrySync(): NodeRegistry | null {
   return registryInstance;
 }
 
+/** 解析 XLSX 方法（按点路径查找）。 */
 export function resolveMethod(name: string): ((...args: unknown[]) => unknown) | null {
   if (!xlsxModuleCache) return null;
   const parts = name.replace(/^XLSX\./, '').split('.');

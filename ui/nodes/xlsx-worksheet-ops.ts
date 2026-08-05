@@ -19,6 +19,7 @@ function positiveInteger(value: unknown, fallback: number): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+/** 将工作表转换为可编辑形态（统一行对象/单元格地址模型）。 */
 export function toEditableWorksheet(worksheet: XLSX.WorkSheet | ProjectWorksheet): XLSX.WorkSheet | ProjectWorksheet {
   if (!(worksheet as ProjectWorksheet)?.__fromProject) return worksheet;
   const ws = worksheet as ProjectWorksheet;
@@ -87,6 +88,7 @@ function recalculateRef(worksheet: XLSX.WorkSheet) {
   });
 }
 
+/** 编辑工作表结构（插入/删除行或列）。 */
 export function editWorksheetStructure(worksheet: XLSX.WorkSheet | ProjectWorksheet, axis: Axis, action: Action, start: unknown, amount: unknown) {
   const editable = toEditableWorksheet(worksheet) as XLSX.WorkSheet;
   if (!editable || typeof editable !== 'object') throw new Error('缺少 worksheet 输入');
@@ -131,6 +133,7 @@ export function editWorksheetStructure(worksheet: XLSX.WorkSheet | ProjectWorksh
   };
 }
 
+/** 向工作表指定区域写入值。 */
 export function writeWorksheetRange(worksheet: XLSX.WorkSheet | ProjectWorksheet, values: unknown, address: string) {
   const editable = toEditableWorksheet(worksheet) as XLSX.WorkSheet;
   if (!editable || !Array.isArray(values)) throw new Error('缺少 worksheet 或 values 输入');

@@ -291,16 +291,19 @@ reg('trigger', (v) => ({ valid: true, normalized: v ?? true }));
 
 // ── 公开 API ──────────────────────────────────────────
 
+/** 检查端口值类型是否匹配。 */
 export function checkPortType(type: string, value: unknown): TypeCheckResult {
   const checker = checkers.get(type);
   if (!checker) return { valid: true, normalized: value };
   return checker(value);
 }
 
+/** 已注册的端口类型列表。 */
 export function getRegisteredTypes(): string[] {
   return [...checkers.keys()];
 }
 
+/** 端口类型是否已注册。 */
 export function isTypeRegistered(type: string): boolean {
   return checkers.has(type);
 }
@@ -308,6 +311,7 @@ export function isTypeRegistered(type: string): boolean {
 /**
  * 校验并规范化端口值，失败时抛出错误
  */
+/** 断言端口类型，失败抛错。 */
 export function assertPortType(type: string, value: unknown, portName?: string): unknown {
   const result = checkPortType(type, value);
   if (!result.valid) {
@@ -320,6 +324,7 @@ export function assertPortType(type: string, value: unknown, portName?: string):
 /**
  * 批量校验多个端口值
  */
+/** 检查端口枚举值合法性。 */
 export function checkPortValues(
   ports: Array<{ name: string; type: string; value: unknown; required?: boolean }>,
 ): { valid: boolean; errors: Record<string, string>; normalized: Record<string, unknown> } {

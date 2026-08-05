@@ -1,5 +1,6 @@
 import type { DesignComponent, FormLinkageAction, FormLinkageCondition, FormLinkageRule } from '../../project/types';
 
+/** 生成事件默认脚本代码（按事件键与字段名）。 */
 export function getDefaultEventCode(eventKey: string, fieldName: string): string {
   const templates: Record<string, string> = {
     onChange: `/** @param {FormEventContext} ctx */
@@ -23,10 +24,12 @@ async (ctx) => {
   return templates[eventKey] || `// ${eventKey}\n`;
 }
 
+/** 生成规则 ID（前缀 + 时间戳）。 */
 export function createRuleId(prefix: string) {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
 }
 
+/** 创建默认联动条件。 */
 export function createDefaultLinkageCondition(field?: string): FormLinkageCondition {
   return {
     id: createRuleId('cond'),
@@ -36,6 +39,7 @@ export function createDefaultLinkageCondition(field?: string): FormLinkageCondit
   };
 }
 
+/** 创建默认联动动作。 */
 export function createDefaultLinkageAction(): FormLinkageAction {
   return {
     id: createRuleId('action'),
@@ -45,6 +49,7 @@ export function createDefaultLinkageAction(): FormLinkageAction {
   };
 }
 
+/** 创建默认联动规则（条件 + 动作）。 */
 export function createDefaultLinkageRule(eventName: string, fieldName: string): FormLinkageRule {
   return {
     id: createRuleId('rule'),
@@ -68,6 +73,7 @@ export type StaticObjectEntry = {
   value: string;
 };
 
+/** 推断静态对象值的模式（JSON/键值对/引用）。 */
 export function inferStaticObjectValueMode(raw: unknown): { valueMode: StaticObjectValueMode; value: string } {
   if (typeof raw !== 'string') return { valueMode: 'static', value: JSON.stringify(raw ?? '') };
   if (raw === '$value') return { valueMode: 'eventValue', value: '' };
@@ -78,6 +84,7 @@ export function inferStaticObjectValueMode(raw: unknown): { valueMode: StaticObj
   return raw.startsWith('$') ? { valueMode: 'expression', value: raw } : { valueMode: 'static', value: raw };
 }
 
+/** 构建静态对象条目值。 */
 export function buildStaticObjectEntryValue(entry: StaticObjectEntry): unknown {
   switch (entry.valueMode) {
     case 'eventValue': return '$value';
@@ -95,6 +102,7 @@ export function buildStaticObjectEntryValue(entry: StaticObjectEntry): unknown {
   }
 }
 
+/** 解析静态对象条目文本（容错格式）。 */
 export function parseStaticObjectEntries(raw: string): StaticObjectEntry[] | null {
   try {
     const parsed = JSON.parse(raw);
@@ -113,6 +121,7 @@ export function parseStaticObjectEntries(raw: string): StaticObjectEntry[] | nul
   }
 }
 
+/** 条目列表 → JSON 对象。 */
 export function buildStaticObjectJson(entries: StaticObjectEntry[]) {
   return JSON.stringify(
     Object.fromEntries(
@@ -125,6 +134,7 @@ export function buildStaticObjectJson(entries: StaticObjectEntry[]) {
   );
 }
 
+/** 规范化映射名（去空白/非法字符）。 */
 export function normalizeMappingName(value: string) {
   return String(value || '')
     .trim()
@@ -132,6 +142,7 @@ export function normalizeMappingName(value: string) {
     .replace(/[\s_-]+/g, '');
 }
 
+/** 在字段列表中查找目标字段（模糊匹配回退）。 */
 export function findMatchingField(target: string, fields: string[]) {
   const normalizedTarget = normalizeMappingName(target);
   if (!normalizedTarget) return '';
@@ -149,10 +160,12 @@ export interface Props {
   onFinishWorkflowContractSession?: (sessionId: string) => void;
 }
 
+/** 组件显示名（props.name/字段绑定/ID 回退）。 */
 export function getComponentDisplayName(component: DesignComponent) {
   return String(component.props.label || component.props.name || component.fieldBinding || component.type || component.id);
 }
 
+/** 追加脚本片段（自动换行分隔）。 */
 export function appendScriptSnippet(current: string, snippet: string) {
   const trimmed = String(current || '').trim();
   return trimmed ? `${trimmed}\n\n${snippet}` : snippet;

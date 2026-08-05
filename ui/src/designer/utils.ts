@@ -1,7 +1,9 @@
 import type { DesignComponent } from '../project/types';
 
+/** 容器组件类型集合。 */
 export const CONTAINER_TYPES = new Set(['card', 'tabs', 'form']);
 
+/** 查找坐标处最上层容器（可排除指定组件）。 */
 export function findContainerAtPoint(x: number, y: number, components: DesignComponent[], excludeId?: string): string | undefined {
   let best: { id: string; area: number } | null = null;
   for (const container of components) {
@@ -14,6 +16,7 @@ export function findContainerAtPoint(x: number, y: number, components: DesignCom
   return best?.id;
 }
 
+/** 查找组件的直接容器父级。 */
 export function findContainerParent(component: DesignComponent, components: DesignComponent[]): string | undefined {
   const descendants = getDescendantIds(components, component.id);
   const centerX = component.x + component.width / 2;
@@ -35,6 +38,7 @@ export function findContainerParent(component: DesignComponent, components: Desi
   return best?.id;
 }
 
+/** 收集组件的全部后代 ID。 */
 export function getDescendantIds(components: DesignComponent[], id: string): Set<string> {
   const result = new Set<string>();
   let changed = true;
@@ -50,6 +54,7 @@ export function getDescendantIds(components: DesignComponent[], id: string): Set
   return result;
 }
 
+/** 归一化容器子级（补 parentId 一致性、过滤孤儿）。 */
 export function normalizeContainerChildren(components: DesignComponent[]): DesignComponent[] {
   const childrenByParent = new Map<string, string[]>();
   for (const component of components) {
@@ -66,16 +71,19 @@ export function normalizeContainerChildren(components: DesignComponent[]): Desig
   });
 }
 
+/** 是否为容器组件。 */
 export function isContainerComponent(component?: DesignComponent | null) {
   return !!component && CONTAINER_TYPES.has(component.type);
 }
 
+/** 容器自动内边距（按类型与子组件计算）。 */
 export function getContainerAutoInsets(component: DesignComponent) {
   if (component.type === 'card') return { top: component.props.subtitle ? 56 : 40, right: 20, bottom: 20, left: 20 };
   if (component.type === 'tabs') return { top: 48, right: 16, bottom: 16, left: 16 };
   return { top: 24, right: 16, bottom: 16, left: 16 };
 }
 
+/** 容器自动调整尺寸以容纳子组件。 */
 export function autoResizeContainers(components: DesignComponent[]) {
   const next = components.map((component) => ({ ...component }));
   const byParent = new Map<string, DesignComponent[]>();
