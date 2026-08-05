@@ -20,6 +20,7 @@ function normalizeKeyFieldList(sheet: SrcSheetInfo, keyFields: string[] | undefi
     .filter((field) => typeof field === 'string' && field && sheet.headers.includes(field) && !seen.has(field) && seen.add(field));
 }
 
+/** 计算 Sheet 主键校验结果（非空/唯一）。 */
 export function computeSheetKeyValidation(sheet: SrcSheetInfo, keyFields: string[] | undefined): SheetKeyValidationResult | undefined {
   const normalized = normalizeKeyFieldList(sheet, keyFields);
   if (normalized.length === 0) return undefined;
@@ -44,6 +45,7 @@ export function computeSheetKeyValidation(sheet: SrcSheetInfo, keyFields: string
   };
 }
 
+/** 将主键配置应用到 Sheet 配置。 */
 export function applySheetKeyConfig(sheet: SrcSheetInfo, keyFields: string[] | undefined): Partial<TableConfig> {
   const normalized = normalizeKeyFieldList(sheet, keyFields);
   return {
@@ -52,6 +54,7 @@ export function applySheetKeyConfig(sheet: SrcSheetInfo, keyFields: string[] | u
   };
 }
 
+/** 读取表/Sheet 的主键配置。 */
 export function getSheetKeyConfig(tables: SrcTableEntry[], tableId: string, sheetName: string) {
   const sheet = tables.find((table) => table.id === tableId)?.sheets.find((item) => item.name === sheetName);
   return sheet?.config ? {
@@ -60,10 +63,12 @@ export function getSheetKeyConfig(tables: SrcTableEntry[], tableId: string, shee
   } : null;
 }
 
+/** 解析 Sheet 主键字段列表。 */
 export function resolveSheetKeyFields(tables: SrcTableEntry[], tableId: string, sheetName: string): string[] {
   return getSheetKeyConfig(tables, tableId, sheetName)?.keyFields || [];
 }
 
+/** 解析单主键字段（复合键返回 undefined）。 */
 export function resolveSingleKeyField(tables: SrcTableEntry[], tableId: string, sheetName: string): string | undefined {
   const keyFields = resolveSheetKeyFields(tables, tableId, sheetName);
   return keyFields.length === 1 ? keyFields[0] : undefined;

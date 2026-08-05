@@ -6,6 +6,7 @@ import { resolveSingleKeyField } from './tableKeys';
 
 type LegacyTableBinding = { tableId?: string; sheetName?: string; keyField?: string; keyValue?: unknown; column?: string };
 
+/** 归一化组件数据绑定（字段绑定 → 绑定配置）。 */
 export function normalizeDataBinding(component: Pick<DesignComponent, 'type' | 'props'>): DataBindingConfig | null {
   const configured = component.props.dataBinding;
   if (configured && typeof configured === 'object' && !Array.isArray(configured)) {
@@ -21,10 +22,12 @@ export function normalizeDataBinding(component: Pick<DesignComponent, 'type' | '
   return null;
 }
 
+/** 绑定是否可读。 */
 export function canBindingRead(binding: DataBindingConfig | null) {
   return !!binding && binding.direction !== 'uiToData';
 }
 
+/** 绑定是否可写。 */
 export function canBindingWrite(binding: DataBindingConfig | null) {
   return !!binding && binding.direction !== 'dataToUi' && binding.source.kind === 'tableCell';
 }
@@ -43,6 +46,7 @@ function selectRangeValue(data: unknown[][], mode: DataBindingValueMode) {
   return data[0]?.[0];
 }
 
+/** 解析绑定值（表单值优先，回退表数据）。 */
 export function resolveDataBindingValue(component: Pick<DesignComponent, 'type' | 'props'>, tables: SrcTableEntry[], formValues: Record<string, unknown> = {}) {
   const binding = normalizeDataBinding(component);
   if (!canBindingRead(binding)) return { found: false as const, binding, value: undefined, diagnostic: null as string | null };
@@ -67,6 +71,7 @@ export function resolveDataBindingValue(component: Pick<DesignComponent, 'type' 
   return { found: true as const, binding, value: matches[0][source.column], diagnostic: null };
 }
 
+/** 解析绑定写回目标（表/列/键）。 */
 export function resolveBindingWrite(component: Pick<DesignComponent, 'type' | 'props'>, tables: SrcTableEntry[], value: unknown) {
   const binding = normalizeDataBinding(component);
   if (!canBindingWrite(binding) || binding!.source.kind !== 'tableCell') return { ok: false as const, diagnostic: binding?.source.kind === 'none' ? null : binding ? '当前绑定方向不允许写回' : null };

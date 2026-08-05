@@ -13,6 +13,7 @@ function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/** 归一化序号规则（补默认值）。 */
 export function normalizeSequenceRule(rule?: Partial<SequenceRule> | null): SequenceRule {
   const formatter = String(rule?.formatter || DEFAULT_FORMATTER).trim();
   return {
@@ -27,6 +28,7 @@ function pad(value: number, width = 2) {
   return String(value).padStart(width, '0');
 }
 
+/** 解析序号格式中的日期 token（YYYY/MM/DD）。 */
 export function resolveSequenceDateTokens(formatter: string, now: Date = new Date()) {
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
@@ -51,6 +53,7 @@ export function resolveSequenceDateTokens(formatter: string, now: Date = new Dat
   });
 }
 
+/** 按格式格式化序号值。 */
 export function formatSequenceValue(value: number, formatter?: string, now?: Date) {
   const template = normalizeSequenceRule({ formatter }).formatter;
   return resolveSequenceDateTokens(template, now).replace(/\{(?:n|num)(?::(\d+))?\}/g, (_match, width) => {
@@ -59,6 +62,7 @@ export function formatSequenceValue(value: number, formatter?: string, now?: Dat
   });
 }
 
+/** 从格式化文本解析序号值。 */
 export function parseSequenceValue(raw: unknown, formatter?: string, now?: Date): number | null {
   if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
   if (raw == null || raw === '') return null;
@@ -78,6 +82,7 @@ export function parseSequenceValue(raw: unknown, formatter?: string, now?: Date)
   return Number.isFinite(numeric) ? numeric : null;
 }
 
+/** 计算下一个序号（按规则与现有值）。 */
 export function getNextSequenceNumber(
   rows: Array<Record<string, unknown>>,
   field: string,

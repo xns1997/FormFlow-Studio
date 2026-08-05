@@ -122,6 +122,7 @@ function buildExpressionFromRow(row: Pick<FlowParameterDraftRow, 'valueMode' | '
   }
 }
 
+/** 工作流端口目标列表（导入/导出端口）。 */
 export function getWorkflowPortTargets(workflow: WorkflowFile | undefined): WorkflowPortTarget[] {
   if (!workflow) return [];
   const migrated = ensureWorkflowIo(workflow);
@@ -167,6 +168,7 @@ export function getWorkflowPortTargets(workflow: WorkflowFile | undefined): Work
   return [...new Map([...fromSpecs, ...fromEdges].map((item) => [item.key, item])).values()];
 }
 
+/** 参数映射 → 草稿行（编辑器展示）。 */
 export function parseParameterMapToDraftRows(
   parameterMap: Record<string, unknown> | undefined,
   workflow: WorkflowFile | undefined,
@@ -226,6 +228,7 @@ export function parseParameterMapToDraftRows(
   return { rows, unsupportedEntries, errors };
 }
 
+/** 草稿行 → 参数映射。 */
 export function buildParameterMapFromDraftRows(rows: FlowParameterDraftRow[]): Record<string, unknown> {
   const parameterMap: Record<string, unknown> = {};
   for (const row of rows) {
@@ -237,6 +240,7 @@ export function buildParameterMapFromDraftRows(rows: FlowParameterDraftRow[]): R
   return parameterMap;
 }
 
+/** 创建默认草稿行（按端口目标）。 */
 export function createDefaultDraftRows(
   workflow: WorkflowFile | undefined,
   componentName: string,
@@ -245,6 +249,7 @@ export function createDefaultDraftRows(
   return parseParameterMapToDraftRows(parameterMap, workflow).rows;
 }
 
+/** 切换工作流时重映射草稿行。 */
 export function remapDraftRowsForWorkflow(
   rows: FlowParameterDraftRow[],
   workflow: WorkflowFile | undefined,

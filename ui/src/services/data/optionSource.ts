@@ -36,6 +36,7 @@ export interface LinkedOptionConfig {
   valueField?: string;
 }
 
+/** 解析联动选项（按过滤字段/值查询表）。 */
 export function resolveLinkageOptions(config: FormLinkageOptionsConfig, tables: SrcTableEntry[]): OptionItem[] {
   if (config.mode === 'table') {
     const source = resolveSourceTable({ table: config.table, filterField: config.filterField, filterValue: config.filterValue, labelField: config.labelField, valueField: config.valueField }, tables);
@@ -96,6 +97,7 @@ function dedupeAndSort(options: OptionItem[], source: Pick<TableOptionSourceConf
   return next;
 }
 
+/** 归一化选项来源配置（容错多形态输入）。 */
 export function normalizeOptionSource(value: unknown): TableOptionSourceConfig {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return { mode: 'static', unique: true, sortOrder: 'none' };
   const source = value as TableOptionSourceConfig;
@@ -119,6 +121,7 @@ function resolveSourceTable(config: LinkedOptionConfig, tables: SrcTableEntry[])
     .find(({ table, sheet }) => [table.id, table.fileName, sheet.name, `${table.id}:${sheet.name}`].includes(config.table));
 }
 
+/** 解析链接选项（级联过滤）。 */
 export function resolveLinkedOptions(config: LinkedOptionConfig, tables: SrcTableEntry[]): OptionItem[] {
   const source = resolveSourceTable(config, tables);
   if (!source) return [];
@@ -144,6 +147,7 @@ function optionKey(value: unknown) {
   }
 }
 
+/** 同步选项值（选项变化时修正选中值）。 */
 export function syncOptionValue(
   value: unknown,
   options: OptionItem[],
@@ -160,6 +164,7 @@ export function syncOptionValue(
   return { value: '', changed: true };
 }
 
+/** 解析控件选项来源（静态/表/联动）。 */
 export function resolveOptionSource(
   configuredOptions: unknown,
   configuredSource: unknown,

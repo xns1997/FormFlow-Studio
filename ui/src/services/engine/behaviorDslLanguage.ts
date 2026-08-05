@@ -1,6 +1,7 @@
 /** DSL 版本标识。 */
 export const BEHAVIOR_DSL_VERSION = '1.0';
 
+/** DSL 语句模板（编辑器补全）。 */
 export const BEHAVIOR_DSL_STATEMENTS = [
   { id: 'when', syntax: 'when $字段 <运算符> <值> -> <动作>', description: '字段变化且条件成立时执行动作。' },
   { id: 'else', syntax: 'else -> <动作>', description: '紧跟上一条 when，执行该条件的反向分支。' },
@@ -11,6 +12,7 @@ export const BEHAVIOR_DSL_STATEMENTS = [
   { id: 'submit', syntax: 'on submit -> <动作>', description: '表单提交事件发生时执行动作。' },
 ] as const;
 
+/** DSL 运算符模板。 */
 export const BEHAVIOR_DSL_OPERATORS = [
   { syntax: '==', description: '严格相等', inverse: '!=' },
   { syntax: '!=', description: '不相等', inverse: '==' },
@@ -28,6 +30,7 @@ export const BEHAVIOR_DSL_OPERATORS = [
   { syntax: 'is not empty', description: '不为空', inverse: 'is empty' },
 ] as const;
 
+/** DSL 动作模板。 */
 export const BEHAVIOR_DSL_ACTIONS = [
   { name: 'show', syntax: 'show(@控件)', description: '显示一个或多个控件。', target: 'component' },
   { name: 'hide', syntax: 'hide(@控件)', description: '隐藏一个或多个控件。', target: 'component' },
@@ -42,6 +45,7 @@ export const BEHAVIOR_DSL_ACTIONS = [
   { name: 'options', syntax: 'options($目标, "表ID", "筛选字段", <筛选值>)', description: '按数据表筛选条件刷新字段选项。', target: 'table' },
 ] as const;
 
+/** DSL 整段模板（常用场景）。 */
 export const BEHAVIOR_DSL_TEMPLATES = [
   { label: '条件显隐', value: 'when $部门 == "技术部" -> show(@技术栈); require($技术栈)\nelse -> hide(@技术栈); clear($技术栈)' },
   { label: '计算字段', value: 'compute $合计 = $数量 * $单价 watch($数量, $单价)' },
@@ -50,5 +54,7 @@ export const BEHAVIOR_DSL_TEMPLATES = [
   { label: '流程调用', value: 'on change($状态) -> run("workflow_id")' },
 ] as const;
 
+/** DSL 保留关键词。 */
 export const BEHAVIOR_DSL_KEYWORDS = ['when', 'else', 'on', 'change', 'compute', 'watch', 'load', 'before', 'submit', 'is', 'not', 'with'] as const;
+/** 消息级别枚举。 */
 export const BEHAVIOR_DSL_MESSAGE_LEVELS = ['info', 'success', 'warning', 'error'] as const;

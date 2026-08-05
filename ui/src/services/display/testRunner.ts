@@ -12,6 +12,7 @@ export interface TestRunnerState {
   isRunning: boolean;
 }
 
+/** 创建测试运行器状态。 */
 export function createTestRunner(): TestRunnerState {
   return {
     runtime: createRuntimeState(),
@@ -21,6 +22,7 @@ export function createTestRunner(): TestRunnerState {
   };
 }
 
+/** 加载测试数据（表单/规则/表）。 */
 export function loadTestData(
   state: TestRunnerState,
   sheetName: string,
@@ -46,6 +48,7 @@ export function loadTestData(
   return { ...state, runtime: { ...runtime, behaviorLogs: logs } };
 }
 
+/** 运行表单加载测试。 */
 export async function runFormLoad(
   state: TestRunnerState,
   setState: (updater: (prev: TestRunnerState) => TestRunnerState) => void,
@@ -64,6 +67,7 @@ export async function runFormLoad(
   }
 }
 
+/** 运行字段变化测试。 */
 export async function runFieldChange(
   state: TestRunnerState,
   fieldName: string,
@@ -88,6 +92,7 @@ export async function runFieldChange(
   }
 }
 
+/** 运行提交测试。 */
 export async function runSubmit(
   state: TestRunnerState,
   setState: (updater: (prev: TestRunnerState) => TestRunnerState) => void,

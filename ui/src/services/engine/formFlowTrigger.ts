@@ -43,6 +43,7 @@ export interface FormFlowTriggerConfig {
   targetNodeId?: string;
 }
 
+/** 解析表单流程触发器参数（上下文值注入）。 */
 export function resolveFormFlowParameters(config: FormFlowTriggerConfig, context: FormControlEventContext): Record<string, unknown> {
   if (config.bindings?.version === 2) return {};
   const defaults: Record<string, unknown> = {
@@ -66,6 +67,7 @@ export function resolveFormFlowParameters(config: FormFlowTriggerConfig, context
   return defaults;
 }
 
+/** 将流程参数按目标节点拆分。 */
 export function splitFlowParameterTargets(workflow: WorkflowFile, parameters: Record<string, unknown>) {
   const nodeIds = new Set(workflow.nodes.map((node) => node.id));
   const variables: Record<string, unknown> = {};
@@ -100,6 +102,7 @@ function buildImportNodeInputs(fieldNames: string[], values: Record<string, unkn
   return Object.fromEntries(fieldNames.map((name) => [name, values[name]]));
 }
 
+/** 执行表单流程触发器（含参数解析与结果写回）。 */
 export async function executeFormFlowTrigger(
   workflow: WorkflowFile,
   config: FormFlowTriggerConfig,
@@ -160,6 +163,7 @@ export async function executeFormFlowTrigger(
   );
 }
 
+/** 工作流可用变量名列表。 */
 export function getWorkflowVariableNames(workflow: WorkflowFile | undefined): string[] {
   if (!workflow) return [];
   const names: string[] = [];
@@ -175,6 +179,7 @@ export function getWorkflowVariableNames(workflow: WorkflowFile | undefined): st
   return names;
 }
 
+/** 创建默认参数映射（表单值）。 */
 export function createDefaultParameterMap(workflow: WorkflowFile | undefined, componentName: string): Record<string, unknown> {
   const importNode = workflow ? getWorkflowImportNode(ensureWorkflowIo(workflow).workflow) : null;
   if (importNode) {
