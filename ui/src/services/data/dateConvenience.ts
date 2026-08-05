@@ -31,6 +31,7 @@ function isRangeValue(value: unknown): value is { start?: unknown; end?: unknown
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
+/** 判断日期类值是否为空（含空串/无效日期）。 */
 export function isEmptyDateValue(value: unknown, kind: DateConvenienceKind) {
   if (kind === 'dateRange') {
     if (!isRangeValue(value)) return true;
@@ -39,6 +40,7 @@ export function isEmptyDateValue(value: unknown, kind: DateConvenienceKind) {
   return !String(value ?? '').trim();
 }
 
+/** 归一化日期类值为标准字符串（date/datetime/time）。 */
 export function normalizeDateLike(value: unknown, mode: 'date' | 'datetime' | 'time'): string {
   const raw = String(value ?? '').trim();
   if (!raw) return '';
@@ -70,6 +72,7 @@ function formatResolvedValue(value: dayjs.Dayjs, mode: 'date' | 'datetime' | 'ti
   return value.format(storageFormat || fallback);
 }
 
+/** 解析日期默认值来源（今天/明天/动态偏移等）。 */
 export function resolveDateDefaultValue(
   config: DateDefaultValueConfig | undefined,
   values: Record<string, unknown>,
@@ -156,6 +159,7 @@ function resolveBoundary(
   }
 }
 
+/** 解析日期约束（min/max/必填/禁用）的运行时状态。 */
 export function resolveDateConstraintState(
   config: DateConstraintConfig | undefined,
   values: Record<string, unknown>,
@@ -187,6 +191,7 @@ function isWeekendValue(value: unknown, mode: 'date' | 'datetime' | 'time') {
   return day === 0 || day === 6;
 }
 
+/** 同步日期值：格式修正与约束钳制。 */
 export function syncDateValue(
   value: unknown,
   kind: DateConvenienceKind,
@@ -224,6 +229,7 @@ export function syncDateValue(
   return { value: '', changed: true, reason: '日期已超出限制' };
 }
 
+/** 日期默认值配置 → 中文描述。 */
 export function describeDateDefaultSource(config: DateDefaultValueConfig | undefined) {
   const unitLabel: Record<string, string> = { day: '天', week: '周', month: '个月', hour: '小时', minute: '分钟' };
   if (!config || config.mode === 'none') return '不预填';
@@ -241,6 +247,7 @@ export function describeDateDefaultSource(config: DateDefaultValueConfig | undef
   }
 }
 
+/** 日期约束状态 → 中文描述列表。 */
 export function describeDateConstraints(constraints: DateConstraintState) {
   const parts: string[] = [];
   if (constraints.min) parts.push(`最小值 ${constraints.min}`);

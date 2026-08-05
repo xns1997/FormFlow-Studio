@@ -3,6 +3,7 @@ import type { CodeEditorExtraLib, CodeEditorSuggestion } from '../../components/
 import type { FlowNodeSpec, SchemaPort } from '../../flowRegistry';
 import type { PropertyType } from '../../../nodes/excel-api-types';
 
+/** 自定义 JS 节点 spec ID 集合。 */
 export const CUSTOM_JS_SPEC_IDS = new Set(['behavior-js-script', 'generic:custom-js']);
 
 /**
@@ -40,6 +41,7 @@ function normalizePortType(type: unknown): PropertyType {
   return (SUPPORTED_PORT_TYPES.has(normalized) ? normalized : 'any') as PropertyType;
 }
 
+/** 解析自定义 JS 端口定义（容错多种输入形态）。 */
 export function parseCustomJsPortDefinitions(raw: unknown): PortDefinitionEntry[] {
   const source = typeof raw === 'string'
     ? raw.trim()
@@ -95,18 +97,22 @@ export function parseCustomJsPortDefinitions(raw: unknown): PortDefinitionEntry[
     });
 }
 
+/** 端口定义 → 端口名 → 属性类型映射。 */
 export function toCustomJsPortMap(raw: unknown): Record<string, PropertyType> {
   return Object.fromEntries(parseCustomJsPortDefinitions(raw).map((entry) => [entry.name, entry.type]));
 }
 
+/** 端口映射 → 可读文本。 */
 export function formatCustomJsPortMap(raw: unknown) {
   return JSON.stringify(toCustomJsPortMap(raw), null, 2);
 }
 
+/** 是否为自定义 JS 节点 spec。 */
 export function isCustomJsNodeSpec(specId: string | undefined) {
   return !!specId && CUSTOM_JS_SPEC_IDS.has(specId);
 }
 
+/** 解析节点属性（JSON 合并 spec 默认值）。 */
 export function resolveNodeProperties(spec: FlowNodeSpec | undefined, propertiesJson: unknown): Record<string, unknown> {
   const defaults = Object.fromEntries(
     (spec?.properties || [])
@@ -123,6 +129,7 @@ export function resolveNodeProperties(spec: FlowNodeSpec | undefined, properties
   }
 }
 
+/** 计算节点有效端口（静态端口 + 自定义 JS 动态端口）。 */
 export function getNodeEffectivePorts(spec: FlowNodeSpec | undefined, properties: Record<string, unknown>): SchemaPort[] {
   const staticPorts = spec?.ports || [];
   const inputPorts = parseCustomJsPortDefinitions(properties.inputPorts).map<SchemaPort>((port) => ({
@@ -188,6 +195,7 @@ function toTsType(type: PropertyType) {
   }
 }
 
+/** 生成自定义 JS 节点的端口补全建议。 */
 export function createCustomJsNodeSuggestions(inputDefs: PortDefinitionEntry[], outputDefs: PortDefinitionEntry[]): CodeEditorSuggestion[] {
   const outputKeys = outputDefs.map((entry) => entry.name);
   return [
@@ -236,6 +244,7 @@ export function createCustomJsNodeSuggestions(inputDefs: PortDefinitionEntry[], 
   ];
 }
 
+/** 生成自定义 JS 节点的 Monaco extra lib（类型声明）。 */
 export function createCustomJsNodeExtraLib(filePath: string, inputDefs: PortDefinitionEntry[], outputDefs: PortDefinitionEntry[]): CodeEditorExtraLib {
   const inputBody = inputDefs.map((entry) => `  ${JSON.stringify(entry.name)}?: ${toTsType(entry.type)};`).join('\n');
   const outputBody = outputDefs.map((entry) => `  ${JSON.stringify(entry.name)}?: ${toTsType(entry.type)};`).join('\n');

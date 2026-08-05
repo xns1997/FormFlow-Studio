@@ -40,6 +40,7 @@ function toPlainRows(sheet: SrcSheetInfo) {
   return Array.isArray(sheet.preview) ? sheet.preview.map((row) => ({ ...row })) : [];
 }
 
+/** 从样本数据推断列的类型/可空/唯一值信息。 */
 export function inferColumnInfo(
   name: string,
   index: number,
@@ -169,6 +170,7 @@ function updateSheet(
   };
 }
 
+/** 创建空数据表入口（按指定列）。 */
 export function createEmptyTableEntry(input: CreateEmptyTableInput): SrcTableEntry {
   const now = new Date().toISOString();
   const baseName = input.tableName.trim() || '新建数据表';
@@ -212,6 +214,7 @@ export function createEmptyTableEntry(input: CreateEmptyTableInput): SrcTableEnt
   };
 }
 
+/** 向 Sheet 追加一列（全表补默认值）。 */
 export function appendColumnToSheet(table: SrcTableEntry, sheetName: string, input: AppendColumnInput): SrcTableEntry {
   return updateSheet(table, sheetName, (sheet) => {
     const nextHeader = normalizeColumnName(input.name, sheet.headers.length);
@@ -234,6 +237,7 @@ export function appendColumnToSheet(table: SrcTableEntry, sheetName: string, inp
   });
 }
 
+/** 在指定位置插入一列。 */
 export function insertColumnInSheet(
   table: SrcTableEntry,
   sheetName: string,
@@ -268,6 +272,7 @@ export function insertColumnInSheet(
   });
 }
 
+/** 重命名列（同步行数据键）。 */
 export function renameColumnInSheet(table: SrcTableEntry, sheetName: string, oldName: string, newName: string): SrcTableEntry {
   return updateSheet(table, sheetName, (sheet) => {
     const nextName = normalizeColumnName(newName, sheet.headers.indexOf(oldName));
@@ -309,6 +314,7 @@ export function renameColumnInSheet(table: SrcTableEntry, sheetName: string, old
   });
 }
 
+/** 删除列（同步行数据键与主键配置）。 */
 export function removeColumnFromSheet(table: SrcTableEntry, sheetName: string, columnName: string): SrcTableEntry {
   return updateSheet(table, sheetName, (sheet) => {
     const nextHeaders = sheet.headers.filter((header) => header !== columnName);
@@ -336,6 +342,7 @@ export function removeColumnFromSheet(table: SrcTableEntry, sheetName: string, c
   });
 }
 
+/** 按新顺序重排列。 */
 export function reorderColumnsInSheet(
   table: SrcTableEntry,
   sheetName: string,

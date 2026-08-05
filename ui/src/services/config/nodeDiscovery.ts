@@ -1,7 +1,9 @@
 import { pinyin } from 'pinyin-pro';
 import type { FlowNodeSpec, SchemaPort } from '../../flowRegistry';
 
+/** 节点发现偏好本地存储键。 */
 export const NODE_DISCOVERY_STORAGE_KEY = 'formflow_node_discovery_v1';
+/** 最近使用节点保留上限。 */
 export const MAX_RECENT_NODES = 5;
 
 export type NodeDiscoveryGroup =
@@ -13,6 +15,7 @@ export type NodeDiscoveryGroup =
   | '机器学习'
   | '高级 XLSX';
 
+/** 节点发现分组定义（按功能域）。 */
 export const NODE_DISCOVERY_GROUPS: NodeDiscoveryGroup[] = [
   '场景模板', '数据处理', 'Excel 编辑',
   '流程行为', '输出与集成', '机器学习', '高级 XLSX',
@@ -62,6 +65,7 @@ export interface QuickNodeConnection {
   targetHandle: string;
 }
 
+/** 搜索文本归一化（小写、去空白）。 */
 export function normalizeSearchText(value: string): string {
   return value
     .normalize('NFKC')
@@ -75,6 +79,7 @@ function compact(value: string): string {
   return normalizeSearchText(value).replace(/\s+/g, '');
 }
 
+/** 节点 spec → 所属发现分组。 */
 export function getNodeDiscoveryGroup(spec: FlowNodeSpec): NodeDiscoveryGroup {
   if (spec.kind === 'scenario') return '场景模板';
   if (spec.kind === 'xlsx-method') return '高级 XLSX';
@@ -98,6 +103,7 @@ function makePinyin(value: string, initials = false): string {
   }).join(''));
 }
 
+/** 为节点 spec 建立搜索文档（名称/描述/关键词）。 */
 export function createNodeSearchDocument(spec: FlowNodeSpec): NodeSearchDocument {
   const keywords = spec.keywords || [];
   const portText = spec.ports.flatMap((port) => [port.name, port.label, port.description]).join(' ');
@@ -125,6 +131,7 @@ export function createNodeSearchDocument(spec: FlowNodeSpec): NodeSearchDocument
   };
 }
 
+/** 构建节点搜索索引。 */
 export function buildNodeSearchIndex(specs: FlowNodeSpec[]): NodeSearchDocument[] {
   return specs.map(createNodeSearchDocument);
 }
@@ -162,6 +169,7 @@ function scoreTerm(doc: NodeSearchDocument, term: string): number {
   return 0;
 }
 
+/** 搜索节点文档（关键词 + 分组过滤，按分数排序）。 */
 export function searchNodeDocuments(
   documents: NodeSearchDocument[],
   query: string,
@@ -200,6 +208,7 @@ export function searchNodeDocuments(
   );
 }
 
+/** 端口类型是否兼容（any 通配 + 数字/文本等级）。 */
 export function portTypesCompatible(source: string, target: string): boolean {
   if (source === 'any' || target === 'any' || source === target) return true;
   const families = [
@@ -223,6 +232,7 @@ function compatibilitySearchBoost(candidate: SchemaPort, context: NodeConnection
   return sameName + exactType + (candidate.required ? 4 : 0);
 }
 
+/** 为连接上下文找到最佳兼容端口。 */
 export function findBestCompatiblePort(spec: FlowNodeSpec, context: NodeConnectionContext): SchemaPort | undefined {
   const wantedDirection = context.direction === 'from-output' ? 'input' : 'output';
   return spec.ports
@@ -234,6 +244,7 @@ export function findBestCompatiblePort(spec: FlowNodeSpec, context: NodeConnecti
     .sort((a, b) => compatibilityScore(b.port, context, b.index) - compatibilityScore(a.port, context, a.index))[0]?.port;
 }
 
+/** 列出与上下文兼容的节点（含端口匹配）。 */
 export function getCompatibleNodeMatches(specs: FlowNodeSpec[], context: NodeConnectionContext, excludeNodeId?: string): NodeCompatibilityMatch[] {
   return specs.flatMap((spec) => {
     if (spec.id === excludeNodeId) return [];
@@ -243,6 +254,7 @@ export function getCompatibleNodeMatches(specs: FlowNodeSpec[], context: NodeCon
   }).sort((a, b) => b.score - a.score || a.spec.label.localeCompare(b.spec.label, 'zh-CN'));
 }
 
+/** 创建快速连接建议（源/目标端口自动匹配）。 */
 export function createQuickNodeConnection(
   context: NodeConnectionContext,
   existingNodeId: string,
@@ -256,6 +268,7 @@ export function createQuickNodeConnection(
   return { source: newNodeId, sourceHandle: `out:${compatiblePort.name}`, target: existingNodeId, targetHandle: existingHandleId };
 }
 
+/** 清洗节点发现偏好（过滤无效 ID）。 */
 export function sanitizeNodeDiscoveryPreferences(value: unknown, validIds: Iterable<string>): NodeDiscoveryPreferences {
   const valid = new Set(validIds);
   const input = value && typeof value === 'object' ? value as Partial<NodeDiscoveryPreferences> : {};
@@ -267,16 +280,19 @@ export function sanitizeNodeDiscoveryPreferences(value: unknown, validIds: Itera
   return { favorites: clean(input.favorites), recent: clean(input.recent, MAX_RECENT_NODES) };
 }
 
+/** 从 localStorage 文本解析节点发现偏好。 */
 export function parseNodeDiscoveryPreferences(raw: string | null, validIds: Iterable<string>): NodeDiscoveryPreferences {
   if (!raw) return { favorites: [], recent: [] };
   try { return sanitizeNodeDiscoveryPreferences(JSON.parse(raw), validIds); }
   catch { return { favorites: [], recent: [] }; }
 }
 
+/** 记录最近使用的节点（去重置顶、限长）。 */
 export function recordRecentNode(preferences: NodeDiscoveryPreferences, specId: string): NodeDiscoveryPreferences {
   return { ...preferences, recent: [specId, ...preferences.recent.filter((id) => id !== specId)].slice(0, MAX_RECENT_NODES) };
 }
 
+/** 切换节点收藏状态。 */
 export function toggleFavoriteNode(preferences: NodeDiscoveryPreferences, specId: string): NodeDiscoveryPreferences {
   const favorites = preferences.favorites.includes(specId)
     ? preferences.favorites.filter((id) => id !== specId)

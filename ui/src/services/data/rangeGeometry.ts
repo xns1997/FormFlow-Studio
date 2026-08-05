@@ -40,6 +40,7 @@ function colName(index: number): string {
   return result;
 }
 
+/** 归一化区域（行列区间规范化、空区域过滤）。 */
 export function normalizeArea(area: RangeArea): RangeArea {
   return {
     startRow: Math.max(0, Math.min(area.startRow, area.endRow)),
@@ -64,6 +65,7 @@ function toCellRange(area: RangeArea): CellRangeArea {
   return { s: { r: area.startRow, c: area.startCol }, e: { r: area.endRow, c: area.endCol } };
 }
 
+/** 解析范围地址文本（如 `Sheet1!A1:B2,C3`）。 */
 export function parseRangeAddress(address: string): { sheetName?: string; areas: RangeArea[] } {
   let inheritedSheet: string | undefined;
   const areas: RangeArea[] = [];
@@ -92,6 +94,7 @@ function quoteSheetName(sheetName: string): string {
   return /^[A-Za-z0-9_\u4e00-\u9fff]+$/.test(sheetName) ? sheetName : `'${sheetName.replace(/'/g, "''")}'`;
 }
 
+/** 区域列表 → 范围地址文本。 */
 export function formatRangeAddress(areas: RangeArea[], sheetName?: string): string {
   const prefix = sheetName ? `${quoteSheetName(sheetName)}!` : '';
   return areas.map((area, index) => {
@@ -103,6 +106,7 @@ export function formatRangeAddress(areas: RangeArea[], sheetName?: string): stri
 }
 
 /** Convert overlapping input rectangles into an exact, non-overlapping canonical set. */
+/** 规范化区域集合（排序、合并相邻/重叠）。 */
 export function canonicalizeAreas(input: RangeArea[]): RangeArea[] {
   const source = input.map(normalizeArea);
   if (!source.length) return [];
@@ -130,6 +134,7 @@ export function canonicalizeAreas(input: RangeArea[]): RangeArea[] {
   return bands.sort((a, b) => a.startRow - b.startRow || a.startCol - b.startCol || a.endRow - b.endRow || a.endCol - b.endCol);
 }
 
+/** 从任意值提取区域列表（字符串/对象兼容）。 */
 export function getRangeAreas(value: unknown): RangeArea[] {
   const range = value as any;
   if (Array.isArray(range?.areas)) return canonicalizeAreas(range.areas.map(toArea).filter(Boolean) as RangeArea[]);
@@ -138,6 +143,7 @@ export function getRangeAreas(value: unknown): RangeArea[] {
   return single ? [single] : [];
 }
 
+/** 构造复杂范围对象。 */
 export function createComplexRange(areas: RangeArea[], options: Pick<ComplexRange, 'sheetName' | 'tableId' | 'operation'> = {}): ComplexRange {
   const normalized = canonicalizeAreas(areas);
   const bounds = normalized.length ? toCellRange({
@@ -157,6 +163,7 @@ export function createComplexRange(areas: RangeArea[], options: Pick<ComplexRang
   };
 }
 
+/** 两个区域集合的交集（行列区间求交）。 */
 export function intersectRangeAreas(left: RangeArea[], right: RangeArea[]): RangeArea[] {
   const intersections: RangeArea[] = [];
   for (const a of canonicalizeAreas(left)) {
@@ -173,6 +180,7 @@ export function intersectRangeAreas(left: RangeArea[], right: RangeArea[]): Rang
   return canonicalizeAreas(intersections);
 }
 
+/** 合并区域集合（并集选择或交集）。 */
 export function combineRangeAreas(input: RangeArea[], operation: 'selection' | 'intersection'): RangeArea[] {
   if (operation === 'intersection' && input.length > 1) {
     return input.slice(1).reduce((result, area) => intersectRangeAreas(result, [area]), [normalizeArea(input[0])]);
@@ -180,6 +188,7 @@ export function combineRangeAreas(input: RangeArea[], operation: 'selection' | '
   return canonicalizeAreas(input);
 }
 
+/** 提取可编辑范围来源区域。 */
 export function getEditableRangeSources(value: unknown): RangeArea[] {
   const range = value as any;
   if (range?.operation === 'intersection' && Array.isArray(range.sourceAreas) && range.sourceAreas.length > 0) {
@@ -188,6 +197,7 @@ export function getEditableRangeSources(value: unknown): RangeArea[] {
   return getRangeAreas(value);
 }
 
+/** 两个复杂范围求交（含 sheet 校验）。 */
 export function intersectComplexRanges(left: unknown, right: unknown): ComplexRange {
   const a = left as any;
   const b = right as any;
