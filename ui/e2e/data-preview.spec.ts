@@ -238,18 +238,31 @@ test.describe('数据准备工作台', () => {
     await expect(page.locator('.data-preview-save-state')).toContainText('已保存');
   });
 
-  test('添加筛选弹窗锚定在筛选栏下方而不是页面底部', async ({ page }) => {
+  test('列头筛选弹窗锚定在表头下方，无筛选时顶栏隐藏', async ({ page }) => {
     await createDataProject(page);
-    const bar = page.locator('.filter-bar');
-    const barBox = await bar.boundingBox();
-    await page.getByRole('button', { name: '+ 添加筛选' }).click();
-    const popup = page.locator('.filter-bar-add-popover');
+    await expect(page.locator('.filter-bar')).toHaveCount(0);
+    const header = page.locator('.ag-header-cell[col-id="参数ID"]');
+    const headerBox = await header.boundingBox();
+    await page.getByRole('button', { name: '筛选 参数ID' }).click();
+    const popup = page.locator('.data-preview-header-filter-popup');
     await expect(popup).toBeVisible();
     const popupBox = await popup.boundingBox();
-    expect(barBox).toBeTruthy();
+    expect(headerBox).toBeTruthy();
     expect(popupBox).toBeTruthy();
-    expect((popupBox as any).x).toBeCloseTo((barBox as any).x, 1);
-    expect((popupBox as any).y).toBeGreaterThanOrEqual((barBox as any).y + (barBox as any).height);
-    await expect(popup).toHaveCSS('position', 'absolute');
+    expect((popupBox as any).x).toBeCloseTo((headerBox as any).x, 0);
+    expect((popupBox as any).y).toBeGreaterThanOrEqual((headerBox as any).y + (headerBox as any).height);
+    await popup.getByPlaceholder('筛选值').fill('A-1');
+    await popup.getByRole('button', { name: '应用' }).click();
+    const bar = page.locator('.filter-bar');
+    await expect(bar).toBeVisible();
+    await expect(bar.getByText('参数ID')).toBeVisible();
+    await expect(bar.getByText(/A-1/)).toBeVisible();
+    await expect(page.locator('.data-preview-grid')).toBeVisible();
+    await expect(page.locator('.data-preview-grid')).not.toHaveAttribute('aria-busy', 'true');
+    await expect(page.getByRole('button', { name: '筛选 参数ID' })).toHaveClass(/is-active/);
+    const deleteFilter = bar.getByRole('button', { name: /删除筛选/ });
+    await expect(deleteFilter).toBeVisible();
+    await deleteFilter.click();
+    await expect(bar).toHaveCount(0);
   });
 });

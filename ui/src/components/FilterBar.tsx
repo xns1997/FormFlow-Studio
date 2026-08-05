@@ -2,7 +2,9 @@
  * FilterBar Component
  *
  * Displays active filters as chips below the toolbar.
- * Supports editing, deleting, and adding filters.
+ * Only responsible for displaying, editing and deleting existing filters;
+ * the bar is hidden entirely when there are no active filters.
+ * Adding filters happens in the column header cell.
  * Chinese labels for all filter types, grouped by data type.
  */
 import React, { useState, useCallback, useRef, useEffect } from 'react';
@@ -74,8 +76,6 @@ export interface FilterBarProps {
 
 export function FilterBar({ filterModel, columns, onFilterChange, onClearAll }: FilterBarProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
-  const [addingFilter, setAddingFilter] = useState(false);
-  const [addFieldSearch, setAddFieldSearch] = useState('');
   const popoverRef = useRef<HTMLDivElement>(null);
 
   // Build chip list from filter model
@@ -89,16 +89,15 @@ export function FilterBar({ filterModel, columns, onFilterChange, onClearAll }: 
 
   // Close popover on outside click
   useEffect(() => {
-    if (!addingFilter && !editingField) return;
+    if (!editingField) return;
     const handleClick = (e: MouseEvent) => {
       if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-        setAddingFilter(false);
         setEditingField(null);
       }
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [addingFilter, editingField]);
+  }, [editingField]);
 
   const handleDeleteChip = useCallback((field: string) => {
     onFilterChange(field, null);
@@ -106,8 +105,9 @@ export function FilterBar({ filterModel, columns, onFilterChange, onClearAll }: 
 
   const handleEditChip = useCallback((field: string) => {
     setEditingField(field);
-    setAddingFilter(false);
   }, []);
+
+  if (chips.length === 0) return null;
 
   return (
     <div className="filter-bar">
@@ -137,57 +137,10 @@ export function FilterBar({ filterModel, columns, onFilterChange, onClearAll }: 
         </div>
       ))}
 
-      <button
-        type="button"
-        className="filter-bar-add-btn"
-        onClick={() => { setAddingFilter(!addingFilter); setEditingField(null); setAddFieldSearch(''); }}
-      >
-        + 添加筛选
-      </button>
-
       {chips.length > 0 && (
         <button type="button" className="filter-bar-clear-btn" onClick={onClearAll}>
           清除全部
         </button>
-      )}
-
-      {addingFilter && (
-        <div ref={popoverRef} className="filter-bar-popover filter-bar-add-popover">
-          <div className="filter-bar-add-header">
-            <input
-              autoFocus
-              placeholder="搜索字段..."
-              value={addFieldSearch}
-              onChange={(e) => setAddFieldSearch(e.target.value)}
-              className="filter-bar-add-search"
-            />
-          </div>
-          <div className="filter-bar-add-list">
-            {columns
-              .filter((col) => !filterModel[col.name] || filterModel[col.name] == null)
-              .filter((col) => col.name.toLowerCase().includes(addFieldSearch.toLowerCase()))
-              .map((col) => (
-                <button
-                  key={col.name}
-                  type="button"
-                  className="filter-bar-add-item"
-                  onClick={() => {
-                    setEditingField(col.name);
-                    setAddingFilter(false);
-                    // Default filter type based on data type
-                    const defaultType = getFilterTypesForDataType(col.dataType)[0] || 'contains';
-                    onFilterChange(col.name, { type: defaultType, filter: '' });
-                  }}
-                >
-                  <span>{col.name}</span>
-                  <span className="filter-bar-add-item-type">{col.dataType || '未知'}</span>
-                </button>
-              ))}
-            {columns.filter((col) => !filterModel[col.name] || filterModel[col.name] == null).length === 0 && (
-              <div className="filter-bar-add-empty">所有字段都已添加筛选</div>
-            )}
-          </div>
-        </div>
       )}
     </div>
   );
@@ -195,7 +148,7 @@ export function FilterBar({ filterModel, columns, onFilterChange, onClearAll }: 
 
 // ── Filter Editor ──────────────────────────────────────
 
-interface FilterEditorProps {
+export interface FilterEditorProps {
   field: string;
   rule: FilterRule;
   dataType?: string;
@@ -204,7 +157,7 @@ interface FilterEditorProps {
   onCancel: () => void;
 }
 
-function FilterEditor({ field, rule, dataType, onApply, onDelete, onCancel }: FilterEditorProps) {
+export function FilterEditor({ field, rule, dataType, onApply, onDelete, onCancel }: FilterEditorProps) {
   const [editType, setEditType] = useState(rule.type || 'contains');
   const [editValue, setEditValue] = useState(String(rule.filter ?? ''));
   const [editValue2, setEditValue2] = useState(String(rule.filterTo ?? ''));

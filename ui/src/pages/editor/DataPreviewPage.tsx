@@ -51,7 +51,7 @@ import {
   resolveSequenceDateTokens,
 } from '../../services/data/sequenceRules';
 import { describeApi, projectApi } from '../../services/io/api';
-import { FilterBar } from '../../components/FilterBar';
+import { FilterBar, FilterEditor, getFilterTypesForDataType, type FilterRule } from '../../components/FilterBar';
 import {
   HistogramChart,
   CategoryBarChart,
@@ -317,12 +317,15 @@ export default function DataPreviewPage({
   const [dragOverRowKey, setDragOverRowKey] = useState<string | null>(null);
   const [dragRange, setDragRange] = useState<{ startRow: number; endRow: number; startCol: number; endCol: number } | null>(null);
   const [isRangeDragging, setIsRangeDragging] = useState(false);
+  const [headerFilterField, setHeaderFilterField] = useState<string | null>(null);
+  const [headerFilterPos, setHeaderFilterPos] = useState<{ left: number; top: number } | null>(null);
   const undoStacksRef = useRef<Map<string, { undo: UndoEntry[]; redo: UndoEntry[] }>>(new Map());
   const autoSaveTimerRef = useRef<number | null>(null);
   const pasteFallbackRef = useRef<HTMLTextAreaElement>(null);
   const handleSaveRef = useRef<() => Promise<boolean>>(async () => true);
   const rangeAnchorRef = useRef<{ row: number; col: number; x: number; y: number } | null>(null);
   const rangeDraggingRef = useRef(false);
+  const headerFilterPopupRef = useRef<HTMLDivElement>(null);
 
   const projectId = project?.config?.id;
   const selectedTable = project?.srcTable.find((table) => table.id === selectedTableId) || null;
@@ -351,6 +354,19 @@ export default function DataPreviewPage({
     if (!selectedTable || !activeSheet || !currentConfig) return;
     await saveSheetConfig(selectedTable.id, activeSheet.name, { ...currentConfig, ...patch });
   }, [selectedTable, activeSheet, currentConfig, saveSheetConfig]);
+
+  const setColumnFilter = useCallback((field: string, rule: FilterRule | null) => {
+    setQuery((current) => {
+      const filterModel = { ...current.filterModel };
+      if (rule) filterModel[field] = rule;
+      else delete filterModel[field];
+      return { ...current, page: 1, filterModel };
+    });
+    const api = gridApiRef.current;
+    if (!api) return;
+    if (rule) void api.setColumnFilterModel(field, rule).then(() => api.onFilterChanged());
+    else void api.setColumnFilterModel(field, null).then(() => api.onFilterChanged());
+  }, []);
 
   const guardAction = useCallback((action: () => void) => {
     if (changeCount > 0) setPendingNavigation(() => action);
@@ -693,6 +709,7 @@ export default function DataPreviewPage({
           filter: false,
           editable: false,
           resizable: false,
+          suppressSizeToFit: true,
           cellClass: 'data-preview-row-number-cell',
           headerClass: 'data-preview-row-number-header',
           cellRenderer: DataPreviewRowNumberCell,
@@ -743,6 +760,22 @@ export default function DataPreviewPage({
                   {params.column?.getSort() === 'asc' ? '↑' : params.column?.getSort() === 'desc' ? '↓' : '↕'}
                 </span>
               </button>
+              {currentConfig.filterEnabled !== false && (
+                <button
+                  type="button"
+                  className={`data-preview-header-filter${query.filterModel[header] != null ? ' is-active' : ''}`}
+                  aria-label={`筛选 ${header}`}
+                  title={query.filterModel[header] != null ? '修改筛选条件' : '添加筛选'}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setHeaderFilterField(header);
+                  }}
+                >
+                  <svg width="11" height="11" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                    <path d="M1.5 2.5h13L10 8.2v5.3l-4 2V8.2L1.5 2.5z" fill="currentColor" />
+                  </svg>
+                </button>
+              )}
             </div>
           ),
           flex: currentConfig.columnWidths[header] ? undefined : 1,
@@ -777,7 +810,7 @@ export default function DataPreviewPage({
         } satisfies ColDef;
       }),
     ];
-  }, [activeSheet, currentConfig, keyFieldSet, saving, pendingChanges, selectedTemplateFields, validationErrors, reorderEnabled, draggingRowKey, dragOverRowKey, handleRowDragStart, handleRowDragOver, handleRowDrop, selectedColIdx, dragRange]);
+  }, [activeSheet, currentConfig, keyFieldSet, saving, pendingChanges, selectedTemplateFields, validationErrors, reorderEnabled, draggingRowKey, dragOverRowKey, handleRowDragStart, handleRowDragOver, handleRowDrop, selectedColIdx, dragRange, query.filterModel]);
 
   const updateKeyFields = useCallback(async (keyFields: string[]) => {
     if (!activeSheet) return;
@@ -1767,6 +1800,50 @@ export default function DataPreviewPage({
   }, [selectedColIdx, dragRange]);
 
   useEffect(() => {
+    if (!headerFilterField) {
+      setHeaderFilterPos(null);
+      return;
+    }
+    const safeId = headerFilterField.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    const updatePosition = () => {
+      const element = document.querySelector<HTMLElement>(`.ag-header-cell[col-id="${safeId}"]`);
+      if (!element) return;
+      const rect = element.getBoundingClientRect();
+      setHeaderFilterPos((current) =>
+        current && Math.abs(current.left - rect.left) < 1 && Math.abs(current.top - (rect.bottom + 4)) < 1
+          ? current
+          : { left: rect.left, top: rect.bottom + 4 },
+      );
+    };
+    updatePosition();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setHeaderFilterField(null);
+    };
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (headerFilterPopupRef.current && target && headerFilterPopupRef.current.contains(target)) return;
+      setHeaderFilterField(null);
+    };
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('pointerdown', onPointerDown, true);
+    let frame = 0;
+    const tick = () => {
+      updatePosition();
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('pointerdown', onPointerDown, true);
+      cancelAnimationFrame(frame);
+    };
+  }, [headerFilterField]);
+
+  useEffect(() => {
     return () => {
       if (autoSaveTimerRef.current) window.clearTimeout(autoSaveTimerRef.current);
     };
@@ -2049,25 +2126,7 @@ export default function DataPreviewPage({
             <FilterBar
               filterModel={query.filterModel}
               columns={(activeSheet.columns || []).map((col) => ({ name: col.name, dataType: col.dataType }))}
-              onFilterChange={(field, rule) => {
-                setQuery((current) => {
-                  const filterModel = { ...current.filterModel };
-                  if (rule) {
-                    filterModel[field] = rule;
-                  } else {
-                    delete filterModel[field];
-                  }
-                  return { ...current, page: 1, filterModel };
-                });
-                // Also sync with AG Grid's filter model
-                if (gridApiRef.current) {
-                  if (rule) {
-                    gridApiRef.current.setColumnFilterModel(field, rule).then(() => gridApiRef.current?.onFilterChanged());
-                  } else {
-                    gridApiRef.current.setColumnFilterModel(field, null).then(() => gridApiRef.current?.onFilterChanged());
-                  }
-                }
-              }}
+              onFilterChange={setColumnFilter}
               onClearAll={() => {
                 setSearchDraft('');
                 setKeyJumpDraft('');
@@ -2699,6 +2758,34 @@ export default function DataPreviewPage({
           items={contextMenuItems}
           onClose={() => setContextMenu(null)}
         />
+      )}
+
+      {headerFilterField && headerFilterPos && (
+        <div
+          ref={headerFilterPopupRef}
+          className="data-preview-header-filter-popup"
+          role="dialog"
+          aria-label={`筛选 ${headerFilterField}`}
+          style={{ left: headerFilterPos.left, top: headerFilterPos.top }}
+        >
+          <FilterEditor
+            field={headerFilterField}
+            rule={(query.filterModel[headerFilterField] as FilterRule | undefined) || {
+              type: getFilterTypesForDataType(activeSheetData?.columns.find((col) => col.name === headerFilterField)?.dataType)[0] || 'contains',
+              filter: '',
+            }}
+            dataType={activeSheetData?.columns.find((col) => col.name === headerFilterField)?.dataType}
+            onApply={(rule) => {
+              setColumnFilter(headerFilterField, rule);
+              setHeaderFilterField(null);
+            }}
+            onDelete={() => {
+              setColumnFilter(headerFilterField, null);
+              setHeaderFilterField(null);
+            }}
+            onCancel={() => setHeaderFilterField(null)}
+          />
+        </div>
       )}
 
       <Modal open={!!showBatchEdit} onClose={() => setShowBatchEdit(null)} maxWidth={420}>
