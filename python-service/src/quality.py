@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""数据质量检查：按规则逐行校验并汇总问题。
+
+标准输入：{"rows": [...], "rules": [{"field", "type", "value", ...}]}
+标准输出：{"issues": [...], "summary": {...}}
+"""
 import json, sys
 from collections import Counter
 
