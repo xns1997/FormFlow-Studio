@@ -1,3 +1,10 @@
+## [1.15.1](https://github.com/xns1997/FormFlow-Studio/compare/v1.15.0...v1.15.1) (2026-08-05)
+
+
+### Performance Improvements
+
+* 消除 executor-registry 与 flowEngine 无效动态导入 ([b862d0b](https://github.com/xns1997/FormFlow-Studio/commit/b862d0b65b3ad1011af196ea6dc8df7fd8267a0f))
+
 # [1.15.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.14.0...v1.15.0) (2026-08-05)
 
 
