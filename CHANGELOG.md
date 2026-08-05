@@ -1,3 +1,10 @@
+## [1.11.1](https://github.com/xns1997/FormFlow-Studio/compare/v1.11.0...v1.11.1) (2026-08-05)
+
+
+### Bug Fixes
+
+* 数据预览恢复并增强整行/整列选择与拖拽框选 ([6c08e6c](https://github.com/xns1997/FormFlow-Studio/commit/6c08e6cab6c6a453128b4249f753b9d0417c0b52))
+
 # [1.11.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.10.0...v1.11.0) (2026-08-05)
 
 
