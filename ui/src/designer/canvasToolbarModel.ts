@@ -8,6 +8,7 @@ export interface CanvasToolbarAvailabilityInput {
   canPaste: boolean;
 }
 
+/** 计算画布工具栏可用状态（按选中/剪贴板/历史栈）。 */
 export function getCanvasToolbarAvailability(input: CanvasToolbarAvailabilityInput) {
   const selectedIds = input.selectedIds ?? (input.selectedId ? [input.selectedId] : []);
   const hasEditableControlSelection = selectedIds.length > 0 && !selectedIds.includes(FORM_WINDOW_CELL_ID);

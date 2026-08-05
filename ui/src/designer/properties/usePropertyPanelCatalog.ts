@@ -4,6 +4,7 @@ import type { SrcTableEntry } from '../../project/types';
 import type { DesignComponent } from '../../project/types';
 import type { PropertyFieldDescriptor } from './propertyEditorRegistry';
 
+/** 属性面板字段目录 Hook：合并组件字段与数据表列。 */
 export function usePropertyPanelCatalog(components: DesignComponent[], tables: SrcTableEntry[]) {
   const fieldDescriptors = useMemo<EventFieldDescriptor[]>(() => {
     const fromTables = tables.flatMap((table) => table.sheets.flatMap((sheet) => sheet.columns.map((column) => ({ name: column.name, type: column.dataType }))));

@@ -10,6 +10,7 @@ interface DesignerIOCtx extends DesignerState {
   selectComponent: (id: string | null) => void;
 }
 
+/** 设计器导入/导出 Hook（JSON 与画布互转）。 */
 export function useDesignerIO(ctx: DesignerIOCtx) {
   const {
     graphRef,

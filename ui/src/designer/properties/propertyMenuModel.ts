@@ -26,6 +26,7 @@ const LEGACY_GROUPS: Record<string, keyof typeof GROUPS> = {
   '数据源': 'binding', '表达式': 'logic', '文本样式': 'textStyle', '样式': 'appearance', '尺寸': 'size', '高级': 'advanced', '格式': 'format', '动画': 'animation',
 };
 
+/** 属性任务（校验/联动/事件）配置。 */
 export const PROPERTY_TASKS: Record<PropertyTaskId, { label: string; section: PropertySection; order: number }> = {
   content: { label: '内容与字段', section: 'function', order: 10 },
   validation: { label: '校验规则', section: 'function', order: 20 },
@@ -40,6 +41,7 @@ export const PROPERTY_TASKS: Record<PropertyTaskId, { label: string; section: Pr
   other: { label: '其他', section: 'function', order: 90 },
 };
 
+/** 解析属性所属分组。 */
 export function resolvePropertyGroup(def: PropSchemaEntry): PropertyGroupDescriptor {
   const raw = def.group || '基础';
   const known = GROUPS[raw] || GROUPS[LEGACY_GROUPS[raw]];
@@ -47,6 +49,7 @@ export function resolvePropertyGroup(def: PropSchemaEntry): PropertyGroupDescrip
   return { id: `other-${raw}`, label: raw, section: def.section || 'function', task: def.task || 'other', order: def.order ?? 90 };
 }
 
+/** 属性值深比较（忽略键顺序）。 */
 export function deepEqualPropertyValue(left: unknown, right: unknown): boolean {
   if (Object.is(left, right)) return true;
   if (Array.isArray(left) || Array.isArray(right)) return Array.isArray(left) && Array.isArray(right) && left.length === right.length && left.every((item, index) => deepEqualPropertyValue(item, right[index]));
@@ -57,12 +60,14 @@ export function deepEqualPropertyValue(left: unknown, right: unknown): boolean {
   return false;
 }
 
+/** 读取属性当前值（含组件回退）。 */
 export function getPropertyValue(def: PropSchemaEntry, values: Record<string, unknown>, component?: DesignComponent) {
   if (isCompositePropDef(def)) return Object.fromEntries(def.keys.map((key) => [key, values[key]]));
   if (def.target === 'geometry' && component) return component[def.key as 'x' | 'y' | 'width' | 'height'];
   return values[def.key];
 }
 
+/** 读取属性默认值（按定义与组件类型）。 */
 export function getPropertyDefaultValue(def: PropSchemaEntry, defaults: Record<string, unknown>, component?: DesignComponent, defaultSize?: { w: number; h: number }) {
   if (isCompositePropDef(def)) return Object.fromEntries(def.keys.map((key) => [key, defaults[key]]));
   if (def.target === 'geometry') {
@@ -87,6 +92,7 @@ function schemaDiagnostic(def: PropSchemaEntry, value: unknown): PropertyDiagnos
   return message ? { severity: 'error', message, key: def.key } : null;
 }
 
+/** 计算属性状态（已修改/默认/必填缺失/冲突）。 */
 export function getPropertyStatus(args: { def: PropSchemaEntry; values: Record<string, unknown>; defaults: Record<string, unknown>; component: DesignComponent; components: DesignComponent[]; defaultSize: { w: number; h: number }; fields?: string[]; fieldCatalog?: PropertyFieldDescriptor[] }): PropertyStatus {
   const { def, values, defaults, component, components, defaultSize } = args;
   const value = getPropertyValue(def, values, component); const defaultValue = getPropertyDefaultValue(def, defaults, component, defaultSize);
@@ -110,6 +116,7 @@ export function getPropertyStatus(args: { def: PropSchemaEntry; values: Record<s
   return { changed: !deepEqualPropertyValue(value, defaultValue), diagnostics };
 }
 
+/** 属性状态 → 中文标签。 */
 export function propertyStatusLabel(statuses: PropertyStatus[]) {
   const errors = statuses.flatMap((status) => status.diagnostics).filter((item) => item.severity === 'error').length;
   const warnings = statuses.flatMap((status) => status.diagnostics).filter((item) => item.severity === 'warning').length;

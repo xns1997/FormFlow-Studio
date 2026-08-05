@@ -731,6 +731,7 @@ function createMasterDetailSkeleton(index: number, options: CreateDesignTemplate
   });
 }
 
+/** 按模板键创建设计文件（主从关系走专用生成器）。 */
 export function createDesignFromTemplate(key: string, index = 1, options: CreateDesignTemplateOptions = {}): DesignFile {
   if (key === 'master-detail' && options.table && options.relation && options.tables?.length) {
     return createMasterDetailRelationDesign(index, { ...options, table: options.table, relation: options.relation, tables: options.tables });

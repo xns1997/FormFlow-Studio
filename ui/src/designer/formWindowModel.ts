@@ -1,6 +1,7 @@
 import { createDefaultFormWindow, type DesignComponent, type FormWindowConfig } from '../project/types';
 import type { ControlDef } from './types';
 
+/** 表单窗体在画布网格中的单元格 ID。 */
 export const FORM_WINDOW_CELL_ID = '__formflow_form_window__';
 
 const defaults = createDefaultFormWindow();
@@ -32,6 +33,7 @@ export const FORM_WINDOW_CONTROL: ControlDef = {
   render: () => null,
 };
 
+/** 窗口配置 → 设计组件（窗体占位）。 */
 export function formWindowToComponent(formWindow: FormWindowConfig): DesignComponent {
   return {
     id: FORM_WINDOW_CELL_ID,

@@ -5,6 +5,7 @@ import { useCallback, type RefObject } from 'react';
  * Extracted from useDesigner to improve locality and testability.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- X6 graph type is complex
+/** 画布视口 Hook：缩放、平移与适配。 */
 export function useCanvasViewport(
   graphRef: RefObject<any>,
   setZoom: (zoom: number) => void,

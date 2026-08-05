@@ -8,10 +8,12 @@ export interface PropertyClipboardPayload {
   value: unknown;
 }
 
+/** 编码属性剪贴板负载为 JSON 文本。 */
 export function encodePropertyClipboard(payload: Omit<PropertyClipboardPayload, 'formflowProperty'>) {
   return JSON.stringify({ formflowProperty: 1, ...payload }, null, 2);
 }
 
+/** 解码属性剪贴板文本（校验标记与结构）。 */
 export function decodePropertyClipboard(text: string): PropertyClipboardPayload {
   let value: unknown;
   try { value = JSON.parse(text); } catch { throw new Error('剪贴板不是有效的 FormFlow 属性配置'); }
@@ -30,6 +32,7 @@ function matchesStorageType(type: PropValueType | 'composite', value: unknown) {
   return value === null || ['string', 'number', 'boolean'].includes(typeof value);
 }
 
+/** 校验剪贴板属性是否可粘贴到目标定义（类型兼容）。 */
 export function validatePropertyClipboard(payload: PropertyClipboardPayload, def: PropSchemaEntry) {
   const expected = isCompositePropDef(def) ? 'composite' : def.type;
   if (!matchesStorageType(expected, payload.value)) return `配置值与“${def.label}”的数据类型不兼容`;

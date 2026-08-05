@@ -5,6 +5,7 @@ interface DesignerHistoryCtx extends DesignerState {
   syncComponentsFromGraph: () => void;
 }
 
+/** 设计器历史 Hook：撤销/重做栈。 */
 export function useDesignerHistory(ctx: DesignerHistoryCtx) {
   const { graphRef, syncComponentsFromGraph, bumpHistoryRevision } = ctx;
 

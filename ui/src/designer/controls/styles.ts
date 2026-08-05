@@ -1,5 +1,6 @@
 import type React from 'react';
 
+/** iOS 风格样式（控件/容器）。 */
 export const ios = {
   field: {
     width: '100%',
@@ -106,12 +107,14 @@ export const ios = {
   } satisfies React.CSSProperties,
 };
 
+/** 必填标记样式。 */
 export const requiredMark: React.CSSProperties = {
   color: 'var(--danger)',
   marginLeft: 4,
   fontWeight: 700,
 };
 
+/** 控件文本样式工厂（可合并覆盖）。 */
 export const controlText = (overrides: React.CSSProperties = {}): React.CSSProperties => ({
   flex: overrides.flex,
   minWidth: 0,

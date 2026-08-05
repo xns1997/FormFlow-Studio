@@ -5,6 +5,7 @@ import { SINGLE_LINE_FIELD_HEIGHT } from '../controls/geometry';
 
 export type ResizeHandle = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
 
+/** 各类型组件最小尺寸。 */
 export const DESIGNER_MIN_SIZES: Record<string, { w: number; h: number }> = {
   input: { w: 160, h: SINGLE_LINE_FIELD_HEIGHT },
   textarea: { w: 180, h: 92 },
@@ -32,6 +33,7 @@ export const DESIGNER_MIN_SIZES: Record<string, { w: number; h: number }> = {
   divider: { w: 32, h: 8 },
 };
 
+/** 将组件尺寸钳制到最小允许值。 */
 export function clampDesignerSize(type: string, width: number, height: number) {
   const min = DESIGNER_MIN_SIZES[type] ?? { w: 96, h: 28 };
   return { width: Number.isFinite(width) && width > 0 ? Math.max(min.w, width) : min.w, height: Number.isFinite(height) && height > 0 ? Math.max(min.h, height) : min.h };
@@ -46,6 +48,7 @@ export interface SelectionOverlay {
   height: number;
 }
 
+/** 设计器全局状态：选中、剪贴板、历史与画布视图。 */
 export function useDesignerState() {
   // Refs
   const containerRef = useRef<HTMLDivElement>(null);

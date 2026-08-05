@@ -108,6 +108,7 @@ export interface CompositePropDef {
 
 export type PropSchemaEntry = PropDef | CompositePropDef;
 
+/** 是否为复合属性定义。 */
 export function isCompositePropDef(def: PropSchemaEntry): def is CompositePropDef {
   return 'kind' in def && def.kind === 'composite';
 }

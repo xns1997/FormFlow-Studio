@@ -20,6 +20,7 @@ interface DesignerActionsCtx extends DesignerState {
   syncSelectionOverlay: (id?: string | null) => void;
 }
 
+/** 生成可读字段名（去重、按类型规范化）。 */
 export function createReadableFieldName(label: string, type: string, existingNames: Iterable<string>) {
   const readableSeed = String(label || '').trim().replace(/[^\p{L}\p{N}_]+/gu, '_').replace(/^_+|_+$/g, '') || type;
   const taken = new Set(existingNames);
@@ -29,6 +30,7 @@ export function createReadableFieldName(label: string, type: string, existingNam
   return name;
 }
 
+/** 设计器动作 Hook：增删改、复制粘贴、撤销重做。 */
 export function useDesignerActions(ctx: DesignerActionsCtx) {
   const {
     graphRef,

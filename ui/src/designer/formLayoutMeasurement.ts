@@ -1,6 +1,7 @@
 import type { DesignComponent } from '../project/types';
 import type { MeasuredNodeBox } from '../services/layout';
 
+/** 测量已渲染控件的实际盒模型尺寸。 */
 export function measureRenderedControls(root: ParentNode | null, components: DesignComponent[]): MeasuredNodeBox[] {
   if (!root) return [];
   const renderedCells = new Map(

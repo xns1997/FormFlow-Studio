@@ -30,6 +30,7 @@ export function lintControlSchema(control: ControlDef): SchemaLintIssue[] {
   return issues;
 }
 
+/** 批量校验控件 schema 的 UX 一致性问题。 */
 export function lintControlSchemas(controls: ControlDef[]) {
   return controls.flatMap(lintControlSchema);
 }

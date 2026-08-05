@@ -2,6 +2,7 @@ import type { DesignComponent } from '../project/types';
 import type { ComponentNode, ComponentEvent } from '../models';
 import { getDesignValuePortType, getRuntimeComponentType, isInteractiveComponentType } from '../services/config/controlTypes';
 
+/** 设计组件 → 运行时组件节点列表。 */
 export function exportToComponentNodes(components: DesignComponent[]): ComponentNode[] {
   return components.map((dc, index) => {
     const events = buildEvents(dc);

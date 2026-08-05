@@ -10,6 +10,7 @@ interface DesignerClipboardCtx extends DesignerState {
   finalizeComponents: (items: DesignComponent[]) => DesignComponent[];
 }
 
+/** 设计器剪贴板 Hook：复制/剪切/粘贴属性。 */
 export function useDesignerClipboard(ctx: DesignerClipboardCtx) {
   const {
     graphRef,
