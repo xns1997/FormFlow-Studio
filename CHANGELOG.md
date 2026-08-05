@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.10.0...v1.11.0) (2026-08-05)
+
+
+### Features
+
+* 数据工作台编辑自由度与右键菜单升级；同步智能体 V4 增强、列表动效与文档修订 ([9caaaeb](https://github.com/xns1997/FormFlow-Studio/commit/9caaaeba007dfcaac536937c569b03bd022610e8))
+
 # [1.10.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.9.0...v1.10.0) (2026-08-04)
 
 
