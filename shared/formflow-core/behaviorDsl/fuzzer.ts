@@ -280,7 +280,9 @@ export function compilationIdentity(oldResult: BehaviorDslCompilation, newResult
   const newRules = JSON.stringify(newResult.rules);
   const oldErrors = oldResult.diagnostics.filter((item) => item.severity === 'error');
   const newErrors = newResult.diagnostics.filter((item) => item.severity === 'error');
-  const ADDED_CHECKS = new Set(['FFR304', 'FFR305', 'FFR306', 'FFR307', 'FFR308']);
+  // FFR105/FFR106 是结构级新增检查：旧实现把它们当作 FFR000 或直接容忍，
+  // 新实现允许在保留原规则与旧诊断的前提下追加这两类诊断。
+  const ADDED_CHECKS = new Set(['FFR304', 'FFR305', 'FFR306', 'FFR307', 'FFR308', 'FFR105', 'FFR106']);
   const lineOfRule = (rule: { id: string }) => Number(rule.id.match(/^dsl_(\d+)/)?.[1] || 1);
   // 旧实现按原始触发词文本比较，`on   load`（多空格）会被误判成 submit；
   // 新实现按 token 正确判为 formLoad（文档修复）。
@@ -318,6 +320,10 @@ export function compilationIdentity(oldResult: BehaviorDslCompilation, newResult
     if (oldRules !== newRules) return `规则不一致（双方都有 error）：old=${oldRules} new=${newRules}`;
     for (const oldError of oldErrors) {
       const matched = newErrors.some((item) => item.line === oldError.line && item.code === oldError.code && item.message === oldError.message);
+      if (!matched && oldError.code === 'FFR000' && oldError.message === '无法识别这条规则。') {
+        const upgraded = newErrors.some((item) => item.line === oldError.line && item.code === 'FFR105');
+        if (upgraded) continue;
+      }
       if (!matched) return `旧实现 error 诊断丢失：${oldError.code}@${oldError.line}（${oldError.message}）`;
     }
   }

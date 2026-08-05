@@ -9,14 +9,14 @@ import {
   OPERATOR_MAP, INVERSE_OPERATOR, stripComment, splitTopLevel, literal,
   normalizeReference, isFieldReference, fieldRef, componentRef, parseRefs,
   parseCondition, parseCanonicalAction, parseLegacyAction, inverseCondition,
-  createRule, diagnostic, lintRules,
+  createRule, diagnostic, lintRules, structuralDiagnostics, unbalancedParenDiagnostics,
 } from './parserRegex';
 
 export {
   OPERATOR_MAP, INVERSE_OPERATOR, stripComment, splitTopLevel, literal,
   normalizeReference, isFieldReference, fieldRef, componentRef, parseRefs,
   parseCondition, parseCanonicalAction, parseLegacyAction, inverseCondition,
-  createRule, diagnostic, lintRules,
+  createRule, diagnostic, lintRules, structuralDiagnostics, unbalancedParenDiagnostics,
 };
 
 export interface ParsedActions { actions: ActionConfig[]; diagnostics: Array<{ message: string; code: string; severity: 'error' | 'warning' | 'info'; suggestion?: string }>; }
@@ -68,6 +68,9 @@ export function compileBehaviorDsl(source: string, context: BehaviorDslCompileCo
     let line = stripComment(raw).trim();
     if (!line) return;
 
+    const unbalanced = unbalancedParenDiagnostics(lineNumber, line);
+    if (unbalanced.length) diagnostics.push(...unbalanced);
+
     // 旧语法 otherwise → else（FFR100）
     let legacyOtherwise = false;
     if (/^otherwise\s*->/i.test(line)) {
@@ -79,6 +82,12 @@ export function compileBehaviorDsl(source: string, context: BehaviorDslCompileCo
     const parsed = parseLine(line);
     const statement = parsed?.statement;
     if (!statement) {
+      const structural = structuralDiagnostics(lineNumber, line);
+      if (structural.length) {
+        diagnostics.push(...structural);
+        previousConditional = null;
+        return;
+      }
       diagnostics.push(diagnostic(lineNumber, 'FFR000', '无法识别这条规则。'));
       previousConditional = null;
       return;

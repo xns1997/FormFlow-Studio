@@ -97,10 +97,14 @@ export function getFormEventContractMember(name: string) {
   return FORM_EVENT_CONTRACT.find((member) => member.name === name);
 }
 
+function memberJsDoc(member: FormEventContractMember) {
+  return `/** ${member.description} */`;
+}
+
 export function renderFormEventContractInterface(name = 'FormEventCanonicalContract') {
   const members = FORM_EVENT_CONTRACT.map((member) => member.kind === 'method'
-    ? `  ${member.signature};`
-    : `  ${member.name}: ${member.type};`);
+    ? `${memberJsDoc(member)}\n  ${member.signature};`
+    : `${memberJsDoc(member)}\n  ${member.name}: ${member.type};`);
   return `interface ${name} {\n${members.join('\n')}\n}`;
 }
 
@@ -108,7 +112,7 @@ export function renderFormEventContractAliases() {
   return FORM_EVENT_CONTRACT
     .filter((member) => member.topLevelAlias)
     .map((member) => member.kind === 'method'
-      ? `declare function ${member.signature};`
-      : `declare const ${member.name}: ${member.type};`)
+      ? `${memberJsDoc(member)}\ndeclare function ${member.signature};`
+      : `${memberJsDoc(member)}\ndeclare const ${member.name}: ${member.type};`)
     .join('\n');
 }

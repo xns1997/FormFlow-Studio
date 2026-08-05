@@ -9,6 +9,7 @@ import {
   createEventContextSuggestions,
   type EventFieldDescriptor,
 } from '../../components/codeEditorSuggestions';
+import { registerEventJsLanguageServices } from '../../components/eventJsLanguageServices';
 import { useProjectStore } from '../../project/store';
 import type { BehaviorFile } from '../../project/types';
 import { getTemplatesByCategory, type BehaviorTemplate } from '../../services/config/behaviorTemplates';
@@ -178,6 +179,25 @@ export default function BehaviorPage() {
 
   const editingScript = scripts.find((s) => s.id === editingId);
   const editingDoc = getBehaviorEventDoc(editingScript?.event, 'script');
+  const editorSuggestions = useMemo(() => {
+    if (!editingScript) return [];
+    return createEventContextSuggestions({
+      fields: fieldDescriptors,
+      components: designComponents,
+      tables: project?.srcTable || [],
+      workflows,
+      eventName: editingScript.event,
+    });
+  }, [editingScript, fieldDescriptors, designComponents, project?.srcTable, workflows]);
+  const editorServicesContext = useMemo(() => editingScript
+    ? {
+        fields: fieldDescriptors,
+        components: designComponents,
+        tables: project?.srcTable || [],
+        workflows,
+        suggestions: editorSuggestions,
+      }
+    : null, [editingScript, fieldDescriptors, designComponents, project?.srcTable, workflows, editorSuggestions]);
 
   useEffect(() => {
     const scriptId = searchParams.get('script');
@@ -422,15 +442,12 @@ export default function BehaviorPage() {
                   }),
                   createChainApiExtraLib(`inmemory://model/behavior-${editingScript.id}-chain.d.ts`),
                 ]}
-                suggestions={createEventContextSuggestions({
-                  fields: fieldDescriptors,
-                  workflows,
-                  eventName: editingScript.event,
-                })}
-                autoSuggestPolicy="explicit"
-                suggestionTriggerCharacters={['.', "'", '"', '(', '$']}
+                suggestions={editorSuggestions}
+                providers={editorServicesContext ? [(monaco, editor) => registerEventJsLanguageServices(monaco, editor, editorServicesContext)] : []}
+                autoSuggestPolicy="contextual"
+                suggestionTriggerCharacters={['.', "'", '"', '(', '{', ':', ',', '$']}
                 lineNumbers
-                options={{ minimap: { enabled: true }, folding: true, fontSize: 13, lineHeight: 21 }}
+                options={{ minimap: { enabled: true }, folding: true, inlineSuggest: { enabled: true }, fontSize: 13, lineHeight: 21 }}
                 fullscreen
               />
             )

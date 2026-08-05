@@ -194,6 +194,53 @@ export function inverseCondition(condition: ConditionConfig): ConditionConfig { 
 export function createRule(id: string, name: string, trigger: BehaviorRule['trigger'], conditions: ConditionConfig[], actions: ActionConfig[]): BehaviorRule { return { id, name, enabled: true, priority: 20, trigger, conditions, actions, sideEffects: [] }; }
 export function diagnostic(line: number, code: string, message: string, severity: BehaviorDslDiagnosticSeverity = 'error', column = 1, suggestion?: string): BehaviorDslDiagnostic { return { line, column, severity, code, message, suggestion }; }
 
+/**
+ * 行内括号深度（字符串外的 `(`/`)` 计数）。用于 FFR106 结构诊断与
+ * 编辑器的「补全右括号」快速修复；返回 0 表示平衡。
+ */
+export function parenBalance(source: string): number {
+  let depth = 0;
+  let quote = '';
+  for (let index = 0; index < source.length; index += 1) {
+    const char = source[index];
+    if (quote) {
+      if (char === '\\') index += 1;
+      else if (char === quote) quote = '';
+      continue;
+    }
+    if (char === '"' || char === "'") quote = char;
+    else if (char === '(') depth += 1;
+    else if (char === ')') depth -= 1;
+  }
+  return depth;
+}
+
+/**
+ * 结构诊断（FFR105 缺 `->`、FFR106 括号不闭合）。
+ * FFR106 对每一行做字符串感知的括号平衡检查（放在 parseLine 之前，
+ * 因为多余右括号会被语法正文捕获而绕过 parseLine 的失败分支）；
+ * FFR105 只在 parseLine 判定该行不可解析时调用，避免与既有 FFR000/FFR001 重复。
+ */
+export function unbalancedParenDiagnostics(lineNumber: number, line: string): BehaviorDslDiagnostic[] {
+  const depth = parenBalance(line);
+  if (depth > 0) {
+    return [diagnostic(lineNumber, 'FFR106', `括号未闭合，还缺少 ${depth} 个右括号。`, 'error', line.length + 1, `${line}${')'.repeat(depth)}`)];
+  }
+  if (depth < 0) {
+    return [diagnostic(lineNumber, 'FFR106', `存在 ${-depth} 个多余的右括号。`, 'error', 1, line.replace(/\)+$/, ''))];
+  }
+  return [];
+}
+
+export function structuralDiagnostics(lineNumber: number, line: string): BehaviorDslDiagnostic[] {
+  const hasArrow = line.includes('->');
+  const statementStart = /^(when|else|otherwise|on|before)\b/i;
+  if (!hasArrow && !/^compute\b/i.test(line) && statementStart.test(line)) {
+    return [diagnostic(lineNumber, 'FFR105', '规则缺少 -> 动作分隔符。', 'error', 1, `${line} -> <动作>`)];
+  }
+  return [];
+}
+
 export function compileBehaviorDslRegex(source: string, context: BehaviorDslCompileContext = {}): BehaviorDslCompilation {
   const rules: BehaviorRule[] = [];
   const diagnostics: BehaviorDslDiagnostic[] = [];

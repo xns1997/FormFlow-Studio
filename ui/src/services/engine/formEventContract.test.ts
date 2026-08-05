@@ -21,6 +21,7 @@ test('runtime aliases, editor and docs are generated from the public form event 
   for (const member of FORM_EVENT_CONTRACT) {
     assert.ok(suggestions.has(`ctx.${member.name}`), `editor missing ctx.${member.name}`);
     assert.ok(documented.has(`ctx.${member.name}`), `docs missing ctx.${member.name}`);
+    assert.ok(renderFormEventContractInterface().includes(`/** ${member.description} */`), `jsdoc missing ${member.name}`);
     const exactDeclaration = member.kind === 'method'
       ? `  ${member.signature};`
       : `  ${member.name}: ${member.type};`;

@@ -22,6 +22,7 @@ import {
   createEventContextSuggestions,
   type EventFieldDescriptor,
 } from '../../components/codeEditorSuggestions';
+import { registerEventJsLanguageServices } from '../../components/eventJsLanguageServices';
 import { getTemplatesByCategory, type BehaviorTemplate } from '../../services/config/behaviorTemplates';
 import Modal, { ModalHeader } from '../../components/Modal';
 import { AntdCompatSelect } from '../../components/AntdFormControls';
@@ -617,6 +618,25 @@ export default function UnifiedEditorPage() {
     const globalFound = globalBehaviors.find((b) => b.id === editingBehaviorId);
     return globalFound ? { behavior: globalFound, scope: 'global' as const } : null;
   }, [editingBehaviorId, editingBehaviorScope, activeBehaviors, globalBehaviors]);
+  const behaviorEditorSuggestions = useMemo(() => {
+    if (!editingBehavior) return [];
+    return createEventContextSuggestions({
+      fields: fieldDescriptors,
+      components: designer.components,
+      tables: project?.srcTable || [],
+      workflows: allWorkflows,
+      eventName: editingBehavior.behavior.event,
+    });
+  }, [editingBehavior, fieldDescriptors, designer.components, project?.srcTable, allWorkflows]);
+  const behaviorEditorServices = useMemo(() => editingBehavior
+    ? {
+        fields: fieldDescriptors,
+        components: designer.components,
+        tables: project?.srcTable || [],
+        workflows: allWorkflows,
+        suggestions: behaviorEditorSuggestions,
+      }
+    : null, [editingBehavior, fieldDescriptors, designer.components, project?.srcTable, allWorkflows, behaviorEditorSuggestions]);
 
   useEffect(() => {
     setBehaviorDraft(editingBehavior?.behavior.code || '');
@@ -1119,15 +1139,12 @@ export default function UnifiedEditorPage() {
                       fields: fieldDescriptors,
                       eventName: editingBehavior.behavior.event,
                     }), createChainApiExtraLib(`inmemory://behavior-${editingBehavior.behavior.id}-chain.d.ts`)]}
-                    suggestions={createEventContextSuggestions({
-                      fields: fieldDescriptors,
-                      workflows: allWorkflows,
-                      eventName: editingBehavior.behavior.event,
-                    })}
-                    autoSuggestPolicy="explicit"
-                    suggestionTriggerCharacters={['.', "'", '"', '(', '$']}
+                    suggestions={behaviorEditorSuggestions}
+                    providers={behaviorEditorServices ? [(monaco, editor) => registerEventJsLanguageServices(monaco, editor, behaviorEditorServices)] : []}
+                    autoSuggestPolicy="contextual"
+                    suggestionTriggerCharacters={['.', "'", '"', '(', '{', ':', ',', '$']}
                     lineNumbers
-                    options={{ minimap: { enabled: true }, folding: true, fontSize: 13, lineHeight: 21 }}
+                    options={{ minimap: { enabled: true }, folding: true, inlineSuggest: { enabled: true }, fontSize: 13, lineHeight: 21 }}
                     fullscreen
                   />
                 </div>

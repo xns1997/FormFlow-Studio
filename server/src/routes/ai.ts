@@ -13,6 +13,7 @@ import { applyRuleProposal, createRuleProposal, formContext, inferRuleAgentInten
 import { canAccessProject, type ProjectAccess } from '../services/permission';
 import { readProjectPackage } from '../services/project-package-store';
 import { projectAgentV4Router } from './project-agent-v4';
+import { formatCode } from '../services/code-formatter';
 
 const router = Router();
 router.use('/project-agent/v4', projectAgentV4Router);
@@ -363,5 +364,13 @@ router.post('/agents/:id/runs', async (req: AuthRequest, res) => {
 router.get('/runs/:runId', async (req: AuthRequest, res) => { try { const run = await llmProviderClient.getAgent(param(req.params.runId), requestIdOf(req)); const context = contextOf(req); if ((run.tenantId && run.tenantId !== context.tenantId) || (run.projectId && run.projectId !== context.projectId)) return res.status(403).json({ error: '无权访问该 Agent run' }); res.json(run); } catch (error) { sendError(res, error, requestIdOf(req)); } });
 router.post('/runs/:runId/resume', async (req: AuthRequest, res) => { try { const context = contextOf(req); const runId = param(req.params.runId); const existing = await llmProviderClient.getAgent(runId, requestIdOf(req)); if ((existing.tenantId && existing.tenantId !== context.tenantId) || (existing.projectId && existing.projectId !== context.projectId)) return res.status(403).json({ error: '无权恢复该 Agent run' }); const profile = llmManagement.resolveProfile(String(req.body.profileId || ''), context); const route = profile.routes[0]; if (!route) throw new Error('模型 Profile 没有路由'); res.json(await llmProviderClient.resumeAgent(runId, req.body.toolResults || [], requestIdOf(req), llmManagement.resolveConnection(route, context))); } catch (error) { sendError(res, error, requestIdOf(req)); } });
 router.get('/plugins', adminOnly, async (req: AuthRequest, res) => { try { res.json(await llmProviderClient.listPlugins(requestIdOf(req))); } catch (error) { sendError(res, error, requestIdOf(req)); } });
+
+router.post('/code-format', async (req: AuthRequest, res) => {
+  try {
+    res.json(await formatCode(String(req.body?.language || ''), String(req.body?.code ?? '')));
+  } catch (error) {
+    res.status(422).json({ error: error instanceof Error ? error.message : String(error), requestId: requestIdOf(req) });
+  }
+});
 
 export { router as aiRouter };

@@ -16,6 +16,7 @@ export {
 
 export {
   compileBehaviorDslRegex, lintRules,
+  parenBalance, structuralDiagnostics, unbalancedParenDiagnostics,
 } from './parserRegex';
 
 export {

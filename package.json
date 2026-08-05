@@ -1,7 +1,7 @@
 {
   "name": "formflow-studio",
   "private": true,
-  "version": "1.13.0",
+  "version": "1.14.0",
   "type": "module",
   "bin": {
     "formflow": "bin/formflow",
@@ -66,6 +66,7 @@
     "mysql2": "^3.22.6",
     "node-cron": "^4.6.0",
     "nodemailer": "^9.0.3",
+    "oxfmt": "^0.62.0",
     "pg": "^8.22.0",
     "pinyin-pro": "3.28.1",
     "react": "^19.2.7",

@@ -24,6 +24,9 @@ export interface CodeEditorExtraLib {
   filePath: string;
 }
 
+/** 语言服务注册器：在编辑器实例挂载时调用，返回的清理函数随实例 dispose 执行。 */
+export type CodeEditorProvider = (monaco: Monaco, editor: editor.IStandaloneCodeEditor) => { dispose(): void } | void;
+
 export interface CodeEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -51,6 +54,7 @@ export interface CodeEditorProps {
   onFocus?: () => void;
   onBlur?: () => void;
   extraLibs?: CodeEditorExtraLib[];
+  providers?: CodeEditorProvider[];
   autoSuggestPolicy?: 'explicit' | 'contextual' | 'json-contextual';
   suggestionContextResolver?: (context: { fullPrefix: string; linePrefix: string; completionPrefix: string }) => string;
 }
@@ -320,12 +324,14 @@ export default function CodeEditor({
   onFocus,
   onBlur,
   extraLibs,
+  providers,
   autoSuggestPolicy = 'explicit',
   suggestionContextResolver,
 }: CodeEditorProps) {
   const [fullOpen, setFullOpen] = useState(false);
   const modelPath = useId();
   const suggestionsRef = useRef(suggestions);
+  const providersRef = useRef(providers);
   const handlersRef = useRef({ onFocus, onBlur });
   const extraLibsRef = useRef(extraLibs);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
@@ -335,6 +341,10 @@ export default function CodeEditor({
   useEffect(() => {
     suggestionsRef.current = suggestions;
   }, [suggestions]);
+
+  useEffect(() => {
+    providersRef.current = providers;
+  }, [providers]);
 
   useEffect(() => {
     extraLibsRef.current = extraLibs;
@@ -540,6 +550,11 @@ export default function CodeEditor({
         }
       }));
     }
+
+    (providersRef.current || []).forEach((register) => {
+      const cleanup = register(monaco, instance);
+      if (cleanup) disposables.push(cleanup);
+    });
 
     instance.onDidDispose(() => {
       if (editorRef.current === instance) editorRef.current = null;

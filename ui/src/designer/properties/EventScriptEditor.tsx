@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import type { DesignComponent, SrcTableEntry, WorkflowFile } from '../../project/types';
 import { getBehaviorEventDoc, getEventReferenceShortcuts } from '../../services/io/behaviorDocs';
 import { createChainApiExtraLib, createEventContextExtraLib, createEventContextSuggestions, type EventFieldDescriptor } from '../../components/codeEditorSuggestions';
+import { registerEventJsLanguageServices } from '../../components/eventJsLanguageServices';
 import CodeEditor from '../../components/CodeEditor';
 import Modal, { ModalFooter, ModalHeader } from '../../components/Modal';
 import { buildDocsPath } from '../../services/io/routes';
@@ -48,6 +49,21 @@ export function EventScriptEditorSection({
   const eventDoc = getBehaviorEventDoc(evt.key, 'control');
   const currentFieldDescriptor = fieldDescriptors.find((field) => field.name === currentField);
   const lineCount = eventCode.trim() ? eventCode.trim().split('\n').length : 0;
+  const eventSuggestions = useMemo(() => createEventContextSuggestions({
+    fields: fieldDescriptors,
+    components,
+    tables,
+    workflows,
+    eventName: evt.key,
+    currentField,
+  }), [fieldDescriptors, components, tables, workflows, evt.key, currentField]);
+  const eventServicesContext = useMemo(() => ({
+    fields: fieldDescriptors,
+    components,
+    tables,
+    workflows,
+    suggestions: eventSuggestions,
+  }), [fieldDescriptors, components, tables, workflows, eventSuggestions]);
   const closeWorkbench = () => {
     setDocModal(null);
     setOpen(false);
@@ -270,15 +286,11 @@ export function EventScriptEditorSection({
           }),
           createChainApiExtraLib(`inmemory://model/form-event-${component.id}-${evt.key}-chain.d.ts`),
         ]}
-        suggestions={createEventContextSuggestions({
-          fields: fieldDescriptors,
-          workflows,
-          eventName: evt.key,
-          currentField,
-        })}
-        autoSuggestPolicy="explicit"
-        suggestionTriggerCharacters={['.', "'", '"', '(']}
-        options={{ folding: true, lineNumbersMinChars: 2, scrollbar: { vertical: 'hidden', horizontal: 'auto' } }}
+        suggestions={eventSuggestions}
+        providers={[(monaco, editor) => registerEventJsLanguageServices(monaco, editor, eventServicesContext)]}
+        autoSuggestPolicy="contextual"
+        suggestionTriggerCharacters={['.', "'", '"', '(', '{', ':', ',']}
+        options={{ folding: true, lineNumbersMinChars: 2, inlineSuggest: { enabled: true }, scrollbar: { vertical: 'hidden', horizontal: 'auto' } }}
         title={`${controlLabel} · ${evt.label}`}
         onChange={onChange}
       />
@@ -341,15 +353,11 @@ export function EventScriptEditorSection({
                   }),
                   createChainApiExtraLib(`inmemory://model/form-event-${component.id}-${evt.key}-workbench-chain.d.ts`),
                 ]}
-                suggestions={createEventContextSuggestions({
-                  fields: fieldDescriptors,
-                  workflows,
-                  eventName: evt.key,
-                  currentField,
-                })}
-                autoSuggestPolicy="explicit"
-                suggestionTriggerCharacters={['.', "'", '"', '(']}
-                options={{ folding: true, lineNumbersMinChars: 2, scrollbar: { vertical: 'auto', horizontal: 'auto' } }}
+                suggestions={eventSuggestions}
+                providers={[(monaco, editor) => registerEventJsLanguageServices(monaco, editor, eventServicesContext)]}
+                autoSuggestPolicy="contextual"
+                suggestionTriggerCharacters={['.', "'", '"', '(', '{', ':', ',']}
+                options={{ folding: true, lineNumbersMinChars: 2, inlineSuggest: { enabled: true }, scrollbar: { vertical: 'auto', horizontal: 'auto' } }}
                 title={`${controlLabel} · ${evt.label}`}
                 onChange={onChange}
               />

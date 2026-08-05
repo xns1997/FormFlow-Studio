@@ -1,6 +1,6 @@
 import type { CodeEditorSuggestion } from './CodeEditor';
 import type { CodeEditorExtraLib } from './CodeEditor';
-import type { WorkflowFile } from '../project/types';
+import type { DesignComponent, SrcTableEntry, WorkflowFile } from '../project/types';
 import {
   getBehaviorEventDoc,
   getEventDetailType,
@@ -189,6 +189,8 @@ function toTsType(type?: string) {
 
 export function createEventContextSuggestions(options: {
   fields?: Array<string | EventFieldDescriptor>;
+  components?: DesignComponent[];
+  tables?: SrcTableEntry[];
   workflows?: WorkflowFile[];
   eventName?: string;
   currentField?: string;
@@ -290,9 +292,43 @@ export function createEventContextSuggestions(options: {
       { label: `ctx.controls.${field.name}.disabled`, kind: 'Field', detail: `控件禁用句柄：${field.name}`, sortText: `13${index.toString().padStart(3, '0')}`, scope: 'ctx-member' },
       { label: `ctx.controls.${field.name}.visible`, kind: 'Field', detail: `控件显隐句柄：${field.name}`, sortText: `14${index.toString().padStart(3, '0')}`, scope: 'ctx-member' },
       { label: field.name, insertText: field.name, kind: 'Value', detail: `字段名${field.type ? ` · ${toTsType(field.type)}` : ''}`, sortText: `15${index.toString().padStart(3, '0')}`, scope: 'field-name' },
+      { label: field.name, insertText: field.name, kind: 'Property', detail: `对象键：${field.name}`, sortText: `159${index.toString().padStart(3, '0')}`, scope: 'json-object-key' },
       { label: `getValue ${field.name}`, insertText: `getValue(${quoted(field.name)})`, kind: 'Function', detail: `读取 ${field.name}`, sortText: `2${index.toString().padStart(3, '0')}`, scope: 'top-level' },
       { label: `setValue ${field.name}`, insertText: `await setValue(${quoted(field.name)}, value)`, kind: 'Function', detail: `设置 ${field.name}`, sortText: `3${index.toString().padStart(3, '0')}`, scope: 'top-level' },
     ]),
+    ...(options.components || []).flatMap<CodeEditorSuggestion>((component, index) => {
+      const name = String(component.fieldBinding || component.props?.name || component.id);
+      const label = String(component.props?.label || name);
+      return [
+        { label: component.id, insertText: component.id, kind: 'Reference', detail: `控件：${label} · ${component.type}`, sortText: `16${index.toString().padStart(3, '0')}`, scope: 'component-name' },
+        { label: name, insertText: name, kind: 'Reference', detail: `控件句柄：${label} · ${component.type}`, sortText: `17${index.toString().padStart(3, '0')}`, scope: 'ctx-controls-member' },
+        { label: `ctx.controls.${name}`, kind: 'Field', detail: `控件句柄：${label} · ${component.type}`, sortText: `171${index.toString().padStart(3, '0')}`, scope: 'ctx-member' },
+      ];
+    }),
+    ...(options.tables || []).flatMap<CodeEditorSuggestion>((table, index) => ({
+      label: table.fileName || table.id,
+      insertText: table.id,
+      kind: 'Reference',
+      detail: `数据表：${table.id}`,
+      sortText: `18${index.toString().padStart(3, '0')}`,
+      scope: 'table-name',
+    })),
+    ...(options.workflows || []).map<CodeEditorSuggestion>((workflow, index) => ({
+      label: workflow.name,
+      insertText: workflow.id,
+      kind: 'Reference',
+      detail: `流程：${workflow.name} · ${workflow.id}`,
+      sortText: `19${index.toString().padStart(3, '0')}`,
+      scope: 'workflow-name',
+    })),
+    ...['info', 'success', 'warning', 'error'].map<CodeEditorSuggestion>((level, index) => ({
+      label: level,
+      insertText: level,
+      kind: 'EnumMember',
+      detail: `${level} 消息级别`,
+      sortText: `195${index}`,
+      scope: 'message-level',
+    })),
     ...workflows.map<CodeEditorSuggestion>((workflow, index) => ({
       label: `运行流程 ${workflow.name}`,
       insertText: `await runWorkflow(${quoted(workflow.id)}, { value })`,
