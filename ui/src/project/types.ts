@@ -41,6 +41,7 @@ export interface FormEntry {
   updatedAt: string;
 }
 
+/** 创建表单入口。 */
 export function createFormEntry(name: string): FormEntry {
   const now = new Date().toISOString();
   return {
@@ -177,6 +178,7 @@ export interface SheetBehaviorEntry {
   updatedAt: string;
 }
 
+/** 默认项目设置。 */
 export function createDefaultProjectSettings(): ProjectSettings {
   return {
     behavior: {
@@ -207,6 +209,7 @@ export function createDefaultProjectSettings(): ProjectSettings {
   };
 }
 
+/** 默认发布配置。 */
 export function createDefaultProjectRelease(): ProjectRelease {
   return {
     mode: 'design',
@@ -216,6 +219,7 @@ export function createDefaultProjectRelease(): ProjectRelease {
   };
 }
 
+/** 归一化发布配置。 */
 export function normalizeProjectRelease(release: ProjectRelease | undefined, forms: FormEntry[] = [], tables: SrcTableEntry[] = []): ProjectRelease {
   const defaults = createDefaultProjectRelease();
   return {
@@ -226,6 +230,7 @@ export function normalizeProjectRelease(release: ProjectRelease | undefined, for
   };
 }
 
+/** 归一化项目设置。 */
 export function normalizeProjectSettings(settings: ProjectSettings | undefined): ProjectSettings {
   const defaults = createDefaultProjectSettings();
   return {
@@ -395,6 +400,7 @@ export interface TableConfig {
   }>;
 }
 
+/** 默认表配置。 */
 export function createDefaultTableConfig(id: string, tableName: string): TableConfig {
   return {
     id,
@@ -422,6 +428,7 @@ export function createDefaultTableConfig(id: string, tableName: string): TableCo
   };
 }
 
+/** 列记录工厂。 */
 export function createColumnRecord(tableId: string, name: string, index: number): ColumnRecord {
   return {
     id: `col_${tableId}_${index}`,
@@ -460,6 +467,7 @@ export function createColumnRecord(tableId: string, name: string, index: number)
   };
 }
 
+/** 行记录工厂。 */
 export function createRowRecord(tableId: string, rowIndex: number): RowRecord {
   return {
     id: `row_${tableId}_${rowIndex}`,
@@ -846,6 +854,7 @@ export interface FormWindowConfig {
   props: Record<string, any>;
 }
 
+/** 默认表单窗口配置。 */
 export function createDefaultFormWindow(title = '表单'): FormWindowConfig {
   return {
     x: 40,
@@ -939,6 +948,7 @@ export interface DesignBinding {
   config: Record<string, any>;
 }
 
+/** 创建设计稿。 */
 export function createDesignFile(name: string, options: Partial<Pick<DesignFile, 'formMode' | 'templateKey'>> = {}): DesignFile {
   return {
     id: `design_${Date.now()}`,
@@ -1039,16 +1049,29 @@ export interface SheetBehaviorsFile {
   exportedAt: string;
 }
 
+/** 项目包扩展名。 */
 export const PROJECT_PACKAGE_EXTENSION = '.formflow';
+/** 表单目录。 */
 export const FORMS_DIR = 'forms';
+/** 数据目录。 */
 export const DATA_DIR = 'data';
+/** 行为目录。 */
 export const BEHAVIORS_DIR = 'behaviors';
+/** 流程目录。 */
 export const WORKFLOWS_DIR = 'workflows';
+/** 输出目录。 */
 export const OUTPUTS_DIR = 'outputs';
+/** 表单索引文件。 */
 export const FORM_INDEX_FILE = '_index.json';
+/** 数据索引文件。 */
 export const DATA_INDEX_FILE = '_index.json';
+/** 行为文件。 */
 export const BEHAVIORS_FILE = 'behaviors.json';
+/** 流程文件。 */
 export const WORKFLOWS_FILE = 'workflows.json';
+/** 输出文件。 */
 export const OUTPUTS_FILE = 'outputs.json';
+/** 项目配置文件。 */
 export const PROJECT_CONFIG_FILE = 'project.json';
+/** 发布配置文件。 */
 export const PROJECT_RELEASE_FILE = 'release.json';

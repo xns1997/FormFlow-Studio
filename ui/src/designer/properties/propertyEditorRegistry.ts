@@ -48,7 +48,9 @@ const editors = new Map<string, PropertyEditorDescriptor>();
 
 /** 注册属性编辑器（按类型或描述符）。 */
 export function registerPropertyEditor(kind: PropertyEditorKind | string, component: PropertyEditorComponent): void;
+/** 注册属性编辑器（按描述符重载）。 */
 export function registerPropertyEditor(descriptor: PropertyEditorDescriptor): void;
+/** 注册属性编辑器（按类型或描述符）。 */
 export function registerPropertyEditor(
   kindOrDescriptor: PropertyEditorKind | string | PropertyEditorDescriptor,
   component?: PropertyEditorComponent,

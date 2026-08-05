@@ -33,6 +33,7 @@ export interface ToolDomainHooks {
 const valueShape = (value: unknown) => value === null ? 'null' : Array.isArray(value) ? `array(${value.length})` : typeof value === 'object' ? 'object' : `${typeof value}${typeof value === 'string' ? `(${value.length})` : ''}`;
 const clone = (value: Record<string, any>) => structuredClone(value);
 
+/** 参数形态归一化（类型补全/去未知键）。 */
 export function shape(value: unknown): unknown {
   if (Array.isArray(value)) return value.length ? [shape(value[0])] : [];
   if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([key, entry]) => [key, shape(entry)]));
@@ -93,6 +94,7 @@ function inspect(value: any, schema: any, path: string, normalizations: ToolArgu
   return value;
 }
 
+/** 按 schema 编译工具参数。 */
 export function compileToolArguments(toolName: string, original: Record<string, any>, schema: Record<string, any>): ToolSchemaContractResult {
   const normalizations: ToolArgumentNormalization[] = []; const issues: ToolArgumentIssue[] = []; const argumentsValue = inspect(clone(original), schema, '', normalizations, issues);
   const first = issues[0];
@@ -130,11 +132,13 @@ export function compileToolArgumentsPipeline(toolName: string, original: Record<
   return { ok: true, arguments: current, normalizations };
 }
 
+/** 工具契约摘要。 */
 export function toolContractSummary(schema: Record<string, any>) {
   const required = (schema.required || []).join('、') || '无'; const properties = Object.entries(schema.properties || {}).slice(0, 24).map(([key, value]: [string, any]) => `${key}:${value.type || 'any'}${value.enum ? `[${value.enum.join('|')}]` : ''}`);
   return `参数契约：必填 ${required}；字段 ${properties.join('，') || '无'}`;
 }
 
+/** 参数失败指纹（幂等诊断）。 */
 export function parameterFailureFingerprint(toolName: string, error: any, argumentsValue: unknown) {
   const shape = (value: any): any => Array.isArray(value) ? value.slice(0, 8).map(shape) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, shape(value[key])])) : typeof value;
   return createHash('sha256').update(JSON.stringify({ toolName, code: error?.code, path: error?.path, shape: shape(argumentsValue) })).digest('hex').slice(0, 20);

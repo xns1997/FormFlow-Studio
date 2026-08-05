@@ -14,6 +14,7 @@ export interface MockGenerationInput {
   scenarios?: MockScenario[];
 }
 
+/** 检查按钮动作引用（工作流存在性）。 */
 export function inspectButtonAction(component: any, workflowIds: Set<string>) {
   const events = component?.props?.events;
   const eventEntries = events && typeof events === 'object' && !Array.isArray(events) ? Object.entries(events) : [];
@@ -100,6 +101,7 @@ function findSheet(project: JsonObject, tableId: string, sheetName: string) {
   return { table, sheet };
 }
 
+/** 分析 Mock 数据画像。 */
 export function profileMockData(project: JsonObject, input: MockGenerationInput) {
   const { sheet } = findSheet(project, input.tableId, input.sheetName);
   const keys = Array.isArray(sheet.config?.keyFields) ? sheet.config.keyFields : [];
@@ -120,6 +122,7 @@ export function profileMockData(project: JsonObject, input: MockGenerationInput)
   };
 }
 
+/** 按画像生成 Mock 数据。 */
 export function generateMockData(project: JsonObject, input: MockGenerationInput) {
   const { table, sheet } = findSheet(project, input.tableId, input.sheetName);
   const rowCount = Math.min(Math.max(Number(input.rowCount || 20), 1), 1000);
@@ -182,6 +185,7 @@ function requirementStyleCases(project: JsonObject) {
   return cases;
 }
 
+/** 生成项目测试套件（种子化）。 */
 export function generateProjectTestSuite(project: JsonObject, seed = 20260715) {
   const cases = (project.forms || []).flatMap((form: any) => {
     const fields = fieldComponents(form);
@@ -213,6 +217,7 @@ function evaluateBusinessAssertion(project: JsonObject, assertion: string) {
   return false;
 }
 
+/** 项目质量检查（按钮/表单/规则引用）。 */
 export function inspectProjectQuality(project: JsonObject) {
   const validation = validateProjectModel(project);
   const diagnostics: any[] = [...validation.errors.map((item) => ({ severity: 'error', ...item }))];
@@ -265,6 +270,7 @@ export function inspectProjectQuality(project: JsonObject) {
   return { ready: blockers.length === 0, validation, diagnostics, tasks, blockers, latestRun };
 }
 
+/** 运行项目测试套件。 */
 export function runProjectTests(project: JsonObject, suite?: any) {
   const activeSuite = suite || project.testing?.suites?.at?.(-1) || generateProjectTestSuite(project);
   const validation = validateProjectModel(project);

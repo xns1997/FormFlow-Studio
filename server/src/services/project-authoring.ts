@@ -71,6 +71,7 @@ export function normalizeFormComponents(components: any[]): any[] {
   });
 }
 
+/** 归一化表单设计（窗体/控件/绑定）。 */
 export function normalizeFormDesign(design: JsonObject): JsonObject {
   const normalized = normalizeFormComponents(Array.isArray(design?.components) ? design.components : []);
   const legacyForms = normalized.filter((component) => component.type === 'form');
@@ -102,6 +103,7 @@ function stable(value: any): any {
   return Object.fromEntries(Object.keys(value).sort().filter((key) => value[key] !== undefined).map((key) => [key, stable(value[key])]));
 }
 
+/** 项目 revision（哈希或显式字段）。 */
 export function projectRevision(project: JsonObject): string {
   // `designs` and `behaviors` are read-time compatibility aliases derived from
   // canonical form/global-behavior resources. Excluding them keeps the revision
@@ -110,6 +112,7 @@ export function projectRevision(project: JsonObject): string {
   return createHash('sha256').update(JSON.stringify(stable(canonical))).digest('hex');
 }
 
+/** 读取项目（不存在抛 PROJECT_NOT_FOUND）。 */
 export function requireProject(projectId: string): JsonObject {
   if (!ID_RE.test(projectId)) throw toolError('INVALID_ID', 'projectId 必须匹配 [A-Za-z0-9_-]+', 'projectId');
   const project = readProjectPackage(projectId);
@@ -118,12 +121,14 @@ export function requireProject(projectId: string): JsonObject {
   return project;
 }
 
+/** 断言 baseRevision 与最新一致（不一致抛冲突）。 */
 export function assertRevision(project: JsonObject, baseRevision?: string) {
   if (!baseRevision) throw toolError('BASE_REVISION_REQUIRED', '修改已有项目必须提供 baseRevision', 'baseRevision');
   const current = projectRevision(project);
   if (current !== baseRevision) throw toolError('PROJECT_REVISION_CONFLICT', '项目已被其他操作修改，请重新读取后重试', 'baseRevision', { currentRevision: current });
 }
 
+/** 构造工具错误（错误码/路径/详情）。 */
 export function toolError(code: string, message: string, path?: string, details?: unknown) {
   return Object.assign(new Error(message), { code, path, details });
 }
@@ -254,6 +259,7 @@ export function auditFrozenProjectFields(project: JsonObject): ValidationIssue[]
   return errors;
 }
 
+/** 项目模型校验（结构/引用/主键）。 */
 export function validateProjectModel(project: JsonObject): ValidationReport {
   const errors: ValidationIssue[] = auditFrozenProjectFields(project);
   const forms = Array.isArray(project.forms) ? project.forms : [];
@@ -350,6 +356,7 @@ function copyPreservedData(fromRoot: string, toRoot: string, tables: any[]) {
   for (const name of readdirSync(sourceDir)) if (retained.has(name)) copyFileSync(join(sourceDir, name), join(targetDir, name));
 }
 
+/** 校验持久化项目来源（文件与内存一致性）。 */
 export function validatePersistedProjectSources(project: JsonObject): void {
   const root = projectPackagePath(project.config.id);
   for (const table of project.srcTable || []) {
@@ -368,6 +375,7 @@ export function validatePersistedProjectSources(project: JsonObject): void {
 
 export type ProjectSourceFile = { fileName: string; source?: string; buffer?: Buffer; consumeFileId?: string };
 
+/** 提交项目变更（快照 + revision 递增 + 持久化）。 */
 export function commitProject(project: JsonObject, sourceFiles: ProjectSourceFile[] = []) {
   const root = projectPackagePath(project.config.id);
   const existed = existsSync(root);
@@ -418,6 +426,7 @@ export function commitProject(project: JsonObject, sourceFiles: ProjectSourceFil
   return { project, revision: projectRevision(project), validation: report };
 }
 
+/** 创建空项目模型（元数据 + 空表/表单）。 */
 export function createEmptyProject(input: JsonObject): JsonObject {
   const now = new Date().toISOString();
   const id = String(input.id || '');
@@ -451,6 +460,7 @@ function makeSheet(name: string, rows: JsonObject[], config: JsonObject = {}) {
   return { name, rowCount: rows.length, colCount: headers.length, headers, columns: headers.map((header, index) => { const declared = declaredColumns.find((item) => String(item.name || item.id || '') === header); const values = rows.map((row) => row[header]); const present = values.filter((value) => value !== null && value !== undefined && value !== ''); return { name: header, index, dataType: declared?.dataType || declared?.type || inferType(values, header), nullable: declared?.nullable ?? present.length !== values.length, uniqueCount: new Set(present.map((value) => JSON.stringify(value))).size, sampleValues: present.slice(0, 5), ...(declared?.title ? { title: declared.title } : {}), ...(declared?.enum ? { enum: declared.enum } : {}) }; }), preview: rows, config: { id: config.id || name, tableName: name, keyFields: config.keyFields || config.key || [], readOnly: Boolean(config.readOnly), frozenRows: config.frozenRows || 0, frozenColumns: config.frozenColumns || 0, filterEnabled: config.filterEnabled ?? true, sortEnabled: config.sortEnabled ?? true } };
 }
 
+/** 由文件缓冲解析数据表。 */
 export function tableFromBuffer(input: {
   id: string;
   fileName: string;
@@ -483,6 +493,7 @@ function parseCsv(text: string): JsonObject[] {
   return XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]], { defval: null });
 }
 
+/** 由输入构造数据表（rows/CSV/文件）。 */
 export function tableFromInput(input: JsonObject): { table: JsonObject; sourceFiles: ProjectSourceFile[] } {
   const preflight = compileDataToolArguments('data_source.create', input);
   if (!preflight.ok) throw toolError(preflight.error.code, preflight.error.message, preflight.error.path, preflight.error);
@@ -516,6 +527,7 @@ export function tableFromInput(input: JsonObject): { table: JsonObject; sourceFi
   return { table: { id, fileName, fileSize: size, fileType, uploadedAt: now, dataHash: hash, sheets }, sourceFiles };
 }
 
+/** 序列化表来源（导出用）。 */
 export function serializeTableSource(project: JsonObject, tableId: string, sheetName: string) {
   const table = (project.srcTable || []).find((item: any) => item.id === tableId); if (!table) throw toolError('TABLE_NOT_FOUND', '数据表不存在', 'tableId');
   const target = (table.sheets || []).find((item: any) => item.name === sheetName); if (!target) throw toolError('SHEET_NOT_FOUND', 'Sheet 不存在', 'sheetName');
@@ -541,6 +553,7 @@ export function serializeTableSource(project: JsonObject, tableId: string, sheet
   return [{ buffer, fileName: table.fileName }];
 }
 
+/** 查询项目数据行（过滤/分页/排序）。 */
 export function queryProjectRows(project: JsonObject, input: JsonObject) {
   const table = (project.srcTable || []).find((item: any) => item.id === input.tableId); if (!table) throw toolError('TABLE_NOT_FOUND', `数据表 ${input.tableId} 不存在`, 'tableId');
   const sheet = (table.sheets || []).find((item: any) => item.name === input.sheetName) || table.sheets?.[0]; if (!sheet) throw toolError('SHEET_NOT_FOUND', 'Sheet 不存在', 'sheetName');
@@ -549,6 +562,7 @@ export function queryProjectRows(project: JsonObject, input: JsonObject) {
   return { headers: sheet.headers, ...queryRows({ rows, headers: sheet.headers || [], keyFields: sheet.config?.keyFields || [], page: input.page, pageSize, search: input.search, keySearch: input.keySearch, sortModel: input.sortModel, filterModel: input.filterModel }) };
 }
 
+/** Sheet 全量行数据。 */
 export function fullSourceRows(project: JsonObject, table: JsonObject, sheet: JsonObject): JsonObject[] {
   const source = join(projectPackagePath(project.config.id), 'data', basename(table.fileName)); if (!existsSync(source)) return sheet.preview || [];
   try {
@@ -558,6 +572,7 @@ export function fullSourceRows(project: JsonObject, table: JsonObject, sheet: Js
   } catch { return sheet.preview || []; }
 }
 
+/** 批量更新项目数据行（新增/修改/删除）。 */
 export function batchProjectRows(project: JsonObject, input: JsonObject) {
   const table = (project.srcTable || []).find((item: any) => item.id === input.tableId); if (!table) throw toolError('TABLE_NOT_FOUND', '数据表不存在', 'tableId');
   const sheet = (table.sheets || []).find((item: any) => item.name === input.sheetName); if (!sheet) throw toolError('SHEET_NOT_FOUND', 'Sheet 不存在', 'sheetName');
@@ -575,6 +590,7 @@ export function batchProjectRows(project: JsonObject, input: JsonObject) {
   return { total: next.length, dataVersion: dataVersion(next), applied: { adds: input.adds?.length || 0, updates: input.updates?.length || 0, deletes: input.deletes?.length || 0 } };
 }
 
+/** 由表生成表单（模板驱动）。 */
 export function generatedForm(table: JsonObject, sheet: JsonObject, input: JsonObject) {
   const now = new Date().toISOString(); const id = String(input.id || `form_${table.id}`); const mode = input.mode || 'edit';
   const components: JsonObject[] = [];
@@ -588,6 +604,7 @@ export function generatedForm(table: JsonObject, sheet: JsonObject, input: JsonO
   return { id, name: input.name || `${table.id} ${mode}`, design: { id: `${id}_design`, name: input.name || id, formMode: mode, ...(input.templateKey ? { templateKey: String(input.templateKey) } : {}), viewport: { zoom: 1, panX: 0, panY: 0 }, gridSize: 12, coordinateSpace: FORM_WINDOW_COORDINATE_SPACE, formWindow: growFormWindowToFit({ x: 40, y: 40, width: 900, height: Math.max(500, 140 + sheet.headers.length * 90), props: { title: input.name || `${table.id} 表单`, showFooter: false } }, components as any), components, bindings: [{ id: `${id}_binding`, sourceId: table.id, targetId: id, type: 'table', config: { tableId: table.id, sheetName: sheet.name } }], createdAt: now, updatedAt: now }, behaviors: [], ruleCode: '', createdAt: now, updatedAt: now };
 }
 
+/** 打包项目为 .formflow 缓冲（校验通过后压缩）。 */
 export async function packageProject(projectId: string): Promise<Buffer> {
   const project = requireProject(projectId); const report = validateProjectModel(project); if (!report.valid) throw toolError('PROJECT_VALIDATION_FAILED', report.errors[0].message, report.errors[0].path, report);
   validatePersistedProjectSources(project);
@@ -596,6 +613,7 @@ export async function packageProject(projectId: string): Promise<Buffer> {
   walk(root); return zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE', compressionOptions: { level: 9 }, platform: 'UNIX' });
 }
 
+/** 项目摘要（表/表单/流程统计）。 */
 export function projectSummary(project: JsonObject) {
   return { project: project.config, release: project.release, data: (project.srcTable || []).map((table: any) => ({ id: table.id, fileName: table.fileName, sheets: (table.sheets || []).map((sheet: any) => ({ name: sheet.name, rows: sheet.rowCount, columns: sheet.headers, keyFields: sheet.config?.keyFields || [], readOnly: !!sheet.config?.readOnly })) })), forms: (project.forms || []).map((form: any) => ({ id: form.id, name: form.name, mode: form.design?.formMode, components: form.design?.components?.length || 0 })), workflows: (project.workflows || []).map((flow: any) => ({ id: flow.id, name: flow.name, nodes: flow.nodes?.length || 0 })), behaviors: { global: project.globalBehaviors?.length || 0, sheets: project.sheetBehaviors?.length || 0, forms: (project.forms || []).reduce((count: number, form: any) => count + (form.behaviors?.length || 0), 0) }, outputs: project.outputs || [], testing: { suites: project.testing?.suites?.length || 0, fixtures: project.testing?.fixtures?.length || 0, runs: project.testing?.runs?.length || 0, latestPassed: project.testing?.runs?.at?.(-1)?.passed } };
 }

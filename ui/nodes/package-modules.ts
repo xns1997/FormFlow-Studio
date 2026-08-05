@@ -20,6 +20,7 @@ const executorModules = import.meta.glob<NodeExecutor>('./*/index.ts', {
   import: 'execute',
 });
 
+/** 节点执行器懒加载映射（specId → 加载器）。 */
 export const executorLoaders: Record<string, NodeExecutorLoader> = Object.fromEntries(
   Object.entries(executorModules).map(([path, load]) => [path, load as NodeExecutorLoader]),
 );

@@ -1,3 +1,4 @@
+/** 节点执行入口：读取输入与属性，返回端口输出（可含副作用）。 */
 export function execute(args: unknown[], properties: Record<string, unknown>): unknown {
   const inputPorts = parsePortDef(properties.inputPorts);
   const inputs: Record<string, unknown> = {};

@@ -51,6 +51,7 @@ function distinctValues(column: SrcColumnInfo) {
     .map((value) => String(value)))];
 }
 
+/** 推断最可能的主键字段（ID 命名/唯一性优先）。 */
 export function inferLikelyKey(sheet: SrcSheetInfo): string | undefined {
   const configured = sheet.config?.keyFields?.filter((field) => sheet.headers.includes(field)) || [];
   if (configured.length === 1) return configured[0];
@@ -59,6 +60,7 @@ export function inferLikelyKey(sheet: SrcSheetInfo): string | undefined {
   return sheet.columns.find((column) => !column.nullable && column.uniqueCount >= Math.max(1, sheet.rowCount))?.name;
 }
 
+/** 由列信息推断表单字段（类型/控件/必填/默认值）。 */
 export function inferFormField(column: SrcColumnInfo, sheet: SrcSheetInfo, explicitKey?: string): InferredFormField {
   const keyField = explicitKey || inferLikelyKey(sheet);
   const isKey = column.name === keyField;
@@ -106,6 +108,7 @@ export function inferFormField(column: SrcColumnInfo, sheet: SrcSheetInfo, expli
   };
 }
 
+/** 推断 Sheet 全部表单字段（可按选中集合过滤）。 */
 export function inferFormFields(sheet: SrcSheetInfo, selectedFields?: string[]) {
   const selected = selectedFields?.length ? new Set(selectedFields) : null;
   const keyField = inferLikelyKey(sheet);

@@ -1,11 +1,17 @@
 export type JsonSchema = Record<string, unknown>;
 
+/** 任意对象 schema。 */
 export const anyObject: JsonSchema = { type: 'object', additionalProperties: true };
+/** 字符串 schema。 */
 export const string = { type: 'string' };
+/** 数组 schema。 */
 export const array = { type: 'array' };
+/** 对象 schema。 */
 export const object = { type: 'object' };
+/** 布尔 schema。 */
 export const boolean = { type: 'boolean' };
 
+/** 工具结果审计元数据 schema。 */
 export const resultMetaSchema: JsonSchema = {
   type: 'object',
   required: ['requestId'],
@@ -20,6 +26,7 @@ export const resultMetaSchema: JsonSchema = {
   },
 };
 
+/** 工具统一结果 schema（成功/失败/待确认）。 */
 export const resultSchema: JsonSchema = {
   oneOf: [
     {
@@ -66,16 +73,25 @@ export const resultSchema: JsonSchema = {
   ],
 };
 
+/** 构造对象参数 schema。 */
 export const schema = (required: string[] = [], properties: Record<string, unknown> = {}): JsonSchema => ({ type: 'object', required, properties, additionalProperties: false });
 
+/** 数据列定义 schema。 */
 export const dataColumnSchema: JsonSchema = { type: 'object', required: ['name'], properties: { name: string, title: string, type: { type: 'string', enum: ['string', 'number', 'boolean', 'date', 'enum'] }, nullable: boolean, enum: { type: 'array', items: string } }, additionalProperties: true };
+/** 数据源配置 schema。 */
 export const dataSourceConfigSchema: JsonSchema = { type: 'object', properties: { name: string, keyFields: { type: 'array', items: string, description: '主键列名，必须与 rows 对象键或 columns.name 完全一致。' }, readOnly: { type: 'boolean', description: '只读表设为 true；可编辑表保持 false 并配置 keyFields。' }, columns: { type: 'array', items: dataColumnSchema, description: '空表的列定义；有 rows 时可以省略并自动推断。' }, frozenRows: { type: 'number' }, frozenColumns: { type: 'number' }, filterEnabled: boolean, sortEnabled: boolean }, additionalProperties: true };
+/** 数据行更新 schema。 */
 export const dataRowUpdateSchema: JsonSchema = { type: 'object', required: ['rowKey', 'changes'], properties: { rowKey: string, changes: { type: 'object', additionalProperties: true } }, additionalProperties: false };
+/** 行为触发器 schema。 */
 export const behaviorTriggerSchema: JsonSchema = { type: 'object', required: ['type'], properties: { type: { type: 'string', enum: ['formLoad', 'rowLoad', 'fieldChange', 'fieldBlur', 'fieldFocus', 'buttonClick', 'validate', 'submit', 'submitSuccess', 'submitError', 'dataSourceChange', 'tabChange', 'formReady', 'formReset', 'beforeSubmit', 'fieldKeyDown', 'fieldPaste', 'fieldClear', 'rowAdd', 'rowDelete', 'rowSelect', 'dataImport', 'dataExport', 'valueChange'] }, fieldName: string, componentName: string, buttonName: string, debounce: { type: 'number' } }, additionalProperties: false };
+/** 行为条件 schema。 */
 export const behaviorConditionSchema: JsonSchema = { type: 'object', required: ['fieldName', 'operator', 'logic'], properties: { fieldName: string, operator: { type: 'string', enum: ['==', '!=', '>', '<', '>=', '<=', 'contains', 'notContains', 'startsWith', 'notStartsWith', 'endsWith', 'notEndsWith', 'isEmpty', 'isNotEmpty', 'regex', 'custom'] }, value: {}, value2: {}, customExpression: string, logic: { type: 'string', enum: ['AND', 'OR'] }, dataSource: { type: 'string', enum: ['form', 'flow', 'behavior'] }, flowOutputField: string, behaviorName: string }, additionalProperties: false };
+/** 行为动作 schema。 */
 export const behaviorActionSchema: JsonSchema = { type: 'object', required: ['type'], properties: { type: { type: 'string', enum: ['setValue', 'clearValue', 'setVisible', 'setHidden', 'setEnabled', 'setDisabled', 'setRequired', 'setOptional', 'showMessage', 'logMessage', 'switchTab', 'executeScript', 'submitData', 'callApi', 'refreshData', 'navigate', 'runWorkflow', 'setOptions'] }, targetField: string, targetComponent: string, value: {}, expression: string, message: string, messageType: { type: 'string', enum: ['info', 'success', 'warning', 'error'] }, tabName: string, scriptCode: string, workflowId: string, workflowParameters: object, optionsConfig: { type: 'object', required: ['table', 'filterField'], properties: { table: string, filterField: string, filterValue: {}, labelField: string, valueField: string }, additionalProperties: false } }, additionalProperties: true };
+/** 行为规则 schema。 */
 export const behaviorRuleSchema: JsonSchema = { type: 'object', required: ['id', 'name', 'trigger', 'conditions', 'actions'], properties: { id: string, name: string, enabled: boolean, priority: { type: 'number' }, trigger: behaviorTriggerSchema, conditions: { type: 'array', items: behaviorConditionSchema }, actions: { type: 'array', minItems: 1, items: behaviorActionSchema } }, additionalProperties: false };
 
+/** 工作流节点 schema。 */
 export const workflowNodeSchema: JsonSchema = {
   type: 'object', required: ['id'], additionalProperties: true,
   properties: {
@@ -85,6 +101,7 @@ export const workflowNodeSchema: JsonSchema = {
     x: { type: 'number' }, y: { type: 'number' }, config: object, props: object,
   },
 };
+/** 工作流边 schema。 */
 export const workflowEdgeSchema: JsonSchema = {
   type: 'object', required: ['id', 'source', 'target'], additionalProperties: true,
   properties: {
@@ -94,10 +111,12 @@ export const workflowEdgeSchema: JsonSchema = {
     sourceHandle: string, targetHandle: string,
   },
 };
+/** 工作流项 schema。 */
 export const workflowItemSchema: JsonSchema = {
   type: 'object', required: ['name', 'nodes', 'edges'], additionalProperties: true,
   properties: { id: string, name: string, description: string, nodes: { type: 'array', items: workflowNodeSchema }, edges: { type: 'array', items: workflowEdgeSchema } },
 };
+/** 表单控件项 schema。 */
 export const formComponentItemSchema: JsonSchema = {
   type: 'object', required: ['id'], additionalProperties: true,
   properties: {

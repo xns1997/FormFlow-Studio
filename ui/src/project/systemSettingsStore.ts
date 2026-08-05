@@ -15,6 +15,7 @@ interface SystemSettingsStore {
   updateSettings: (updater: (current: SystemSettings) => SystemSettings) => void;
 }
 
+/** 系统设置 Store（加载/保存/更新）。 */
 export const useSystemSettingsStore = create<SystemSettingsStore>((set) => ({
   settings: createDefaultSystemSettings(),
   loading: false,

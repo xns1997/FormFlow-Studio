@@ -14,8 +14,10 @@ import { toolError } from './project-authoring';
 
 export type JsonSchema = Record<string, unknown>;
 export type ToolRisk = 'read' | 'write' | 'destructive';
+/** 合法 MCP 角色列表。 */
 export const MCP_ROLES = ['project', 'data', 'form', 'workflow', 'behavior', 'quality', 'delivery'] as const;
 export type McpRole = typeof MCP_ROLES[number];
+/** MCP 角色目录（标题与职责描述）。 */
 export const MCP_ROLE_CATALOG: ReadonlyArray<{ id: McpRole; title: string; description: string }> = [
   { id: 'project', title: '项目专家', description: '项目创建、模板初始化、整包导入、克隆、元信息和项目删除' },
   { id: 'data', title: '数据专家', description: '数据源、Sheet、主键、查询和批量写回' },
@@ -68,12 +70,18 @@ export interface FormFlowToolDefinition {
 
 // ─── Schema primitives ────────────────────────────────────────────────────────
 
+/** 任意对象 schema。 */
 export const anyObject: JsonSchema = { type: 'object', additionalProperties: true };
+/** 字符串 schema。 */
 export const string = { type: 'string' };
+/** 数组 schema。 */
 export const array = { type: 'array' };
+/** 对象 schema。 */
 export const object = { type: 'object' };
+/** 布尔 schema。 */
 export const boolean = { type: 'boolean' };
 
+/** 工具结果审计元数据 schema。 */
 export const resultMetaSchema: JsonSchema = {
   type: 'object',
   required: ['requestId'],
@@ -88,6 +96,7 @@ export const resultMetaSchema: JsonSchema = {
   },
 };
 
+/** 工具统一结果 schema。 */
 export const resultSchema: JsonSchema = {
   oneOf: [
     {
@@ -134,17 +143,20 @@ export const resultSchema: JsonSchema = {
   ],
 };
 
+/** 构造对象参数 schema。 */
 export const schema = (required: string[] = [], properties: Record<string, unknown> = {}): JsonSchema =>
   ({ type: 'object', required, properties, additionalProperties: false });
 
 // ─── Domain-specific schemas ──────────────────────────────────────────────────
 
+/** 数据列定义 schema。 */
 export const dataColumnSchema: JsonSchema = {
   type: 'object', required: ['name'],
   properties: { name: string, title: string, type: { type: 'string', enum: ['string', 'text', 'number', 'integer', 'float', 'double', 'boolean', 'bool', 'date', 'datetime', 'enum'], description: '列类型。常用别名（text/integer/float/double/bool/datetime）会自动规范化为 string/number/boolean/date。' }, nullable: boolean, enum: { type: 'array', items: string } },
   additionalProperties: true,
 };
 
+/** 数据源配置 schema。 */
 export const dataSourceConfigSchema: JsonSchema = {
   type: 'object',
   properties: {
@@ -158,6 +170,7 @@ export const dataSourceConfigSchema: JsonSchema = {
   additionalProperties: true,
 };
 
+/** 数据行更新 schema。 */
 export const dataRowUpdateSchema: JsonSchema = {
   type: 'object', required: ['rowKey', 'changes'],
   properties: {
@@ -167,6 +180,7 @@ export const dataRowUpdateSchema: JsonSchema = {
   additionalProperties: false,
 };
 
+/** 行为触发器 schema。 */
 export const behaviorTriggerSchema: JsonSchema = {
   type: 'object', required: ['type'],
   properties: {
@@ -176,6 +190,7 @@ export const behaviorTriggerSchema: JsonSchema = {
   additionalProperties: false,
 };
 
+/** 行为条件 schema。 */
 export const behaviorConditionSchema: JsonSchema = {
   type: 'object', required: ['fieldName', 'operator', 'logic'],
   properties: {
@@ -189,6 +204,7 @@ export const behaviorConditionSchema: JsonSchema = {
   additionalProperties: false,
 };
 
+/** 行为动作 schema。 */
 export const behaviorActionSchema: JsonSchema = {
   type: 'object', required: ['type'],
   properties: {
@@ -205,6 +221,7 @@ export const behaviorActionSchema: JsonSchema = {
   additionalProperties: true,
 };
 
+/** 行为规则 schema。 */
 export const behaviorRuleSchema: JsonSchema = {
   type: 'object', required: ['id', 'name', 'trigger', 'conditions', 'actions'],
   properties: {
@@ -216,6 +233,7 @@ export const behaviorRuleSchema: JsonSchema = {
   additionalProperties: false,
 };
 
+/** 行为列表输入 schema。 */
 export const behaviorListInputSchema: JsonSchema = {
   ...schema(['projectId', 'scope'], {
     projectId: string,
@@ -230,6 +248,7 @@ export const behaviorListInputSchema: JsonSchema = {
   ],
 };
 
+/** 工作流节点 schema。 */
 export const workflowNodeSchema: JsonSchema = {
   type: 'object', required: ['id'], additionalProperties: true,
   properties: {
@@ -240,6 +259,7 @@ export const workflowNodeSchema: JsonSchema = {
   },
 };
 
+/** 工作流边 schema。 */
 export const workflowEdgeSchema: JsonSchema = {
   type: 'object', required: ['id', 'source', 'target'], additionalProperties: true,
   properties: {
@@ -250,6 +270,7 @@ export const workflowEdgeSchema: JsonSchema = {
   },
 };
 
+/** 工作流项 schema。 */
 export const workflowItemSchema: JsonSchema = {
   type: 'object', required: ['name', 'nodes', 'edges'], additionalProperties: true,
   properties: {
@@ -259,6 +280,7 @@ export const workflowItemSchema: JsonSchema = {
   },
 };
 
+/** 表单控件项 schema。 */
 export const formComponentItemSchema: JsonSchema = {
   type: 'object', required: ['id'], additionalProperties: true,
   properties: {
@@ -279,6 +301,7 @@ export const formComponentItemSchema: JsonSchema = {
 
 // ─── Field descriptions ───────────────────────────────────────────────────────
 
+/** 工具参数中文文档（catalog 与模型参考）。 */
 export const FIELD_DESCRIPTIONS: Record<string, string> = {
   projectId: '目标项目的稳定 ID。省略仅在调用上下文已经唯一绑定项目且该字段非必填时有效。',
   baseRevision: '最近一次 project.get 返回的 revision。服务端仅在它仍是最新版本时执行写入，否则拒绝且不修改项目。',
@@ -350,12 +373,14 @@ export const FIELD_DESCRIPTIONS: Record<string, string> = {
 
 // ─── Normalization helpers ────────────────────────────────────────────────────
 
+/** 解析端口端点（nodeId/portId）。 */
 export function endpoint(value: unknown): { nodeId: string; portId?: string } {
   if (typeof value === 'string') return { nodeId: value };
   const entry = value && typeof value === 'object' ? value as Record<string, any> : {};
   return { nodeId: String(entry.nodeId || entry.id || ''), portId: entry.portId ? String(entry.portId) : entry.port ? String(entry.port) : undefined };
 }
 
+/** 归一化工作流节点（补默认端口与属性）。 */
 export function normalizeWorkflowNode(value: any) {
   const properties = value?.data?.propertiesJson !== undefined
     ? value.data.propertiesJson
@@ -371,6 +396,7 @@ export function normalizeWorkflowNode(value: any) {
   };
 }
 
+/** 归一化工作流边。 */
 export function normalizeWorkflowEdge(value: any) {
   const source = endpoint(value?.source); const target = endpoint(value?.target);
   return {
@@ -380,6 +406,7 @@ export function normalizeWorkflowEdge(value: any) {
   };
 }
 
+/** 归一化工作流项（节点/边通用）。 */
 export function normalizeWorkflowItem(value: any, fallbackId?: unknown) {
   return {
     ...(value || {}), id: String(value?.id || fallbackId || ''), name: String(value?.name || value?.label || fallbackId || value?.id || ''),
@@ -388,9 +415,12 @@ export function normalizeWorkflowItem(value: any, fallbackId?: unknown) {
   };
 }
 
+/** 全部合法角色。 */
 export function allRoles(): McpRole[] { return [...MCP_ROLES]; }
+/** 是否为合法 MCP 角色。 */
 export function isMcpRole(value: unknown): value is McpRole { return MCP_ROLES.includes(value as McpRole); }
 
+/** 为工具输入 schema 补充名称/标题/风险描述。 */
 export function clarifyInputSchema(name: string, title: string, risk: ToolRisk, inputSchema: JsonSchema): JsonSchema {
   const next = structuredClone(inputSchema) as Record<string, any>;
   next.additionalProperties ??= false;

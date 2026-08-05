@@ -9,8 +9,10 @@ import { columnDataTypeToFieldType } from '../../../shared/formflow-core/columnT
 import type { FieldType } from '../../../shared/formflow-core/behaviorDsl';
 import type { RuleAgentSession } from './rule-agent-store';
 
+/** 规则代码稳定哈希（变更检测）。 */
 export const ruleHash = (source: string) => createHash('sha256').update(source).digest('hex');
 
+/** 推断规则智能体意图（解释/检查/编辑/lint/测试）。 */
 export function inferRuleAgentIntent(prompt: string): 'explain' | 'inspect' | 'edit' | 'lint' | 'test' {
   if (/(状态|当前值|实时|表单数据|看一下表单)/i.test(prompt)) return 'inspect';
   if (/(测试|运行|模拟|场景)/i.test(prompt)) return 'test';
@@ -19,6 +21,7 @@ export function inferRuleAgentIntent(prompt: string): 'explain' | 'inspect' | 'e
   return 'explain';
 }
 
+/** 构造表单上下文（项目/表单信息）。 */
 export function formContext(projectId: string, formId: string) {
   const project = readProjectPackage(projectId);
   if (!project) throw new Error('项目不存在');
@@ -48,6 +51,7 @@ export function deriveFieldTypes(form: any, tables: any[]): Record<string, Field
   return result;
 }
 
+/** lint 规则代码（语法/静态检查）。 */
 export function lintRuleCode(projectId: string, formId: string, code: string) {
   const context = formContext(projectId, formId);
   return compileBehaviorDsl(code, {
@@ -59,6 +63,7 @@ export function lintRuleCode(projectId: string, formId: string, code: string) {
   });
 }
 
+/** 在沙箱中运行规则代码。 */
 export function runRuleSandbox(projectId: string, formId: string, code: string) {
   const compilation = lintRuleCode(projectId, formId, code);
   const errors = compilation.diagnostics.filter((item) => item.severity === 'error');
@@ -76,6 +81,7 @@ export function runRuleSandbox(projectId: string, formId: string, code: string) 
   return { passed: scenarios.every((item) => item.passed), scenarios, mockedEffects, preview: compilation.preview };
 }
 
+/** 读取规则参考文档。 */
 export function readRuleReference(query = '') {
   const source = readFileSync(join(env.repositoryRoot, 'docs', 'behavior-rule-syntax.md'), 'utf8');
   const terms = query.toLowerCase().split(/\s+/).filter((item) => item.length > 1);
@@ -84,6 +90,7 @@ export function readRuleReference(query = '') {
   return (selected.length ? selected : sections.slice(0, 4)).join('\n').slice(0, 8_000);
 }
 
+/** 创建规则修改提案。 */
 export function createRuleProposal(session: RuleAgentSession, input: { code: string; summary?: string; proposedCode: string; changes?: string[]; assumptions?: string[] }) {
   const compilation = lintRuleCode(session.projectId, session.formId, input.proposedCode);
   return {
@@ -93,6 +100,7 @@ export function createRuleProposal(session: RuleAgentSession, input: { code: str
   };
 }
 
+/** 应用规则提案（校验基线哈希与失败测试确认）。 */
 export function applyRuleProposal(session: RuleAgentSession, proposal: Record<string, any>, baseRuleHash: string, confirmFailedTests: boolean) {
   const { project, form } = formContext(session.projectId, session.formId);
   if (proposal.baseRuleHash !== baseRuleHash || ruleHash(form.ruleCode || '') !== baseRuleHash) throw new Error('规则代码已变更，建议已过期，请重新生成');

@@ -21,19 +21,23 @@ export interface ProjectSnapshot {
   revision: string;
 }
 
+/** 保存项目结构（持久化到存储）。 */
 export async function saveProjectStructure(project: ProjectStructure, baseRevision: string, idempotencyKey: string): Promise<ProjectSnapshot> {
   const response = await projectApi.updateWithRevision(project.config.id, normalizeProjectStructure(project), { baseRevision, idempotencyKey });
   return { project: normalizeProjectStructure(response.data), revision: response.revision || baseRevision };
 }
 
+/** 创建项目结构（初始化目录与索引）。 */
 export async function createProjectStructure(project: ProjectStructure): Promise<ProjectStructure> {
   return normalizeProjectStructure(await projectApi.create(project));
 }
 
+/** 加载项目结构。 */
 export async function loadProjectStructure(projectId: string): Promise<ProjectStructure | null> {
   return (await loadProjectSnapshot(projectId))?.project || null;
 }
 
+/** 加载项目快照（最近保存）。 */
 export async function loadProjectSnapshot(projectId: string): Promise<ProjectSnapshot | null> {
   try {
     const response = await projectApi.getWithRevision(projectId);
@@ -41,20 +45,24 @@ export async function loadProjectSnapshot(projectId: string): Promise<ProjectSna
   } catch { return null; }
 }
 
+/** 列出全部项目摘要。 */
 export async function listProjects(): Promise<Array<{ id: string; name: string; updatedAt: string; tableCount: number }>> {
   try {
     return await projectApi.list();
   } catch { return []; }
 }
 
+/** 删除项目。 */
 export async function deleteProject(projectId: string): Promise<void> {
   await projectApi.remove(projectId);
 }
 
+/** 克隆项目（新名称）。 */
 export async function cloneProject(projectId: string): Promise<ProjectStructure> {
   return normalizeProjectStructure(await projectApi.clone(projectId));
 }
 
+/** 创建新项目结构。 */
 export function createNewProject(name: string = '我的项目'): ProjectStructure {
   const now = new Date().toISOString();
   return {
@@ -90,6 +98,7 @@ export function createNewProject(name: string = '我的项目'): ProjectStructur
   };
 }
 
+/** 归一化项目结构（补默认值）。 */
 export function normalizeProjectStructure(project: ProjectStructure): ProjectStructure {
   // 兼容旧格式：迁移 designs + behaviors → forms
   let forms = project.forms || [];
@@ -129,6 +138,7 @@ export function normalizeProjectStructure(project: ProjectStructure): ProjectStr
 
 // ── 数据表 ──────────────────────────────────────
 
+/** 添加数据表。 */
 export function addSrcTable(project: ProjectStructure, table: SrcTableEntry): ProjectStructure {
   return {
     ...project,
@@ -137,6 +147,7 @@ export function addSrcTable(project: ProjectStructure, table: SrcTableEntry): Pr
   };
 }
 
+/** 移除数据表。 */
 export function removeSrcTable(project: ProjectStructure, tableId: string): ProjectStructure {
   return {
     ...project,
@@ -145,6 +156,7 @@ export function removeSrcTable(project: ProjectStructure, tableId: string): Proj
   };
 }
 
+/** 更新 Sheet 配置。 */
 export function updateTableSheetConfig(
   project: ProjectStructure,
   tableId: string,
@@ -177,6 +189,7 @@ export function updateTableSheetConfig(
 
 // ── 流程 ──────────────────────────────────────
 
+/** 添加工作流。 */
 export function addWorkflow(project: ProjectStructure, workflow: WorkflowFile): ProjectStructure {
   return {
     ...project,
@@ -185,6 +198,7 @@ export function addWorkflow(project: ProjectStructure, workflow: WorkflowFile): 
   };
 }
 
+/** 更新工作流。 */
 export function updateWorkflow(project: ProjectStructure, workflowId: string, patch: Partial<WorkflowFile>): ProjectStructure {
   return {
     ...project,
@@ -193,6 +207,7 @@ export function updateWorkflow(project: ProjectStructure, workflowId: string, pa
   };
 }
 
+/** 移除工作流。 */
 export function removeWorkflow(project: ProjectStructure, workflowId: string): ProjectStructure {
   return {
     ...project,
@@ -203,6 +218,7 @@ export function removeWorkflow(project: ProjectStructure, workflowId: string): P
 
 // ── 表单设计 ──────────────────────────────────────
 
+/** 添加设计稿。 */
 export function addDesign(project: ProjectStructure, design: DesignFile): ProjectStructure {
   const now = new Date().toISOString();
   const nextDesign = { ...design, updatedAt: now };
@@ -217,6 +233,7 @@ export function addDesign(project: ProjectStructure, design: DesignFile): Projec
   };
 }
 
+/** 更新设计稿。 */
 export function updateDesign(project: ProjectStructure, designId: string, patch: Partial<DesignFile>): ProjectStructure {
   const now = new Date().toISOString();
   return {
@@ -226,6 +243,7 @@ export function updateDesign(project: ProjectStructure, designId: string, patch:
   };
 }
 
+/** 移除设计稿。 */
 export function removeDesign(project: ProjectStructure, designId: string): ProjectStructure {
   const now = new Date().toISOString();
   return {
@@ -237,6 +255,7 @@ export function removeDesign(project: ProjectStructure, designId: string): Proje
 
 // ── 行为 ──────────────────────────────────────
 
+/** 添加行为。 */
 export function addBehavior(project: ProjectStructure, behavior: BehaviorFile): ProjectStructure {
   return {
     ...project,
@@ -245,6 +264,7 @@ export function addBehavior(project: ProjectStructure, behavior: BehaviorFile): 
   };
 }
 
+/** 更新行为。 */
 export function updateBehavior(project: ProjectStructure, behaviorId: string, patch: Partial<BehaviorFile>): ProjectStructure {
   return {
     ...project,
@@ -253,6 +273,7 @@ export function updateBehavior(project: ProjectStructure, behaviorId: string, pa
   };
 }
 
+/** 移除行为。 */
 export function removeBehavior(project: ProjectStructure, behaviorId: string): ProjectStructure {
   return {
     ...project,
@@ -263,6 +284,7 @@ export function removeBehavior(project: ProjectStructure, behaviorId: string): P
 
 // ── 输出 ──────────────────────────────────────
 
+/** 添加输出。 */
 export function addOutput(project: ProjectStructure, output: OutputFile): ProjectStructure {
   return {
     ...project,
@@ -271,6 +293,7 @@ export function addOutput(project: ProjectStructure, output: OutputFile): Projec
   };
 }
 
+/** 移除输出。 */
 export function removeOutput(project: ProjectStructure, outputId: string): ProjectStructure {
   return {
     ...project,
@@ -281,6 +304,7 @@ export function removeOutput(project: ProjectStructure, outputId: string): Proje
 
 // ── 表单实例 ──────────────────────────────────────
 
+/** 添加表单。 */
 export function addForm(project: ProjectStructure, form: FormEntry): ProjectStructure {
   return {
     ...project,
@@ -289,6 +313,7 @@ export function addForm(project: ProjectStructure, form: FormEntry): ProjectStru
   };
 }
 
+/** 更新表单。 */
 export function updateForm(project: ProjectStructure, formId: string, patch: Partial<FormEntry>): ProjectStructure {
   return {
     ...project,
@@ -297,6 +322,7 @@ export function updateForm(project: ProjectStructure, formId: string, patch: Par
   };
 }
 
+/** 移除表单。 */
 export function removeForm(project: ProjectStructure, formId: string): ProjectStructure {
   return {
     ...project,
@@ -305,6 +331,7 @@ export function removeForm(project: ProjectStructure, formId: string): ProjectSt
   };
 }
 
+/** 添加表单行为。 */
 export function addFormBehavior(project: ProjectStructure, formId: string, behavior: BehaviorFile): ProjectStructure {
   return {
     ...project,
@@ -315,6 +342,7 @@ export function addFormBehavior(project: ProjectStructure, formId: string, behav
   };
 }
 
+/** 更新表单行为。 */
 export function updateFormBehavior(project: ProjectStructure, formId: string, behaviorId: string, patch: Partial<BehaviorFile>): ProjectStructure {
   return {
     ...project,
@@ -325,6 +353,7 @@ export function updateFormBehavior(project: ProjectStructure, formId: string, be
   };
 }
 
+/** 移除表单行为。 */
 export function removeFormBehavior(project: ProjectStructure, formId: string, behaviorId: string): ProjectStructure {
   return {
     ...project,
@@ -337,6 +366,7 @@ export function removeFormBehavior(project: ProjectStructure, formId: string, be
 
 // ── 全局行为 ──────────────────────────────────────
 
+/** 添加全局行为。 */
 export function addGlobalBehavior(project: ProjectStructure, behavior: BehaviorFile): ProjectStructure {
   return {
     ...project,
@@ -347,6 +377,7 @@ export function addGlobalBehavior(project: ProjectStructure, behavior: BehaviorF
 
 // ── 工作表行为 ──────────────────────────────────────
 
+/** 设置 Sheet 级行为。 */
 export function setSheetBehaviors(
   project: ProjectStructure,
   tableId: string,
@@ -366,6 +397,7 @@ export function setSheetBehaviors(
   };
 }
 
+/** 更新全局行为。 */
 export function updateGlobalBehavior(project: ProjectStructure, behaviorId: string, patch: Partial<BehaviorFile>): ProjectStructure {
   return {
     ...project,
@@ -374,6 +406,7 @@ export function updateGlobalBehavior(project: ProjectStructure, behaviorId: stri
   };
 }
 
+/** 移除全局行为。 */
 export function removeGlobalBehavior(project: ProjectStructure, behaviorId: string): ProjectStructure {
   return {
     ...project,

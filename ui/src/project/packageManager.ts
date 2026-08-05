@@ -83,6 +83,7 @@ function buildImportedForms(
 
 // ── 从 ProjectStructure 导出为项目包 ──────────────────
 
+/** 导出项目结构为包条目。 */
 export async function exportToPackage(
   dirHandle: FileSystemDirectoryHandle,
   project: ProjectStructure,
@@ -177,6 +178,7 @@ export async function exportToPackage(
 
 // ── 从项目包导入为 ProjectStructure ──────────────────
 
+/** 从包条目导入项目结构。 */
 export async function importFromPackage(
   dirHandle: FileSystemDirectoryHandle,
 ): Promise<ProjectStructure | null> {
@@ -259,11 +261,14 @@ export async function importFromPackage(
   };
 }
 
+/** .formflow 包扩展名。 */
 export const FORMFLOW_PACKAGE_EXTENSION = '.formflow';
+/** .formflow 包 MIME 类型。 */
 export const FORMFLOW_PACKAGE_MIME = 'application/vnd.formflow+zip';
 
 // ── FormFlow 项目包导出（使用 ZIP 容器）────────────
 
+/** 导出项目为 .formflow 包（Blob）。 */
 export async function exportFormFlowPackage(project: ProjectStructure): Promise<Blob> {
   // 动态导入 JSZip
   const JSZip = (await import('jszip')).default;
@@ -358,6 +363,7 @@ export async function exportFormFlowPackage(project: ProjectStructure): Promise<
 
 // ── FormFlow 项目包导入（导入后由服务端落盘为解包目录）──
 
+/** 从 .formflow 包文件导入项目。 */
 export async function importFormFlowPackage(file: File): Promise<ProjectStructure | null> {
   if (!file.name.toLowerCase().endsWith(FORMFLOW_PACKAGE_EXTENSION)) {
     throw new Error('仅支持 .formflow 项目包');
@@ -469,6 +475,7 @@ export async function importFormFlowPackage(file: File): Promise<ProjectStructur
 
 // ── 下载 .formflow 项目包 ──────────────────────────
 
+/** 下载项目包文件。 */
 export async function downloadFormFlowPackage(project: ProjectStructure): Promise<void> {
   const blob = await exportFormFlowPackage(project);
   const url = URL.createObjectURL(blob);
@@ -481,6 +488,7 @@ export async function downloadFormFlowPackage(project: ProjectStructure): Promis
 
 // ── 打开目录选择器 ──────────────────────────────────
 
+/** 打开目录选择器（包导入）。 */
 export async function openDirectoryPicker(): Promise<FileSystemDirectoryHandle | null> {
   try {
     if ('showDirectoryPicker' in window) {
@@ -497,6 +505,7 @@ export async function openDirectoryPicker(): Promise<FileSystemDirectoryHandle |
 
 // ── 打开 .formflow 文件选择器 ───────────────────────
 
+/** 打开文件选择器（限定扩展名）。 */
 export function openFilePicker(accept: string = FORMFLOW_PACKAGE_EXTENSION): Promise<File | null> {
   return new Promise((resolve) => {
     const input = document.createElement('input');

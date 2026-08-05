@@ -14,6 +14,7 @@ export type BatchChange = {
   deletes?: string[];
 };
 
+/** 数据版本标识（行集哈希）。 */
 export function dataVersion(rows: DataRow[]): string {
   return createHash('sha1').update(JSON.stringify(rows)).digest('hex').slice(0, 16);
 }
@@ -22,6 +23,7 @@ function encodeKeyPart(value: unknown) {
   return encodeURIComponent(value == null ? '' : String(value));
 }
 
+/** 构建行主键数组。 */
 export function buildRowKeys(rows: DataRow[], keyFields: string[] = []): string[] {
   const candidates = keyFields.length
     ? rows.map((row) => keyFields.map((field) => encodeKeyPart(row[field])).join('|'))
@@ -44,6 +46,7 @@ function contains(value: unknown, expected: unknown) {
   return String(value ?? '').toLocaleLowerCase().includes(String(expected ?? '').toLocaleLowerCase());
 }
 
+/** 查询数据行（过滤/分页/排序）。 */
 export function queryRows(input: {
   rows: DataRow[];
   headers: string[];
@@ -206,6 +209,7 @@ export function queryRows(input: {
   return result;
 }
 
+/** 应用批量变更（新增/修改/删除）。 */
 export function applyBatchChanges(rows: DataRow[], keyFields: string[], changes: BatchChange) {
   const keys = buildRowKeys(rows, keyFields);
   const indexByKey = new Map(keys.map((key, index) => [key, index]));
@@ -220,6 +224,7 @@ export function applyBatchChanges(rows: DataRow[], keyFields: string[], changes:
   return next;
 }
 
+/** 校验已配置主键（非空/唯一）。 */
 export function validateConfiguredKeys(rows: DataRow[], keyFields: string[]) {
   if (!keyFields.length) return;
   const values = rows.map((row) => keyFields.map((field) => String(row[field] ?? '')).join('\u001f'));

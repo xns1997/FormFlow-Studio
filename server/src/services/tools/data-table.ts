@@ -11,6 +11,7 @@ import { dataColumnSchema } from '../tool-shared';
 import { normalizeColumnType } from '../../../../shared/formflow-core/columnTypes';
 import type { RegisterFn, ToolHelpers } from './types';
 
+/** 注册数据表域工具（数据源/Sheet/行操作）。 */
 export function registerDataTableTools(register: RegisterFn, h: ToolHelpers) {
   const { projectId } = h;
   register({

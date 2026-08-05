@@ -147,6 +147,7 @@ registerDeliveryTools(register, helpers);
 
 function availableToRole(definition: FormFlowToolDefinition, role: McpRole) { return definition.ownerRole === role || Boolean(definition.sharedReadRoles?.includes(role)); }
 
+/** 校验 MCP 工具注册表（ID/角色/契约一致性）。 */
 export function validateMcpToolRegistry() {
   for (const definition of registry.values()) {
     if (!isMcpRole(definition.ownerRole)) throw new Error(`工具缺少有效负责人：${definition.name}`);
@@ -169,12 +170,15 @@ validateMcpToolRegistry();
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
+/** 列出工具（可按角色过滤）。 */
 export function listFormFlowTools(role?: McpRole) {
   const definitions = role ? [...registry.values()].filter((definition) => availableToRole(definition, role)) : [...registry.values()];
   return definitions.map(({ handler: _handler, impact: _impact, confirmWhen: _confirmWhen, ...definition }) => definition);
 }
+/** 按名称获取工具。 */
 export function getFormFlowTool(name: string) { return registry.get(name); }
 
+/** 执行工具（角色放行、参数契约、revision 门禁与审计）。 */
 export async function executeFormFlowTool(name: string, argumentsValue: unknown, context: ToolContext = {}): Promise<ToolResult> {
   const requestId = context.requestId || `tool_${randomUUID()}`; const definition = registry.get(name);
   if (!definition) return { ok: false, error: { code: 'TOOL_NOT_FOUND', message: `未注册工具：${name}`, retryable: false }, meta: { requestId } };
@@ -260,4 +264,5 @@ function validateInput(value: unknown, definition: FormFlowToolDefinition) {
   }
 }
 
+/** 注册外部工具（返回注销函数）。 */
 export function registerExternalFormFlowTool(definition: FormFlowToolDefinition) { register(definition); return () => registry.delete(definition.name); }

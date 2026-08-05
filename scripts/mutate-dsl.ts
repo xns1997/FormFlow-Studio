@@ -68,6 +68,7 @@ export interface MutationResult {
   score: number;
 }
 
+/** 运行 DSL 变异测试工具（稳健性门禁）。 */
 export function runMutationHarness(bases: string[] = BASES): MutationResult {
   const survived: MutationResult['survived'] = [];
   let total = 0;

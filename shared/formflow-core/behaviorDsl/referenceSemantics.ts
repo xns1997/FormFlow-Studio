@@ -57,6 +57,7 @@ export interface ReferenceRunResult {
   terminated: boolean;
 }
 
+/** 创建参考解释器状态（表单值 + 运行时副作用容器）。 */
 export function createReferenceState(formValues: Record<string, unknown> = {}): ReferenceState {
   return {
     formValues: { ...formValues },
@@ -75,6 +76,7 @@ function cmp(value: unknown): number | string {
   return comparableValue(value) as number | string;
 }
 
+/** 求值单条条件（值 vs 运算符/比较值）。 */
 export function evaluateConditionValue(value: unknown, condition: ConditionConfig, emptyArrayIsEmpty = true): boolean {
   const { operator, value: cv } = condition;
   const isEmptyValue = (input: unknown) => input === null || input === undefined || input === '' || (emptyArrayIsEmpty && Array.isArray(input) && input.length === 0);
@@ -100,6 +102,7 @@ export function evaluateConditionValue(value: unknown, condition: ConditionConfi
   }
 }
 
+/** 求值条件集合（AND 语义）。 */
 export function evaluateConditionsValue(conditions: ConditionConfig[], formValues: Record<string, unknown>, emptyArrayIsEmpty = true): boolean {
   if (conditions.length === 0) return true;
   let result = true;
@@ -117,6 +120,7 @@ function evaluateExpression(expression: string, state: ReferenceState) {
   return evaluatePropertyExpression(expression, { form: state.formValues });
 }
 
+/** 应用守卫动作（必填/类型/范围校验），失败记录 guardFailures。 */
 export function applyGuardAction(action: { type: string; fields?: string[]; targetField?: string; min?: number | null; max?: number | null; validator?: string; pattern?: string; operator?: string; value?: unknown; valueSource?: string; sourceField?: string; message?: string }, state: ReferenceState): void {
   const fields = action.fields || (action.targetField ? [action.targetField] : []);
   const fieldValues = fields.map((field) => ({ field, value: state.formValues[field] }));
@@ -206,6 +210,7 @@ export function applyGuardAction(action: { type: string; fields?: string[]; targ
   }
 }
 
+/** 应用值/消息/流程动作到参考状态。 */
 export function applyAction(action: { type: string; targetField?: string; targetComponent?: string; expression?: string; value?: unknown; message?: string; messageType?: string; workflowId?: string; optionsConfig?: { mode?: string; table?: string } }, state: ReferenceState): boolean {
   switch (action.type) {
     case 'setValue': {
@@ -241,6 +246,7 @@ export function applyAction(action: { type: string; targetField?: string; target
   }
 }
 
+/** 规则触发器与事件是否匹配。 */
 export function matchesEvent(rule: BehaviorRule, event: ReferenceEvent): boolean {
   if (!rule.enabled) return false;
   switch (event.type) {
@@ -308,6 +314,7 @@ export function runReferenceSemantics(rules: BehaviorRule[], initialValues: Reco
   return { state, trace, terminated };
 }
 
+/** 运行结果 → 轨迹摘要（差分对比用）。 */
 export function traceSummary(result: ReferenceRunResult) {
   return {
     formValues: result.state.formValues,

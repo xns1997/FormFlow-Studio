@@ -17,6 +17,7 @@ export type FilterRule = {
   condition2?: FilterRule;
 };
 
+/** 过滤类型 → 中文标签。 */
 export const FILTER_TYPE_LABELS: Record<string, string> = {
   contains: '包含',
   notContains: '不包含',
@@ -33,6 +34,7 @@ export const FILTER_TYPE_LABELS: Record<string, string> = {
   inRange: '区间内',
 };
 
+/** 数据类型 → 可用过滤类型列表。 */
 export const FILTER_TYPES_BY_DATA_TYPE: Record<string, string[]> = {
   string: ['contains', 'equals', 'notEqual', 'startsWith', 'endsWith', 'notContains', 'blank', 'notBlank'],
   number: ['equals', 'notEqual', 'greaterThan', 'greaterThanOrEqual', 'lessThan', 'lessThanOrEqual', 'inRange', 'blank', 'notBlank'],
@@ -42,6 +44,7 @@ export const FILTER_TYPES_BY_DATA_TYPE: Record<string, string[]> = {
   unknown: ['contains', 'equals', 'notEqual', 'blank', 'notBlank'],
 };
 
+/** 数据类型可用的过滤类型（未知类型返回通用集）。 */
 export function filterTypesForDataType(dataType?: string): string[] {
   return FILTER_TYPES_BY_DATA_TYPE[dataType || 'unknown'] || FILTER_TYPES_BY_DATA_TYPE.unknown;
 }
@@ -50,6 +53,7 @@ function contains(value: unknown, expected: unknown) {
   return String(value ?? '').toLocaleLowerCase().includes(String(expected ?? '').toLocaleLowerCase());
 }
 
+/** 单条过滤规则匹配（等于/包含/区间/空值）。 */
 export function matchesSimpleFilter(value: unknown, rule: FilterRule): boolean {
   const type = rule.type || 'contains';
   const expected = rule.filter;
@@ -69,6 +73,7 @@ export function matchesSimpleFilter(value: unknown, rule: FilterRule): boolean {
   return contains(value, expected);
 }
 
+/** 过滤规则匹配入口（AND/OR 逻辑）。 */
 export function matchesFilterRule(value: unknown, rule: FilterRule): boolean {
   if (rule.condition1 && rule.condition2) {
     const values = [matchesFilterRule(value, rule.condition1), matchesFilterRule(value, rule.condition2)];

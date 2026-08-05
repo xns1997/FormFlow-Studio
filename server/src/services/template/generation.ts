@@ -1399,6 +1399,7 @@ function analyticalForm(
 }
 
 
+/** 规划操作模板生成计划（数据/表单/流程）。 */
 export function planOperationTemplate(project: JsonObject, templateId: string, selection: TemplateSelection, suppliedParameters: JsonObject = {}): GenerationPlan {
   const report = analyzeOperationTemplate(project, templateId, selection, suppliedParameters);
   if (report.status === 'blocked' || report.status === 'not-applicable') throw toolError('TEMPLATE_NOT_FEASIBLE', report.summary, 'selection', report);

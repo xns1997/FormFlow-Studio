@@ -137,12 +137,14 @@ export function compileDataToolArguments(name: string, original: Record<string, 
   return compileToolArgumentsPipeline(name, original, undefined, dataToolDomainHooks) as DataToolPreflightResult;
 }
 
+/** 数据失败指纹（工具/错误码/参数）。 */
 export function dataFailureFingerprint(toolName: string, error: { code?: string; path?: string }, argumentsValue: Record<string, any>): DataFailureFingerprint {
   const argumentShape = shape(argumentsValue); const code = String(error.code || 'TOOL_FAILED'); const path = error.path ? String(error.path) : undefined;
   const value = createHash('sha256').update(JSON.stringify({ toolName, code, path, argumentShape })).digest('hex').slice(0, 20);
   return { value, toolName, code, path, argumentShape };
 }
 
+/** 同一失败指纹是否反复出现。 */
 export function hasRepeatedDataFailure(events: Array<{ data?: any }>, taskId: string, fingerprint: string) {
   return events.some((event) => event.data?.taskId === taskId && event.data?.failureFingerprint === fingerprint);
 }

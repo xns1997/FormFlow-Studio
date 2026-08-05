@@ -21,6 +21,7 @@ import {
  */
 
 /** Order rows by a stable row-key sequence; unknown keys keep original relative order at the end. */
+/** 按行序数组重排行（未列出的行保持相对顺序）。 */
 export function orderRowsBy(rows: PreviewRow[], order: string[]): PreviewRow[] {
   const byKey = new Map(rows.map((row) => [row.__rowKey, row]));
   const ordered: PreviewRow[] = [];
@@ -46,6 +47,7 @@ export interface WorkbenchPendingState {
   validationErrors: Map<string, string>;
 }
 
+/** 工作台初始待处理状态。 */
 export const initialWorkbenchState: WorkbenchPendingState = {
   rows: [],
   pendingChanges: new Map(),
@@ -59,6 +61,7 @@ function resolve<T>(value: SetStateAction<T>, current: T): T {
 }
 
 /** Apply one undo entry (edit/add/delete/row-order) to the workbench state. Pure and deterministic. */
+/** 应用撤销条目到工作台（新增/修改/删除）。 */
 export function applyEntryToWorkbench(state: WorkbenchPendingState, entry: UndoEntry): WorkbenchPendingState {
   const pendingAddKeys = new Set(state.pendingAdds.map((row) => row.__rowKey));
   const newRowKeys = new Set(entry.addedRows.map((row) => row.__rowKey));
@@ -124,6 +127,7 @@ export type WorkbenchAction =
   | { kind: 'set-validation-errors'; value: SetStateAction<Map<string, string>> }
   | { kind: 'reset'; rows?: PreviewRow[] };
 
+/** 工作台 reducer（合并/回滚/清空待处理变更）。 */
 export function workbenchReducer(state: WorkbenchPendingState, action: WorkbenchAction): WorkbenchPendingState {
   switch (action.kind) {
     case 'apply-entry': return applyEntryToWorkbench(state, action.entry);
@@ -138,6 +142,7 @@ export function workbenchReducer(state: WorkbenchPendingState, action: Workbench
 }
 
 /** Merge server-loaded rows with local pending state: patch edits and append pending adds on page 1. */
+/** 合并加载行与待处理变更（分页展示视图）。 */
 export function mergeLoadedRows(loadedRows: PreviewRow[], pendingAdds: PreviewRow[], pendingChanges: Map<string, RowChanges>, page: number): PreviewRow[] {
   const patched = loadedRows.map((row) => {
     const changes = pendingChanges.get(row.__rowKey);
@@ -149,6 +154,7 @@ export function mergeLoadedRows(loadedRows: PreviewRow[], pendingAdds: PreviewRo
 }
 
 /** Strip internal workbench fields before sending a pending add to the server. */
+/** 清理待处理行（去掉 UI 专用字段）。 */
 export function cleanPendingRow(row: PreviewRow): Record<string, unknown> {
   const { __rowKey: _rowKey, __rowIndex: _rowIndex, __isNew: _isNew, ...clean } = row;
   return clean;
@@ -216,6 +222,7 @@ export interface DataWorkbench {
  * interface. The page wires AG Grid and dialogs to it; commit and undo/redo
  * cross the HTTP seam through `dataPreviewApi` (the transport adapter).
  */
+/** 数据工作台 Hook：分页加载、编辑、撤销与批量提交。 */
 export function useDataWorkbench(options: DataWorkbenchOptions): DataWorkbench {
   const { viewKey, autoSave, keyFields, projectId, tableId, sheetName } = options;
   const optionsRef = useRef(options);

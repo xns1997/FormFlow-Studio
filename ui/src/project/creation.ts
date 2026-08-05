@@ -40,6 +40,7 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+/** 解析标签输入（逗号/空格分隔）。 */
 export function parseTagInput(tagsInput: string): string[] {
   return tagsInput.split(',').map((item) => item.trim()).filter(Boolean);
 }
@@ -66,10 +67,12 @@ function applyMeta(project: ProjectStructure, meta: ProjectCreationMeta): Projec
   });
 }
 
+/** 创建空白项目。 */
 export function createBlankProject(meta: ProjectCreationMeta): ProjectStructure {
   return applyMeta(createNewProject(meta.name), meta);
 }
 
+/** 按模板创建项目。 */
 export function createProjectFromTemplate(templateId: ProjectTemplateId, meta: ProjectCreationMeta): ProjectStructure {
   const now = nowIso();
   return normalizeProjectStructure(buildProjectTemplate(templateId, {
@@ -82,12 +85,14 @@ export function createProjectFromTemplate(templateId: ProjectTemplateId, meta: P
   }) as ProjectStructure);
 }
 
+/** 从项目包文件创建项目（导入 + 元数据）。 */
 export async function createProjectFromPackage(file: File, meta: ProjectCreationMeta): Promise<ProjectStructure> {
   const imported = await importFormFlowPackage(file);
   if (!imported) throw new Error('无效的项目包文件');
   return applyMeta(imported, meta);
 }
 
+/** 从数据源创建项目（空白/模板/包）。 */
 export async function createProjectFromSource(options:
   | { mode: 'blank'; meta: ProjectCreationMeta }
   | { mode: 'template'; templateId: ProjectTemplateId; meta: ProjectCreationMeta }

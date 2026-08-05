@@ -42,6 +42,7 @@ export type DataTransactionTarget = {
   mutations: Array<{ mode: 'insert' | 'update' | 'upsert' | 'delete'; keyValue: unknown; row?: Record<string, unknown> }>;
 };
 
+/** 默认预览查询（分页 + 排序 + 过滤）。 */
 export const defaultPreviewQuery = (): PreviewQuery => ({
   page: 1,
   pageSize: 100,
@@ -51,10 +52,12 @@ export const defaultPreviewQuery = (): PreviewQuery => ({
   filterModel: {},
 });
 
+/** 统计单元格变更总数。 */
 export function countCellChanges(changes: Map<string, RowChanges>) {
   return [...changes.values()].reduce((total, row) => total + Object.keys(row).length, 0);
 }
 
+/** 变更集合 → 批量更新负载。 */
 export function serializeUpdates(changes: Map<string, RowChanges>) {
   return [...changes.entries()].map(([rowKey, fields]) => ({
     rowKey,
@@ -62,6 +65,7 @@ export function serializeUpdates(changes: Map<string, RowChanges>) {
   }));
 }
 
+/** 单元格值类型校验（返回错误消息）。 */
 export function validateCellValue(value: unknown, dataType: string): string | null {
   if (value == null || value === '') return null;
   if (dataType === 'number' && (typeof value === 'boolean' || Number.isNaN(Number(value)))) return '请输入有效数字';
@@ -70,6 +74,7 @@ export function validateCellValue(value: unknown, dataType: string): string | nu
   return null;
 }
 
+/** 批量校验变更（类型与必填）。 */
 export function validateChanges(
   changes: Map<string, RowChanges>,
   additions: PreviewRow[],
@@ -180,6 +185,7 @@ export type UndoEntry = {
   committed: boolean;
 };
 
+/** 空撤销条目。 */
 export function emptyUndoEntry(): UndoEntry {
   return { changes: [], addedRows: [], deletedRows: [], committed: false };
 }
@@ -239,6 +245,7 @@ export function undoEntryToBatchPayload(entry: UndoEntry, keyFields: string[]): 
   return { adds, updates, deletes, unresolved };
 }
 
+/** 数据预览 API（查询/更新/撤销/导出）。 */
 export const dataPreviewApi = {
   page: (input: { projectId: string; tableId: string; sheetName: string } & PreviewQuery) =>
     request('/data/paginated', { method: 'POST', body: JSON.stringify(input) }) as Promise<PreviewPageResult>,

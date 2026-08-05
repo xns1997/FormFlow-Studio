@@ -77,6 +77,7 @@ interface ProjectStore {
   importFromPackage: () => Promise<void>;
 }
 
+/** 项目 Store（结构、保存队列与撤销/重做）。 */
 export const useProjectStore = create<ProjectStore>((set, get) => {
   let saveQueue: Promise<void> = Promise.resolve();
   let latestSaveSequence = 0;
