@@ -25,6 +25,7 @@ function openDb(): Promise<IDBDatabase | undefined> {
   });
 }
 
+/** 加载编辑器草稿。 */
 export async function loadEditorDraft(id: string): Promise<EditorDraft | undefined> {
   const cached = memory.get(id);
   const db = await openDb();
@@ -38,6 +39,7 @@ export async function loadEditorDraft(id: string): Promise<EditorDraft | undefin
   } finally { db.close(); }
 }
 
+/** 保存编辑器草稿。 */
 export async function saveEditorDraft(draft: EditorDraft): Promise<void> {
   memory.set(draft.id, draft);
   const db = await openDb();
@@ -51,6 +53,7 @@ export async function saveEditorDraft(draft: EditorDraft): Promise<void> {
   } finally { db.close(); }
 }
 
+/** 清除编辑器草稿。 */
 export async function clearEditorDraft(id: string): Promise<void> {
   memory.delete(id);
   const db = await openDb();

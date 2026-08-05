@@ -14,8 +14,11 @@ import { validateEditableTableValue } from '../../components/EditableTableGrid';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
+/** 进入向导模式的字段数阈值。 */
 export const WIZARD_FIELD_THRESHOLD = 6;
+/** 向导每步字段数。 */
 export const WIZARD_STEP_SIZE = 4;
+/** 卡片分组大小。 */
 export const CARD_GROUP_SIZE = 4;
 
 // ─── Field name resolution ────────────────────────────────────────────────────
@@ -24,6 +27,7 @@ export const CARD_GROUP_SIZE = 4;
  * Resolve the logical field name for a component.
  * Prefers `fieldBinding`, falls back to `name`, then `props.name`, then `id`.
  */
+/** 解析组件绑定字段名。 */
 export function resolveComponentFieldName(comp: ComponentNode): string {
   return String(comp.fieldBinding || comp.name || comp.props.name || comp.id);
 }
@@ -32,6 +36,7 @@ export function resolveComponentFieldName(comp: ComponentNode): string {
  * Normalize component props for runtime rendering.
  * Merges component props with top-level label and name.
  */
+/** 归一化渲染属性（补默认值）。 */
 export function normalizeRenderProps(comp: ComponentNode): Record<string, unknown> {
   return {
     ...comp.props,
@@ -46,6 +51,7 @@ export function normalizeRenderProps(comp: ComponentNode): Record<string, unknow
  * Compute resolved expression values for all components.
  * This is the memoized computation that was previously inline in FormRenderer.
  */
+/** 批量计算表达式属性值。 */
 export function computeExpressionValues(
   components: ComponentNode[],
   values: Record<string, unknown>,
@@ -67,6 +73,7 @@ export function computeExpressionValues(
  * Determine whether a component should be validated.
  * Returns false for non-editable, hidden, disabled, or readonly components.
  */
+/** 组件是否应参与校验（非只读/未禁用）。 */
 export function shouldValidateComponent(
   component: ComponentNode,
   runtime: ReturnType<typeof resolveRuntimeProperties>,
@@ -85,6 +92,7 @@ export function shouldValidateComponent(
  * Compute validation errors for all components.
  * Returns a map of field name → error message (empty string = valid).
  */
+/** 计算组件校验错误。 */
 export function computeValidationErrors(
   components: ComponentNode[],
   componentStates: Record<string, { visible: boolean; disabled: boolean; readonly: boolean }>,
@@ -105,6 +113,7 @@ export function computeValidationErrors(
 /**
  * Get list of invalid fields from validation errors.
  */
+/** 校验错误字段列表。 */
 export function getInvalidFields(validationErrors: Record<string, string>): string[] {
   return Object.entries(validationErrors).filter(([, error]) => !!error).map(([field]) => field);
 }
@@ -114,6 +123,7 @@ export function getInvalidFields(validationErrors: Record<string, string>): stri
 /**
  * Determine if the form should use wizard mode.
  */
+/** 是否向导模式（字段数超阈值）。 */
 export function isWizardMode(
   components: ComponentNode[],
   componentStates: Record<string, { visible: boolean; disabled: boolean; readonly: boolean }>,
@@ -130,6 +140,7 @@ export function isWizardMode(
  * Group components into wizard steps.
  * Each step contains up to WIZARD_STEP_SIZE components, breaking on editable fields.
  */
+/** 按步大小切分组件为向导步骤。 */
 export function computeWizardSteps(components: ComponentNode[]): ComponentNode[][] {
   const result: ComponentNode[][] = [];
   let current: ComponentNode[] = [];
@@ -150,6 +161,7 @@ export function computeWizardSteps(components: ComponentNode[]): ComponentNode[]
  * Compute required field fill progress.
  * Returns { filled, total, progress } where progress is a display string like "3/5".
  */
+/** 计算必填进度（已完成必填/总数）。 */
 export function computeRequiredProgress(
   components: ComponentNode[],
   componentStates: Record<string, { visible: boolean; disabled: boolean; readonly: boolean }>,

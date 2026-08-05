@@ -12,6 +12,7 @@ export interface RegexTestResult {
   timedOut?: boolean;
 }
 
+/** 正则示例（测试面板）。 */
 export const REGEX_EXAMPLES = [
   { category: '常用', label: '整数', pattern: '^-?\\d+$', sample: '123' },
   { category: '常用', label: '小数', pattern: '^-?\\d+(?:\\.\\d+)?$', sample: '12.50' },
@@ -21,6 +22,7 @@ export const REGEX_EXAMPLES = [
   { category: '标识符', label: '字段名', pattern: '^[A-Za-z_][A-Za-z0-9_]*$', sample: 'customer_name' },
 ] as const;
 
+/** 编译正则（非法模式返回错误消息）。 */
 export function compileRegex(pattern: string, flags = ''): string | null {
   try { new RegExp(pattern, flags); return null; }
   catch (error) { return error instanceof Error ? error.message : String(error); }
@@ -47,6 +49,7 @@ interface RegexWorkerLike {
   terminate: () => void;
 }
 
+/** 测试正则（Worker 执行防卡死）。 */
 export function testRegex(pattern: string, samples: string[], flags = '', timeoutMs = 300, workerFactory?: () => RegexWorkerLike): Promise<RegexTestResult> {
   if (!workerFactory && typeof Worker === 'undefined') return Promise.resolve(runSynchronously(pattern, flags, samples));
   const syntaxError = compileRegex(pattern, flags);

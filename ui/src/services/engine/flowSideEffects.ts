@@ -91,6 +91,7 @@ function normalizeTableRowEffect(kind: FlowSideEffect['kind'], value: Record<str
   return { kind, tableId, sheetName, keyField, keyValue: nextKeyValue, row } as FlowSideEffect;
 }
 
+/** 归一化流程副作用（容错多形态输入）。 */
 export function normalizeFlowSideEffect(value: unknown): FlowSideEffect | null {
   if (!isRecord(value)) return null;
   const kind = String(value.kind || '');
@@ -130,6 +131,7 @@ export function normalizeFlowSideEffect(value: unknown): FlowSideEffect | null {
   return null;
 }
 
+/** 从节点输出中提取副作用。 */
 export function extractNodeSideEffects(outputs: Record<string, unknown> | undefined): FlowSideEffect[] {
   if (!outputs) return [];
   const explicit = Array.isArray(outputs.sideEffects)
@@ -140,6 +142,7 @@ export function extractNodeSideEffects(outputs: Record<string, unknown> | undefi
   return legacyWriteBack ? [legacyWriteBack] : [];
 }
 
+/** 收集流程结果的副作用列表。 */
 export function collectFlowSideEffects(result: FlowResultLike): FlowSideEffect[] {
   const direct = Array.isArray(result.sideEffects)
     ? result.sideEffects.map(normalizeFlowSideEffect).filter(Boolean) as FlowSideEffect[]

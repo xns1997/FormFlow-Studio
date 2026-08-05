@@ -118,6 +118,7 @@ function buildLinkageRulesWithoutRefs(component: DesignComponent, refs: LinkageE
   return next;
 }
 
+/** 诊断表单设计（绑定/校验/UX 一致性）。 */
 export function diagnoseForm(
   components: DesignComponent[],
   tables: SrcTableEntry[] = [],
@@ -483,6 +484,7 @@ export function diagnoseForm(
   return diagnostics;
 }
 
+/** 汇总表单诊断（按严重级计数）。 */
 export function summarizeFormDiagnostics(diagnostics: FormDiagnostic[]) {
   const errors = diagnostics.filter((item) => item.severity === 'error').length;
   const warnings = diagnostics.filter((item) => item.severity === 'warning').length;
@@ -491,6 +493,7 @@ export function summarizeFormDiagnostics(diagnostics: FormDiagnostic[]) {
   return { errors, warnings, info, score, ready: errors === 0 };
 }
 
+/** 查找未在表单中表示的列。 */
 export function findUnrepresentedColumns(components: DesignComponent[], tables: SrcTableEntry[]) {
   const represented = new Set(components.map((component) => String(component.fieldBinding || component.props?.name || '').trim()).filter(Boolean));
   return tables.flatMap((table) => table.sheets.flatMap((sheet) => sheet.columns

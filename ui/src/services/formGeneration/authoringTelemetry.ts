@@ -9,17 +9,20 @@ export interface AuthoringEvent {
 
 const STORAGE_KEY = 'formflow:authoring-metrics:v1';
 
+/** 读取作者行为事件（localStorage）。 */
 export function readAuthoringEvents(): AuthoringEvent[] {
   if (typeof localStorage === 'undefined' || typeof localStorage.getItem !== 'function') return [];
   try { const value = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); return Array.isArray(value) ? value : []; } catch { return []; }
 }
 
+/** 记录一次作者行为事件。 */
 export function recordAuthoringEvent(name: AuthoringEventName, data: Record<string, unknown> = {}, projectId?: string) {
   const event: AuthoringEvent = { name, projectId, createdAt: new Date().toISOString(), data };
   if (typeof localStorage !== 'undefined' && typeof localStorage.setItem === 'function') localStorage.setItem(STORAGE_KEY, JSON.stringify([...readAuthoringEvents(), event].slice(-500)));
   return event;
 }
 
+/** 汇总作者行为事件统计。 */
 export function summarizeAuthoringEvents(events: AuthoringEvent[]) {
   return {
     generatedForms: events.filter((item) => item.name === 'form_generated').length,

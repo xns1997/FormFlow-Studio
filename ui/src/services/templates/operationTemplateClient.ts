@@ -44,6 +44,7 @@ export interface TemplateRecommendation {
 
 type ToolEnvelope<T> = { ok: true; data: T } | { ok: false; error?: { message?: string }; confirmation?: { token: string; summary: string } };
 
+/** 操作模板工具错误（含错误码）。 */
 export class TemplateToolError extends Error {
   constructor(
     message: string,
@@ -54,6 +55,7 @@ export class TemplateToolError extends Error {
   ) { super(message); this.name = 'TemplateToolError'; }
 }
 
+/** 操作模板需要确认的错误。 */
 export class TemplateConfirmationRequired extends Error {
   constructor(readonly token: string, readonly summary: string, readonly impact: unknown) {
     super(summary); this.name = 'TemplateConfirmationRequired';
@@ -106,6 +108,7 @@ export interface TemplateStatistics {
   failureReasons: Array<{ code: string; message: string; count: number }>;
 }
 
+/** 操作模板客户端（应用/校验/导入导出）。 */
 export const operationTemplateClient = {
   list: (projectId?: string) => invoke<OperationTemplateCatalogItem[]>('project', 'catalog.operation_templates.list', projectId ? { projectId } : {}),
   recommend: (projectId: string, selection: TemplateSelection) => invoke<TemplateRecommendation[]>('project', 'template.recommend', { projectId, selection }),

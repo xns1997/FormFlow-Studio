@@ -9,6 +9,7 @@ export interface DocSection {
   tags: string[];
 }
 
+/** 文档区块定义（导航与路径）。 */
 export const docSections: DocSection[] = [
   {
     id: 'overview',
@@ -62,10 +63,12 @@ export const docSections: DocSection[] = [
   },
 ];
 
+/** 按 ID 查找文档区块。 */
 export function getDocSection(id: string): DocSection | undefined {
   return docSections.find((s) => s.id === id);
 }
 
+/** 按路径查找文档区块。 */
 export function getDocSectionByPath(path: string): DocSection | undefined {
   return docSections.find((s) => s.path === path);
 }

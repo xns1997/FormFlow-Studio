@@ -23,6 +23,7 @@ export interface DiagnosticExplanation {
   learnMore?: string;
 }
 
+/** 诊断 ID → 分类定义（标题/严重级/修复提示）。 */
 export const DIAGNOSTIC_CATEGORIES: Record<string, DiagnosticCategory> = {
   'field-binding': { id: 'field-binding', label: '数据绑定', icon: '🔗' },
   'validation': { id: 'validation', label: '校验规则', icon: '✓' },
@@ -152,6 +153,7 @@ const EXPLANATIONS: Record<string, DiagnosticExplanation> = {
   },
 };
 
+/** 获取诊断解释（含修复建议）。 */
 export function getDiagnosticExplanation(diagnosticId: string): DiagnosticExplanation | undefined {
   const prefix = diagnosticId.split(':')[0];
   return EXPLANATIONS[prefix] || EXPLANATIONS[diagnosticId];
@@ -175,6 +177,7 @@ const CATEGORY_MAP: Record<string, string> = {
   'missing-key': 'data-source',
 };
 
+/** 获取诊断分类（未知回退通用）。 */
 export function getDiagnosticCategory(diagnosticId: string): DiagnosticCategory {
   const prefix = diagnosticId.split(':')[0];
   const categoryId = CATEGORY_MAP[prefix] || 'layout';

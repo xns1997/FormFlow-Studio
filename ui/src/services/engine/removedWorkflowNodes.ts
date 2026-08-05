@@ -1,5 +1,6 @@
 import type { FlowNodeSpec } from '../../flowRegistry';
 
+/** 已移除的工作流节点 spec ID（兼容展示）。 */
 export const REMOVED_WORKFLOW_NODE_IDS = new Set([
   'generic:variable-input',
   'generic:text-input',
@@ -14,10 +15,12 @@ export const REMOVED_WORKFLOW_NODE_IDS = new Set([
   'func-checkbox-input',
 ]);
 
+/** 是否为已移除的节点 spec。 */
 export function isRemovedWorkflowNode(specId: string | undefined) {
   return !!specId && REMOVED_WORKFLOW_NODE_IDS.has(specId);
 }
 
+/** 构造已移除节点的占位 spec。 */
 export function createRemovedWorkflowNodeSpec(specId: string): FlowNodeSpec {
   return {
     id: specId,

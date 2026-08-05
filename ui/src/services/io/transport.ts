@@ -31,6 +31,7 @@ function abortableDelay(milliseconds: number, signal: AbortSignal) {
   });
 }
 
+/** 消费断线重连流（SSE/事件流）。 */
 export async function consumeReconnectingStream<T>(options: {
   signal: AbortSignal;
   cursor: number;
@@ -66,6 +67,7 @@ export async function consumeReconnectingStream<T>(options: {
   return cursor;
 }
 
+/** 解析 SSE 字节流为帧序列。 */
 export async function* parseSseStream(stream: ReadableStream<Uint8Array>): AsyncGenerator<SseFrame> {
   const reader = stream.getReader();
   const decoder = new TextDecoder();
@@ -100,6 +102,7 @@ export async function* parseSseStream(stream: ReadableStream<Uint8Array>): Async
   }
 }
 
+/** HTTP 传输错误（含状态码）。 */
 export class HttpTransportError extends Error {
   constructor(
     message: string,
@@ -128,6 +131,7 @@ export interface HttpResponse<T> {
   revision?: string;
 }
 
+/** 创建 HTTP 传输（请求/流式/离线队列）。 */
 export function createHttpTransport(options: {
   baseUrl: string;
   fetch?: typeof fetch;
