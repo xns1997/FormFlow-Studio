@@ -10,6 +10,7 @@ export interface FilteredPreviewRow {
   row: unknown[];
 }
 
+/** 按查询关键词过滤预览行（返回原始行与匹配列）。 */
 export function filterPreviewRows(rows: unknown[][], query: string): FilteredPreviewRow[] {
   const normalized = query.trim().toLocaleLowerCase();
   return rows.flatMap((row, sourceIndex) => {
@@ -46,6 +47,7 @@ function columnName(index: number): string {
   return result;
 }
 
+/** 解析 CSV 文本为行单元格数组（容错引号与换行）。 */
 export function parseCsvRows(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -67,6 +69,7 @@ export function parseCsvRows(text: string): string[][] {
   return rows;
 }
 
+/** 从工作簿对象提取 Sheet 名称列表。 */
 export function getWorkbookSheetNames(value: unknown): string[] {
   const workbook = value as any;
   return Array.isArray(workbook?.SheetNames) ? workbook.SheetNames.map(String) : [];
@@ -85,6 +88,7 @@ function worksheetToTable(worksheet: any): OutputPreviewTable | null {
   return null;
 }
 
+/** 输出值 → 预览表格（支持数组/CSV/工作簿）。 */
 export function outputToPreviewTable(type: string, value: unknown, sheetName?: string): OutputPreviewTable | null {
   if (type === 'workbook') {
     const workbook = value as any;
@@ -123,6 +127,7 @@ export function outputToPreviewTable(type: string, value: unknown, sheetName?: s
   return null;
 }
 
+/** 预览值 → 可读字符串。 */
 export function stringifyPreviewValue(value: unknown): string {
   if (typeof value === 'string') return value;
   if (value instanceof ArrayBuffer) return `ArrayBuffer(${value.byteLength} bytes)`;
@@ -137,6 +142,7 @@ export function stringifyPreviewValue(value: unknown): string {
   } catch { return String(value); }
 }
 
+/** 按输出类型格式化预览文本。 */
 export function formatOutputPreviewText(type: string, value: unknown): string {
   if (type === 'json-string' && typeof value === 'string') {
     try { return JSON.stringify(JSON.parse(value), null, 2); } catch { return value; }
@@ -144,12 +150,14 @@ export function formatOutputPreviewText(type: string, value: unknown): string {
   return stringifyPreviewValue(value);
 }
 
+/** 是否为二进制预览值（需下载/图片展示）。 */
 export function isBinaryPreviewValue(value: unknown): boolean {
   return value instanceof ArrayBuffer || ArrayBuffer.isView(value) || (typeof Blob !== 'undefined' && value instanceof Blob);
 }
 
 export type OutputPreviewMode = 'table' | 'html' | 'binary' | 'text';
 
+/** 决定输出预览模式（表格/文本/图片/下载）。 */
 export function getOutputPreviewMode(type: string, value: unknown, sheetName?: string): OutputPreviewMode {
   if (type === 'html-string') return 'html';
   if (outputToPreviewTable(type, value, sheetName)) return 'table';

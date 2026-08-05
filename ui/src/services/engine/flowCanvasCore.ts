@@ -10,6 +10,7 @@ import { createRemovedWorkflowNodeSpec, isRemovedWorkflowNode } from './removedW
  * 端口解析、Sheet 输入构造），页面只保留渲染与交互。
  */
 
+/** 节点属性中保存输入覆盖值的内部键。 */
 export const INPUT_OVERRIDE_KEY = '__inputOverrides';
 
 export type FlowNodeData = {
@@ -26,10 +27,12 @@ export type FlowNodeData = {
   debugActive?: boolean;
 };
 
+/** 由节点 spec 构造默认节点数据。 */
 export function nodeDataFromSpec(spec: FlowNodeSpec): FlowNodeData {
   return { specId: spec.id, label: spec.label, kind: spec.kind, category: spec.category, description: spec.description, propertiesJson: '{}', connectedPortsJson: '[]' };
 }
 
+/** 读取节点的输入覆盖值（端口名 → 值）。 */
 export function getInputOverrides(properties: Record<string, unknown>) {
   const raw = properties[INPUT_OVERRIDE_KEY];
   return raw && typeof raw === 'object' && !Array.isArray(raw)
@@ -37,6 +40,7 @@ export function getInputOverrides(properties: Record<string, unknown>) {
     : {};
 }
 
+/** 读取端口当前的连线选择（端口名 → edgeId）。 */
 export function getInputSelections(properties: Record<string, unknown>) {
   const raw = properties.__inputSelections;
   return raw && typeof raw === 'object' && !Array.isArray(raw)
@@ -44,6 +48,7 @@ export function getInputSelections(properties: Record<string, unknown>) {
     : {};
 }
 
+/** 写入端口输入覆盖值。 */
 export function setInputOverride(properties: Record<string, unknown>, portName: string, value: unknown) {
   const current = getInputOverrides(properties);
   const next = { ...current };
@@ -55,6 +60,7 @@ export function setInputOverride(properties: Record<string, unknown>, portName: 
   return { ...properties, [INPUT_OVERRIDE_KEY]: next };
 }
 
+/** 写入端口的连线选择。 */
 export function setInputSelection(properties: Record<string, unknown>, portName: string, edgeId: string | undefined) {
   const current = getInputSelections(properties);
   const next = { ...current };
@@ -65,14 +71,17 @@ export function setInputSelection(properties: Record<string, unknown>, portName:
   return { ...withoutSelections, __inputSelections: next };
 }
 
+/** 规范化 Sheet 键（去空白、统一分隔符）。 */
 export function normalizeSheetKey(tableId: string, sheetName: string) {
   return `${tableId}::${sheetName}`;
 }
 
+/** 边的逻辑键（source/target/端口），用于去重。 */
 export function getLogicalEdgeKey(edge: Pick<Edge, 'source' | 'target' | 'sourceHandle' | 'targetHandle'>) {
   return `${edge.source}::${edge.sourceHandle || ''}=>${edge.target}::${edge.targetHandle || ''}`;
 }
 
+/** 按逻辑键去重边（保留首个）。 */
 export function dedupeEdges<T extends Pick<Edge, 'source' | 'target' | 'sourceHandle' | 'targetHandle'>>(edgeList: T[]) {
   const seen = new Set<string>();
   return edgeList.filter((edge) => {
@@ -83,10 +92,12 @@ export function dedupeEdges<T extends Pick<Edge, 'source' | 'target' | 'sourceHa
   });
 }
 
+/** 是否为结构化输入类型（表/数组/对象）。 */
 export function isStructuredInputType(type: string) {
   return ['any', 'json', 'object', 'array', 'json-rows', 'filter', 'sort-config', 'validation-rule', 'style'].includes(type);
 }
 
+/** 端口是否支持项目 Sheet 输入。 */
 export function supportsProjectSheetInput(port: SchemaPort) {
   if (port.type === 'worksheet' || port.type === 'workbook' || port.type === 'json-rows') return true;
   if (port.type === 'array') {
@@ -98,6 +109,7 @@ export function supportsProjectSheetInput(port: SchemaPort) {
   return false;
 }
 
+/** 构造项目 Sheet 输入值（表引用对象）。 */
 export function buildProjectSheetValue(port: SchemaPort, table: SrcTableEntry, sheet: SrcTableEntry['sheets'][number]) {
   const worksheet = {
     __fromProject: true,
@@ -113,6 +125,7 @@ export function buildProjectSheetValue(port: SchemaPort, table: SrcTableEntry, s
   return undefined;
 }
 
+/** 创建画布节点（生成唯一 ID 与默认数据）。 */
 export function createNode(spec: FlowNodeSpec, index: number, position?: { x: number; y: number }) {
   return {
     id: `${spec.id}:${Date.now()}:${index}`,
@@ -122,10 +135,12 @@ export function createNode(spec: FlowNodeSpec, index: number, position?: { x: nu
   };
 }
 
+/** 从节点注册表解析 spec（含类别前缀回退）。 */
 export function resolveCanvasNodeSpec(registry: NodeRegistry | null | undefined, specId: string): FlowNodeSpec | undefined {
   return registry?.byId.get(specId) || (isRemovedWorkflowNode(specId) ? createRemovedWorkflowNodeSpec(specId) : undefined);
 }
 
+/** 解析字面量字符串（数字/布尔/JSON/原样）。 */
 export function parseLiteralValue(value: string) {
   if (value === '') return undefined;
   try { return JSON.parse(value); } catch { return value; }
