@@ -118,6 +118,41 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：changedFields"
+    },
+    {
+      "name": "executed",
+      "label": "是否执行",
+      "type": "boolean",
+      "direction": "output",
+      "description": "提交处理器是否已执行"
+    },
+    {
+      "name": "rowIndex",
+      "label": "行号",
+      "type": "number",
+      "direction": "output",
+      "description": "提交事件所在行号"
+    },
+    {
+      "name": "sheetName",
+      "label": "工作表名",
+      "type": "string",
+      "direction": "output",
+      "description": "提交事件所在工作表"
+    },
+    {
+      "name": "changedFields",
+      "label": "变更字段",
+      "type": "object",
+      "direction": "output",
+      "description": "本次提交变更的字段集合"
+    },
+    {
+      "name": "timestamp",
+      "label": "时间戳",
+      "type": "number",
+      "direction": "output",
+      "description": "事件触发时间戳"
     }
   ],
   "keywords": [

@@ -169,6 +169,20 @@ function workflowNodeProperties(node: any): Record<string, any> {
 }
 
 /** 解析自定义端口定义（与客户端 parseCustomJsPortDefinitions 兼容的最小实现，支持数组/JSON 字符串/对象映射）。 */
+const DYNAMIC_PORT_TYPES = new Set([
+  'string', 'number', 'boolean', 'enum', 'color', 'any',
+  'workbook', 'worksheet', 'cell', 'range', 'address', 'cell-ref',
+  'json-rows', 'aoa', 'headers', 'options', 'file-data', 'array', 'object', 'json',
+  'csv-string', 'html-string', 'json-string',
+  'filter', 'sort-config', 'style', 'validation-rule',
+  'trigger',
+]);
+
+function normalizeDynamicPortType(type: unknown): string {
+  const normalized = String(type || 'any').trim();
+  return DYNAMIC_PORT_TYPES.has(normalized) ? normalized : 'any';
+}
+
 function workflowCustomPorts(raw: unknown): Array<{ name: string; type: string }> {
   let source = raw;
   if (typeof source === 'string') {
@@ -185,7 +199,7 @@ function workflowCustomPorts(raw: unknown): Array<{ name: string; type: string }
       .filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry))
       .map((entry) => entry as Record<string, unknown>)
       .filter((entry) => typeof entry.name === 'string' && String(entry.name).trim())
-      .map((entry) => ({ name: String(entry.name).trim(), type: String(entry.type || 'any').trim() || 'any' }));
+      .map((entry) => ({ name: String(entry.name).trim(), type: normalizeDynamicPortType(entry.type) }));
   }
   if (source && typeof source === 'object') {
     return Object.entries(source as Record<string, unknown>)
@@ -193,9 +207,9 @@ function workflowCustomPorts(raw: unknown): Array<{ name: string; type: string }
       .map(([name, value]) => {
         if (value && typeof value === 'object' && !Array.isArray(value)) {
           const entry = value as Record<string, unknown>;
-          return { name, type: String(entry.type || 'any').trim() || 'any' };
+          return { name, type: normalizeDynamicPortType(entry.type) };
         }
-        return { name, type: String(value || 'any').trim() || 'any' };
+        return { name, type: normalizeDynamicPortType(value) };
       });
   }
   return [];

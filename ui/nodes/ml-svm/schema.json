@@ -37,25 +37,29 @@
       "label": "数据",
       "type": "json-rows",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "透传数据"
     },
     {
       "name": "accuracy",
       "label": "准确率",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "准确率"
     },
     {
       "name": "predictions",
       "label": "预测",
       "type": "array",
-      "direction": "output"
+      "direction": "output",
+      "description": "预测结果"
     },
     {
       "name": "support_vectors",
       "label": "支持向量数",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "支持向量数"
     }
   ],
   "keywords": [

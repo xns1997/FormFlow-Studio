@@ -88,6 +88,20 @@
       "type": "array",
       "direction": "output",
       "description": "输出：options"
+    },
+    {
+      "name": "trigger",
+      "label": "触发事件",
+      "type": "any",
+      "direction": "output",
+      "description": "复选框事件对象"
+    },
+    {
+      "name": "fieldName",
+      "label": "字段名",
+      "type": "string",
+      "direction": "output",
+      "description": "绑定字段名"
     }
   ],
   "keywords": [

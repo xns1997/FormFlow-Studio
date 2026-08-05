@@ -90,6 +90,13 @@
       "type": "string",
       "direction": "output",
       "description": "消息内容"
+    },
+    {
+      "name": "messageType",
+      "label": "消息类型",
+      "type": "string",
+      "direction": "output",
+      "description": "消息类型（info/warning/error/success）"
     }
   ],
   "keywords": [

@@ -385,6 +385,20 @@ function workflowNodeProperties(node) {
   return {};
 }
 
+const DYNAMIC_PORT_TYPES = new Set([
+  'string', 'number', 'boolean', 'enum', 'color', 'any',
+  'workbook', 'worksheet', 'cell', 'range', 'address', 'cell-ref',
+  'json-rows', 'aoa', 'headers', 'options', 'file-data', 'array', 'object', 'json',
+  'csv-string', 'html-string', 'json-string',
+  'filter', 'sort-config', 'style', 'validation-rule',
+  'trigger',
+]);
+
+function normalizeDynamicPortType(type) {
+  const normalized = String(type || 'any').trim();
+  return DYNAMIC_PORT_TYPES.has(normalized) ? normalized : 'any';
+}
+
 function customPorts(raw) {
   let source = raw;
   if (typeof source === 'string') {
@@ -396,12 +410,12 @@ function customPorts(raw) {
     return source
       .filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry))
       .filter((entry) => typeof entry.name === 'string' && String(entry.name).trim())
-      .map((entry) => ({ name: String(entry.name).trim(), type: String(entry.type || 'any').trim() || 'any' }));
+      .map((entry) => ({ name: String(entry.name).trim(), type: normalizeDynamicPortType(entry.type) }));
   }
   if (source && typeof source === 'object') {
     return Object.entries(source)
       .filter(([name]) => Boolean(String(name).trim()))
-      .map(([name, value]) => ({ name, type: value && typeof value === 'object' ? String(value.type || 'any').trim() || 'any' : String(value || 'any').trim() || 'any' }));
+      .map(([name, value]) => ({ name, type: value && typeof value === 'object' ? normalizeDynamicPortType(value.type) : normalizeDynamicPortType(value) }));
   }
   return [];
 }

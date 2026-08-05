@@ -30,31 +30,36 @@
       "label": "表单数据",
       "type": "object",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "表单数据对象"
     },
     {
       "name": "row",
       "label": "当前数据行",
       "type": "object",
-      "direction": "input"
+      "direction": "input",
+      "description": "当前行数据"
     },
     {
       "name": "flow",
       "label": "流程输出",
       "type": "object",
-      "direction": "input"
+      "direction": "input",
+      "description": "流程上下文数据"
     },
     {
       "name": "value",
       "label": "计算值",
       "type": "any",
-      "direction": "output"
+      "direction": "output",
+      "description": "值"
     },
     {
       "name": "result",
       "label": "结果",
       "type": "any",
-      "direction": "output"
+      "direction": "output",
+      "description": "结果值"
     },
     {
       "name": "values",
@@ -79,6 +84,13 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：event"
+    },
+    {
+      "name": "targetField",
+      "label": "目标字段",
+      "type": "string",
+      "direction": "output",
+      "description": "计算值要写入的字段名"
     }
   ],
   "keywords": [

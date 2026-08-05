@@ -138,6 +138,41 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：fields"
+    },
+    {
+      "name": "executed",
+      "label": "是否执行",
+      "type": "boolean",
+      "direction": "output",
+      "description": "加载处理器是否已执行"
+    },
+    {
+      "name": "timestamp",
+      "label": "时间戳",
+      "type": "number",
+      "direction": "output",
+      "description": "事件触发时间戳"
+    },
+    {
+      "name": "rowIndex",
+      "label": "行号",
+      "type": "number",
+      "direction": "output",
+      "description": "加载事件所在行号"
+    },
+    {
+      "name": "formData",
+      "label": "表单数据",
+      "type": "object",
+      "direction": "output",
+      "description": "加载时的表单数据"
+    },
+    {
+      "name": "fields",
+      "label": "字段列表",
+      "type": "array",
+      "direction": "output",
+      "description": "表单字段列表"
     }
   ],
   "keywords": [

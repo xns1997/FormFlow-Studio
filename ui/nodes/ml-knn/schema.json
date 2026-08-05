@@ -35,19 +35,22 @@
       "label": "数据",
       "type": "json-rows",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "透传数据"
     },
     {
       "name": "accuracy",
       "label": "准确率",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "准确率"
     },
     {
       "name": "predictions",
       "label": "预测结果",
       "type": "array",
-      "direction": "output"
+      "direction": "output",
+      "description": "预测结果"
     }
   ],
   "keywords": [

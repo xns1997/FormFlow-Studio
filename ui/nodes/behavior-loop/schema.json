@@ -127,6 +127,27 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：data"
+    },
+    {
+      "name": "trigger",
+      "label": "触发信号",
+      "type": "any",
+      "direction": "output",
+      "description": "透传的触发信号"
+    },
+    {
+      "name": "items",
+      "label": "迭代数组",
+      "type": "array",
+      "direction": "output",
+      "description": "实际迭代的数组"
+    },
+    {
+      "name": "count",
+      "label": "迭代次数",
+      "type": "number",
+      "direction": "output",
+      "description": "本次循环的迭代次数"
     }
   ],
   "keywords": [

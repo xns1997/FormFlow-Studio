@@ -132,6 +132,20 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：context"
+    },
+    {
+      "name": "failedReason",
+      "label": "未命中原因",
+      "type": "string",
+      "direction": "output",
+      "description": "没有满足条件的候选时的说明"
+    },
+    {
+      "name": "trigger",
+      "label": "触发信号",
+      "type": "any",
+      "direction": "output",
+      "description": "透传的触发信号"
     }
   ],
   "keywords": [

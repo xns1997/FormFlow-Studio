@@ -54,6 +54,34 @@
       "type": "string",
       "direction": "output",
       "description": "连接状态"
+    },
+    {
+      "name": "url",
+      "label": "连接地址",
+      "type": "string",
+      "direction": "output",
+      "description": "WebSocket 目标地址"
+    },
+    {
+      "name": "sent",
+      "label": "发送内容",
+      "type": "any",
+      "direction": "output",
+      "description": "已准备发送的消息内容"
+    },
+    {
+      "name": "message",
+      "label": "状态消息",
+      "type": "string",
+      "direction": "output",
+      "description": "连接/发送操作的结果消息"
+    },
+    {
+      "name": "error",
+      "label": "错误信息",
+      "type": "string",
+      "direction": "output",
+      "description": "操作失败时的错误信息"
     }
   ],
   "keywords": [

@@ -42,13 +42,15 @@
       "label": "数据",
       "type": "json-rows",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "透传数据"
     },
     {
       "name": "insight",
       "label": "洞察",
       "type": "string",
-      "direction": "output"
+      "direction": "output",
+      "description": "分析结论"
     }
   ],
   "keywords": [

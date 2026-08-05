@@ -116,26 +116,30 @@
       "label": "主记录",
       "type": "json-rows",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "左表（主表）数据"
     },
     {
       "name": "right",
       "label": "参考记录",
       "type": "json-rows",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "右表（参考表）数据"
     },
     {
       "name": "rows",
       "label": "关联结果",
       "type": "json-rows",
-      "direction": "output"
+      "direction": "output",
+      "description": "关联后的行数据"
     },
     {
       "name": "matchedCount",
       "label": "匹配数量",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "命中记录数"
     },
     {
       "name": "rows",
@@ -160,6 +164,34 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：criteria"
+    },
+    {
+      "name": "result",
+      "label": "关联结果",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "关联后的行集合（同 rows）"
+    },
+    {
+      "name": "total",
+      "label": "匹配总数",
+      "type": "number",
+      "direction": "output",
+      "description": "过滤前关联匹配的总行数"
+    },
+    {
+      "name": "unique",
+      "label": "唯一匹配",
+      "type": "boolean",
+      "direction": "output",
+      "description": "是否唯一命中一条记录"
+    },
+    {
+      "name": "message",
+      "label": "结果消息",
+      "type": "string",
+      "direction": "output",
+      "description": "关联结果提示消息"
     }
   ],
   "keywords": [

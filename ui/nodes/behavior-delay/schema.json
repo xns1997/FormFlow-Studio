@@ -46,6 +46,13 @@
       "type": "any",
       "direction": "output",
       "description": "延时后触发"
+    },
+    {
+      "name": "delay",
+      "label": "延迟毫秒",
+      "type": "number",
+      "direction": "output",
+      "description": "实际生效的延迟毫秒数"
     }
   ],
   "keywords": [

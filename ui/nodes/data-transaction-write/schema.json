@@ -57,31 +57,36 @@
       "label": "复合表单数据",
       "type": "object",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "表单数据对象"
     },
     {
       "name": "result",
       "label": "事务结果",
       "type": "array",
-      "direction": "output"
+      "direction": "output",
+      "description": "结果值"
     },
     {
       "name": "success",
       "label": "提交成功",
       "type": "boolean",
-      "direction": "output"
+      "direction": "output",
+      "description": "是否成功"
     },
     {
       "name": "diff",
       "label": "变更差异",
       "type": "array",
-      "direction": "output"
+      "direction": "output",
+      "description": "变更明细列表"
     },
     {
       "name": "conflicts",
       "label": "冲突",
       "type": "array",
-      "direction": "output"
+      "direction": "output",
+      "description": "冲突列表"
     },
     {
       "name": "data",

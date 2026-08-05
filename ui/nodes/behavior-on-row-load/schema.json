@@ -144,6 +144,34 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：formData"
+    },
+    {
+      "name": "sheetName",
+      "label": "工作表名",
+      "type": "string",
+      "direction": "output",
+      "description": "当前行所在工作表"
+    },
+    {
+      "name": "totalRows",
+      "label": "总行数",
+      "type": "number",
+      "direction": "output",
+      "description": "数据源总行数"
+    },
+    {
+      "name": "formData",
+      "label": "表单数据",
+      "type": "object",
+      "direction": "output",
+      "description": "行加载时的表单数据"
+    },
+    {
+      "name": "timestamp",
+      "label": "时间戳",
+      "type": "number",
+      "direction": "output",
+      "description": "事件触发时间戳"
     }
   ],
   "keywords": [

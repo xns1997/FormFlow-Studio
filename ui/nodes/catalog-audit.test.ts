@@ -15,13 +15,26 @@ import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { loadNodeRegistry } from '../src/flowRegistry';
 import { portTypesCompatible } from '../src/services/config/nodeDiscovery';
+import { parseCustomJsPortDefinitions } from '../src/services/config/customJsNode';
 import { executeFlow, type FlowEdgeDef, type FlowNodeDef } from '../src/services/engine/flowEngine';
+import { getExecutor, hasExecutor, registerExecutor } from './executor-registry';
+import { checkPortType, assertPortType, getRegisteredTypes } from './port-types';
 
 const repoRoot = join(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
 const nodesRoot = join(repoRoot, 'ui', 'nodes');
 const referencePath = join(repoRoot, '.codex', 'skills', 'formflow-project-editor', 'references', 'node-ports-v2.json');
 
 const KNOWN_TYPES = new Set([
+  'string', 'number', 'boolean', 'enum', 'array', 'object', 'json', 'range', 'color', 'any',
+  'workbook', 'worksheet', 'cell', 'address', 'cell-ref',
+  'json-rows', 'aoa', 'headers', 'options', 'file-data',
+  'csv-string', 'html-string', 'json-string',
+  'filter', 'sort-config', 'style', 'validation-rule',
+  'trigger', 'port-definition', 'code',
+]);
+
+/** 合法的属性类型（与 excel-api-types.PropertyType 保持一致） */
+const PROPERTY_TYPES = new Set([
   'string', 'number', 'boolean', 'enum', 'array', 'object', 'json', 'range', 'color', 'any',
   'workbook', 'worksheet', 'cell', 'address', 'cell-ref',
   'json-rows', 'aoa', 'headers', 'options', 'file-data',
@@ -103,6 +116,14 @@ test('全部节点包 schema 自洽：端口类型合法、唯一、inputs/outpu
       keys.add(key);
       assert.ok(['input', 'output', 'both'].includes(port.direction), `${schema.id}: 非法方向 ${port.direction}`);
       assert.ok(KNOWN_TYPES.has(port.type), `${schema.id}: 未知端口类型 ${port.type} (${key})`);
+      assert.ok(typeof port.label === 'string' && port.label.trim(), `${schema.id}: 端口 ${key} 缺少 label`);
+      assert.ok(typeof port.description === 'string' && port.description.trim(), `${schema.id}: 端口 ${key} 缺少 description`);
+      if (port.name === 'worksheet') {
+        assert.ok(['worksheet', 'workbook', 'any'].includes(port.type), `${schema.id}: worksheet 端口类型应为 worksheet/workbook/any，实际 ${port.type}`);
+      }
+      if (port.name === 'workbook') {
+        assert.equal(port.type, 'workbook', `${schema.id}: workbook 端口类型应为 workbook，实际 ${port.type}`);
+      }
     }
     const inputNames = new Set(ports.filter((p) => p.direction === 'input' || p.direction === 'both').map((p) => p.name));
     const outputNames = new Set(ports.filter((p) => p.direction === 'output' || p.direction === 'both').map((p) => p.name));
@@ -114,6 +135,29 @@ test('全部节点包 schema 自洽：端口类型合法、唯一、inputs/outpu
       assert.ok(outputNames.has(output.name), `${schema.id}: output "${output.name}" 缺少对应输出端口`);
       assert.ok(KNOWN_TYPES.has(output.type), `${schema.id}: output "${output.name}" 类型未知 ${output.type}`);
     }
+    const propSeen = new Set<string>();
+    for (const prop of schema.properties || []) {
+      assert.ok(!propSeen.has(prop.name), `${schema.id}: 重复属性 ${prop.name}`);
+      propSeen.add(prop.name);
+      assert.ok(PROPERTY_TYPES.has(prop.type), `${schema.id}: 属性 ${prop.name} 类型非法 ${prop.type}`);
+      if (prop.type === 'enum') {
+        assert.ok(Array.isArray(prop.enum) && prop.enum.length > 0, `${schema.id}: enum 属性 ${prop.name} 缺少 enum 列表`);
+      }
+    }
+  }
+});
+
+test('每个 schema 端口类型都有运行时校验器（checkPortType 可检测有效性）', () => {
+  const schemas = readSchemas();
+  const registered = new Set(getRegisteredTypes());
+  const used = new Set<string>();
+  for (const schema of schemas) {
+    for (const port of schema.ports || []) used.add(port.type);
+    for (const input of schema.inputs || []) used.add(input.type);
+    for (const output of schema.outputs || []) used.add(output.type);
+  }
+  for (const type of used) {
+    assert.ok(registered.has(type), `端口类型 ${type} 未注册运行时校验器，checkPortType 会静默放行`);
   }
 });
 
@@ -215,6 +259,122 @@ test('上下游连通性：每个端口都有兼容的上下游搭档', async ()
   }
 });
 
+test('动态端口类型与运行时/服务端类型系统一致（不静默降级为 any）', () => {
+  const defs = parseCustomJsPortDefinitions({
+    a: 'workbook',
+    b: 'json-rows',
+    c: 'file-data',
+    d: 'range',
+    e: 'filter',
+    f: 'string',
+    g: 'unknown-type',
+  });
+  const byName = new Map(defs.map((entry) => [entry.name, entry.type]));
+  assert.equal(byName.get('a'), 'workbook', '动态端口 workbook 类型不应被降级');
+  assert.equal(byName.get('b'), 'json-rows', '动态端口 json-rows 类型不应被降级');
+  assert.equal(byName.get('c'), 'file-data', '动态端口 file-data 类型不应被降级');
+  assert.equal(byName.get('d'), 'range', '动态端口 range 类型不应被降级');
+  assert.equal(byName.get('e'), 'filter', '动态端口 filter 类型不应被降级');
+  assert.equal(byName.get('f'), 'string');
+  assert.equal(byName.get('g'), 'any', '未知类型仍应安全降级为 any');
+});
+
+/** 与服务端 validateProjectModel / formflow-project CLI 一致的动态端口解析。 */
+function workflowCustomPorts(raw: unknown): Array<{ name: string; type: string }> {
+  let source = raw;
+  if (typeof source === 'string') {
+    const text = source.trim();
+    if (!text) return [];
+    try { source = JSON.parse(text); } catch { return []; }
+  }
+  if (Array.isArray(source)) {
+    return source
+      .filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry))
+      .map((entry) => entry as Record<string, unknown>)
+      .filter((entry) => typeof entry.name === 'string' && String(entry.name).trim())
+      .map((entry) => ({ name: String(entry.name).trim(), type: String(entry.type || 'any').trim() || 'any' }));
+  }
+  if (source && typeof source === 'object') {
+    return Object.entries(source as Record<string, unknown>)
+      .filter(([name]) => Boolean(String(name).trim()))
+      .map(([name, value]) => {
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          const entry = value as Record<string, unknown>;
+          return { name, type: String(entry.type || 'any').trim() || 'any' };
+        }
+        return { name, type: String(value || 'any').trim() || 'any' };
+      });
+  }
+  return [];
+}
+
+function mergePorts(staticPorts: Array<{ name: string; type: string }>, customPorts: Array<{ name: string; type: string }>) {
+  const byName = new Map<string, { name: string; type: string }>();
+  for (const port of [...staticPorts, ...customPorts]) if (!byName.has(port.name)) byName.set(port.name, port);
+  return byName;
+}
+
+function workflowNodeProperties(node: any): Record<string, any> {
+  try {
+    const raw = node?.data?.propertiesJson;
+    if (typeof raw !== 'string' || !raw.trim()) return {};
+    return JSON.parse(raw) as Record<string, any>;
+  } catch {
+    return {};
+  }
+}
+
+test('真实项目全部工作流连线可被端口 schema 采纳（端口存在 + 类型兼容 + 动态端口）', () => {
+  const reference = JSON.parse(readFileSync(referencePath, 'utf8'));
+  const projectRoot = join(repoRoot, 'projects', 'data');
+  if (!existsSync(projectRoot)) return;
+  let projects = 0;
+  let workflows = 0;
+  let edges = 0;
+  const violations: string[] = [];
+  for (const dir of readdirSync(projectRoot, { withFileTypes: true })) {
+    if (!dir.isDirectory() || !dir.name.endsWith('.formflow')) continue;
+    const workflowPath = join(projectRoot, dir.name, 'workflows', 'workflows.json');
+    if (!existsSync(workflowPath)) continue;
+    const { workflows: workflowList } = JSON.parse(readFileSync(workflowPath, 'utf8'));
+    projects += 1;
+    for (const workflow of workflowList || []) {
+      workflows += 1;
+      const nodesById = new Map<string, any>((workflow.nodes || []).map((item: any) => [item.id, item]));
+      for (const edge of workflow.edges || []) {
+        if (!edge.sourceHandle || !edge.targetHandle) continue; // 状态机/无句柄边不是流式连线
+        edges += 1;
+        const source = nodesById.get(edge.source);
+        const target = nodesById.get(edge.target);
+        if (!source) { violations.push(`${dir.name}/${workflow.id}: 边 ${edge.id} 源节点不存在`); continue; }
+        if (!target) { violations.push(`${dir.name}/${workflow.id}: 边 ${edge.id} 目标节点不存在`); continue; }
+        const sourcePortName = String(edge.sourceHandle).replace(/^out:/, '');
+        const targetPortName = String(edge.targetHandle).replace(/^in:/, '');
+        const sourceProperties = workflowNodeProperties(source);
+        const targetProperties = workflowNodeProperties(target);
+        const sourceOutputs = mergePorts(
+          reference[source.specId]?.outputs || [],
+          [...workflowCustomPorts(sourceProperties.outputPorts), ...(source.specId === 'workflow:import' ? workflowCustomPorts(sourceProperties.ports) : [])],
+        );
+        const targetInputs = mergePorts(
+          reference[target.specId]?.inputs || [],
+          [...workflowCustomPorts(targetProperties.inputPorts), ...(target.specId === 'workflow:export' ? workflowCustomPorts(targetProperties.ports) : [])],
+        );
+        const sourceEntry = sourceOutputs.get(sourcePortName);
+        const targetEntry = targetInputs.get(targetPortName);
+        if (!sourceEntry) violations.push(`${dir.name}/${workflow.id}: 边 ${edge.id} 输出端口 ${source.specId}.${sourcePortName} 不存在`);
+        if (!targetEntry) violations.push(`${dir.name}/${workflow.id}: 边 ${edge.id} 输入端口 ${target.specId}.${targetPortName} 不存在`);
+        if (sourceEntry && targetEntry && !portTypesCompatible(sourceEntry.type, targetEntry.type)) {
+          violations.push(`${dir.name}/${workflow.id}: 边 ${edge.id} 类型不兼容 ${sourcePortName}(${sourceEntry.type}) → ${targetPortName}(${targetEntry.type})`);
+        }
+      }
+    }
+  }
+  assert.ok(projects >= 20, `应扫描到至少 20 个本地样例项目，实际 ${projects}`);
+  assert.ok(workflows > 0 && edges > 0, `应存在带连线的样例工作流，实际 workflows=${workflows} edges=${edges}`);
+  assert.equal(violations.length, 0, violations.join('\n'));
+});
+
 const node = (id: string, specId: string, properties: Record<string, unknown> = {}): FlowNodeDef => ({
   id, specId, position: { x: 0, y: 0 }, data: { propertiesJson: JSON.stringify(properties) },
 });
@@ -254,4 +414,125 @@ test('联动执行：targetNodeId 只运行上游链路并传递命名端口', a
   assert.equal(result.success, true, result.errors.join('\n'));
   assert.deepEqual([...result.nodeResults.keys()].sort(), ['src', 'target']);
   assert.equal(result.nodeResults.get('target')?.outputs.value, '表单值');
+});
+
+function samplePortValue(type: string): unknown {
+  switch (type) {
+    case 'string': case 'address': case 'cell-ref': case 'csv-string': case 'html-string': case 'json-string':
+    case 'enum': case 'color': return 'x';
+    case 'number': return 1;
+    case 'boolean': return true;
+    case 'array': case 'json-rows': case 'aoa': case 'headers': return [];
+    default: return {};
+  }
+}
+
+test('执行器输出契约：成功路径的返回键覆盖声明输出，产物键均为已声明端口', async () => {
+  const registry = await loadNodeRegistry();
+  const registryIds = new Set(registry.specs.map((s) => s.id));
+
+  // 模拟 registry 对 func-* 包执行器的包装（Vite glob 在 Node 下不可用，这里手工套用同一包装逻辑）
+  const schemas = readSchemas();
+  const schemaById = new Map(schemas.map((s) => [s.id, s]));
+  const nodesRootDir = nodesRoot;
+  for (const entry of readdirSync(nodesRootDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const schemaPath = join(nodesRootDir, entry.name, 'schema.json');
+    const indexPath = join(nodesRootDir, entry.name, 'index.ts');
+    if (!existsSync(schemaPath) || !existsSync(indexPath)) continue;
+    const schema = JSON.parse(readFileSync(schemaPath, 'utf8'));
+    if (!String(schema.id || '').startsWith('func-')) continue;
+    const inputPorts = (schema.ports || []).filter((p) => p.direction === 'input' || p.direction === 'both');
+    const outputPorts = (schema.ports || []).filter((p) => p.direction === 'output' || p.direction === 'both');
+    registerExecutor(String(schema.id), async (ctx: any) => {
+      const module = await import(indexPath);
+      const args = inputPorts.map((p) => ctx.inputs[p.name]);
+      const result = await module.execute(args, ctx.properties);
+      if (result && typeof result === 'object' && !Array.isArray(result)) return result;
+      return { [outputPorts[0]?.name || 'result']: result };
+    });
+  }
+
+  const allNodes: Array<{ id: string; ports: Array<{ name: string; type: string; direction: string }>; properties: Array<{ name: string; type: string; default?: unknown }> }> = [];
+  for (const spec of registry.specs) {
+    if (spec.id.startsWith('method:')) continue;
+    allNodes.push({ id: spec.id, ports: spec.ports, properties: spec.properties });
+  }
+  for (const schema of schemas) {
+    if (registryIds.has(schema.id)) continue;
+    allNodes.push({ id: normalizePackageId(schema.id), ports: schema.ports || [], properties: schema.properties || [] });
+  }
+
+  /** 条件输出：仅在特定运行模式下产出，探针默认夹具不触发，属于合法豁免 */
+  const CONDITIONAL_OUTPUTS: Record<string, Set<string>> = {
+    'generic:sheet-source': new Set(['workbook', 'range', 'address', 'areas', 'values', 'areaValues', 'areaCount', 'cellCount', 'rowCount', 'colCount']),
+    'generic:websocket': new Set(['sent', 'error']),
+  };
+  const EXTRA_ALLOWLIST = new Set(['sideEffects', 'result', 'error']);
+
+  // 屏蔽真实网络：探针只验证契约，不允许依赖外部服务
+  const realFetch = globalThis.fetch;
+  (globalThis as { fetch: typeof fetch }).fetch = () => Promise.reject(new Error('probe network stub'));
+
+  const mismatches: string[] = [];
+  let executedOk = 0;
+  let envSkipped = 0;
+  let configSkipped = 0;
+  try {
+    for (const node of allNodes) {
+      const declaredOutputs = new Set(node.ports.filter((p) => p.direction === 'output' || p.direction === 'both').map((p) => p.name));
+      if (declaredOutputs.size === 0) continue;
+      if (!hasExecutor(node.id)) continue;
+      const inputs: Record<string, unknown> = {};
+      for (const port of node.ports.filter((p) => p.direction === 'input' || p.direction === 'both')) {
+        inputs[port.name] = samplePortValue(port.type);
+      }
+      // 条件输出节点固定到默认分支
+      if (node.id === 'generic:sheet-source') {
+        inputs.sourceMode = 'worksheet';
+      }
+      const props: Record<string, unknown> = {};
+      for (const prop of node.properties || []) props[prop.name] = prop.default !== undefined ? prop.default : samplePortValue(prop.type);
+      if (node.id === 'generic:websocket') {
+        props.url = 'wss://example.test';
+      }
+      const ctx: any = {
+        inputs,
+        properties: props,
+        tables: [],
+        getNodeOutput: () => ({}),
+        checkType: (type: string, value: unknown) => checkPortType(type, value),
+        assertType: (type: string, value: unknown, portName?: string) => assertPortType(type, value, portName),
+      };
+      try {
+        const output = (await getExecutor(node.id)!(ctx)) || {};
+        const keys = Object.keys(output).filter((key) => !key.startsWith('__'));
+        const hasAnyDeclared = [...declaredOutputs].some((key) => keys.includes(key));
+        if (!hasAnyDeclared && keys.includes('error')) {
+          // 网络/服务/配置错误被捕获后返回 {error}：按环境失败豁免，不判定为契约错误
+          envSkipped += 1;
+          continue;
+        }
+        executedOk += 1;
+        const conditional = CONDITIONAL_OUTPUTS[node.id] || new Set<string>();
+        const missing = [...declaredOutputs].filter((key) => !keys.includes(key) && !conditional.has(key));
+        const extra = keys.filter((key) => !declaredOutputs.has(key) && !EXTRA_ALLOWLIST.has(key));
+        if (missing.length > 0) {
+          mismatches.push(`${node.id}: 声明输出未产出 [${missing.join(', ')}]`);
+        }
+        if (extra.length > 0) {
+          mismatches.push(`${node.id}: 产出未声明 [${extra.join(', ')}]`);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (/fetch|网络|Failed to parse URL|请求失败/.test(message)) envSkipped += 1;
+        else configSkipped += 1;
+      }
+    }
+  } finally {
+    (globalThis as { fetch: typeof fetch }).fetch = realFetch;
+  }
+
+  assert.ok(executedOk >= 120, `探针应覆盖至少 120 个可执行节点，实际 ${executedOk}（env 跳过 ${envSkipped}，配置跳过 ${configSkipped}）`);
+  assert.deepEqual(mismatches, [], mismatches.join('\n'));
 });

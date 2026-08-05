@@ -114,37 +114,43 @@
       "name": "criteria",
       "label": "查询条件",
       "type": "object",
-      "direction": "input"
+      "direction": "input",
+      "description": "查询条件"
     },
     {
       "name": "matched",
       "label": "是否命中",
       "type": "boolean",
-      "direction": "output"
+      "direction": "output",
+      "description": "是否命中"
     },
     {
       "name": "unique",
       "label": "是否唯一",
       "type": "boolean",
-      "direction": "output"
+      "direction": "output",
+      "description": "是否唯一匹配"
     },
     {
       "name": "matchCount",
       "label": "命中数量",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "匹配记录数"
     },
     {
       "name": "record",
       "label": "记录",
       "type": "object",
-      "direction": "output"
+      "direction": "output",
+      "description": "记录对象"
     },
     {
       "name": "patch",
       "label": "表单补丁",
       "type": "object",
-      "direction": "output"
+      "direction": "output",
+      "description": "补丁对象"
     },
     {
       "name": "tableId",
@@ -177,6 +183,20 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：originalFieldMap"
+    },
+    {
+      "name": "originalPatch",
+      "label": "原字段补丁",
+      "type": "object",
+      "direction": "output",
+      "description": "原字段值回填补丁"
+    },
+    {
+      "name": "appliedFields",
+      "label": "回填字段",
+      "type": "array",
+      "direction": "output",
+      "description": "本次实际回填的字段列表"
     }
   ],
   "keywords": [

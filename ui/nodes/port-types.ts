@@ -157,6 +157,37 @@ reg('cell-ref', (v) => {
 });
 
 // 数据集合类型
+reg('array', (v) => {
+  if (v === null || v === undefined) return { valid: true, normalized: v };
+  if (Array.isArray(v)) return { valid: true, normalized: v };
+  // 项目工作表包装对象（json-rows 同款）可归一化为预览数组
+  const wrapper = v as Record<string, unknown>;
+  if (wrapper?.__fromProject && Array.isArray(wrapper.preview)) {
+    return { valid: true, normalized: wrapper.preview };
+  }
+  return { valid: false, error: `期望数组，实际: ${typeof v}` };
+});
+
+reg('object', (v) => {
+  if (v === null || v === undefined) return { valid: true, normalized: v };
+  if (typeof v === 'object' && !Array.isArray(v)) return { valid: true, normalized: v };
+  return { valid: false, error: `期望对象，实际: ${Array.isArray(v) ? 'array' : typeof v}` };
+});
+
+reg('json', (v) => {
+  if (v === null || v === undefined) return { valid: true, normalized: v };
+  if (typeof v === 'string') {
+    try {
+      JSON.parse(v);
+      return { valid: true, normalized: v };
+    } catch {
+      return { valid: false, error: '期望有效 JSON 字符串' };
+    }
+  }
+  if (typeof v === 'object') return { valid: true, normalized: v };
+  return { valid: false, error: `期望 JSON 值，实际: ${typeof v}` };
+});
+
 reg('json-rows', (v) => {
   if (v === null || v === undefined) return { valid: false, error: 'json-rows 为空' };
   const ws = v as Record<string, unknown> | null;

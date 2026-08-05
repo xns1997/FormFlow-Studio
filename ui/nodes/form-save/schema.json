@@ -62,7 +62,7 @@
     {
       "name": "duplicatePolicy",
       "label": "重复主键策略",
-      "type": "select",
+      "type": "enum",
       "default": "upsert",
       "options": [
         {
@@ -73,6 +73,10 @@
           "label": "拒绝重复",
           "value": "reject"
         }
+      ],
+      "enum": [
+        "upsert",
+        "reject"
       ]
     },
     {
@@ -140,37 +144,43 @@
       "label": "表单数据",
       "type": "object",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "表单数据对象"
     },
     {
       "name": "saved",
       "label": "保存成功",
       "type": "boolean",
-      "direction": "output"
+      "direction": "output",
+      "description": "是否保存成功"
     },
     {
       "name": "status",
       "label": "保存状态",
       "type": "string",
-      "direction": "output"
+      "direction": "output",
+      "description": "事件状态"
     },
     {
       "name": "row",
       "label": "写入记录",
       "type": "object",
-      "direction": "output"
+      "direction": "output",
+      "description": "保存后的行记录"
     },
     {
       "name": "missingFields",
       "label": "缺失字段",
       "type": "array",
-      "direction": "output"
+      "direction": "output",
+      "description": "缺失字段"
     },
     {
       "name": "writeBack",
       "label": "写回动作",
       "type": "object",
-      "direction": "output"
+      "direction": "output",
+      "description": "写回结果"
     },
     {
       "name": "data",

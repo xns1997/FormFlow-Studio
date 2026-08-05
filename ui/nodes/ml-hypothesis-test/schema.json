@@ -36,25 +36,29 @@
       "label": "数据",
       "type": "json-rows",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "透传数据"
     },
     {
       "name": "statistic",
       "label": "统计量",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "统计量"
     },
     {
       "name": "p_value",
       "label": "P值",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "P 值"
     },
     {
       "name": "significant",
       "label": "是否显著",
       "type": "boolean",
-      "direction": "output"
+      "direction": "output",
+      "description": "是否显著"
     }
   ],
   "keywords": [

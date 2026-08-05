@@ -112,6 +112,34 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：sheetName"
+    },
+    {
+      "name": "formData",
+      "label": "表单数据",
+      "type": "object",
+      "direction": "output",
+      "description": "点击事件时的表单数据"
+    },
+    {
+      "name": "rowIndex",
+      "label": "行号",
+      "type": "number",
+      "direction": "output",
+      "description": "点击事件所在行号"
+    },
+    {
+      "name": "sheetName",
+      "label": "工作表名",
+      "type": "string",
+      "direction": "output",
+      "description": "点击事件所在工作表"
+    },
+    {
+      "name": "timestamp",
+      "label": "时间戳",
+      "type": "number",
+      "direction": "output",
+      "description": "事件触发时间戳"
     }
   ],
   "keywords": [

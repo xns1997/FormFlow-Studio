@@ -36,6 +36,13 @@
       "type": "any",
       "direction": "output",
       "description": "触发输出"
+    },
+    {
+      "name": "refreshed",
+      "label": "已刷新",
+      "type": "boolean",
+      "direction": "output",
+      "description": "数据是否已刷新"
     }
   ],
   "keywords": [

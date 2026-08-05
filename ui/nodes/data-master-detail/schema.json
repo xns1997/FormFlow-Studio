@@ -51,26 +51,30 @@
       "label": "主记录",
       "type": "json-rows",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "主表数据"
     },
     {
       "name": "details",
       "label": "明细记录",
       "type": "json-rows",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "从表数据"
     },
     {
       "name": "rows",
       "label": "主从结果",
       "type": "json-rows",
-      "direction": "output"
+      "direction": "output",
+      "description": "关联后的行数据"
     },
     {
       "name": "detailCount",
       "label": "明细数量",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "命中明细数"
     },
     {
       "name": "left",
@@ -87,6 +91,13 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：right"
+    },
+    {
+      "name": "message",
+      "label": "结果消息",
+      "type": "string",
+      "direction": "output",
+      "description": "主从关联结果提示消息"
     }
   ],
   "keywords": [

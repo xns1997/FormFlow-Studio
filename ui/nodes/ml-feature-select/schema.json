@@ -36,19 +36,22 @@
       "label": "数据",
       "type": "json-rows",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "透传数据"
     },
     {
       "name": "selected",
       "label": "选中特征",
       "type": "headers",
-      "direction": "output"
+      "direction": "output",
+      "description": "选中字段"
     },
     {
       "name": "removed",
       "label": "移除特征",
       "type": "headers",
-      "direction": "output"
+      "direction": "output",
+      "description": "移除字段"
     }
   ],
   "keywords": [

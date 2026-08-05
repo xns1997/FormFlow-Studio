@@ -15,9 +15,40 @@
     }
   ],
   "ports": [
-    { "name": "input", "label": "输入", "type": "any", "direction": "input", "description": "传入子流程的数据" },
-    { "name": "result", "label": "结果", "type": "any", "direction": "output", "description": "子流程返回结果" },
-    { "name": "success", "label": "是否成功", "type": "boolean", "direction": "output", "description": "子流程是否执行成功" }
+    {
+      "name": "input",
+      "label": "输入",
+      "type": "any",
+      "direction": "input",
+      "description": "传入子流程的数据"
+    },
+    {
+      "name": "result",
+      "label": "结果",
+      "type": "any",
+      "direction": "output",
+      "description": "子流程返回结果"
+    },
+    {
+      "name": "success",
+      "label": "是否成功",
+      "type": "boolean",
+      "direction": "output",
+      "description": "子流程是否执行成功"
+    },
+    {
+      "name": "workflowId",
+      "label": "子流程 ID",
+      "type": "string",
+      "direction": "output",
+      "description": "被调用的子流程 ID"
+    }
   ],
-  "keywords": ["调用", "子流程", "sub-workflow", "call", "invoke"]
+  "keywords": [
+    "调用",
+    "子流程",
+    "sub-workflow",
+    "call",
+    "invoke"
+  ]
 }

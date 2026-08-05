@@ -48,31 +48,36 @@
       "label": "输入记录",
       "type": "object",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "记录对象"
     },
     {
       "name": "fieldMap",
       "label": "动态映射",
       "type": "object",
-      "direction": "input"
+      "direction": "input",
+      "description": "字段映射"
     },
     {
       "name": "record",
       "label": "映射记录",
       "type": "object",
-      "direction": "output"
+      "direction": "output",
+      "description": "记录对象"
     },
     {
       "name": "result",
       "label": "结果",
       "type": "object",
-      "direction": "output"
+      "direction": "output",
+      "description": "结果值"
     },
     {
       "name": "fields",
       "label": "输出字段",
       "type": "array",
-      "direction": "output"
+      "direction": "output",
+      "description": "字段列表"
     },
     {
       "name": "data",

@@ -60,6 +60,36 @@ test('edge validation accepts workflow:import dynamic output ports defined as JS
   assert.equal(portError, undefined, `动态端口不应被误判，实际: ${report.errors.map((e) => `${e.code}:${e.message}`).join('; ')}`);
 });
 
+test('edge validation keeps full dynamic port types and normalizes unknown to any', () => {
+  const project = workflowProject({
+    id: 'wf',
+    name: '动态端口类型',
+    nodes: [
+      node('import', 'workflow:import', JSON.stringify({
+        outputPorts: JSON.stringify([
+          { name: 'wb', type: 'workbook', label: '工作簿' },
+          { name: 'rows', type: 'json-rows', label: '行集' },
+          { name: 'odd', type: 'not-a-type', label: '未知' },
+        ]),
+      })),
+      node('commit', 'generic:worksheet-commit', '{}'),
+      node('joiner', 'generic:merge', '{}'),
+      node('log', 'behavior-log', '{}'),
+    ],
+    edges: [
+      // workbook 类型动态输出端口接 workbook 输入
+      { id: 'e1', source: 'import', sourceHandle: 'out:wb', target: 'commit', targetHandle: 'in:workbook' },
+      // json-rows 类型动态输出端口接 json-rows 输入
+      { id: 'e2', source: 'import', sourceHandle: 'out:rows', target: 'joiner', targetHandle: 'in:leftData' },
+      // 未知类型归一化为 any，可与任意端口相连
+      { id: 'e3', source: 'import', sourceHandle: 'out:odd', target: 'log', targetHandle: 'in:message' },
+    ],
+  });
+  const report = validateProjectModel(project as any);
+  const portErrors = report.errors.filter((item) => item.code === 'INVALID_PORT' || item.code === 'INVALID_EDGE_TYPE');
+  assert.equal(portErrors.length, 0, `动态端口应保留类型并归一化未知类型，实际: ${portErrors.map((e) => `${e.code}:${e.message}`).join('; ')}`);
+});
+
 test('edge validation rejects unknown static ports', () => {
   const project = workflowProject({
     id: 'wf',

@@ -30,31 +30,36 @@
       "label": "表单数据",
       "type": "object",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "表单数据对象"
     },
     {
       "name": "rules",
       "label": "动态规则",
       "type": "object",
-      "direction": "input"
+      "direction": "input",
+      "description": "字段校验规则对象"
     },
     {
       "name": "valid",
       "label": "是否通过",
       "type": "boolean",
-      "direction": "output"
+      "direction": "output",
+      "description": "是否有效"
     },
     {
       "name": "missingFields",
       "label": "缺失字段",
       "type": "array",
-      "direction": "output"
+      "direction": "output",
+      "description": "缺失字段"
     },
     {
       "name": "errors",
       "label": "错误汇总",
       "type": "object",
-      "direction": "output"
+      "direction": "output",
+      "description": "错误集合"
     },
     {
       "name": "values",
@@ -71,6 +76,13 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：requiredFields"
+    },
+    {
+      "name": "message",
+      "label": "错误消息",
+      "type": "string",
+      "direction": "output",
+      "description": "汇总后的校验错误消息"
     }
   ],
   "keywords": [

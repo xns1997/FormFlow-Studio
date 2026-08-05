@@ -33,6 +33,18 @@
       {
         "name": "status",
         "type": "number"
+      },
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "url",
+        "type": "string"
+      },
+      {
+        "name": "method",
+        "type": "string"
       }
     ]
   },
@@ -67,6 +79,14 @@
       {
         "name": "result",
         "type": "any"
+      },
+      {
+        "name": "targetField",
+        "type": "string"
+      },
+      {
+        "name": "value",
+        "type": "any"
       }
     ]
   },
@@ -91,6 +111,10 @@
       {
         "name": "fieldName",
         "type": "string"
+      },
+      {
+        "name": "value",
+        "type": "any"
       }
     ]
   },
@@ -154,6 +178,30 @@
       {
         "name": "value",
         "type": "any"
+      },
+      {
+        "name": "passed",
+        "type": "boolean"
+      },
+      {
+        "name": "fieldName",
+        "type": "string"
+      },
+      {
+        "name": "operator",
+        "type": "string"
+      },
+      {
+        "name": "compareValue",
+        "type": "any"
+      },
+      {
+        "name": "fieldValue",
+        "type": "any"
+      },
+      {
+        "name": "trigger",
+        "type": "any"
       }
     ]
   },
@@ -213,6 +261,10 @@
       {
         "name": "sheetName",
         "type": "string"
+      },
+      {
+        "name": "rows",
+        "type": "json-rows"
       }
     ]
   },
@@ -228,6 +280,10 @@
       {
         "name": "trigger",
         "type": "any"
+      },
+      {
+        "name": "delay",
+        "type": "number"
       }
     ]
   },
@@ -262,6 +318,10 @@
       {
         "name": "appliedFields",
         "type": "array"
+      },
+      {
+        "name": "patch",
+        "type": "object"
       }
     ]
   },
@@ -297,6 +357,14 @@
       {
         "name": "trigger",
         "type": "any"
+      },
+      {
+        "name": "message",
+        "type": "string"
+      },
+      {
+        "name": "level",
+        "type": "string"
       }
     ]
   },
@@ -333,6 +401,18 @@
       },
       {
         "name": "index",
+        "type": "number"
+      },
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "items",
+        "type": "array"
+      },
+      {
+        "name": "count",
         "type": "number"
       }
     ]
@@ -408,6 +488,22 @@
       {
         "name": "buttonName",
         "type": "string"
+      },
+      {
+        "name": "formData",
+        "type": "object"
+      },
+      {
+        "name": "rowIndex",
+        "type": "number"
+      },
+      {
+        "name": "sheetName",
+        "type": "string"
+      },
+      {
+        "name": "timestamp",
+        "type": "number"
       }
     ]
   },
@@ -465,6 +561,26 @@
       {
         "name": "fieldName",
         "type": "string"
+      },
+      {
+        "name": "value",
+        "type": "any"
+      },
+      {
+        "name": "rowIndex",
+        "type": "number"
+      },
+      {
+        "name": "sheetName",
+        "type": "string"
+      },
+      {
+        "name": "formData",
+        "type": "object"
+      },
+      {
+        "name": "timestamp",
+        "type": "number"
       }
     ]
   },
@@ -513,6 +629,26 @@
       {
         "name": "sheetName",
         "type": "string"
+      },
+      {
+        "name": "executed",
+        "type": "boolean"
+      },
+      {
+        "name": "timestamp",
+        "type": "number"
+      },
+      {
+        "name": "rowIndex",
+        "type": "number"
+      },
+      {
+        "name": "formData",
+        "type": "object"
+      },
+      {
+        "name": "fields",
+        "type": "array"
       }
     ]
   },
@@ -566,6 +702,22 @@
       {
         "name": "rowIndex",
         "type": "number"
+      },
+      {
+        "name": "sheetName",
+        "type": "string"
+      },
+      {
+        "name": "totalRows",
+        "type": "number"
+      },
+      {
+        "name": "formData",
+        "type": "object"
+      },
+      {
+        "name": "timestamp",
+        "type": "number"
       }
     ]
   },
@@ -610,6 +762,26 @@
       {
         "name": "formData",
         "type": "object"
+      },
+      {
+        "name": "executed",
+        "type": "boolean"
+      },
+      {
+        "name": "rowIndex",
+        "type": "number"
+      },
+      {
+        "name": "sheetName",
+        "type": "string"
+      },
+      {
+        "name": "changedFields",
+        "type": "object"
+      },
+      {
+        "name": "timestamp",
+        "type": "number"
       }
     ]
   },
@@ -663,6 +835,30 @@
       {
         "name": "value",
         "type": "any"
+      },
+      {
+        "name": "executed",
+        "type": "boolean"
+      },
+      {
+        "name": "formData",
+        "type": "object"
+      },
+      {
+        "name": "errors",
+        "type": "array"
+      },
+      {
+        "name": "rowIndex",
+        "type": "number"
+      },
+      {
+        "name": "sheetName",
+        "type": "string"
+      },
+      {
+        "name": "timestamp",
+        "type": "number"
       }
     ]
   },
@@ -701,6 +897,10 @@
       {
         "name": "trigger",
         "type": "any"
+      },
+      {
+        "name": "refreshed",
+        "type": "boolean"
       }
     ]
   },
@@ -1001,6 +1201,10 @@
       {
         "name": "patch",
         "type": "json"
+      },
+      {
+        "name": "trigger",
+        "type": "any"
       }
     ]
   },
@@ -1057,6 +1261,10 @@
       },
       {
         "name": "message",
+        "type": "string"
+      },
+      {
+        "name": "messageType",
         "type": "string"
       }
     ]
@@ -1136,6 +1344,14 @@
       {
         "name": "keyValue",
         "type": "any"
+      },
+      {
+        "name": "row",
+        "type": "object"
+      },
+      {
+        "name": "keyField",
+        "type": "string"
       }
     ]
   },
@@ -1169,6 +1385,22 @@
       {
         "name": "errorMessage",
         "type": "string"
+      },
+      {
+        "name": "fieldName",
+        "type": "string"
+      },
+      {
+        "name": "rule",
+        "type": "string"
+      },
+      {
+        "name": "valid",
+        "type": "boolean"
+      },
+      {
+        "name": "trigger",
+        "type": "any"
       }
     ]
   },
@@ -1427,6 +1659,22 @@
       {
         "name": "matchedCount",
         "type": "number"
+      },
+      {
+        "name": "result",
+        "type": "json-rows"
+      },
+      {
+        "name": "total",
+        "type": "number"
+      },
+      {
+        "name": "unique",
+        "type": "boolean"
+      },
+      {
+        "name": "message",
+        "type": "string"
       }
     ]
   },
@@ -1504,6 +1752,10 @@
       {
         "name": "detailCount",
         "type": "number"
+      },
+      {
+        "name": "message",
+        "type": "string"
       }
     ]
   },
@@ -1736,6 +1988,10 @@
       {
         "name": "compensated",
         "type": "boolean"
+      },
+      {
+        "name": "error",
+        "type": "any"
       }
     ]
   },
@@ -1769,6 +2025,10 @@
       {
         "name": "first",
         "type": "any"
+      },
+      {
+        "name": "count",
+        "type": "number"
       }
     ]
   },
@@ -1813,6 +2073,10 @@
       {
         "name": "result",
         "type": "any"
+      },
+      {
+        "name": "targetField",
+        "type": "string"
       }
     ]
   },
@@ -1842,6 +2106,14 @@
       {
         "name": "active",
         "type": "boolean"
+      },
+      {
+        "name": "target",
+        "type": "string"
+      },
+      {
+        "name": "state",
+        "type": "string"
       }
     ]
   },
@@ -1893,6 +2165,14 @@
       {
         "name": "patch",
         "type": "object"
+      },
+      {
+        "name": "originalPatch",
+        "type": "object"
+      },
+      {
+        "name": "appliedFields",
+        "type": "array"
       }
     ]
   },
@@ -2007,6 +2287,10 @@
       {
         "name": "errors",
         "type": "object"
+      },
+      {
+        "name": "message",
+        "type": "string"
       }
     ]
   },
@@ -2081,6 +2365,14 @@
       {
         "name": "options",
         "type": "array"
+      },
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "fieldName",
+        "type": "string"
       }
     ]
   },
@@ -2509,6 +2801,14 @@
       {
         "name": "options",
         "type": "array"
+      },
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "fieldName",
+        "type": "string"
       }
     ]
   },
@@ -2610,6 +2910,14 @@
       {
         "name": "options",
         "type": "array"
+      },
+      {
+        "name": "trigger",
+        "type": "any"
+      },
+      {
+        "name": "fieldName",
+        "type": "string"
       }
     ]
   },
@@ -2852,6 +3160,10 @@
       {
         "name": "success",
         "type": "boolean"
+      },
+      {
+        "name": "workflowId",
+        "type": "string"
       }
     ]
   },
@@ -2985,6 +3297,14 @@
       {
         "name": "emptyReason",
         "type": "string"
+      },
+      {
+        "name": "failedReason",
+        "type": "string"
+      },
+      {
+        "name": "trigger",
+        "type": "any"
       }
     ]
   },
@@ -3333,6 +3653,10 @@
       {
         "name": "result",
         "type": "object"
+      },
+      {
+        "name": "count",
+        "type": "number"
       }
     ]
   },
@@ -3706,6 +4030,18 @@
       {
         "name": "fileName",
         "type": "string"
+      },
+      {
+        "name": "rowCount",
+        "type": "number"
+      },
+      {
+        "name": "colCount",
+        "type": "number"
+      },
+      {
+        "name": "message",
+        "type": "string"
       }
     ]
   },
@@ -3753,6 +4089,10 @@
       {
         "name": "count",
         "type": "number"
+      },
+      {
+        "name": "trigger",
+        "type": "any"
       }
     ]
   },
@@ -3843,12 +4183,12 @@
       },
       {
         "name": "rangeMode",
-        "type": "string",
+        "type": "enum",
         "required": false
       },
       {
         "name": "address",
-        "type": "string",
+        "type": "address",
         "required": false
       },
       {
@@ -3862,12 +4202,12 @@
         "required": false
       },
       {
-        "name": "rows",
+        "name": "rowCount",
         "type": "number",
         "required": false
       },
       {
-        "name": "cols",
+        "name": "colCount",
         "type": "number",
         "required": false
       }
@@ -3875,11 +4215,11 @@
     "outputs": [
       {
         "name": "range",
-        "type": "object"
+        "type": "range"
       },
       {
         "name": "address",
-        "type": "string"
+        "type": "address"
       },
       {
         "name": "areas",
@@ -4392,6 +4732,22 @@
       {
         "name": "status",
         "type": "string"
+      },
+      {
+        "name": "url",
+        "type": "string"
+      },
+      {
+        "name": "sent",
+        "type": "any"
+      },
+      {
+        "name": "message",
+        "type": "string"
+      },
+      {
+        "name": "error",
+        "type": "string"
       }
     ]
   },
@@ -4495,6 +4851,18 @@
       {
         "name": "matched",
         "type": "boolean"
+      },
+      {
+        "name": "label",
+        "type": "string"
+      },
+      {
+        "name": "value",
+        "type": "any"
+      },
+      {
+        "name": "trigger",
+        "type": "any"
       }
     ]
   },
@@ -5211,6 +5579,14 @@
       {
         "name": "trend_slope",
         "type": "number"
+      },
+      {
+        "name": "source",
+        "type": "string"
+      },
+      {
+        "name": "warning",
+        "type": "string"
       }
     ]
   },
@@ -5312,7 +5688,7 @@
     "inputs": [
       {
         "name": "fileData",
-        "type": "any",
+        "type": "file-data",
         "required": true
       }
     ],
@@ -5347,7 +5723,7 @@
     "outputs": [
       {
         "name": "fileData",
-        "type": "any"
+        "type": "file-data"
       }
     ]
   },

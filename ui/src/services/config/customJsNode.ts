@@ -5,14 +5,23 @@ import type { PropertyType } from '../../../nodes/excel-api-types';
 
 export const CUSTOM_JS_SPEC_IDS = new Set(['behavior-js-script', 'generic:custom-js']);
 
+/**
+ * 动态端口（custom-js / workflow:import / workflow:export）可声明的数据类型。
+ * 与 ui/nodes/port-types.ts 的运行时校验器、服务端 workflowCustomPorts 保持一致：
+ * 客户端不得把服务端支持的专有类型降级为 any，否则 UI 判定可连的边会被服务端拒绝。
+ */
 const SUPPORTED_PORT_TYPES = new Set([
-  'string',
-  'number',
-  'boolean',
-  'object',
-  'array',
-  'json',
-  'any',
+  // 基础类型
+  'string', 'number', 'boolean', 'enum', 'color', 'any',
+  // Excel 数据类型
+  'workbook', 'worksheet', 'cell', 'range', 'address', 'cell-ref',
+  // 数据集合类型
+  'json-rows', 'aoa', 'headers', 'options', 'file-data', 'array', 'object', 'json',
+  // 格式类型
+  'csv-string', 'html-string', 'json-string',
+  // 配置类型
+  'filter', 'sort-config', 'style', 'validation-rule',
+  // 流程类型
   'trigger',
 ]);
 
@@ -142,10 +151,35 @@ function toTsType(type: PropertyType) {
     case 'boolean':
       return 'boolean';
     case 'array':
+    case 'json-rows':
+    case 'aoa':
+    case 'headers':
+    case 'options':
       return 'unknown[]';
     case 'object':
     case 'json':
       return 'Record<string, unknown>';
+    case 'cell':
+    case 'cell-ref':
+      return '{ r: number; c: number } | string';
+    case 'range':
+    case 'address':
+      return 'string | { s: { r: number; c: number }; e: { r: number; c: number } }';
+    case 'workbook':
+    case 'worksheet':
+    case 'file-data':
+    case 'filter':
+    case 'sort-config':
+    case 'style':
+    case 'validation-rule':
+      return 'unknown';
+    case 'enum':
+    case 'color':
+    case 'string':
+    case 'csv-string':
+    case 'html-string':
+    case 'json-string':
+      return 'string';
     case 'trigger':
     case 'any':
       return 'unknown';

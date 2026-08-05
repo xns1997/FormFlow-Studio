@@ -79,6 +79,13 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：enableComponentIds"
+    },
+    {
+      "name": "patch",
+      "label": "回填补丁",
+      "type": "object",
+      "direction": "output",
+      "description": "表单回填的字段值补丁"
     }
   ],
   "keywords": [

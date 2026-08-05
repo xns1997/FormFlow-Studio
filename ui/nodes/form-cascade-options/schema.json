@@ -36,32 +36,37 @@
       "label": "字典记录",
       "type": "json-rows",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "关联后的行数据"
     },
     {
       "name": "parentValue",
       "label": "父级值",
       "type": "any",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "父级选项值"
     },
     {
       "name": "options",
       "label": "选项",
       "type": "array",
-      "direction": "output"
+      "direction": "output",
+      "description": "选项列表"
     },
     {
       "name": "values",
       "label": "可选值",
       "type": "array",
-      "direction": "output"
+      "direction": "output",
+      "description": "值列表"
     },
     {
       "name": "first",
       "label": "首个值",
       "type": "any",
-      "direction": "output"
+      "direction": "output",
+      "description": "首个匹配值"
     },
     {
       "name": "data",
@@ -70,6 +75,13 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：data"
+    },
+    {
+      "name": "count",
+      "label": "选项数",
+      "type": "number",
+      "direction": "output",
+      "description": "级联匹配到的选项数量"
     }
   ],
   "keywords": [

@@ -20,19 +20,22 @@
       "label": "数据",
       "type": "json-rows",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "透传数据"
     },
     {
       "name": "data",
       "label": "结果",
       "type": "json-rows",
-      "direction": "output"
+      "direction": "output",
+      "description": "透传数据"
     },
     {
       "name": "mapping",
       "label": "映射",
       "type": "object",
-      "direction": "output"
+      "direction": "output",
+      "description": "编码映射"
     }
   ],
   "keywords": [

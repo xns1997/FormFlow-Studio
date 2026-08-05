@@ -39,19 +39,36 @@
       "label": "数据",
       "type": "json-rows",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "透传数据"
     },
     {
       "name": "moving_average",
       "label": "移动平均",
       "type": "array",
-      "direction": "output"
+      "direction": "output",
+      "description": "移动平均"
     },
     {
       "name": "trend_slope",
       "label": "趋势斜率",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "趋势斜率"
+    },
+    {
+      "name": "source",
+      "label": "数据来源",
+      "type": "string",
+      "direction": "output",
+      "description": "计算结果来源（本地回退或 ML 服务）"
+    },
+    {
+      "name": "warning",
+      "label": "警告信息",
+      "type": "string",
+      "direction": "output",
+      "description": "外部 ML 服务异常时的降级说明"
     }
   ],
   "keywords": [

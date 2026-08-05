@@ -30,25 +30,29 @@
       "label": "待匹配值",
       "type": "any",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "值"
     },
     {
       "name": "cases",
       "label": "动态匹配表",
       "type": "array",
-      "direction": "input"
+      "direction": "input",
+      "description": "分支条件数组"
     },
     {
       "name": "result",
       "label": "匹配结果",
       "type": "any",
-      "direction": "output"
+      "direction": "output",
+      "description": "结果值"
     },
     {
       "name": "matched",
       "label": "是否命中",
       "type": "boolean",
-      "direction": "output"
+      "direction": "output",
+      "description": "是否命中"
     },
     {
       "name": "default",
@@ -65,6 +69,27 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：trigger"
+    },
+    {
+      "name": "label",
+      "label": "命中标签",
+      "type": "string",
+      "direction": "output",
+      "description": "命中分支的标签"
+    },
+    {
+      "name": "value",
+      "label": "输入值",
+      "type": "any",
+      "direction": "output",
+      "description": "透传的输入值"
+    },
+    {
+      "name": "trigger",
+      "label": "触发信号",
+      "type": "any",
+      "direction": "output",
+      "description": "透传的触发信号"
     }
   ],
   "keywords": [

@@ -213,6 +213,13 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：filter"
+    },
+    {
+      "name": "rows",
+      "label": "查询行",
+      "type": "json-rows",
+      "direction": "output",
+      "description": "查询结果行数组（同 result）"
     }
   ],
   "keywords": [

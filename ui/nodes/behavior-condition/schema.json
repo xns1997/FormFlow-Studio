@@ -136,6 +136,48 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：data"
+    },
+    {
+      "name": "passed",
+      "label": "是否成立",
+      "type": "boolean",
+      "direction": "output",
+      "description": "条件判断是否成立"
+    },
+    {
+      "name": "fieldName",
+      "label": "字段名",
+      "type": "string",
+      "direction": "output",
+      "description": "被判断的字段名"
+    },
+    {
+      "name": "operator",
+      "label": "运算符",
+      "type": "string",
+      "direction": "output",
+      "description": "实际使用的比较运算符"
+    },
+    {
+      "name": "compareValue",
+      "label": "比较值",
+      "type": "any",
+      "direction": "output",
+      "description": "参与比较的目标值"
+    },
+    {
+      "name": "fieldValue",
+      "label": "字段值",
+      "type": "any",
+      "direction": "output",
+      "description": "被判断的字段实际值"
+    },
+    {
+      "name": "trigger",
+      "label": "触发信号",
+      "type": "any",
+      "direction": "output",
+      "description": "透传的触发信号"
     }
   ],
   "keywords": [

@@ -27,25 +27,29 @@
       "label": "数据",
       "type": "json-rows",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "透传数据"
     },
     {
       "name": "data",
       "label": "结果",
       "type": "json-rows",
-      "direction": "output"
+      "direction": "output",
+      "description": "透传数据"
     },
     {
       "name": "anomaly_count",
       "label": "异常数",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "异常样本数"
     },
     {
       "name": "normal_count",
       "label": "正常数",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "正常样本数"
     }
   ],
   "keywords": [

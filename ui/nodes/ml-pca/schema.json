@@ -28,19 +28,22 @@
       "label": "数据",
       "type": "json-rows",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "透传数据"
     },
     {
       "name": "data",
       "label": "结果",
       "type": "json-rows",
-      "direction": "output"
+      "direction": "output",
+      "description": "透传数据"
     },
     {
       "name": "explained_variance",
       "label": "方差解释率",
       "type": "array",
-      "direction": "output"
+      "direction": "output",
+      "description": "解释方差"
     }
   ],
   "keywords": [

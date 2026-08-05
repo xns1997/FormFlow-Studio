@@ -70,6 +70,13 @@
       "type": "string",
       "direction": "output",
       "description": "字段名"
+    },
+    {
+      "name": "value",
+      "label": "清除后的值",
+      "type": "any",
+      "direction": "output",
+      "description": "清空后的字段值（空字符串）"
     }
   ],
   "keywords": [

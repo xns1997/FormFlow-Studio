@@ -14,7 +14,7 @@
     {
       "name": "mode",
       "label": "运行模式",
-      "type": "select",
+      "type": "enum",
       "default": "analysis",
       "options": [
         {
@@ -29,6 +29,11 @@
           "label": "活动分析",
           "value": "campaign"
         }
+      ],
+      "enum": [
+        "analysis",
+        "forecast",
+        "campaign"
       ]
     }
   ],
@@ -38,67 +43,78 @@
       "label": "筛选条件",
       "type": "object",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "表单数据对象"
     },
     {
       "name": "kpi_dau",
       "label": "DAU",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "日活跃用户数"
     },
     {
       "name": "kpi_mau",
       "label": "MAU",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "月活跃用户数"
     },
     {
       "name": "kpi_d1",
       "label": "D1留存",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "次日留存率"
     },
     {
       "name": "kpi_d7",
       "label": "D7留存",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "7 日留存率"
     },
     {
       "name": "kpi_payment_rate",
       "label": "付费率",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "付费率"
     },
     {
       "name": "kpi_revenue",
       "label": "收入",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "总收入"
     },
     {
       "name": "kpi_arpu",
       "label": "ARPU",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "每用户平均收入"
     },
     {
       "name": "kpi_arppu",
       "label": "ARPPU",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "每付费用户平均收入"
     },
     {
       "name": "dashboard_status",
       "label": "运行状态",
       "type": "string",
-      "direction": "output"
+      "direction": "output",
+      "description": "看板状态"
     },
     {
       "name": "refreshed_rows",
       "label": "刷新行数",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "刷新行数"
     },
     {
       "name": "filters",

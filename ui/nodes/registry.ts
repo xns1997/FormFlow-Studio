@@ -762,7 +762,7 @@ const scenarioSpecs: FlowNodeSpec[] = [
     kind: 'scenario',
     properties: [],
     ports: [
-      { name: 'fileData', label: '文件数据', type: 'any', direction: 'input', required: true, description: '文件 ArrayBuffer' },
+      { name: 'fileData', label: '文件数据', type: 'file-data', direction: 'input', required: true, description: '文件 ArrayBuffer' },
       { name: 'workbook', label: '工作簿', type: 'workbook', direction: 'output', description: '解析后的工作簿' },
       { name: 'jsonData', label: 'JSON 数据', type: 'array', direction: 'output', description: 'JSON 行数据' },
       { name: 'schema', label: '字段模型', type: 'object', direction: 'output', description: '字段类型推断结果' },
@@ -778,7 +778,7 @@ const scenarioSpecs: FlowNodeSpec[] = [
     ports: [
       { name: 'jsonData', label: 'JSON 数据', type: 'array', direction: 'input', required: true, description: 'JSON 行数据' },
       { name: 'fileName', label: '文件名', type: 'string', direction: 'input', defaultValue: 'output.xlsx', description: '输出文件名' },
-      { name: 'fileData', label: '文件数据', type: 'any', direction: 'output', description: '输出的文件数据' },
+      { name: 'fileData', label: '文件数据', type: 'file-data', direction: 'output', description: '输出的文件数据' },
     ],
   },
   {

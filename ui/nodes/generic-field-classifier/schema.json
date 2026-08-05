@@ -57,6 +57,13 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：rules"
+    },
+    {
+      "name": "count",
+      "label": "分类字段数",
+      "type": "number",
+      "direction": "output",
+      "description": "本次分类的字段数量"
     }
   ],
   "keywords": [

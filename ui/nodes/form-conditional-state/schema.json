@@ -75,25 +75,29 @@
       "name": "formData",
       "label": "表单数据",
       "type": "object",
-      "direction": "input"
+      "direction": "input",
+      "description": "表单数据对象"
     },
     {
       "name": "value",
       "label": "条件值",
       "type": "any",
-      "direction": "input"
+      "direction": "input",
+      "description": "值"
     },
     {
       "name": "matched",
       "label": "条件命中",
       "type": "boolean",
-      "direction": "output"
+      "direction": "output",
+      "description": "是否命中"
     },
     {
       "name": "active",
       "label": "最终状态",
       "type": "boolean",
-      "direction": "output"
+      "direction": "output",
+      "description": "是否激活"
     },
     {
       "name": "compareValue",
@@ -102,6 +106,20 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：compareValue"
+    },
+    {
+      "name": "target",
+      "label": "目标组件",
+      "type": "string",
+      "direction": "output",
+      "description": "状态生效的目标组件 ID"
+    },
+    {
+      "name": "state",
+      "label": "目标状态",
+      "type": "string",
+      "direction": "output",
+      "description": "生效的状态（visible/disabled/required）"
     }
   ],
   "keywords": [

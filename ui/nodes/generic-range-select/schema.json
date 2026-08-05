@@ -1,51 +1,62 @@
 {
   "id": "generic:range-select",
-  "label": "range-select",
-  "description": "节点 generic:range-select",
+  "label": "区域选择",
+  "description": "从工作表按模式选择区域，输出规范化的复杂 Range 及其地址、值与统计信息",
   "category": "功能 · 数据操作",
   "kind": "generic",
   "properties": [
     {
       "name": "rangeMode",
-      "label": "rangeMode",
-      "type": "string",
-      "default": "",
-      "description": "配置项：rangeMode"
+      "label": "区域模式",
+      "type": "enum",
+      "enum": [
+        "usedRange",
+        "address",
+        "row",
+        "column",
+        "custom"
+      ],
+      "default": "usedRange",
+      "description": "区域选择方式：usedRange 使用区域、address 按 A1 地址、row/column/custom 按行列坐标"
     },
     {
       "name": "address",
-      "label": "address",
+      "label": "区域地址",
       "type": "string",
       "default": "",
-      "description": "配置项：address"
+      "description": "A1 地址，支持逗号分隔的复杂地址"
     },
     {
       "name": "rowIndex",
-      "label": "rowIndex",
+      "label": "起始行",
       "type": "number",
-      "default": 0,
-      "description": "配置项：rowIndex"
+      "default": 1,
+      "min": 1,
+      "description": "起始行号（1 起）"
     },
     {
       "name": "colIndex",
-      "label": "colIndex",
+      "label": "起始列",
       "type": "number",
-      "default": 0,
-      "description": "配置项：colIndex"
+      "default": 1,
+      "min": 1,
+      "description": "起始列号（1 起）"
     },
     {
-      "name": "rows",
-      "label": "rows",
+      "name": "rowCount",
+      "label": "行数",
       "type": "number",
-      "default": 0,
-      "description": "配置项：rows"
+      "default": 1,
+      "min": 1,
+      "description": "选择的行数"
     },
     {
-      "name": "cols",
-      "label": "cols",
+      "name": "colCount",
+      "label": "列数",
       "type": "number",
-      "default": 0,
-      "description": "配置项：cols"
+      "default": 1,
+      "min": 1,
+      "description": "选择的列数"
     }
   ],
   "inputs": [
@@ -53,214 +64,231 @@
       "name": "worksheet",
       "type": "worksheet",
       "required": true,
-      "description": "数据输入：worksheet"
+      "description": "从中选择区域的工作表"
     },
     {
       "name": "rangeMode",
-      "type": "string",
+      "type": "enum",
       "required": false,
-      "description": "数据输入：rangeMode"
+      "description": "区域选择方式"
     },
     {
       "name": "address",
-      "type": "string",
+      "type": "address",
       "required": false,
-      "description": "数据输入：address"
+      "description": "A1 地址，支持逗号分隔的复杂地址"
     },
     {
       "name": "rowIndex",
       "type": "number",
       "required": false,
-      "description": "数据输入：rowIndex"
+      "description": "起始行号（1 起）"
     },
     {
       "name": "colIndex",
       "type": "number",
       "required": false,
-      "description": "数据输入：colIndex"
+      "description": "起始列号（1 起）"
     },
     {
-      "name": "rows",
+      "name": "rowCount",
       "type": "number",
       "required": false,
-      "description": "数据输入：rows"
+      "description": "选择的行数"
     },
     {
-      "name": "cols",
+      "name": "colCount",
       "type": "number",
       "required": false,
-      "description": "数据输入：cols"
+      "description": "选择的列数"
     }
   ],
   "outputs": [
     {
       "name": "range",
-      "type": "object",
-      "description": "输出：range"
+      "type": "range",
+      "description": "含一个或多个精确子区域的复杂 Range"
     },
     {
       "name": "address",
-      "type": "string",
-      "description": "输出：address"
+      "type": "address",
+      "description": "逗号分隔的 A1 复杂地址"
     },
     {
       "name": "areas",
       "type": "array",
-      "description": "输出：areas"
+      "description": "规范化的非重叠子区域"
     },
     {
       "name": "values",
       "type": "array",
-      "description": "输出：values"
+      "description": "区域内的单元格值"
     },
     {
       "name": "areaValues",
       "type": "array",
-      "description": "输出：areaValues"
+      "description": "按子区域分组的二维数组"
     },
     {
       "name": "areaCount",
       "type": "number",
-      "description": "输出：areaCount"
+      "description": "子区域数量"
     },
     {
       "name": "cellCount",
       "type": "number",
-      "description": "输出：cellCount"
+      "description": "去重后的单元格总数"
     },
     {
       "name": "rowCount",
       "type": "number",
-      "description": "输出：rowCount"
+      "description": "区域行数"
     },
     {
       "name": "colCount",
       "type": "number",
-      "description": "输出：colCount"
+      "description": "区域列数"
     }
   ],
   "ports": [
     {
       "name": "worksheet",
-      "label": "worksheet",
+      "label": "工作表",
       "type": "worksheet",
       "direction": "input",
       "required": true,
-      "description": "数据输入：worksheet"
+      "description": "从中选择区域的工作表"
     },
     {
       "name": "rangeMode",
-      "label": "rangeMode",
-      "type": "string",
+      "label": "区域模式",
+      "type": "enum",
       "direction": "input",
       "required": false,
-      "description": "数据输入：rangeMode"
+      "defaultValue": "usedRange",
+      "enum": [
+        "usedRange",
+        "address",
+        "row",
+        "column",
+        "custom"
+      ],
+      "description": "区域选择方式"
     },
     {
       "name": "address",
-      "label": "address",
-      "type": "string",
+      "label": "区域地址",
+      "type": "address",
       "direction": "input",
       "required": false,
-      "description": "数据输入：address"
+      "description": "A1 地址，支持逗号分隔的复杂地址"
     },
     {
       "name": "rowIndex",
-      "label": "rowIndex",
+      "label": "起始行",
       "type": "number",
       "direction": "input",
       "required": false,
-      "description": "数据输入：rowIndex"
+      "defaultValue": 1,
+      "description": "起始行号（1 起）"
     },
     {
       "name": "colIndex",
-      "label": "colIndex",
+      "label": "起始列",
       "type": "number",
       "direction": "input",
       "required": false,
-      "description": "数据输入：colIndex"
-    },
-    {
-      "name": "rows",
-      "label": "rows",
-      "type": "number",
-      "direction": "input",
-      "required": false,
-      "description": "数据输入：rows"
-    },
-    {
-      "name": "cols",
-      "label": "cols",
-      "type": "number",
-      "direction": "input",
-      "required": false,
-      "description": "数据输入：cols"
-    },
-    {
-      "name": "range",
-      "label": "range",
-      "type": "object",
-      "direction": "output",
-      "description": "输出：range"
-    },
-    {
-      "name": "address",
-      "label": "address",
-      "type": "string",
-      "direction": "output",
-      "description": "输出：address"
-    },
-    {
-      "name": "areas",
-      "label": "areas",
-      "type": "array",
-      "direction": "output",
-      "description": "输出：areas"
-    },
-    {
-      "name": "values",
-      "label": "values",
-      "type": "array",
-      "direction": "output",
-      "description": "输出：values"
-    },
-    {
-      "name": "areaValues",
-      "label": "areaValues",
-      "type": "array",
-      "direction": "output",
-      "description": "输出：areaValues"
-    },
-    {
-      "name": "areaCount",
-      "label": "areaCount",
-      "type": "number",
-      "direction": "output",
-      "description": "输出：areaCount"
-    },
-    {
-      "name": "cellCount",
-      "label": "cellCount",
-      "type": "number",
-      "direction": "output",
-      "description": "输出：cellCount"
+      "defaultValue": 1,
+      "description": "起始列号（1 起）"
     },
     {
       "name": "rowCount",
-      "label": "rowCount",
+      "label": "行数",
       "type": "number",
-      "direction": "output",
-      "description": "输出：rowCount"
+      "direction": "input",
+      "required": false,
+      "defaultValue": 1,
+      "description": "选择的行数"
     },
     {
       "name": "colCount",
-      "label": "colCount",
+      "label": "列数",
+      "type": "number",
+      "direction": "input",
+      "required": false,
+      "defaultValue": 1,
+      "description": "选择的列数"
+    },
+    {
+      "name": "range",
+      "label": "复杂区域",
+      "type": "range",
+      "direction": "output",
+      "description": "含一个或多个精确子区域的复杂 Range"
+    },
+    {
+      "name": "address",
+      "label": "地址",
+      "type": "address",
+      "direction": "output",
+      "description": "逗号分隔的 A1 复杂地址"
+    },
+    {
+      "name": "areas",
+      "label": "子区域",
+      "type": "array",
+      "direction": "output",
+      "description": "规范化的非重叠子区域"
+    },
+    {
+      "name": "values",
+      "label": "值",
+      "type": "array",
+      "direction": "output",
+      "description": "区域内的单元格值"
+    },
+    {
+      "name": "areaValues",
+      "label": "分区值",
+      "type": "array",
+      "direction": "output",
+      "description": "按子区域分组的二维数组"
+    },
+    {
+      "name": "areaCount",
+      "label": "区域数",
       "type": "number",
       "direction": "output",
-      "description": "输出：colCount"
+      "description": "子区域数量"
+    },
+    {
+      "name": "cellCount",
+      "label": "单元格数",
+      "type": "number",
+      "direction": "output",
+      "description": "去重后的单元格总数"
+    },
+    {
+      "name": "rowCount",
+      "label": "行数",
+      "type": "number",
+      "direction": "output",
+      "description": "区域行数"
+    },
+    {
+      "name": "colCount",
+      "label": "列数",
+      "type": "number",
+      "direction": "output",
+      "description": "区域列数"
     }
   ],
   "keywords": [
-    "generic:range-select"
+    "区域选择",
+    "范围选择",
+    "A1 地址",
+    "range",
+    "select",
+    "单元格区域"
   ]
 }

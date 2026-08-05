@@ -103,6 +103,20 @@
       "type": "any",
       "direction": "output",
       "description": "计算结果"
+    },
+    {
+      "name": "targetField",
+      "label": "目标字段",
+      "type": "string",
+      "direction": "output",
+      "description": "计算结果要写入的字段名"
+    },
+    {
+      "name": "value",
+      "label": "计算值",
+      "type": "any",
+      "direction": "output",
+      "description": "表达式计算结果"
     }
   ],
   "keywords": [

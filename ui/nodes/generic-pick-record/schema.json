@@ -99,6 +99,13 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：topN"
+    },
+    {
+      "name": "trigger",
+      "label": "触发信号",
+      "type": "any",
+      "direction": "output",
+      "description": "透传的触发信号"
     }
   ],
   "keywords": [

@@ -2,6 +2,7 @@
 
 ## 功能
 
+- 流程节点端口契约全量审计加固：逐节点校验外露端点类型/标签/描述、执行器消费与产出的输入输出全部声明、服务端参考目录与客户端注册表/节点包三方同步；动态端口（`workflow:import`/`workflow:export`/`generic:custom-js`）在客户端、服务端与打包 CLI 统一按完整运行时类型系统解析（`workbook`/`json-rows`/`file-data`/`range` 等不再降级为 `any`，未知类型才归一化为 `any`）；`generic:range-select` 端口契约修正为与执行器一致的 `rowCount`/`colCount`，输出复杂区域类型改为 `range`；`generic:sheet-source` 的 `workbook` 输出与 `generic:websocket` 的 `sent`/`error` 输出按条件输出契约声明。常驻审计新增：真实项目全部工作流连线可被端口 schema 采纳（端口存在 + 同族类型兼容 + 动态端口），以及成功路径执行器返回键覆盖声明输出的探针测试。
 - 项目智能体（v4）可靠性增强：决策支持 `batchReads` 一步并行最多 3 个只读工具；瞬时错误与 revision 冲突自动恢复（消耗 `maxRecoveryCycles` 预算，预算用尽才暂停）；执行中可 `replan` 只重规划剩余任务（goal 模式自动确认）；大工具结果自动转存 artifact，新增内置只读工具 `context.read_artifact` 分段回读；提示词超过 `context.maxPromptChars`（默认 40000）触发结构化上下文压缩（保留目标/约束/决策/验证/剩余工作）；写任务首次执行前自动建立项目检查点，暂停/受阻后可在智能体工作台一键恢复到最近检查点。
 - 项目智能体（v4）验证闭环：写计划完成前必须运行回归测试（`project_test.generate/run`），执行前记录测试基线，预存失败不阻塞、引入失败必须修复；完成前增加模型自审（`self_review`），发现问题回到对应领域修复；final gates 失败自动回灌修复而非直接暂停。
 - 项目智能体（v4）可观测性：每 turn 记录运行指标（模型调用/耗时/token、工具调用、无效工具比、审批、自动恢复、压缩、暂停），新增 `GET /threads/:id/metrics` 与管理员 `GET /metrics`，状态栏实时显示；新增 `formflow_agent_turn_metrics` 与 `formflow_agent_artifacts` 表（迁移 `006_agent_metrics.sql`）；新增 `project.map` 只读工具提供数据表/表单/流程/规则的交叉引用索引。

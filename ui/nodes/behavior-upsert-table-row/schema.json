@@ -103,6 +103,20 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：keyValue"
+    },
+    {
+      "name": "row",
+      "label": "写入行",
+      "type": "object",
+      "direction": "output",
+      "description": "准备写入的数据行"
+    },
+    {
+      "name": "keyField",
+      "label": "主键字段",
+      "type": "string",
+      "direction": "output",
+      "description": "用于去重定位的主键字段名"
     }
   ],
   "keywords": [

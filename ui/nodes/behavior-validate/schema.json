@@ -127,6 +127,34 @@
       "type": "string",
       "direction": "output",
       "description": "错误消息"
+    },
+    {
+      "name": "fieldName",
+      "label": "字段名",
+      "type": "string",
+      "direction": "output",
+      "description": "被校验的字段名"
+    },
+    {
+      "name": "rule",
+      "label": "校验规则",
+      "type": "string",
+      "direction": "output",
+      "description": "实际应用的校验规则"
+    },
+    {
+      "name": "valid",
+      "label": "是否通过",
+      "type": "boolean",
+      "direction": "output",
+      "description": "校验是否通过"
+    },
+    {
+      "name": "trigger",
+      "label": "触发信号",
+      "type": "any",
+      "direction": "output",
+      "description": "透传的触发信号"
     }
   ],
   "keywords": [

@@ -30,19 +30,22 @@
       "label": "数据",
       "type": "json-rows",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "透传数据"
     },
     {
       "name": "matrix",
       "label": "相关矩阵",
       "type": "object",
-      "direction": "output"
+      "direction": "output",
+      "description": "相关矩阵"
     },
     {
       "name": "columns",
       "label": "列名",
       "type": "headers",
-      "direction": "output"
+      "direction": "output",
+      "description": "列名列表"
     }
   ],
   "keywords": [

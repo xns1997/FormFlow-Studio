@@ -36,6 +36,7 @@ registerExecutor('behavior-on-form-load', (ctx) => {
     sheetName: inputs.sheetName || properties.sheetName || '',
     rowIndex: inputs.rowIndex ?? 0,
     formData: inputs.formData || inputs.data || {},
+    rowData: inputs.formData || inputs.data || {},
     fields: inputs.fields || [],
   };
 });
@@ -43,10 +44,12 @@ registerExecutor('behavior-on-form-load', (ctx) => {
 registerExecutor('behavior-on-field-change', (ctx) => {
   const { inputs, properties } = ctx;
   const fieldName = ctx.assertType('string', properties.fieldName || inputs.fieldName || '', 'fieldName') as string;
+  const newValue = inputs.value ?? properties.value ?? '';
   return {
     trigger: 'fieldChange',
     fieldName,
-    value: inputs.value ?? properties.value ?? '',
+    value: newValue,
+    newValue,
     oldValue: inputs.oldValue ?? '',
     rowIndex: inputs.rowIndex ?? 0,
     sheetName: inputs.sheetName || '',
@@ -70,11 +73,17 @@ registerExecutor('behavior-on-submit', (ctx) => {
 
 registerExecutor('behavior-on-validate', (ctx) => {
   const { inputs } = ctx;
+  const errors = inputs.errors || {};
+  const errorsArray = Array.isArray(errors) ? errors : [];
+  const isValid = errorsArray.length === 0
+    && !(errors && typeof errors === 'object' && !Array.isArray(errors) && Object.keys(errors).length > 0);
   return {
     trigger: 'validate',
     executed: true,
     formData: inputs.formData || inputs.data || {},
-    errors: inputs.errors || {},
+    errors,
+    isValid,
+    value: inputs.value ?? inputs.data,
     rowIndex: inputs.rowIndex ?? 0,
     sheetName: inputs.sheetName || '',
     timestamp: Date.now(),
@@ -133,6 +142,7 @@ registerExecutor('behavior-condition', (ctx) => {
     passed: result,
     true: result ? fieldValue : undefined,
     false: !result ? fieldValue : undefined,
+    value: fieldValue,
     fieldName,
     operator,
     compareValue,
@@ -366,7 +376,34 @@ registerExecutor('behavior-show-message', (ctx) => {
 registerExecutor('behavior-validate', (ctx) => {
   const fieldName = ctx.assertType('string', ctx.properties.fieldName || ctx.inputs.fieldName || '', 'fieldName') as string;
   const rule = ctx.assertType('string', ctx.properties.rule || 'required', 'rule') as string;
-  return { trigger: ctx.inputs.trigger, fieldName, rule, valid: true };
+  const value = ctx.inputs.value;
+  let passed = true;
+  let errorMessage = '';
+  switch (rule) {
+    case 'required':
+      passed = value !== null && value !== undefined && value !== '';
+      if (!passed) errorMessage = `${fieldName} 为必填项`;
+      break;
+    case 'number':
+      passed = value === null || value === undefined || value === '' || ctx.checkType('number', value).valid;
+      if (!passed) errorMessage = `${fieldName} 必须是数字`;
+      break;
+    case 'email':
+      passed = value === null || value === undefined || value === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value));
+      if (!passed) errorMessage = `${fieldName} 必须是有效邮箱`;
+      break;
+    default:
+      passed = true;
+  }
+  return {
+    trigger: ctx.inputs.trigger,
+    fieldName,
+    rule,
+    valid: passed,
+    passed: passed ? value : undefined,
+    failed: passed ? undefined : value,
+    errorMessage,
+  };
 });
 
 registerExecutor('behavior:submit', async (ctx) => {
@@ -494,9 +531,29 @@ registerExecutor('behavior:submit', async (ctx) => {
 });
 
 registerExecutor('behavior-api-request', (ctx) => {
-  const url = ctx.assertType('string', ctx.properties.url || '', 'url') as string;
+  const url = ctx.assertType('string', ctx.properties.url || ctx.inputs.url || '', 'url') as string;
   const method = ctx.assertType('string', ctx.properties.method || 'GET', 'method') as string;
-  return { trigger: ctx.inputs.trigger, url, method, pending: true };
+  const trigger = ctx.inputs.trigger;
+  const body = ctx.inputs.body;
+  if (!url) return { trigger, url, method, success: false, error: '缺少请求地址 url', response: undefined, status: 0 };
+  return fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: ['GET', 'DELETE'].includes(method.toUpperCase()) ? undefined : JSON.stringify(body ?? {}),
+  }).then(async (response) => {
+    const status = response.status;
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) return { trigger, url, method, success: false, error: `HTTP ${status}`, response: payload, status };
+    return { trigger, url, method, success: true, error: undefined, response: payload, status };
+  }).catch((error: unknown) => ({
+    trigger,
+    url,
+    method,
+    success: false,
+    error: error instanceof Error ? error.message : String(error),
+    response: undefined,
+    status: 0,
+  }));
 });
 
 registerExecutor('behavior-js-script', (ctx) => {
@@ -524,7 +581,16 @@ registerExecutor('behavior-js-script', (ctx) => {
 registerExecutor('behavior-loop', (ctx) => {
   const items = ctx.inputs.items || ctx.inputs.data;
   const count = ctx.assertType('number', Array.isArray(items) ? items.length : Number(ctx.properties.repeatCount ?? ctx.properties.count ?? 0), 'repeatCount') as number;
-  return { trigger: ctx.inputs.trigger, items, count, index: 0 };
+  const list = Array.isArray(items) ? items : [];
+  return {
+    trigger: ctx.inputs.trigger,
+    items: list,
+    count,
+    index: 0,
+    item: list[0],
+    each: list,
+    done: list.length === 0,
+  };
 });
 
 registerExecutor('behavior-data-query', (ctx) => {
@@ -549,6 +615,7 @@ registerExecutor('behavior-data-query', (ctx) => {
     const rowsCheck = checkType('json-rows', rows);
     const normalizedRows = rowsCheck.valid ? rowsCheck.normalized : rows;
     return {
+      trigger: inputs.trigger,
       data: normalizedRows,
       result: normalizedRows,
       rows: normalizedRows,
@@ -558,7 +625,7 @@ registerExecutor('behavior-data-query', (ctx) => {
       sheetName: sheet.name,
     };
   }
-  return { data: [], result: [], rows: [], count: 0, headers: [], tableId, sheetName };
+  return { trigger: inputs.trigger, data: [], result: [], rows: [], count: 0, headers: [], tableId, sheetName };
 });
 
 registerExecutor('behavior-row-lookup', (ctx) => {

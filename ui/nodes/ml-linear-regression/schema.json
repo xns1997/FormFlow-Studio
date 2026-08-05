@@ -28,31 +28,36 @@
       "label": "数据",
       "type": "json-rows",
       "direction": "input",
-      "required": true
+      "required": true,
+      "description": "透传数据"
     },
     {
       "name": "slope",
       "label": "斜率",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "斜率"
     },
     {
       "name": "intercept",
       "label": "截距",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "截距"
     },
     {
       "name": "r2",
       "label": "R²",
       "type": "number",
-      "direction": "output"
+      "direction": "output",
+      "description": "R²"
     },
     {
       "name": "predictions",
       "label": "预测值",
       "type": "array",
-      "direction": "output"
+      "direction": "output",
+      "description": "预测结果"
     }
   ],
   "keywords": [

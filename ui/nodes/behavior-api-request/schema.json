@@ -128,6 +128,27 @@
       "type": "number",
       "direction": "output",
       "description": "HTTP 状态码"
+    },
+    {
+      "name": "trigger",
+      "label": "触发信号",
+      "type": "any",
+      "direction": "output",
+      "description": "透传的触发信号"
+    },
+    {
+      "name": "url",
+      "label": "请求地址",
+      "type": "string",
+      "direction": "output",
+      "description": "实际请求的地址"
+    },
+    {
+      "name": "method",
+      "label": "请求方法",
+      "type": "string",
+      "direction": "output",
+      "description": "实际使用的 HTTP 方法"
     }
   ],
   "keywords": [

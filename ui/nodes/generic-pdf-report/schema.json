@@ -60,6 +60,27 @@
       "type": "string",
       "direction": "output",
       "description": "文件名"
+    },
+    {
+      "name": "rowCount",
+      "label": "行数",
+      "type": "number",
+      "direction": "output",
+      "description": "报告包含的数据行数"
+    },
+    {
+      "name": "colCount",
+      "label": "列数",
+      "type": "number",
+      "direction": "output",
+      "description": "报告包含的数据列数"
+    },
+    {
+      "name": "message",
+      "label": "生成消息",
+      "type": "string",
+      "direction": "output",
+      "description": "报告生成结果提示"
     }
   ],
   "keywords": [
