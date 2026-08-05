@@ -69,22 +69,7 @@ export function createReferenceState(formValues: Record<string, unknown> = {}): 
   };
 }
 
-/**
- * 与前端运行时 valueUtils 的 comparableValue 同逻辑的镜像：
- * 数字保持数字、日期字符串解析为时间戳、其余转字符串。
- * 共享模块不允许 import ui，故在此镜像，保证条件/守卫比较与运行时一致。
- */
-function comparableValue(value: unknown): number | string | unknown {
-  if (typeof value === 'number') return value;
-  if (value instanceof Date) return value.getTime();
-  const text = typeof value === 'string' ? value.trim() : String(value ?? '').trim();
-  if (!text) return value;
-  const numeric = Number(text);
-  if (!Number.isNaN(numeric) && /^-?\d+(\.\d+)?$/.test(text)) return numeric;
-  const date = Date.parse(text);
-  if (!Number.isNaN(date)) return date;
-  return text;
-}
+import { comparableValue, sameValue } from '../valueComparison';
 
 function cmp(value: unknown): number | string {
   return comparableValue(value) as number | string;
@@ -153,13 +138,13 @@ export function applyGuardAction(action: { type: string; fields?: string[]; targ
       if (!fieldValues.some(({ value }) => !empty(value))) fail(action.message || `请至少填写以下字段之一：${fields.join('、')}`);
       break;
     case 'assertDirty':
-      if (fieldValues.every(({ field }) => sameValueValue(state.formValues[field], (state.originalValues || {})[field]))) {
+      if (fieldValues.every(({ field }) => sameValue(state.formValues[field], (state.originalValues || {})[field]))) {
         fail(action.message || `请至少修改以下字段之一：${fields.join('、')}`);
       }
       break;
     case 'assertReadonly': {
       const original = state.originalValues || {};
-      const changed = fieldValues.filter(({ field }) => !sameValueValue(state.formValues[field], original[field])).map(({ field }) => field);
+      const changed = fieldValues.filter(({ field }) => !sameValue(state.formValues[field], original[field])).map(({ field }) => field);
       if (changed.length) fail(action.message || `只读字段不允许修改：${changed.join('、')}`);
       break;
     }
@@ -219,11 +204,6 @@ export function applyGuardAction(action: { type: string; fields?: string[]; targ
       break;
     }
   }
-}
-
-function sameValueValue(left: unknown, right: unknown): boolean {
-  if (Object.is(left, right)) return true;
-  try { return JSON.stringify(left) === JSON.stringify(right); } catch { return false; }
 }
 
 export function applyAction(action: { type: string; targetField?: string; targetComponent?: string; expression?: string; value?: unknown; message?: string; messageType?: string; workflowId?: string; optionsConfig?: { mode?: string; table?: string } }, state: ReferenceState): boolean {

@@ -39,6 +39,7 @@ function toLinkageAction(action: ActionConfig, index: number): FormLinkageAction
 
 function triggerEventName(trigger: BehaviorRule['trigger']) { if (trigger.type === 'fieldChange' || trigger.type === 'valueChange') return 'onChange'; if (trigger.type === 'formLoad') return 'onLoad'; if (trigger.type === 'beforeSubmit') return 'onBeforeSubmit'; if (trigger.type === 'submit') return 'onSubmit'; if (trigger.type === 'buttonClick') return 'onClick'; return `on${trigger.type.charAt(0).toUpperCase()}${trigger.type.slice(1)}`; }
 
+/** 将行为 DSL 规则转换为表单联动规则结构。 */
 export function behaviorRuleToLinkageRule(rule: BehaviorRule): FormLinkageRule {
   const conditions = rule.conditions.map((condition, index): FormLinkageCondition | null => {
     const operator = LINKAGE_OPERATOR[condition.operator];
@@ -48,6 +49,7 @@ export function behaviorRuleToLinkageRule(rule: BehaviorRule): FormLinkageRule {
   return { id: rule.id, name: rule.name, trigger: { eventName: triggerEventName(rule.trigger), sourceField: rule.trigger.fieldName }, conditions, conditionMode: rule.conditions.some((condition) => condition.logic === 'OR') ? 'any' : 'all', actions, scope: rule.trigger.fieldName ? 'target-fields' : 'current-form', enabled: rule.enabled, priority: rule.priority };
 }
 
+/** 将 DSL 源码应用到组件集合：生成联动规则并绑定到组件。 */
 export function applyBehaviorDslToComponents(components: DesignComponent[], source: string, formWindow?: FormWindowConfig) {
   const fields = components.map((component) => String(component.fieldBinding || component.props?.name || '')).filter(Boolean);
   const compilation = compileBehaviorDsl(source, { fields, components });

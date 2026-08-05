@@ -15,6 +15,7 @@ import type { ConditionOperator } from '../types';
  * 这消除了早期验证发现的“NaN 下两者均不成立”反例。
  */
 
+/** 互补性验证使用的抽样值域（覆盖数字、文本、空值与类型边界）。 */
 export const COMPLEMENTARITY_DOMAIN: unknown[] = [
   null, undefined, '', 'a', 'b', 'abc', '0',
   0, 1, 5, -1, 1.5, 100,
@@ -22,6 +23,7 @@ export const COMPLEMENTARITY_DOMAIN: unknown[] = [
   [], [1], ['a'],
 ];
 
+/** 单对运算符互补性违规：某取值下正反方向结果不一致。 */
 export interface PairViolation {
   operator: ConditionOperator;
   inverse: ConditionOperator;
@@ -31,6 +33,7 @@ export interface PairViolation {
   neither: boolean;
 }
 
+/** 一对运算符的验证结果：是否互补、违规样例与覆盖范围。 */
 export interface PairVerification {
   operator: ConditionOperator;
   inverse: ConditionOperator;
@@ -43,6 +46,7 @@ function describe(value: unknown): string {
   return JSON.stringify(value ?? (value === undefined ? 'undefined' : value));
 }
 
+/** 验证一对互逆运算符在抽样值域上是否互补（否定一个等于另一个的否定）。 */
 export function verifyPair(operator: ConditionOperator, inverse: ConditionOperator, domain: unknown[] = COMPLEMENTARITY_DOMAIN): PairVerification {
   const violations: PairViolation[] = [];
   for (const value of domain) {
@@ -65,6 +69,7 @@ export function verifyPair(operator: ConditionOperator, inverse: ConditionOperat
   return { operator, inverse, complementary: violations.length === 0, violations };
 }
 
+/** 全部运算符对的互补性汇总报告。 */
 export interface ComplementarityReport {
   generatedAt: string;
   pairs: PairVerification[];
@@ -75,6 +80,7 @@ export interface ComplementarityReport {
   allComplementaryOnFullDomain: boolean;
 }
 
+/** 运行完整运算符互补性验证（静态门禁用）。 */
 export function verifyOperatorComplementarity(): ComplementarityReport {
   const numericValues = COMPLEMENTARITY_DOMAIN.filter((value) => typeof value === 'number');
   const stringValues = COMPLEMENTARITY_DOMAIN.filter((value) => typeof value === 'string');

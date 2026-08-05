@@ -3,6 +3,7 @@ import type {
   BehaviorDslDiagnosticSeverity, BehaviorDslDiagnostic, BehaviorDslCompileContext, BehaviorDslCompilation,
 } from './types';
 
+/** 条件运算符文本 → 枚举的匹配表（按优先级顺序尝试）。 */
 export const OPERATOR_MAP: Array<[RegExp, ConditionOperator]> = [
   [/\s+is\s+not\s+empty\s*$/i, 'isNotEmpty'], [/\s+is\s+empty\s*$/i, 'isEmpty'],
   [/\s+not\s+starts\s+with\s+/i, 'notStartsWith'], [/\s+starts\s+with\s+/i, 'startsWith'],
@@ -11,11 +12,13 @@ export const OPERATOR_MAP: Array<[RegExp, ConditionOperator]> = [
   [/\s*>=\s*/, '>='], [/\s*<=\s*/, '<='], [/\s*!=\s*/, '!='], [/\s*==\s*/, '=='], [/\s*>\s*/, '>'], [/\s*<\s*/, '<'],
 ];
 
+/** 运算符 → 其逻辑逆运算（用于取反条件与互补性验证）。 */
 export const INVERSE_OPERATOR: Partial<Record<ConditionOperator, ConditionOperator>> = {
   '==': '!=', '!=': '==', '>': '<=', '<': '>=', '>=': '<', '<=': '>', contains: 'notContains', notContains: 'contains',
   startsWith: 'notStartsWith', notStartsWith: 'startsWith', endsWith: 'notEndsWith', notEndsWith: 'endsWith', isEmpty: 'isNotEmpty', isNotEmpty: 'isEmpty',
 };
 
+/** 去除行尾注释（字符串内的 `#`/`//` 不受影响）。 */
 export function stripComment(source: string) {
   let quote = '';
   for (let index = 0; index < source.length; index += 1) {
@@ -74,7 +77,9 @@ export function isFieldReference(source: string) {
   return /^\$(?:form\.)?/.test(String(source || '').trim());
 }
 
+/** 构造规范字段引用（`$field`）。 */
 export function fieldRef(value: string) { return `$${value.trim().replace(/^\$form\.|^\$/, '')}`; }
+/** 构造规范组件引用（`@component`）。 */
 export function componentRef(value: string) { return `@${value.trim().replace(/^@/, '')}`; }
 
 /** 解析单个条件子句（`字段 运算符 值`），失败返回 null。 */
@@ -96,10 +101,13 @@ export function parseCondition(source: string): ConditionConfig | null {
   return null;
 }
 
+/** 解析引用列表：按顶层分隔符拆分并规范化、去空。 */
 export function parseRefs(source: string) { return splitTopLevel(source).map(normalizeReference).filter(Boolean); }
 
+/** 动作解析结果：规范化动作列表 + 诊断。 */
 export interface ParsedActions { actions: ActionConfig[]; diagnostics: Array<{ message: string; code: string; severity: BehaviorDslDiagnosticSeverity; suggestion?: string }>; }
 
+/** 解析函数式动作调用（如 `show(@c)` / `require($f)`），非函数式返回 null。 */
 export function parseCanonicalAction(phrase: string, mode: 'default' | 'guard' = 'default'): ActionConfig[] | null {
   const call = phrase.match(/^([a-z]+)\s*\((.*)\)$/i);
   if (!call) return null;
@@ -156,6 +164,7 @@ export function parseCanonicalAction(phrase: string, mode: 'default' | 'guard' =
   return null;
 }
 
+/** 解析旧式动作语法（`show x` / `set x = y` 等），返回动作与改写建议。 */
 export function parseLegacyAction(phrase: string): { actions: ActionConfig[]; suggestion?: string } | null {
   let match: RegExpMatchArray | null;
   if ((match = phrase.match(/^(show|hide|enable|disable)\s+(.+)$/i))) {
@@ -178,6 +187,7 @@ export function parseLegacyAction(phrase: string): { actions: ActionConfig[]; su
   return null;
 }
 
+/** 解析动作列表：先试函数式，再退回旧式语法，无法识别时产出 FFR002。 */
 export function parseActions(source: string, mode: 'default' | 'guard' = 'default'): ParsedActions {
   const actions: ActionConfig[] = [];
   const diagnostics: ParsedActions['diagnostics'] = [];
@@ -195,7 +205,9 @@ export function parseActions(source: string, mode: 'default' | 'guard' = 'defaul
   return { actions, diagnostics };
 }
 
+/** 取反条件：运算符有逆运算时替换，否则用 customExpression=false 恒假。 */
 export function inverseCondition(condition: ConditionConfig): ConditionConfig { return { ...condition, operator: INVERSE_OPERATOR[condition.operator] || 'custom', customExpression: INVERSE_OPERATOR[condition.operator] ? undefined : 'false' }; }
+/** 构造一条默认启用的规则（优先级 20）。 */
 export function createRule(id: string, name: string, trigger: BehaviorRule['trigger'], conditions: ConditionConfig[], actions: ActionConfig[]): BehaviorRule { return { id, name, enabled: true, priority: 20, trigger, conditions, actions, sideEffects: [] }; }
 /** 构造一条诊断记录（默认 error 级、第 1 列）。 */
 export function diagnostic(line: number, code: string, message: string, severity: BehaviorDslDiagnosticSeverity = 'error', column = 1, suggestion?: string): BehaviorDslDiagnostic { return { line, column, severity, code, message, suggestion }; }
@@ -238,6 +250,7 @@ export function unbalancedParenDiagnostics(lineNumber: number, line: string): Be
   return [];
 }
 
+/** 结构诊断（FFR105：规则行缺少 `->` 动作分隔符）。 */
 export function structuralDiagnostics(lineNumber: number, line: string): BehaviorDslDiagnostic[] {
   const hasArrow = line.includes('->');
   const statementStart = /^(when|else|otherwise|on|before)\b/i;
@@ -317,8 +330,10 @@ export function compileBehaviorDslRegex(source: string, context: BehaviorDslComp
   return { rules, diagnostics, preview };
 }
 
+/** 编译结果是否含 error 级诊断。 */
 export function hasBehaviorDslErrors(compilation: Pick<BehaviorDslCompilation, 'diagnostics'>) { return compilation.diagnostics.some((item) => item.severity === 'error'); }
 
+/** 将规则集转回中文自然语言描述。 */
 export function behaviorRulesToNaturalLanguage(rules: BehaviorRule[]) {
   return rules.map((rule) => { const trigger = rule.trigger.fieldName ? `${rule.trigger.fieldName}发生${rule.trigger.type}` : `发生${rule.trigger.type}`; const condition = rule.conditions.length ? `，满足 ${rule.conditions.map((item) => `${item.fieldName} ${item.operator} ${String(item.value ?? '')}`).join(' 且 ')}` : ''; return `${trigger}${condition}，执行 ${rule.actions.map((action) => action.type).join('、')}。`; });
 }

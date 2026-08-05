@@ -8,9 +8,12 @@
  * and in the server's `generatedForm`, which only reads `key` / `formMode`.
  */
 
+/** 表单模板默认模式。 */
 export type FormTemplateMode = 'create' | 'edit' | 'detail' | 'lookup-edit';
+/** 内置表单模板 ID。 */
 export type FormTemplateId = 'blank' | 'basic-entry' | 'lookup-edit' | 'master-detail';
 
+/** 表单模板描述：UI 设计器与服务端 catalog 共享的唯一事实源。 */
 export interface FormTemplateDescriptor {
   key: FormTemplateId;
   label: string;
@@ -25,6 +28,7 @@ export interface FormTemplateDescriptor {
   options: string[];
 }
 
+/** 全部内置表单模板（blank / basic-entry / lookup-edit / master-detail）。 */
 export const FORM_TEMPLATES: FormTemplateDescriptor[] = [
   {
     key: 'blank',
@@ -64,6 +68,7 @@ export const FORM_TEMPLATES: FormTemplateDescriptor[] = [
   },
 ];
 
+/** 按 key 查找模板描述，未找到返回 undefined。 */
 export function getFormTemplate(key: string): FormTemplateDescriptor | undefined {
   return FORM_TEMPLATES.find((template) => template.key === key);
 }

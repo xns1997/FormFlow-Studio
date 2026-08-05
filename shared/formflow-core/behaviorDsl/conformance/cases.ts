@@ -8,6 +8,7 @@ import type { BehaviorDslCompileContext } from '../types';
  * 差分测试时只要求“旧诊断 ⊆ 新诊断 + 规则等价”；其余用例要求逐字节一致。
  */
 
+/** 用例预期：诊断码、规则数与差分严格度。 */
 export interface ConformanceExpectation {
   /** 不应存在任何 error 级诊断 */
   ok?: boolean;
@@ -21,6 +22,7 @@ export interface ConformanceExpectation {
   exact?: boolean;
 }
 
+/** 一致性用例：文档引用、源码与预期。 */
 export interface ConformanceCase {
   id: string;
   docRef: string;
@@ -34,6 +36,7 @@ const techStackComponents = [
   { id: 'tech-stack', type: 'input', x: 0, y: 0, width: 200, height: 60, fieldBinding: '技术栈', props: { name: '技术栈' } },
 ];
 
+/** 全部一致性用例（锚定 docs/behavior-rule-syntax.md）。 */
 export const CONFORMANCE_CASES: ConformanceCase[] = [
   // ---- 12.x 用例（合法，0 诊断） ----
   {
@@ -326,6 +329,7 @@ export const CONFORMANCE_CASES: ConformanceCase[] = [
   },
 ];
 
+/** 一致性套件覆盖的 FFR 诊断码清单。 */
 export const CONFORMANCE_FFR_CODES = [
   'FFR000', 'FFR001', 'FFR002', 'FFR003', 'FFR004',
   'FFR100', 'FFR101', 'FFR102', 'FFR103', 'FFR104',
@@ -333,6 +337,7 @@ export const CONFORMANCE_FFR_CODES = [
   'FFR301', 'FFR302', 'FFR303', 'FFR304', 'FFR305', 'FFR306', 'FFR307', 'FFR308', 'FFR309',
 ] as const;
 
+/** 返回全部一致性用例（保持定义顺序）。 */
 export function getConformanceCases(): ConformanceCase[] {
   return CONFORMANCE_CASES;
 }

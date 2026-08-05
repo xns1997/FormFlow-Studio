@@ -1,3 +1,4 @@
+/** 参与属性依赖分析的组件最小形状（fieldBinding 或 props.name 作为字段标识）。 */
 export interface PropertyDependencyComponent {
   fieldBinding?: string;
   props: Record<string, unknown>;
@@ -11,6 +12,7 @@ const EXPRESSION_PROP_KEYS = [
   'contentTemplate',
 ] as const;
 
+/** 从表达式/模板文本中提取引用的字段名（form.x / form['x'] / $field）。 */
 export function extractPropertyReferences(source: string) {
   const references = new Set<string>();
   const pattern = /\bform(?:\.([A-Za-z_$一-鿿][\w$一-鿿]*)(?:\.[A-Za-z_$一-鿿][\w$一-鿿]*)*|\[['"]([^'"]+)['"]\])/g;
@@ -21,6 +23,7 @@ export function extractPropertyReferences(source: string) {
   return [...references];
 }
 
+/** 构建字段 → 其表达式所引用字段的依赖图。 */
 export function buildPropertyDependencyGraph(components: PropertyDependencyComponent[]) {
   const graph = new Map<string, string[]>();
   for (const component of components) {
@@ -32,6 +35,7 @@ export function buildPropertyDependencyGraph(components: PropertyDependencyCompo
   return graph;
 }
 
+/** 在依赖图中找出所有环（返回首尾重复的字段路径）。 */
 export function findPropertyDependencyCycles(graph: Map<string, string[]>) {
   const cycles: string[][] = [];
   const visited = new Set<string>();
@@ -53,6 +57,7 @@ export function findPropertyDependencyCycles(graph: Map<string, string[]>) {
   return cycles;
 }
 
+/** 属性表达式求值上下文：form/original/component/context 及任意附加键。 */
 export interface PropertyExpressionContext {
   form?: Record<string, unknown>;
   original?: Record<string, unknown>;
@@ -61,6 +66,7 @@ export interface PropertyExpressionContext {
   [key: string]: unknown;
 }
 
+/** 表达式求值结果：成功带 value，失败带 error。 */
 export interface ExpressionResult<T = unknown> {
   ok: boolean;
   value?: T;
@@ -271,6 +277,10 @@ class Parser {
   }
 }
 
+/**
+ * 求值受限属性表达式（白名单运算符与内置函数，不执行任意 JS）。
+ * 空表达式返回 { ok: true, value: undefined }。
+ */
 export function evaluatePropertyExpression(expression: string, context: PropertyExpressionContext): ExpressionResult {
   const source = expression.trim();
   if (!source) return { ok: true, value: undefined };
@@ -281,6 +291,7 @@ export function evaluatePropertyExpression(expression: string, context: Property
   }
 }
 
+/** 插值模板：替换 `{{表达式}}`，任一子表达式失败则整体返回失败与部分结果。 */
 export function interpolatePropertyTemplate(template: string, context: PropertyExpressionContext): ExpressionResult<string> {
   let error: string | undefined;
   const value = template.replace(/\{\{([\s\S]*?)\}\}/g, (_match, expression: string) => {
@@ -291,7 +302,9 @@ export function interpolatePropertyTemplate(template: string, context: PropertyE
   return error ? { ok: false, value, error } : { ok: true, value };
 }
 
+/** 内置函数名列表（用于编辑器补全）。 */
 export const PROPERTY_EXPRESSION_FUNCTIONS = Object.keys(FUNCTIONS);
+/** 内置函数的中文说明（用于编辑器提示）。 */
 export const PROPERTY_EXPRESSION_FUNCTION_DETAILS: Record<string, string> = {
   len: 'len(value) → 长度', upper: 'upper(value) → 大写文本', lower: 'lower(value) → 小写文本', trim: 'trim(value) → 去除首尾空格',
   contains: 'contains(value, search) → 是否包含', startsWith: 'startsWith(value, search) → 是否以文本开头', endsWith: 'endsWith(value, search) → 是否以文本结尾',
@@ -301,6 +314,7 @@ export const PROPERTY_EXPRESSION_FUNCTION_DETAILS: Record<string, string> = {
   unique: 'unique(values) → 去重', lookup: 'lookup(collection, key, valueField?) → 查找', match: 'match(value, case, result, ..., default?) → 匹配',
 };
 
+/** 运行时属性解析结果：值、显隐/禁用/必填状态、props 与诊断。 */
 export interface RuntimePropertyResult {
   value: unknown;
   visible: boolean;
@@ -310,6 +324,10 @@ export interface RuntimePropertyResult {
   diagnostics: string[];
 }
 
+/**
+ * 解析单个组件的运行时属性：求值 value/visible/disabled/required 表达式并插值 contentTemplate。
+ * 表达式失败时回退默认值并记录诊断。
+ */
 export function resolveRuntimeProperties(
   props: Record<string, unknown>,
   value: unknown,
@@ -339,6 +357,11 @@ export function resolveRuntimeProperties(
   };
 }
 
+/**
+ * 按依赖序批量解析字段表达式值：先做拓扑排序，检测并隔离循环依赖字段。
+ *
+ * @returns 解析后的值字典与按字段聚合的诊断
+ */
 export function resolveExpressionValues(
   entries: Array<{ field: string; props: Record<string, unknown> }>,
   values: Record<string, unknown>,

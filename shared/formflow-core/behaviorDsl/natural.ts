@@ -5,6 +5,7 @@ function splitChineseList(source: string) {
   return source.split(/[、,，和及]/).map((item) => item.trim()).filter(Boolean);
 }
 
+/** 将自然语言规则描述转换为 DSL 代码（含预览与诊断）。 */
 export function naturalLanguageToBehaviorDsl(source: string): NaturalRuleTranslation {
   const lines: string[] = [];
   const preview: string[] = [];

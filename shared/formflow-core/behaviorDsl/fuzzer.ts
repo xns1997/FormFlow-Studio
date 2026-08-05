@@ -64,6 +64,7 @@ const IMAGES: Record<string, () => string> = {
 };
 
 let seedState = 0x9e3779b9;
+/** 重置模糊测试随机种子（默认与初始值一致，保证可复现）。 */
 export function resetFuzzSeed(seed = 0x9e3779b9): void { seedState = seed >>> 0; }
 function randomInt(min: number, max: number): number {
   seedState ^= seedState << 13; seedState ^= seedState >>> 17; seedState ^= seedState << 5;
@@ -242,6 +243,7 @@ export function generateGastStatement(): string {
 /**
  * 生成一个 DSL 程序（若干语句）。
  */
+/** 生成一个 DSL 程序（若干语义合理语句）。 */
 export function generateProgram(lineCount = 3): string {
   const lines: string[] = [];
   for (let index = 0; index < lineCount; index += 1) lines.push(generateStatement());
@@ -260,18 +262,21 @@ function mutate(source: string): string {
   return chars.join('');
 }
 
+/** 对程序做若干次随机变异（稳健性测试输入）。 */
 export function mutateProgram(source: string, mutationCount = 2): string {
   let result = source;
   for (let index = 0; index < mutationCount; index += 1) result = mutate(result);
   return result;
 }
 
+/** 差分对拍选项：严格逐字节 vs 变异稳健性。 */
 export interface IdentityOptions {
   /** true = 合法生成输入（严格逐字节对拍）；false = 变异输入（稳健性不变量） */
   strict?: boolean;
   source?: string;
 }
 
+/** 对比新旧实现编译结果，返回差异描述；一致返回 null。 */
 export function compilationIdentity(oldResult: BehaviorDslCompilation, newResult: BehaviorDslCompilation, options: IdentityOptions = {}): string | null {
   const strict = options.strict ?? true;
   const oldRules = JSON.stringify(oldResult.rules);
@@ -328,6 +333,7 @@ export function compilationIdentity(oldResult: BehaviorDslCompilation, newResult
   return null;
 }
 
+/** 运行差分对拍：旧正则实现 vs 新文法实现的编译一致性。 */
 export function differentialCheck(source: string, options: IdentityOptions = {}): string | null {
   // 单行出现多个 `->` 属于出语言范围（DSL 规范：一行一条规则、一个箭头）；
   // 旧正则对这类输入的贪婪解析是正则伪影，不参与差分（仅做崩溃安全冒烟）。
@@ -347,6 +353,7 @@ export function differentialCheck(source: string, options: IdentityOptions = {})
   return compilationIdentity(oldResult, newResult, { ...options, source });
 }
 
+/** 模糊测试汇总：用例数、失败数与差异样例。 */
 export interface FuzzSummary {
   generated: number;
   mutated: number;
@@ -354,6 +361,7 @@ export interface FuzzSummary {
   crashes: Array<{ source: string; error: string }>;
 }
 
+/** 运行模糊测试：生成/变异程序，差分对拍并汇总结果。 */
 export function runFuzz(validCount: number, mutatedCount: number, seed = 20260803): FuzzSummary {
   resetFuzzSeed(seed);
   const summary: FuzzSummary = { generated: 0, mutated: 0, divergences: [], crashes: [] };

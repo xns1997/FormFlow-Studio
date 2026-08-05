@@ -72,6 +72,7 @@ const NumberToken = createToken({ name: 'NumberToken', pattern: /\d+(?:\.\d+)?/ 
 const Ident = createToken({ name: 'Ident', pattern: /[\w一-鿿][\w一-鿿]*/ });
 const Other = createToken({ name: 'Other', pattern: /./ });
 
+/** DSL 全部 token 定义（Chevrotain）。 */
 export const DSL_TOKENS = [
   WhiteSpace, Comment, NewLine,
   Arrow,
@@ -82,6 +83,7 @@ export const DSL_TOKENS = [
   FieldRef, ComponentRef, StringToken, NumberToken, Ident, Other,
 ] as const;
 
+/** DSL 词法分析器（保留完整位置信息供诊断定位）。 */
 export const dslLexer = new Lexer([...DSL_TOKENS], { positionTracking: 'full' });
 
 // 可被“任意正文捕获”规则消费的 token（排除结构 token：Arrow / Eq / NewLine / EOF）
@@ -101,18 +103,21 @@ function isEndToken(token: IToken | undefined) {
 // 语法（CST）——每个语句把关键 token 记录到字段上，供语义层取原文
 // ---------------------------------------------------------------------------
 
+/** when 语句结构。 */
 export interface WhenLine {
   kind: 'when';
   conditionText: string;
   actionsText: string;
 }
 
+/** else 语句结构（含旧语法 otherwise 标记）。 */
 export interface ElseLine {
   kind: 'else';
   actionsText: string;
   legacyOtherwise: boolean;
 }
 
+/** compute 语句结构（含 watch / on change 覆盖标记）。 */
 export interface ComputeLine {
   kind: 'compute';
   targetText: string;
@@ -121,6 +126,7 @@ export interface ComputeLine {
   fieldsText: string;
 }
 
+/** on change 语句结构（含旧语法标记）。 */
 export interface OnChangeLine {
   kind: 'onChange';
   legacy: boolean;
@@ -128,12 +134,14 @@ export interface OnChangeLine {
   actionsText: string;
 }
 
+/** before click 语句结构。 */
 export interface BeforeClickLine {
   kind: 'beforeClick';
   buttonName: string;
   actionsText: string;
 }
 
+/** 生命周期语句结构（on load / on submit / before submit）。 */
 export interface LifecycleLine {
   kind: 'lifecycle';
   event: 'formLoad' | 'submit' | 'beforeSubmit';
@@ -142,6 +150,7 @@ export interface LifecycleLine {
   actionsText: string;
 }
 
+/** 所有可识别语句的联合类型。 */
 export type StatementLine =
   | WhenLine
   | ElseLine
@@ -150,6 +159,7 @@ export type StatementLine =
   | BeforeClickLine
   | LifecycleLine;
 
+/** 单行解析结果：规范化文本 + 语句结构（null 表示无法识别）。 */
 export interface ParsedLine {
   /** 规范化（trim 后）的单行文本；语义层用它计算列号与旧语法对齐 */
   normalized: string;
@@ -387,6 +397,7 @@ class BehaviorDslCstParser extends CstParser {
   }
 }
 
+/** DSL 单行语句解析器实例（线程内可复用）。 */
 export const dslParser = new BehaviorDslCstParser();
 
 /**

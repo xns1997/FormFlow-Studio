@@ -19,20 +19,24 @@ export interface EventControlComponentLike {
   props: Record<string, unknown>;
 }
 
+/** 控件键种类：规范字段名键、ID 别名键、兼容旧命名的废弃别名键。 */
 export type EventControlKeyKind = 'canonical' | 'id' | 'deprecated';
 
+/** 单个控件键赋值：键名、种类与组件序号。 */
 export interface EventControlKeyAssignment {
   key: string;
   kind: EventControlKeyKind;
   componentIndex: number;
 }
 
+/** 单个控件的键规划：canonical、ID 别名与可选的 legacy 别名。 */
 export interface EventControlKeyPlan {
   canonical: string;
   id: string;
   legacy?: string;
 }
 
+/** 控件键 lint 问题：重复字段名或 ID 别名冲突。 */
 export interface EventControlKeyLintIssue {
   componentId: string;
   key: string;
@@ -59,6 +63,7 @@ export function resolveLegacyEventControlFieldName(component: EventControlCompon
   return firstDefined(component.name, propsName, component.id) || String(component.id);
 }
 
+/** 计算单个控件的完整键规划（canonical + ID + 兼容别名）。 */
 export function resolveEventControlKeys(component: EventControlComponentLike): EventControlKeyPlan {
   const canonical = resolveEventControlFieldName(component);
   const legacy = resolveLegacyEventControlFieldName(component);

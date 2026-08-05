@@ -5,14 +5,17 @@
  */
 import type { InferredFormField } from '../fieldInference';
 
+/** 单行字段控件高度。 */
 export const SINGLE_LINE_FIELD_HEIGHT = 76;
 
+/** 按字段数自动选择列数（1 → 1 列，≤4 → 2 列，其余 3 列）。 */
 export function autoColumns(fieldCount: number): 1 | 2 | 3 {
   if (fieldCount <= 1) return 1;
   if (fieldCount <= 4) return 2;
   return 3;
 }
 
+/** 布局计划：列数、行数、分区、分页与操作区 Y 坐标。 */
 export interface LayoutPlan {
   columns: 1 | 2 | 3;
   fieldRows: number;
@@ -22,6 +25,7 @@ export interface LayoutPlan {
   actionY: number;
 }
 
+/** 规划表单布局：计算列数、分区、分页与操作区位置。 */
 export function planLayout(
   fields: InferredFormField[],
   options: {
@@ -46,6 +50,7 @@ export function planLayout(
   return { columns, fieldRows, sections, needsTabs, pageCount, actionY };
 }
 
+/** 计算第 index 个字段的网格位置（列/行/坐标/宽度）。 */
 export function fieldPosition(
   index: number,
   columns: number,

@@ -22,6 +22,7 @@ function workflowIoPorts(direction: 'output' | 'input') {
   return JSON.stringify({ [`${direction}Ports`]: JSON.stringify(ports) });
 }
 
+/** 生成保存工作流（导入/提交/导出节点）；无主键字段时返回 undefined。 */
 export function createSaveWorkflow(
   table: SrcTableEntry,
   sheet: SrcSheetInfo,

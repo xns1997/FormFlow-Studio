@@ -4,10 +4,14 @@ import {
   type ComponentRectLike,
 } from './form-window-layout';
 
+/** 现行项目模板 ID（行业方案）。 */
 export type ProjectTemplateId = 'game_analytics' | 'flexible_employment' | 'china_population_forecast' | 'check_valve_selection';
+/** 旧版模板 ID（历史兼容，映射到现行模板）。 */
 export type LegacyProjectTemplateId = 'blank_form' | 'data_entry' | 'query_edit' | 'approval_flow' | 'data_dashboard';
+/** 模板行业分类。 */
 export type ProjectTemplateKind = 'analytics' | 'employment' | 'forecast' | 'selection';
 
+/** 模板描述：ID、名称、亮点与行业分类。 */
 export interface ProjectTemplateDescriptor {
   id: ProjectTemplateId;
   name: string;
@@ -16,6 +20,7 @@ export interface ProjectTemplateDescriptor {
   kind: ProjectTemplateKind;
 }
 
+/** 创建项目时的元数据：名称、描述、作者与标签。 */
 export interface ProjectTemplateMetadata {
   id: string;
   name: string;
@@ -29,6 +34,7 @@ export interface ProjectTemplateMetadata {
 type JsonObject = Record<string, any>;
 type Row = Record<string, string | number | boolean>;
 
+/** 全部现行项目模板描述。 */
 export const PROJECT_TEMPLATES: ProjectTemplateDescriptor[] = [
   { id: 'game_analytics', name: '游戏数据分析', description: '玩家、事件、付费和活动的一体化录入分析看板。', highlights: ['事件录入', '玩家档案编辑', '活动创建', '付费查询', '运营看板'], kind: 'analytics' },
   { id: 'flexible_employment', name: '灵活就业分析', description: '从业者、工时、结算和保障情况的综合分析。', highlights: ['工作记录', '从业者档案编辑', '结算查询', '保障调查', '综合看板'], kind: 'employment' },
@@ -36,6 +42,7 @@ export const PROJECT_TEMPLATES: ProjectTemplateDescriptor[] = [
   { id: 'check_valve_selection', name: '止回阀选型', description: '工况需求、产品约束、候选评分和结果确认。', highlights: ['工况录入', '产品目录查询', '选型确认', '零件库存', '结果看板'], kind: 'selection' },
 ];
 
+/** 旧版模板 ID → 现行模板 ID 的映射。 */
 export const LEGACY_TEMPLATE_ALIASES: Record<LegacyProjectTemplateId, ProjectTemplateId> = {
   blank_form: 'game_analytics',
   data_dashboard: 'game_analytics',
@@ -44,6 +51,7 @@ export const LEGACY_TEMPLATE_ALIASES: Record<LegacyProjectTemplateId, ProjectTem
   query_edit: 'check_valve_selection',
 };
 
+/** 解析模板 ID：现行 ID 原样返回，旧版 ID 映射到现行 ID，未知返回 undefined。 */
 export function resolveProjectTemplateId(id: string): ProjectTemplateId | undefined {
   if (PROJECT_TEMPLATES.some((item) => item.id === id)) return id as ProjectTemplateId;
   return LEGACY_TEMPLATE_ALIASES[id as LegacyProjectTemplateId];
@@ -178,6 +186,7 @@ function editFormComponents(id: string, name: string, subtitle: string, fields: 
   ];
 }
 
+/** 模板附加表单定义：字段、规则与筛选/结果列配置。 */
 export interface ExtraFormDefinition {
   id: string;
   name: string;
@@ -496,6 +505,10 @@ function valve(now: string): IndustryContent {
 
 const factories: Record<ProjectTemplateId, (now: string) => IndustryContent> = { game_analytics: game, flexible_employment: employment, china_population_forecast: population, check_valve_selection: valve };
 
+/**
+ * 按模板 ID 生成完整项目模型（数据表、表单、工作流与看板）。
+ * 未知模板 ID 抛错；时间戳未提供时使用当前时间。
+ */
 export function buildProjectTemplate(requestedId: ProjectTemplateId | LegacyProjectTemplateId, metadata: ProjectTemplateMetadata): JsonObject {
   const templateId = resolveProjectTemplateId(requestedId);
   if (!templateId) throw new Error(`未知模板 ${requestedId}`);

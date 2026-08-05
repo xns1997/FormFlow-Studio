@@ -19,6 +19,7 @@ function fieldBinding(path: string): DataBindingConfig {
   return { version: 1, source: { kind: 'formField', path }, direction: 'twoWay', valueMode: 'firstCell' };
 }
 
+/** 生成字段控件组件（含数据绑定与选项/默认值属性）。 */
 export function fieldComponent(
   field: InferredFormField,
   index: number,
@@ -52,6 +53,7 @@ export function fieldComponent(
   };
 }
 
+/** 生成分区标题组件（按分区数）。 */
 export function sectionComponents(
   prefix: string,
   sectionCount: number,
@@ -76,6 +78,7 @@ export function sectionComponents(
   }));
 }
 
+/** 生成分页控件（页数 ≤1 时返回 null）。 */
 export function tabsComponent(
   prefix: string,
   pageCount: number,
@@ -98,6 +101,7 @@ export function tabsComponent(
   };
 }
 
+/** 生成状态文本组件（位于操作区上方）。 */
 export function statusComponent(
   prefix: string,
   actionY: number,
@@ -120,6 +124,7 @@ export function statusComponent(
   };
 }
 
+/** 生成保存按钮组件。 */
 export function saveButtonComponent(
   prefix: string,
   actionY: number,
@@ -141,6 +146,7 @@ export function saveButtonComponent(
   };
 }
 
+/** 生成重置按钮组件。 */
 export function resetButtonComponent(
   prefix: string,
   actionY: number,
@@ -161,6 +167,7 @@ export function resetButtonComponent(
   };
 }
 
+/** 生成查询/查找按钮组件。 */
 export function lookupButtonComponent(
   prefix: string,
   actionY: number,

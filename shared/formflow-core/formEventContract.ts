@@ -1,5 +1,7 @@
+/** 契约成员种类：值或方法。 */
 export type FormEventContractMemberKind = 'value' | 'method';
 
+/** 契约成员可选标记：内部成员与已废弃成员。 */
 export interface FormEventContractMemberOptions {
   /** 内部成员：运行时存在，但编辑器补全、参考文档与别名 d.ts 不暴露。 */
   internal?: boolean;
@@ -7,6 +9,7 @@ export interface FormEventContractMemberOptions {
   deprecated?: boolean;
 }
 
+/** 单个契约成员：名称、种类、类型/签名与中文描述。 */
 export interface FormEventContractMember {
   name: string;
   kind: FormEventContractMemberKind;
@@ -101,17 +104,22 @@ export const FORM_EVENT_CONTRACT: readonly FormEventContractMember[] = [
   method('call', 'call(name: string, ...args: unknown[]): Promise<unknown>', '调用宿主回调。'),
 ] as const;
 
+/** 需要生成顶层别名（补全与 d.ts）的成员名列表。 */
 export const FORM_EVENT_SCRIPT_ALIAS_KEYS = FORM_EVENT_CONTRACT
   .filter((member) => member.topLevelAlias)
   .map((member) => member.name);
 
+/** 面向脚本开放的公开成员（不含 internal）。 */
 export const FORM_EVENT_PUBLIC_MEMBERS = FORM_EVENT_CONTRACT.filter((member) => !member.internal);
+/** 仅运行时存在、编辑器与文档隐藏的内部成员。 */
 export const FORM_EVENT_INTERNAL_MEMBERS = FORM_EVENT_CONTRACT.filter((member) => member.internal);
 
+/** 契约成员名联合类型。 */
 export type FormEventContractKey = typeof FORM_EVENT_CONTRACT[number]['name'];
-/** Compile-time completeness constraint for concrete runtime contexts. */
+/** 运行时上下文编译期完备性约束：上下文必须覆盖全部契约键。 */
 export type FormEventRuntimeContract = { [Key in FormEventContractKey]: unknown };
 
+/** 按名称查找契约成员。 */
 export function getFormEventContractMember(name: string) {
   return FORM_EVENT_CONTRACT.find((member) => member.name === name);
 }
@@ -120,6 +128,7 @@ function memberJsDoc(member: FormEventContractMember) {
   return `/** ${member.description} */`;
 }
 
+/** 渲染契约接口的 TypeScript 源码（用于生成参考文档与补全 d.ts）。 */
 export function renderFormEventContractInterface(
   name = 'FormEventCanonicalContract',
   options: { includeInternal?: boolean } = {},
@@ -137,6 +146,7 @@ export function renderFormEventContractInterface(
   return `interface ${name} {\n${members.join('\n')}\n}`;
 }
 
+/** 渲染顶层函数/常量别名的 d.ts 源码。 */
 export function renderFormEventContractAliases() {
   return FORM_EVENT_CONTRACT
     .filter((member) => member.topLevelAlias)

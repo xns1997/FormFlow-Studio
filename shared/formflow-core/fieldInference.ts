@@ -1,3 +1,5 @@
+import { columnDataTypeToControlType } from './columnTypes';
+
 export interface CoreTableConfig {
   keyFields?: string[];
   keyValidation?: { valid: boolean };
@@ -65,22 +67,11 @@ export function inferFormField(column: SrcColumnInfo, sheet: SrcSheetInfo, expli
   let controlType: GeneratedControlType = 'input';
   let confidence = 0.72;
 
-  if (column.dataType === 'number') {
-    controlType = 'number';
-    confidence = 0.98;
-    reasons.push('数据类型为数字');
-  } else if (column.dataType === 'date') {
-    controlType = 'datePicker';
-    confidence = 0.98;
-    reasons.push('数据类型为日期');
-  } else if (column.dataType === 'boolean') {
-    controlType = 'switch';
-    confidence = 0.98;
-    reasons.push('数据类型为布尔值');
-  } else if (column.dataType === 'enum') {
-    controlType = 'select';
-    confidence = 0.96;
-    reasons.push('字段为低基数枚举');
+  const dataTypeControl = columnDataTypeToControlType(column.dataType) as GeneratedControlType;
+  if (dataTypeControl !== 'input') {
+    controlType = dataTypeControl;
+    confidence = dataTypeControl === 'select' ? 0.96 : 0.98;
+    reasons.push(dataTypeControl === 'switch' ? '数据类型为布尔值' : dataTypeControl === 'select' ? '字段为低基数枚举' : `数据类型为${column.dataType}`);
   } else if (LONG_TEXT_PATTERN.test(column.name) || options.some((value) => value.length > 80)) {
     controlType = 'textarea';
     confidence = 0.86;

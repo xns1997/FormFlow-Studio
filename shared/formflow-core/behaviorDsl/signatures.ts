@@ -10,6 +10,7 @@ import { splitTopLevel, literal } from './parserRegex';
  * 不产生误报。
  */
 
+/** 动作参数槽类型：字段引用、组件引用、字符串、数字、枚举等。 */
 export type ActionArgKind =
   | 'field'       // 期待 $字段
   | 'component'   // 期待 @控件
@@ -22,6 +23,7 @@ export type ActionArgKind =
   | 'validator'   // 校验器名或 pattern(...)
   | 'any';
 
+/** 动作签名：名称、参数槽定义与可用语境。 */
 export interface ActionSignature {
   name: string;
   /** 该动作可用的上下文（FFR308 语境矩阵） */
@@ -31,6 +33,7 @@ export interface ActionSignature {
   variadic?: boolean;
 }
 
+/** 全部规范化动作签名（FFR307 校验依据）。 */
 export const ACTION_SIGNATURES: ActionSignature[] = [
   // 常规动作（10.1）
   { name: 'show', contexts: ['normal'], args: ['component'], variadic: true },
@@ -105,6 +108,7 @@ function kindMismatch(arg: string, expected: ActionArgKind): string | null {
  * 校验规范动作调用（`name(args...)`）的参数槽类型与上下文合法性。
  * 返回 FFR307 / FFR308 诊断消息；通过返回空数组。
  */
+/** 校验动作调用与签名是否匹配（FFR307），返回不合规项。 */
 export function validateActionCall(
   phrase: string,
   mode: 'default' | 'guard',
@@ -129,11 +133,13 @@ export function validateActionCall(
   return results;
 }
 
+/** 该动作是否仅允许在守卫语境（按钮点击/提交）使用。 */
 export function isGuardOnlyAction(name: string): boolean {
   const signature = SIGNATURE_BY_NAME.get(name.toLowerCase());
   return !!signature && signature.contexts.length === 1 && signature.contexts[0] === 'guard';
 }
 
+/** 按动作名查找签名。 */
 export function getActionSignature(name: string): ActionSignature | undefined {
   return SIGNATURE_BY_NAME.get(name.toLowerCase());
 }

@@ -6,6 +6,7 @@
 import type { InferredFormField } from '../fieldInference';
 import type { SrcSheetInfo, SrcTableEntry, BehaviorFile } from '../formScaffold';
 
+/** 生成必填/类型/枚举校验规则 DSL；提供 saveButtonName 时同时生成点击守卫。 */
 export function buildRuleCode(fields: InferredFormField[], saveButtonName?: string) {
   const rules: string[] = [];
   const requiredFields = fields.filter((field) => field.required && !field.readonly).map((field) => `$${field.name}`);
@@ -23,6 +24,7 @@ export function buildRuleCode(fields: InferredFormField[], saveButtonName?: stri
   return rules.join('\n');
 }
 
+/** 生成表单重置脚本：清理非键字段并回填默认值（数字主键自动续号）。 */
 export function buildResetScript(fields: InferredFormField[], table: SrcTableEntry, sheet: SrcSheetInfo) {
   const key = fields.find((field) => field.isKey);
   const clearFields = fields.filter((field) => !field.isKey && field.defaultValue === undefined).map((field) => field.name);
@@ -35,6 +37,7 @@ export function buildResetScript(fields: InferredFormField[], table: SrcTableEnt
   return lines.join('\n');
 }
 
+/** 生成初始化/重置行为文件（按是否只读与是否包含重置开关）。 */
 export function createBehaviors(
   prefix: string,
   name: string,
