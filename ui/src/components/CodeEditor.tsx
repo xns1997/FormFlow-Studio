@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import Editor, { type BeforeMount, type Monaco, type OnMount, type OnValidate } from '@monaco-editor/react';
 import type { editor, languages, Position } from 'monaco-editor';
 import Modal, { ModalHeader } from './Modal';
@@ -324,6 +324,7 @@ export default function CodeEditor({
   suggestionContextResolver,
 }: CodeEditorProps) {
   const [fullOpen, setFullOpen] = useState(false);
+  const modelPath = useId();
   const suggestionsRef = useRef(suggestions);
   const handlersRef = useRef({ onFocus, onBlur });
   const extraLibsRef = useRef(extraLibs);
@@ -584,6 +585,10 @@ export default function CodeEditor({
     return () => window.clearTimeout(id);
   }, [fullOpen]);
 
+  // 每个 CodeEditor 实例使用唯一 model path，避免多个编辑器共享 Monaco 默认 model
+  // （一个实例卸载/切换全屏时销毁默认 model，导致另一实例 getModel() 为 null 并触发
+  // “Cannot read properties of null (reading 'getFullModelRange')”）。
+  const editorPath = path || defaultPath || `code-editor:${modelPath}`;
   const editorNode = (isFullscreen: boolean) => (
     <div
       className={`code-editor-shell ${compact ? 'compact' : ''} ${disabled ? 'readonly' : ''} ${className || ''}`}
@@ -591,11 +596,11 @@ export default function CodeEditor({
     >
       {placeholder && !value && <div className="code-editor-placeholder">{placeholder}</div>}
       <Editor
-        key={isFullscreen ? `${path || title || 'editor'}:fullscreen` : `${path || title || 'editor'}:inline`}
+        key={isFullscreen ? `${editorPath}:fullscreen` : `${editorPath}:inline`}
         value={value}
         language={language}
-        path={path}
-        defaultPath={defaultPath}
+        path={editorPath}
+        defaultPath={editorPath}
         line={line}
         theme={theme}
         loading={loading}
