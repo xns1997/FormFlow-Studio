@@ -441,7 +441,9 @@ test('真实项目全部工作流连线可被端口 schema 采纳（端口存在
       }
     }
   }
-  assert.ok(projects >= 20, `应扫描到至少 20 个本地样例项目，实际 ${projects}`);
+  // CI 只入库 3 个受控样例（projects/data/proj_*.formflow 被 .gitignore 排除，
+  // 其余为本地未提交样例），门槛与已跟踪样例数一致；本地样例更多时审计范围自动扩大。
+  assert.ok(projects >= 3, `应扫描到至少 3 个本地样例项目，实际 ${projects}`);
   assert.ok(workflows > 0 && edges > 0, `应存在带连线的样例工作流，实际 workflows=${workflows} edges=${edges}`);
   assert.equal(violations.length, 0, violations.join('\n'));
 });
