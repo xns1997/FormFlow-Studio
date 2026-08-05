@@ -1,3 +1,10 @@
+## [1.12.2](https://github.com/xns1997/FormFlow-Studio/compare/v1.12.1...v1.12.2) (2026-08-05)
+
+
+### Bug Fixes
+
+* 模态框内 antd 下拉改挂载到模态容器并逐级 Esc，浮层点击不再误关；网格销毁后不再调用 AG Grid API ([19e0c24](https://github.com/xns1997/FormFlow-Studio/commit/19e0c240edb4b8e3d7b75daa4c65eec1da0f4720))
+
 ## [1.12.1](https://github.com/xns1997/FormFlow-Studio/compare/v1.12.0...v1.12.1) (2026-08-05)
 
 
