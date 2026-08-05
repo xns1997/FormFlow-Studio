@@ -2,7 +2,7 @@ import type {
   BehaviorRule, BehaviorDslCompileContext, BehaviorDslDiagnostic, ConditionConfig, FieldType,
 } from './types';
 import { findPropertyDependencyCycles } from '../propertyExpression';
-import { diagnostic, normalizeReference } from './parserRegex';
+import { diagnostic } from './parserRegex';
 
 /**
  * 静态属性前置（Phase 2）：

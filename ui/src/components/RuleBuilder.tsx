@@ -1,6 +1,7 @@
 // 可视化规则构建器 — 触发器/条件/动作 UI，与代码双向同步
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { AntdCompatSelect } from './AntdFormControls';
 import type { EventFieldDescriptor } from './codeEditorSuggestions';
 

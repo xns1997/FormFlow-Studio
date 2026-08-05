@@ -4,7 +4,7 @@
  * Provides easy-to-use hooks for all interactive elements
  */
 
-import { useRef, useEffect, useCallback, useState, type RefObject } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import {
   animateFieldFocus,
   animateFieldError,
@@ -47,7 +47,6 @@ import {
   animateNumberCountUp,
   animateStaggeredChildren,
 } from './microInteractions';
-import { prefersReducedMotion } from './anime';
 
 // ══════════════════════════════════════════════════════════════════════
 // Form Control Hooks

@@ -12,8 +12,8 @@
  * - useToast: Toast notification animations
  */
 
-import { useRef, useEffect, useCallback, useState, RefObject } from 'react';
-import { animate, stagger } from 'animejs';
+import { useRef, useEffect, useCallback, useState } from 'react';
+import { animate } from 'animejs';
 import {
   fadeIn,
   fadeOut,

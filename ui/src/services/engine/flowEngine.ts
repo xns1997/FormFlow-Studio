@@ -14,7 +14,7 @@ import { isRemovedWorkflowNode } from './removedWorkflowNodes';
 import type { DebugEntry } from '../../project/types';
 import { clearCheckpoint, loadCheckpoint, saveCheckpoint } from './checkpoint';
 import { topologicalSort, selectUpstreamFlow, groupByTopologicalLevel } from './flowEngine/graphOps';
-import { collectInputs, buildScopeMap, extractPortName, resolveInputSelections } from './flowEngine/inputResolver';
+import { collectInputs, buildScopeMap, resolveInputSelections } from './flowEngine/inputResolver';
 import type { FlowNodeDef, FlowEdgeDef, NodeExecutionResult, FlowExecutionResult, ExecuteFlowOptions } from './flowEngine/types';
 
 // Re-export types for backward compatibility

@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createDefaultFormWindow, type DebugEntry, type DesignComponent, type FormEventExecutionTrace, type FormWindowConfig, type SrcTableEntry, type WorkflowFile } from '../project/types';
 import { getControl } from './registry';
 import {

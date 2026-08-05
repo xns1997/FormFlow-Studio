@@ -1,4 +1,5 @@
-import React, { Suspense, lazy, useState } from 'react';
+import React from 'react';
+import { Suspense, lazy, useState } from 'react';
 import Modal, { ModalFooter, ModalHeader } from '../../components/Modal';
 import { jsonSuggestions } from '../../components/codeEditorSuggestions';
 import { extractPropertyReferences } from '../../services/engine/propertyExpression';

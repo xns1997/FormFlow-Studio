@@ -1,4 +1,4 @@
-import { registerExecutor, type NodeExecContext, type NodeExecResult } from '../executor-registry';
+import { registerExecutor } from '../executor-registry';
 
 async function getXlsx() {
   return await import('xlsx');

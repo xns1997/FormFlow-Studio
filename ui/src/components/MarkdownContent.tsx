@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React from 'react';
+import { useMemo } from 'react';
 import { Marked } from 'marked';
 
 function escapeHtml(value: string) {

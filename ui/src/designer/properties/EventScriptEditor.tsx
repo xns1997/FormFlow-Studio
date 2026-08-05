@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
+import { useState, useMemo } from 'react';
 import type { DesignComponent, SrcTableEntry, WorkflowFile } from '../../project/types';
 import { getBehaviorEventDoc, getEventReferenceShortcuts } from '../../services/io/behaviorDocs';
 import { createChainApiExtraLib, createEventContextExtraLib, createEventContextSuggestions, type EventFieldDescriptor } from '../../components/codeEditorSuggestions';

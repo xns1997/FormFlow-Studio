@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { parseJson, parseJsonOrNull } from '../../services/engine/safeJson';
+import React from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { parseJson } from '../../services/engine/safeJson';
 import type { ComponentNode } from '../../models';
 import type { DesignComponent, WorkflowFile } from '../../project/types';
 import {

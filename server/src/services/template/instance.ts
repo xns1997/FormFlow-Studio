@@ -1,9 +1,9 @@
 import { queryRows, type FilterRule, type SortRule } from '../data-preview';
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import {
   batchProjectRows, fullSourceRows, generatedForm, normalizeFormDesign, toolError, validateProjectModel, type JsonObject,
 } from '../project-authoring';
-import { OperationTemplateDefinition, extractBehaviorArtifacts, parameters } from './shared';
+import { OperationTemplateDefinition, extractBehaviorArtifacts } from './shared';
 import { GenerationPlan, planOperationTemplate } from './generation';
 
 export function applyOperationPlan(project: JsonObject, plan: GenerationPlan): JsonObject {

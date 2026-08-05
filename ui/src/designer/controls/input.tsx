@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import { registerControl } from '../registry';
 import type { DesignComponent } from '../../project/types';
-import { controlText, ios, requiredMark } from './styles';
+import { ios, requiredMark } from './styles';
 import type { PreviewControlRuntime } from '../types';
 import {
   describeDateConstraints,

@@ -1,4 +1,5 @@
-import React, { useMemo, useCallback } from 'react';
+import React from 'react';
+import { useMemo, useCallback } from 'react';
 import type { RangeRef } from '../models';
 import type { MetricConfig, AggFn, PostCalc, ColDataType } from '../components/ChartWidget';
 import { AGG_OPTIONS, POST_CALC_OPTIONS, detectColType } from '../components/ChartWidget';

@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import Modal, { ModalHeader } from './Modal';
 import { buildSearchIndex, loadDocCatalog, searchDocs, type DocEntry } from '../services/io/docs/catalog';

@@ -1,14 +1,14 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import React from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { llmApi, projectApi } from '../services/io/api';
-import { buildProjectPath } from '../services/io/routes';
 import { useProjectStore } from '../project/store';
 import ThreadSidebar, { type ThreadSidebarHandle } from './ThreadSidebar';
 import ConversationSurface from './ConversationSurface';
 import DetailLayer from './DetailLayer';
 import WorkbenchStatusBar from './WorkbenchStatusBar';
-import { modeLabelsShort, statusLabels, statusLabelsShort, statusSymbols, type ProjectAgentConnectionState, type ProjectAgentMode, type ProjectAgentThread, type SurfaceItem } from './projectAgentUiModel';
+import { modeLabelsShort, statusLabelsShort, statusSymbols, type ProjectAgentConnectionState, type ProjectAgentMode, type ProjectAgentThread, type SurfaceItem } from './projectAgentUiModel';
 import { useAppInteraction } from './AppInteractionProvider';
 
 interface OperationError { title: string; message: string; }

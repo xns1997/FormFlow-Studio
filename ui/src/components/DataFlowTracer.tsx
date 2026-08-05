@@ -2,7 +2,8 @@
  * DataFlowTracer — shows data flow from data sources to components.
  * Visualizes binding paths, highlights breaks, supports click-to-inspect.
  */
-import React, { useMemo, useState } from 'react';
+import React from 'react';
+import { useMemo, useState } from 'react';
 import type { DesignComponent, SrcTableEntry, WorkflowFile } from '../project/types';
 import { buildDataFlowGraph, type DataFlowNode } from '../services/formGeneration/componentInspector';
 import CollapsiblePanel from './CollapsiblePanel';

@@ -1,10 +1,9 @@
 // 测试运行器 - 整合所有服务
 
 import type { RuntimeState, BehaviorLog } from '../../models';
-import { createRuntimeState, setFormValue, submitForm, addBehaviorLog } from '../engine/runtime';
-import { validateAllFields } from '../engine/validator';
-import { executeAllRules, type BehaviorRule, type TriggerType } from '../engine/behaviorEngine';
-import { runAllChecks, type BindingError } from './errorChecker';
+import { createRuntimeState, setFormValue, addBehaviorLog } from '../engine/runtime';
+import { executeAllRules, type BehaviorRule } from '../engine/behaviorEngine';
+import { type BindingError } from './errorChecker';
 
 export interface TestRunnerState {
   runtime: RuntimeState;

@@ -5,7 +5,7 @@ import { env } from '../config/env';
 import { llmManagement, type ScopeContext } from '../services/llm-management';
 import { isRetryableLlmRpcError, llmProviderClient, LlmProviderRpcError, type LlmMessage } from '../services/llm-provider-client';
 import { executeLlmTool, listFormFlowTools } from '../services/llm-tools';
-import { getFormFlowTool, isMcpRole, MCP_ROLE_CATALOG, type McpRole } from '../services/formflow-tool-registry';
+import { isMcpRole, MCP_ROLE_CATALOG } from '../services/formflow-tool-registry';
 import { checkAiHealth, runtimeHealth } from '../services/runtime-health';
 import { deleteKnowledge, searchKnowledge, upsertKnowledgeChunks } from '../services/vector-store';
 import { createRuleAgentSession, getRuleAgentSession, listRuleAgentSessions, saveRuleAgentSession } from '../services/rule-agent-store';

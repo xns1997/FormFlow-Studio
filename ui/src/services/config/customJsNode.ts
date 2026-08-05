@@ -1,4 +1,4 @@
-import { parseJson, parseJsonOrNull } from '../engine/safeJson';
+import { parseJson } from '../engine/safeJson';
 import type { CodeEditorExtraLib, CodeEditorSuggestion } from '../../components/CodeEditor';
 import type { FlowNodeSpec, SchemaPort } from '../../flowRegistry';
 import type { PropertyType } from '../../../nodes/excel-api-types';

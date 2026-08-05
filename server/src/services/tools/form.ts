@@ -4,7 +4,7 @@
 import { assertRevision, generatedForm, normalizeFormComponents, normalizeFormDesign, requireProject, toolError } from '../project-authoring';
 import { applyBehaviorDslToComponents, hasBehaviorDslErrors } from '../../../../shared/formflow-core/behaviorDsl';
 import { getFormTemplate } from '../../../../shared/form-templates';
-import { formContext, lintRuleCode } from '../rule-agent';
+import { formContext } from '../rule-agent';
 import { formComponentItemSchema } from '../tool-shared';
 import type { RegisterFn, ToolHelpers } from './types';
 

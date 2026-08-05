@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AntdCompatSelect } from '../../components/AntdFormControls';
-import { InputNumber, Select } from 'antd';
+import { InputNumber } from 'antd';
 import { Link, useParams } from 'react-router-dom';
 import { useProjectStore } from '../../project/store';
 import { normalizeProjectStructure } from '../../project/manager';

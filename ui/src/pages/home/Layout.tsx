@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import ContextHelpPanel from '../../components/ContextHelpPanel';
 import DocsCommandPalette from '../../components/DocsCommandPalette';

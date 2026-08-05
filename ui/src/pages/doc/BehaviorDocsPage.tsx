@@ -1,4 +1,5 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import {
   behaviorEventDocs,

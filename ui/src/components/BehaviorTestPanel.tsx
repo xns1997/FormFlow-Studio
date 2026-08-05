@@ -1,6 +1,7 @@
 // 行为测试面板 — 在编辑器中验证行为逻辑
 
-import React, { useState, useCallback, useRef } from 'react';
+import React from 'react';
+import { useState, useCallback } from 'react';
 import type { EventFieldDescriptor } from './codeEditorSuggestions';
 import type { DebugEntry } from '../project/types';
 import DebugDrawer from './DebugDrawer';

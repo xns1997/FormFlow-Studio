@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface DocSidebarProps {
   sections: Array<{ id: string; title: string }>;

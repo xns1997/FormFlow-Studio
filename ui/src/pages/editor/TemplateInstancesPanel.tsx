@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React from 'react';
+import { useEffect, useState } from "react";
 import { Alert, Button, Tag } from "antd";
 import type { ProjectStructure, TemplateInstance } from "../../project/types";
 import {

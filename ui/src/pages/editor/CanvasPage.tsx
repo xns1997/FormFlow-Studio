@@ -33,7 +33,7 @@ import OutputPreviewModal, { type OutputPreviewTarget } from '../../components/O
 import Modal, { ModalHeader } from '../../components/Modal';
 import CodeEditor from '../../components/CodeEditor';
 import { AntdCompatSelect } from '../../components/AntdFormControls';
-import { createCustomJsNodeExtraLib, createCustomJsNodeSuggestions, formatCustomJsPortMap, getNodeEffectivePorts, isCustomJsNodeSpec, parseCustomJsPortDefinitions, resolveNodeProperties, toCustomJsPortMap } from '../../services/config/customJsNode';
+import { createCustomJsNodeExtraLib, createCustomJsNodeSuggestions, getNodeEffectivePorts, isCustomJsNodeSpec, parseCustomJsPortDefinitions, resolveNodeProperties, toCustomJsPortMap } from '../../services/config/customJsNode';
 import { formatStructuredProperty, isStructuredProperty, parseStructuredProperty } from '../../services/data/structuredProperties';
 import { jsonSuggestions } from '../../components/codeEditorSuggestions';
 import NodePalette, { QuickNodePicker } from '../../components/NodePalette';

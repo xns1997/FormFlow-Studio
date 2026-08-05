@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, Drawer, Input, Select, Space, Tag, message } from 'antd';
+import { Button, Drawer, Select, Space, Tag, message } from 'antd';
 import { request } from '../services/io/api';
 
 type Member = { userId: string; username: string; role: 'owner' | 'member'; grants: string[] };

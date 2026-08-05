@@ -2,7 +2,8 @@
  * DiagnosticPanel — unified error/warning/info panel with cause analysis and fix suggestions.
  * Shows both design-time diagnostics and runtime errors.
  */
-import React, { useMemo, useState } from 'react';
+import React from 'react';
+import { useMemo, useState } from 'react';
 import type { FormDiagnostic } from '../services/formGeneration/formDiagnostics';
 import { getDiagnosticExplanation, getDiagnosticCategory } from '../services/formGeneration/diagnosticCategories';
 import type { ManagedError, ErrorCategory, ErrorFix } from '../services/engine/errorManager';

@@ -10,7 +10,6 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from '
 import { dirname } from 'node:path';
 import { Pool } from 'pg';
 import { MCP_ROLE_CATALOG } from '../services/formflow-tool-registry';
-import type { McpRole } from '../services/tool-shared';
 import { serverDataPath } from '../config/paths';
 import { env } from '../config/env';
 import type {

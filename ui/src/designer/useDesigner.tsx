@@ -1,7 +1,7 @@
-import { useRef, useCallback, useEffect, useState } from 'react';
+import React from 'react';
+import { useCallback, useEffect } from 'react';
 import { Graph, type Node, Selection, Snapline, Clipboard, Keyboard, History } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
-import React from 'react';
 import type { DesignComponent, DesignFile, FormWindowConfig } from '../project/types';
 import { getControl, hydrateControlComponent } from './registry';
 import { useDesignerState, type SelectionOverlay, type ResizeHandle } from './hooks/useDesignerState';

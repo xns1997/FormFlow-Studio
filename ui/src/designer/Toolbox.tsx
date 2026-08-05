@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { useEffect, useState } from 'react';
 import { getAllControls, getControlsByCategory, getCategories, CATEGORY_LABELS } from './registry';
 import { DesignerIcon } from './icons';
 import { AntdTextInput, FormAntdProvider } from '../components/AntdFormControls';

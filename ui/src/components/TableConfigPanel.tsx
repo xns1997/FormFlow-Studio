@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { useProjectStore } from '../project/store';
-import { createDefaultTableConfig, type TableConfig } from '../project/types';
+import { type TableConfig } from '../project/types';
 
 interface Props {
   tableId: string;

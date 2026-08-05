@@ -2,7 +2,7 @@ import React from 'react';
 import { registerControl } from '../registry';
 import type { PropSchemaEntry } from '../types';
 import type { DesignComponent } from '../../project/types';
-import { controlText, ios, requiredMark } from './styles';
+import { ios, requiredMark } from './styles';
 import type { PreviewControlRuntime } from '../types';
 import { useProjectStore } from '../../project/store';
 import { resolveOptionSource } from '../../services/data/optionSource';

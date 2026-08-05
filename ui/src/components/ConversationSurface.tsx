@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   buildSurfaceItems, messageById, planProgress, taskById, taskStatusLabels,
   type ProjectAgentQuestion, type ProjectAgentThread, type SurfaceItem,

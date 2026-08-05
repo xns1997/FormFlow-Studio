@@ -7,7 +7,7 @@
  */
 
 import type { ComponentNode } from '../../models';
-import { isEditableComponentType, getRuntimeComponentType } from '../config/controlTypes';
+import { isEditableComponentType } from '../config/controlTypes';
 import { resolveExpressionValues, resolveRuntimeProperties } from './propertyExpression';
 import { compileComponentValidation, validateField } from './validator';
 import { validateEditableTableValue } from '../../components/EditableTableGrid';

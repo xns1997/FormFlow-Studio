@@ -1,4 +1,4 @@
-import { registerExecutor, type NodeExecContext, type NodeExecResult } from '../executor-registry';
+import { registerExecutor, type NodeExecResult } from '../executor-registry';
 import type { FlowSideEffect } from '../../src/services/engine/flowSideEffects';
 import { normalizeFlowSideEffect } from '../../src/services/engine/flowSideEffects';
 import { parseCustomJsPortDefinitions } from '../../src/services/config/customJsNode';

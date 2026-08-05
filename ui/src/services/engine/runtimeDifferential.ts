@@ -1,5 +1,4 @@
 import { behaviorRuleToLinkageRule, compileBehaviorDsl } from '../../../../shared/formflow-core/behaviorDsl';
-import type { BehaviorRule } from '../../../../shared/formflow-core/behaviorDsl/types';
 import {
   createReferenceState, runReferenceSemantics,
   type ReferenceEvent, type ReferenceState,

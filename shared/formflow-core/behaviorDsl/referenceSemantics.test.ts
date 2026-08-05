@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { compileBehaviorDsl } from './parser';
-import { runReferenceSemantics, traceSummary, evaluateConditionValue } from './referenceSemantics';
+import { runReferenceSemantics, evaluateConditionValue } from './referenceSemantics';
 import { boundedModelCheck, verifyDeterminism } from './modelChecker';
 
 test('reference semantics: when/else executes strict inverse branch (doc 12.1)', () => {

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { compileBehaviorDsl } from './parser';
 import { createRule } from './parserRegex';
-import { findCrossRuleCycles, findUnsatConditions, checkExpressionTypes } from './staticAnalysis';
+import { findUnsatConditions, checkExpressionTypes } from './staticAnalysis';
 
 test('FFR304 detects cross-rule compute cycles but not acyclic compute chains', () => {
   const cyclic = compileBehaviorDsl('compute $A = $B + 1 watch($B)\ncompute $B = $A + 1 watch($A)');

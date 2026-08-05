@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { marked } from 'marked';
 import hljs from 'highlight.js/lib/core';

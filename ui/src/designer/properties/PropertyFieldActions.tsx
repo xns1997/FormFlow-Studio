@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useState } from 'react';
 import { Dropdown } from 'antd';
 import { isCompositePropDef } from '../types';
 import { getPropertyEditorDescriptor, resolvePropertyEditorKind, type PropertyEditorContext } from './propertyEditorRegistry';

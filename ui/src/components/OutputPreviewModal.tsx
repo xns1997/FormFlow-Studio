@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Modal, { ModalHeader } from './Modal';
 import { AntdCompatSelect } from './AntdFormControls';
 import TypeDisplayer from './TypeDisplayer';

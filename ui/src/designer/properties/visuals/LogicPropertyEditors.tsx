@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { useEffect, useState } from 'react';
 import { AntdSelectInput, AntdTextAreaInput, AntdTextInput } from '../../../components/AntdFormControls';
 import type { ValidationRule } from '../../../models';
 import { buildPropertyDependencyGraph, extractPropertyReferences, findPropertyDependencyCycles } from '../../../services/engine/propertyExpression';

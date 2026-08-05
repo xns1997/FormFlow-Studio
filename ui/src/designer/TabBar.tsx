@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { DesignFile } from '../project/types';
 import { createDesignFile } from '../project/types';
 import { DESIGN_TEMPLATES, createDesignFromTemplate } from './designTemplates';

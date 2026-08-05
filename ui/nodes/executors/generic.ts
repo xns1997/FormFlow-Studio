@@ -1,4 +1,4 @@
-import { registerExecutor, type NodeExecContext, type NodeExecResult } from '../executor-registry';
+import { registerExecutor, type NodeExecContext } from '../executor-registry';
 import type { SrcTableEntry } from '../../src/project/types';
 import { editWorksheetStructure, toEditableWorksheet } from '../xlsx-worksheet-ops';
 import { createComplexRange, getRangeAreas, intersectComplexRanges, parseRangeAddress, type RangeArea } from '../../src/services/data/rangeGeometry';

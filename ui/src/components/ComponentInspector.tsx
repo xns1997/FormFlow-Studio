@@ -2,7 +2,8 @@
  * ComponentInspector — shows selected component's state for debugging.
  * Displays bindings, validations, linkages, flow triggers, and source info.
  */
-import React, { useMemo } from 'react';
+import React from 'react';
+import { useMemo } from 'react';
 import type { DesignComponent, SrcTableEntry, WorkflowFile } from '../project/types';
 import { inspectComponent, type ComponentState } from '../services/formGeneration/componentInspector';
 import CollapsiblePanel from './CollapsiblePanel';

@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { notification } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -18,7 +19,7 @@ import {
   type ProjectWizardDraft,
 } from '../../project/creation';
 import { useProjectStore } from '../../project/store';
-import { buildProjectPath, buildWorkspacePath, buildEditorPath, buildUsagePath } from '../../services/io/routes';
+import { buildProjectPath, buildWorkspacePath, buildUsagePath } from '../../services/io/routes';
 import type { ProjectStructure } from '../../project/types';
 import { ShareDialog } from '../../components/ShareDialog';
 import { getSession } from '../../services/io/auth';

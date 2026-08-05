@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { join } from 'path';
 import { execSync } from 'child_process';
 import { PYTHON_EXECUTABLE, pythonServicePath } from '../config/paths';
 

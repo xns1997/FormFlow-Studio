@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useState } from 'react';
 import { Toolbox } from './Toolbox';
 import { ComponentTree } from './ComponentTree';
 import type { DesignComponent } from '../project/types';
