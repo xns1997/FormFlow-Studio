@@ -6,9 +6,8 @@
 import type { InferredFormField } from '../fieldInference';
 import type { SrcSheetInfo, SrcTableEntry, BehaviorFile } from '../formScaffold';
 
-export function buildRuleCode(fields: InferredFormField[], workflowId?: string, saveButtonName?: string) {
+export function buildRuleCode(fields: InferredFormField[], saveButtonName?: string) {
   const rules: string[] = [];
-  const submitPrefix = saveButtonName ? `before click(${JSON.stringify(saveButtonName)})` : 'before submit';
   const requiredFields = fields.filter((field) => field.required && !field.readonly).map((field) => `$${field.name}`);
   if (requiredFields.length) {
     if (saveButtonName) rules.push(`before click(${JSON.stringify(saveButtonName)}) -> require(${requiredFields.join(', ')})`);

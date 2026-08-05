@@ -29,6 +29,7 @@ export function stripComment(source: string) {
   return source;
 }
 
+/** 按顶层分隔符拆分（忽略括号/引号内的分隔符）。 */
 export function splitTopLevel(source: string, separators = ',') {
   const result: string[] = [];
   let start = 0; let depth = 0; let quote = '';
@@ -48,6 +49,7 @@ export function splitTopLevel(source: string, separators = ',') {
   return result.filter(Boolean);
 }
 
+/** 解析字面量：数字、加引号字符串、布尔/null/undefined 或原样返回。 */
 export function literal(source: string): unknown {
   const trimmed = source.trim();
   if (!trimmed) return undefined;
@@ -61,11 +63,13 @@ export function literal(source: string): unknown {
   return trimmed;
 }
 
+/** 规范化字段/组件引用：去掉 `$form.` 前缀与多余空白。 */
 export function normalizeReference(source: string) {
   const value = literal(source);
   return String(value ?? '').trim().replace(/^\$form\.|^[\$@]/, '');
 }
 
+/** 判断引用是否为字段引用（`$` 前缀）。 */
 export function isFieldReference(source: string) {
   return /^\$(?:form\.)?/.test(String(source || '').trim());
 }
@@ -73,6 +77,7 @@ export function isFieldReference(source: string) {
 export function fieldRef(value: string) { return `$${value.trim().replace(/^\$form\.|^\$/, '')}`; }
 export function componentRef(value: string) { return `@${value.trim().replace(/^@/, '')}`; }
 
+/** 解析单个条件子句（`字段 运算符 值`），失败返回 null。 */
 export function parseCondition(source: string): ConditionConfig | null {
   for (const [pattern, operator] of OPERATOR_MAP) {
     const match = source.match(pattern);
@@ -192,6 +197,7 @@ export function parseActions(source: string, mode: 'default' | 'guard' = 'defaul
 
 export function inverseCondition(condition: ConditionConfig): ConditionConfig { return { ...condition, operator: INVERSE_OPERATOR[condition.operator] || 'custom', customExpression: INVERSE_OPERATOR[condition.operator] ? undefined : 'false' }; }
 export function createRule(id: string, name: string, trigger: BehaviorRule['trigger'], conditions: ConditionConfig[], actions: ActionConfig[]): BehaviorRule { return { id, name, enabled: true, priority: 20, trigger, conditions, actions, sideEffects: [] }; }
+/** 构造一条诊断记录（默认 error 级、第 1 列）。 */
 export function diagnostic(line: number, code: string, message: string, severity: BehaviorDslDiagnosticSeverity = 'error', column = 1, suggestion?: string): BehaviorDslDiagnostic { return { line, column, severity, code, message, suggestion }; }
 
 /**
@@ -241,6 +247,10 @@ export function structuralDiagnostics(lineNumber: number, line: string): Behavio
   return [];
 }
 
+/**
+ * 正则实现的行为 DSL 编译入口（与 Chevrotain 文法实现差分对拍）：
+ * 逐行编译为规则，追加括号/结构诊断与 FFR 静态检查。
+ */
 export function compileBehaviorDslRegex(source: string, context: BehaviorDslCompileContext = {}): BehaviorDslCompilation {
   const rules: BehaviorRule[] = [];
   const diagnostics: BehaviorDslDiagnostic[] = [];
@@ -313,6 +323,7 @@ export function behaviorRulesToNaturalLanguage(rules: BehaviorRule[]) {
   return rules.map((rule) => { const trigger = rule.trigger.fieldName ? `${rule.trigger.fieldName}发生${rule.trigger.type}` : `发生${rule.trigger.type}`; const condition = rule.conditions.length ? `，满足 ${rule.conditions.map((item) => `${item.fieldName} ${item.operator} ${String(item.value ?? '')}`).join(' 且 ')}` : ''; return `${trigger}${condition}，执行 ${rule.actions.map((action) => action.type).join('、')}。`; });
 }
 
+/** 对已编译规则执行静态属性分析（跨规则环、watch 覆盖、类型错误、不可满足条件）。 */
 export function lintRules(rules: BehaviorRule[], context: BehaviorDslCompileContext, sourceLines: string[]): BehaviorDslDiagnostic[] {
   const result: BehaviorDslDiagnostic[] = [];
   const fields = new Set(context.fields || []);

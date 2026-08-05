@@ -1,7 +1,7 @@
 import type { BehaviorRule } from './types';
 import {
   createReferenceState, evaluateConditionsValue, applyAction, applyGuardAction,
-  matchesEvent, type ReferenceEvent, type ReferenceState,
+  matchesEvent, type ReferenceEvent,
 } from './referenceSemantics';
 
 /**
@@ -15,6 +15,7 @@ import {
  * 模型检查用于“找反例”，不追求无限状态证明（计划 §2.3）。
  */
 
+/** 有界模型检查选项：显式限定字段子集、值域与搜索预算。 */
 export interface ModelCheckOptions {
   fields?: string[];
   domains?: Record<string, unknown[]>;
@@ -22,6 +23,7 @@ export interface ModelCheckOptions {
   maxStates?: number;
 }
 
+/** 模型检查结果：是否无环、探索状态数、反例路径与说明。 */
 export interface ModelCheckResult {
   acyclic: boolean;
   statesExplored: number;
@@ -29,8 +31,12 @@ export interface ModelCheckResult {
   notes: string[];
 }
 
+/** 未显式指定值域时使用的小型抽象值域（覆盖数字、空串与文本）。 */
 export const DEFAULT_DOMAIN = [0, 1, '', 'x'];
 
+/**
+ * 收集规则涉及的字段（触发器/条件/动作/表达式），最多取前 4 个作为有界检查的抽象字段。
+ */
 export function involvedFields(rules: BehaviorRule[]): string[] {
   const set = new Set<string>();
   for (const rule of rules) {
@@ -109,6 +115,13 @@ function step(
   return { next: nextState, wroteFields };
 }
 
+/**
+ * 有界显式状态模型检查：在有限字段与值域上 BFS，检测事件触发链是否可能无限循环。
+ *
+ * @param rules 行为规则集
+ * @param options 字段子集、值域、深度/状态数预算（默认 depth 14、states 4000）
+ * @returns acyclic 为 true 表示未发现循环；否则携带反例路径与说明
+ */
 export function boundedModelCheck(rules: BehaviorRule[], options: ModelCheckOptions = {}): ModelCheckResult {
   const fields = options.fields?.length ? options.fields : involvedFields(rules);
   const domains: Record<string, unknown[]> = {};
@@ -175,9 +188,14 @@ export function boundedModelCheck(rules: BehaviorRule[], options: ModelCheckOpti
 }
 
 /**
- * 确定性校验：同一抽象状态重复执行迁移函数必须得到同一后继。
+ * 确定性校验：同一抽象状态重复执行迁移函数必须得到同一后继（无随机源）。
+ *
+ * @param rules 行为规则集
+ * @param values 起始字段值
+ * @param event 初始触发事件
+ * @returns 两次执行后继是否完全一致
  */
-export function verifyDeterminism(rules: BehaviorRule[], fields: string[], values: Record<string, unknown>, event: ReferenceEvent): boolean {
+export function verifyDeterminism(rules: BehaviorRule[], values: Record<string, unknown>, event: ReferenceEvent): boolean {
   const state: AbstractState = { values: { ...values }, queue: [event], guardFailures: 0, messages: 0, workflowRuns: 0, path: [], ancestors: new Set<string>() };
   const first = step(state, rules);
   const second = step(state, rules);

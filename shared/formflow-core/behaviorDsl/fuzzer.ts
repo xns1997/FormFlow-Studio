@@ -159,7 +159,6 @@ function joinTokens(tokens: string[]): string {
   for (let index = 0; index < tokens.length; index += 1) {
     const token = tokens[index];
     const prev = result ? result[result.length - 1] : '';
-    const next = tokens[index + 1] || '';
     const noBefore = token === ')' || token === ']' || token === ',' || token === ';';
     const noAfter = token === '(' || token === '[';
     const needSpace = !noBefore && !noAfter && prev && prev !== '(' && prev !== '[' && prev !== ',' && prev !== ';';
@@ -210,7 +209,6 @@ function actionList(count: number, guard = false): string {
 export function generateStatement(): string {
   const kind = randomInt(0, 7);
   const field = () => `$${pick(FIELDS)}`;
-  const component = () => `@${pick(COMPONENTS)}`;
   const value = () => (randomInt(0, 1) === 0 ? `"${pick(MESSAGES)}"` : String(randomInt(0, 5)));
   const operator = () => pick(['==', '!=', '>', '<', '>=', '<=', 'contains', 'starts with', 'is empty']);
   if (kind === 0) return `when ${field()} ${operator()} ${value()} -> ${actionList(randomInt(1, 3))}`;

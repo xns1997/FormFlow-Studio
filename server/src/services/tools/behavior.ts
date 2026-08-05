@@ -49,7 +49,7 @@ export function registerBehaviorTools(register: RegisterFn, h: ToolHelpers) {
       { type: 'formLoad' },
       { type: 'submit' },
     ];
-    const deterministic = events.every((event) => verifyDeterminism(rules, fields, baseValues, event as any));
+    const deterministic = events.every((event) => verifyDeterminism(rules, baseValues, event as any));
     const passed = errors.length === 0 && check.acyclic && deterministic;
     return {
       formId: input.formId,

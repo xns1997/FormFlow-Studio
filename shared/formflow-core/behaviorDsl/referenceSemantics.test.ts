@@ -77,5 +77,5 @@ test('model checker: acyclic compute chain terminates', () => {
 
 test('model checker: determinism of the transition function', () => {
   const { rules } = compileBehaviorDsl('when $A == 1 -> set($B, 2)\nwhen $B == 2 -> set($C, 3)');
-  assert.equal(verifyDeterminism(rules, ['A', 'B', 'C'], { A: 1 }, { type: 'fieldChange', field: 'A', value: 1 }), true);
+  assert.equal(verifyDeterminism(rules, { A: 1 }, { type: 'fieldChange', field: 'A', value: 1 }), true);
 });

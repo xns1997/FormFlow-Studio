@@ -23,8 +23,10 @@ import { buildRuleCode, createBehaviors } from './formScaffold/ruleGenerator';
 // Re-export for backward compatibility
 export { createSaveWorkflow } from './formScaffold/workflowGenerator';
 
+/** 表单生成的目标模式：新建、编辑、详情、查询修改。 */
 export type FormMode = 'create' | 'edit' | 'detail' | 'lookup-edit';
 
+/** 字段到单元格的双向绑定配置（当前固定为 version 1 的 firstCell 模式）。 */
 export interface DataBindingConfig {
   version: 1;
   source: { kind: 'formField'; path: string };
@@ -32,6 +34,7 @@ export interface DataBindingConfig {
   valueMode?: 'firstCell';
 }
 
+/** 源数据表单个 Sheet 的结构信息（列名、类型、样本值与主键配置）。 */
 export interface SrcSheetInfo {
   name: string;
   rowCount: number;
@@ -48,12 +51,14 @@ export interface SrcSheetInfo {
   config?: { keyFields?: string[]; keyValidation?: { valid: boolean } };
 }
 
+/** 源数据表：文件级入口，包含其下全部 Sheet。 */
 export interface SrcTableEntry {
   id: string;
   fileName: string;
   sheets: SrcSheetInfo[];
 }
 
+/** 设计稿组件：位置、尺寸、字段绑定与自定义属性。 */
 export interface DesignComponent {
   id: string;
   type: string;
@@ -67,6 +72,7 @@ export interface DesignComponent {
   props: Record<string, any>;
 }
 
+/** 工作流文件：节点与连线的扁平描述。 */
 export interface WorkflowFile {
   id: string;
   name: string;
@@ -77,6 +83,7 @@ export interface WorkflowFile {
   updatedAt: string;
 }
 
+/** 行为文件：DSL 代码、触发事件与优先级。 */
 export interface BehaviorFile {
   id: string;
   name: string;
@@ -90,6 +97,7 @@ export interface BehaviorFile {
   eventFallbackReason?: string;
 }
 
+/** 表单设计文件：视口、窗口布局、组件与绑定关系。 */
 export interface DesignFile {
   id: string;
   name: string;
@@ -112,6 +120,7 @@ export interface DesignFile {
   updatedAt: string;
 }
 
+/** 表单入口：设计 + 行为 + 规则代码的聚合。 */
 export interface FormEntry {
   id: string;
   name: string;
@@ -122,6 +131,7 @@ export interface FormEntry {
   updatedAt: string;
 }
 
+/** 表单脚手架生成选项：模式、用途、字段选择、布局列数与包含项。 */
 export interface FormScaffoldOptions {
   name?: string;
   mode?: FormMode;
@@ -135,6 +145,7 @@ export interface FormScaffoldOptions {
   now?: string;
 }
 
+/** 脚手架生成结果：设计、表单、工作流、行为与字段推断汇总。 */
 export interface GeneratedFormScaffold {
   design: DesignFile;
   form: FormEntry;
@@ -152,6 +163,16 @@ function safeId(value: string) {
   return normalized && normalized === value.trim() ? normalized : `${normalized || 'field'}_${suffix}`;
 }
 
+/**
+ * 补齐缺失字段的组件：对比既有组件的字段绑定与源表字段，
+ * 为未覆盖字段生成新组件并排布在现有组件下方。
+ *
+ * @param existing 已存在的设计组件列表
+ * @param table 源数据表
+ * @param sheetName 目标 Sheet 名称
+ * @param options 列数与组件 id 前缀
+ * @returns 缺失字段对应的新组件（不含排布冲突检测）
+ */
 export function generateMissingFieldComponents(
   existing: DesignComponent[],
   table: SrcTableEntry,
@@ -172,6 +193,14 @@ export function generateMissingFieldComponents(
   });
 }
 
+/**
+ * 由数据表生成完整表单脚手架：布局规划、组件生成、行为与工作流编排。
+ *
+ * @param table 源数据表
+ * @param sheetName 目标 Sheet 名称
+ * @param options 生成选项（模式、用途、字段、列数等）
+ * @returns 设计、表单、行为与工作流的聚合结果
+ */
 export function generateFormScaffold(table: SrcTableEntry, sheetName: string, options: FormScaffoldOptions = {}): GeneratedFormScaffold {
   const sheet = table.sheets.find((item) => item.name === sheetName);
   if (!sheet) throw new Error(`工作表不存在: ${sheetName}`);
@@ -192,7 +221,7 @@ export function generateFormScaffold(table: SrcTableEntry, sheetName: string, op
   const workflow = canWrite ? createSaveWorkflow(table, sheet, fields, { id: workflowId, name, now }) : undefined;
 
   // Generate rules
-  const ruleCode = buildRuleCode(fields, workflow?.id, canWrite ? saveButtonName : undefined);
+  const ruleCode = buildRuleCode(fields, canWrite ? saveButtonName : undefined);
 
   // Generate components
   const fieldComps = fields.map((field, index) =>

@@ -19,6 +19,7 @@ export {
   createRule, diagnostic, lintRules, structuralDiagnostics, unbalancedParenDiagnostics,
 };
 
+/** 动作解析结果：规范化动作列表 + 诊断（错误/警告/提示）。 */
 export interface ParsedActions { actions: ActionConfig[]; diagnostics: Array<{ message: string; code: string; severity: 'error' | 'warning' | 'info'; suggestion?: string }>; }
 
 /**
@@ -72,9 +73,7 @@ export function compileBehaviorDsl(source: string, context: BehaviorDslCompileCo
     if (unbalanced.length) diagnostics.push(...unbalanced);
 
     // 旧语法 otherwise → else（FFR100）
-    let legacyOtherwise = false;
     if (/^otherwise\s*->/i.test(line)) {
-      legacyOtherwise = true;
       diagnostics.push(diagnostic(lineNumber, 'FFR100', 'otherwise 是旧写法，请改用 else。', 'warning', 1, line.replace(/^otherwise/i, 'else')));
       line = line.replace(/^otherwise/i, 'else');
     }
@@ -178,8 +177,10 @@ export function compileBehaviorDsl(source: string, context: BehaviorDslCompileCo
   return { rules, diagnostics, preview };
 }
 
+/** 编译结果是否含 error 级诊断。 */
 export function hasBehaviorDslErrors(compilation: Pick<BehaviorDslCompilation, 'diagnostics'>) { return compilation.diagnostics.some((item) => item.severity === 'error'); }
 
+/** 将规则集转回人类可读的中文描述（用于编辑器展示与差分对拍）。 */
 export function behaviorRulesToNaturalLanguage(rules: BehaviorRule[]) {
   return rules.map((rule) => { const trigger = rule.trigger.fieldName ? `${rule.trigger.fieldName}发生${rule.trigger.type}` : `发生${rule.trigger.type}`; const condition = rule.conditions.length ? `，满足 ${rule.conditions.map((item) => `${item.fieldName} ${item.operator} ${String(item.value ?? '')}`).join(' 且 ')}` : ''; return `${trigger}${condition}，执行 ${rule.actions.map((action) => action.type).join('、')}。`; });
 }

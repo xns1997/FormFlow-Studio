@@ -29,6 +29,9 @@ function isWriteAction(action: { type: string; targetField?: string }): boolean 
 // FFR304 跨规则回写/计算环
 // ---------------------------------------------------------------------------
 
+/**
+ * FFR304 跨规则回写/计算环检测：以字段为节点构建写入图，报告长度 ≥2 的环。
+ */
 export function findCrossRuleCycles(rules: BehaviorRule[]): BehaviorDslDiagnostic[] {
   const diagnostics: BehaviorDslDiagnostic[] = [];
   const graph = new Map<string, string[]>();
@@ -69,6 +72,9 @@ export function findCrossRuleCycles(rules: BehaviorRule[]): BehaviorDslDiagnosti
 // FFR305 compute watch 覆盖
 // ---------------------------------------------------------------------------
 
+/**
+ * FFR305 compute 表达式依赖覆盖检测：compute 引用的字段必须出现在 watch(...) 声明中。
+ */
 export function findWatchCoverageViolations(rules: BehaviorRule[]): BehaviorDslDiagnostic[] {
   const diagnostics: BehaviorDslDiagnostic[] = [];
   const groups = new Map<number, BehaviorRule[]>();
@@ -146,7 +152,7 @@ function tokenizeExpression(source: string): ExprToken[] | null {
       continue;
     }
     if (char === '"' || char === "'") {
-      const start = index++;
+      index++;
       let value = '';
       let closed = false;
       while (index < source.length) {
@@ -286,6 +292,10 @@ class ExpressionTypeChecker {
   }
 }
 
+/**
+ * 表达式类型检查（单条）：按字段类型推断表达式结果类型，返回错误描述列表；
+ * 语法无法静态解析时返回空数组，交由运行时求值兜底。
+ */
 export function checkExpressionTypes(
   expression: string,
   fieldTypes: Record<string, FieldType>,
@@ -297,6 +307,9 @@ export function checkExpressionTypes(
   return errors;
 }
 
+/**
+ * FFR306 表达式类型错误检测：遍历规则中 compute 赋值与动作表达式，汇总类型错误诊断。
+ */
 export function findExpressionTypeErrors(rules: BehaviorRule[], context: BehaviorDslCompileContext): BehaviorDslDiagnostic[] {
   const diagnostics: BehaviorDslDiagnostic[] = [];
   const fieldTypes = context.fieldTypes || {};
@@ -327,6 +340,9 @@ function intervalOf(operator: ConditionConfig['operator'], value: unknown): { lo
   }
 }
 
+/**
+ * FFR309 条件不可满足检测：同一字段的相等约束冲突或数值区间交集为空时给出 warning。
+ */
 export function findUnsatConditions(rules: BehaviorRule[]): BehaviorDslDiagnostic[] {
   const diagnostics: BehaviorDslDiagnostic[] = [];
   for (const rule of rules) {
@@ -365,6 +381,9 @@ export function findUnsatConditions(rules: BehaviorRule[]): BehaviorDslDiagnosti
 // 汇总
 // ---------------------------------------------------------------------------
 
+/**
+ * 运行完整静态属性分析（Phase 2）：汇总 FFR304/305/306/309 全部诊断。
+ */
 export function runStaticAnalysis(rules: BehaviorRule[], context: BehaviorDslCompileContext): BehaviorDslDiagnostic[] {
   return [
     ...findCrossRuleCycles(rules),
