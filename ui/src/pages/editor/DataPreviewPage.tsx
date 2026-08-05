@@ -355,6 +355,11 @@ export default function DataPreviewPage({
     await saveSheetConfig(selectedTable.id, activeSheet.name, { ...currentConfig, ...patch });
   }, [selectedTable, activeSheet, currentConfig, saveSheetConfig]);
 
+  const safeGridApi = useCallback((): GridApi | null => {
+    const api = gridApiRef.current;
+    return api && !api.isDestroyed() ? api : null;
+  }, []);
+
   const setColumnFilter = useCallback((field: string, rule: FilterRule | null) => {
     setQuery((current) => {
       const filterModel = { ...current.filterModel };
@@ -362,11 +367,11 @@ export default function DataPreviewPage({
       else delete filterModel[field];
       return { ...current, page: 1, filterModel };
     });
-    const api = gridApiRef.current;
+    const api = safeGridApi();
     if (!api) return;
     if (rule) void api.setColumnFilterModel(field, rule).then(() => api.onFilterChanged());
     else void api.setColumnFilterModel(field, null).then(() => api.onFilterChanged());
-  }, []);
+  }, [safeGridApi]);
 
   const guardAction = useCallback((action: () => void) => {
     if (changeCount > 0) setPendingNavigation(() => action);
@@ -374,14 +379,14 @@ export default function DataPreviewPage({
   }, [changeCount]);
 
   const getSelectedRowsSnapshot = useCallback((): PreviewRow[] => {
-    const selected = gridApiRef.current?.getSelectedRows() as PreviewRow[] | undefined;
+    const selected = safeGridApi()?.getSelectedRows() as PreviewRow[] | undefined;
     if (selected && selected.length > 0) return selected;
     if (selectedRowKey) {
       const row = rows.find((item) => item.__rowKey === selectedRowKey);
       return row ? [row] : [];
     }
     return [];
-  }, [selectedRowKey, rows]);
+  }, [selectedRowKey, rows, safeGridApi]);
 
   const pushUndo = useCallback((entry: UndoEntry) => {
     if (!currentViewKey) return;
@@ -1110,7 +1115,7 @@ export default function DataPreviewPage({
   }, [rows, activeSheet, applyPasteMatrix]);
 
   const startPaste = useCallback(async () => {
-    const focused = gridApiRef.current?.getFocusedCell();
+    const focused = safeGridApi()?.getFocusedCell();
     const selected = getSelectedRowsSnapshot();
     const anchorRow = focused?.rowIndex ?? selected[0]?.__rowIndex ?? 0;
     const focusedField = focused && focused.column.getColDef().field ? focused.column.getColDef().field : undefined;
@@ -1127,7 +1132,7 @@ export default function DataPreviewPage({
       return;
     }
     runPasteText(text, anchorRow, anchorCol);
-  }, [activeSheet, getSelectedRowsSnapshot, readClipboardText, runPasteText]);
+  }, [activeSheet, getSelectedRowsSnapshot, readClipboardText, runPasteText, safeGridApi]);
 
   const copySelection = useCallback(async () => {
     if (!activeSheet) return;
@@ -1136,7 +1141,7 @@ export default function DataPreviewPage({
       return;
     }
     const selected = getSelectedRowsSnapshot();
-    const focused = gridApiRef.current?.getFocusedCell();
+    const focused = safeGridApi()?.getFocusedCell();
     const focusedField = focused ? focused.column.getColDef().field : undefined;
     if (selected.length <= 1 && focused && focusedField && focusedField !== '__rowNumber') {
       const row = rows[focused.rowIndex];
@@ -1148,7 +1153,7 @@ export default function DataPreviewPage({
     const lines = selected.map((row) => activeSheet.headers.map((header) => String(row[header] ?? '')).join('\t'));
     await navigator.clipboard.writeText(lines.join('\n'));
     setFeedback({ type: 'success', message: `已复制 ${selected.length} 行 × ${activeSheet.headers.length} 列` });
-  }, [activeSheet, dragRange, copyRangeToClipboard, getSelectedRowsSnapshot, rows]);
+  }, [activeSheet, dragRange, copyRangeToClipboard, getSelectedRowsSnapshot, rows, safeGridApi]);
 
   const handleColumnMenuAction = useCallback((field: string, action: string) => {
     const index = activeSheet?.headers.indexOf(field) ?? -1;
@@ -1157,7 +1162,7 @@ export default function DataPreviewPage({
       case 'sortAsc':
       case 'sortDesc':
       case 'clearSort':
-        gridApiRef.current?.applyColumnState({ state: [{ colId: field, sort: action === 'sortAsc' ? 'asc' : action === 'sortDesc' ? 'desc' : null }] });
+        safeGridApi()?.applyColumnState({ state: [{ colId: field, sort: action === 'sortAsc' ? 'asc' : action === 'sortDesc' ? 'desc' : null }] });
         break;
       case 'insertLeft':
       case 'insertRight':
@@ -1195,7 +1200,7 @@ export default function DataPreviewPage({
         void updateConfig({ lockedColumns: (currentConfig?.lockedColumns || []).filter((name) => name !== field) });
         break;
     }
-  }, [activeSheet, currentConfig, updateConfig]);
+  }, [activeSheet, currentConfig, updateConfig, safeGridApi]);
 
   const contextMenuItems = useMemo<DataPreviewMenuItem[]>(() => {
     if (!contextMenu) return [];
@@ -1216,7 +1221,7 @@ export default function DataPreviewPage({
         label: '选择整行',
         onSelect: () => {
           if (!rowKey) return;
-          const node = gridApiRef.current?.getRowNode(rowKey);
+          const node = safeGridApi()?.getRowNode(rowKey);
           node?.setSelected(true, false);
         },
       });
@@ -1229,7 +1234,7 @@ export default function DataPreviewPage({
         disabled: locked,
         disabledReason: lockedReason,
         onSelect: () => {
-          if (rowIndex >= 0) gridApiRef.current?.startEditingCell({ rowIndex, colKey: field });
+          if (rowIndex >= 0) safeGridApi()?.startEditingCell({ rowIndex, colKey: field });
         },
       });
       items.push({ key: 'copy', label: '复制', onSelect: () => void copySelection() });
@@ -1333,7 +1338,7 @@ export default function DataPreviewPage({
     }
 
     return items;
-  }, [contextMenu, rows, activeSheet, currentConfig, getSelectedRowsSnapshot, copySelection, startPaste, handleClearCells, handleInsertRow, handleDuplicateRow, handleAddRow, handleColumnMenuAction]);
+  }, [contextMenu, rows, activeSheet, currentConfig, getSelectedRowsSnapshot, copySelection, startPaste, handleClearCells, handleInsertRow, handleDuplicateRow, handleAddRow, handleColumnMenuAction, safeGridApi]);
 
   const handleGridContextMenu = useCallback((event: React.MouseEvent) => {
     const target = event.target as HTMLElement;
@@ -1771,7 +1776,7 @@ export default function DataPreviewPage({
       } else if (mod && key === 'c' && !editingText) {
         event.preventDefault();
         void copySelection();
-      } else if (event.key === 'Delete' && !editingText && (selectedRowKey || (gridApiRef.current?.getSelectedRows().length ?? 0) > 0)) {
+      } else if (event.key === 'Delete' && !editingText && (selectedRowKey || (safeGridApi()?.getSelectedRows().length ?? 0) > 0)) {
         event.preventDefault();
         setShowDeleteRowConfirm(true);
       } else if (event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown') && !editingText && reorderEnabled) {
@@ -2743,7 +2748,7 @@ export default function DataPreviewPage({
         onPaste={(event) => {
           const text = event.clipboardData?.getData('text') || '';
           event.preventDefault();
-          const focused = gridApiRef.current?.getFocusedCell();
+          const focused = safeGridApi()?.getFocusedCell();
           const focusedField = focused && focused.column.getColDef().field ? focused.column.getColDef().field : undefined;
           const anchorRow = focused?.rowIndex ?? 0;
           const anchorCol = focusedField && activeSheet ? Math.max(0, activeSheet.headers.indexOf(focusedField)) : 0;

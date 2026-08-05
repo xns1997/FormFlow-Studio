@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { ConfigProvider } from 'antd';
 import { useModal } from '../services/animation';
 import { isImeKeyboardEvent } from '../services/io/docs/ime';
 
@@ -82,6 +83,9 @@ export default function Modal({
       if (modalStack[modalStack.length - 1] !== token) return;
       if (isImeKeyboardEvent(e)) return;
       if (e.key === 'Escape') {
+        // 先让 antd 下拉/弹层处理 Esc，避免下拉还开着时直接关掉整个模态
+        const openPopup = containerRef.current?.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden)');
+        if (openPopup) return;
         e.preventDefault();
         onCloseRef.current();
         return;
@@ -123,26 +127,28 @@ export default function Modal({
   return (
     <ModalTitleContext.Provider value={titleId}>
       {createPortal(
-        <div
-          className={['modal-overlay', exiting ? 'modal-exiting' : '', overlayClassName].filter(Boolean).join(' ')}
-          ref={backdropRef}
-          onClick={(e) => { if (closeOnBackdrop && e.target === backdropRef.current) onClose(); }}
-        >
+        <ConfigProvider getPopupContainer={() => containerRef.current || document.body}>
           <div
-            ref={containerRef}
-            className={['modal-container', containerClassName].filter(Boolean).join(' ')}
-            style={{ width, maxWidth, maxHeight }}
-            role={dialogRole}
-            aria-modal="true"
-            aria-labelledby={ariaLabel ? undefined : titleId}
-            aria-label={ariaLabel}
-            tabIndex={-1}
-            data-app-modal="true"
-            onClick={(e) => e.stopPropagation()}
+            className={['modal-overlay', exiting ? 'modal-exiting' : '', overlayClassName].filter(Boolean).join(' ')}
+            ref={backdropRef}
+            onClick={(e) => { if (closeOnBackdrop && e.target === backdropRef.current) onClose(); }}
           >
-            {children}
+            <div
+              ref={containerRef}
+              className={['modal-container', containerClassName].filter(Boolean).join(' ')}
+              style={{ width, maxWidth, maxHeight }}
+              role={dialogRole}
+              aria-modal="true"
+              aria-labelledby={ariaLabel ? undefined : titleId}
+              aria-label={ariaLabel}
+              tabIndex={-1}
+              data-app-modal="true"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {children}
+            </div>
           </div>
-        </div>,
+        </ConfigProvider>,
         document.body
       )}
     </ModalTitleContext.Provider>

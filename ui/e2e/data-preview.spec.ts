@@ -298,4 +298,42 @@ test.describe('数据准备工作台', () => {
     await enumPopup.getByRole('button', { name: '取消' }).click();
     await expect(page.locator('.filter-bar')).toHaveCount(0);
   });
+
+  test('浮层操作不冲突：模态内下拉可选、Esc 逐级关闭、chip 编辑弹层稳定', async ({ page }) => {
+    await createDataProject(page);
+
+    // 1) 模态框内的下拉：选择后弹窗保持打开且值已更新
+    await page.locator('.ag-header-cell[col-id="参数ID"]').click({ button: 'right' });
+    await page.locator('.data-preview-context-menu').getByRole('menuitem', { name: '插入列（右侧）' }).click();
+    const modal = page.locator('.modal-container');
+    await expect(modal).toBeVisible();
+    await modal.locator('.ff-antd-select').first().click();
+    const numberOption = modal.locator('.ant-select-item-option').filter({ hasText: 'number' });
+    await expect(numberOption).toBeVisible();
+    await numberOption.click();
+    await expect(modal).toBeVisible();
+    await expect(modal.locator('.ff-antd-select').first()).toContainText('number');
+
+    // 2) Esc 先关闭下拉，再关闭模态
+    await modal.locator('.ff-antd-select').first().click();
+    await expect(modal.locator('.ant-select-item-option').first()).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(modal.locator('.ant-select-item-option').first()).toBeHidden();
+    await expect(modal).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(modal).toBeHidden();
+
+    // 3) chip 编辑弹层内切换运算类型不消失
+    await page.getByRole('button', { name: '筛选 参数ID' }).click();
+    const headerPopup = page.locator('.data-preview-header-filter-popup');
+    await headerPopup.getByPlaceholder('筛选值').fill('A-1');
+    await headerPopup.getByRole('button', { name: '应用' }).click();
+    await page.locator('.filter-bar-chip').click();
+    const chipPopover = page.locator('.filter-bar-popover');
+    await expect(chipPopover).toBeVisible();
+    await chipPopover.getByLabel('筛选类型').click();
+    await chipPopover.locator('.ant-select-item-option').filter({ hasText: /^不等于$/ }).click();
+    await expect(chipPopover).toBeVisible();
+    await chipPopover.getByRole('button', { name: '取消' }).click();
+  });
 });
