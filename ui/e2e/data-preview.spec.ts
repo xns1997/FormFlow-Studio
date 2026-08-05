@@ -265,4 +265,37 @@ test.describe('数据准备工作台', () => {
     await deleteFilter.click();
     await expect(bar).toHaveCount(0);
   });
+
+  test('筛选器按数据类型提供专用输入，选择运算类型不关闭弹窗', async ({ page }) => {
+    await createDataProject(page);
+    await page.getByRole('button', { name: '筛选 出生率' }).click();
+    const popup = page.locator('.data-preview-header-filter-popup');
+    await expect(popup).toBeVisible();
+    await expect(popup.getByPlaceholder('筛选值')).toHaveAttribute('type', 'number');
+    await expect(popup.getByRole('button', { name: '≥ 0' })).toBeVisible();
+    await popup.getByLabel('筛选类型').click();
+    await popup.locator('.ant-select-item-option').filter({ hasText: /^大于$/ }).click();
+    await expect(popup).toBeVisible();
+    await popup.getByPlaceholder('筛选值').fill('0.5');
+    await popup.getByRole('button', { name: '应用' }).click();
+    const bar = page.locator('.filter-bar');
+    await expect(bar).toBeVisible();
+    await expect(bar).toContainText('大于');
+    await expect(bar).toContainText('0.5');
+    await bar.getByRole('button', { name: /删除筛选/ }).click();
+    await expect(bar).toHaveCount(0);
+
+    await page.getByRole('button', { name: '筛选 情景' }).click();
+    const enumPopup = page.locator('.data-preview-header-filter-popup');
+    await expect(enumPopup.getByLabel('选择已有值')).toBeVisible();
+    await enumPopup.getByLabel('选择已有值').click();
+    const firstOption = enumPopup.locator('.ant-select-item-option').first();
+    await expect(firstOption).toBeVisible();
+    const optionText = (await firstOption.textContent()) || '';
+    await firstOption.click();
+    await expect(enumPopup).toBeVisible();
+    await expect(enumPopup.getByPlaceholder('筛选值')).toHaveValue(optionText.trim());
+    await enumPopup.getByRole('button', { name: '取消' }).click();
+    await expect(page.locator('.filter-bar')).toHaveCount(0);
+  });
 });

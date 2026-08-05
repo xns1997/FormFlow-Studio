@@ -42,6 +42,17 @@ function getFilterTypesForDataType(dataType?: string): string[] {
   return FILTER_TYPES_BY_DATA_TYPE[dataType || 'unknown'] || FILTER_TYPES_BY_DATA_TYPE.unknown;
 }
 
+/** 返回今天（或偏移 N 天）的 YYYY-MM-DD。 */
+function isoDate(offsetDays: number): string {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + offsetDays);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // ── Types ──────────────────────────────────────────────
 
 export interface FilterRule {
@@ -65,7 +76,7 @@ export interface FilterBarProps {
   /** Current filter model from AG Grid */
   filterModel: Record<string, unknown>;
   /** Available columns with their data types */
-  columns: Array<{ name: string; dataType?: string }>;
+  columns: Array<{ name: string; dataType?: string; sampleValues?: string[] }>;
   /** Called when a filter is added or modified */
   onFilterChange: (field: string, rule: FilterRule | null) => void;
   /** Called when all filters are cleared */
@@ -91,7 +102,9 @@ export function FilterBar({ filterModel, columns, onFilterChange, onClearAll }: 
   useEffect(() => {
     if (!editingField) return;
     const handleClick = (e: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+      const target = e.target as Node | null;
+      if (popoverRef.current && target && !popoverRef.current.contains(target)) {
+        if (target instanceof Element && target.closest('input, textarea, select, option, [contenteditable="true"], .ant-select-dropdown')) return;
         setEditingField(null);
       }
     };
@@ -128,6 +141,8 @@ export function FilterBar({ filterModel, columns, onFilterChange, onClearAll }: 
                 field={chip.field}
                 rule={chip.rule}
                 dataType={columns.find((c) => c.name === chip.field)?.dataType}
+                options={columns.find((c) => c.name === chip.field)?.sampleValues}
+                popupContainer={() => popoverRef.current}
                 onApply={(rule) => { onFilterChange(chip.field, rule); setEditingField(null); }}
                 onDelete={() => { onFilterChange(chip.field, null); setEditingField(null); }}
                 onCancel={() => setEditingField(null)}
@@ -152,12 +167,16 @@ export interface FilterEditorProps {
   field: string;
   rule: FilterRule;
   dataType?: string;
+  /** 枚举列的可选值（用于快捷选择已有值） */
+  options?: string[];
+  /** 自定义下拉弹层挂载容器，避免选择时被当作“点击外部”关闭 */
+  popupContainer?: () => HTMLElement | null;
   onApply: (rule: FilterRule) => void;
   onDelete: () => void;
   onCancel: () => void;
 }
 
-export function FilterEditor({ field, rule, dataType, onApply, onDelete, onCancel }: FilterEditorProps) {
+export function FilterEditor({ field, rule, dataType, options, popupContainer, onApply, onDelete, onCancel }: FilterEditorProps) {
   const [editType, setEditType] = useState(rule.type || 'contains');
   const [editValue, setEditValue] = useState(String(rule.filter ?? ''));
   const [editValue2, setEditValue2] = useState(String(rule.filterTo ?? ''));
@@ -165,6 +184,10 @@ export function FilterEditor({ field, rule, dataType, onApply, onDelete, onCance
   const availableTypes = getFilterTypesForDataType(dataType);
   const needsValue = !['blank', 'notBlank'].includes(editType);
   const needsValue2 = editType === 'inRange';
+
+  const applyRule = (type: string, filter?: unknown, filterTo?: unknown) => {
+    onApply({ type, filter, filterTo });
+  };
 
   return (
     <div className="filter-editor">
@@ -176,28 +199,119 @@ export function FilterEditor({ field, rule, dataType, onApply, onDelete, onCance
         <AntdCompatSelect
           aria-label="筛选类型"
           value={editType}
+          getPopupContainer={popupContainer ? () => popupContainer() || document.body : undefined}
           onChange={(e) => setEditType(e.target.value)}
         >
           {availableTypes.map((type) => (
             <option key={type} value={type}>{FILTER_TYPE_LABELS[type] || type}</option>
           ))}
         </AntdCompatSelect>
-        {needsValue && (
-          <input
-            autoFocus
-            placeholder={needsValue2 ? '最小值' : '筛选值'}
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') onApply({ type: editType, filter: editValue, filterTo: needsValue2 ? editValue2 : undefined }); }}
-          />
+        {!needsValue && <p className="filter-editor-hint">此筛选无需填写值</p>}
+        {needsValue && dataType === 'number' && (
+          <>
+            <input
+              autoFocus
+              type="number"
+              step="any"
+              placeholder={needsValue2 ? '最小值' : '筛选值'}
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') applyRule(editType, editValue, needsValue2 ? editValue2 : undefined); }}
+            />
+            {needsValue2 && (
+              <input
+                type="number"
+                step="any"
+                placeholder="最大值"
+                value={editValue2}
+                onChange={(e) => setEditValue2(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') applyRule(editType, editValue, editValue2); }}
+              />
+            )}
+            <div className="filter-editor-quick">
+              <button type="button" onClick={() => applyRule('greaterThanOrEqual', '0')}>≥ 0</button>
+              <button type="button" onClick={() => applyRule('greaterThan', '0')}>&gt; 0</button>
+            </div>
+          </>
         )}
-        {needsValue2 && (
-          <input
-            placeholder="最大值"
-            value={editValue2}
-            onChange={(e) => setEditValue2(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') onApply({ type: editType, filter: editValue, filterTo: editValue2 }); }}
-          />
+        {needsValue && dataType === 'date' && (
+          <>
+            <input
+              autoFocus
+              type="date"
+              placeholder={needsValue2 ? '最小值' : '筛选值'}
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') applyRule(editType, editValue, needsValue2 ? editValue2 : undefined); }}
+            />
+            {needsValue2 && (
+              <input
+                type="date"
+                placeholder="最大值"
+                value={editValue2}
+                onChange={(e) => setEditValue2(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') applyRule(editType, editValue, editValue2); }}
+              />
+            )}
+            <div className="filter-editor-quick">
+              <button type="button" onClick={() => applyRule('equals', isoDate(0))}>今天</button>
+              <button type="button" onClick={() => applyRule('inRange', isoDate(-6), isoDate(0))}>最近 7 天</button>
+              <button type="button" onClick={() => applyRule('inRange', isoDate(-29), isoDate(0))}>最近 30 天</button>
+              <button type="button" onClick={() => applyRule('inRange', isoDate(-89), isoDate(0))}>最近 90 天</button>
+            </div>
+          </>
+        )}
+        {needsValue && dataType === 'boolean' && (
+          <div className="filter-editor-boolean">
+            <button
+              type="button"
+              className={editValue === 'true' ? 'is-active' : ''}
+              onClick={() => setEditValue('true')}
+            >
+              是
+            </button>
+            <button
+              type="button"
+              className={editValue === 'false' ? 'is-active' : ''}
+              onClick={() => setEditValue('false')}
+            >
+              否
+            </button>
+          </div>
+        )}
+        {needsValue && dataType !== 'number' && dataType !== 'date' && dataType !== 'boolean' && (
+          <>
+            {dataType === 'enum' && options && options.length > 0 && (
+              <AntdCompatSelect
+                aria-label="选择已有值"
+                value={editValue}
+                getPopupContainer={popupContainer ? () => popupContainer() || document.body : undefined}
+                onChange={(e) => setEditValue(e.target.value)}
+              >
+                {options.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+                {editValue && !options.includes(editValue) && (
+                  <option value={editValue}>{editValue}（当前值）</option>
+                )}
+              </AntdCompatSelect>
+            )}
+            <input
+              autoFocus
+              placeholder={needsValue2 ? '最小值' : '筛选值'}
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') applyRule(editType, editValue, needsValue2 ? editValue2 : undefined); }}
+            />
+            {needsValue2 && (
+              <input
+                placeholder="最大值"
+                value={editValue2}
+                onChange={(e) => setEditValue2(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') applyRule(editType, editValue, editValue2); }}
+              />
+            )}
+          </>
         )}
       </div>
       <div className="filter-editor-footer">
@@ -205,7 +319,7 @@ export function FilterEditor({ field, rule, dataType, onApply, onDelete, onCance
         <button
           type="button"
           className="ui-btn ui-btn-xs ui-btn-primary"
-          onClick={() => onApply({ type: editType, filter: editValue, filterTo: needsValue2 ? editValue2 : undefined })}
+          onClick={() => applyRule(editType, editValue, needsValue2 ? editValue2 : undefined)}
         >
           应用
         </button>

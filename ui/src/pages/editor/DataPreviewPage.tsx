@@ -1822,6 +1822,7 @@ export default function DataPreviewPage({
     const onPointerDown = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node | null;
       if (headerFilterPopupRef.current && target && headerFilterPopupRef.current.contains(target)) return;
+      if (target instanceof Element && target.closest('input, textarea, select, option, [contenteditable="true"], .ant-select-dropdown')) return;
       setHeaderFilterField(null);
     };
     window.addEventListener('resize', updatePosition);
@@ -2125,7 +2126,7 @@ export default function DataPreviewPage({
           {activeSheet && activeTab === 'table' && (
             <FilterBar
               filterModel={query.filterModel}
-              columns={(activeSheet.columns || []).map((col) => ({ name: col.name, dataType: col.dataType }))}
+              columns={(activeSheet.columns || []).map((col) => ({ name: col.name, dataType: col.dataType, sampleValues: (col.sampleValues || []).map(String) }))}
               onFilterChange={setColumnFilter}
               onClearAll={() => {
                 setSearchDraft('');
@@ -2775,6 +2776,8 @@ export default function DataPreviewPage({
               filter: '',
             }}
             dataType={activeSheetData?.columns.find((col) => col.name === headerFilterField)?.dataType}
+            options={activeSheetData?.columns.find((col) => col.name === headerFilterField)?.sampleValues?.map(String)}
+            popupContainer={() => headerFilterPopupRef.current}
             onApply={(rule) => {
               setColumnFilter(headerFilterField, rule);
               setHeaderFilterField(null);

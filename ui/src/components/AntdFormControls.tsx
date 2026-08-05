@@ -358,6 +358,8 @@ export function AntdCompatSelect(props: {
   children?: React.ReactNode;
   onChange?: (event: CompatSelectChangeEvent) => void;
   'aria-label'?: string;
+  /** 自定义下拉弹层挂载容器，默认挂到 body */
+  getPopupContainer?: () => HTMLElement;
 }) {
   const controlled = props.value !== undefined;
   const [internalValue, setInternalValue] = React.useState(String(props.defaultValue ?? ''));
@@ -381,6 +383,7 @@ export function AntdCompatSelect(props: {
       options={options}
       optionFilterProp="label"
       style={props.style}
+      getPopupContainer={props.getPopupContainer}
       onChange={(value) => {
         const event: CompatSelectChangeEvent = { target: { value: String(value) } };
         props.onChange?.(event);
