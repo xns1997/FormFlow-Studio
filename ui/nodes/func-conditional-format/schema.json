@@ -32,6 +32,13 @@
       "description": "条件格式类型"
     },
     {
+      "name": "value1",
+      "label": "值1",
+      "type": "string",
+      "default": "0",
+      "description": "比较值1"
+    },
+    {
       "name": "operator",
       "label": "比较运算符",
       "type": "enum",
@@ -47,13 +54,6 @@
       ],
       "default": "greaterThan",
       "description": "比较运算符"
-    },
-    {
-      "name": "value1",
-      "label": "值1",
-      "type": "string",
-      "default": "0",
-      "description": "比较值1"
     },
     {
       "name": "value2",
@@ -75,25 +75,6 @@
       "type": "color",
       "default": "#9C0006",
       "description": "满足条件时的字体颜色"
-    },
-    {
-      "name": "field",
-      "label": "field",
-      "type": "string",
-      "default": "",
-      "description": "配置项：field"
-    },
-    {
-      "name": "value",
-      "label": "value",
-      "type": "any",
-      "description": "配置项：value"
-    },
-    {
-      "name": "condition",
-      "label": "condition",
-      "type": "object",
-      "description": "配置项：condition"
     }
   ],
   "inputs": [
@@ -104,78 +85,70 @@
       "description": "工作表对象"
     },
     {
-      "name": "rangeAddress",
-      "type": "string",
+      "name": "addrOverride",
+      "type": "any",
       "required": false,
-      "description": "地址覆盖"
+      "description": "数据输入：addrOverride"
     },
     {
-      "name": "ruleType",
-      "type": "string",
+      "name": "ruleOverride",
+      "type": "any",
       "required": false,
-      "description": "规则类型覆盖"
+      "description": "数据输入：ruleOverride"
     },
     {
-      "name": "value1",
-      "type": "string",
+      "name": "valOverride",
+      "type": "any",
       "required": false,
-      "description": "值1覆盖"
+      "description": "数据输入：valOverride"
     }
   ],
   "outputs": [
     {
       "name": "worksheet",
       "type": "worksheet",
-      "description": "修改后的工作表"
+      "description": "输出：worksheet"
     }
   ],
   "ports": [
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "input",
       "required": true,
-      "description": "工作表"
+      "description": "工作表对象"
     },
     {
-      "name": "rangeAddress",
-      "label": "地址",
-      "type": "string",
+      "name": "addrOverride",
+      "label": "addrOverride",
+      "type": "any",
       "direction": "input",
-      "description": "区域地址"
+      "required": false,
+      "description": "数据输入：addrOverride"
     },
     {
-      "name": "ruleType",
-      "label": "规则",
-      "type": "enum",
+      "name": "ruleOverride",
+      "label": "ruleOverride",
+      "type": "any",
       "direction": "input",
-      "enum": [
-        "cellValue",
-        "colorScale",
-        "dataBar",
-        "iconSet",
-        "top10",
-        "aboveAverage",
-        "uniqueValues",
-        "textContains",
-        "duplicate"
-      ],
-      "description": "规则类型"
+      "required": false,
+      "description": "数据输入：ruleOverride"
     },
     {
-      "name": "value1",
-      "label": "值",
-      "type": "string",
+      "name": "valOverride",
+      "label": "valOverride",
+      "type": "any",
       "direction": "input",
-      "description": "比较值"
+      "required": false,
+      "description": "数据输入：valOverride"
     },
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "output",
-      "description": "修改后的工作表"
+      "description": "输出：worksheet"
     }
   ],
   "keywords": [

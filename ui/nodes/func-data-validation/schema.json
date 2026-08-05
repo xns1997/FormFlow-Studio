@@ -35,39 +35,11 @@
       "description": "下拉列表值（逗号分隔）"
     },
     {
-      "name": "minValue",
-      "label": "最小值",
-      "type": "number",
-      "default": 0,
-      "description": "数字验证最小值"
-    },
-    {
-      "name": "maxValue",
-      "label": "最大值",
-      "type": "number",
-      "default": 100,
-      "description": "数字验证最大值"
-    },
-    {
       "name": "errorMessage",
       "label": "错误提示",
       "type": "string",
       "default": "输入无效",
       "description": "验证失败时的提示"
-    },
-    {
-      "name": "field",
-      "label": "field",
-      "type": "string",
-      "default": "",
-      "description": "配置项：field"
-    },
-    {
-      "name": "formula1",
-      "label": "formula1",
-      "type": "string",
-      "default": "",
-      "description": "配置项：formula1"
     }
   ],
   "inputs": [
@@ -78,74 +50,70 @@
       "description": "工作表对象"
     },
     {
-      "name": "rangeAddress",
-      "type": "string",
+      "name": "addr",
+      "type": "any",
       "required": false,
-      "description": "地址覆盖"
+      "description": "数据输入：addr"
     },
     {
-      "name": "validationType",
-      "type": "string",
+      "name": "type",
+      "type": "any",
       "required": false,
-      "description": "类型覆盖"
+      "description": "数据输入：type"
     },
     {
-      "name": "listValues",
-      "type": "string",
+      "name": "vals",
+      "type": "any",
       "required": false,
-      "description": "列表值覆盖"
+      "description": "数据输入：vals"
     }
   ],
   "outputs": [
     {
       "name": "worksheet",
       "type": "worksheet",
-      "description": "修改后的工作表"
+      "description": "输出：worksheet"
     }
   ],
   "ports": [
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "input",
       "required": true,
-      "description": "工作表"
+      "description": "工作表对象"
     },
     {
-      "name": "rangeAddress",
-      "label": "地址",
-      "type": "string",
+      "name": "addr",
+      "label": "addr",
+      "type": "any",
       "direction": "input",
-      "description": "区域地址"
+      "required": false,
+      "description": "数据输入：addr"
     },
     {
-      "name": "validationType",
-      "label": "类型",
-      "type": "enum",
+      "name": "type",
+      "label": "type",
+      "type": "any",
       "direction": "input",
-      "enum": [
-        "list",
-        "number",
-        "date",
-        "textLength",
-        "custom"
-      ],
-      "description": "验证类型"
+      "required": false,
+      "description": "数据输入：type"
     },
     {
-      "name": "listValues",
-      "label": "值",
-      "type": "string",
+      "name": "vals",
+      "label": "vals",
+      "type": "any",
       "direction": "input",
-      "description": "列表值"
+      "required": false,
+      "description": "数据输入：vals"
     },
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "output",
-      "description": "修改后的工作表"
+      "description": "输出：worksheet"
     }
   ],
   "keywords": [

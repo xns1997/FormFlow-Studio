@@ -78,6 +78,13 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：values"
+    },
+    {
+      "name": "focusFirst",
+      "label": "focusFirst",
+      "type": "boolean",
+      "direction": "output",
+      "description": "输出：focusFirst"
     }
   ],
   "keywords": [
@@ -99,6 +106,13 @@
       "type": "object",
       "required": false,
       "description": "数据输入：values"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "focusFirst",
+      "type": "boolean",
+      "description": "输出：focusFirst"
     }
   ]
 }

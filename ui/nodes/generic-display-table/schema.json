@@ -14,35 +14,12 @@
       "description": "表格标题"
     },
     {
-      "name": "pageSize",
-      "label": "每页行数",
-      "type": "number",
-      "default": 10,
-      "min": 1,
-      "max": 100,
-      "description": "每页显示的行数"
-    },
-    {
-      "name": "showIndex",
-      "label": "显示行号",
-      "type": "boolean",
-      "default": true,
-      "description": "是否显示行号列"
-    },
-    {
       "name": "maxRows",
       "label": "最大行数",
       "type": "number",
       "default": 1000,
       "min": 0,
       "description": "最大显示行数，0 表示不限制"
-    },
-    {
-      "name": "highlightFirst",
-      "label": "高亮首行",
-      "type": "boolean",
-      "default": false,
-      "description": "是否高亮第一行数据"
     }
   ],
   "inputs": [

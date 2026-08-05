@@ -26,26 +26,6 @@
       "type": "boolean",
       "default": true,
       "description": "第一行是否为表头"
-    },
-    {
-      "name": "tableStyle",
-      "label": "表格样式",
-      "type": "enum",
-      "enum": [
-        "TableStyleMedium2",
-        "TableStyleLight1",
-        "TableStyleDark1",
-        "TableStyleMedium9",
-        "TableStyleLight6"
-      ],
-      "default": "TableStyleMedium2",
-      "description": "预定义表格样式"
-    },
-    {
-      "name": "style",
-      "label": "style",
-      "type": "object",
-      "description": "配置项：style"
     }
   ],
   "inputs": [
@@ -56,66 +36,68 @@
       "description": "工作表对象"
     },
     {
-      "name": "tableName",
-      "type": "string",
+      "name": "nameOverride",
+      "type": "any",
       "required": false,
-      "description": "表格名覆盖"
+      "description": "数据输入：nameOverride"
     },
     {
-      "name": "rangeAddress",
-      "type": "string",
+      "name": "rangeOverride",
+      "type": "any",
       "required": false,
-      "description": "范围覆盖"
+      "description": "数据输入：rangeOverride"
     }
   ],
   "outputs": [
     {
       "name": "worksheet",
       "type": "worksheet",
-      "description": "修改后的工作表"
+      "description": "输出：worksheet"
     },
     {
       "name": "tableName",
       "type": "string",
-      "description": "创建的表格名"
+      "description": "输出：tableName"
     }
   ],
   "ports": [
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "input",
       "required": true,
-      "description": "工作表"
+      "description": "工作表对象"
     },
     {
-      "name": "tableName",
-      "label": "名称",
-      "type": "string",
+      "name": "nameOverride",
+      "label": "nameOverride",
+      "type": "any",
       "direction": "input",
-      "description": "表格名"
+      "required": false,
+      "description": "数据输入：nameOverride"
     },
     {
-      "name": "rangeAddress",
-      "label": "范围",
-      "type": "string",
+      "name": "rangeOverride",
+      "label": "rangeOverride",
+      "type": "any",
       "direction": "input",
-      "description": "数据范围"
+      "required": false,
+      "description": "数据输入：rangeOverride"
     },
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "output",
-      "description": "修改后的工作表"
+      "description": "输出：worksheet"
     },
     {
       "name": "tableName",
-      "label": "表格名",
+      "label": "tableName",
       "type": "string",
       "direction": "output",
-      "description": "表格名"
+      "description": "输出：tableName"
     }
   ],
   "keywords": [

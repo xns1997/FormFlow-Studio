@@ -154,7 +154,19 @@ registerExecutor('generic:file-source', async (ctx) => {
     fileName = table.fileName;
   }
   const check = ctx.checkType('file-data', fileData);
-  const data = check.valid ? check.normalized : fileData;
+  let data = check.valid ? check.normalized : fileData;
+  const readAs = String(ctx.properties.readAs || 'arraybuffer');
+  if (readAs === 'text' || readAs === 'json') {
+    const bytes = data instanceof ArrayBuffer ? new Uint8Array(data) : data instanceof Uint8Array ? data : null;
+    if (bytes) {
+      const text = new TextDecoder().decode(bytes);
+      if (readAs === 'json') {
+        try { data = JSON.parse(text); } catch { data = text; }
+      } else {
+        data = text;
+      }
+    }
+  }
   const size = data instanceof ArrayBuffer
     ? data.byteLength
     : data instanceof Uint8Array
@@ -394,7 +406,9 @@ registerExecutor('generic:call-workflow', ({ inputs, properties }) => {
 });
 
 registerExecutor('generic:output-display', (ctx) => {
-  return { value: ctx.inputs.value };
+  const value = ctx.inputs.value;
+  if (ctx.properties.logToConsole) console.log('[output-display]', value);
+  return { value, label: String(ctx.properties.label || '') };
 });
 
 registerExecutor('generic:for-each', ({ inputs }) => {
@@ -1205,15 +1219,17 @@ registerExecutor('generic:compare', (ctx) => {
   const dataA = aCheck.normalized as Record<string, unknown>[];
   const dataB = bCheck.normalized as Record<string, unknown>[];
   const matchField = String(properties.matchField || '');
+  const fuzzyMatch = properties.fuzzyMatch === true;
+  const normalizeKey = (value: unknown) => fuzzyMatch ? String(value ?? '').trim().toLocaleLowerCase() : value;
 
   const bMap = new Map<unknown, Record<string, unknown>>();
-  for (const row of dataB) bMap.set(row[matchField], row);
+  for (const row of dataB) bMap.set(normalizeKey(row[matchField]), row);
 
   const onlyA: Record<string, unknown>[] = [], same: Record<string, unknown>[] = [], different: Record<string, unknown>[] = [];
   const matchedBKeys = new Set<unknown>();
 
   for (const aRow of dataA) {
-    const key = aRow[matchField];
+    const key = normalizeKey(aRow[matchField]);
     const bRow = bMap.get(key);
     if (!bRow) { onlyA.push(aRow); continue; }
     matchedBKeys.add(key);
@@ -1227,7 +1243,7 @@ registerExecutor('generic:compare', (ctx) => {
     (isDiff ? different : same).push({ ...aRow, ...bRow });
   }
 
-  const onlyB = dataB.filter(row => !matchedBKeys.has(row[matchField]));
+  const onlyB = dataB.filter(row => !matchedBKeys.has(normalizeKey(row[matchField])));
 
   return { onlyA, same, different, onlyB };
 });
@@ -1282,7 +1298,8 @@ registerExecutor('generic:type-cast', (ctx) => {
         case 'boolean': newRow[field] = val === true || val === 'true' || val === '1' || val === 1; break;
         case 'date': {
           const d = new Date(val as string);
-          newRow[field] = isNaN(d.getTime()) ? null : d.toISOString();
+          if (isNaN(d.getTime())) newRow[field] = null;
+          else newRow[field] = String(properties.dateFormat || 'iso') === 'date' ? d.toISOString().slice(0, 10) : d.toISOString();
           break;
         }
       }
@@ -1512,7 +1529,8 @@ registerExecutor('generic:rename-columns', (ctx) => {
   const result = data.map(row => {
     const newRow: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(row)) {
-      newRow[mapping[k] ?? k] = v;
+      const target = mapping[k] ?? k;
+      newRow[properties.trimSpaces === true ? String(target).trim() : target] = v;
     }
     return newRow;
   });
@@ -1628,6 +1646,12 @@ registerExecutor('generic:validate-json', (ctx) => {
       }
     }
   }
+  if (properties.strictMode === true && schema.properties && typeof data === 'object') {
+    const knownKeys = new Set(Object.keys(schema.properties as Record<string, unknown>));
+    for (const key of Object.keys(data as Record<string, unknown>)) {
+      if (!knownKeys.has(key)) errors.push({ field: key, message: `未知字段 ${key}` });
+    }
+  }
 
   return { valid: errors.length === 0, errors };
 });
@@ -1636,14 +1660,17 @@ registerExecutor('generic:validate-xml', (ctx) => {
   const { inputs } = ctx;
   const data = String(inputs.data || '');
   const errors: Array<{ message: string }> = [];
+  const checkWellFormed = ctx.properties.checkWellFormed !== false;
 
   const tagMatch = data.match(/<(\w+)[\s>]/);
   if (!tagMatch) errors.push({ message: '未找到有效的 XML 标签' });
 
-  const openTags = [...data.matchAll(/<(\w+)[^\/]*>/g)].map(m => m[1]);
-  const closeTags = [...data.matchAll(/<\/(\w+)>/g)].map(m => m[1]);
-  if (openTags.length !== closeTags.length) {
-    errors.push({ message: `标签不匹配: ${openTags.length} 个开始标签, ${closeTags.length} 个结束标签` });
+  if (checkWellFormed) {
+    const openTags = [...data.matchAll(/<(\w+)[^\/]*>/g)].map(m => m[1]);
+    const closeTags = [...data.matchAll(/<\/(\w+)>/g)].map(m => m[1]);
+    if (openTags.length !== closeTags.length) {
+      errors.push({ message: `标签不匹配: ${openTags.length} 个开始标签, ${closeTags.length} 个结束标签` });
+    }
   }
 
   return { valid: errors.length === 0, errors };
@@ -1656,6 +1683,9 @@ registerExecutor('generic:validate-csv', (ctx) => {
   const csv = String(csvCheck.normalized || '');
   const delimiter = String(properties.delimiter || ',');
   const requiredFields = String(properties.requiredFields || '').split(',').map(s => s.trim()).filter(Boolean);
+  const uniqueFields = String(properties.uniqueFields || '').split(',').map(s => s.trim()).filter(Boolean);
+  let patternFields: Record<string, string> = {};
+  try { patternFields = JSON.parse(String(properties.patternFields || '{}')); } catch { patternFields = {}; }
 
   const lines = csv.split('\n').filter(l => l.trim());
   if (lines.length < 2) return { valid: false, errors: [{ message: 'CSV 至少需要表头和一行数据' }] };
@@ -1665,6 +1695,27 @@ registerExecutor('generic:validate-csv', (ctx) => {
 
   for (const f of requiredFields) {
     if (!headers.includes(f)) errors.push({ field: f, message: `缺少必填列 ${f}` });
+  }
+  const cellValue = (line: string, column: number) => line.split(delimiter)[column]?.trim().replace(/^"|"$/g, '') ?? '';
+  for (const f of uniqueFields) {
+    const column = headers.indexOf(f);
+    if (column < 0) continue;
+    const seen = new Set<string>();
+    for (const line of lines.slice(1)) {
+      const value = cellValue(line, column);
+      if (seen.has(value)) { errors.push({ field: f, message: `列 ${f} 存在重复值 ${value}` }); break; }
+      seen.add(value);
+    }
+  }
+  for (const [f, pattern] of Object.entries(patternFields)) {
+    const column = headers.indexOf(f);
+    if (column < 0) continue;
+    let regex: RegExp;
+    try { regex = new RegExp(pattern); } catch { continue; }
+    for (const line of lines.slice(1)) {
+      const value = cellValue(line, column);
+      if (value !== '' && !regex.test(value)) { errors.push({ field: f, message: `列 ${f} 的值 ${value} 不符合格式` }); break; }
+    }
   }
 
   return { valid: errors.length === 0, errors, headers, rowCount: lines.length - 1 };
@@ -1676,12 +1727,13 @@ registerExecutor('generic:unique-check', (ctx) => {
   if (!dataCheck.valid) return { error: '输入数据格式错误' };
   const data = dataCheck.normalized as Record<string, unknown>[];
   const field = String(properties.field || '');
+  const caseSensitive = properties.caseSensitive !== false;
 
   const seen = new Map<unknown, number>();
   const duplicates: Record<string, unknown>[] = [];
 
   for (const row of data) {
-    const val = row[field];
+    const val = caseSensitive ? row[field] : String(row[field] ?? '').toLocaleLowerCase();
     const count = (seen.get(val) || 0) + 1;
     seen.set(val, count);
     if (count >= 2) duplicates.push(row);

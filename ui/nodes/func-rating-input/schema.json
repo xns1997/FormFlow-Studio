@@ -68,6 +68,31 @@
       "name": "value",
       "type": "number",
       "description": "输出：value"
+    },
+    {
+      "name": "max",
+      "type": "number",
+      "description": "输出：max"
+    },
+    {
+      "name": "allowHalf",
+      "type": "boolean",
+      "description": "输出：allowHalf"
+    },
+    {
+      "name": "label",
+      "type": "string",
+      "description": "输出：label"
+    },
+    {
+      "name": "required",
+      "type": "boolean",
+      "description": "输出：required"
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "description": "输出：disabled"
     }
   ],
   "ports": [
@@ -85,6 +110,41 @@
       "type": "number",
       "direction": "output",
       "description": "输出：value"
+    },
+    {
+      "name": "max",
+      "label": "max",
+      "type": "number",
+      "direction": "output",
+      "description": "输出：max"
+    },
+    {
+      "name": "allowHalf",
+      "label": "allowHalf",
+      "type": "boolean",
+      "direction": "output",
+      "description": "输出：allowHalf"
+    },
+    {
+      "name": "label",
+      "label": "label",
+      "type": "string",
+      "direction": "output",
+      "description": "输出：label"
+    },
+    {
+      "name": "required",
+      "label": "required",
+      "type": "boolean",
+      "direction": "output",
+      "description": "输出：required"
+    },
+    {
+      "name": "disabled",
+      "label": "disabled",
+      "type": "boolean",
+      "direction": "output",
+      "description": "输出：disabled"
     }
   ],
   "keywords": [

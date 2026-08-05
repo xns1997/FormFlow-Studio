@@ -1,10 +1,16 @@
 {
   "id": "func-radio-input",
-  "label": "func-radio-input",
+  "label": "单选输入",
   "description": "节点 func-radio-input",
   "category": "功能 · 表单控件",
   "kind": "generic",
   "properties": [
+    {
+      "name": "options",
+      "label": "options",
+      "type": "array",
+      "description": "配置项：options"
+    },
     {
       "name": "defaultValue",
       "label": "defaultValue",
@@ -13,41 +19,20 @@
       "description": "配置项：defaultValue"
     },
     {
-      "name": "options",
-      "label": "options",
-      "type": "array",
-      "description": "配置项：options"
-    },
-    {
-      "name": "label",
-      "label": "label",
+      "name": "fieldName",
+      "label": "fieldName",
       "type": "string",
       "default": "",
-      "description": "配置项：label"
-    },
-    {
-      "name": "name",
-      "label": "name",
-      "type": "string",
-      "default": "",
-      "description": "配置项：name"
-    },
-    {
-      "name": "required",
-      "label": "required",
-      "type": "boolean",
-      "default": false,
-      "description": "配置项：required"
-    },
-    {
-      "name": "disabled",
-      "label": "disabled",
-      "type": "boolean",
-      "default": false,
-      "description": "配置项：disabled"
+      "description": "配置项：fieldName"
     }
   ],
   "inputs": [
+    {
+      "name": "trigger",
+      "type": "any",
+      "required": true,
+      "description": "数据输入：trigger"
+    },
     {
       "name": "value",
       "type": "any",
@@ -57,6 +42,11 @@
   ],
   "outputs": [
     {
+      "name": "trigger",
+      "type": "any",
+      "description": "输出：trigger"
+    },
+    {
       "name": "value",
       "type": "any",
       "description": "输出：value"
@@ -65,9 +55,22 @@
       "name": "options",
       "type": "array",
       "description": "输出：options"
+    },
+    {
+      "name": "fieldName",
+      "type": "string",
+      "description": "输出：fieldName"
     }
   ],
   "ports": [
+    {
+      "name": "trigger",
+      "label": "trigger",
+      "type": "any",
+      "direction": "input",
+      "required": true,
+      "description": "数据输入：trigger"
+    },
     {
       "name": "value",
       "label": "value",
@@ -75,6 +78,13 @@
       "direction": "input",
       "required": false,
       "description": "数据输入：value"
+    },
+    {
+      "name": "trigger",
+      "label": "trigger",
+      "type": "any",
+      "direction": "output",
+      "description": "输出：trigger"
     },
     {
       "name": "value",
@@ -91,18 +101,11 @@
       "description": "输出：options"
     },
     {
-      "name": "trigger",
-      "label": "触发事件",
-      "type": "any",
-      "direction": "output",
-      "description": "单选事件对象"
-    },
-    {
       "name": "fieldName",
-      "label": "字段名",
+      "label": "fieldName",
       "type": "string",
       "direction": "output",
-      "description": "绑定字段名"
+      "description": "输出：fieldName"
     }
   ],
   "keywords": [

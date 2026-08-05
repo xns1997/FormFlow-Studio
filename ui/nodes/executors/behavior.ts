@@ -365,10 +365,12 @@ registerExecutor('behavior-calculate', (ctx) => {
 registerExecutor('behavior-show-message', (ctx) => {
   const message = ctx.assertType('string', ctx.properties.message || ctx.inputs.message || '', 'message') as string;
   const messageType = ctx.assertType('string', ctx.properties.messageType || 'info', 'messageType') as string;
+  const duration = ctx.properties.duration ? Number(ctx.properties.duration) : undefined;
   return {
     trigger: ctx.inputs.trigger,
     message,
     messageType,
+    duration: Number.isFinite(duration as number) ? duration : undefined,
     sideEffects: message ? [{ kind: 'show-message', message, level: messageType }] : [],
   };
 });
@@ -392,9 +394,21 @@ registerExecutor('behavior-validate', (ctx) => {
       passed = value === null || value === undefined || value === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value));
       if (!passed) errorMessage = `${fieldName} 必须是有效邮箱`;
       break;
+    case 'pattern':
+    case 'regex': {
+      const pattern = String(ctx.properties.ruleParam || '');
+      try {
+        passed = value === null || value === undefined || value === '' || new RegExp(pattern).test(String(value));
+      } catch {
+        passed = false;
+      }
+      if (!passed) errorMessage = `${fieldName} 格式不正确`;
+      break;
+    }
     default:
       passed = true;
   }
+  if (ctx.properties.errorMessage) errorMessage = String(ctx.properties.errorMessage);
   return {
     trigger: ctx.inputs.trigger,
     fieldName,
@@ -535,10 +549,14 @@ registerExecutor('behavior-api-request', (ctx) => {
   const method = ctx.assertType('string', ctx.properties.method || 'GET', 'method') as string;
   const trigger = ctx.inputs.trigger;
   const body = ctx.inputs.body;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (ctx.properties.headers) {
+    try { Object.assign(headers, JSON.parse(String(ctx.properties.headers))); } catch { /* 非法 JSON 头忽略 */ }
+  }
   if (!url) return { trigger, url, method, success: false, error: '缺少请求地址 url', response: undefined, status: 0 };
   return fetch(url, {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: ['GET', 'DELETE'].includes(method.toUpperCase()) ? undefined : JSON.stringify(body ?? {}),
   }).then(async (response) => {
     const status = response.status;
@@ -593,11 +611,36 @@ registerExecutor('behavior-loop', (ctx) => {
   };
 });
 
-registerExecutor('behavior-data-query', (ctx) => {
+registerExecutor('behavior-data-query', async (ctx) => {
   const { properties, inputs, tables, checkType } = ctx;
   const sheetName = ctx.assertType('string', properties.sheetName || inputs.sheetName || '', 'sheetName') as string;
   const tableId = String(properties.tableId || inputs.tableId || '');
   const filter = inputs.filter as Record<string, unknown> || {};
+  const workbook = inputs.workbook as Record<string, unknown> | undefined;
+
+  // 优先使用传入的 workbook（流程入口/文件来源），否则查询项目表
+  if (workbook) {
+    try {
+      const wb = workbook as any;
+      let rows: Record<string, unknown>[] = [];
+      if (wb.SheetNames && wb.Sheets) {
+        const XLSX = await import('xlsx');
+        const ws = wb.Sheets[sheetName || wb.SheetNames[0]];
+        rows = ws ? XLSX.utils.sheet_to_json(ws) as Record<string, unknown>[] : [];
+      } else if (Array.isArray(wb.preview) && wb.__fromProject) {
+        rows = wb.preview;
+      }
+      if (Object.keys(filter).length > 0) {
+        rows = rows.filter(row => Object.entries(filter).every(([k, v]) => row[k] === v));
+      }
+      const rowsCheck = checkType('json-rows', rows);
+      const normalizedRows = rowsCheck.valid ? rowsCheck.normalized : rows;
+      const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
+      return { trigger: inputs.trigger, data: normalizedRows, result: normalizedRows, rows: normalizedRows, count: rows.length, headers, tableId, sheetName };
+    } catch {
+      // workbook 解析失败时回退到项目表
+    }
+  }
 
   const sourceTables = tableId
     ? tables.filter((table) => table.id === tableId)
@@ -769,7 +812,7 @@ registerExecutor('behavior-require-fields', (ctx) => {
   const sideEffects = !result.valid && result.message
     ? [normalizeFlowSideEffect({ kind: 'show-message', message: result.message, level: 'error' })!]
     : [];
-  return { valid: result.valid, missingFields: result.missingFields, firstMissingField: result.firstMissingField, sideEffects };
+  return { valid: result.valid, missingFields: result.missingFields, firstMissingField: result.firstMissingField, focusFirst: ctx.properties.focusFirst === true, sideEffects };
 });
 
 registerExecutor('behavior-reset-form', (ctx) => {
@@ -833,5 +876,5 @@ registerExecutor('behavior-clear-field', (ctx) => {
 });
 
 registerExecutor('behavior-stop', (ctx) => {
-  return { trigger: ctx.inputs.trigger, stopped: true };
+  return { trigger: ctx.inputs.trigger, stopped: true, reason: String(ctx.properties.reason || '') };
 });

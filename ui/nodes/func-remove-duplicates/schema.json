@@ -29,53 +29,54 @@
       "description": "工作表对象"
     },
     {
-      "name": "columns",
-      "type": "string",
+      "name": "colsOverride",
+      "type": "any",
       "required": false,
-      "description": "列覆盖"
+      "description": "数据输入：colsOverride"
     }
   ],
   "outputs": [
     {
       "name": "worksheet",
       "type": "worksheet",
-      "description": "去重后的工作表"
+      "description": "输出：worksheet"
     },
     {
       "name": "removedCount",
       "type": "number",
-      "description": "删除的行数"
+      "description": "输出：removedCount"
     }
   ],
   "ports": [
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "input",
       "required": true,
-      "description": "工作表"
+      "description": "工作表对象"
     },
     {
-      "name": "columns",
-      "label": "列",
-      "type": "string",
+      "name": "colsOverride",
+      "label": "colsOverride",
+      "type": "any",
       "direction": "input",
-      "description": "比较列"
+      "required": false,
+      "description": "数据输入：colsOverride"
     },
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "output",
-      "description": "去重后的工作表"
+      "description": "输出：worksheet"
     },
     {
       "name": "removedCount",
-      "label": "删除数",
+      "label": "removedCount",
       "type": "number",
       "direction": "output",
-      "description": "删除行数"
+      "description": "输出：removedCount"
     }
   ],
   "keywords": [

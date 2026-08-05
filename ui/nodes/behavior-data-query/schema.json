@@ -7,46 +7,11 @@
   "methods": [],
   "properties": [
     {
-      "name": "queryType",
-      "label": "查询类型",
-      "type": "enum",
-      "enum": [
-        "getCellValue",
-        "getColumnValues",
-        "findRows",
-        "countRows",
-        "getSheetNames"
-      ],
-      "default": "getCellValue",
-      "description": "查询类型"
-    },
-    {
       "name": "sheetName",
       "label": "Sheet 名",
       "type": "string",
       "default": "",
       "description": "目标 Sheet"
-    },
-    {
-      "name": "cellAddress",
-      "label": "单元格地址",
-      "type": "string",
-      "default": "A1",
-      "description": "单元格地址"
-    },
-    {
-      "name": "filterField",
-      "label": "筛选字段",
-      "type": "string",
-      "default": "",
-      "description": "筛选字段名"
-    },
-    {
-      "name": "filterValue",
-      "label": "筛选值",
-      "type": "string",
-      "default": "",
-      "description": "筛选值"
     },
     {
       "name": "tableId",
@@ -62,12 +27,6 @@
       "type": "trigger",
       "required": true,
       "description": "触发信号"
-    },
-    {
-      "name": "workbook",
-      "type": "workbook",
-      "required": true,
-      "description": "工作簿对象"
     },
     {
       "name": "sheetName",
@@ -86,6 +45,12 @@
       "type": "filter",
       "required": false,
       "description": "数据输入：filter"
+    },
+    {
+      "name": "workbook",
+      "type": "workbook",
+      "required": false,
+      "description": "数据输入：workbook"
     }
   ],
   "outputs": [
@@ -133,14 +98,6 @@
       "direction": "input",
       "required": true,
       "description": "触发信号"
-    },
-    {
-      "name": "workbook",
-      "label": "工作簿",
-      "type": "workbook",
-      "direction": "input",
-      "required": true,
-      "description": "工作簿"
     },
     {
       "name": "sheetName",
@@ -220,6 +177,14 @@
       "type": "json-rows",
       "direction": "output",
       "description": "查询结果行数组（同 result）"
+    },
+    {
+      "name": "workbook",
+      "label": "workbook",
+      "type": "workbook",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：workbook"
     }
   ],
   "keywords": [

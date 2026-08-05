@@ -7,21 +7,6 @@
   "methods": [],
   "properties": [
     {
-      "name": "componentPort",
-      "label": "组件端口",
-      "type": "string",
-      "default": "value",
-      "description": "组件端口名"
-    },
-    {
-      "name": "dataField",
-      "label": "数据字段",
-      "type": "string",
-      "default": "",
-      "required": true,
-      "description": "数据字段名"
-    },
-    {
       "name": "direction",
       "label": "绑定方向",
       "type": "enum",
@@ -66,82 +51,70 @@
       "type": "any",
       "required": false,
       "description": "数据端的值"
-    },
-    {
-      "name": "dataField",
-      "type": "string",
-      "required": false,
-      "description": "数据输入：dataField"
     }
   ],
   "outputs": [
     {
       "name": "trigger",
-      "type": "trigger",
-      "description": "触发输出"
+      "type": "any",
+      "description": "输出：trigger"
     },
     {
       "name": "uiValue",
       "type": "any",
-      "description": "UI 端的值"
+      "description": "输出：uiValue"
     },
     {
       "name": "dataValue",
       "type": "any",
-      "description": "数据端的值"
+      "description": "输出：dataValue"
     }
   ],
   "ports": [
     {
       "name": "trigger",
-      "label": "触发",
-      "type": "any",
+      "label": "trigger",
+      "type": "trigger",
       "direction": "input",
       "required": true,
-      "description": "触发"
+      "description": "触发信号"
     },
     {
       "name": "uiValue",
-      "label": "UI 值",
+      "label": "uiValue",
       "type": "any",
       "direction": "input",
-      "description": "UI 值"
+      "required": false,
+      "description": "UI 端的值"
     },
     {
       "name": "dataValue",
-      "label": "数据值",
+      "label": "dataValue",
       "type": "any",
       "direction": "input",
-      "description": "数据值"
+      "required": false,
+      "description": "数据端的值"
     },
     {
       "name": "trigger",
-      "label": "触发",
+      "label": "trigger",
       "type": "any",
       "direction": "output",
-      "description": "触发输出"
+      "description": "输出：trigger"
     },
     {
       "name": "uiValue",
-      "label": "UI 值",
+      "label": "uiValue",
       "type": "any",
       "direction": "output",
-      "description": "UI 值"
+      "description": "输出：uiValue"
     },
     {
       "name": "dataValue",
-      "label": "数据值",
+      "label": "dataValue",
       "type": "any",
       "direction": "output",
-      "description": "数据值"
-    },
-    {
-      "name": "dataField",
-      "label": "dataField",
-      "type": "string",
-      "direction": "input",
-      "required": false,
-      "description": "数据输入：dataField"
+      "description": "输出：dataValue"
     }
   ],
   "keywords": [

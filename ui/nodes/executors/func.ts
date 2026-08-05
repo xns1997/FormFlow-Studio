@@ -142,7 +142,14 @@ registerExecutor('func-date-input', (ctx) => {
 
 registerExecutor('func-rating-input', (ctx) => {
   const valueCheck = ctx.checkType('number', ctx.inputs.value ?? ctx.properties.defaultValue ?? 0);
-  return { value: valueCheck.valid ? valueCheck.normalized : 0 };
+  return {
+    value: valueCheck.valid ? valueCheck.normalized : 0,
+    max: Number(ctx.properties.max || 5),
+    allowHalf: ctx.properties.allowHalf === true,
+    label: String(ctx.properties.label || ''),
+    required: ctx.properties.required === true,
+    disabled: ctx.properties.disabled === true,
+  };
 });
 
 registerExecutor('func-style', (ctx) => {

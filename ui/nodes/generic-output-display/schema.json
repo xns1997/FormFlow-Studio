@@ -14,19 +14,6 @@
       "description": "显示标签文本"
     },
     {
-      "name": "format",
-      "label": "显示格式",
-      "type": "enum",
-      "enum": [
-        "auto",
-        "json",
-        "text",
-        "table"
-      ],
-      "default": "auto",
-      "description": "值的显示格式"
-    },
-    {
       "name": "logToConsole",
       "label": "输出到控制台",
       "type": "boolean",
@@ -53,6 +40,11 @@
       "name": "value",
       "type": "any",
       "description": "透传的输入值"
+    },
+    {
+      "name": "label",
+      "type": "string",
+      "description": "输出：label"
     }
   ],
   "ports": [
@@ -77,6 +69,13 @@
       "type": "any",
       "direction": "output",
       "description": "透传的值"
+    },
+    {
+      "name": "label",
+      "label": "label",
+      "type": "string",
+      "direction": "output",
+      "description": "输出：label"
     }
   ],
   "keywords": [

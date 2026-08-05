@@ -20,34 +20,6 @@
       "type": "string",
       "default": "",
       "description": "替换后的文本"
-    },
-    {
-      "name": "matchCase",
-      "label": "区分大小写",
-      "type": "boolean",
-      "default": false,
-      "description": "是否区分大小写"
-    },
-    {
-      "name": "matchEntireCell",
-      "label": "全匹配",
-      "type": "boolean",
-      "default": false,
-      "description": "是否要求整个单元格匹配"
-    },
-    {
-      "name": "find",
-      "label": "find",
-      "type": "string",
-      "default": "",
-      "description": "配置项：find"
-    },
-    {
-      "name": "replace",
-      "label": "replace",
-      "type": "string",
-      "default": "",
-      "description": "配置项：replace"
     }
   ],
   "inputs": [
@@ -58,66 +30,68 @@
       "description": "工作表对象"
     },
     {
-      "name": "findText",
-      "type": "string",
+      "name": "findOverride",
+      "type": "any",
       "required": false,
-      "description": "查找内容覆盖"
+      "description": "数据输入：findOverride"
     },
     {
-      "name": "replaceText",
-      "type": "string",
+      "name": "replaceOverride",
+      "type": "any",
       "required": false,
-      "description": "替换内容覆盖"
+      "description": "数据输入：replaceOverride"
     }
   ],
   "outputs": [
     {
       "name": "worksheet",
       "type": "worksheet",
-      "description": "修改后的工作表"
+      "description": "输出：worksheet"
     },
     {
       "name": "replacedCount",
       "type": "number",
-      "description": "替换的单元格数"
+      "description": "输出：replacedCount"
     }
   ],
   "ports": [
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "input",
       "required": true,
-      "description": "工作表"
+      "description": "工作表对象"
     },
     {
-      "name": "findText",
-      "label": "查找",
-      "type": "string",
+      "name": "findOverride",
+      "label": "findOverride",
+      "type": "any",
       "direction": "input",
-      "description": "查找内容"
+      "required": false,
+      "description": "数据输入：findOverride"
     },
     {
-      "name": "replaceText",
-      "label": "替换",
-      "type": "string",
+      "name": "replaceOverride",
+      "label": "replaceOverride",
+      "type": "any",
       "direction": "input",
-      "description": "替换为"
+      "required": false,
+      "description": "数据输入：replaceOverride"
     },
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "output",
-      "description": "修改后的工作表"
+      "description": "输出：worksheet"
     },
     {
       "name": "replacedCount",
-      "label": "数量",
+      "label": "replacedCount",
       "type": "number",
       "direction": "output",
-      "description": "替换数量"
+      "description": "输出：replacedCount"
     }
   ],
   "keywords": [

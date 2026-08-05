@@ -20,13 +20,6 @@
       "type": "string",
       "default": "",
       "description": "命名项引用的公式/地址"
-    },
-    {
-      "name": "range",
-      "label": "range",
-      "type": "string",
-      "default": "",
-      "description": "配置项：range"
     }
   ],
   "inputs": [
@@ -37,80 +30,68 @@
       "description": "工作簿对象"
     },
     {
-      "name": "name",
-      "type": "string",
+      "name": "nameOverride",
+      "type": "any",
       "required": false,
-      "description": "名称覆盖"
+      "description": "数据输入：nameOverride"
     },
     {
-      "name": "formula",
-      "type": "string",
+      "name": "formulaOverride",
+      "type": "any",
       "required": false,
-      "description": "公式覆盖"
-    },
-    {
-      "name": "worksheet",
-      "type": "worksheet",
-      "required": false,
-      "description": "数据输入：worksheet"
+      "description": "数据输入：formulaOverride"
     }
   ],
   "outputs": [
     {
       "name": "workbook",
       "type": "workbook",
-      "description": "修改后的工作簿"
+      "description": "输出：workbook"
     },
     {
       "name": "name",
       "type": "string",
-      "description": "创建的命名项名"
+      "description": "输出：name"
     }
   ],
   "ports": [
     {
       "name": "workbook",
-      "label": "工作簿",
+      "label": "workbook",
       "type": "workbook",
       "direction": "input",
       "required": true,
-      "description": "工作簿"
+      "description": "工作簿对象"
     },
     {
-      "name": "name",
-      "label": "名称",
-      "type": "string",
+      "name": "nameOverride",
+      "label": "nameOverride",
+      "type": "any",
       "direction": "input",
-      "description": "命名项名"
+      "required": false,
+      "description": "数据输入：nameOverride"
     },
     {
-      "name": "formula",
-      "label": "公式",
-      "type": "string",
+      "name": "formulaOverride",
+      "label": "formulaOverride",
+      "type": "any",
       "direction": "input",
-      "description": "引用公式"
+      "required": false,
+      "description": "数据输入：formulaOverride"
     },
     {
       "name": "workbook",
-      "label": "工作簿",
+      "label": "workbook",
       "type": "workbook",
       "direction": "output",
-      "description": "修改后的工作簿"
+      "description": "输出：workbook"
     },
     {
       "name": "name",
-      "label": "名称",
+      "label": "name",
       "type": "string",
       "direction": "output",
-      "description": "命名项名"
-    },
-    {
-      "name": "worksheet",
-      "label": "worksheet",
-      "type": "worksheet",
-      "direction": "input",
-      "required": false,
-      "description": "数据输入：worksheet"
+      "description": "输出：name"
     }
   ],
   "keywords": [

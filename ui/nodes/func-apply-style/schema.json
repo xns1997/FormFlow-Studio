@@ -34,56 +34,58 @@
       "description": "样式对象"
     },
     {
-      "name": "rangeAddress",
-      "type": "string",
+      "name": "addrOverride",
+      "type": "any",
       "required": false,
-      "description": "区域地址覆盖"
+      "description": "数据输入：addrOverride"
     }
   ],
   "outputs": [
     {
       "name": "workbook",
       "type": "workbook",
-      "description": "修改后的工作簿"
+      "description": "输出：workbook"
     }
   ],
   "ports": [
     {
       "name": "workbook",
-      "label": "工作簿",
+      "label": "workbook",
       "type": "workbook",
       "direction": "input",
       "required": true,
-      "description": "工作簿"
+      "description": "工作簿对象"
     },
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "input",
-      "description": "工作表"
+      "required": false,
+      "description": "工作表对象"
     },
     {
       "name": "style",
-      "label": "样式",
+      "label": "style",
       "type": "object",
       "direction": "input",
       "required": true,
       "description": "样式对象"
     },
     {
-      "name": "rangeAddress",
-      "label": "地址",
-      "type": "string",
+      "name": "addrOverride",
+      "label": "addrOverride",
+      "type": "any",
       "direction": "input",
-      "description": "区域地址"
+      "required": false,
+      "description": "数据输入：addrOverride"
     },
     {
       "name": "workbook",
-      "label": "工作簿",
+      "label": "workbook",
       "type": "workbook",
       "direction": "output",
-      "description": "修改后的工作簿"
+      "description": "输出：workbook"
     }
   ],
   "keywords": [

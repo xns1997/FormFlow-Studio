@@ -12,13 +12,6 @@
       "type": "string",
       "default": "",
       "description": "逗号分隔的字段名，空则校验全部"
-    },
-    {
-      "name": "rules",
-      "label": "校验规则",
-      "type": "string",
-      "default": "",
-      "description": "JSON 格式规则"
     }
   ],
   "inputs": [
@@ -38,37 +31,37 @@
   "outputs": [
     {
       "name": "passed",
-      "type": "trigger",
-      "description": "通过"
+      "type": "boolean",
+      "description": "输出：passed"
     },
     {
       "name": "failed",
-      "type": "trigger",
-      "description": "失败"
+      "type": "any",
+      "description": "输出：failed"
     },
     {
       "name": "errors",
-      "type": "object",
-      "description": "错误信息"
+      "type": "array",
+      "description": "输出：errors"
     },
     {
       "name": "isValid",
       "type": "boolean",
-      "description": "是否有效"
+      "description": "输出：isValid"
     }
   ],
   "ports": [
     {
       "name": "trigger",
-      "label": "触发",
-      "type": "any",
+      "label": "trigger",
+      "type": "trigger",
       "direction": "input",
       "required": true,
-      "description": "触发"
+      "description": "触发信号"
     },
     {
       "name": "formData",
-      "label": "表单",
+      "label": "formData",
       "type": "object",
       "direction": "input",
       "required": true,
@@ -76,31 +69,31 @@
     },
     {
       "name": "passed",
-      "label": "通过",
-      "type": "any",
+      "label": "passed",
+      "type": "boolean",
       "direction": "output",
-      "description": "通过"
+      "description": "输出：passed"
     },
     {
       "name": "failed",
-      "label": "失败",
+      "label": "failed",
       "type": "any",
       "direction": "output",
-      "description": "失败"
+      "description": "输出：failed"
     },
     {
       "name": "errors",
-      "label": "错误",
-      "type": "object",
+      "label": "errors",
+      "type": "array",
       "direction": "output",
-      "description": "错误信息"
+      "description": "输出：errors"
     },
     {
       "name": "isValid",
-      "label": "有效",
+      "label": "isValid",
       "type": "boolean",
       "direction": "output",
-      "description": "是否有效"
+      "description": "输出：isValid"
     }
   ],
   "keywords": [

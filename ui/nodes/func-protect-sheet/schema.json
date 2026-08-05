@@ -19,20 +19,6 @@
       "type": "string",
       "default": "",
       "description": "保护密码"
-    },
-    {
-      "name": "allowSelectLockedCells",
-      "label": "允许选择锁定单元格",
-      "type": "boolean",
-      "default": true,
-      "description": "是否允许选择锁定的单元格"
-    },
-    {
-      "name": "allowSelectUnlockedCells",
-      "label": "允许选择未锁定单元格",
-      "type": "boolean",
-      "default": true,
-      "description": "是否允许选择未锁定的单元格"
     }
   ],
   "inputs": [
@@ -43,54 +29,56 @@
       "description": "工作表对象"
     },
     {
-      "name": "protect",
-      "type": "boolean",
+      "name": "protectOverride",
+      "type": "any",
       "required": false,
-      "description": "保护开关覆盖"
+      "description": "数据输入：protectOverride"
     },
     {
-      "name": "password",
-      "type": "string",
+      "name": "passOverride",
+      "type": "any",
       "required": false,
-      "description": "密码覆盖"
+      "description": "数据输入：passOverride"
     }
   ],
   "outputs": [
     {
       "name": "worksheet",
       "type": "worksheet",
-      "description": "修改后的工作表"
+      "description": "输出：worksheet"
     }
   ],
   "ports": [
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "input",
       "required": true,
-      "description": "工作表"
+      "description": "工作表对象"
     },
     {
-      "name": "protect",
-      "label": "保护",
-      "type": "boolean",
+      "name": "protectOverride",
+      "label": "protectOverride",
+      "type": "any",
       "direction": "input",
-      "description": "启用保护"
+      "required": false,
+      "description": "数据输入：protectOverride"
     },
     {
-      "name": "password",
-      "label": "密码",
-      "type": "string",
+      "name": "passOverride",
+      "label": "passOverride",
+      "type": "any",
       "direction": "input",
-      "description": "密码"
+      "required": false,
+      "description": "数据输入：passOverride"
     },
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "output",
-      "description": "修改后的工作表"
+      "description": "输出：worksheet"
     }
   ],
   "keywords": [

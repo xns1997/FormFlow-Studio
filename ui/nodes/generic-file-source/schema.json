@@ -7,20 +7,6 @@
   "methods": [],
   "properties": [
     {
-      "name": "accept",
-      "label": "允许类型",
-      "type": "string",
-      "default": ".xlsx,.xls,.csv",
-      "description": "允许的文件扩展名"
-    },
-    {
-      "name": "multiple",
-      "label": "允许多选",
-      "type": "boolean",
-      "default": false,
-      "description": "是否允许多选"
-    },
-    {
       "name": "readAs",
       "label": "读取方式",
       "type": "enum",
@@ -46,18 +32,6 @@
       "type": "trigger",
       "required": true,
       "description": "触发文件选择"
-    },
-    {
-      "name": "accept",
-      "type": "string",
-      "required": false,
-      "description": "文件类型过滤"
-    },
-    {
-      "name": "multiple",
-      "type": "boolean",
-      "required": false,
-      "description": "允许多选"
     },
     {
       "name": "data",
@@ -108,22 +82,6 @@
       "direction": "input",
       "required": true,
       "description": "触发文件选择"
-    },
-    {
-      "name": "accept",
-      "label": "文件类型",
-      "type": "string",
-      "direction": "input",
-      "defaultValue": ".xlsx,.xls,.csv",
-      "description": "允许的文件扩展名"
-    },
-    {
-      "name": "multiple",
-      "label": "多选",
-      "type": "boolean",
-      "direction": "input",
-      "defaultValue": false,
-      "description": "是否允许多选"
     },
     {
       "name": "file",

@@ -13,24 +13,6 @@
       "description": "PDF 标题"
     },
     {
-      "name": "orientation",
-      "label": "方向",
-      "type": "enum",
-      "enum": [
-        "portrait",
-        "landscape"
-      ],
-      "default": "portrait",
-      "description": "页面方向"
-    },
-    {
-      "name": "includeChart",
-      "label": "包含图表",
-      "type": "boolean",
-      "default": true,
-      "description": "是否包含数据图表"
-    },
-    {
       "name": "autoDownload",
       "label": "自动下载",
       "type": "boolean",
@@ -87,5 +69,6 @@
     "pdf",
     "报告",
     "report"
-  ]
+  ],
+  "inputs": []
 }

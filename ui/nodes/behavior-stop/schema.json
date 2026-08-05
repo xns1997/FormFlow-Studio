@@ -22,7 +22,23 @@
       "description": "触发信号"
     }
   ],
-  "outputs": [],
+  "outputs": [
+    {
+      "name": "reason",
+      "type": "string",
+      "description": "输出：reason"
+    },
+    {
+      "name": "trigger",
+      "type": "any",
+      "description": "输出：trigger"
+    },
+    {
+      "name": "stopped",
+      "type": "boolean",
+      "description": "输出：stopped"
+    }
+  ],
   "ports": [
     {
       "name": "trigger",
@@ -31,6 +47,27 @@
       "direction": "input",
       "required": true,
       "description": "触发信号"
+    },
+    {
+      "name": "reason",
+      "label": "reason",
+      "type": "string",
+      "direction": "output",
+      "description": "输出：reason"
+    },
+    {
+      "name": "trigger",
+      "label": "trigger",
+      "type": "any",
+      "direction": "output",
+      "description": "输出：trigger"
+    },
+    {
+      "name": "stopped",
+      "label": "stopped",
+      "type": "boolean",
+      "direction": "output",
+      "description": "输出：stopped"
     }
   ],
   "keywords": [

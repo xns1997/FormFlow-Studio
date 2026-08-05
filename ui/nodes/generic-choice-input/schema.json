@@ -10,23 +10,21 @@
       "name": "selectionMode",
       "label": "选择模式",
       "type": "enum",
-      "enum": ["single", "multiple"],
+      "enum": [
+        "single",
+        "multiple"
+      ],
       "default": "single",
       "description": "单选或多选"
-    },
-    {
-      "name": "displayMode",
-      "label": "显示形式",
-      "type": "enum",
-      "enum": ["select", "radio", "checkbox"],
-      "default": "select",
-      "description": "用于表达交互形态"
     },
     {
       "name": "optionsSource",
       "label": "选项来源",
       "type": "enum",
-      "enum": ["static", "input"],
+      "enum": [
+        "static",
+        "input"
+      ],
       "default": "static",
       "description": "静态配置或运行时输入"
     },
@@ -43,13 +41,6 @@
       "type": "any",
       "default": "",
       "description": "默认选中值"
-    },
-    {
-      "name": "placeholder",
-      "label": "占位提示",
-      "type": "string",
-      "default": "请选择",
-      "description": "select 形态下的占位文本"
     }
   ],
   "inputs": [

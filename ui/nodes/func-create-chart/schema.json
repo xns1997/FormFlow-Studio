@@ -7,6 +7,20 @@
   "methods": [],
   "properties": [
     {
+      "name": "dataRange",
+      "label": "数据范围",
+      "type": "string",
+      "default": "A1:C10",
+      "description": "图表数据的 A1 范围"
+    },
+    {
+      "name": "title",
+      "label": "图表标题",
+      "type": "string",
+      "default": "",
+      "description": "图表标题"
+    },
+    {
       "name": "chartType",
       "label": "图表类型",
       "type": "enum",
@@ -24,20 +38,6 @@
       "description": "图表类型"
     },
     {
-      "name": "dataRange",
-      "label": "数据范围",
-      "type": "string",
-      "default": "A1:C10",
-      "description": "图表数据的 A1 范围"
-    },
-    {
-      "name": "title",
-      "label": "图表标题",
-      "type": "string",
-      "default": "",
-      "description": "图表标题"
-    },
-    {
       "name": "width",
       "label": "宽度",
       "type": "number",
@@ -50,20 +50,6 @@
       "type": "number",
       "default": 320,
       "description": "图表高度（像素）"
-    },
-    {
-      "name": "xField",
-      "label": "xField",
-      "type": "string",
-      "default": "",
-      "description": "配置项：xField"
-    },
-    {
-      "name": "yField",
-      "label": "yField",
-      "type": "string",
-      "default": "",
-      "description": "配置项：yField"
     }
   ],
   "inputs": [
@@ -74,80 +60,68 @@
       "description": "工作表对象"
     },
     {
-      "name": "dataRange",
-      "type": "string",
-      "required": false,
-      "description": "数据范围覆盖"
-    },
-    {
-      "name": "title",
-      "type": "string",
-      "required": false,
-      "description": "标题覆盖"
-    },
-    {
-      "name": "data",
+      "name": "rangeOverride",
       "type": "any",
       "required": false,
-      "description": "数据输入：data"
+      "description": "数据输入：rangeOverride"
+    },
+    {
+      "name": "titleOverride",
+      "type": "any",
+      "required": false,
+      "description": "数据输入：titleOverride"
     }
   ],
   "outputs": [
     {
       "name": "worksheet",
       "type": "worksheet",
-      "description": "修改后的工作表"
+      "description": "输出：worksheet"
     },
     {
       "name": "chartName",
       "type": "string",
-      "description": "创建的图表名"
+      "description": "输出：chartName"
     }
   ],
   "ports": [
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "input",
       "required": true,
-      "description": "工作表"
+      "description": "工作表对象"
     },
     {
-      "name": "dataRange",
-      "label": "数据",
-      "type": "string",
-      "direction": "input",
-      "description": "数据范围"
-    },
-    {
-      "name": "title",
-      "label": "标题",
-      "type": "string",
-      "direction": "input",
-      "description": "图表标题"
-    },
-    {
-      "name": "worksheet",
-      "label": "工作表",
-      "type": "worksheet",
-      "direction": "output",
-      "description": "修改后的工作表"
-    },
-    {
-      "name": "chartName",
-      "label": "图表名",
-      "type": "string",
-      "direction": "output",
-      "description": "图表名"
-    },
-    {
-      "name": "data",
-      "label": "data",
+      "name": "rangeOverride",
+      "label": "rangeOverride",
       "type": "any",
       "direction": "input",
       "required": false,
-      "description": "数据输入：data"
+      "description": "数据输入：rangeOverride"
+    },
+    {
+      "name": "titleOverride",
+      "label": "titleOverride",
+      "type": "any",
+      "direction": "input",
+      "required": false,
+      "description": "数据输入：titleOverride"
+    },
+    {
+      "name": "worksheet",
+      "label": "worksheet",
+      "type": "worksheet",
+      "direction": "output",
+      "description": "输出：worksheet"
+    },
+    {
+      "name": "chartName",
+      "label": "chartName",
+      "type": "string",
+      "direction": "output",
+      "description": "输出：chartName"
     }
   ],
   "keywords": [

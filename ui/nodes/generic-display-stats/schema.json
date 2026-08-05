@@ -12,22 +12,6 @@
       "type": "string",
       "default": "数据统计",
       "description": "显示标题"
-    },
-    {
-      "name": "showSample",
-      "label": "显示样本",
-      "type": "boolean",
-      "default": true,
-      "description": "是否显示前几行样本数据"
-    },
-    {
-      "name": "sampleCount",
-      "label": "样本行数",
-      "type": "number",
-      "default": 3,
-      "min": 1,
-      "max": 10,
-      "description": "显示的样本行数"
     }
   ],
   "inputs": [

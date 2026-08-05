@@ -132,23 +132,24 @@
     {
       "name": "style",
       "type": "object",
-      "description": "生成的样式对象"
+      "description": "输出：style"
     }
   ],
   "ports": [
     {
       "name": "override",
-      "label": "覆盖",
+      "label": "override",
       "type": "object",
       "direction": "input",
-      "description": "外部覆盖"
+      "required": false,
+      "description": "外部传入的样式覆盖"
     },
     {
       "name": "style",
-      "label": "样式",
+      "label": "style",
       "type": "object",
       "direction": "output",
-      "description": "样式对象"
+      "description": "输出：style"
     }
   ],
   "keywords": [

@@ -14,18 +14,6 @@
       "description": "要哈希的列名"
     },
     {
-      "name": "algorithm",
-      "label": "算法",
-      "type": "enum",
-      "enum": [
-        "md5",
-        "sha1",
-        "sha256"
-      ],
-      "default": "md5",
-      "description": "哈希算法"
-    },
-    {
       "name": "newField",
       "label": "新字段名",
       "type": "string",
@@ -56,5 +44,6 @@
     "hash",
     "md5",
     "sha"
-  ]
+  ],
+  "inputs": []
 }

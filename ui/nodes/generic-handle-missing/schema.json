@@ -33,18 +33,6 @@
       "type": "string",
       "default": "",
       "description": "填充策略的值"
-    },
-    {
-      "name": "interpolateMethod",
-      "label": "插值方法",
-      "type": "enum",
-      "enum": [
-        "linear",
-        "quadratic",
-        "cubic"
-      ],
-      "default": "linear",
-      "description": "插值算法"
     }
   ],
   "ports": [
@@ -79,5 +67,6 @@
     "null",
     "fill",
     "na"
-  ]
+  ],
+  "inputs": []
 }

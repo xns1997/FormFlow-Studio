@@ -28,49 +28,50 @@
       "description": "要写入的二维数组值"
     },
     {
-      "name": "address",
-      "type": "string",
+      "name": "addrOverride",
+      "type": "any",
       "required": false,
-      "description": "地址覆盖"
+      "description": "数据输入：addrOverride"
     }
   ],
   "outputs": [
     {
       "name": "worksheet",
       "type": "worksheet",
-      "description": "修改后的工作表"
+      "description": "输出：worksheet"
     }
   ],
   "ports": [
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "input",
       "required": true,
-      "description": "工作表"
+      "description": "工作表对象"
     },
     {
       "name": "values",
-      "label": "值",
+      "label": "values",
       "type": "array",
       "direction": "input",
       "required": true,
-      "description": "二维数组"
+      "description": "要写入的二维数组值"
     },
     {
-      "name": "address",
-      "label": "地址",
-      "type": "string",
+      "name": "addrOverride",
+      "label": "addrOverride",
+      "type": "any",
       "direction": "input",
-      "description": "区域地址"
+      "required": false,
+      "description": "数据输入：addrOverride"
     },
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "output",
-      "description": "修改后的工作表"
+      "description": "输出：worksheet"
     }
   ],
   "keywords": [

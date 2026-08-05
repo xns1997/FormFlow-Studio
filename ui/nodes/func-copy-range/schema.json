@@ -19,13 +19,6 @@
       "type": "string",
       "default": "E1",
       "description": "目标起始单元格"
-    },
-    {
-      "name": "targetRange",
-      "label": "targetRange",
-      "type": "string",
-      "default": "",
-      "description": "配置项：targetRange"
     }
   ],
   "inputs": [
@@ -36,54 +29,56 @@
       "description": "工作表对象"
     },
     {
-      "name": "sourceRange",
-      "type": "string",
+      "name": "srcOverride",
+      "type": "any",
       "required": false,
-      "description": "源区域覆盖"
+      "description": "数据输入：srcOverride"
     },
     {
-      "name": "targetCell",
-      "type": "string",
+      "name": "tgtOverride",
+      "type": "any",
       "required": false,
-      "description": "目标位置覆盖"
+      "description": "数据输入：tgtOverride"
     }
   ],
   "outputs": [
     {
       "name": "worksheet",
       "type": "worksheet",
-      "description": "修改后的工作表"
+      "description": "输出：worksheet"
     }
   ],
   "ports": [
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "input",
       "required": true,
-      "description": "工作表"
+      "description": "工作表对象"
     },
     {
-      "name": "sourceRange",
-      "label": "源",
-      "type": "string",
+      "name": "srcOverride",
+      "label": "srcOverride",
+      "type": "any",
       "direction": "input",
-      "description": "源区域"
+      "required": false,
+      "description": "数据输入：srcOverride"
     },
     {
-      "name": "targetCell",
-      "label": "目标",
-      "type": "string",
+      "name": "tgtOverride",
+      "label": "tgtOverride",
+      "type": "any",
       "direction": "input",
-      "description": "目标位置"
+      "required": false,
+      "description": "数据输入：tgtOverride"
     },
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "output",
-      "description": "修改后的工作表"
+      "description": "输出：worksheet"
     }
   ],
   "keywords": [

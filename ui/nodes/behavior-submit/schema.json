@@ -7,13 +7,6 @@
   "methods": [],
   "properties": [
     {
-      "name": "validateFirst",
-      "label": "先校验",
-      "type": "boolean",
-      "default": true,
-      "description": "提交前是否先校验"
-    },
-    {
       "name": "target",
       "label": "提交目标",
       "type": "enum",
@@ -25,13 +18,6 @@
       ],
       "default": "changeLog",
       "description": "提交输出格式"
-    },
-    {
-      "name": "fileName",
-      "label": "文件名",
-      "type": "string",
-      "default": "output",
-      "description": "输出文件名（不含扩展名）"
     },
     {
       "name": "writeBackMode",

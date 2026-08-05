@@ -6,13 +6,6 @@
   "kind": "generic",
   "properties": [
     {
-      "name": "xsdSchema",
-      "label": "XSD Schema",
-      "type": "string",
-      "default": "",
-      "description": "XSD Schema 内容或路径"
-    },
-    {
       "name": "checkWellFormed",
       "label": "检查格式",
       "type": "boolean",
@@ -49,5 +42,6 @@
     "xml",
     "validate",
     "xsd"
-  ]
+  ],
+  "inputs": []
 }

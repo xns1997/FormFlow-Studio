@@ -19,20 +19,6 @@
       "type": "boolean",
       "default": true,
       "description": "true=合并，false=取消合并"
-    },
-    {
-      "name": "startCell",
-      "label": "startCell",
-      "type": "string",
-      "default": "",
-      "description": "配置项：startCell"
-    },
-    {
-      "name": "endCell",
-      "label": "endCell",
-      "type": "string",
-      "default": "",
-      "description": "配置项：endCell"
     }
   ],
   "inputs": [
@@ -43,54 +29,56 @@
       "description": "工作表对象"
     },
     {
-      "name": "rangeAddress",
-      "type": "string",
+      "name": "addrOverride",
+      "type": "any",
       "required": false,
-      "description": "地址覆盖"
+      "description": "数据输入：addrOverride"
     },
     {
-      "name": "merge",
-      "type": "boolean",
+      "name": "mergeOverride",
+      "type": "any",
       "required": false,
-      "description": "合并开关覆盖"
+      "description": "数据输入：mergeOverride"
     }
   ],
   "outputs": [
     {
       "name": "worksheet",
       "type": "worksheet",
-      "description": "修改后的工作表"
+      "description": "输出：worksheet"
     }
   ],
   "ports": [
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "input",
       "required": true,
-      "description": "工作表"
+      "description": "工作表对象"
     },
     {
-      "name": "rangeAddress",
-      "label": "地址",
-      "type": "string",
+      "name": "addrOverride",
+      "label": "addrOverride",
+      "type": "any",
       "direction": "input",
-      "description": "区域地址"
+      "required": false,
+      "description": "数据输入：addrOverride"
     },
     {
-      "name": "merge",
-      "label": "合并",
-      "type": "boolean",
+      "name": "mergeOverride",
+      "label": "mergeOverride",
+      "type": "any",
       "direction": "input",
-      "description": "合并/取消"
+      "required": false,
+      "description": "数据输入：mergeOverride"
     },
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "output",
-      "description": "修改后的工作表"
+      "description": "输出：worksheet"
     }
   ],
   "keywords": [

@@ -59,6 +59,11 @@
       "name": "message",
       "type": "string",
       "description": "显示的消息"
+    },
+    {
+      "name": "duration",
+      "type": "number",
+      "description": "输出：duration"
     }
   ],
   "ports": [
@@ -97,6 +102,13 @@
       "type": "string",
       "direction": "output",
       "description": "消息类型（info/warning/error/success）"
+    },
+    {
+      "name": "duration",
+      "label": "duration",
+      "type": "number",
+      "direction": "output",
+      "description": "输出：duration"
     }
   ],
   "keywords": [

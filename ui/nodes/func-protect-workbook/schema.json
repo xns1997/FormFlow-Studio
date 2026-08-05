@@ -14,18 +14,18 @@
       "description": "是否保护工作簿结构"
     },
     {
-      "name": "protectWindows",
-      "label": "保护窗口",
-      "type": "boolean",
-      "default": false,
-      "description": "是否保护工作簿窗口"
-    },
-    {
       "name": "password",
       "label": "密码",
       "type": "string",
       "default": "",
       "description": "保护密码"
+    },
+    {
+      "name": "protectWindows",
+      "label": "保护窗口",
+      "type": "boolean",
+      "default": false,
+      "description": "是否保护工作簿窗口"
     }
   ],
   "inputs": [
@@ -36,54 +36,56 @@
       "description": "工作簿对象"
     },
     {
-      "name": "protectStructure",
-      "type": "boolean",
+      "name": "structOverride",
+      "type": "any",
       "required": false,
-      "description": "结构保护覆盖"
+      "description": "数据输入：structOverride"
     },
     {
-      "name": "password",
-      "type": "string",
+      "name": "passOverride",
+      "type": "any",
       "required": false,
-      "description": "密码覆盖"
+      "description": "数据输入：passOverride"
     }
   ],
   "outputs": [
     {
       "name": "workbook",
       "type": "workbook",
-      "description": "修改后的工作簿"
+      "description": "输出：workbook"
     }
   ],
   "ports": [
     {
       "name": "workbook",
-      "label": "工作簿",
+      "label": "workbook",
       "type": "workbook",
       "direction": "input",
       "required": true,
-      "description": "工作簿"
+      "description": "工作簿对象"
     },
     {
-      "name": "protectStructure",
-      "label": "结构",
-      "type": "boolean",
+      "name": "structOverride",
+      "label": "structOverride",
+      "type": "any",
       "direction": "input",
-      "description": "保护结构"
+      "required": false,
+      "description": "数据输入：structOverride"
     },
     {
-      "name": "password",
-      "label": "密码",
-      "type": "string",
+      "name": "passOverride",
+      "label": "passOverride",
+      "type": "any",
       "direction": "input",
-      "description": "密码"
+      "required": false,
+      "description": "数据输入：passOverride"
     },
     {
       "name": "workbook",
-      "label": "工作簿",
+      "label": "workbook",
       "type": "workbook",
       "direction": "output",
-      "description": "修改后的工作簿"
+      "description": "输出：workbook"
     }
   ],
   "keywords": [

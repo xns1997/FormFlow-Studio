@@ -28,13 +28,6 @@
       "description": "登录用户名"
     },
     {
-      "name": "password",
-      "label": "密码",
-      "type": "string",
-      "default": "",
-      "description": "登录密码"
-    },
-    {
       "name": "from",
       "label": "发件人",
       "type": "string",
@@ -101,5 +94,6 @@
     "email",
     "send",
     "smtp"
-  ]
+  ],
+  "inputs": []
 }

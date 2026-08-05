@@ -7,17 +7,6 @@
   "methods": [],
   "properties": [
     {
-      "name": "loopType",
-      "label": "循环类型",
-      "type": "enum",
-      "enum": [
-        "forEach",
-        "repeat"
-      ],
-      "default": "forEach",
-      "description": "循环类型"
-    },
-    {
       "name": "repeatCount",
       "label": "重复次数",
       "type": "number",
@@ -25,13 +14,6 @@
       "min": 1,
       "max": 1000,
       "description": "repeat 模式的次数"
-    },
-    {
-      "name": "varName",
-      "label": "迭代变量名",
-      "type": "string",
-      "default": "item",
-      "description": "forEach 模式的迭代变量"
     }
   ],
   "inputs": [

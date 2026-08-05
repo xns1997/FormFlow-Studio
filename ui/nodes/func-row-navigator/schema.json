@@ -27,13 +27,6 @@
       "default": 0,
       "min": 0,
       "description": "goto 模式的目标行号"
-    },
-    {
-      "name": "currentIndex",
-      "label": "currentIndex",
-      "type": "number",
-      "default": 0,
-      "description": "配置项：currentIndex"
     }
   ],
   "inputs": [
@@ -54,96 +47,70 @@
       "type": "number",
       "required": false,
       "description": "总行数"
-    },
-    {
-      "name": "data",
-      "type": "any",
-      "required": false,
-      "description": "数据输入：data"
-    },
-    {
-      "name": "currentIndex",
-      "type": "number",
-      "required": false,
-      "description": "数据输入：currentIndex"
     }
   ],
   "outputs": [
     {
       "name": "trigger",
-      "type": "trigger",
-      "description": "触发输出"
+      "type": "any",
+      "description": "输出：trigger"
     },
     {
       "name": "targetRow",
       "type": "number",
-      "description": "目标行号"
+      "description": "输出：targetRow"
     },
     {
       "name": "canNavigate",
       "type": "boolean",
-      "description": "是否可导航"
+      "description": "输出：canNavigate"
     }
   ],
   "ports": [
     {
       "name": "trigger",
-      "label": "触发",
-      "type": "any",
+      "label": "trigger",
+      "type": "trigger",
       "direction": "input",
       "required": true,
-      "description": "触发"
+      "description": "触发信号"
     },
     {
       "name": "currentRow",
-      "label": "当前行",
+      "label": "currentRow",
       "type": "number",
       "direction": "input",
+      "required": false,
       "description": "当前行号"
     },
     {
       "name": "totalRows",
-      "label": "总行数",
+      "label": "totalRows",
       "type": "number",
       "direction": "input",
+      "required": false,
       "description": "总行数"
     },
     {
       "name": "trigger",
-      "label": "触发",
+      "label": "trigger",
       "type": "any",
       "direction": "output",
-      "description": "触发输出"
+      "description": "输出：trigger"
     },
     {
       "name": "targetRow",
-      "label": "目标行",
+      "label": "targetRow",
       "type": "number",
       "direction": "output",
-      "description": "目标行号"
+      "description": "输出：targetRow"
     },
     {
       "name": "canNavigate",
-      "label": "可导航",
+      "label": "canNavigate",
       "type": "boolean",
       "direction": "output",
-      "description": "是否可导航"
-    },
-    {
-      "name": "data",
-      "label": "data",
-      "type": "any",
-      "direction": "input",
-      "required": false,
-      "description": "数据输入：data"
-    },
-    {
-      "name": "currentIndex",
-      "label": "currentIndex",
-      "type": "number",
-      "direction": "input",
-      "required": false,
-      "description": "数据输入：currentIndex"
+      "description": "输出：canNavigate"
     }
   ],
   "keywords": [

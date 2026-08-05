@@ -72,6 +72,13 @@ function readSchemas() {
 
 function extractExecutorSource(id: string): string | null {
   const normalized = normalizePackageId(id);
+  // func-* 节点的权威执行器是包内 index.ts（loadNodeRegistry 注册时覆盖 executors/func.ts）
+  if (id.startsWith('func-')) {
+    const packageDir = join(nodesRoot, id);
+    if (existsSync(join(packageDir, 'index.ts'))) {
+      return readFileSync(join(packageDir, 'index.ts'), 'utf8');
+    }
+  }
   const executorFiles = ['behavior.ts', 'generic.ts', 'ml.ts', 'scenario.ts', 'func.ts', 'macros.ts'];
   const sources = executorFiles
     .map((file) => join(nodesRoot, 'executors', file))
@@ -186,6 +193,56 @@ test('每个执行器消费的 properties/inputs 都被 schema 声明', () => {
   }
   assert.ok(asserted >= 130, `至少检查 130 个注册表节点，实际 ${asserted}`);
   assert.equal(checked, 0);
+});
+
+test('每个 schema 属性与输入端口都被执行器消费（无死字段）', () => {
+  const schemas = readSchemas();
+  const executorFiles = ['behavior.ts', 'generic.ts', 'ml.ts', 'scenario.ts', 'func.ts', 'macros.ts']
+    .map((file) => join(nodesRoot, 'executors', file))
+    .filter((path) => existsSync(path))
+    .map((path) => readFileSync(path, 'utf8'));
+  const allExecutorSource = executorFiles.join('\n');
+  const engineProps = new Set(['retryCount', 'retryDelayMs', 'retryOn']);
+  /** 动态访问豁免：执行器通过用户表达式/输入名间接取值（如 behavior-calculate 的 expression 引用 inputs.a）。 */
+  const DYNAMIC_ACCESS: Record<string, Set<string>> = {
+    'behavior-calculate': new Set(['a', 'b', 'c']),
+  };
+  let asserted = 0;
+  for (const schema of schemas) {
+    if (!isRegistryPackageId(schema.id)) continue;
+    const normalized = normalizePackageId(schema.id);
+    const dir = schema.id.startsWith('generic:')
+      ? `generic-${schema.id.slice(8)}`
+      : schema.id.startsWith('ml:')
+        ? `ml-${schema.id.slice(3)}`
+        : schema.id.replace(':', '-');
+    const indexPath = join(nodesRoot, dir, 'index.ts');
+    const inFile = existsSync(indexPath) && schema.id.startsWith('func-');
+    const source = inFile ? readFileSync(indexPath, 'utf8') : allExecutorSource;
+    const usedProps = new Set<string>();
+    const usedInputs = new Set<string>();
+    for (const match of source.matchAll(/(?:ctx\.|context\.)?properties\.([A-Za-z0-9_]+)/g)) usedProps.add(match[1]);
+    for (const match of source.matchAll(/properties\[['"]([A-Za-z0-9_]+)['"]\]/g)) usedProps.add(match[1]);
+    for (const match of source.matchAll(/(?:props|properties)\.([A-Za-z0-9_]+)/g)) usedProps.add(match[1]);
+    for (const match of source.matchAll(/(?:ctx\.|context\.)?inputs\.([A-Za-z0-9_]+)/g)) usedInputs.add(match[1]);
+    const dynamic = DYNAMIC_ACCESS[schema.id] || new Set<string>();
+    for (const prop of schema.properties || []) {
+      if (usedProps.has(prop.name) || engineProps.has(prop.name)) continue;
+      if (dynamic.has(prop.name)) continue;
+      assert.fail(`${schema.id}: schema 属性 ${prop.name} 未被任何执行器消费（死字段，请接线或删除）`);
+    }
+    const propNames = new Set((schema.properties || []).map((prop) => prop.name));
+    // func-* 包通过 index.ts 按 args 位置消费输入端口，逐一静态核对不适用
+    if (!(schema.id.startsWith('func-') && inFile)) {
+      for (const port of (schema.ports || []).filter((p) => p.direction === 'input' || p.direction === 'both')) {
+        const mirrorsUsedProperty = propNames.has(port.name) && usedProps.has(port.name);
+        if (usedInputs.has(port.name) || mirrorsUsedProperty || dynamic.has(port.name)) continue;
+        assert.fail(`${schema.id}: 输入端口 ${port.name} 未被执行器消费（死输入，请接线或删除）`);
+      }
+    }
+    asserted += 1;
+  }
+  assert.ok(asserted >= 150, `至少检查 150 个注册表节点，实际 ${asserted}`);
 });
 
 test('服务端端口参考目录与注册表/节点包同步（含类型）', async () => {

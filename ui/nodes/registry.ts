@@ -742,13 +742,13 @@ const genericNodeSpecs: FlowNodeSpec[] = [
     kind: 'generic',
     properties: [
       { name: 'label', label: '显示标签', type: 'string', default: '输出', description: '标签文本' },
-      { name: 'format', label: '显示格式', type: 'enum', enum: ['auto', 'json', 'text'], default: 'auto', description: '显示格式' },
       { name: 'logToConsole', label: '输出到控制台', type: 'boolean', default: false, description: '是否输出到 console' },
     ],
     ports: [
       { name: 'value', label: '输入值', type: 'any', direction: 'input', required: true, description: '要显示的值' },
       { name: 'label', label: '标签', type: 'string', direction: 'input', description: '标签覆盖' },
       { name: 'value', label: '输出值', type: 'any', direction: 'output', description: '透传的值' },
+      { name: 'label', label: '标签', type: 'string', direction: 'output', description: '透传的标签' },
     ],
   },
 ];

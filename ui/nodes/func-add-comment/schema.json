@@ -8,38 +8,24 @@
   "properties": [
     {
       "name": "cellAddress",
-      "label": "单元格地址",
+      "label": "cellAddress",
       "type": "string",
-      "default": "A1",
-      "description": "批注目标单元格"
+      "default": "",
+      "description": "配置项：cellAddress"
     },
     {
       "name": "content",
-      "label": "批注内容",
+      "label": "content",
       "type": "string",
       "default": "",
-      "required": true,
-      "description": "批注文本"
+      "description": "配置项：content"
     },
     {
       "name": "author",
-      "label": "作者",
+      "label": "author",
       "type": "string",
       "default": "",
-      "description": "作者名称"
-    },
-    {
-      "name": "comment",
-      "label": "comment",
-      "type": "string",
-      "default": "",
-      "description": "配置项：comment"
-    },
-    {
-      "name": "cell",
-      "label": "cell",
-      "type": "address",
-      "description": "配置项：cell"
+      "description": "配置项：author"
     }
   ],
   "inputs": [
@@ -47,57 +33,59 @@
       "name": "worksheet",
       "type": "worksheet",
       "required": true,
-      "description": "工作表对象"
+      "description": "数据输入：worksheet"
     },
     {
-      "name": "cellAddress",
-      "type": "string",
+      "name": "cellAddr",
+      "type": "any",
       "required": false,
-      "description": "地址覆盖"
+      "description": "数据输入：cellAddr"
     },
     {
-      "name": "content",
-      "type": "string",
+      "name": "contentOverride",
+      "type": "any",
       "required": false,
-      "description": "内容覆盖"
+      "description": "数据输入：contentOverride"
     }
   ],
   "outputs": [
     {
       "name": "worksheet",
       "type": "worksheet",
-      "description": "修改后的工作表"
+      "description": "输出：worksheet"
     }
   ],
   "ports": [
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "input",
       "required": true,
-      "description": "工作表"
+      "description": "数据输入：worksheet"
     },
     {
-      "name": "cellAddress",
-      "label": "地址",
-      "type": "string",
+      "name": "cellAddr",
+      "label": "cellAddr",
+      "type": "any",
       "direction": "input",
-      "description": "单元格地址"
+      "required": false,
+      "description": "数据输入：cellAddr"
     },
     {
-      "name": "content",
-      "label": "内容",
-      "type": "string",
+      "name": "contentOverride",
+      "label": "contentOverride",
+      "type": "any",
       "direction": "input",
-      "description": "批注内容"
+      "required": false,
+      "description": "数据输入：contentOverride"
     },
     {
       "name": "worksheet",
-      "label": "工作表",
+      "label": "worksheet",
       "type": "worksheet",
       "direction": "output",
-      "description": "修改后的工作表"
+      "description": "输出：worksheet"
     }
   ],
   "keywords": [

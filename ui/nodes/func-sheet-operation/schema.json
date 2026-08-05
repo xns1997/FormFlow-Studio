@@ -50,86 +50,82 @@
       "description": "工作簿对象"
     },
     {
-      "name": "operation",
-      "type": "string",
+      "name": "opOverride",
+      "type": "any",
       "required": false,
-      "description": "操作覆盖"
+      "description": "数据输入：opOverride"
     },
     {
-      "name": "sheetName",
-      "type": "string",
+      "name": "nameOverride",
+      "type": "any",
       "required": false,
-      "description": "名称覆盖"
+      "description": "数据输入：nameOverride"
     },
     {
-      "name": "newName",
-      "type": "string",
+      "name": "newNameOverride",
+      "type": "any",
       "required": false,
-      "description": "新名称覆盖"
+      "description": "数据输入：newNameOverride"
     }
   ],
   "outputs": [
     {
       "name": "workbook",
       "type": "workbook",
-      "description": "修改后的工作簿"
+      "description": "输出：workbook"
     },
     {
       "name": "sheetNames",
       "type": "array",
-      "description": "当前所有工作表名"
+      "description": "输出：sheetNames"
     }
   ],
   "ports": [
     {
       "name": "workbook",
-      "label": "工作簿",
+      "label": "workbook",
       "type": "workbook",
       "direction": "input",
       "required": true,
-      "description": "工作簿"
+      "description": "工作簿对象"
     },
     {
-      "name": "operation",
-      "label": "操作",
-      "type": "enum",
+      "name": "opOverride",
+      "label": "opOverride",
+      "type": "any",
       "direction": "input",
-      "enum": [
-        "create",
-        "rename",
-        "delete",
-        "copy",
-        "move"
-      ],
-      "description": "操作类型"
+      "required": false,
+      "description": "数据输入：opOverride"
     },
     {
-      "name": "sheetName",
-      "label": "表名",
-      "type": "string",
+      "name": "nameOverride",
+      "label": "nameOverride",
+      "type": "any",
       "direction": "input",
-      "description": "工作表名"
+      "required": false,
+      "description": "数据输入：nameOverride"
     },
     {
-      "name": "newName",
-      "label": "新名",
-      "type": "string",
+      "name": "newNameOverride",
+      "label": "newNameOverride",
+      "type": "any",
       "direction": "input",
-      "description": "新名称"
+      "required": false,
+      "description": "数据输入：newNameOverride"
     },
     {
       "name": "workbook",
-      "label": "工作簿",
+      "label": "workbook",
       "type": "workbook",
       "direction": "output",
-      "description": "修改后的工作簿"
+      "description": "输出：workbook"
     },
     {
       "name": "sheetNames",
-      "label": "所有表名",
+      "label": "sheetNames",
       "type": "array",
       "direction": "output",
-      "description": "工作表名列表"
+      "description": "输出：sheetNames"
     }
   ],
   "keywords": [
