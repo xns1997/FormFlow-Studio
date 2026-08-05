@@ -1,4 +1,3 @@
-import { createHash, randomUUID } from 'node:crypto';
 import {
   fullSourceRows,
   toolError,
@@ -218,58 +217,76 @@ export interface TemplateRecommendation {
 }
 
 
+/** 构造 JSON Schema 对象参数定义。 */
 export const parameters = (properties: JsonObject = {}, required: string[] = []) => ({ type: 'object', properties, required, additionalProperties: false });
 
+/** 解析模板选择对应的数据表。 */
 export function resolveTables(project: JsonObject, selection: TemplateSelection) {
   const ids = [...new Set([...(selection.tableIds || []), ...(selection.tableId ? [selection.tableId] : [])])];
   return ids.map((id) => (project.srcTable || []).find((item: JsonObject) => item.id === id)).filter(Boolean);
 }
 
 
+/** 解析选中 Sheet（按名称匹配）。 */
 export function selectedSheet(table: JsonObject | undefined, selection: TemplateSelection) {
   return table?.sheets?.find((item: JsonObject) => item.name === selection.sheetName) || table?.sheets?.[0];
 }
 
 
+/** 邮箱字段名匹配模式。 */
 export const EMAIL_FIELD_PATTERN = /(email|e-mail|邮箱)/i;
 
+/** 电话字段名匹配模式。 */
 export const PHONE_FIELD_PATTERN = /(phone|mobile|tel|电话|手机)/i;
 
+/** URL 字段名匹配模式。 */
 export const URL_FIELD_PATTERN = /(url|link|website|web|网址|链接)/i;
 
+/** 文件/附件字段名匹配模式。 */
 export const FILE_FIELD_PATTERN = /(file|attachment|附件|图片|照片|文档)/i;
 
+/** 货币字段名匹配模式。 */
 export const CURRENCY_FIELD_PATTERN = /(amount|price|cost|fee|salary|工资|金额|价格|费用|收入|预算)/i;
 
+/** 百分比字段名匹配模式。 */
 export const PERCENTAGE_FIELD_PATTERN = /(rate|ratio|pct|percent|百分比|占比|比例|率)/i;
 
+/** 整数计数字段名匹配模式。 */
 export const INTEGER_FIELD_PATTERN = /(count|qty|quantity|num|数量|人数|次数|期数)/i;
 
+/** 时间字段名匹配模式。 */
 export const TIME_FIELD_PATTERN = /(time|时刻|时段)/i;
 
+/** 日期时间字段名匹配模式。 */
 export const DATETIME_FIELD_PATTERN = /(datetime|timestamp|created.?at|updated.?at|时间戳|创建时间|更新时间)/i;
 
+/** 长文本字段名匹配模式。 */
 export const LONG_TEXT_FIELD_PATTERN = /(说明|描述|备注|意见|内容|详情|地址|原因|总结|日志|comment|description|remark|content|address)/i;
 
+/** 关系键字段名匹配模式（以 id/编号结尾）。 */
 export const RELATION_KEY_FIELD_PATTERN = /(id|编号|编码|标识)$/i;
 
 
+/** 规范化字段 ID（表/Sheet/字段组合）。 */
 export function normalizedFieldId(tableId: string, sheetName: string, field: string) {
   return `${tableId}.${sheetName}.${field}`;
 }
 
 
+/** 去重非空字符串。 */
 export function distinctNonEmptyStrings(values: unknown[] = []) {
   return [...new Set(values.filter((value) => value !== '' && value !== null && value !== undefined).map(String))];
 }
 
 
+/** 样本是否全部为整数。 */
 export function looksLikeAllIntegers(values: unknown[] = []) {
   const numeric = values.filter((value) => value !== '' && value !== null && value !== undefined);
   return numeric.length > 0 && numeric.every((value) => Number.isInteger(Number(value)));
 }
 
 
+/** 推断字段类型（按名称模式与样本值）。 */
 export function inferNormalizedFieldType(column: JsonObject, field: string, samples: unknown[], format?: string): Pick<NormalizedField, 'type' | 'typeConfidence' | 'pattern' | 'minLength' | 'maxLength' | 'reasons'> {
   const reasons: string[] = [];
   const sampleStrings = distinctNonEmptyStrings(samples);
@@ -315,6 +332,7 @@ export function inferNormalizedFieldType(column: JsonObject, field: string, samp
 }
 
 
+/** 归一化 Sheet 字段（类型推断 + 置信度）。 */
 export function normalizeSheetFields(table: JsonObject | undefined, sheet: JsonObject | undefined): NormalizedField[] {
   if (!table || !sheet) return [];
   const keyFields = new Set((sheet.config?.keyFields || []).map(String));
@@ -383,6 +401,7 @@ export function normalizeSheetFields(table: JsonObject | undefined, sheet: JsonO
 }
 
 
+/** 推断模板推荐参数（表单名/用途等）。 */
 export function inferRecommendationParameters(
   template: OperationTemplateDefinition,
   selection: TemplateSelection,
@@ -448,6 +467,7 @@ export function inferRecommendationParameters(
 }
 
 
+/** 校验数据关系（表/字段存在性与类型）。 */
 export function validateRelation(project: JsonObject, relation: DataRelation): { valid: boolean; checks: FeasibilityCheck[] } {
   const checks: FeasibilityCheck[] = [];
   const side = (value: DataRelation['left'], label: string) => {
@@ -470,6 +490,7 @@ export function validateRelation(project: JsonObject, relation: DataRelation): {
 }
 
 
+/** 提取行为工件（规则代码/事件/联动）。 */
 export function extractBehaviorArtifacts(
   template: Pick<OperationTemplateDefinition, 'generation'>,
   forms: JsonObject[] = [],
@@ -522,6 +543,7 @@ export function extractBehaviorArtifacts(
 }
 
 
+/** 字段的有限取值集合。 */
 export function finiteFieldValues(rows: JsonObject[], field: string) {
   return rows
     .map((row) => row[field])
@@ -531,6 +553,7 @@ export function finiteFieldValues(rows: JsonObject[], field: string) {
 }
 
 
+/** 解析时间值（容错格式）。 */
 export function parseTimeValue(value: unknown) {
   if (value === null || value === undefined || value === '') return null;
   const date = new Date(typeof value === 'number' ? value : String(value));
@@ -538,21 +561,25 @@ export function parseTimeValue(value: unknown) {
 }
 
 
+/** 值 → 字符串列表（容错）。 */
 export function stringList(value: unknown) {
   return Array.isArray(value) ? value.map(String).filter(Boolean) : [];
 }
 
 
+/** 字符串去重（保持顺序）。 */
 export function uniqueStrings(values: string[]) {
   return [...new Set(values.map(String).filter(Boolean))];
 }
 
 
+/** 两个字段序列是否相同（顺序敏感）。 */
 export function sameFieldSequence(left: string[], right: string[]) {
   return left.length === right.length && left.every((field, index) => field === right[index]);
 }
 
 
+/** 解析选中字段集合（显式/全部）。 */
 export function resolveSelectedFieldSet(
   selection: TemplateSelection,
   suppliedParameters: JsonObject,
@@ -573,6 +600,7 @@ export function resolveSelectedFieldSet(
 }
 
 
+/** 关系作用域下的数据表列表。 */
 export function relationScopedTables(project: JsonObject, selection: TemplateSelection, relation: DataRelation | undefined) {
   if (!relation) return resolveTables(project, selection);
   return [relation.left.tableId, relation.right.tableId]
@@ -581,6 +609,7 @@ export function relationScopedTables(project: JsonObject, selection: TemplateSel
 }
 
 
+/** 跨表字段目录（主从关系字段）。 */
 export function crossTableFieldCatalog(project: JsonObject, selection: TemplateSelection, relation: DataRelation | undefined) {
   const tables = relationScopedTables(project, selection, relation);
   const relationSheets = new Map<string, string>();
@@ -606,6 +635,7 @@ export function crossTableFieldCatalog(project: JsonObject, selection: TemplateS
 }
 
 
+/** 解析跨表字段引用。 */
 export function resolveCrossTableFieldReference(
   references: ResolvedFieldReference[],
   input: string,
@@ -620,6 +650,7 @@ export function resolveCrossTableFieldReference(
 }
 
 
+/** 批量解析跨表字段引用。 */
 export function resolveCrossTableFieldReferences(
   references: ResolvedFieldReference[],
   inputs: string[],
@@ -647,9 +678,11 @@ export interface JoinQueryOptions {
 }
 
 
+/** 关系键（字段值序列化）。 */
 export function relationKey(row: JsonObject, fields: string[]) { return JSON.stringify(fields.map((field) => row[field])); }
 
 
+/** 查询关系行（主从连接）。 */
 export function queryRelationRows(project: JsonObject, options: JoinQueryOptions) {
   const relation = (project.relations || []).find((item: DataRelation) => item.id === options.relationId) as DataRelation | undefined;
   if (!relation) throw toolError('RELATION_NOT_FOUND', `关系 ${options.relationId} 不存在`, 'relationId');

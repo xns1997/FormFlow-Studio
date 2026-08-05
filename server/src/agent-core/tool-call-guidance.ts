@@ -18,6 +18,7 @@ export interface ToolCallGuidance {
   wrong: ToolWrongExample[];
 }
 
+/** 工具调用指南（参数规范与注意事项）。 */
 export const TOOL_CALL_GUIDANCE: Record<string, ToolCallGuidance> = {
   // ─── project 领域 ──────────────────────────────────────────────────────────
   'system.capabilities.get': {

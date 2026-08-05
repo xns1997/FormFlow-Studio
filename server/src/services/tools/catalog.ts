@@ -32,6 +32,7 @@ function workflowCatalog() {
   walk(root); return result.sort((a: any, b: any) => String(a.id).localeCompare(String(b.id)));
 }
 
+/** 注册目录域工具（组件/模板/节点/事件目录）。 */
 export function registerCatalogTools(register: RegisterFn, { schema, string }: ToolHelpers, mcpRoles: readonly string[], listFormFlowTools: (role?: string) => any[]) {
   register({ name: 'system.capabilities.get', title: '获取能力', description: '返回当前专职 MCP 的能力、限制和版本。', inputSchema: schema(), risk: 'read', examples: [{ summary: '查看当前角色的能力与工具数量', arguments: {} }], handler: (_input, context) => ({ formatVersion: 2, role: context.mcpRole, tools: context.mcpRole ? listFormFlowTools(context.mcpRole).length : listFormFlowTools().length, roles: mcpRoles, limits: { uploadBytes: 50 * 1024 * 1024, inlineBytes: 5 * 1024 * 1024, inlineRows: 10_000, queryPageSize: 500, batchChanges: 1000 }, transports: ['agent', 'mcp-http', 'mcp-stdio'] }) });
   register({ name: 'catalog.templates.list', title: '项目模板目录', description: '列出可用于初始化项目的模板。', inputSchema: schema(), risk: 'read', examples: [{ summary: '查看可用项目模板', arguments: {} }], handler: () => PROJECT_TEMPLATES });

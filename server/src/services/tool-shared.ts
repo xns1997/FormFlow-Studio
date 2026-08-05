@@ -6,7 +6,7 @@
  */
 import type { AuthUser } from '../middleware/auth';
 import type { ProjectAccess } from './permission';
-import type { DataArgumentNormalization } from './data-tool-preflight';
+import type { ToolArgumentNormalization } from './tool-argument-contract';
 import type { ProjectSourceFile } from './project-authoring';
 import { toolError } from './project-authoring';
 
@@ -28,7 +28,7 @@ export const MCP_ROLE_CATALOG: ReadonlyArray<{ id: McpRole; title: string; descr
 export type ToolWarning = { code: string; message: string; path?: string };
 export type ToolContext = { tenantId?: string; projectId?: string; userId?: string; user?: AuthUser; requestId?: string; mcpRole?: McpRole };
 export type ToolResult<T = unknown> =
-  | { ok: true; data: T; meta: { requestId: string; projectId?: string; revision?: string; warnings?: ToolWarning[]; argumentNormalizations?: DataArgumentNormalization[] } }
+  | { ok: true; data: T; meta: { requestId: string; projectId?: string; revision?: string; warnings?: ToolWarning[]; argumentNormalizations?: ToolArgumentNormalization[] } }
   | { ok: false; error: { code: string; message: string; path?: string; details?: unknown; retryable: boolean }; meta: { requestId: string } }
   | { ok: false; status: 'confirmation_required'; confirmation: { token: string; expiresAt: string; summary: string; impact: unknown }; meta: { requestId: string } };
 

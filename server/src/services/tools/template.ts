@@ -7,6 +7,7 @@ import { OPERATION_TEMPLATES, analyzeOperationTemplate, applyOperationPlan, dele
 import { listAudit } from '../audit-store';
 import type { RegisterFn, ToolHelpers } from './types';
 
+/** 注册模板域工具（模板目录/操作模板）。 */
 export function registerTemplateTools(register: RegisterFn, h: ToolHelpers) {
   const { projectId, findById, upsert, remove } = h;
   register({ name: 'template.analyze', title: '模板可行性检查', description: '按模板专属规则检查选择对象、主键、关系、字段角色、样本量和必填参数。', inputSchema: h.schema(['projectId', 'templateId'], { projectId: h.string, templateId: h.string, selection: h.object, parameters: h.object }), risk: 'read', requiredAccess: 'view', examples: [{ summary: '检查模板可行性', arguments: { projectId: 'device_mgmt', templateId: 'device-record', selection: { tableId: 'device', sheetName: 'Sheet1' } } }], handler: (input, context) => analyzeOperationTemplate(requireProject(projectId(input, context)), input.templateId, input.selection || {}, input.parameters || {}) });

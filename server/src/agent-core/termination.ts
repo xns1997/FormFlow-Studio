@@ -5,7 +5,9 @@
  */
 import type { AgentThread } from './types';
 
+/** 连续无进展阈值（达到则暂停提问）。 */
 export const NO_PROGRESS_THRESHOLD = 2;
+/** 同一阻塞条件连续阈值（达到则标记 blocked）。 */
 export const BLOCKED_THRESHOLD = 3;
 
 /** 当前进度的稳定指纹（用于检测连续无进展）。 */

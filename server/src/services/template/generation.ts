@@ -1,4 +1,5 @@
 import { applyBehaviorDslToComponents } from '../../../../shared/formflow-core/behaviorDsl';
+import { columnDataTypeToControlType } from '../../../../shared/formflow-core/columnTypes';
 import { createHash, randomUUID } from 'node:crypto';
 import {
   batchProjectRows, fullSourceRows, generatedForm, normalizeFormDesign, toolError, validateProjectModel, type JsonObject,
@@ -1694,9 +1695,10 @@ export function planOperationTemplate(project: JsonObject, templateId: string, s
           const primaryLabelPrefix = template.id === 'parallel-cross-table-entry'
             ? String(tableTitles[String(primaryTransactionTable.id || '')] || primaryTransactionTable.fileName || primaryTransactionTable.id || '')
             : '';
+          const primaryControlType = columnDataTypeToControlType(column?.dataType, { noSelectOptions: true });
           form.design.components.push({
             id: `${safe}_primary_field_${fieldIndex + 1}`,
-            type: column?.dataType === 'number' ? 'number' : column?.dataType === 'date' ? 'datePicker' : 'input',
+            type: primaryControlType,
             x: 80 + (fieldIndex % 2) * 390,
             y: 140 + Math.floor(fieldIndex / 2) * 92,
             width: 340,
@@ -1784,7 +1786,8 @@ export function planOperationTemplate(project: JsonObject, templateId: string, s
           for (const [fieldIndex, field] of projectedFields.entries()) {
             const column = targetSheet.columns?.find((item: JsonObject) => item.name === field);
             const componentId = `${safe}_${targetTable.id}_field_${fieldIndex + 1}`;
-            form.design.components.push({ id: componentId, type: column?.dataType === 'number' ? 'number' : column?.dataType === 'date' ? 'datePicker' : 'input', x: 80 + (fieldIndex % 2) * 390, y: sectionY + Math.floor(fieldIndex / 2) * 92, width: 340, height: 76, zIndex: 2, fieldBinding: `${targetTable.id}.${field}`, props: { name: `${targetTable.id}.${field}`, label: `${String(tableTitles[String(targetTable.id || '')] || targetTable.fileName || targetTable.id)} · ${field}`, required: (targetSheet.config?.keyFields || []).includes(field), generatedRole: 'editable' } });
+            const targetControlType = columnDataTypeToControlType(column?.dataType, { noSelectOptions: true });
+            form.design.components.push({ id: componentId, type: targetControlType, x: 80 + (fieldIndex % 2) * 390, y: sectionY + Math.floor(fieldIndex / 2) * 92, width: 340, height: 76, zIndex: 2, fieldBinding: `${targetTable.id}.${field}`, props: { name: `${targetTable.id}.${field}`, label: `${String(tableTitles[String(targetTable.id || '')] || targetTable.fileName || targetTable.id)} · ${field}`, required: (targetSheet.config?.keyFields || []).includes(field), generatedRole: 'editable' } });
           }
           editorBottom = Math.max(editorBottom, sectionY + Math.ceil(projectedFields.length / 2) * 92);
         }
@@ -2192,9 +2195,10 @@ export function planOperationTemplate(project: JsonObject, templateId: string, s
       const formWindow = form.design.formWindow; const baseY = Number(formWindow?.height || 500); const resultId = `${safe}_master_detail_results`; const statusId = `${safe}_master_detail_status`; const buttonId = `${safe}_master_detail_run`; const flowId = `${safe}_master_detail_flow`;
       const readonlyFields = masterSheet.headers.map((field: string, index: number) => {
         const column = masterSheet.columns?.find((item: JsonObject) => item.name === field);
+        const readonlyControlType = columnDataTypeToControlType(column?.dataType, { noSelectOptions: true });
         return {
           id: `${safe}_master_field_${index + 1}`,
-          type: column?.dataType === 'number' ? 'number' : column?.dataType === 'date' ? 'datePicker' : 'input',
+          type: readonlyControlType,
           x: 80 + (index % 2) * 360,
           y: baseY + 22 + Math.floor(index / 2) * 86,
           width: 320,

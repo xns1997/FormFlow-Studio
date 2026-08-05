@@ -7,6 +7,7 @@ import { formContext, lintRuleCode, readRuleReference, runRuleSandbox } from '..
 import { behaviorListInputSchema, behaviorRuleSchema } from '../tool-shared';
 import type { RegisterFn, ToolHelpers } from './types';
 
+/** 注册行为域工具（规则代码/测试/形式化验证）。 */
 export function registerBehaviorTools(register: RegisterFn, h: ToolHelpers) {
   const { projectId, findById, upsert, remove } = h;
   register({ name: 'behavior.list', title: '行为列表', description: '按 global/sheet/form 作用域列出行为；form 必须传 formId，sheet 必须传 tableId 和 sheetName。', inputSchema: behaviorListInputSchema, risk: 'read', requiredAccess: 'view', examples: [{ summary: '列出表单行为', arguments: { projectId: 'device_mgmt', scope: 'form', formId: 'device_edit' } }], handler: (input, context) => {

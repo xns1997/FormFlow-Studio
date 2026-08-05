@@ -1,10 +1,43 @@
 import { createHash } from 'node:crypto';
 
-export type ToolArgumentNormalization = { path: string; action: string; from?: unknown; to?: unknown };
+export type ToolArgumentNormalization = { path: string; action: string; from?: unknown; to?: unknown; reason?: string };
 export type ToolArgumentIssue = { path: string; code: string; message: string; expected: string; received: string };
+export type ToolPreflightError = {
+  code: string;
+  message: string;
+  path?: string;
+  expectedShape: unknown;
+  receivedShape: unknown;
+  suggestedArguments?: Record<string, any>;
+  normalizationsApplied?: ToolArgumentNormalization[];
+  issues?: ToolArgumentIssue[];
+  correctionInstruction?: string;
+};
+export type ToolPipelineResult =
+  | { ok: true; arguments: Record<string, any>; normalizations: ToolArgumentNormalization[] }
+  | { ok: false; arguments: Record<string, any>; normalizations: ToolArgumentNormalization[]; error: ToolPreflightError };
+
+/** The schema compiler always returns detailed issues plus a repair instruction. */
+export type ToolSchemaContractError = ToolPreflightError & { issues: ToolArgumentIssue[]; correctionInstruction: string };
+export type ToolSchemaContractResult =
+  | { ok: true; arguments: Record<string, any>; normalizations: ToolArgumentNormalization[] }
+  | { ok: false; arguments: Record<string, any>; normalizations: ToolArgumentNormalization[]; error: ToolSchemaContractError };
+
+export interface ToolDomainHooks {
+  /** Domain normalization runs after schema compilation; return undefined for no-op. */
+  normalize?: (name: string, args: Record<string, any>) => { arguments: Record<string, any>; normalizations: ToolArgumentNormalization[] } | undefined;
+  /** Domain validation runs after normalization; return an error to fail the tool call. */
+  validate?: (name: string, args: Record<string, any>, normalizations: ToolArgumentNormalization[]) => ToolPreflightError | undefined;
+}
 
 const valueShape = (value: unknown) => value === null ? 'null' : Array.isArray(value) ? `array(${value.length})` : typeof value === 'object' ? 'object' : `${typeof value}${typeof value === 'string' ? `(${value.length})` : ''}`;
 const clone = (value: Record<string, any>) => structuredClone(value);
+
+export function shape(value: unknown): unknown {
+  if (Array.isArray(value)) return value.length ? [shape(value[0])] : [];
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([key, entry]) => [key, shape(entry)]));
+  return typeof value;
+}
 
 function exactAlias(key: string, properties: Record<string, any>) {
   const normalized = key.replace(/[-_\s]/g, '').toLowerCase(); const matches = Object.keys(properties).filter((candidate) => candidate.replace(/[-_\s]/g, '').toLowerCase() === normalized);
@@ -60,13 +93,41 @@ function inspect(value: any, schema: any, path: string, normalizations: ToolArgu
   return value;
 }
 
-export function compileToolArguments(toolName: string, original: Record<string, any>, schema: Record<string, any>) {
+export function compileToolArguments(toolName: string, original: Record<string, any>, schema: Record<string, any>): ToolSchemaContractResult {
   const normalizations: ToolArgumentNormalization[] = []; const issues: ToolArgumentIssue[] = []; const argumentsValue = inspect(clone(original), schema, '', normalizations, issues);
   const first = issues[0];
   return first ? { ok: false as const, arguments: argumentsValue, normalizations, error: {
     code: first.code, message: first.message, path: first.path, expectedShape: first.expected, receivedShape: first.received,
     issues: issues.slice(0, 12), suggestedArguments: argumentsValue, correctionInstruction: '只修正本次工具参数，不要重启任务。按 issues 逐项修改；缺少业务值时先调用对应 list/get 工具读取真实值，禁止猜测 ID。',
   } } : { ok: true as const, arguments: argumentsValue, normalizations };
+}
+
+/**
+ * One argument-compilation pipeline: schema contract first, then domain
+ * normalization hooks, then domain validation hooks. The registry crosses a
+ * single interface instead of three parallel compilers.
+ */
+export function compileToolArgumentsPipeline(toolName: string, original: Record<string, any>, schema: Record<string, any> | undefined, hooks: ToolDomainHooks = {}): ToolPipelineResult {
+  const normalizations: ToolArgumentNormalization[] = [];
+  let current = clone(original);
+  if (schema) {
+    const contract = compileToolArguments(toolName, current, schema);
+    if (!contract.ok) return contract;
+    normalizations.push(...contract.normalizations);
+    current = contract.arguments;
+  }
+  if (hooks.normalize) {
+    const normalized = hooks.normalize(toolName, current);
+    if (normalized) {
+      normalizations.push(...normalized.normalizations);
+      current = normalized.arguments;
+    }
+  }
+  if (hooks.validate) {
+    const error = hooks.validate(toolName, current, normalizations);
+    if (error) return { ok: false, arguments: current, normalizations, error };
+  }
+  return { ok: true, arguments: current, normalizations };
 }
 
 export function toolContractSummary(schema: Record<string, any>) {

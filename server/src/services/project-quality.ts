@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { runRuleSandbox } from './rule-agent';
 import { fullSourceRows, validateProjectModel, type JsonObject } from './project-authoring';
 import { evaluatePropertyExpression } from '../../../shared/formflow-core/propertyExpression';
+import { normalizeColumnType } from '../../../shared/formflow-core/columnTypes';
 
 export type MockScenario = 'normal' | 'boundary' | 'empty' | 'wrong_type' | 'enum_outside' | 'duplicate_key' | 'not_found' | 'multiple_matches' | 'workflow_failure';
 
@@ -58,16 +59,17 @@ const statuses = ['草稿', '处理中', '已完成'];
 function pick<T>(values: T[], random: () => number): T { return values[Math.floor(random() * values.length)]!; }
 function columnKind(column: any) {
   const name = String(column.name || '');
+  const dataType = normalizeColumnType(column.dataType);
   if (/姓名|联系人|负责人/.test(name)) return 'person';
   if (/部门|组织/.test(name)) return 'department';
   if (/城市|地区|地址/.test(name)) return 'city';
   if (/手机|电话/.test(name)) return 'phone';
   if (/邮箱|email/i.test(name)) return 'email';
   if (/状态|阶段/.test(name)) return 'status';
-  if (/日期|时间/.test(name) || column.dataType === 'date') return 'date';
-  if (/金额|价格|数量|年龄|比例|得分/.test(name) || column.dataType === 'number') return 'number';
-  if (column.dataType === 'boolean') return 'boolean';
-  if (column.dataType === 'enum') return 'enum';
+  if (/日期|时间/.test(name) || dataType === 'date') return 'date';
+  if (/金额|价格|数量|年龄|比例|得分/.test(name) || dataType === 'number') return 'number';
+  if (dataType === 'boolean') return 'boolean';
+  if (dataType === 'enum') return 'enum';
   return 'text';
 }
 

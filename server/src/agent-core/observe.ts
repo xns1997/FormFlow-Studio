@@ -58,6 +58,7 @@ function toolSummary(toolName: string | undefined, data: any): string {
   }
 }
 
+/** 工具调用 → 观察（结果摘要/错误/耗时）。 */
 export function observeToolResult(decision: ToolCallShape, result: ToolResult): LoopObservation {
   if (result.ok) {
     const data = result.data as Record<string, any> | undefined;
@@ -115,6 +116,7 @@ export function observeToolResult(decision: ToolCallShape, result: ToolResult): 
   };
 }
 
+/** 最近观察摘要（事件流提取）。 */
 export function recentObservations(threadEvents: ThreadEvent[], limit = 12): string[] {
   const rows: string[] = [];
   for (const event of threadEvents) {

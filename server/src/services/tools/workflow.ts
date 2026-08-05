@@ -5,6 +5,7 @@ import { assertRevision, requireProject, toolError, validateProjectModel } from 
 import { normalizeWorkflowNode, normalizeWorkflowEdge, normalizeWorkflowItem, workflowEdgeSchema, workflowItemSchema, workflowNodeSchema } from '../tool-shared';
 import type { RegisterFn, ToolHelpers } from './types';
 
+/** 注册流程域工具（工作流 CRUD/校验）。 */
 export function registerWorkflowTools(register: RegisterFn, h: ToolHelpers) {
   const { projectId, findById, upsert, remove } = h;
   // Workflow CRUD

@@ -7,6 +7,7 @@ import { applyDataRowsTransaction, queryRelationRows, suggestDataRelations, vali
 import { dataSourceConfigSchema, dataRowUpdateSchema } from '../tool-shared';
 import type { RegisterFn, ToolHelpers } from './types';
 
+/** 注册数据域工具（数据源/Sheet/行操作）。 */
 export function registerDataTools(register: RegisterFn, h: ToolHelpers) {
   const { projectId } = h;
   // Data source CRUD

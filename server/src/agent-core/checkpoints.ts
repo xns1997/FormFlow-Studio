@@ -16,6 +16,7 @@ function safePart(value: string) {
   return value;
 }
 
+/** 检查点存储路径。 */
 export function checkpointPath(threadId: string, projectId: string, taskId: string, attempt: number) {
   return join(CHECKPOINT_ROOT, safePart(threadId), `${safePart(projectId)}__${safePart(taskId)}__${attempt}`);
 }
@@ -31,6 +32,7 @@ export function createProjectCheckpoint(threadId: string, projectId: string, tas
   return target;
 }
 
+/** 列出线程全部检查点。 */
 export function listThreadCheckpoints(threadId: string): string[] {
   const root = join(CHECKPOINT_ROOT, safePart(threadId));
   if (!existsSync(root)) return [];

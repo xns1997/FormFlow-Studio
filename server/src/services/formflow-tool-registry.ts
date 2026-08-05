@@ -3,9 +3,9 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import type { JsonObject } from './project-authoring';
 import { commitProject as persistProject, toolError } from './project-authoring';
 import { consumeConfirmation, issueConfirmation, operationHash } from './tool-confirmations';
-import { compileDataToolArguments, type DataArgumentNormalization } from './data-tool-preflight';
-import { compileBehaviorToolArguments } from './behavior-tool-preflight';
-import { compileToolArguments } from './tool-argument-contract';
+import { dataToolDomainHooks } from './data-tool-preflight';
+import { behaviorToolDomainHooks } from './behavior-tool-preflight';
+import { compileToolArgumentsPipeline } from './tool-argument-contract';
 import { projectMutation } from './project-mutation';
 import type { ProjectSourceFile } from './project-authoring';
 import { createFileProjectMutationReplayStore } from './project-mutation-replay-store';
@@ -181,13 +181,12 @@ export async function executeFormFlowTool(name: string, argumentsValue: unknown,
   if (context.mcpRole && !availableToRole(definition, context.mcpRole)) return { ok: false, error: { code: 'TOOL_NOT_AVAILABLE_IN_ROLE', message: `工具 ${name} 不属于 ${context.mcpRole} MCP`, details: { role: context.mcpRole, ownerRole: definition.ownerRole }, retryable: false }, meta: { requestId } };
   try {
     validateInput(argumentsValue, definition);
-    const contract = compileToolArguments(name, argumentsValue as JsonObject, definition.inputSchema);
-    if (!contract.ok) throw toolError(contract.error.code, contract.error.message, contract.error.path, contract.error);
-    const dataPreflight = compileDataToolArguments(name, contract.arguments as JsonObject);
-    if (!dataPreflight.ok) throw toolError(dataPreflight.error.code, dataPreflight.error.message, dataPreflight.error.path, dataPreflight.error);
-    const preflight = compileBehaviorToolArguments(name, dataPreflight.arguments as JsonObject);
-    if (!preflight.ok) throw toolError(preflight.error.code, preflight.error.message, preflight.error.path, preflight.error);
-    const input = preflight.arguments as JsonObject; const pid = projectId(input, context) || undefined;
+    const pipeline = compileToolArgumentsPipeline(name, argumentsValue as JsonObject, definition.inputSchema, {
+      normalize: dataToolDomainHooks.normalize,
+      validate: (toolName, args, normalizations) => dataToolDomainHooks.validate?.(toolName, args, normalizations) || behaviorToolDomainHooks.validate?.(toolName, args, normalizations),
+    });
+    if (!pipeline.ok) throw toolError(pipeline.error.code, pipeline.error.message, pipeline.error.path, pipeline.error);
+    const input = pipeline.arguments as JsonObject; const pid = projectId(input, context) || undefined;
     if (definition.requiredAccess && pid) { const project = requireProject(pid); if (!canAccessProject(user(context), project, definition.requiredAccess)) throw toolError('FORBIDDEN', `需要项目 ${definition.requiredAccess} 权限`); }
     if (definition.risk !== 'read') {
       if (!input.idempotencyKey) throw toolError('IDEMPOTENCY_KEY_REQUIRED', '写操作必须提供 idempotencyKey', 'idempotencyKey');
@@ -228,13 +227,13 @@ export async function executeFormFlowTool(name: string, argumentsValue: unknown,
         data = await definition.handler(input, { ...context, projectId: pid, requestId });
       }
       const afterProject = pid ? (() => { try { return requireProject(pid); } catch { return undefined; } })() : undefined;
-      const result: ToolResult = { ok: true, data, meta: { requestId, projectId: pid, revision: afterProject ? projectRevision(afterProject) : undefined, ...(dataPreflight.normalizations.length ? { argumentNormalizations: dataPreflight.normalizations } : {}) } };
+      const result: ToolResult = { ok: true, data, meta: { requestId, projectId: pid, revision: afterProject ? projectRevision(afterProject) : undefined, ...(pipeline.normalizations.length ? { argumentNormalizations: pipeline.normalizations } : {}) } };
       toolReplayStore.set(key, { fingerprint, result, expiresAt: Date.now() + 24 * 60 * 60 * 1_000 });
       addAudit({ userId: context.userId, username: context.user?.username, action: `llm_tool.${name}`, resource: pid || name, projectId: pid, detail: { requestId, risk: definition.risk, beforeRevision: before, afterRevision: result.meta.revision } });
       return result;
     }
     const data = await definition.handler(input, { ...context, projectId: pid, requestId }); const revision = pid ? projectRevision(requireProject(pid)) : undefined;
-    return { ok: true, data, meta: { requestId, projectId: pid, revision, ...(dataPreflight.normalizations.length ? { argumentNormalizations: dataPreflight.normalizations } : {}) } };
+    return { ok: true, data, meta: { requestId, projectId: pid, revision, ...(pipeline.normalizations.length ? { argumentNormalizations: pipeline.normalizations } : {}) } };
   } catch (error: any) {
     const code = String(error?.code || 'TOOL_EXECUTION_FAILED');
     const pid = String((argumentsValue as JsonObject)?.projectId || context.projectId || '') || undefined;

@@ -11,6 +11,7 @@ import { stableIdempotencyKey } from './policy';
 import { threadProjectIds } from './store';
 import type { AgentEvidence, AgentTask, AgentThread, RunContext } from './types';
 
+/** 门禁失败错误（含门禁名与详情）。 */
 export class GateFailure extends Error {
   constructor(message: string, public details?: unknown) {
     super(message);

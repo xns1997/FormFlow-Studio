@@ -27,6 +27,7 @@ import type { RegisterFn, ToolHelpers } from './types';
 
 function user(context: any) { return context.user || (context.userId ? { id: context.userId, username: context.userId, role: 'viewer' } : undefined); }
 
+/** 注册项目域工具（CRUD/克隆/导入/校验）。 */
 export function registerProjectTools(register: RegisterFn, h: ToolHelpers) {
   const { projectId } = h;
   register({ name: 'project.list', title: '项目列表', description: '列出可见 FormFlow 项目。', inputSchema: h.schema(), risk: 'read', examples: [{ summary: '列出全部项目', arguments: {} }], handler: (_input, context) => listProjectPackages().filter((item) => { try { return canAccessProject(user(context), requireProject(item.id), 'view'); } catch { return false; } }) });

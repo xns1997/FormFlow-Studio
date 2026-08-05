@@ -6,6 +6,7 @@ import { generateMockData, generateProjectTestSuite, profileMockData, runProject
 import { analysisRunStatus, appendAnalysisRun, applyPredictionWriteback, runAnalysisTemplate } from '../analysis-template-runtime';
 import type { RegisterFn, ToolHelpers } from './types';
 
+/** 注册质量域工具（质量检查/测试生成运行）。 */
 export function registerQualityTools(register: RegisterFn, h: ToolHelpers) {
   const { projectId, upsert } = h;
   // Mock data

@@ -1,18 +1,10 @@
 import { createHash } from 'node:crypto';
 import { dataIndexManager, DataIndexManager } from './data-index-cache.js';
+import { matchesFilterRule, type FilterRule, type SortRule } from '../../../shared/formflow-core/previewFilter';
+
+export type { FilterRule, SortRule } from '../../../shared/formflow-core/previewFilter';
 
 export type DataRow = Record<string, unknown>;
-export type SortRule = { colId?: string; field?: string; sort?: 'asc' | 'desc' };
-export type FilterRule = {
-  filterType?: string;
-  type?: string;
-  filter?: unknown;
-  filterTo?: unknown;
-  values?: unknown[];
-  operator?: 'AND' | 'OR';
-  condition1?: FilterRule;
-  condition2?: FilterRule;
-};
 
 export type KeyedRow = DataRow & { __rowKey: string; __rowIndex: number };
 
@@ -50,33 +42,6 @@ function compare(left: unknown, right: unknown) {
 
 function contains(value: unknown, expected: unknown) {
   return String(value ?? '').toLocaleLowerCase().includes(String(expected ?? '').toLocaleLowerCase());
-}
-
-function matchesSimpleFilter(value: unknown, rule: FilterRule): boolean {
-  const type = rule.type || 'contains';
-  const expected = rule.filter;
-  if (rule.values) return rule.values.map(String).includes(String(value ?? ''));
-  if (type === 'blank') return value == null || value === '';
-  if (type === 'notBlank') return value != null && value !== '';
-  if (type === 'equals') return String(value ?? '') === String(expected ?? '');
-  if (type === 'notEqual') return String(value ?? '') !== String(expected ?? '');
-  if (type === 'startsWith') return String(value ?? '').toLocaleLowerCase().startsWith(String(expected ?? '').toLocaleLowerCase());
-  if (type === 'endsWith') return String(value ?? '').toLocaleLowerCase().endsWith(String(expected ?? '').toLocaleLowerCase());
-  if (type === 'notContains') return !contains(value, expected);
-  if (type === 'greaterThan') return Number(value) > Number(expected);
-  if (type === 'greaterThanOrEqual') return Number(value) >= Number(expected);
-  if (type === 'lessThan') return Number(value) < Number(expected);
-  if (type === 'lessThanOrEqual') return Number(value) <= Number(expected);
-  if (type === 'inRange') return Number(value) >= Number(expected) && Number(value) <= Number(rule.filterTo);
-  return contains(value, expected);
-}
-
-function matchesFilter(value: unknown, rule: FilterRule): boolean {
-  if (rule.condition1 && rule.condition2) {
-    const values = [matchesFilter(value, rule.condition1), matchesFilter(value, rule.condition2)];
-    return rule.operator === 'OR' ? values.some(Boolean) : values.every(Boolean);
-  }
-  return matchesSimpleFilter(value, rule);
 }
 
 export function queryRows(input: {
@@ -185,20 +150,20 @@ export function queryRows(input: {
         if (!candidateIndices!.has(row.__rowIndex)) return false;
         // Verify with full filter (for compound/complex filters)
         for (const [field, rule] of filterEntries) {
-          if (!matchesFilter(row[field], rule)) return false;
+          if (!matchesFilterRule(row[field], rule)) return false;
         }
         return true;
       });
     } else {
       // No index results, fall back to full scan
       for (const [field, rule] of filterEntries) {
-        keyed = keyed.filter((row) => matchesFilter(row[field], rule));
+        keyed = keyed.filter((row) => matchesFilterRule(row[field], rule));
       }
     }
   } else {
     // Small dataset, use simple filter
     for (const [field, rule] of filterEntries) {
-      keyed = keyed.filter((row) => matchesFilter(row[field], rule));
+      keyed = keyed.filter((row) => matchesFilterRule(row[field], rule));
     }
   }
 

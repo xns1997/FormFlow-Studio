@@ -1,26 +1,23 @@
 import { createHash } from 'node:crypto';
+import { COLUMN_TYPE_ALIASES, normalizeColumnType } from '../../../shared/formflow-core/columnTypes';
+import {
+  compileToolArgumentsPipeline,
+  shape,
+  type ToolDomainHooks,
+  type ToolPreflightError,
+} from './tool-argument-contract';
 
 export type DataToolName = 'data_source.create' | 'data_source.import' | 'data_sheet.configure' | 'data_rows.batch';
-export interface DataArgumentNormalization { path: string; from: string; to: string; reason: string; }
-export interface DataPreflightError {
-  code: string;
-  message: string;
-  path?: string;
-  expectedShape: unknown;
-  receivedShape: unknown;
-  suggestedArguments?: Record<string, unknown>;
-  normalizationsApplied: DataArgumentNormalization[];
-}
+export type DataArgumentNormalization = { path: string; action: string; from: string; to: string; reason: string };
+export type DataPreflightError = ToolPreflightError & { normalizationsApplied: DataArgumentNormalization[] };
 export type DataToolPreflightResult =
   | { ok: true; arguments: Record<string, any>; normalizations: DataArgumentNormalization[] }
   | { ok: false; arguments: Record<string, any>; normalizations: DataArgumentNormalization[]; error: DataPreflightError };
 export interface DataFailureFingerprint { value: string; toolName: string; code: string; path?: string; argumentShape: unknown; }
 
 const DATA_TOOL_NAMES = new Set<DataToolName>(['data_source.create', 'data_source.import', 'data_sheet.configure', 'data_rows.batch']);
-const TYPE_ALIASES: Record<string, string> = { integer: 'number', float: 'number', double: 'number', datetime: 'date', bool: 'boolean', text: 'string' };
-
 function object(value: unknown): Record<string, any> { return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, any> : {}; }
-function record(normalizations: DataArgumentNormalization[], path: string, from: string, to: string, reason: string) { normalizations.push({ path, from, to, reason }); }
+function record(normalizations: DataArgumentNormalization[], path: string, from: string, to: string, reason: string) { normalizations.push({ path, from, to, reason, action: reason }); }
 
 function normalizeConfig(original: unknown, sheetName: string, normalizations: DataArgumentNormalization[]) {
   const config = structuredClone(object(original));
@@ -42,7 +39,7 @@ function normalizeConfig(original: unknown, sheetName: string, normalizations: D
     const column = object(value); const next = { ...column };
     if (!next.name && next.id) { next.name = String(next.id); record(normalizations, `config.columns[${index}].id`, 'id', 'name', '统一列标识字段'); }
     if (!next.type && next.dataType) { next.type = String(next.dataType); record(normalizations, `config.columns[${index}].dataType`, 'dataType', 'type', '统一列类型字段'); }
-    if (next.type && TYPE_ALIASES[String(next.type).toLowerCase()]) { const before = String(next.type); next.type = TYPE_ALIASES[before.toLowerCase()]; record(normalizations, `config.columns[${index}].type`, before, next.type, '规范化列类型别名'); }
+    if (next.type) { const before = String(next.type); const aliased = COLUMN_TYPE_ALIASES[before.toLowerCase()]; if (aliased) { next.type = aliased; record(normalizations, `config.columns[${index}].type`, before, aliased, '规范化列类型别名'); } }
     delete next.id; delete next.dataType; return next;
   });
   const next: Record<string, any> = { ...nested, ...config, ...(keyFields !== undefined ? { keyFields: Array.isArray(keyFields) ? keyFields.map(String) : [String(keyFields)] } : {}), ...(columns.length ? { columns } : {}), readOnly: config.readOnly ?? nested.readOnly ?? (typeof editable === 'boolean' ? !editable : undefined) };
@@ -56,7 +53,7 @@ function looksLikeFieldDefinitions(rows: unknown[]) {
 }
 
 function fieldDefinitionSuggestion(args: Record<string, any>, rows: unknown[]) {
-  const definitions = rows.map(object); const columns = definitions.map((item) => ({ name: String(item.fieldId || item.name || item.title || ''), ...(item.title ? { title: String(item.title) } : {}), type: TYPE_ALIASES[String(item.type || 'string').toLowerCase()] || String(item.type || 'string') })).filter((item) => item.name);
+  const definitions = rows.map(object); const columns = definitions.map((item) => ({ name: String(item.fieldId || item.name || item.title || ''), ...(item.title ? { title: String(item.title) } : {}), type: normalizeColumnType(item.type || 'string') })).filter((item) => item.name);
   const keys = definitions.filter((item) => item.isKey === true).map((item) => String(item.fieldId || item.name || item.title || '')).filter(Boolean);
   return { ...args, rows: [], config: { ...object(args.config), columns, ...(keys.length ? { keyFields: keys } : {}) } };
 }
@@ -65,65 +62,79 @@ function receivedShape(args: Record<string, any>) {
   return { keys: Object.keys(args).sort(), rows: Array.isArray(args.rows) ? args.rows.length ? looksLikeFieldDefinitions(args.rows) ? 'field_definitions' : 'business_records' : 'empty' : typeof args.rows, configKeys: Object.keys(object(args.config)).sort() };
 }
 
-function failure(argumentsValue: Record<string, any>, normalizations: DataArgumentNormalization[], code: string, message: string, path: string | undefined, expectedShape: unknown, suggestion?: Record<string, unknown>): DataToolPreflightResult {
-  return { ok: false, arguments: argumentsValue, normalizations, error: { code, message, path, expectedShape, receivedShape: receivedShape(argumentsValue), suggestedArguments: suggestion, normalizationsApplied: normalizations } };
+function failure(argumentsValue: Record<string, any>, normalizations: DataArgumentNormalization[], code: string, message: string, path: string | undefined, expectedShape: unknown, suggestion?: Record<string, unknown>): ToolPreflightError {
+  return { code, message, path, expectedShape, receivedShape: receivedShape(argumentsValue), suggestedArguments: suggestion, normalizationsApplied: normalizations };
 }
 
-function compileSource(name: 'data_source.create' | 'data_source.import', original: Record<string, any>) {
-  const normalizations: DataArgumentNormalization[] = []; const args = structuredClone(original); args.config = normalizeConfig(args.config, String(args.sheetName || 'Sheet1'), normalizations);
-  const rows = args.rows;
-  if (Array.isArray(rows) && looksLikeFieldDefinitions(rows)) return failure(args, normalizations, 'DATA_ROWS_LOOK_LIKE_SCHEMA', 'rows 看起来是字段定义而不是业务记录；请改用 config.columns', 'rows', { rows: [{ columnName: '业务值' }], config: { columns: [{ name: 'columnName', type: 'string' }], keyFields: ['columnName'], readOnly: false } }, fieldDefinitionSuggestion(args, rows));
-  const hasFile = typeof args.fileId === 'string' && args.fileId.length > 0; const hasCsv = typeof args.csv === 'string'; const hasRows = Array.isArray(rows); const columns = Array.isArray(args.config.columns) ? args.config.columns : [];
-  const suppliedSources = [hasFile ? 'fileId' : '', hasCsv ? 'csv' : '', hasRows ? 'rows' : ''].filter(Boolean);
-  if (suppliedSources.length > 1) return failure(
-    args,
-    normalizations,
-    'DATA_SOURCE_INPUT_AMBIGUOUS',
-    `fileId、csv、rows 只能提供一种；当前同时提供了 ${suppliedSources.join('、')}`,
-    suppliedSources[1],
-    { exactlyOneOf: ['fileId', 'csv', 'rows', 'config.columns（仅空表）'] },
-  );
-  if (!hasFile && !hasCsv && !hasRows && !columns.length) return failure(args, normalizations, 'DATA_SOURCE_INPUT_REQUIRED', '必须提供 fileId、csv、业务 rows 或 config.columns', 'rows', { oneOf: ['fileId', 'csv', 'rows', 'config.columns'] });
-  if (hasRows && rows.length === 0 && !columns.length) return failure(args, normalizations, 'DATA_COLUMNS_REQUIRED', '空 rows 必须同时提供 config.columns', 'config.columns', { config: { columns: [{ name: 'id', type: 'string' }], keyFields: ['id'] } });
-  const keys: string[] = Array.isArray(args.config.keyFields) ? args.config.keyFields.map(String) : [];
-  const available = new Set<string>([...columns.map((item: any) => String(item.name || '')).filter(Boolean), ...(hasRows ? rows.flatMap((row: any) => Object.keys(object(row))) : [])]);
-  if (args.config.readOnly !== true && !keys.length) {
-    const candidate = [...available].find((name) => /编号|id|code|号/i.test(name)) || ([...available].length === 1 ? [...available][0] : undefined);
-    if (candidate) {
-      // 可编辑表必须有主键；列名明显是主键（编号/id/code/号）或只有一列时自动补齐，避免模型反复失败。
-      args.config = { ...args.config, keyFields: [candidate], readOnly: false };
-      record(normalizations, 'config.keyFields', '（缺失）', candidate, '自动推断主键（可编辑表必须有主键）');
-    } else {
-      return failure(args, normalizations, 'DATA_KEY_REQUIRED', '可编辑 Sheet 必须配置 config.keyFields', 'config.keyFields', { availableColumns: [...available], config: { keyFields: [candidate || 'id'], readOnly: false } });
+function normalizeDataToolArguments(name: string, original: Record<string, any>): { arguments: Record<string, any>; normalizations: DataArgumentNormalization[] } | undefined {
+  if (!DATA_TOOL_NAMES.has(name as DataToolName)) return undefined;
+  const normalizations: DataArgumentNormalization[] = [];
+  const args = structuredClone(original);
+  if (name === 'data_source.create' || name === 'data_source.import' || name === 'data_sheet.configure') {
+    args.config = normalizeConfig(args.config, String(args.sheetName || 'Sheet1'), normalizations);
+  }
+  if (name === 'data_source.create' || name === 'data_source.import') {
+    const rows = args.rows;
+    const hasRows = Array.isArray(rows);
+    const columns = Array.isArray(args.config.columns) ? args.config.columns : [];
+    const available = new Set<string>([...columns.map((item: any) => String(item.name || '')).filter(Boolean), ...(hasRows ? rows.flatMap((row: any) => Object.keys(object(row))) : [])]);
+    const keys: string[] = Array.isArray(args.config.keyFields) ? args.config.keyFields.map(String) : [];
+    if (args.config.readOnly !== true && !keys.length) {
+      const candidate = [...available].find((columnName) => /编号|id|code|号/i.test(columnName)) || ([...available].length === 1 ? [...available][0] : undefined);
+      if (candidate) {
+        args.config = { ...args.config, keyFields: [candidate], readOnly: false };
+        record(normalizations, 'config.keyFields', '（缺失）', candidate, '自动推断主键（可编辑表必须有主键）');
+      }
     }
   }
-  const missing = keys.filter((key) => available.size > 0 && !available.has(key));
-  if (missing.length) return failure(args, normalizations, 'DATA_KEY_FIELD_MISSING', `主键列不存在：${missing.join('、')}`, 'config.keyFields', { availableColumns: [...available], config: { ...args.config, keyFields: [...available].slice(0, 1) } });
-  if (hasRows && keys.length) {
-    const blank = rows.findIndex((row: any) => keys.some((key) => object(row)[key] === '' || object(row)[key] == null));
-    if (blank >= 0) return failure(args, normalizations, 'DATA_KEY_VALUE_EMPTY', `第 ${blank + 1} 行主键不能为空`, `rows[${blank}]`, { keyFields: keys });
-    const seen = new Set<string>(); for (let index = 0; index < rows.length; index += 1) { const value = JSON.stringify(keys.map((key) => object(rows[index])[key])); if (seen.has(value)) return failure(args, normalizations, 'DATA_KEY_VALUE_DUPLICATE', `第 ${index + 1} 行主键重复`, `rows[${index}]`, { keyFields: keys }); seen.add(value); }
-  }
-  return { ok: true as const, arguments: args, normalizations };
+  return { arguments: args, normalizations };
 }
 
-export function compileDataToolArguments(name: string, original: Record<string, any>): DataToolPreflightResult {
-  if (!DATA_TOOL_NAMES.has(name as DataToolName)) return { ok: true, arguments: structuredClone(original), normalizations: [] };
-  if (name === 'data_source.create' || name === 'data_source.import') return compileSource(name, original);
-  const normalizations: DataArgumentNormalization[] = []; const args = structuredClone(original);
-  if (name === 'data_sheet.configure') args.config = normalizeConfig(args.config, String(args.sheetName || 'Sheet1'), normalizations);
+function validateDataToolArguments(name: string, args: Record<string, any>, normalizations: DataArgumentNormalization[]): ToolPreflightError | undefined {
+  if (!DATA_TOOL_NAMES.has(name as DataToolName)) return undefined;
+  if (name === 'data_source.create' || name === 'data_source.import') {
+    const rows = args.rows;
+    if (Array.isArray(rows) && looksLikeFieldDefinitions(rows)) return failure(args, normalizations, 'DATA_ROWS_LOOK_LIKE_SCHEMA', 'rows 看起来是字段定义而不是业务记录；请改用 config.columns', 'rows', { rows: [{ columnName: '业务值' }], config: { columns: [{ name: 'columnName', type: 'string' }], keyFields: ['columnName'], readOnly: false } }, fieldDefinitionSuggestion(args, rows));
+    const hasFile = typeof args.fileId === 'string' && args.fileId.length > 0; const hasCsv = typeof args.csv === 'string'; const hasRows = Array.isArray(rows); const columns = Array.isArray(args.config.columns) ? args.config.columns : [];
+    const suppliedSources = [hasFile ? 'fileId' : '', hasCsv ? 'csv' : '', hasRows ? 'rows' : ''].filter(Boolean);
+    if (suppliedSources.length > 1) return failure(args, normalizations, 'DATA_SOURCE_INPUT_AMBIGUOUS', `fileId、csv、rows 只能提供一种；当前同时提供了 ${suppliedSources.join('、')}`, suppliedSources[1], { exactlyOneOf: ['fileId', 'csv', 'rows', 'config.columns（仅空表）'] });
+    if (!hasFile && !hasCsv && !hasRows && !columns.length) return failure(args, normalizations, 'DATA_SOURCE_INPUT_REQUIRED', '必须提供 fileId、csv、业务 rows 或 config.columns', 'rows', { oneOf: ['fileId', 'csv', 'rows', 'config.columns'] });
+    if (hasRows && rows.length === 0 && !columns.length) return failure(args, normalizations, 'DATA_COLUMNS_REQUIRED', '空 rows 必须同时提供 config.columns', 'config.columns', { config: { columns: [{ name: 'id', type: 'string' }], keyFields: ['id'] } });
+    const keys: string[] = Array.isArray(args.config.keyFields) ? args.config.keyFields.map(String) : [];
+    const available = new Set<string>([...columns.map((item: any) => String(item.name || '')).filter(Boolean), ...(hasRows ? rows.flatMap((row: any) => Object.keys(object(row))) : [])]);
+    if (args.config.readOnly !== true && !keys.length) return failure(args, normalizations, 'DATA_KEY_REQUIRED', '可编辑 Sheet 必须配置 config.keyFields', 'config.keyFields', { availableColumns: [...available], config: { keyFields: ['id'], readOnly: false } });
+    const missing = keys.filter((key) => available.size > 0 && !available.has(key));
+    if (missing.length) return failure(args, normalizations, 'DATA_KEY_FIELD_MISSING', `主键列不存在：${missing.join('、')}`, 'config.keyFields', { availableColumns: [...available], config: { ...args.config, keyFields: [...available].slice(0, 1) } });
+    if (hasRows && keys.length) {
+      const blank = rows.findIndex((row: any) => keys.some((key) => object(row)[key] === '' || object(row)[key] == null));
+      if (blank >= 0) return failure(args, normalizations, 'DATA_KEY_VALUE_EMPTY', `第 ${blank + 1} 行主键不能为空`, `rows[${blank}]`, { keyFields: keys });
+      const seen = new Set<string>(); for (let index = 0; index < rows.length; index += 1) { const value = JSON.stringify(keys.map((key) => object(rows[index])[key])); if (seen.has(value)) return failure(args, normalizations, 'DATA_KEY_VALUE_DUPLICATE', `第 ${index + 1} 行主键重复`, `rows[${index}]`, { keyFields: keys }); seen.add(value); }
+    }
+    return undefined;
+  }
   if (name === 'data_rows.batch') {
     const changes = ['adds', 'updates', 'deletes'].flatMap((key) => Array.isArray(args[key]) ? args[key] : []);
     if (!changes.length) return failure(args, normalizations, 'DATA_BATCH_EMPTY', '批量写回至少需要一项 adds、updates 或 deletes', undefined, { adds: [], updates: [{ rowKey: 'key:...', changes: {} }], deletes: [] });
     if (changes.length > 1000) return failure(args, normalizations, 'DATA_BATCH_LIMIT_EXCEEDED', '单次批量写回最多 1000 个变更', undefined, { maxChanges: 1000 });
   }
-  return { ok: true, arguments: args, normalizations };
+  return undefined;
 }
 
-function shape(value: unknown): unknown {
-  if (Array.isArray(value)) return value.length ? [shape(value[0])] : [];
-  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([key, entry]) => [key, shape(entry)]));
-  return typeof value;
+/**
+ * Data-domain hooks for the unified argument pipeline: config normalization
+ * (sheets merge, key fields, editable/readOnly inversion, column aliases) and
+ * source/key-integrity validation.
+ */
+export const dataToolDomainHooks: ToolDomainHooks = {
+  normalize: normalizeDataToolArguments,
+  validate(name, args, normalizations) {
+    return validateDataToolArguments(name, args, normalizations as DataArgumentNormalization[]);
+  },
+};
+
+/** Wrapper kept for tests and callers that preflight data arguments directly. */
+export function compileDataToolArguments(name: string, original: Record<string, any>): DataToolPreflightResult {
+  return compileToolArgumentsPipeline(name, original, undefined, dataToolDomainHooks) as DataToolPreflightResult;
 }
 
 export function dataFailureFingerprint(toolName: string, error: { code?: string; path?: string }, argumentsValue: Record<string, any>): DataFailureFingerprint {

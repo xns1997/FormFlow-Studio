@@ -42,6 +42,7 @@ function parseSkillFile(role: McpRole): DistilledSkill {
   return { meta: { role, title, description }, body };
 }
 
+/** 获取角色对应技能（蒸馏提示词）。 */
 export function skillFor(role: McpRole): DistilledSkill {
   let skill = loaded.get(role);
   if (!skill) {
@@ -225,6 +226,7 @@ export function skillDocument(scope: ScopeConfig, bundle: CapabilityBundleVersio
   ].filter((line) => line !== '').join('\n');
 }
 
+/** 作用域可用的工具列表（含排除项）。 */
 export function effectiveScopeTools(scope: ScopeConfig) {
   const all = listFormFlowTools(scope.role).filter((tool) => tool.name !== 'release.apply');
   if (scope.toolMode === 'selected') {

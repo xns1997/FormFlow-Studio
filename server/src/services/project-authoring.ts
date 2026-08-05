@@ -19,6 +19,7 @@ import {
   growFormWindowToFit,
   migrateCanvasComponentsToWindowLocal,
 } from '../../../shared/form-window-layout';
+import { columnDataTypeToControlType, columnSelectOptions } from '../../../shared/formflow-core/columnTypes';
 
 export type JsonObject = Record<string, any>;
 export type ValidationIssue = { code: string; path: string; message: string };
@@ -579,8 +580,9 @@ export function generatedForm(table: JsonObject, sheet: JsonObject, input: JsonO
   const components: JsonObject[] = [];
   sheet.headers.forEach((header: string, index: number) => {
     const column = sheet.columns?.find((item: any) => item.name === header); const componentId = `${id}_field_${index + 1}`;
-    const componentType = /(照片|图片)$/.test(header) ? 'imageUpload' : /(附件|文件)$/.test(header) ? 'upload' : /(描述|说明|备注|意见|结果|原因)$/.test(header) ? 'textarea' : column?.dataType === 'number' ? 'number' : column?.dataType === 'date' ? 'datePicker' : column?.dataType === 'enum' && (column?.enum?.length || column?.sampleValues?.length) ? 'select' : 'input';
-    const options = componentType === 'select' ? [...new Set([...(column?.enum || []), ...(column?.sampleValues || [])].map(String))].map((value) => ({ label: value, value })) : undefined;
+    const baseType = columnDataTypeToControlType(column?.dataType, { noSelectOptions: !(column?.enum?.length || column?.sampleValues?.length) });
+    const componentType = /(照片|图片)$/.test(header) ? 'imageUpload' : /(附件|文件)$/.test(header) ? 'upload' : /(描述|说明|备注|意见|结果|原因)$/.test(header) ? 'textarea' : baseType;
+    const options = componentType === 'select' ? columnSelectOptions(column).map((value) => ({ label: value, value })) : undefined;
     components.push({ id: componentId, type: componentType, x: 80 + (index % 2) * 390, y: 130 + Math.floor(index / 2) * 92, width: 340, height: componentType === 'textarea' || componentType === 'imageUpload' ? 120 : 76, zIndex: 2, fieldBinding: header, props: { name: header, label: header, required: (sheet.config?.keyFields || []).includes(header), readonly: mode === 'detail', ...(options ? { options } : {}) } });
   });
   return { id, name: input.name || `${table.id} ${mode}`, design: { id: `${id}_design`, name: input.name || id, formMode: mode, ...(input.templateKey ? { templateKey: String(input.templateKey) } : {}), viewport: { zoom: 1, panX: 0, panY: 0 }, gridSize: 12, coordinateSpace: FORM_WINDOW_COORDINATE_SPACE, formWindow: growFormWindowToFit({ x: 40, y: 40, width: 900, height: Math.max(500, 140 + sheet.headers.length * 90), props: { title: input.name || `${table.id} 表单`, showFooter: false } }, components as any), components, bindings: [{ id: `${id}_binding`, sourceId: table.id, targetId: id, type: 'table', config: { tableId: table.id, sheetName: sheet.name } }], createdAt: now, updatedAt: now }, behaviors: [], ruleCode: '', createdAt: now, updatedAt: now };

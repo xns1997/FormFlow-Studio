@@ -5,6 +5,7 @@ import { env } from '../config/env';
 import { readProjectPackage } from './project-package-store';
 import { commitProject } from './project-authoring';
 import { compileBehaviorDsl, applyBehaviorDslToComponents, hasBehaviorDslErrors } from '../../../shared/formflow-core/behaviorDsl';
+import { columnDataTypeToFieldType } from '../../../shared/formflow-core/columnTypes';
 import type { FieldType } from '../../../shared/formflow-core/behaviorDsl';
 import type { RuleAgentSession } from './rule-agent-store';
 
@@ -42,12 +43,7 @@ export function deriveFieldTypes(form: any, tables: any[]): Record<string, Field
   for (const column of sheet?.columns || []) {
     const name = String(column.name || '');
     if (!name) continue;
-    const dataType = String(column.dataType || '').toLowerCase();
-    result[name] = dataType === 'number' ? 'number'
-      : dataType === 'boolean' ? 'boolean'
-        : dataType === 'date' ? 'date'
-          : dataType === 'enum' || dataType === 'text' || dataType === 'string' ? 'string'
-            : 'unknown';
+    result[name] = columnDataTypeToFieldType(column.dataType);
   }
   return result;
 }

@@ -5,6 +5,7 @@ import { assertRevision, packageProject, projectRevision, requireProject, toolEr
 import { inspectProjectQuality } from '../project-quality';
 import type { RegisterFn, ToolHelpers } from './types';
 
+/** 注册交付域工具（打包/导出/发布预检）。 */
 export function registerDeliveryTools(register: RegisterFn, h: ToolHelpers) {
   const { projectId, findById, upsert, remove } = h;
   // Output CRUD

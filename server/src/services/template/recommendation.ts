@@ -20,7 +20,6 @@ function recommendationRoleCoverage(template: OperationTemplateDefinition, repor
 
 
 function recommendationReasons(
-  template: OperationTemplateDefinition,
   report: FeasibilityReport,
   unresolvedParameters: string[],
 ): string[] {
@@ -68,7 +67,7 @@ export function recommendOperationTemplates(
       report,
       matchScore,
       roleCoverage,
-      reasons: recommendationReasons(template, report, unresolvedParameters),
+      reasons: recommendationReasons(report, unresolvedParameters),
       suggestedParameters,
       unresolvedParameters,
       catalogIndex,
@@ -132,4 +131,3 @@ export function suggestDataRelations(project: JsonObject): RelationSuggestion[] 
   }
   return candidates.sort((left, right) => right.confidence - left.confidence || left.id.localeCompare(right.id)).slice(0, 20);
 }
-

@@ -8,16 +8,8 @@
  */
 import { assertRevision, requireProject, tableFromInput, toolError } from '../project-authoring';
 import { dataColumnSchema } from '../tool-shared';
+import { normalizeColumnType } from '../../../../shared/formflow-core/columnTypes';
 import type { RegisterFn, ToolHelpers } from './types';
-
-const COLUMN_TYPE_ALIASES: Record<string, string> = {
-  text: 'string',
-  integer: 'number',
-  float: 'number',
-  double: 'number',
-  bool: 'boolean',
-  datetime: 'date',
-};
 
 export function registerDataTableTools(register: RegisterFn, h: ToolHelpers) {
   const { projectId } = h;
@@ -68,7 +60,7 @@ export function registerDataTableTools(register: RegisterFn, h: ToolHelpers) {
       if ((project.srcTable || []).some((item: any) => item.id === input.id)) throw toolError('TABLE_EXISTS', `数据表 ${input.id} 已存在`);
       const columns = (input.columns || []).map((column: any) => {
         const type = String(column.type || 'string').toLowerCase();
-        return { ...column, type: COLUMN_TYPE_ALIASES[type] || type };
+        return { ...column, type: normalizeColumnType(type) };
       });
       const keyFields = Array.isArray(input.keyFields) ? input.keyFields.map(String) : [];
       if (input.readOnly !== true && !keyFields.length) {
