@@ -1,3 +1,19 @@
+# [1.14.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.13.0...v1.14.0) (2026-08-05)
+
+
+### Bug Fixes
+
+* CI 样例项目审计门槛与实际入库样例数对齐 ([531ac70](https://github.com/xns1997/FormFlow-Studio/commit/531ac706dde7d8e6234e1572221227c5f9bf4d07))
+* 删除通用节点中的行业定制字段（schema + 执行器逻辑） ([1cdeb38](https://github.com/xns1997/FormFlow-Studio/commit/1cdeb3869d9f2bb437bcb153eb9a7771224df877))
+* 流程画布 Monaco 空模型崩溃——本地装配 monaco + 每实例独立 model path ([f56412e](https://github.com/xns1997/FormFlow-Studio/commit/f56412e99038c217f9aaef95dbdf87f7b88a81f1))
+* 清理节点中无法传入传出/无法编辑且不参与运行的无用字段 ([b665c38](https://github.com/xns1997/FormFlow-Studio/commit/b665c38a75e697fa9faaba5ee63ffb5f01d8ede2))
+
+
+### Features
+
+* DSL 与事件 JS 编辑器升级为 IDE 级 Monaco 辅助编程 ([53b16ac](https://github.com/xns1997/FormFlow-Studio/commit/53b16ac0b6252708705115452cdf5e51a7795065))
+* 流程节点端口契约全量审计加固与动态端口类型对齐 ([dbc49c3](https://github.com/xns1997/FormFlow-Studio/commit/dbc49c362f076a6c2042bba026bc55cc4af3879e))
+
 # [1.13.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.12.2...v1.13.0) (2026-08-05)
 
 
