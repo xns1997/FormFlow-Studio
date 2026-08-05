@@ -237,4 +237,19 @@ test.describe('数据准备工作台', () => {
     await expect(centerCells.nth(0)).toHaveText(firstValue as string);
     await expect(page.locator('.data-preview-save-state')).toContainText('已保存');
   });
+
+  test('添加筛选弹窗锚定在筛选栏下方而不是页面底部', async ({ page }) => {
+    await createDataProject(page);
+    const bar = page.locator('.filter-bar');
+    const barBox = await bar.boundingBox();
+    await page.getByRole('button', { name: '+ 添加筛选' }).click();
+    const popup = page.locator('.filter-bar-add-popover');
+    await expect(popup).toBeVisible();
+    const popupBox = await popup.boundingBox();
+    expect(barBox).toBeTruthy();
+    expect(popupBox).toBeTruthy();
+    expect((popupBox as any).x).toBeCloseTo((barBox as any).x, 1);
+    expect((popupBox as any).y).toBeGreaterThanOrEqual((barBox as any).y + (barBox as any).height);
+    await expect(popup).toHaveCSS('position', 'absolute');
+  });
 });

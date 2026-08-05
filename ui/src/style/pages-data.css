@@ -289,7 +289,7 @@
 .data-preview-filter-chips button { min-height: 24px; padding: 3px 8px; border: 1px solid var(--accent-line); border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11px; cursor: pointer; }
 
 /* ── FilterBar ─────────────────────────────────────── */
-.filter-bar { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-bottom: 1px solid var(--border, #e5e7eb); background: var(--bg-secondary, #f9fafb); flex-wrap: wrap; min-height: 36px; }
+.filter-bar { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-bottom: 1px solid var(--border, #e5e7eb); background: var(--bg-secondary, #f9fafb); flex-wrap: wrap; min-height: 36px; position: relative; }
 .filter-bar-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border: 1px solid var(--accent-line, #bfdbfe); border-radius: 999px; background: var(--accent-soft, #eff6ff); color: var(--accent, #2563eb); font-size: 12px; cursor: pointer; position: relative; white-space: nowrap; }
 .filter-bar-chip:hover { background: var(--accent-hover, #dbeafe); }
 .filter-bar-chip-label { max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
