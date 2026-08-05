@@ -103,6 +103,7 @@ function isRetryableFailure(error: unknown) {
   return status === undefined || [408, 425, 429, 502, 503, 504].includes(status);
 }
 
+/** 立即执行指定任务（含超时与结果落盘）。 */
 export async function executeTask(id: string) {
   let task = records.get(id);
   if (!task && pool) {
@@ -168,6 +169,7 @@ async function claimAndExecute() {
   }
 }
 
+/** 初始化任务队列：恢复未完成任务并启动轮询。 */
 export async function initTaskQueue() {
   const databaseUrl = env.databaseUrl;
   const required = env.databaseRequired;
@@ -212,6 +214,7 @@ export async function initTaskQueue() {
   }
 }
 
+/** 入队新任务。 */
 export async function enqueueTask(name: string, payload: TaskRecord['payload']) {
   const task: TaskRecord = { id: `task_${randomUUID()}`, name: name || '未命名任务', state: 'queued', progress: 0, payload, logs: [], createdAt: new Date().toISOString() };
   records.set(task.id, task); await saveTask(task);
@@ -219,24 +222,28 @@ export async function enqueueTask(name: string, payload: TaskRecord['payload']) 
   return task;
 }
 
+/** 列出任务（按创建时间倒序）。 */
 export async function listTasks(limit = 100) {
   if (!pool) return [...records.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, limit);
   const result = await pool.query('SELECT * FROM formflow_tasks ORDER BY created_at DESC LIMIT $1', [Math.min(Math.max(limit, 1), 1000)]);
   return result.rows.map(rowToTask);
 }
 
+/** 读取任务详情。 */
 export async function getTask(id: string) {
   if (!pool) return records.get(id);
   const result = await pool.query('SELECT * FROM formflow_tasks WHERE id = $1', [id]);
   return result.rows[0] ? rowToTask(result.rows[0]) : undefined;
 }
 
+/** 取消排队中的任务。 */
 export async function cancelTask(id: string) {
   const task = await getTask(id);
   if (task && ['queued', 'running'].includes(task.state)) { task.state = 'cancelled'; task.finishedAt = new Date().toISOString(); await saveTask(task); records.set(task.id, task); }
   return task;
 }
 
+/** 停止队列轮询并释放资源。 */
 export async function shutdownTaskQueue() {
   if (pollTimer) clearInterval(pollTimer);
   pollTimer = undefined;

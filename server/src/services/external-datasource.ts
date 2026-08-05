@@ -111,6 +111,7 @@ function cachePath(projectDir: string, id: string): string {
   return join(configDir(projectDir), `${id}.cache.json`);
 }
 
+/** 保存外部数据源配置。 */
 export function saveDatasourceConfig(projectDir: string, config: DatasourceConfig): void {
   const dir = configDir(projectDir);
   mkdirSync(dir, { recursive: true });
@@ -124,6 +125,7 @@ export function saveDatasourceConfig(projectDir: string, config: DatasourceConfi
   writeFileSync(configPath(projectDir, config.id), JSON.stringify(encrypted, null, 2));
 }
 
+/** 按 ID 读取数据源配置。 */
 export function loadDatasourceConfig(projectDir: string, id: string): DatasourceConfig | null {
   const path = configPath(projectDir, id);
   if (!existsSync(path)) return null;
@@ -142,6 +144,7 @@ export function loadDatasourceConfig(projectDir: string, id: string): Datasource
   }
 }
 
+/** 列出项目全部数据源配置。 */
 export function listDatasourceConfigs(projectDir: string): DatasourceConfig[] {
   const dir = configDir(projectDir);
   if (!existsSync(dir)) return [];
@@ -164,6 +167,7 @@ export function listDatasourceConfigs(projectDir: string): DatasourceConfig[] {
     .filter(Boolean);
 }
 
+/** 删除数据源配置。 */
 export function deleteDatasourceConfig(projectDir: string, id: string): void {
   const path = configPath(projectDir, id);
   const cPath = cachePath(projectDir, id);
@@ -174,6 +178,7 @@ export function deleteDatasourceConfig(projectDir: string, id: string): void {
 
 // ── Query Execution ────────────────────────────────────
 
+/** 查询外部数据源（SQL/表/视图），受行数与超时限制。 */
 export async function queryDatasource(
   projectDir: string,
   config: DatasourceConfig,
@@ -342,6 +347,7 @@ function writeCache(projectDir: string, id: string, result: DatasourceQueryResul
 
 // ── Connection Testing ─────────────────────────────────
 
+/** 测试数据源连通性，返回成功与否与延迟。 */
 export async function testConnection(config: DatasourceConfig): Promise<{ success: boolean; message: string; latency?: number }> {
   const start = Date.now();
   try {

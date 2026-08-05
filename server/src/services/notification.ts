@@ -7,11 +7,17 @@ export type Notification = { id: string; userId?: string; title: string; message
 const dir = serverDataPath('notifications'); const file = `${dir}/notifications.json`; const settingsFile = `${dir}/settings.json`;
 function read<T>(path: string, fallback: T): T { try { return existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : fallback; } catch { return fallback; } }
 function write(path: string, value: unknown) { mkdirSync(dir, { recursive: true }); writeFileSync(path, JSON.stringify(value, null, 2)); }
+/** 列出通知（可按用户过滤，最新在前）。 */
 export function listNotifications(userId?: string) { return read<Notification[]>(file, []).filter((item) => !userId || !item.userId || item.userId === userId).sort((a,b) => b.createdAt.localeCompare(a.createdAt)); }
+/** 创建通知并广播（持久化上限 2000 条）。 */
 export function createNotification(input: Omit<Notification, 'id' | 'read' | 'createdAt'>) { const item: Notification = { ...input, id: `notification_${randomUUID()}`, read: false, createdAt: new Date().toISOString() }; write(file, [...read<Notification[]>(file, []), item].slice(-2000)); broadcastNotification(item); return item; }
+/** 标记通知已读/未读。 */
 export function markNotification(id: string, readState = true) { const items = read<Notification[]>(file, []); const item = items.find((entry) => entry.id === id); if (item) { item.read = readState; write(file, items); } return item; }
+/** 读取通知设置（默认仅站内通知）。 */
 export function getNotificationSettings() { return read(settingsFile, { email: false, webhook: false, inApp: true, webhookUrl: '' }); }
+/** 保存通知设置。 */
 export function saveNotificationSettings(value: unknown) { write(settingsFile, value); return value; }
+/** 按指定渠道发送通知（站内/邮件/Webhook）。 */
 export async function sendNotification(input: { channels: Array<'inApp' | 'email' | 'webhook'>; userId?: string; title: string; message: string; level?: Notification['level']; email?: string; webhookUrl?: string; data?: unknown }) {
   const results: Record<string, unknown> = {};
   if (input.channels.includes('inApp')) results.inApp = createNotification({ userId: input.userId, title: input.title, message: input.message, level: input.level || 'info' });

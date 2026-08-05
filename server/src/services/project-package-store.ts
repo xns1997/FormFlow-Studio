@@ -6,7 +6,9 @@ import { basename, dirname, extname, join } from 'node:path';
 import XLSX from 'xlsx';
 import { PROJECTS_DIR } from '../config/paths';
 
+/** 项目包文件后缀。 */
 export const PROJECT_PACKAGE_SUFFIX = '.formflow';
+/** 项目包格式版本。 */
 export const PROJECT_FORMAT_VERSION = 2;
 
 type JsonObject = Record<string, any>;
@@ -16,6 +18,7 @@ function safeProjectId(id: string): string {
   return id;
 }
 
+/** 项目包文件路径（按项目 ID 稳定定位）。 */
 export function projectPackagePath(id: string): string {
   return join(PROJECTS_DIR, `${safeProjectId(id)}${PROJECT_PACKAGE_SUFFIX}`);
 }
@@ -181,10 +184,12 @@ function replaceProjectPackage(project: JsonObject, sourceOverrides: Map<string,
   }
 }
 
+/** 写入/覆盖项目包文件（含格式版本校验）。 */
 export function writeProjectPackage(project: JsonObject): void {
   replaceProjectPackage(project);
 }
 
+/** 读取项目包；不存在或损坏返回 null。 */
 export function readProjectPackage(id: string): JsonObject | null {
   const root = projectPackagePath(id);
   const manifestPath = join(root, 'project.json');
@@ -284,6 +289,7 @@ export function readProjectPackage(id: string): JsonObject | null {
   };
 }
 
+/** 列出全部已存项目包。 */
 export function listProjectPackages(): JsonObject[] {
   if (!existsSync(PROJECTS_DIR)) return [];
   const candidates = readdirSync(PROJECTS_DIR, { withFileTypes: true })
@@ -298,6 +304,7 @@ export function listProjectPackages(): JsonObject[] {
   return dedupeProjectPackageCandidates(candidates);
 }
 
+/** 按项目 ID 去重候选包（保留首个匹配）。 */
 export function dedupeProjectPackageCandidates(candidates: Array<{ storageId: string; project: JsonObject }>): JsonObject[] {
   const selected = new Map<string, { storageId: string; project: JsonObject }>();
   for (const candidate of candidates) {
@@ -333,6 +340,7 @@ export function dedupeProjectPackageCandidates(candidates: Array<{ storageId: st
       || String(left.id || '').localeCompare(String(right.id || '')));
 }
 
+/** 删除项目包文件。 */
 export function deleteProjectPackage(id: string): void {
   rmSync(projectPackagePath(id), { recursive: true, force: true });
 }
@@ -385,6 +393,7 @@ function serializeRawTable(projectId: string, table: JsonObject, changedSheetNam
   return Buffer.from(XLSX.write(workbook, { type: 'buffer', bookType: extension === 'xls' ? 'xls' : 'xlsx' }));
 }
 
+/** 读取项目数据表指定 Sheet 的行数据（含主键与行序）。 */
 export function getTableSheetData(projectId: string, tableId: string, sheetName: string): { headers: string[]; data: Record<string, unknown>[]; keyFields: string[]; rowOrder: string[] } | null {
   const project = readProjectPackage(projectId);
   if (!project) return null;
@@ -400,6 +409,7 @@ export function getTableSheetData(projectId: string, tableId: string, sheetName:
   };
 }
 
+/** 覆写项目数据表指定 Sheet 的全部行数据。 */
 export function updateTableSheetData(projectId: string, tableId: string, sheetName: string, data: Record<string, unknown>[]): void {
   const project = readProjectPackage(projectId);
   if (!project) throw new Error(`项目 ${projectId} 不存在`);
@@ -426,6 +436,7 @@ export function updateTableSheetData(projectId: string, tableId: string, sheetNa
   }
 }
 
+/** 以快照事务方式批量更新多个 Sheet（失败回滚）。 */
 export function updateTableSheetsTransaction(
   projectId: string,
   changes: Array<{ tableId: string; sheetName: string; data: Record<string, unknown>[] }>,

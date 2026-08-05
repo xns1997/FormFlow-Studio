@@ -43,12 +43,15 @@ function writeQuotas(quotas: TenantQuota[]) {
   writeFileSync(quotaFile, JSON.stringify(quotas, null, 2));
 }
 
+/** 列出全部租户。 */
 export function listTenants(): Tenant[] { return readTenants(); }
 
+/** 按 ID 读取租户。 */
 export function getTenant(id: string): Tenant | undefined {
   return readTenants().find((t) => t.id === id);
 }
 
+/** 创建租户（配额默认值见 Tenant 定义）。 */
 export function createTenant(input: { name: string; maxProjects?: number; maxStorageMb?: number; maxApiCallsPerDay?: number }): Tenant {
   const tenants = readTenants();
   const tenant: Tenant = {
@@ -64,6 +67,7 @@ export function createTenant(input: { name: string; maxProjects?: number; maxSto
   return tenant;
 }
 
+/** 更新租户信息与配额。 */
 export function updateTenant(id: string, patch: Partial<Pick<Tenant, 'name' | 'maxProjects' | 'maxStorageMb' | 'maxApiCallsPerDay'>>): Tenant | undefined {
   const tenants = readTenants();
   const index = tenants.findIndex((t) => t.id === id);
@@ -73,6 +77,7 @@ export function updateTenant(id: string, patch: Partial<Pick<Tenant, 'name' | 'm
   return tenants[index];
 }
 
+/** 删除租户（返回是否删除成功）。 */
 export function deleteTenant(id: string): boolean {
   const tenants = readTenants();
   const filtered = tenants.filter((t) => t.id !== id);
@@ -81,6 +86,7 @@ export function deleteTenant(id: string): boolean {
   return true;
 }
 
+/** 检查租户配额（项目数/存储/API 调用量）。 */
 export function checkQuota(tenantId: string, projectId: string, storageBytes?: number): { allowed: boolean; reason?: string } {
   const tenant = getTenant(tenantId);
   if (!tenant) return { allowed: true };

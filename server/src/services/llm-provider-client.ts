@@ -36,13 +36,16 @@ function metadata() {
 
 function parseJson(value: string, fallback: unknown) { try { return value ? JSON.parse(value) : fallback; } catch { return fallback; } }
 
+/** LLM Provider gRPC 目标地址（默认本地 50051）。 */
 export const llmProviderGrpcTarget = process.env.LLM_PROVIDER_GRPC_URL || '127.0.0.1:50051';
 const grpcMaxMessageBytes = Number(process.env.LLM_PROVIDER_GRPC_MAX_MESSAGE_BYTES || 16 * 1024 * 1024);
 
+/** LLM Provider RPC 错误（保留 gRPC code/details）。 */
 export class LlmProviderRpcError extends Error {
   constructor(message: string, public grpcCode: number, public httpStatus: number) { super(message); }
 }
 
+/** 将 gRPC 错误规范化为 LlmProviderRpcError。 */
 export function normalizeLlmProviderRpcError(error: Pick<grpc.ServiceError, 'code' | 'details' | 'message'>) {
   const httpStatus = error.code === grpc.status.UNAVAILABLE ? 503 : error.code === grpc.status.DEADLINE_EXCEEDED ? 504 : error.code === grpc.status.FAILED_PRECONDITION || error.code === grpc.status.INVALID_ARGUMENT ? 422 : 502;
   const unavailable = error.code === grpc.status.UNAVAILABLE;
@@ -109,8 +112,10 @@ class LlmProviderClient {
   private normalizeRun(response: any) { return { runId: response.runId, status: response.status, state: parseJson(response.stateJson, {}), events: parseJson(response.eventsJson, []), requestId: response.requestId, tenantId: response.tenantId || '', projectId: response.projectId || '' }; }
 }
 
+/** 全局 LLM Provider 客户端实例。 */
 export const llmProviderClient = new LlmProviderClient();
 
+/** 该 RPC 错误是否可重试（网络/资源耗尽类）。 */
 export function isRetryableLlmRpcError(error: unknown) {
   return error instanceof LlmProviderRpcError && [grpc.status.UNAVAILABLE, grpc.status.DEADLINE_EXCEEDED, grpc.status.RESOURCE_EXHAUSTED].includes(error.grpcCode);
 }

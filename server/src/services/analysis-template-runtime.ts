@@ -86,6 +86,7 @@ function localAnalysis(templateId: string, rows: JsonObject[], parameters: JsonO
   return undefined;
 }
 
+/** 评估分析模板运行结果是否可用（数据结构与必需字段）。 */
 export function assessAnalysisResult(templateId: string, result: JsonObject): { usable: boolean; reasons: string[] } {
   const reasons: string[] = [];
   if (result.error) reasons.push(String(result.error));
@@ -121,6 +122,7 @@ function analysisInputRows(project: JsonObject, input: AnalysisRunInput) {
   return rows.map((row) => Object.fromEntries(fields.map((field) => [field, row[field]])));
 }
 
+/** 运行分析模板：执行结果、可用性评估并追加运行记录。 */
 export function runAnalysisTemplate(project: JsonObject, input: AnalysisRunInput, projectRevision?: string) {
   const command = COMMANDS[input.templateId];
   const selection = { tableId: input.tableId, tableIds: input.tableIds || [input.tableId], sheetName: input.sheetName, fields: input.fields || [], relationIds: input.relationIds || (input.parameters?.relationId ? [String(input.parameters.relationId)] : []) };
@@ -148,6 +150,7 @@ export function runAnalysisTemplate(project: JsonObject, input: AnalysisRunInput
   return { result, record, quality: assessment };
 }
 
+/** 计算一次分析运行的当前状态（含写回进度）。 */
 export function analysisRunStatus(project: JsonObject, record: AnalysisRunRecord) {
   if (!record.input) return { ...record, stale: true, staleReason: '旧结果缺少输入数据定位信息，请重新运行。' };
   const table = (project.srcTable || []).find((item: JsonObject) => item.id === record.input?.tableId); const sheet = table?.sheets?.find((item: JsonObject) => item.name === record.input?.sheetName);
@@ -229,6 +232,7 @@ function presentationChartData(record: AnalysisRunRecord, rows: JsonObject[]) {
   return { labels: rows.slice(0, 30).map((row, index) => String(row[labelKey] ?? index + 1)), datasets: [{ label: numericKey, data: rows.slice(0, 30).map((row) => Number(row[numericKey]) || 0), backgroundColor: 'rgba(0,122,255,0.24)', borderColor: '#007aff' }] };
 }
 
+/** 将分析运行记录追加到项目（限制历史条数）。 */
 export function appendAnalysisRun(project: JsonObject, record: AnalysisRunRecord) {
   const next = structuredClone(project); next.modelRuns = [...(next.modelRuns || []), record].slice(-50); next.config.updatedAt = record.completedAt;
   const rows = presentationRows(record);
@@ -275,6 +279,7 @@ export function appendAnalysisRun(project: JsonObject, record: AnalysisRunRecord
   return next;
 }
 
+/** 应用预测写回：更新数据行字段（默认不覆盖已有值）。 */
 export function applyPredictionWriteback(source: JsonObject, recordId: string, fieldNameValue: string, overwrite = false) {
   const project = structuredClone(source); const record = (project.modelRuns || []).find((item: JsonObject) => item.id === recordId);
   if (!record) throw toolError('ANALYSIS_RUN_NOT_FOUND', '预测结果不存在', 'id');

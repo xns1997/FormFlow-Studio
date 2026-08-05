@@ -28,6 +28,7 @@ let indexedDimensions: number[] = [];
 function errorMessage(error: unknown) { return error instanceof Error ? error.message : String(error); }
 function scope(scope: VectorScope) { return { tenantId: scope.tenantId || 'local', projectId: scope.projectId || '' }; }
 
+/** 生成 SQL 向量字面量（`[1,2,3]`）。 */
 export function vectorLiteral(values: number[]) {
   if (!Array.isArray(values) || !values.length) throw new Error('向量不能为空');
   if (values.length > 16_000) throw new Error('向量维度不能超过 16000');
@@ -42,6 +43,7 @@ async function createDimensionIndex(client: Pool, dimension: number) {
   await client.query(`CREATE INDEX IF NOT EXISTS ${name} ON formflow_knowledge_chunks USING hnsw ((embedding::vector(${dimension})) vector_cosine_ops) WHERE dimensions = ${dimension}`);
 }
 
+/** 初始化向量存储（建表与扩展检查）。 */
 export async function initVectorStore(databaseUrl = env.databaseUrl) {
   const startedAt = Date.now();
   if (!databaseUrl) return { available: false, latencyMs: Date.now() - startedAt, error: '未配置 FORMFLOW_DATABASE_URL' };
@@ -82,6 +84,7 @@ export async function initVectorStore(databaseUrl = env.databaseUrl) {
   }
 }
 
+/** 向量库连通性探针。 */
 export async function probeVectorStore() {
   if (!pool) throw new Error('pgvector 尚未初始化');
   const startedAt = Date.now();
@@ -91,6 +94,7 @@ export async function probeVectorStore() {
 
 function activePool() { if (!pool) throw new Error('pgvector 不可用'); return pool; }
 
+/** 批量写入知识分块（按 scope/sourceId 覆盖）。 */
 export async function upsertKnowledgeChunks(input: VectorScope & { collection?: string; embeddingModel: string; chunks: KnowledgeChunkInput[] }) {
   if (!input.embeddingModel) throw new Error('缺少 embeddingModel');
   if (!input.chunks.length || input.chunks.length > 100) throw new Error('每次必须写入 1 到 100 个知识分块');
@@ -125,6 +129,7 @@ export async function upsertKnowledgeChunks(input: VectorScope & { collection?: 
   } finally { client.release(); }
 }
 
+/** 向量相似度搜索知识分块。 */
 export async function searchKnowledge(input: VectorSearchInput) {
   const dimension = dimensions(input.embedding);
   const currentScope = scope(input);
@@ -143,6 +148,7 @@ export async function searchKnowledge(input: VectorSearchInput) {
   return result.rows.map((row) => ({ id: row.id, sourceType: row.source_type, sourceId: row.source_id, chunkIndex: row.chunk_index, content: row.content, metadata: row.metadata, embeddingModel: row.embedding_model, score: Number(row.score) }));
 }
 
+/** 删除知识分块（按 scope/sourceId 过滤）。 */
 export async function deleteKnowledge(input: VectorScope & { collection?: string; sourceId?: string }) {
   const currentScope = scope(input);
   const values: unknown[] = [currentScope.tenantId, currentScope.projectId, input.collection || 'default'];
@@ -152,6 +158,7 @@ export async function deleteKnowledge(input: VectorScope & { collection?: string
   return result.rowCount || 0;
 }
 
+/** 关闭向量存储连接池。 */
 export async function shutdownVectorStore() {
   const active = pool; pool = undefined;
   if (active) await active.end();

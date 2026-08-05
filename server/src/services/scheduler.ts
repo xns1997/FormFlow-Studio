@@ -21,6 +21,7 @@ function activate(schedule: ScheduleRecord) {
     catch (error) { console.error(`[scheduler:${schedule.id}] enqueue failed`, error); }
   }, { timezone: schedule.timezone }));
 }
+/** 初始化调度器：恢复持久化计划并启动定时执行。 */
 export function initScheduler() {
   if (existsSync(FILE)) try {
     for (const item of JSON.parse(readFileSync(FILE, 'utf8')) as ScheduleRecord[]) {
@@ -29,11 +30,15 @@ export function initScheduler() {
     }
   } catch (error) { console.error('[scheduler]', error); }
 }
+/** 列出全部计划。 */
 export function listSchedules() { return [...schedules.values()]; }
+/** 保存计划（新计划生成 ID 并注册执行）。 */
 export function saveSchedule(input: Omit<ScheduleRecord, 'id' | 'createdAt'> & { id?: string }) {
   const previous = input.id ? schedules.get(input.id) : undefined;
   const record: ScheduleRecord = { ...input, id: input.id || `schedule_${randomUUID()}`, createdAt: previous?.createdAt || new Date().toISOString() };
   activate(record); schedules.set(record.id, record); persist(); return record;
 }
+/** 删除计划并停止其执行器。 */
 export function deleteSchedule(id: string) { running.get(id)?.stop(); running.delete(id); const removed = schedules.delete(id); persist(); return removed; }
+/** 停止全部定时任务。 */
 export function stopScheduler() { for (const task of running.values()) task.stop(); running.clear(); }

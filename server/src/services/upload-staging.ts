@@ -52,6 +52,7 @@ function rowsToSheet(name: string, rows: unknown): StagedSheet {
   return { name, rowCount: data.length, colCount: headers.length, headers, data };
 }
 
+/** 解析上传文件内容（xlsx/csv/xml → Sheet 数组）。 */
 export function parseSourceBuffer(buffer: Buffer, originalName: string): { fileType: string; sheets: StagedSheet[] } {
   const fileType = extname(originalName).toLowerCase().slice(1);
   if (!SUPPORTED.has(fileType)) throw new Error('仅支持 XLSX、XLS、CSV、TSV、JSON、XML、Parquet');
@@ -90,7 +91,7 @@ export function parseSourceBuffer(buffer: Buffer, originalName: string): { fileT
       ignoreAttributes: false,
       attributeNamePrefix: '@_',
       textNodeName: '#text',
-      isArray: (name, jpath, isLeafNode, isAttribute) => !isAttribute,
+      isArray: (_name, _jpath, _isLeafNode, isAttribute) => !isAttribute,
     });
     const parsed = parser.parse(buffer.toString('utf8'));
     // Find the array of records: root > items[] or root > firstArray
@@ -145,6 +146,7 @@ function flattenObject(obj: Record<string, unknown>, prefix = ''): Record<string
   return result;
 }
 
+/** 清理超过有效期（默认 30 分钟）的暂存上传。 */
 export function cleanupExpiredUploads(now = Date.now()): void {
   mkdirSync(STAGING_DIR, { recursive: true });
   for (const name of readdirSync(STAGING_DIR)) {
@@ -157,6 +159,7 @@ export function cleanupExpiredUploads(now = Date.now()): void {
   }
 }
 
+/** 暂存一次上传：返回 fileId 与解析后的 Sheet 摘要。 */
 export function stageUpload(input: {
   buffer: Buffer;
   originalName: string;
@@ -194,6 +197,7 @@ export function stageUpload(input: {
   return record;
 }
 
+/** 按 fileId 读取暂存上传。 */
 export function getStagedUpload(fileId: string): StagedUpload | null {
   cleanupExpiredUploads();
   const metaPath = metadataPath(fileId);
@@ -206,12 +210,14 @@ export function getStagedUpload(fileId: string): StagedUpload | null {
   }
 }
 
+/** 消费（删除）暂存上传，仅允许一次。 */
 export function consumeStagedUpload(fileId: string): void {
   const record = getStagedUpload(fileId);
   if (record) rmSync(record.path, { force: true });
   rmSync(metadataPath(fileId), { force: true });
 }
 
+/** 列出全部暂存上传。 */
 export function listStagedUploads(): StagedUpload[] {
   cleanupExpiredUploads();
   return readdirSync(STAGING_DIR)

@@ -24,12 +24,15 @@ function publicUser(user: StoredUser): User {
   return safe;
 }
 
+/** 列出全部用户（脱敏后的公开信息）。 */
 export function listUsers(): User[] { return readUsers().map(publicUser); }
+/** 按 ID 查找用户（含密码哈希的完整对象）。 */
 export function findUserById(id: string): User | undefined {
   const user = readUsers().find((entry) => entry.id === id);
   return user ? publicUser(user) : undefined;
 }
 
+/** 创建用户（密码哈希存储，重名抛错）。 */
 export function createUser(username: string, password: string, role: UserRole = 'viewer'): User {
   const normalized = username.trim().toLowerCase();
   if (normalized.length < 3) throw new Error('用户名至少需要 3 个字符');
@@ -49,6 +52,7 @@ export function createUser(username: string, password: string, role: UserRole = 
   return publicUser(stored);
 }
 
+/** 用户名+密码认证，成功返回用户对象。 */
 export function authenticateUser(username: string, password: string): User | undefined {
   const user = readUsers().find((entry) => entry.username === username.trim().toLowerCase());
   if (!user) return undefined;
@@ -57,6 +61,7 @@ export function authenticateUser(username: string, password: string): User | und
   return actual.length === expected.length && timingSafeEqual(actual, expected) ? publicUser(user) : undefined;
 }
 
+/** 更新用户角色。 */
 export function updateUserRole(id: string, role: UserRole): User | undefined {
   const users = readUsers();
   const index = users.findIndex((entry) => entry.id === id);
