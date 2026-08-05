@@ -104,6 +104,7 @@ function normalizedName(value: string) {
 }
 
 /** 字段身份的唯一派生；与 ctx.controls 的 canonical 键共用同一实现。 */
+/** 读取组件绑定的字段名（fieldBinding/props.name 回退）。 */
 export function getFlowComponentField(component: FieldComponent) {
   return resolveEventControlFieldName(component);
 }
@@ -174,6 +175,7 @@ function cloneBindings(bindings: FlowBindingsV2): FlowBindingsV2 {
   }
 }
 
+/** 归一化流程绑定（补默认值、去重、检查引用完整性）。 */
 export function normalizeFlowBindings(
   config: FlowBindingConfigLike | undefined,
   workflow: WorkflowFile | undefined,
@@ -243,6 +245,7 @@ export function normalizeFlowBindings(
   };
 }
 
+/** 评估绑定风险（未绑定字段、缺失来源、类型不匹配）。 */
 export function getFlowBindingRisks(
   bindings: FlowBindingsV2 | undefined,
   workflow: WorkflowFile | undefined,
@@ -308,6 +311,7 @@ function resolvePath(source: unknown, path: string) {
   ), source);
 }
 
+/** 解析流程值来源（字段/常量/表达式）。 */
 export function resolveFlowValueSource(source: FlowValueSource, context: FlowBindingContext): unknown {
   switch (source.kind) {
     case 'event': {
@@ -358,6 +362,7 @@ function isMissingRequiredValue(value: unknown) {
   return value === undefined || value === null || (typeof value === 'string' && value.trim() === '');
 }
 
+/** 解析 V2 流程输入：按端口字段求值来源并组装参数。 */
 export function resolveV2FlowInputs(
   bindings: FlowBindingsV2,
   workflow: WorkflowFile,
@@ -438,6 +443,7 @@ export interface PreparedFlowOutputWrites {
   skipped: string[];
 }
 
+/** 准备 V2 流程输出写回（字段映射 + 值解析）。 */
 export function prepareV2FlowOutputWrites(
   bindings: FlowBindingsV2,
   workflow: WorkflowFile,
@@ -485,6 +491,7 @@ export function prepareV2FlowOutputWrites(
   return { writes, skipped };
 }
 
+/** 将流程值来源描述为人类可读文本。 */
 export function describeFlowValueSource(source: FlowValueSource) {
   switch (source.kind) {
     case 'event': return `事件 · ${source.value}`;
@@ -521,6 +528,7 @@ function resolvePathV1(source: unknown, path: string[]): unknown {
   return path.reduce((value: any, key) => value == null ? undefined : value[key], source as any);
 }
 
+/** 在控件事件上下文中解析表单值表达式。 */
 export function resolveFormFlowValue(expression: unknown, context: FormControlEventContext): unknown {
   if (Array.isArray(expression)) return expression.map((item) => resolveFormFlowValue(item, context));
   if (expression && typeof expression === 'object') {

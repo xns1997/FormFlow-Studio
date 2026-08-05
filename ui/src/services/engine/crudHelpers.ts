@@ -104,6 +104,7 @@ function isBlankValue(value: unknown) {
   return false;
 }
 
+/** 按过滤条件查询 Sheet 行。 */
 export function querySheetRows(
   tables: SrcTableEntry[],
   sheetId: string,
@@ -117,6 +118,7 @@ export function querySheetRows(
   return rows.filter((row) => matchesCriteria(row, filter));
 }
 
+/** 跨表查找匹配行（criteria 全等匹配）。 */
 export function findRowsInTables(
   tables: SrcTableEntry[],
   sheetId: string,
@@ -135,6 +137,7 @@ export function findRowsInTables(
   return applyPickFields(rows, options.pickFields);
 }
 
+/** 跨表查找单条匹配行。 */
 export function findRowInTables(
   tables: SrcTableEntry[],
   sheetId: string,
@@ -150,6 +153,7 @@ export function findRowInTables(
   return rows[0] || null;
 }
 
+/** 生成下一个顺序编号（列内最大值 + 1，支持 start）。 */
 export function nextSequenceInTables(
   tables: SrcTableEntry[],
   sheetId: string,
@@ -167,6 +171,7 @@ export function nextSequenceInTables(
   return maxValue + step;
 }
 
+/** 构建表单回填补丁（按字段映射与写回配置）。 */
 export function buildFillFormPatch(
   record: Record<string, unknown> | null | undefined,
   fieldMap?: Record<string, string>,
@@ -204,6 +209,7 @@ export function buildFillFormPatch(
   };
 }
 
+/** 校验必填字段，返回缺失列表。 */
 export function validateRequiredFields(
   values: Record<string, unknown>,
   fields: string[],
@@ -218,6 +224,7 @@ export function validateRequiredFields(
   return { valid, firstMissingField, missingFields, message };
 }
 
+/** 构建重置表单补丁（清空非键字段并回填默认值）。 */
 export function buildResetFormPatch(
   currentValues: Record<string, unknown>,
   options: ResetFormOptions = {},

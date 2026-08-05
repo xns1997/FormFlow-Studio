@@ -26,6 +26,7 @@ const OVERVIEW_SLUGS = new Set(overviewDocs.map((doc) => doc.slug));
 const CONTROL_SLUGS = new Set(formDesignDocs.map((doc) => doc.slug));
 const API_SLUGS = new Set(backendDocs.map((doc) => doc.slug));
 
+/** 解析文档规范路径。 */
 export function resolveDocCanonicalPath(slug?: string) {
   if (!slug) return '/docs';
   if (TOPIC_BEHAVIOR_SLUGS.has(slug)) return `/docs/reference/behavior/${encodeURIComponent(slug)}`;
@@ -36,6 +37,7 @@ export function resolveDocCanonicalPath(slug?: string) {
   return `/docs?q=${encodeURIComponent(slug)}`;
 }
 
+/** 旧文档路径 → 新规范路径（含重定向）。 */
 export function resolveLegacyDocPath(section: LegacyDocSection, slug?: string) {
   if (!slug) {
     const domain = section === 'overview'
@@ -69,18 +71,22 @@ export function resolveLegacyDocPath(section: LegacyDocSection, slug?: string) {
   return `/docs?domain=nodes&q=${encodeURIComponent(slug)}`;
 }
 
+/** 项目列表页路径。 */
 export function buildProjectsPath() {
   return '/projects';
 }
 
+/** 项目详情页路径。 */
 export function buildProjectPath(projectId: string) {
   return `/projects/${projectId}`;
 }
 
+/** 项目编辑器路径。 */
 export function buildEditorPath(projectId: string) {
   return `/projects/${projectId}/editor`;
 }
 
+/** 工作区路径（可带页签）。 */
 export function buildWorkspacePath(projectId: string, tab?: WorkspaceTab) {
   if (tab === 'test') return `/projects/${projectId}/usage`;
   const modes: Record<Exclude<WorkspaceTab, 'test'>, string> = {
@@ -89,10 +95,12 @@ export function buildWorkspacePath(projectId: string, tab?: WorkspaceTab) {
   return `/projects/${projectId}/editor?mode=${modes[tab || 'data']}`;
 }
 
+/** 项目设置路径（可带区块）。 */
 export function buildProjectSettingsPath(projectId: string, section?: ProjectSettingsSection) {
   return section ? `/projects/${projectId}/settings/${section}` : `/projects/${projectId}/settings`;
 }
 
+/** 文档页路径（带来源追踪参数）。 */
 export function buildDocsPath(slug?: string, source?: {
   fromProject?: string;
   fromPage?: DocSourcePage;
@@ -101,6 +109,7 @@ export function buildDocsPath(slug?: string, source?: {
   return withDocSource(resolveDocCanonicalPath(slug), source);
 }
 
+/** 文档区块路径。 */
 export function buildDocsSectionPath(sectionId: string, slug?: string, source?: {
   fromProject?: string;
   fromPage?: DocSourcePage;
@@ -110,10 +119,12 @@ export function buildDocsSectionPath(sectionId: string, slug?: string, source?: 
   return withDocSource(base, source);
 }
 
+/** 用量页路径。 */
 export function buildUsagePath(projectId: string) {
   return `/projects/${projectId}/usage`;
 }
 
+/** 系统设置路径。 */
 export function buildSystemSettingsPath(section?: SystemSettingsSection) {
   return section ? `/settings/${section}` : '/settings';
 }

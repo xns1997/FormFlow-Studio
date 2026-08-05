@@ -135,10 +135,12 @@ const PRIORITY_ORDER: Record<number, string> = {
   40: 'user-input',
 };
 
+/** 优先级数字 → 中文名。 */
 export function getPriorityName(priority: number): string {
   return PRIORITY_ORDER[priority] || `custom-${priority}`;
 }
 
+/** 求值单条条件（字段值 vs 运算符/比较值）。 */
 export function evaluateCondition(value: unknown, condition: ConditionConfig): boolean {
   const { operator, value: cv, value2 } = condition;
   switch (operator) {
@@ -164,6 +166,7 @@ export function evaluateCondition(value: unknown, condition: ConditionConfig): b
   }
 }
 
+/** 求值规则全部条件（AND 语义）。 */
 export function evaluateConditions(
   conditions: ConditionConfig[],
   formValues: Record<string, unknown>,
@@ -227,6 +230,7 @@ function recordGuardFailure(
   throw new Error(message);
 }
 
+/** 执行单个动作（set/clear/runWorkflow/showMessage 等），副作用经 setState 提交。 */
 export async function executeAction(action: ActionConfig, state: RuntimeState, setState: (updater: (prev: RuntimeState) => RuntimeState) => void, tables?: any[], onSubmit?: () => void, context?: BehaviorExecutionContext): Promise<void> {
   switch (action.type) {
     case 'setValue':
@@ -570,6 +574,7 @@ export async function executeAction(action: ActionConfig, state: RuntimeState, s
   }
 }
 
+/** 执行非异步副作用（写回表格等）。 */
 export function executeSideEffect(sideEffect: SideEffectConfig, setState: (updater: (prev: RuntimeState) => RuntimeState) => void): void {
   switch (sideEffect.type) {
     case 'log':
@@ -587,6 +592,7 @@ export function executeSideEffect(sideEffect: SideEffectConfig, setState: (updat
   }
 }
 
+/** 执行单条规则：条件通过后依次执行动作。 */
 export async function executeBehaviorRule(
   rule: BehaviorRule,
   triggerType: TriggerType,
@@ -637,6 +643,7 @@ export async function executeBehaviorRule(
   return result;
 }
 
+/** 按优先级稳定顺序执行全部规则。 */
 export async function executeAllRules(
   rules: BehaviorRule[],
   triggerType: TriggerType,

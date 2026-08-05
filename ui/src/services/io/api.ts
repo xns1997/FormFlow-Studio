@@ -2,6 +2,7 @@
 import { consumeReconnectingStream, createHttpTransport, HttpTransportError, type ReconnectingStreamState, type TransportRequestInit } from './transport';
 import { enqueueOffline, replayOfflineQueue } from './offlineQueue';
 
+/** API 基础路径（环境变量覆盖，默认 /api）。 */
 export const API_BASE = (((import.meta as any).env?.VITE_API_BASE) || '/api').replace(/\/$/, '');
 export type ProjectAgentSessionScope = 'project' | 'unbound' | 'all';
 
@@ -46,6 +47,7 @@ function currentSession(): any {
 }
 function offlineScopeKey(session = currentSession()): string { return `${session?.tenantId || 'local'}:${session?.user?.id || session?.user?.username || 'anonymous'}`; }
 
+/** 重放离线队列中的请求。 */
 export async function replayOfflineRequests(): Promise<void> {
   await replayOfflineQueue(async (item) => {
     try {
@@ -63,6 +65,7 @@ export async function replayOfflineRequests(): Promise<void> {
   }, offlineScopeKey());
 }
 
+/** 当前离线作用域键（租户/项目）。 */
 export function currentOfflineScopeKey(): string { return offlineScopeKey(); }
 
 async function confirmedRequest(path: string, init: TransportRequestInit) {
@@ -80,15 +83,18 @@ async function confirmedRequest(path: string, init: TransportRequestInit) {
   }
 }
 
+/** 发起请求并解析 JSON 响应（错误抛 ApiError）。 */
 export async function request<T = any>(path: string, options?: TransportRequestInit): Promise<T> {
   return transport.json<T>(path, options);
 }
 
+/** 发起请求并返回原始 Response。 */
 export async function requestRaw(path: string, options?: TransportRequestInit): Promise<Response> {
   return transport.raw(path, options);
 }
 
 /** Read a structured API envelope even when the endpoint intentionally returns 409/422. */
+/** 发起请求并返回状态/响应体（不抛错）。 */
 export async function requestResult(path: string, options?: TransportRequestInit): Promise<{ status: number; ok: boolean; body: any }> {
   const result = await transport.result(path, options);
   return { status: result.status, ok: result.ok, body: result.body };
@@ -96,6 +102,7 @@ export async function requestResult(path: string, options?: TransportRequestInit
 
 // ── 项目管理 ──────────────────────────────────────
 
+/** 项目相关 API（CRUD、克隆、校验、质量）。 */
 export const projectApi = {
   list: () => request('/projects'),
   get: (id: string) => request(`/projects/${encodeURIComponent(id)}`),
@@ -182,6 +189,7 @@ export const projectApi = {
 
 // ── 文件管理 ──────────────────────────────────────
 
+/** 文件上传 API。 */
 export const fileApi = {
   list: () => request('/files'),
   get: (id: string) => request(`/files/${id}`),
@@ -196,6 +204,7 @@ export const fileApi = {
 
 // ── 数据管理 ──────────────────────────────────────
 
+/** 数据源/Sheet API。 */
 export const dataApi = {
   parse: (fileId: string, sheetName?: string) => request('/data/parse', { method: 'POST', body: JSON.stringify({ fileId, sheetName }) }),
   get: (fileId: string, sheetName: string) => request(`/data/${fileId}/${sheetName}`),
@@ -206,6 +215,7 @@ export const dataApi = {
 
 // ── 历史管理 ──────────────────────────────────────
 
+/** 线程历史 API。 */
 export const historyApi = {
   list: (projectId: string) => request(`/history/${projectId}`),
   create: (projectId: string, label: string, snapshot: any) => request(`/history/${projectId}`, { method: 'POST', body: JSON.stringify({ label, snapshot: JSON.stringify(snapshot) }) }),
@@ -217,6 +227,7 @@ export const historyApi = {
 
 // ── 流程管理 ──────────────────────────────────────
 
+/** 工作流 API。 */
 export const workflowApi = {
   list: (projectId: string) => request(`/workflows/${projectId}`),
   create: (projectId: string, data: any, metadata: { baseRevision: string; idempotencyKey: string }) => request(`/workflows/${projectId}`, { method: 'POST', headers: { 'if-match': metadata.baseRevision, 'x-idempotency-key': metadata.idempotencyKey }, body: JSON.stringify(data) }),
@@ -226,6 +237,7 @@ export const workflowApi = {
 
 // ── 行为管理 ──────────────────────────────────────
 
+/** 行为 API。 */
 export const behaviorApi = {
   list: (projectId: string) => request(`/behaviors/${projectId}`),
   create: (projectId: string, data: any, metadata: { baseRevision: string; idempotencyKey: string }) => request(`/behaviors/${projectId}`, { method: 'POST', headers: { 'if-match': metadata.baseRevision, 'x-idempotency-key': metadata.idempotencyKey }, body: JSON.stringify(data) }),
@@ -235,6 +247,7 @@ export const behaviorApi = {
 
 // ── 配置管理 ──────────────────────────────────────
 
+/** 配置 API。 */
 export const configApi = {
   list: () => request('/configs'),
   get: (id: string) => request(`/configs/${id}`),
@@ -242,6 +255,7 @@ export const configApi = {
   remove: (id: string) => request(`/configs/${id}`, { method: 'DELETE' }),
 };
 
+/** LLM Provider 配置 API。 */
 export const llmApi = {
   health: () => request('/ai/health'),
   providers: {
@@ -356,6 +370,7 @@ export const llmApi = {
 
 // ── Describe 分析 ──────────────────────────────────────
 
+/** 项目描述/分析 API。 */
 export const describeApi = {
   get: (fileId: string, sheet?: string, projectId?: string) => {
     const params = new URLSearchParams();
@@ -371,6 +386,7 @@ export const describeApi = {
   },
 };
 
+/** 任务队列 API。 */
 export const taskApi = {
   list: (limit = 100) => request(`/tasks?limit=${limit}`),
   get: (id: string) => request(`/tasks/${encodeURIComponent(id)}`),

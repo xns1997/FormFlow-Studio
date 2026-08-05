@@ -58,6 +58,7 @@ async function withStore<T>(mode: IDBTransactionMode, run: (store: IDBObjectStor
   }
 }
 
+/** 入队离线写操作（网络不可用时的本地缓冲）。 */
 export async function enqueueOffline(item: Omit<OfflineQueueItem, 'createdAt' | 'updatedAt' | 'state' | 'attempts'>): Promise<OfflineQueueItem> {
   const now = Date.now();
   const record: OfflineQueueItem = { ...item, createdAt: now, updatedAt: now, state: 'pending', attempts: 0 };
@@ -66,6 +67,7 @@ export async function enqueueOffline(item: Omit<OfflineQueueItem, 'createdAt' | 
   return record;
 }
 
+/** 列出离线队列（可按项目/作用域过滤）。 */
 export async function listOfflineQueue(projectId?: string, scopeKey?: string): Promise<OfflineQueueItem[]> {
   const values = [...memory.values()].filter((item) => (!projectId || item.projectId === projectId) && (!scopeKey || item.scopeKey === scopeKey));
   try {
@@ -79,6 +81,7 @@ export async function listOfflineQueue(projectId?: string, scopeKey?: string): P
     .sort((a, b) => a.createdAt - b.createdAt);
 }
 
+/** 更新离线项状态（重试计数/错误/下次尝试时间）。 */
 export async function updateOfflineQueue(id: string, patch: Partial<Pick<OfflineQueueItem, 'state' | 'attempts' | 'error' | 'nextAttemptAt'>>): Promise<void> {
   const current = memory.get(id);
   if (!current) return;
@@ -87,16 +90,19 @@ export async function updateOfflineQueue(id: string, patch: Partial<Pick<Offline
   try { await withStore('readwrite', (store) => store.put(next)); } catch { /* best effort */ }
 }
 
+/** 移除离线项。 */
 export async function removeOfflineQueue(id: string): Promise<void> {
   memory.delete(id);
   try { await withStore('readwrite', (store) => store.delete(id)); } catch { /* best effort */ }
 }
 
+/** 清空离线队列（可按范围过滤）。 */
 export async function clearOfflineQueue(projectId?: string, scopeKey?: string): Promise<void> {
   const items = await listOfflineQueue(projectId, scopeKey);
   await Promise.all(items.map((item) => removeOfflineQueue(item.id)));
 }
 
+/** 清理超过保留期的离线项。 */
 export async function pruneOfflineQueue(retentionDays: number, scopeKey?: string): Promise<void> {
   if (retentionDays <= 0) return;
   const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
@@ -104,6 +110,7 @@ export async function pruneOfflineQueue(retentionDays: number, scopeKey?: string
   await Promise.all(items.filter((item) => item.updatedAt < cutoff).map((item) => removeOfflineQueue(item.id)));
 }
 
+/** 重放离线队列：completed 删除、conflict/retry 保留并按退避重试。 */
 export async function replayOfflineQueue(execute: (item: OfflineQueueItem) => Promise<'completed' | 'conflict' | 'retry'>, scopeKey?: string): Promise<void> {
   const items = await listOfflineQueue(undefined, scopeKey);
   const now = Date.now();

@@ -15,7 +15,9 @@ import {
   wireLegacyExportEdge,
 } from './workflowIoMigration';
 
+/** 导入节点 spec ID。 */
 export const WORKFLOW_IMPORT_SPEC_ID = 'workflow:import';
+/** 导出节点 spec ID。 */
 export const WORKFLOW_EXPORT_SPEC_ID = 'workflow:export';
 
 const WORKFLOW_IMPORT_NODE_ID = 'workflow:import';
@@ -35,6 +37,7 @@ function stableFieldId(nodeId: string, direction: 'input' | 'output', name: stri
   return `io_${direction}_${(hash >>> 0).toString(36)}`;
 }
 
+/** 归一化端口字段定义（去重、补默认方向）。 */
 export function normalizeIoFields(node: WorkflowNode, direction: 'input' | 'output', fields: PortDefinitionEntry[]): WorkflowIoField[] {
   return fields.map((field) => ({
     ...field,
@@ -85,12 +88,14 @@ function defaultWorkflowExportProperties() {
 
 // ─── Field access ─────────────────────────────────────────────────────────────
 
+/** 获取导入端口字段（节点或工作流均可）。 */
 export function getWorkflowImportFields(nodeOrWorkflow: WorkflowNode | Pick<WorkflowFile, 'nodes'> | undefined) {
   const node = nodeOrWorkflow && 'nodes' in nodeOrWorkflow ? getWorkflowImportNode(nodeOrWorkflow) : nodeOrWorkflow;
   if (!node) return [];
   return normalizeIoFields(node as WorkflowNode, 'input', parseCustomJsPortDefinitions(parseProperties(node as WorkflowNode).outputPorts));
 }
 
+/** 获取导出端口字段（节点或工作流均可）。 */
 export function getWorkflowExportFields(nodeOrWorkflow: WorkflowNode | Pick<WorkflowFile, 'nodes'> | undefined) {
   const node = nodeOrWorkflow && 'nodes' in nodeOrWorkflow ? getWorkflowExportNode(nodeOrWorkflow) : nodeOrWorkflow;
   if (!node) return [];
@@ -99,14 +104,17 @@ export function getWorkflowExportFields(nodeOrWorkflow: WorkflowNode | Pick<Work
 
 // ─── Node creation ────────────────────────────────────────────────────────────
 
+/** 创建导入节点（ID 避开已有集合）。 */
 export function createWorkflowImportNode(existingIds: Set<string>, position = { x: 80, y: 140 }): WorkflowNode {
   return createNode(nextNodeId(WORKFLOW_IMPORT_NODE_ID, existingIds), WORKFLOW_IMPORT_SPEC_ID, position.x, position.y, defaultWorkflowImportProperties());
 }
 
+/** 创建导出节点（ID 避开已有集合）。 */
 export function createWorkflowExportNode(existingIds: Set<string>, position = { x: 760, y: 140 }): WorkflowNode {
   return createNode(nextNodeId(WORKFLOW_EXPORT_NODE_ID, existingIds), WORKFLOW_EXPORT_SPEC_ID, position.x, position.y, defaultWorkflowExportProperties());
 }
 
+/** 创建默认导入/导出节点骨架。 */
 export function createWorkflowIoScaffold() {
   const importNode = createNode(WORKFLOW_IMPORT_NODE_ID, WORKFLOW_IMPORT_SPEC_ID, 80, 140, defaultWorkflowImportProperties());
   const exportNode = createNode(WORKFLOW_EXPORT_NODE_ID, WORKFLOW_EXPORT_SPEC_ID, 760, 140, defaultWorkflowExportProperties());
@@ -115,19 +123,23 @@ export function createWorkflowIoScaffold() {
 
 // ─── Node lookup ──────────────────────────────────────────────────────────────
 
+/** 工作流中的全部导入节点。 */
 export function getWorkflowImportNodes(workflow: Pick<WorkflowFile, 'nodes'>) {
   return workflow.nodes.filter((node) => node.specId === WORKFLOW_IMPORT_SPEC_ID);
 }
 
+/** 工作流中的全部导出节点。 */
 export function getWorkflowExportNodes(workflow: Pick<WorkflowFile, 'nodes'>) {
   return workflow.nodes.filter((node) => node.specId === WORKFLOW_EXPORT_SPEC_ID);
 }
 
+/** 工作流中的首个导入节点。 */
 export function getWorkflowImportNode(workflow: Pick<WorkflowFile, 'nodes'>) {
   const matches = getWorkflowImportNodes(workflow);
   return matches.length === 1 ? matches[0] : null;
 }
 
+/** 工作流中的首个导出节点。 */
 export function getWorkflowExportNode(workflow: Pick<WorkflowFile, 'nodes'>) {
   const matches = getWorkflowExportNodes(workflow);
   return matches.length === 1 ? matches[0] : null;
@@ -135,6 +147,7 @@ export function getWorkflowExportNode(workflow: Pick<WorkflowFile, 'nodes'>) {
 
 // ─── Validation ───────────────────────────────────────────────────────────────
 
+/** 校验工作流 IO 配置（缺少导入/导出时给出提示）。 */
 export function validateWorkflowIo(workflow: Pick<WorkflowFile, 'nodes'>) {
   const errors: string[] = [];
   const imports = getWorkflowImportNodes(workflow);
@@ -148,6 +161,7 @@ export function validateWorkflowIo(workflow: Pick<WorkflowFile, 'nodes'>) {
 
 // ─── Orchestrator ─────────────────────────────────────────────────────────────
 
+/** 确保工作流包含导入/导出节点（缺失时补齐并返回更新后的工作流）。 */
 export function ensureWorkflowIo(workflow: WorkflowFile, options: { legacyTargetNodeId?: string; persistFieldIds?: boolean } = {}) {
   const existingIds = new Set(workflow.nodes.map((node) => node.id));
   let nextNodes = [...workflow.nodes];
