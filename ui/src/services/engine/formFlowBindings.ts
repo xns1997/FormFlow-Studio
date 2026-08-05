@@ -1,6 +1,7 @@
 import type { ComponentNode } from '../../models';
 import type { DesignComponent, WorkflowFile } from '../../project/types';
 import type { PropertyType } from '../../../nodes/excel-api-types';
+import { resolveEventControlFieldName } from '../../../../shared/formflow-core/formEventControls';
 import { evaluatePropertyExpression } from './propertyExpression';
 import { ensureWorkflowIo, getWorkflowExportFields, getWorkflowImportFields } from './workflowIo';
 
@@ -102,10 +103,9 @@ function normalizedName(value: string) {
   return value.trim().toLowerCase().replace(/[\s_-]+/g, '');
 }
 
+/** 字段身份的唯一派生；与 ctx.controls 的 canonical 键共用同一实现。 */
 export function getFlowComponentField(component: FieldComponent) {
-  if ('fieldBinding' in component && component.fieldBinding) return String(component.fieldBinding);
-  const props = component.props || {};
-  return String(props.name || ('name' in component ? component.name : '') || component.id);
+  return resolveEventControlFieldName(component);
 }
 
 function findFieldComponent(field: string, components: FieldComponent[]) {

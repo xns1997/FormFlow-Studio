@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { WorkflowFile } from '../project/types';
+import type { DesignComponent, WorkflowFile } from '../project/types';
 import { createEventContextExtraLib, createEventContextSuggestions, createFlowParameterSuggestions } from './codeEditorSuggestions';
 
 const workflow: WorkflowFile = {
@@ -83,6 +83,29 @@ test('event extra lib carries current field and value typing', () => {
   assert.match(lib.content, /declare function getValue/);
   assert.match(lib.content, /declare function PrintDebug\(\.\.\.args: unknown\[\]\): void;/);
   assert.match(lib.content, /declare const value: CurrentEventValue;/);
+});
+
+test('event extra lib and suggestions carry dual controls keys when components are provided', () => {
+  const components: DesignComponent[] = [
+    { id: 'comp-1', type: 'input', x: 0, y: 0, width: 100, height: 32, props: { name: 'customerName' } },
+    { id: 'comp-2', type: 'input', x: 0, y: 0, width: 100, height: 32, props: { name: '旧名' }, fieldBinding: 'approvalNote' },
+  ];
+  const suggestions = createEventContextSuggestions({ fields: [], components, eventName: 'onChange' });
+  assert.ok(suggestions.some((item) => item.label === 'ctx.controls.customerName' && item.scope === 'ctx-member'));
+  assert.ok(suggestions.some((item) => item.label === 'ctx.controls.comp-1' && item.scope === 'ctx-member'));
+  assert.ok(suggestions.some((item) => item.label === 'approvalNote' && item.scope === 'ctx-controls-member'));
+  assert.ok(suggestions.some((item) => item.label === 'comp-2' && item.scope === 'ctx-controls-member'));
+  assert.ok(!suggestions.some((item) => item.label === 'ctx.controls.旧名'), 'deprecated aliases must not be suggested');
+
+  const lib = createEventContextExtraLib({
+    filePath: 'inmemory://model/typed-controls.d.ts',
+    fields: [],
+    components,
+    eventName: 'onChange',
+  });
+  assert.match(lib.content, /type FormEventControlKey = EventFieldName \| "customerName" \| "comp-1" \| "approvalNote" \| "comp-2";/);
+  assert.match(lib.content, /controls: Partial<Record<FormEventControlKey, FormEventControlHandle>> & Record<string, FormEventControlHandle>;/);
+  assert.match(lib.content, /type FormLinkageOptionsConfig =/);
 });
 
 test('event-specific suggestions follow the selected behavior event', () => {

@@ -1,5 +1,12 @@
 export type FormEventContractMemberKind = 'value' | 'method';
 
+export interface FormEventContractMemberOptions {
+  /** 内部成员：运行时存在，但编辑器补全、参考文档与别名 d.ts 不暴露。 */
+  internal?: boolean;
+  /** 已废弃：仅保留运行期兼容，编辑器补全与参考文档不推荐。 */
+  deprecated?: boolean;
+}
+
 export interface FormEventContractMember {
   name: string;
   kind: FormEventContractMemberKind;
@@ -7,6 +14,8 @@ export interface FormEventContractMember {
   signature?: string;
   description: string;
   topLevelAlias?: boolean;
+  internal?: boolean;
+  deprecated?: boolean;
 }
 
 const value = (
@@ -14,20 +23,24 @@ const value = (
   type: string,
   description: string,
   topLevelAlias = true,
-): FormEventContractMember => ({ name, kind: 'value', type, description, topLevelAlias });
+  options: FormEventContractMemberOptions = {},
+): FormEventContractMember => ({ name, kind: 'value', type, description, topLevelAlias, ...options });
 
 const method = (
   name: string,
   signature: string,
   description: string,
   topLevelAlias = true,
-): FormEventContractMember => ({ name, kind: 'method', type: 'function', signature, description, topLevelAlias });
+  options: FormEventContractMemberOptions = {},
+): FormEventContractMember => ({ name, kind: 'method', type: 'function', signature, description, topLevelAlias, ...options });
 
 /**
  * Canonical public contract for control-event scripts.
  *
  * Runtime aliases, editor completion and reference documentation consume this
  * inventory so adding an API in one surface cannot silently omit the others.
+ * `internal` members are part of the runtime contract but intentionally hidden
+ * from editor completion, reference docs and top-level aliases.
  */
 export const FORM_EVENT_CONTRACT: readonly FormEventContractMember[] = [
   value('event', 'string', '当前事件名。'),
@@ -45,7 +58,7 @@ export const FORM_EVENT_CONTRACT: readonly FormEventContractMember[] = [
   value('component', 'FormEventComponent', '当前控件定义。'),
   value('componentId', 'string', '当前控件 ID。'),
   value('componentType', 'string', '当前控件类型。'),
-  value('controls', 'Record<string, FormEventControlHandle>', '按字段名或控件 ID 访问控件句柄。'),
+  value('controls', 'Record<string, FormEventControlHandle>', '按字段名或控件 ID 访问控件句柄。字段名键按 fieldBinding→props.name→name→id 派生；ID 键仅在未被占用时写入；旧派生键（name→props.name→id）在未冲突时以 deprecated 别名保留。'),
   value('callbacks', 'Record<string, EventCallback>', '宿主注册的回调。'),
   method('getValue', 'getValue(field: string): unknown', '读取字段值。'),
   method('getValues', 'getValues(fields: readonly string[]): Record<string, unknown>', '批量读取字段值。'),
@@ -60,6 +73,7 @@ export const FORM_EVENT_CONTRACT: readonly FormEventContractMember[] = [
   method('setRequired', 'setRequired(field: string, required: boolean): Promise<void>', '设置字段必填状态。'),
   method('toggleRequired', 'toggleRequired(field: string): Promise<boolean>', '切换字段必填状态。'),
   method('setFieldState', 'setFieldState(fieldOrComponentId: string, patch: FormFieldStatePatch): Promise<void>', '一次设置字段值与控件状态。'),
+  method('setOptions', 'setOptions(field: string, config: FormLinkageOptionsConfig): Promise<void>', '设置字段选项配置。', false),
   method('focusField', 'focusField(field: string): Promise<void>', '聚焦字段。'),
   method('focusControl', 'focusControl(componentId: string): Promise<void>', '聚焦控件。'),
   method('scrollToField', 'scrollToField(field: string): Promise<void>', '滚动到字段。'),
@@ -68,6 +82,7 @@ export const FORM_EVENT_CONTRACT: readonly FormEventContractMember[] = [
   method('openTab', 'openTab(tabIdOrIndex: string | number): Promise<void>', '切换页签的业务别名。'),
   method('showMessage', "showMessage(message: string, level?: 'info' | 'success' | 'warning' | 'error'): Promise<void>", '显示用户提示。'),
   method('debug', 'debug(label: string, data?: unknown, options?: Record<string, unknown>): void', '写入结构化调试日志。'),
+  value('console', "Pick<Console, 'log' | 'warn' | 'error' | 'debug'>", '事件内调试控制台；写入结构化日志。', false),
   method('querySheet', 'querySheet(sheetId: string, filter?: Record<string, unknown>): Record<string, unknown>[]', '查询项目数据表。'),
   method('findRows', 'findRows(sheetId: string, criteria?: Record<string, unknown>, options?: FormFindRowsOptions): Record<string, unknown>[]', '查询多条记录。'),
   method('findRow', 'findRow(sheetId: string, criteria: Record<string, unknown>, options?: FormFindRowOptions): Record<string, unknown> | null', '查询单条记录。'),
@@ -82,12 +97,16 @@ export const FORM_EVENT_CONTRACT: readonly FormEventContractMember[] = [
   method('flow', 'flow(workflow?: string): FormFlowChain', '创建流程链式操作。', false),
   method('runWorkflow', 'runWorkflow(workflow?: string, parameters?: Record<string, unknown>, options?: { targetNodeId?: string }): Promise<EventFlowResult>', '运行指定流程。'),
   method('runConfiguredWorkflow', 'runConfiguredWorkflow(parameters?: Record<string, unknown>): Promise<EventFlowResult>', '运行当前事件绑定的流程。'),
+  method('queueFlowOutput', 'queueFlowOutput(field: string, value: unknown): void', '记录流程输出意图，事件尾部统一提交（内部成员，不面向脚本）。', false, { internal: true }),
   method('call', 'call(name: string, ...args: unknown[]): Promise<unknown>', '调用宿主回调。'),
 ] as const;
 
 export const FORM_EVENT_SCRIPT_ALIAS_KEYS = FORM_EVENT_CONTRACT
   .filter((member) => member.topLevelAlias)
   .map((member) => member.name);
+
+export const FORM_EVENT_PUBLIC_MEMBERS = FORM_EVENT_CONTRACT.filter((member) => !member.internal);
+export const FORM_EVENT_INTERNAL_MEMBERS = FORM_EVENT_CONTRACT.filter((member) => member.internal);
 
 export type FormEventContractKey = typeof FORM_EVENT_CONTRACT[number]['name'];
 /** Compile-time completeness constraint for concrete runtime contexts. */
@@ -101,10 +120,20 @@ function memberJsDoc(member: FormEventContractMember) {
   return `/** ${member.description} */`;
 }
 
-export function renderFormEventContractInterface(name = 'FormEventCanonicalContract') {
-  const members = FORM_EVENT_CONTRACT.map((member) => member.kind === 'method'
-    ? `${memberJsDoc(member)}\n  ${member.signature};`
-    : `${memberJsDoc(member)}\n  ${member.name}: ${member.type};`);
+export function renderFormEventContractInterface(
+  name = 'FormEventCanonicalContract',
+  options: { includeInternal?: boolean } = {},
+) {
+  const members = FORM_EVENT_CONTRACT
+    .filter((member) => options.includeInternal || !member.internal)
+    .map((member) => {
+      const jsDoc = member.deprecated
+        ? `${memberJsDoc(member)}\n  @deprecated 保留运行期兼容，编辑器与文档不再推荐。`
+        : memberJsDoc(member);
+      return member.kind === 'method'
+        ? `${jsDoc}\n  ${member.signature};`
+        : `${jsDoc}\n  ${member.name}: ${member.type};`;
+    });
   return `interface ${name} {\n${members.join('\n')}\n}`;
 }
 

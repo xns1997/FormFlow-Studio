@@ -23,6 +23,7 @@ import {
   type EventFieldDescriptor,
 } from '../../components/codeEditorSuggestions';
 import { registerEventJsLanguageServices } from '../../components/eventJsLanguageServices';
+import { lintEventControlKeys } from '../../../../shared/formflow-core/formEventControls';
 import { getTemplatesByCategory, type BehaviorTemplate } from '../../services/config/behaviorTemplates';
 import Modal, { ModalHeader } from '../../components/Modal';
 import { AntdCompatSelect } from '../../components/AntdFormControls';
@@ -635,6 +636,7 @@ export default function UnifiedEditorPage() {
         tables: project?.srcTable || [],
         workflows: allWorkflows,
         suggestions: behaviorEditorSuggestions,
+        controlKeyIssues: lintEventControlKeys(designer.components),
       }
     : null, [editingBehavior, fieldDescriptors, designer.components, project?.srcTable, allWorkflows, behaviorEditorSuggestions]);
 
@@ -1137,6 +1139,7 @@ export default function UnifiedEditorPage() {
                     extraLibs={[createEventContextExtraLib({
                       filePath: `inmemory://behavior-${editingBehavior.behavior.id}.d.ts`,
                       fields: fieldDescriptors,
+                      components: designer.components,
                       eventName: editingBehavior.behavior.event,
                     }), createChainApiExtraLib(`inmemory://behavior-${editingBehavior.behavior.id}-chain.d.ts`)]}
                     suggestions={behaviorEditorSuggestions}

@@ -5,6 +5,7 @@ import { request } from '../services/io/api';
 import type { CodeEditorSuggestion } from './CodeEditor';
 import { codeEditorSuggestionInternals } from './CodeEditor';
 import { acquireLanguageProviders, type Disposable } from './monacoProviderRegistry';
+import type { EventControlKeyLintIssue } from '../../../shared/formflow-core/formEventControls';
 
 export interface EventFieldDescriptorLike { name: string; type?: string; }
 
@@ -14,6 +15,8 @@ export interface EventJsServicesContext {
   tables: SrcTableEntry[];
   workflows: WorkflowFile[];
   suggestions: CodeEditorSuggestion[];
+  /** 表单级控件键 lint（重复字段名 / ID 撞键），以编辑器 warning 呈现。 */
+  controlKeyIssues?: EventControlKeyLintIssue[];
 }
 
 const contextByUri = new Map<string, EventJsServicesContext>();
@@ -272,6 +275,18 @@ export function registerEventJsLanguageServices(
 ): Disposable {
   const uri = instance.getModel()?.uri.toString();
   if (uri) contextByUri.set(uri, ctx);
+  const model = instance.getModel();
+  if (model) {
+    const issues = ctx.controlKeyIssues || [];
+    monaco.editor.setModelMarkers(model, 'formflow-event-control-keys', issues.map((issue) => ({
+      severity: monaco.MarkerSeverity.Warning,
+      message: issue.message,
+      startLineNumber: 1,
+      startColumn: 1,
+      endLineNumber: 1,
+      endColumn: 1,
+    })));
+  }
   const acquire = acquireLanguageProviders(monaco, 'javascript:formflow-event', (monacoInstance) => [
     registerInlineCompletions(monacoInstance),
     registerCodeActions(monacoInstance),
@@ -279,6 +294,8 @@ export function registerEventJsLanguageServices(
   ]);
   return {
     dispose() {
+      const current = instance.getModel();
+      if (current) monaco.editor.setModelMarkers(current, 'formflow-event-control-keys', []);
       acquire.dispose();
       if (uri) contextByUri.delete(uri);
     },

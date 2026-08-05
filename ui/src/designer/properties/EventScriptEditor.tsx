@@ -3,6 +3,7 @@ import type { DesignComponent, SrcTableEntry, WorkflowFile } from '../../project
 import { getBehaviorEventDoc, getEventReferenceShortcuts } from '../../services/io/behaviorDocs';
 import { createChainApiExtraLib, createEventContextExtraLib, createEventContextSuggestions, type EventFieldDescriptor } from '../../components/codeEditorSuggestions';
 import { registerEventJsLanguageServices } from '../../components/eventJsLanguageServices';
+import { lintEventControlKeys } from '../../../../shared/formflow-core/formEventControls';
 import CodeEditor from '../../components/CodeEditor';
 import Modal, { ModalFooter, ModalHeader } from '../../components/Modal';
 import { buildDocsPath } from '../../services/io/routes';
@@ -63,6 +64,7 @@ export function EventScriptEditorSection({
     tables,
     workflows,
     suggestions: eventSuggestions,
+    controlKeyIssues: lintEventControlKeys(components),
   }), [fieldDescriptors, components, tables, workflows, eventSuggestions]);
   const closeWorkbench = () => {
     setDocModal(null);
@@ -281,6 +283,7 @@ export function EventScriptEditorSection({
           createEventContextExtraLib({
             filePath: `inmemory://model/form-event-${component.id}-${evt.key}.d.ts`,
             fields: fieldDescriptors,
+            components,
             currentField,
             eventName: evt.key,
           }),
@@ -348,6 +351,7 @@ export function EventScriptEditorSection({
                   createEventContextExtraLib({
                     filePath: `inmemory://model/form-event-${component.id}-${evt.key}-workbench.d.ts`,
                     fields: fieldDescriptors,
+                    components,
                     currentField,
                     eventName: evt.key,
                   }),

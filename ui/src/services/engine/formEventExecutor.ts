@@ -40,6 +40,7 @@ import {
   type FormEventEffectSource,
 } from './formEventTransaction';
 import type { FormEventRuntimeContract } from '../../../../shared/formflow-core/formEventContract';
+import { planEventControlKeys, resolveEventControlFieldName } from '../../../../shared/formflow-core/formEventControls';
 import { createBrowserDomAdapter, type DomAdapter } from './domAdapter';
 
 export type FormEventCallback = (context: FormEventRuntimeContext, ...args: unknown[]) => unknown | Promise<unknown>;
@@ -133,7 +134,7 @@ export interface FormEventRuntimeContext extends FormControlEventContext, FormEv
   ) => Promise<FlowExecutionResult>;
   runConfiguredWorkflow: (parameters?: Record<string, unknown>) => Promise<FlowExecutionResult>;
   /** Internal output intent used by linkage actions; committed at the event tail. */
-  queueFlowOutput?: (field: string, value: unknown) => void;
+  queueFlowOutput: (field: string, value: unknown) => void;
   call: (name: string, ...args: unknown[]) => Promise<unknown>;
   callbacks: Record<string, FormEventCallback>;
   debug: (label: string, data?: unknown, options?: Partial<DebugEntry>) => void;
@@ -212,8 +213,9 @@ function createControlAccessors(
   },
 ) {
   const controls: FormEventRuntimeContext['controls'] = {};
+  const handles: FormEventRuntimeContext['controls'][string][] = [];
   for (const component of components) {
-    const fieldName = String(component.name || component.props.name || component.id);
+    const fieldName = resolveEventControlFieldName(component);
     const control: Record<string, unknown> = {
       id: component.id,
       name: fieldName,
@@ -251,8 +253,10 @@ function createControlAccessors(
         },
       },
     });
-    controls[fieldName] = control as FormEventRuntimeContext['controls'][string];
-    controls[component.id] = controls[fieldName];
+    handles.push(control as FormEventRuntimeContext['controls'][string]);
+  }
+  for (const assignment of planEventControlKeys(components)) {
+    controls[assignment.key] = handles[assignment.componentIndex];
   }
   return controls;
 }

@@ -10,6 +10,7 @@ import {
   type EventFieldDescriptor,
 } from '../../components/codeEditorSuggestions';
 import { registerEventJsLanguageServices } from '../../components/eventJsLanguageServices';
+import { lintEventControlKeys } from '../../../../shared/formflow-core/formEventControls';
 import { useProjectStore } from '../../project/store';
 import type { BehaviorFile } from '../../project/types';
 import { getTemplatesByCategory, type BehaviorTemplate } from '../../services/config/behaviorTemplates';
@@ -196,6 +197,7 @@ export default function BehaviorPage() {
         tables: project?.srcTable || [],
         workflows,
         suggestions: editorSuggestions,
+        controlKeyIssues: lintEventControlKeys(designComponents),
       }
     : null, [editingScript, fieldDescriptors, designComponents, project?.srcTable, workflows, editorSuggestions]);
 
@@ -438,6 +440,7 @@ export default function BehaviorPage() {
                   createEventContextExtraLib({
                     filePath: `inmemory://model/behavior-${editingScript.id}.d.ts`,
                     fields: fieldDescriptors,
+                    components: designComponents,
                     eventName: editingScript.event,
                   }),
                   createChainApiExtraLib(`inmemory://model/behavior-${editingScript.id}-chain.d.ts`),

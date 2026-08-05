@@ -24,6 +24,8 @@ export interface ScriptExecutionScope {
 
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor as new (...args: string[]) => (...args: unknown[]) => Promise<unknown>;
 
+// 遗留别名由行为脚本沙箱（SandboxContext）放入 ctx 后经本清单暴露为顶层变量；
+// 控件事件运行时 ctx 不含这些键，因此不会被意外绑定。
 const LEGACY_SCRIPT_ALIAS_KEYS = ['setField', 'validateField', 'updateRow', 'submit', 'getState', 'originalData'];
 export const SCRIPT_ALIAS_KEYS = [...new Set([...FORM_EVENT_SCRIPT_ALIAS_KEYS, ...LEGACY_SCRIPT_ALIAS_KEYS])];
 

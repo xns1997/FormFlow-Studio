@@ -59,7 +59,7 @@ FormFlow 的应对是把规则、契约与事件 API 统一建模为事实来源
 
 ### 3.4 事件契约单一事实来源
 
-`FORM_EVENT_CONTRACT` 一份清单同时驱动运行时别名、编辑器补全与参考文档；新增任一 API 不会在其他表面静默遗漏。
+`FORM_EVENT_CONTRACT` 一份清单同时驱动运行时别名、编辑器补全与参考文档；新增任一 API 不会在其他表面静默遗漏。运行时 ctx 与契约的双向一致性（含 `ctx.controls` 动态键派生）由真实执行器审计测试在 CI 中强制保证。
 
 ### 3.5 智能体与 MCP
 
@@ -101,7 +101,6 @@ Windows 请改用 `powershell -ExecutionPolicy Bypass -File scripts/init-env.ps1
 
 - DSL 为行级语法，跨表单与跨项目的规则引用尚未建模；
 - 内联补全目前为规则驱动，尚未接入模型续写（AI 生成仍走确认式提案）；
-- 事件 JS 上下文按契约静态建模，运行时动态键（如 `ctx.controls` 别名）依赖人工校验；
 - 自动生成的 `CHANGELOG.md` 保留了一段 2.x 历史线，尚未与 1.x 分卷归档对齐。
 
 ## 参考

@@ -36,7 +36,18 @@
 
 ## ctx.controls
 
-`ctx.controls` 会按控件 `name` 和 `componentId` 暴露运行时句柄，适合做同表单内的直接联动。
+`ctx.controls` 会同时按「规范字段名键」和「组件 ID 键」暴露运行时句柄，适合做同表单内的直接联动。
+
+键派生规则（canonical 字段名键）：
+
+- `fieldBinding → props.name → name → id`（单一实现，与流程字段解析共用）
+- 旧实现曾用 `name → props.name → id`（忽略 `fieldBinding`）；为兼容存量脚本，旧派生键在可推导且不与任何已占用键冲突时以 deprecated 别名保留，但编辑器补全与文档不再推荐
+
+撞键规则：
+
+- 重复字段名：后写覆盖，设计器中会给出 warning
+- 组件 ID 键：仅在键未被占用时写入；与字段名键冲突时该别名被跳过并给出 warning
+- deprecated 别名：仅在可推导、与 canonical/ID 键不同且未被占用时写入
 
 常见属性：
 
@@ -44,6 +55,8 @@
 - `ctx.controls.resultTable.visible`
 - `ctx.controls.submitButton.disabled`
 - `ctx.controls.amount.required`
+
+编辑器内 `ctx.controls.` 的补全同时建议规范字段名键与组件 ID 键，d.ts 会按当前表单生成键联合类型，写错键会直接标红。
 
 示例：
 
@@ -57,6 +70,13 @@ ctx.controls.approvalResults.value = rows
 
 - 同表单内的轻量联动优先用 `ctx.controls`
 - 需要复杂计算、节点编排或跨流程复用时，再用 `ctx.runConfiguredWorkflow()` / `ctx.runWorkflow()`
+
+## 补充公开成员
+
+- `ctx.setOptions(field, config)`：设置字段的选项配置（表、区间或静态映射）
+- `ctx.console`：事件内调试控制台（`log / warn / error / debug`），日志会进入结构化调试记录
+
+`ctx.queueFlowOutput` 为内部成员，仅用于联动链路在事件尾部统一提交流程输出，不面向脚本使用，编辑器不会补全或提示。
 
 ## 批量方法与链式 API
 

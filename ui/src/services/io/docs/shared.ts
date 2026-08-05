@@ -23,7 +23,7 @@ export const sharedContextFields: BehaviorReferenceField[] = [
 ];
 
 export const controlOnlyContextFields: BehaviorReferenceField[] = FORM_EVENT_CONTRACT
-  .filter((member) => member.kind === 'value')
+  .filter((member) => member.kind === 'value' && !member.internal)
   .map((member) => ({
     name: `ctx.${member.name}`,
     type: member.type,
@@ -131,7 +131,7 @@ const printApis: BehaviorApiReference[] = [
 
 export const controlApis: BehaviorApiReference[] = [
   ...FORM_EVENT_CONTRACT
-    .filter((member) => member.kind === 'method' && member.topLevelAlias)
+    .filter((member) => member.kind === 'method' && member.topLevelAlias && !member.internal)
     .map((member) => ({
       name: member.name,
       signature: member.signature || member.name,
@@ -139,7 +139,7 @@ export const controlApis: BehaviorApiReference[] = [
     })),
   ...printApis,
   ...FORM_EVENT_CONTRACT
-    .filter((member) => member.kind === 'method')
+    .filter((member) => member.kind === 'method' && !member.internal)
     .map((member) => ({
       name: `ctx.${member.name}`,
       signature: `ctx.${member.signature || member.name}`,
