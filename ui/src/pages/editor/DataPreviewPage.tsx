@@ -315,10 +315,14 @@ export default function DataPreviewPage({
   const [insertColumnDefault, setInsertColumnDefault] = useState('');
   const [draggingRowKey, setDraggingRowKey] = useState<string | null>(null);
   const [dragOverRowKey, setDragOverRowKey] = useState<string | null>(null);
+  const [dragRange, setDragRange] = useState<{ startRow: number; endRow: number; startCol: number; endCol: number } | null>(null);
+  const [isRangeDragging, setIsRangeDragging] = useState(false);
   const undoStacksRef = useRef<Map<string, { undo: UndoEntry[]; redo: UndoEntry[] }>>(new Map());
   const autoSaveTimerRef = useRef<number | null>(null);
   const pasteFallbackRef = useRef<HTMLTextAreaElement>(null);
   const handleSaveRef = useRef<() => Promise<boolean>>(async () => true);
+  const rangeAnchorRef = useRef<{ row: number; col: number; x: number; y: number } | null>(null);
+  const rangeDraggingRef = useRef(false);
 
   const projectId = project?.config?.id;
   const selectedTable = project?.srcTable.find((table) => table.id === selectedTableId) || null;
@@ -412,7 +416,10 @@ export default function DataPreviewPage({
       for (const change of entry.changes) {
         if (pendingAddKeys.has(change.rowKey) || newRowKeys.has(change.rowKey)) continue;
         const rowChanges = { ...(next.get(change.rowKey) || {}) };
-        rowChanges[change.field] = { oldValue: change.oldValue, newValue: change.newValue };
+        const existing = rowChanges[change.field];
+        rowChanges[change.field] = existing
+          ? { ...existing, newValue: change.newValue }
+          : { oldValue: change.oldValue, newValue: change.newValue };
         if (rowChanges[change.field].oldValue === rowChanges[change.field].newValue) delete rowChanges[change.field];
         if (Object.keys(rowChanges).length > 0) next.set(change.rowKey, rowChanges);
         else next.delete(change.rowKey);
@@ -705,6 +712,8 @@ export default function DataPreviewPage({
       ...activeSheet.headers.map((header) => {
         const isKeyField = keyFieldSet.has(header);
         const isTemplateField = selectedTemplateFields.includes(header);
+        const headerIndex = activeSheet.headers.indexOf(header);
+        const isColumnSelected = selectedColIdx === headerIndex;
         return {
           headerName: header,
           field: header,
@@ -747,10 +756,20 @@ export default function DataPreviewPage({
           pinned: currentConfig.frozenColumns > activeSheet.headers.indexOf(header) ? 'left' : undefined,
           lockPinned: currentConfig.frozenColumns > activeSheet.headers.indexOf(header),
           sort: currentConfig.defaultSort?.column === header ? (currentConfig.defaultSort.ascending ? 'asc' : 'desc') : undefined,
-          headerClass: [isKeyField ? 'ag-col-key' : '', isTemplateField ? 'data-preview-template-header-selected' : ''].filter(Boolean).join(' '),
+          headerClass: [
+            isKeyField ? 'ag-col-key' : '',
+            isTemplateField ? 'data-preview-template-header-selected' : '',
+            isColumnSelected ? 'data-preview-header-selected' : '',
+          ].filter(Boolean).join(' '),
           cellClass: (params: any) => [
             isKeyField ? 'ag-cell-key' : '',
             isTemplateField ? 'data-preview-template-field-selected' : '',
+            isColumnSelected ? 'data-preview-column-selected' : '',
+            dragRange && params.rowIndex != null
+              && params.rowIndex >= dragRange.startRow && params.rowIndex <= dragRange.endRow
+              && headerIndex >= dragRange.startCol && headerIndex <= dragRange.endCol
+              ? 'data-preview-range-cell'
+              : '',
             pendingChanges.has(params.data?.__rowKey) && pendingChanges.get(params.data?.__rowKey)?.[header] ? 'ag-cell-dirty' : '',
             validationErrors.has(`${params.data?.__rowKey}:${header}`) ? 'ag-cell-validation-error' : '',
           ].filter(Boolean).join(' '),
@@ -758,7 +777,7 @@ export default function DataPreviewPage({
         } satisfies ColDef;
       }),
     ];
-  }, [activeSheet, currentConfig, keyFieldSet, saving, pendingChanges, selectedTemplateFields, validationErrors, reorderEnabled, draggingRowKey, dragOverRowKey, handleRowDragStart, handleRowDragOver, handleRowDrop]);
+  }, [activeSheet, currentConfig, keyFieldSet, saving, pendingChanges, selectedTemplateFields, validationErrors, reorderEnabled, draggingRowKey, dragOverRowKey, handleRowDragStart, handleRowDragOver, handleRowDrop, selectedColIdx, dragRange]);
 
   const updateKeyFields = useCallback(async (keyFields: string[]) => {
     if (!activeSheet) return;
@@ -917,8 +936,52 @@ export default function DataPreviewPage({
     setFeedback({ type: 'success', message: `已向下填充 ${changes.length} 个单元格${skipped > 0 ? `，跳过 ${skipped} 个锁定单元格` : ''}` });
   }, [showFillDialog, fillCount, rows, currentConfig, commitMutation]);
 
+  const copyRangeToClipboard = useCallback(() => {
+    if (!dragRange || !activeSheet) return;
+    const lines: string[] = [];
+    for (let row = dragRange.startRow; row <= dragRange.endRow; row += 1) {
+      const source = rows[row];
+      if (!source) continue;
+      const cells: string[] = [];
+      for (let col = dragRange.startCol; col <= dragRange.endCol; col += 1) {
+        const field = activeSheet.headers[col];
+        cells.push(String(source[field] ?? ''));
+      }
+      lines.push(cells.join('\t'));
+    }
+    void navigator.clipboard.writeText(lines.join('\n'));
+    setFeedback({ type: 'success', message: `已复制选区 ${dragRange.endRow - dragRange.startRow + 1} 行 × ${dragRange.endCol - dragRange.startCol + 1} 列` });
+  }, [dragRange, activeSheet, rows]);
+
+  const clearRange = useCallback(() => {
+    if (!dragRange || !activeSheet) return;
+    const changes: CellUndoChange[] = [];
+    let skipped = 0;
+    for (let row = dragRange.startRow; row <= dragRange.endRow; row += 1) {
+      const source = rows[row];
+      if (!source) continue;
+      for (let col = dragRange.startCol; col <= dragRange.endCol; col += 1) {
+        const field = activeSheet.headers[col];
+        if (currentConfig?.lockedColumns.includes(field)) { skipped += 1; continue; }
+        if (source[field] == null || source[field] === '') continue;
+        changes.push({ rowKey: source.__rowKey, field, oldValue: source[field], newValue: '' });
+      }
+    }
+    setDragRange(null);
+    if (changes.length === 0) {
+      setFeedback({ type: 'info', message: skipped > 0 ? '选区内单元格均已锁定' : '选区内没有需要清除的内容' });
+      return;
+    }
+    commitMutation({ changes, addedRows: [], deletedRows: [], committed: false });
+    setFeedback({ type: 'success', message: `已清除 ${changes.length} 个单元格${skipped > 0 ? `，跳过 ${skipped} 个锁定单元格` : ''}` });
+  }, [dragRange, activeSheet, rows, currentConfig, commitMutation]);
+
   const handleClearCells = useCallback((field: string, rowKey?: string) => {
     if (!field) return;
+    if (dragRange && (dragRange.startRow !== dragRange.endRow || dragRange.startCol !== dragRange.endCol)) {
+      clearRange();
+      return;
+    }
     const targets = rowKey
       ? [rows.find((row) => row.__rowKey === rowKey)].filter((row): row is PreviewRow => !!row)
       : getSelectedRowsSnapshot();
@@ -935,7 +998,7 @@ export default function DataPreviewPage({
     }
     commitMutation({ changes, addedRows: [], deletedRows: [], committed: false });
     setFeedback({ type: 'success', message: `已清除 ${changes.length} 个单元格` });
-  }, [rows, getSelectedRowsSnapshot, currentConfig, commitMutation]);
+  }, [rows, getSelectedRowsSnapshot, currentConfig, commitMutation, dragRange, clearRange]);
 
   const readClipboardText = useCallback(async (): Promise<string | null> => {
     try {
@@ -1035,6 +1098,10 @@ export default function DataPreviewPage({
 
   const copySelection = useCallback(async () => {
     if (!activeSheet) return;
+    if (dragRange && (dragRange.startRow !== dragRange.endRow || dragRange.startCol !== dragRange.endCol)) {
+      copyRangeToClipboard();
+      return;
+    }
     const selected = getSelectedRowsSnapshot();
     const focused = gridApiRef.current?.getFocusedCell();
     const focusedField = focused ? focused.column.getColDef().field : undefined;
@@ -1048,7 +1115,7 @@ export default function DataPreviewPage({
     const lines = selected.map((row) => activeSheet.headers.map((header) => String(row[header] ?? '')).join('\t'));
     await navigator.clipboard.writeText(lines.join('\n'));
     setFeedback({ type: 'success', message: `已复制 ${selected.length} 行 × ${activeSheet.headers.length} 列` });
-  }, [activeSheet, getSelectedRowsSnapshot, rows]);
+  }, [activeSheet, dragRange, copyRangeToClipboard, getSelectedRowsSnapshot, rows]);
 
   const handleColumnMenuAction = useCallback((field: string, action: string) => {
     const index = activeSheet?.headers.indexOf(field) ?? -1;
@@ -1071,6 +1138,9 @@ export default function DataPreviewPage({
       case 'settings':
         setSelectedColIdx(index);
         setInspectorOpen(true);
+        break;
+      case 'selectColumn':
+        setSelectedColIdx(index);
         break;
       case 'delete':
         setSelectedColIdx(index);
@@ -1201,6 +1271,7 @@ export default function DataPreviewPage({
         { key: 'clearSort', label: '清除排序', onSelect: () => handleColumnMenuAction(field, 'clearSort') },
         { key: 'insertLeft', label: '插入列（左侧）', separatorBefore: true, onSelect: () => handleColumnMenuAction(field, 'insertLeft') },
         { key: 'insertRight', label: '插入列（右侧）', onSelect: () => handleColumnMenuAction(field, 'insertRight') },
+        { key: 'selectColumn', label: '选择整列', onSelect: () => handleColumnMenuAction(field, 'selectColumn') },
         { key: 'rename', label: '重命名列', onSelect: () => handleColumnMenuAction(field, 'rename') },
         { key: 'type', label: '修改列类型', onSelect: () => handleColumnMenuAction(field, 'type') },
         { key: 'delete', label: '删除列', danger: true, onSelect: () => handleColumnMenuAction(field, 'delete') },
@@ -1248,6 +1319,65 @@ export default function DataPreviewPage({
     setContextMenu({ x: event.clientX, y: event.clientY, menu: 'empty' });
   }, []);
 
+  const rangeCellFromPoint = useCallback((target: EventTarget | null): { row: number; col: number } | null => {
+    if (!(target instanceof HTMLElement)) return null;
+    const cell = target.closest<HTMLElement>('.ag-cell');
+    if (!cell) return null;
+    const colId = cell.getAttribute('col-id');
+    if (!colId || colId === '__rowNumber' || colId === 'ag-Grid-SelectionColumn') return null;
+    const rowEl = cell.closest<HTMLElement>('.ag-row');
+    const row = rowEl ? Number(rowEl.getAttribute('row-index')) : NaN;
+    const col = activeSheet ? activeSheet.headers.indexOf(colId) : -1;
+    if (Number.isNaN(row) || col < 0) return null;
+    return { row, col };
+  }, [activeSheet]);
+
+  useEffect(() => {
+    const onMouseDown = (event: MouseEvent) => {
+      if (event.button !== 0) return;
+      const target = event.target as HTMLElement;
+      if (target.closest('.ag-header') || target.closest('input, textarea, [contenteditable="true"]')) return;
+      const cell = rangeCellFromPoint(target);
+      if (!cell) return;
+      setDragRange(null);
+      rangeAnchorRef.current = { ...cell, x: event.clientX, y: event.clientY };
+      rangeDraggingRef.current = false;
+    };
+    const onMouseMove = (event: MouseEvent) => {
+      const anchor = rangeAnchorRef.current;
+      if (!anchor) return;
+      if (!rangeDraggingRef.current) {
+        if (Math.hypot(event.clientX - anchor.x, event.clientY - anchor.y) < 5) return;
+        rangeDraggingRef.current = true;
+        setIsRangeDragging(true);
+        setDragRange({ startRow: anchor.row, endRow: anchor.row, startCol: anchor.col, endCol: anchor.col });
+      }
+      event.preventDefault();
+      const point = rangeCellFromPoint(document.elementFromPoint(event.clientX, event.clientY));
+      if (!point) return;
+      setDragRange({
+        startRow: Math.min(anchor.row, point.row),
+        endRow: Math.max(anchor.row, point.row),
+        startCol: Math.min(anchor.col, point.col),
+        endCol: Math.max(anchor.col, point.col),
+      });
+    };
+    const onMouseUp = () => {
+      if (!rangeAnchorRef.current) return;
+      rangeAnchorRef.current = null;
+      rangeDraggingRef.current = false;
+      setIsRangeDragging(false);
+    };
+    window.addEventListener('mousedown', onMouseDown, true);
+    window.addEventListener('mousemove', onMouseMove, true);
+    window.addEventListener('mouseup', onMouseUp, true);
+    return () => {
+      window.removeEventListener('mousedown', onMouseDown, true);
+      window.removeEventListener('mousemove', onMouseMove, true);
+      window.removeEventListener('mouseup', onMouseUp, true);
+    };
+  }, [rangeCellFromPoint]);
+
   const discardChanges = useCallback(() => {
     setPendingChanges(new Map());
     setPendingAdds([]);
@@ -1271,6 +1401,7 @@ export default function DataPreviewPage({
       setQuery(nextQuery);
       setSearchDraft(nextQuery.search);
       setSelectedColIdx(null);
+      setDragRange(null);
       setSelectedTemplateFields([]);
       setShowTemplateRecommendations(false);
       setSelectedRowIdx(null);
@@ -1508,8 +1639,8 @@ export default function DataPreviewPage({
       }
     };
     loadRows();
-    setSelectedColIdx(null);
     setSelectedRowIdx(null);
+    setDragRange(null);
     setDescribeReport(null);
     return () => { cancelled = true; };
   }, [projectId, selectedTableId, activeSheetIdx, activeSheet?.name, query, reloadToken]);
@@ -1615,6 +1746,7 @@ export default function DataPreviewPage({
         moveSelectedRow(event.key === 'ArrowUp' ? 'up' : 'down');
       } else if (event.key === 'Escape') {
         setShowDeleteRowConfirm(false);
+        setDragRange(null);
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -1628,6 +1760,11 @@ export default function DataPreviewPage({
   useEffect(() => {
     if (changeCount === 0 && saveState === 'dirty') setSaveState('saved');
   }, [changeCount, saveState]);
+
+  useEffect(() => {
+    const api = gridApiRef.current;
+    if (api && !api.isDestroyed()) api.refreshCells({ force: true });
+  }, [selectedColIdx, dragRange]);
 
   useEffect(() => {
     return () => {
@@ -2006,6 +2143,7 @@ export default function DataPreviewPage({
                     'data-preview-grid',
                     currentConfig?.alternateRowColor === false ? 'no-zebra' : '',
                     currentConfig?.showGridLines === false ? 'no-grid-lines' : '',
+                    isRangeDragging ? 'data-preview-range-dragging' : '',
                   ].filter(Boolean).join(' ')}
                   style={{ width: '100%', height: '100%' }}
                   role="region"
@@ -2023,7 +2161,7 @@ export default function DataPreviewPage({
                     }}
                     rowHeight={currentConfig?.rowHeight}
                     headerHeight={currentConfig?.headerHeight}
-                    rowSelection={{ mode: 'multiRow', enableClickSelection: true, checkboxes: false }}
+                    rowSelection={{ mode: 'multiRow', enableClickSelection: true, checkboxes: false, headerCheckbox: false }}
                     suppressContextMenu
                     preventDefaultOnContextMenu
                     getRowId={(params) => String(params.data.__rowKey)}
@@ -2058,9 +2196,6 @@ export default function DataPreviewPage({
                     onDragStopped={() => {
                       setDraggingRowKey(null);
                       setDragOverRowKey(null);
-                    }}
-                    onCellMouseDown={(event) => {
-                      if (event.colDef.field === '__rowNumber') event.event?.stopPropagation();
                     }}
                     onColumnResized={onColumnResized}
                     onColumnHeaderClicked={(event) => {
@@ -2097,6 +2232,16 @@ export default function DataPreviewPage({
                     }}
                     onCellValueChanged={onCellValueChanged}
                   />
+                  {dragRange && (dragRange.startRow !== dragRange.endRow || dragRange.startCol !== dragRange.endCol) && (
+                    <div className="data-preview-range-bar" role="toolbar" aria-label="选区操作">
+                      <span className="data-preview-range-bar-info">
+                        已选 {dragRange.endRow - dragRange.startRow + 1} 行 × {dragRange.endCol - dragRange.startCol + 1} 列
+                      </span>
+                      <button type="button" className="ui-btn ui-btn-xs" onClick={() => void copyRangeToClipboard()}>复制选区</button>
+                      <button type="button" className="ui-btn ui-btn-xs" onClick={clearRange}>清除内容</button>
+                      <button type="button" className="ui-btn ui-btn-xs" onClick={() => setDragRange(null)}>取消</button>
+                    </div>
+                  )}
                 </div>
               )}
               <div className="data-preview-pager">

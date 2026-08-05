@@ -34,10 +34,10 @@ test.describe('数据准备工作台', () => {
     await createDataProject(page);
     await page.getByRole('button', { name: '+ 新增行' }).click();
     await expect(page.locator('.data-preview-save-state')).toContainText('未保存');
-    await page.getByRole('button', { name: '表单设计' }).click();
+    await page.getByRole('button', { name: '表单', exact: true }).click();
     await expect(page.getByRole('heading', { name: '有未保存的数据修改' })).toBeVisible();
     await page.getByRole('button', { name: '留在当前页' }).click();
-    await expect(page.getByRole('button', { name: '数据预览' })).toHaveClass(/active/);
+    await expect(page.getByRole('button', { name: '数据', exact: true })).toHaveClass(/active/);
     await page.getByRole('button', { name: '撤销' }).click();
     await expect(page.locator('.data-preview-save-state')).toContainText('已保存');
   });
@@ -161,7 +161,7 @@ test.describe('数据准备工作台', () => {
     const menu = page.locator('.data-preview-context-menu');
     await expect(menu).toBeVisible();
     await expect(menu.getByRole('menuitem', { name: '编辑' })).toBeVisible();
-    await expect(menu.getByRole('menuitem', { name: '复制' })).toBeVisible();
+    await expect(menu.getByRole('menuitem', { name: '复制', exact: true })).toBeVisible();
     await expect(menu.getByRole('menuitem', { name: '粘贴' })).toBeVisible();
     await expect(menu.getByRole('menuitem', { name: '插入行（上方）' })).toBeVisible();
     await expect(menu.getByRole('menuitem', { name: '删除行' })).toBeVisible();
@@ -186,9 +186,7 @@ test.describe('数据准备工作台', () => {
     await createDataProject(page);
     const keyCells = page.locator('.ag-pinned-left-cols-container .ag-cell[col-id="参数ID"]');
     await keyCells.nth(0).click();
-    await page.keyboard.down('Control');
-    await keyCells.nth(1).click();
-    await page.keyboard.up('Control');
+    await keyCells.nth(1).click({ modifiers: ['Shift'] });
     await keyCells.nth(0).click({ button: 'right' });
     await page.locator('.data-preview-context-menu').getByRole('menuitem', { name: '批量修改列值' }).click();
     await page.getByLabel('新值').fill('E2E-批量值');
@@ -199,6 +197,44 @@ test.describe('数据准备工作台', () => {
     await keyCells.nth(0).click();
     await page.keyboard.press('Control+Z');
     await expect(keyCells.nth(0)).not.toContainText('E2E-批量值');
+    await expect(page.locator('.data-preview-save-state')).toContainText('已保存');
+  });
+
+  test('点击行号或单元格即可选中整行', async ({ page }) => {
+    await createDataProject(page);
+    await page.locator('.ag-pinned-left-cols-container .ag-cell[col-id="__rowNumber"]').first().click();
+    await expect(page.locator('.ag-center-cols-container .ag-row').nth(0)).toHaveClass(/ag-row-selected/);
+  });
+
+  test('列头点击高亮整列并同步表结构面板', async ({ page }) => {
+    await createDataProject(page);
+    await page.locator('.ag-header-cell[col-id="参数ID"]').click();
+    await expect(page.locator('.ag-cell[col-id="参数ID"].data-preview-column-selected')).toHaveCount(3);
+    await expect(page.locator('.data-preview-inspector')).toContainText('列：参数ID');
+  });
+
+  test('拖拽框选单元格并支持清除与撤销', async ({ page }) => {
+    await createDataProject(page);
+    const centerCells = page.locator('.ag-center-cols-container .ag-cell');
+    const firstValue = await centerCells.nth(0).textContent();
+    const box0 = await centerCells.nth(0).boundingBox();
+    const boxTarget = await centerCells.nth(3).boundingBox();
+    expect(firstValue).toBeTruthy();
+    expect(box0).toBeTruthy();
+    expect(boxTarget).toBeTruthy();
+    await page.mouse.move((box0 as any).x + 10, (box0 as any).y + 10);
+    await page.mouse.down();
+    await page.mouse.move((boxTarget as any).x + 10, (boxTarget as any).y + 10, { steps: 8 });
+    await page.mouse.up();
+    const rangeBar = page.locator('.data-preview-range-bar');
+    await expect(rangeBar).toBeVisible();
+    await expect(page.locator('.ag-center-cols-container .ag-cell.data-preview-range-cell').first()).toBeVisible();
+    await rangeBar.getByRole('button', { name: '清除内容' }).click();
+    await expect(centerCells.nth(0)).toHaveText('');
+    await expect(page.locator('.data-preview-save-state')).toContainText('未保存');
+    await centerCells.nth(0).click();
+    await page.keyboard.press('Control+z');
+    await expect(centerCells.nth(0)).toHaveText(firstValue as string);
     await expect(page.locator('.data-preview-save-state')).toContainText('已保存');
   });
 });
