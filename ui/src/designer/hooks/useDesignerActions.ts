@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import type { Node } from '@antv/x6';
 import type { DesignComponent } from '../../project/types';
-import type { DesignerState, SelectionOverlay, ResizeHandle } from './useDesignerState';
+import type { DesignerState, ResizeHandle } from './useDesignerState';
 import { getControl } from '../registry';
 import { findContainerAtPoint, findContainerParent, getDescendantIds, CONTAINER_TYPES } from '../utils';
 import { FORM_WINDOW_CELL_ID } from '../formWindowModel';

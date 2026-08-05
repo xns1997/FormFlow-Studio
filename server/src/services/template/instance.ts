@@ -1,7 +1,12 @@
 import { queryRows, type FilterRule, type SortRule } from '../data-preview';
 import { createHash } from 'node:crypto';
 import {
-  batchProjectRows, fullSourceRows, generatedForm, normalizeFormDesign, toolError, validateProjectModel, type JsonObject,
+  batchProjectRows,
+  fullSourceRows,
+  normalizeFormDesign,
+  toolError,
+  validateProjectModel,
+  type JsonObject,
 } from '../project-authoring';
 import { OperationTemplateDefinition, extractBehaviorArtifacts } from './shared';
 import { GenerationPlan, planOperationTemplate } from './generation';

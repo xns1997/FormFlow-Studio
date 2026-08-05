@@ -7,9 +7,18 @@ import JSZip from 'jszip';
 import { REPOSITORY_ROOT } from '../../config/paths';
 import { canAccessProject } from '../permission';
 import {
-  assertRevision, createEmptyProject, generatedForm, listProjectPackages,
-  normalizeFormDesign, packageProject, projectRevision, projectSummary, queryProjectRows, requireProject,
-  serializeTableSource, tableFromInput, toolError, validateProjectModel,
+  assertRevision,
+  createEmptyProject,
+  generatedForm,
+  listProjectPackages,
+  normalizeFormDesign,
+  packageProject,
+  projectRevision,
+  projectSummary,
+  requireProject,
+  tableFromInput,
+  toolError,
+  validateProjectModel,
 } from '../project-authoring';
 import { inspectProjectQuality } from '../project-quality';
 import { buildProjectTemplate, resolveProjectTemplateId } from '../../../../shared/project-templates';

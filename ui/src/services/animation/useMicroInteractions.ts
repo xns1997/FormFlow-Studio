@@ -35,7 +35,6 @@ import {
   animateDropZoneHighlight,
   animateTreeExpand,
   animateTreeCollapse,
-  animateTreeToggle,
   animateDropdownEnter,
   animateDropdownExit,
   animateProgressFill,

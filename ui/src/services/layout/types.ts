@@ -1,4 +1,4 @@
-import type { DesignComponent, WorkflowEdge, WorkflowNode } from '../../project/types';
+import type { DesignComponent, WorkflowNode } from '../../project/types';
 import type { ControlDef } from '../../designer/types';
 
 export interface LayoutDiagnostics {

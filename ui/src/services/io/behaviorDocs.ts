@@ -30,7 +30,7 @@ export { formDesignDocs, formDesignCategories } from './docs/form-design-docs';
 export { flowNodeDocs, flowNodeCategories } from './docs/flow-node-docs';
 export { backendDocs } from './docs/backend-docs';
 
-import type { BehaviorDocScope, BehaviorEventDocEntry, BehaviorTopicDocEntry } from './docs/types';
+import type { BehaviorDocScope, BehaviorEventDocEntry } from './docs/types';
 import { sharedContextFields, flowParameterShortcuts, scriptApis, controlApis } from './docs/shared';
 import { scriptEventDocs } from './docs/event-docs-script';
 import { controlEventDocs } from './docs/event-docs-control';

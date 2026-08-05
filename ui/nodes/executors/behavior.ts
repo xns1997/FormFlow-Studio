@@ -6,7 +6,6 @@ import { resolveSingleKeyField } from '../../src/services/data/tableKeys';
 import {
   buildFillFormPatch,
   buildResetFormPatch,
-  findRowInTables,
   findRowsInTables,
   nextSequenceInTables,
   validateRequiredFields,

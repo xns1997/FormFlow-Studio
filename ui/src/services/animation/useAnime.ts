@@ -16,15 +16,11 @@ import { useRef, useEffect, useCallback, useState } from 'react';
 import { animate } from 'animejs';
 import {
   fadeIn,
-  fadeOut,
   slideIn,
   scaleBounce,
   staggerIn,
   shake,
   pulse,
-  cardHover,
-  buttonPress,
-  fieldFocus,
   tabActivate,
   modalEnter,
   modalExit,
@@ -34,7 +30,6 @@ import {
   dropdownExit,
   sidebarItemHover,
   prefersReducedMotion,
-  getDuration,
   SPRING,
   DURATION,
 } from './anime';
