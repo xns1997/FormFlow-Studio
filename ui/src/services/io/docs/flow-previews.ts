@@ -23,6 +23,7 @@ export interface FlowPreview {
   edges: PreviewEdge[];
 }
 
+/** 流程预览配置（按 specId）。 */
 export const flowPreviews: Record<string, FlowPreview> = {
   'scenario-read-excel': {
     id: 'scenario-read-excel',

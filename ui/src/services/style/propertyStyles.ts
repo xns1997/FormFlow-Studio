@@ -1,5 +1,6 @@
 export interface SpacingValue { top?: number; right?: number; bottom?: number; left?: number }
 
+/** 归一化间距值（数字/对象）。 */
 export function normalizeSpacing(value: unknown, fallback = 0): Required<SpacingValue> {
   if (typeof value === 'number' || (typeof value === 'string' && value.trim() !== '' && !Number.isNaN(Number(value)))) {
     const number = Number(value); return { top: number, right: number, bottom: number, left: number };
@@ -15,6 +16,7 @@ export function normalizeSpacing(value: unknown, fallback = 0): Required<Spacing
   return { top: fallback, right: fallback, bottom: fallback, left: fallback };
 }
 
+/** 间距值 → CSS 属性对象。 */
 export function spacingToCss(value: unknown, fallback = 0) {
   const spacing = normalizeSpacing(value, fallback);
   return `${spacing.top}px ${spacing.right}px ${spacing.bottom}px ${spacing.left}px`;

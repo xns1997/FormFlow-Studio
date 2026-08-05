@@ -43,6 +43,7 @@ function operationInput(template: OperationTemplateCatalogItem) {
  * intentionally contains behavior-level expectations only; template schemas
  * remain the single source of truth for IDs, labels, and selection rules.
  */
+/** 构建模板审计矩阵（覆盖/一致性检查）。 */
 export function buildTemplateAuditMatrix(operationTemplates: OperationTemplateCatalogItem[]): TemplateAuditEntry[] {
   const designerEntries = DESIGN_TEMPLATES.map((template) => ({
     id: template.key,
@@ -77,6 +78,7 @@ export function buildTemplateAuditMatrix(operationTemplates: OperationTemplateCa
   return [...designerEntries, ...operationEntries, ...projectEntries];
 }
 
+/** 断言审计矩阵通过（门禁用）。 */
 export function assertTemplateAuditMatrix(matrix: TemplateAuditEntry[]) {
   const ids = new Set<string>();
   for (const entry of matrix) {

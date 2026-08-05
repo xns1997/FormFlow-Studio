@@ -22,6 +22,7 @@ function pickControl(components: DesignComponent[], matcher: (component: DesignC
   return uniqueControls(components).find((component) => matcher(component, resolveControlName(component)));
 }
 
+/** 控件代码片段示例（补全与文档）。 */
 export function getControlSnippetExamples(options: {
   components?: DesignComponent[];
   currentField?: string;

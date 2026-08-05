@@ -278,6 +278,7 @@ async function executeCallbackCode(
   return executeInjectedScript(code, scope);
 }
 
+/** 执行控件事件（上下文构造 + 规则/脚本联动）。 */
 export async function executeFormControlEvent(
   eventContext: FormControlEventContext,
   options: ExecuteFormEventOptions,

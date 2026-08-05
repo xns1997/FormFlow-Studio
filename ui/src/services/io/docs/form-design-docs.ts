@@ -1,7 +1,9 @@
 import type { BehaviorTopicDocEntry } from './types';
 
+/** 表单设计文档分类。 */
 export const formDesignCategories = ['基础控件', '选择控件', '容器控件', '展示控件'];
 
+/** 表单设计文档条目。 */
 export const formDesignDocs: BehaviorTopicDocEntry[] = [
   // ─── 基础控件 ─────────────────────────────────────────────
   {

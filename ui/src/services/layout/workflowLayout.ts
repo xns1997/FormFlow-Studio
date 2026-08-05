@@ -333,6 +333,7 @@ function placeNodes(
   return positioned;
 }
 
+/** 工作流自动布局（分层 + 紧凑化）。 */
 export function layoutWorkflow(
   workflow: Pick<WorkflowFile, 'nodes' | 'edges'>,
   measuredNodes: MeasuredNodeBox[] = [],

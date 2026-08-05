@@ -1,6 +1,7 @@
 import type { BehaviorEventDocEntry } from './types';
 import { createEventDoc } from './shared';
 
+/** 控件事件文档条目。 */
 export const controlEventDocs: BehaviorEventDocEntry[] = [
   createEventDoc({
     id: 'control:onChange',

@@ -1,6 +1,7 @@
 import type { BehaviorTopicDocEntry } from './types';
 import { sharedContextFields, controlOnlyContextFields, scriptOnlyContextFields, flowParameterShortcuts } from './shared';
 
+/** 行为主题文档条目。 */
 export const behaviorTopicDocs: BehaviorTopicDocEntry[] = [
   {
     id: 'topic:context-reference',

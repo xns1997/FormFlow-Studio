@@ -288,6 +288,7 @@ async function executeXlsxMethod(
   return { [outputPorts[0].name]: result };
 }
 
+/** 执行整个流程：拓扑排序、逐节点执行并收集结果与副作用。 */
 export async function executeFlow(
   nodes: FlowNodeDef[],
   edges: FlowEdgeDef[],

@@ -1,5 +1,6 @@
 import type { BehaviorTopicDocEntry } from './types';
 
+/** 概览文档条目。 */
 export const overviewDocs: BehaviorTopicDocEntry[] = [
   {
     id: 'overview:what-is-formflow',

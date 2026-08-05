@@ -9,6 +9,7 @@ function replaceField(value: unknown, from: string, to: string, key = ''): unkno
   return value;
 }
 
+/** 重命名字段引用（组件绑定与工作流参数同步）。 */
 export function renameFieldReferences(components: DesignComponent[], workflows: WorkflowFile[], from: string, to: string) {
   if (!from || !to || from === to) return { components, workflows, changedComponents: 0, changedWorkflows: 0 };
   let changedComponents = 0;

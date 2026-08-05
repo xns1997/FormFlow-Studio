@@ -138,6 +138,7 @@ function compareCandidates(left: Candidate, right: Candidate) {
   return STRATEGY_ORDER.indexOf(left.strategy) - STRATEGY_ORDER.indexOf(right.strategy);
 }
 
+/** 表单自动布局（网格/换行/容器）。 */
 export function layoutForm(
   components: DesignComponent[],
   registry: FormLayoutControlRegistry,

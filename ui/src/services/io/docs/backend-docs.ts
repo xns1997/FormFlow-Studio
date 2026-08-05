@@ -1,5 +1,6 @@
 import type { BehaviorTopicDocEntry } from './types';
 
+/** 后端接口文档条目。 */
 export const backendDocs: BehaviorTopicDocEntry[] = [
   {
     id: 'backend:projects',

@@ -1,5 +1,6 @@
 import type { BehaviorTopicDocEntry } from './types';
 
+/** 流程节点文档分类。 */
 export const flowNodeCategories: string[] = [
   '场景模板',
   '数据处理',
@@ -10,6 +11,7 @@ export const flowNodeCategories: string[] = [
   '高级 XLSX',
 ];
 
+/** 流程节点文档条目。 */
 export const flowNodeDocs: BehaviorTopicDocEntry[] = [
   {
     id: 'flow-nodes:scenario',

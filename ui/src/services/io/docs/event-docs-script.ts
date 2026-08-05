@@ -1,6 +1,7 @@
 import type { BehaviorEventDocEntry } from './types';
 import { createEventDoc } from './shared';
 
+/** 脚本事件文档条目。 */
 export const scriptEventDocs: BehaviorEventDocEntry[] = [
   createEventDoc({
     id: 'script:onFormLoad',

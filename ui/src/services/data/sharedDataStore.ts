@@ -11,6 +11,7 @@ interface SharedDataState {
   clearPendingRangeRef: () => void;
 }
 
+/** 共享数据 Store（跨页面表单/表数据）。 */
 export const useSharedDataStore = create<SharedDataState>((set) => ({
   pendingRowData: null,
   pendingRowSource: '',

@@ -428,6 +428,7 @@ function instructionFocus(domain: DocDomain, instruction: string): ScreenshotFoc
   return domainFocus(domain);
 }
 
+/** 从文档块提取操作步骤列表。 */
 export function extractInstructionSteps(block: Pick<DocBlock, 'title' | 'body' | 'examples'> & { id?: string }): string[] {
   const numberedText = [block.body || '', ...(block.examples || []).map((example) => example.code)].join('\n');
   const numbered = [...numberedText.matchAll(/(?:^|\n)\s*\d+[.、]\s*([^\n]+)/g)]
@@ -471,6 +472,7 @@ export function extractInstructionSteps(block: Pick<DocBlock, 'title' | 'body' |
   return [];
 }
 
+/** 构建文档插图计划（截图与标注）。 */
 export function buildDocIllustrationPlan(entry: IllustrationEntry): DocIllustrationPlan {
   const identity = entry.id || `${entry.domain}:${entry.title}`;
   const customizationId = `doc-shot-${stableHash(identity).toString(16).padStart(8, '0')}`;

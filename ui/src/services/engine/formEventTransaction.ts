@@ -10,6 +10,7 @@ function effectKey(effect: FormEventEffect) {
   return `${effect.kind}:${'field' in effect ? effect.field : effect.componentId}`;
 }
 
+/** 创建表单事件事务（变更收集与提交）。 */
 export function createFormEventTransaction(options: {
   values: Record<string, unknown>;
   apply(effects: FormEventEffect[]): Promise<void>;

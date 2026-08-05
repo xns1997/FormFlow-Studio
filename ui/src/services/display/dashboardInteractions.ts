@@ -9,4 +9,5 @@ class DashboardInteractions {
   subscribe(listener: Listener) { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; }
   private emit() { const filters = this.all(); this.listeners.forEach((listener) => listener(filters)); }
 }
+/** 看板交互单例（拖拽/缩放/联动）。 */
 export const dashboardInteractions = new DashboardInteractions();

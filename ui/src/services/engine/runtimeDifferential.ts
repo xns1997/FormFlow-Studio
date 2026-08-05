@@ -42,6 +42,7 @@ function referenceEvent(event: RuntimeDifferentialEvent): ReferenceEvent {
   return { type: event.type, field: event.field, value: event.value, buttonName: event.buttonName };
 }
 
+/** 运行运行时差分测试（新旧引擎对比）。 */
 export async function runRuntimeDifferential(
   source: string,
   initialValues: Record<string, unknown>,
