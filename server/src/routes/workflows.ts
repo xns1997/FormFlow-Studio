@@ -1,6 +1,7 @@
 import { ProjectMutationError } from '../services/project-mutation';
 import { createProjectResourceRouter } from '../services/project-resource-router';
 
+/** 工作流资源 CRUD 路由。 */
 export const workflowRouter = createProjectResourceRouter({
   kind: 'workflow',
   label: '流程',

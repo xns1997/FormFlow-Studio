@@ -4,6 +4,7 @@ import type { UserRole } from '../services/user-store';
 
 const rank: Record<UserRole, number> = { viewer: 1, editor: 2, admin: 3 };
 
+/** 角色校验中间件：用户角色低于最低要求返回 403。 */
 export function requireRole(minimum: UserRole) {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) return res.status(401).json({ error: '需要登录' });

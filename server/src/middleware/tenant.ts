@@ -2,6 +2,7 @@ import type { NextFunction, Response } from 'express';
 import type { AuthRequest } from './auth';
 import { getTenant, checkQuota } from '../services/tenant-store';
 
+/** 租户隔离中间件：从请求头解析 x-tenant-id 并注入上下文。 */
 export function tenantIsolation(req: AuthRequest, res: Response, next: NextFunction) {
   // 本地模式跳过租户检查
   if (process.env.FORMFLOW_MODE !== 'cloud') return next();

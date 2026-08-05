@@ -32,6 +32,7 @@ function mcpCompatibleSchema(value: unknown): unknown {
   return result;
 }
 
+/** 创建指定角色的 MCP Server（工具注册 + 调用协议）。 */
 export function createMcpServer(role: McpRole, context: ToolContext) {
   const scopedContext = { ...context, mcpRole: role };
   const server = new McpServer({ name: `formflow-${role}`, version: '2.0.0' });
@@ -82,6 +83,7 @@ export function createMcpServer(role: McpRole, context: ToolContext) {
   return server;
 }
 
+/** MCP Streamable HTTP 路由。 */
 export const mcpRouter = Router();
 mcpRouter.all('/', (_req, res) => res.status(410).json({ error: '统一 MCP 已移除，请使用 /mcp/:role', roles: MCP_ROLE_CATALOG }));
 mcpRouter.all('/:role', async (req: AuthRequest, res) => {
@@ -101,6 +103,7 @@ mcpRouter.all('/:role', async (req: AuthRequest, res) => {
   }
 });
 
+/** 以 stdio 模式启动 MCP 服务（供 bin/formflow-mcp 使用）。 */
 export async function startStdioMcpServer(role: McpRole) {
   let authenticated: AuthUser | undefined;
   const token = process.env.FORMFLOW_TOKEN;
