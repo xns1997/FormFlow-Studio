@@ -39,6 +39,7 @@ function recommendationReasons(
 }
 
 
+/** 按项目特征推荐操作模板（含参数推断）。 */
 export function recommendOperationTemplates(
   project: JsonObject,
   selection: TemplateSelection,
@@ -95,6 +96,7 @@ function normalizedFieldName(value: string) {
 
 /** Suggests auditable equal-key relations without modifying the project. */
 
+/** 建议数据关系（外键/命名匹配）。 */
 export function suggestDataRelations(project: JsonObject): RelationSuggestion[] {
   const candidates: RelationSuggestion[] = [];
   const existing = new Set((project.relations || []).flatMap((relation: DataRelation) => [

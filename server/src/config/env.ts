@@ -19,6 +19,7 @@ function integerList(name: string) {
 const mode = process.env.FORMFLOW_MODE === 'cloud' ? 'cloud' as const : 'local' as const;
 const localDatabaseUrl = `postgresql://${encodeURIComponent(userInfo().username)}@127.0.0.1:5432/formflow`;
 
+/** 服务端环境配置（路径/端口/密钥/模式）。 */
 export const env = {
   mode,
   nodeEnv: process.env.NODE_ENV || 'development',

@@ -252,6 +252,7 @@ class ColumnIndex {
 
 // ── DataIndexManager ───────────────────────────────────
 
+/** 数据索引管理器（Sheet 读取缓存与失效）。 */
 export class DataIndexManager {
   private indexes = new Map<string, ColumnIndex>();
   private cache = new LRUCache(50, 30_000); // 50 entries, 30s TTL
@@ -304,4 +305,5 @@ export class DataIndexManager {
 }
 
 // Singleton instance
+/** 全局数据索引管理器实例。 */
 export const dataIndexManager = new DataIndexManager();

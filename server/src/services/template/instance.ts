@@ -47,6 +47,7 @@ function stable(value: unknown): unknown {
 }
 
 
+/** 资源稳定指纹（漂移检测用）。 */
 export function resourceFingerprint(resource: JsonObject) { return createHash('sha256').update(JSON.stringify(stable(resource))).digest('hex'); }
 
 

@@ -21,6 +21,7 @@ function inferRoles(normalizedFields: NormalizedField[], selected: string[] = []
 }
 
 
+/** 分析操作模板可行性（数据/字段/关系检查）。 */
 export function analyzeOperationTemplate(project: JsonObject, templateId: string, selection: TemplateSelection = {}, suppliedParameters: JsonObject = {}): FeasibilityReport {
   const template = getOperationTemplate(templateId, project);
   const checks: FeasibilityCheck[] = [];
@@ -333,4 +334,3 @@ export function analyzeOperationTemplate(project: JsonObject, templateId: string
   const score = Math.max(0, Math.min(100, 100 - failed * 25 - warnings * 8 - requiredQuestions.length * 5));
   return { status, score, summary: failed ? `${failed} 项条件未满足` : requiredQuestions.length ? `还需配置 ${requiredQuestions.length} 项参数` : warnings ? `${warnings} 项风险需要确认` : '可以生成', checks, inferredRoles: roles, requiredQuestions, generationPreview: template.generation };
 }
-

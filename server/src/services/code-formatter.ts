@@ -1,6 +1,8 @@
 import { format as formatWithOxfmt } from 'oxfmt';
 
+/** 格式化代码最大长度（200KB）。 */
 export const MAX_FORMAT_CODE_LENGTH = 200 * 1024;
+/** 支持格式化的语言集合。 */
 export const FORMAT_LANGUAGES = new Set(['javascript', 'typescript', 'json']);
 
 /**

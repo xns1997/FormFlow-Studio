@@ -11,6 +11,7 @@ function issue(code: string, path: string, message: string): ValidationIssue { r
 function properties(node: any) { try { return JSON.parse(String(node?.data?.propertiesJson || '{}')); } catch { return {}; } }
 function fieldName(component: any) { return String(component?.fieldBinding || component?.props?.name || component?.props?.label || ''); }
 
+/** 项目语义检查（表单/数据/流程引用完整性）。 */
 export function inspectProjectSemantics(project: JsonObject): ValidationIssue[] {
   const errors: ValidationIssue[] = [];
   const workflows = new Map((project.workflows || []).map((item: any) => [String(item.id), item]));
