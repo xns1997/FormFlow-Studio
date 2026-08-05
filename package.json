@@ -1,7 +1,7 @@
 {
   "name": "formflow-studio",
   "private": true,
-  "version": "1.14.0",
+  "version": "1.15.0",
   "type": "module",
   "bin": {
     "formflow": "bin/formflow",

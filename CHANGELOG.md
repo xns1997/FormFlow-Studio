@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.14.0...v1.15.0) (2026-08-05)
+
+
+### Features
+
+* 事件 JS 上下文运行时动态键与契约双向一致性审计 ([aea7192](https://github.com/xns1997/FormFlow-Studio/commit/aea71925d474fbba5147924696637625e2a7f855))
+
 # [1.14.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.13.0...v1.14.0) (2026-08-05)
 
 
