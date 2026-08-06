@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  buildProjectAgentActivity, evidenceKindLabel, formatSummaryText, groupProjectAgentHistoryByTime, humanEventSummary, projectAgentActivityState,
-  sessionProjectScope, statusLabels, taskStatus, threadProjectScope,
+  buildActivityState, buildProjectAgentActivity, buildUnifiedCards, evidenceKindLabel, formatDuration, formatSummaryText, groupProjectAgentHistoryByTime, humanEventSummary, projectAgentActivityState,
+  sessionProjectScope, statusLabels, threadProjectScope,
   type ProjectAgentThread,
 } from './projectAgentUiModel';
 
 function thread(overrides: Partial<ProjectAgentThread> = {}): ProjectAgentThread {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: 'pat_test',
     tenantId: 'local',
     userId: 'local',
@@ -17,8 +17,8 @@ function thread(overrides: Partial<ProjectAgentThread> = {}): ProjectAgentThread
     title: '测试线程',
     profileId: 'default-cloud',
     capabilityBundleVersionId: 'cap_default_v1',
-    mode: 'plan',
     status: 'idle',
+    turns: [],
     messages: [],
     summary: '',
     events: [],
@@ -33,7 +33,7 @@ function thread(overrides: Partial<ProjectAgentThread> = {}): ProjectAgentThread
 }
 
 test('status labels cover every thread status', () => {
-  for (const status of ['idle', 'planning', 'awaiting_plan_approval', 'executing', 'awaiting_operation_approval', 'paused', 'completed', 'blocked', 'stopped', 'failed'] as const) {
+  for (const status of ['idle', 'executing', 'awaiting_operation_approval', 'paused', 'completed', 'blocked', 'stopped', 'failed'] as const) {
     assert.ok(statusLabels[status], `缺少 ${status} 的标签`);
   }
 });
@@ -41,7 +41,7 @@ test('status labels cover every thread status', () => {
 test('activity state is active only while planning/executing', () => {
   const idle = projectAgentActivityState(thread(), 0);
   assert.equal(idle.active, false);
-  const running = projectAgentActivityState(thread({ status: 'executing', events: [{ id: 'e1', seq: 1, type: 'task_started', data: { taskId: 't1' }, createdAt: '2026-08-03T00:00:01.000Z' }] }), Date.parse('2026-08-03T00:02:01.000Z'));
+  const running = projectAgentActivityState(thread({ status: 'executing', events: [{ id: 'e1', seq: 1, type: 'tool_call', data: { toolName: 'form.create' }, createdAt: '2026-08-03T00:00:01.000Z' }] }), Date.parse('2026-08-03T00:02:01.000Z'));
   assert.equal(running.active, true);
   assert.equal(running.stale, true);
   assert.match(running.label, /正在判断下一步/);
@@ -50,12 +50,6 @@ test('activity state is active only while planning/executing', () => {
 test('thread project scope de-duplicates ids', () => {
   assert.deepEqual(threadProjectScope(thread({ projectIds: ['p1', 'p2'], currentProjectId: 'p1' })), ['p1', 'p2']);
   assert.deepEqual(sessionProjectScope({ projectIds: ['p1'], currentProjectId: 'p1' }), ['p1']);
-});
-
-test('task status normalizes unknown values to pending', () => {
-  assert.equal(taskStatus('passed'), 'passed');
-  assert.equal(taskStatus('cancelled'), 'cancelled');
-  assert.equal(taskStatus('whatever'), 'pending');
 });
 
 test('history grouping separates pinned/today/recent/earlier', () => {
@@ -75,14 +69,86 @@ test('history grouping separates pinned/today/recent/earlier', () => {
 
 test('activity feed maps known event types', () => {
   const events = [
-    { id: 'e1', seq: 1, type: 'task_started', data: {}, createdAt: '2026-08-03T00:00:01.000Z' },
-    { id: 'e2', seq: 2, type: 'approval_required', data: { toolName: 'project.delete' }, createdAt: '2026-08-03T00:00:02.000Z' },
+    { id: 'e1', seq: 1, type: 'tool_call', data: { toolName: 'form.create' }, createdAt: '2026-08-03T00:00:01.000Z' },
+    { id: 'e2', seq: 2, type: 'verification.failed', data: { summary: '结构校验未通过' }, createdAt: '2026-08-03T00:00:02.000Z' },
     { id: 'e3', seq: 3, type: 'thread_completed', data: {}, createdAt: '2026-08-03T00:00:03.000Z' },
   ];
   const activities = buildProjectAgentActivity(events);
   assert.equal(activities.length, 3);
-  assert.equal(activities[1].kind, 'approval');
+  assert.equal(activities[0].kind, 'tool');
+  assert.equal(activities[1].kind, 'verification');
   assert.equal(activities[2].status, 'passed');
+});
+
+test('activity state reflects the latest executing event with a spinner', () => {
+  const now = Date.parse('2026-08-03T00:00:03.000Z');
+  const value = thread({
+    status: 'executing',
+    events: [{ id: 'e1', seq: 1, type: 'tool_call', data: { toolName: 'form.create' }, createdAt: new Date(now).toISOString() }],
+  });
+  const activity = buildActivityState(value, now);
+  assert.equal(activity.active, true);
+  assert.equal(activity.spinner, true);
+  assert.ok(activity.label.includes('form.create'));
+  const idle = buildActivityState(thread({ status: 'paused' }), now);
+  assert.equal(idle.active, false);
+});
+
+test('formatDuration renders seconds and minutes', () => {
+  assert.equal(formatDuration(3500), '4s');
+  assert.equal(formatDuration(125000), '2m 5s');
+  assert.equal(formatDuration(120000), '2m');
+  assert.equal(formatDuration(-1), '');
+});
+
+test('buildUnifiedCards merges plan, messages and events into a chronological card list', () => {
+  const value = thread({
+    status: 'executing',
+    dynamicPlan: {
+      goal: '员工系统', successCriteria: ['表存在'], summary: '', steps: ['建表'], assumptions: [], risks: [],
+      updatedAt: '2026-08-03T00:00:00.000Z', updatedBy: 'system',
+    },
+    messages: [{ id: 'm1', role: 'user', kind: 'prompt', content: '创建员工系统', createdAt: '2026-08-03T00:00:01.000Z' }],
+    events: [{ id: 'e1', seq: 1, type: 'tool_call', data: { toolName: 'project.create' }, createdAt: '2026-08-03T00:00:02.000Z' }],
+    turns: [],
+  });
+  const cards = buildUnifiedCards(value);
+  assert.equal(cards[0].kind, 'plan');
+  assert.equal(cards[0].state, 'running', '执行中的计划卡应显示运行态');
+  const messageIndex = cards.findIndex((card) => card.kind === 'message');
+  const eventIndex = cards.findIndex((card) => card.kind === 'event');
+  assert.ok(messageIndex >= 0, '应包含消息卡片');
+  assert.ok(eventIndex >= 0, '应包含事件卡片');
+  assert.ok(messageIndex < eventIndex, '消息应按时间排在事件之前');
+
+  const done = buildUnifiedCards(thread({ status: 'completed', dynamicPlan: value.dynamicPlan }));
+  assert.equal(done[0].state, 'passed', '完成的线程其计划卡应为完成态');
+  assert.equal(done[0].kind, 'plan');
+});
+
+test('buildUnifiedCards merges verification started and result into one card', () => {
+  const value = thread({
+    status: 'completed',
+    events: [
+      { id: 'e1', seq: 1, type: 'verification.started', data: { projectId: 'p1', kind: 'write' }, createdAt: '2026-08-03T00:00:01.000Z' },
+      { id: 'e2', seq: 2, type: 'verification.completed', data: { projectId: 'p1', kind: 'write', summary: '结构校验通过' }, createdAt: '2026-08-03T00:00:02.000Z' },
+      { id: 'e3', seq: 3, type: 'verification.started', data: { kind: 'write' }, createdAt: '2026-08-03T00:00:03.000Z' },
+    ],
+  });
+  const cards = buildUnifiedCards(value);
+  const verifyCards = cards.filter((card) => card.kind === 'event' && (card.title.includes('验证') || card.title.includes('开始验证')));
+  assert.equal(verifyCards.length, 2, '开始与结果应合并为一张卡，进行中的验证另算一张');
+  const merged = cards.find((card) => card.key === 'card:verify:1');
+  assert.ok(merged, '合并卡应使用开始事件作为稳定 key');
+  assert.equal(merged?.state, 'passed');
+  assert.equal(merged?.title, '验证通过。');
+  assert.match(merged?.meta ?? '', /→/);
+  assert.match(merged?.body ?? '', /结构校验通过/);
+  const running = cards.find((card) => card.key === 'card:verify:3');
+  assert.ok(running, '未结束的验证应保留运行态卡片');
+  assert.equal(running?.state, 'running');
+  assert.equal(running?.title, '正在验证…');
+  assert.ok(!cards.some((card) => card.title === '开始验证。'), '不应再出现独立的开始验证卡片');
 });
 
 test('formatSummaryText never leaks object placeholders and truncates long text', () => {

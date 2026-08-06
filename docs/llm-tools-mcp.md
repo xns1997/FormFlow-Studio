@@ -36,7 +36,7 @@ flowchart TD
 - **正确调用**：可直接照抄结构、替换真实 id/名称的 JSON 示例（工具定义内 `examples` + 集中式调用指导）；
 - **错误调用**：常见“看起来对、实际会失败”的传参方式、原因与预期错误码（集中式 `TOOL_CALL_GUIDANCE`），禁止照抄。
 
-系统设置 → 专家管理的「工具手册」标签页展示同一份结构化内容（`GET /api/ai/project-agent/v4/capability-bundles/:id/scopes` 的 `toolDocs` 字段），可在发布前核对每个作用域工具的调用契约。
+系统设置 → 专家管理的「工具手册」标签页展示同一份结构化内容（`GET /api/ai/project-agent/v5/capability-bundles/:id/scopes` 的 `toolDocs` 字段），可在发布前核对每个作用域工具的调用契约。
 
 ## 数据导入
 
@@ -50,24 +50,23 @@ flowchart TD
 
 ## 项目编排智能体
 
-项目智能体 V4 使用显式版本 API（旧 V2/V1 端点已移除）：
+项目智能体 V5 使用显式版本 API（旧 V4/V2/V1 端点与 v1 记录已彻底移除/忽略）：
 
-- `GET/POST /api/ai/project-agent/v4/threads`
-- `GET /api/ai/project-agent/v4/threads/history?q=&status=&projectId=&archived=&cursor=&limit=`：轻量历史摘要 + 不透明游标分页。
-- `GET/PATCH /api/ai/project-agent/v4/threads/:id`：线程详情与标题/置顶更新。
-- `PUT /api/ai/project-agent/v4/threads/:id/projects`：限定项目范围。
-- `DELETE /api/ai/project-agent/v4/threads/:id`、`POST .../restore`：归档与恢复。
-- `DELETE /api/ai/project-agent/v4/threads/:id/permanent`：确认后永久删除。
-- `POST /api/ai/project-agent/v4/threads/:id/turns`、`.../turns/retry`
-- `POST /api/ai/project-agent/v4/threads/:id/plan/confirm`、`.../plan/reject`：确认或拒绝目标契约（拒绝携带反馈重新规划）。
-- `POST /api/ai/project-agent/v4/threads/:id/operations/:operationId/decision`
-- `POST /api/ai/project-agent/v4/threads/:id/control`（pause/continue/stop/retry/replan）、`.../steer`
-- `GET /api/ai/project-agent/v4/threads/:id/events?afterSeq=<seq>`
-- `GET/POST /api/ai/project-agent/v4/capability-bundles`、`GET .../:id/scopes`
+- `GET/POST /api/ai/project-agent/v5/threads`
+- `GET /api/ai/project-agent/v5/threads/history?q=&status=&projectId=&archived=&cursor=&limit=`：轻量历史摘要 + 不透明游标分页。
+- `GET/PATCH /api/ai/project-agent/v5/threads/:id`：线程详情与标题/置顶更新。
+- `PUT /api/ai/project-agent/v5/threads/:id/projects`：限定项目范围。
+- `DELETE /api/ai/project-agent/v5/threads/:id`、`POST .../restore`：归档与恢复。
+- `DELETE /api/ai/project-agent/v5/threads/:id/permanent`：确认后永久删除。
+- `POST /api/ai/project-agent/v5/threads/:id/turns`、`.../turns/retry`：提交即动态执行，无确认环节。
+- `POST /api/ai/project-agent/v5/threads/:id/operations/:operationId/decision`
+- `POST /api/ai/project-agent/v5/threads/:id/control`（pause/continue/stop/retry）、`.../steer`
+- `GET /api/ai/project-agent/v5/threads/:id/events?afterSeq=<seq>`
+- `GET/POST /api/ai/project-agent/v5/capability-bundles`、`GET .../:id/scopes`
 
-智能体采用单一主循环：一个智能体持有线程上下文与单一活跃计划（goal、successCriteria、任务清单），每次迭代决定下一步调用哪个 MCP 角色作用域的工具；写工具前自动刷新最新 revision 并注入稳定 `idempotencyKey`，删除/覆盖操作独立等待确认，`release.apply` 永远不可调用。七个领域以 skill 形式组织（`project/data/form/workflow/behavior/quality/delivery`），决策时先按 skill 目录选择作用域，再使用该领域工具。确定性门禁不因目标确认放宽：写任务通过前必须 `project.validate`，线程完成必须通过结构校验与计划包含的质量/交付预检。连续两步无证据推进暂停提问，同一阻塞条件连续三次标记 blocked，决策步预算超限暂停。
+智能体采用 Codex 式单一主循环：一次用户输入 = 一个 Turn，线程持有**动态展示型计划**（goal、successCriteria、summary、steps，仅展示、不约束执行、无需确认），每次迭代动态决定下一步调用哪个 MCP 角色作用域的工具，并用 harness 工具 `plan.update` 随时修订计划。写工具前自动刷新最新 revision 并注入稳定 `idempotencyKey`，删除/覆盖操作独立等待确认，`release.apply` 永远不可调用。七个领域以 skill 形式组织（`project/data/form/workflow/behavior/quality/delivery`），决策时按目标关键词与最近活动动态注入 Top 2 领域 skill + 通用循环 skill。确定性门禁不因任何确认放宽：写成功后自动最小验证（`project.validate`，行为/规则追加 `rule_verify.model`），Turn 完成必须通过结构校验、形式化验证、回归测试与 `release.preview`。连续无进展自动纠正后继续，同类问题收敛到阈值才标记 blocked 提问，决策步预算超限暂停。
 
-事件接口支持 JSON 补播与 `text/event-stream`，所有事件携带线程内单调 `seq`，客户端断线后从最后序号恢复。主要事件：`turn_started`、`grounding_completed`、`plan_proposed`、`plan_confirmed`、`plan_rejected`、`tool_call`、`tool_observation`、`revision_refreshed`、`approval_required`、`approval_decided`、`task_started/task_completed/task_failed`、`gate_failed`、`thread_completed`、`thread_blocked`、`question_asked`。能力包内的 agents 已降级为作用域配置（提示词片段 + 工具白名单 + 附加知识），系统 skill 提供领域规范与运行时工具目录。
+事件接口支持 JSON 补播与 `text/event-stream`，所有事件携带线程内单调 `seq`，客户端断线后从最后序号恢复。主要事件：`turn.started`、`grounding_completed`、`plan.updated`、`model.started/model.completed`、`tool.started/tool.completed`、`tool_call`、`tool_observation`、`revision_refreshed`、`approval_required/approval_decided`、`verification.started/verification.completed/verification.failed`、`gate_failed`、`thread_completed`、`thread_blocked`、`question_asked`、`no_progress_auto_continue`。能力包内的 agents 已降级为作用域配置（提示词片段 + 工具白名单 + 附加知识），系统 skill 提供领域规范与运行时工具目录。
 
 项目质量与测试相关工具：
 

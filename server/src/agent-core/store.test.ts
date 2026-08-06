@@ -14,8 +14,8 @@ process.env.FORMFLOW_DATA_DIR = join(testRoot, 'data');
 
 const {
   acquireAgentThreadLease, appendAgentThreadEvent, createAgentThread, defaultCapabilityBundle,
-  getAgentThread, getCapabilityBundle, hasAgentThreadLease, initializeAgentStore,
-  listCapabilityBundles, releaseAgentThreadLease, saveCapabilityBundleDraft, setAgentThreadMode, validateBundle,
+  getAgentThread, getCapabilityBundle, hasAgentThreadLease, initializeAgentStore, listAgentThreads,
+  listCapabilityBundles, releaseAgentThreadLease, saveAgentThread, saveCapabilityBundleDraft, validateBundle,
 } = await import('./store');
 
 test.after(() => rmSync(testRoot, { recursive: true, force: true }));
@@ -27,9 +27,9 @@ test('agent store persists threads, monotonic events and bundles', async () => {
   assert.ok(listCapabilityBundles('local').some((item) => item.id === 'cap_default_v1'));
 
   const thread = createAgentThread({ tenantId: 'local', userId: 'local', projectIds: ['p1'], currentProjectId: 'p1', profileId: 'default-cloud' });
-  assert.equal(thread.schemaVersion, 1);
-  assert.equal(thread.mode, 'plan');
+  assert.equal(thread.schemaVersion, 2);
   assert.equal(thread.status, 'idle');
+  assert.equal(thread.turns.length, 0);
   assert.equal(thread.events.length, 0);
 
   appendAgentThreadEvent(thread, 'turn_started', {});
@@ -41,15 +41,24 @@ test('agent store persists threads, monotonic events and bundles', async () => {
   assert.equal(reloaded, thread);
   assert.equal(reloaded.events.at(-1)?.type, 'plan_proposed');
 
-  setAgentThreadMode(thread, 'goal');
-  assert.equal(getAgentThread(thread.id)!.mode, 'goal');
-  assert.throws(() => setAgentThreadMode(thread, 'auto' as never), /必须是 plan 或 goal/);
-
   assert.equal(hasAgentThreadLease(thread.id), false);
   assert.equal(await acquireAgentThreadLease(thread.id), true);
   assert.equal(await acquireAgentThreadLease(thread.id), false);
   await releaseAgentThreadLease(thread.id);
   assert.equal(hasAgentThreadLease(thread.id), false);
+});
+
+test('legacy v1 records are ignored completely', async () => {
+  await initializeAgentStore();
+  const legacy = {
+    schemaVersion: 1, id: 'pat_legacy', tenantId: 'local', userId: 'local', projectIds: ['p1'], currentProjectId: 'p1',
+    projectRevisions: {}, title: '旧线程', profileId: 'p', capabilityBundleVersionId: 'b', status: 'idle',
+    messages: [], summary: '', events: [], consecutiveNoProgress: 0, blockedCount: 0, decisionSteps: 0,
+    archived: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+  };
+  saveAgentThread(legacy as any);
+  assert.equal(getAgentThread('pat_legacy'), undefined, 'v1 记录必须被忽略');
+  assert.equal(listAgentThreads({ tenantId: 'local', userId: 'local', scopeKind: 'all' }).some((item) => item.id === 'pat_legacy'), false, 'v1 记录不得出现在活动列表');
 });
 
 test('bundle drafts round-trip and validate', () => {

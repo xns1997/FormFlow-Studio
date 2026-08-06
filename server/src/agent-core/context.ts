@@ -20,22 +20,19 @@ export function maxPromptChars(bundle: CapabilityBundleVersion) {
   return bundle.context?.maxPromptChars ?? DEFAULT_MAX_PROMPT_CHARS;
 }
 
-/** 从线程现有结构化状态确定性提取压缩契约。 */
+/** 从线程现有结构化状态确定性提取压缩契约（动态计划 + 事件流，无任务清单）。 */
 /** 构造线程的结构化上下文（目标/约束/决策/验证/剩余工作）。 */
 export function structuredThreadContext(thread: AgentThread): ThreadContext {
-  const plan = thread.plan;
-  const tasks = plan?.tasks || [];
-  const remainingWork = tasks
-    .filter((task) => ['pending', 'running', 'failed'].includes(task.status))
-    .map((task) => `[${task.scope}/${task.access}] ${task.title}${task.error ? `（错误：${task.error}）` : ''}`);
-  const verification = tasks
-    .flatMap((task) => task.evidence
-      .filter((item) => ['structural_validation', 'formal_verification', 'semantic_validation', 'delivery_preview', 'scenario_result'].includes(item.kind))
-      .map((item) => item.summary))
-    .slice(-10);
-  const decisions = tasks
-    .flatMap((task) => task.evidence.filter((item) => item.kind === 'tool_result').map((item) => item.summary))
-    .slice(-12);
+  const plan = thread.dynamicPlan;
+  const remainingWork = [...(plan?.steps || [])];
+  const verification = thread.events
+    .filter((event) => event.type === 'verification.completed' || event.type === 'verification.failed' || event.type === 'gate_failed')
+    .slice(-10)
+    .map((event) => String(event.data?.summary || event.type));
+  const decisions = thread.events
+    .filter((event) => event.type === 'tool_observation' && event.data?.status === 'succeeded')
+    .slice(-12)
+    .map((event) => String(event.data?.summary || ''));
   const userCorrections = thread.messages
     .filter((message) => message.role === 'user' && message.kind === 'prompt')
     .slice(-3)

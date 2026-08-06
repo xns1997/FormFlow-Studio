@@ -7,8 +7,7 @@ import { useProjectStore } from '../project/store';
 import ThreadSidebar, { type ThreadSidebarHandle } from './ThreadSidebar';
 import ConversationSurface from './ConversationSurface';
 import DetailLayer from './DetailLayer';
-import WorkbenchStatusBar from './WorkbenchStatusBar';
-import { modeLabelsShort, statusLabelsShort, statusSymbols, type ProjectAgentConnectionState, type ProjectAgentMode, type ProjectAgentThread, type SurfaceItem } from './projectAgentUiModel';
+import { statusLabelsShort, statusSymbols, type ProjectAgentConnectionState, type ProjectAgentThread, type SurfaceItem } from './projectAgentUiModel';
 import { useAppInteraction } from './AppInteractionProvider';
 
 interface OperationError { title: string; message: string; }
@@ -44,6 +43,7 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
   const [threads, setThreads] = useState<ProjectAgentThread[]>([]);
   const [thread, setThread] = useState<ProjectAgentThread | null>(null);
   const [activeDetail, setActiveDetail] = useState<SurfaceItem | null>(null);
+  const [detailOpen, setDetailOpen] = useState(() => typeof window === 'undefined' || window.innerWidth > 1080);
   const [prompt, setPrompt] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<OperationError | null>(null);
@@ -59,9 +59,11 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
 
   const loadThreadList = useCallback(async () => {
     try {
-      setThreads(await llmApi.projectAgent.threads({ projectId, scope: projectId ? 'project' : 'all' }) as ProjectAgentThread[]);
+      // 全量拉取，由侧栏按「当前项目/未绑定/其它项目」分组，避免新建的未绑定对话被项目作用域过滤掉。
+      const result = await llmApi.projectAgent.threads({ scope: 'all' }) as { items: ProjectAgentThread[]; total: number };
+      setThreads(result.items);
     } catch { /* keep last list */ }
-  }, [projectId]);
+  }, []);
 
   const activateThread = useCallback((next: ProjectAgentThread | null) => {
     setThread(next);
@@ -74,9 +76,25 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
     void loadThreadList();
   }, [loadThreadList]);
 
+  const openDetail = useCallback((item: SurfaceItem) => {
+    setActiveDetail(item);
+    setDetailOpen(true);
+  }, []);
+
+  const dismissDetail = useCallback(() => {
+    if (activeDetail) { setActiveDetail(null); return; }
+    setDetailOpen(false);
+  }, [activeDetail]);
+
   const loadThread = useCallback(async (id: string) => {
     const next = await llmApi.projectAgent.getThread(id) as ProjectAgentThread;
-    setThread(next);
+    setThread((current) => {
+      if (current?.id !== id) return next;
+      const currentMax = current.events[current.events.length - 1]?.seq ?? 0;
+      const nextMax = next.events[next.events.length - 1]?.seq ?? 0;
+      // 拒绝乱序返回的旧快照：事件是只追加的，快照不应比当前状态更短。
+      return nextMax >= currentMax ? next : current;
+    });
     lastSeq.current = Math.max(lastSeq.current, next.events[next.events.length - 1]?.seq || 0);
     return next;
   }, []);
@@ -97,14 +115,14 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
     lastSeq.current = 0;
     void Promise.all([
       projectApi.list(),
-      llmApi.projectAgent.threads({ projectId, scope: projectId ? 'project' : 'all' }),
+      llmApi.projectAgent.threads({ scope: 'all' }),
       pendingThreadId ? llmApi.projectAgent.getThread(pendingThreadId) as Promise<ProjectAgentThread> : Promise.resolve(null),
     ])
-      .then(([projectItems, threadItems, pending]: [ProjectOption[], ProjectAgentThread[], ProjectAgentThread | null]) => {
+      .then(([projectItems, threadResult, pending]: [ProjectOption[], { items: ProjectAgentThread[]; total: number }, ProjectAgentThread | null]) => {
         if (cancelled) return;
         setProjects(projectItems);
-        setThreads(threadItems);
-        activateThread(pending || threadItems.find((item) => item.id === projectId) || threadItems[0] || null);
+        setThreads(threadResult.items);
+        activateThread(pending || threadResult.items.find((item) => item.id === projectId) || threadResult.items[0] || null);
       })
       .catch((cause) => reportError('无法读取智能体会话', cause));
     return () => { cancelled = true; };
@@ -121,6 +139,25 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
     }, controller.signal, thread.currentProjectId, { reconnect: true, onState: setConnection });
     return () => { controller.abort(); window.clearTimeout(refreshTimer.current); };
   }, [thread?.id, thread?.currentProjectId, projectId, loadThread, loadThreadList, reconnectNonce]);
+
+  // 运行中兜底轮询：SSE 可能长时间无事件或掉线，定时同步线程、左侧列表与项目列表，保证「正在干什么/耗时/列表」始终新鲜。
+  const runningStatus = ['executing', 'awaiting_operation_approval'].includes(thread?.status || '');
+  useEffect(() => {
+    if (!thread?.id || !runningStatus) return undefined;
+    let cancelled = false;
+    let inFlight = false;
+    const tick = () => {
+      if (inFlight || cancelled) return;
+      inFlight = true;
+      void Promise.allSettled([
+        loadThread(thread.id),
+        loadThreadList(),
+        projectApi.list().then((items) => { if (!cancelled) setProjects(items as ProjectOption[]); }).catch(() => undefined),
+      ]).finally(() => { inFlight = false; });
+    };
+    const timer = window.setInterval(tick, 5000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [thread?.id, runningStatus, loadThread, loadThreadList]);
 
   useEffect(() => { const resize = () => setWidth((value) => clamp(value, window.innerWidth)); window.addEventListener('resize', resize); return () => window.removeEventListener('resize', resize); }, []);
   useEffect(() => {
@@ -142,6 +179,7 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
       if (event.key !== 'Escape' || document.querySelector('[aria-modal="true"]')) return;
       event.preventDefault();
       if (activeDetail) { setActiveDetail(null); return; }
+      if (detailOpen) { setDetailOpen(false); return; }
       if (scopeOpen) { setScopeOpen(false); return; }
       closeDrawer();
     };
@@ -153,7 +191,7 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
     window.addEventListener('keydown', handleEscape);
     window.addEventListener('keydown', handleSlash);
     return () => { window.removeEventListener('keydown', handleEscape); window.removeEventListener('keydown', handleSlash); };
-  }, [activeDetail, closeDrawer, open, scopeOpen]);
+  }, [activeDetail, closeDrawer, detailOpen, open, scopeOpen]);
 
   useEffect(() => {
     const textarea = composerRef.current;
@@ -192,26 +230,6 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
     }
   }
 
-  async function confirmPlan(revision: number) {
-    if (!thread || busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await llmApi.projectAgent.confirmPlan(thread.id, { acknowledged: true, planRevision: revision, projectId: thread.currentProjectId });
-      await loadThread(thread.id);
-    } catch (cause) { reportError('确认计划失败', cause); } finally { setBusy(false); }
-  }
-
-  async function rejectPlan(feedback: string) {
-    if (!thread || busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await llmApi.projectAgent.rejectPlan(thread.id, { feedback, projectId: thread.currentProjectId });
-      await loadThread(thread.id);
-    } catch (cause) { reportError('重新规划失败', cause); } finally { setBusy(false); }
-  }
-
   async function decideOperation(approvalId: string, approved: boolean, automatic = false) {
     if (!thread || busy) return;
     setBusy(true);
@@ -223,11 +241,11 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
     } catch (cause) { reportError(automatic ? '本地操作自动继续失败' : approved ? '确认操作失败' : '拒绝操作失败', cause); } finally { setBusy(false); }
   }
 
-  async function control(action: 'pause' | 'continue' | 'stop' | 'retry' | 'replan') {
+  async function control(action: 'pause' | 'continue' | 'stop' | 'retry') {
     if (!thread || busy) return;
     setBusy(true);
     setError(null);
-    const names = { pause: '暂停失败', continue: '继续执行失败', stop: '停止失败', retry: '重试任务失败', replan: '重新规划失败' };
+    const names = { pause: '暂停失败', continue: '继续执行失败', stop: '停止失败', retry: '重试任务失败' };
     try {
       await llmApi.projectAgent.control(thread.id, { action, projectId: thread.currentProjectId });
       await loadThread(thread.id);
@@ -262,16 +280,6 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
     void refreshCheckpoints(thread.id);
   }, [thread?.id, thread?.status, refreshCheckpoints]);
 
-  async function setMode(mode: ProjectAgentMode) {
-    if (!thread || busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await llmApi.projectAgent.updateMetadata(thread.id, { mode });
-      await loadThread(thread.id);
-    } catch (cause) { reportError('切换模式失败', cause); } finally { setBusy(false); }
-  }
-
   async function pauseBeforeLeaving(active: ProjectAgentThread) {
     if (!['executing'].includes(active.status)) return true;
     if (!await confirm({ title: '暂停当前任务？', message: '当前任务仍在执行，切换前需要先暂停。', detail: '系统会等待安全工具边界，不会中断正在进行的写操作。', confirmLabel: '暂停并继续' })) return false;
@@ -292,7 +300,7 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
       if (thread && !(await pauseBeforeLeaving(thread))) return;
       let capabilityBundleVersionId: string | undefined;
       try { capabilityBundleVersionId = localStorage.getItem('formflow.projectAgent.bundle') || undefined; } catch { /* ignore */ }
-      const created = await llmApi.projectAgent.createThread({ projectId: boundProjectId, projectIds: boundProjectId ? [boundProjectId] : [], capabilityBundleVersionId, mode: thread?.mode || 'plan' }) as ProjectAgentThread;
+      const created = await llmApi.projectAgent.createThread({ projectId: boundProjectId, projectIds: boundProjectId ? [boundProjectId] : [], capabilityBundleVersionId }) as ProjectAgentThread;
       activateThread(created);
     } catch (cause) { reportError('新建会话失败', cause); } finally { setBusy(false); }
   }
@@ -415,12 +423,11 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
     try { localStorage.setItem(WIDTH_KEY, String(next)); } catch { /* ignore */ }
   }
 
-  const awaitingPlan = thread?.plan?.status === 'pending';
-  const running = ['planning', 'executing'].includes(thread?.status || '');
+  const running = ['executing'].includes(thread?.status || '');
   const pausedForQuestion = thread?.status === 'paused' && thread.messages.some((message) => message.kind === 'question');
   const launcherClassName = launcherVariant === 'nav' ? `project-agent-nav-trigger nav-link ${open ? 'active' : ''}` : `project-agent-launcher ${open ? 'active' : ''}`;
   const mergedDrawerStyle = useMemo(() => open ? drawerStyle : { width }, [drawerStyle, open, width]);
-  const composerLabel = awaitingPlan ? '提交' : running ? '转向' : pausedForQuestion ? '回答' : '发送';
+  const composerLabel = running ? '转向' : pausedForQuestion ? '回答' : '发送';
 
   const drawerNode = open ? (
     <aside className={`project-agent-drawer ${launcherVariant === 'nav' ? 'project-agent-drawer-anchored' : ''}`} style={mergedDrawerStyle} aria-label="项目智能体">
@@ -430,17 +437,6 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
           <div className="agent-title"><strong>{thread?.title || '项目智能体'}</strong><small>{thread ? `✦ ${statusSymbols[thread.status]} ${statusLabelsShort[thread.status]}` : '先检查、再规划、确认后执行'}</small></div>
           <span className={`agent-badge ${connection === 'connected' ? 'agent-badge-success' : connection === 'disconnected' ? 'agent-badge-danger' : 'agent-badge-warning'}`}>{thread ? connectionLabels[connection] : '未连接'}</span>
           <span className="agent-spacer" />
-          {thread && (
-            <div className="agent-mode-switch" role="group" aria-label="执行模式" style={{ display: 'flex', border: 'var(--border)', borderRadius: 999, padding: 2 }}>
-              {(['plan', 'goal'] as const).map((mode) => (
-                <button key={mode} type="button" className="agent-btn agent-btn-ghost" aria-pressed={thread.mode === mode}
-                  style={thread.mode === mode ? { background: 'var(--fill)', color: 'var(--text)', fontWeight: 600 } : undefined}
-                  onClick={() => { if (thread.mode !== mode) void setMode(mode); }}>
-                  {modeLabelsShort[mode]}
-                </button>
-              ))}
-            </div>
-          )}
           {!thread && <button type="button" className="agent-btn agent-btn-primary" disabled={busy} onClick={() => void startNewThread(projectId)}>+ 新建</button>}
           {thread && <details className="agent-row-menu"><summary aria-label="更多操作">•••</summary><div className="agent-menu" role="menu">
             <button type="button" role="menuitem" disabled={busy} onClick={() => setScopeOpen(true)}>限定项目范围…</button>
@@ -449,7 +445,6 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
           </div></details>}
           <button type="button" className="agent-btn agent-btn-ghost" onClick={closeDrawer} aria-label="关闭项目智能体">×</button>
         </header>
-        <WorkbenchStatusBar thread={thread} busy={busy} onControl={(action) => void control(action)} onInterrupt={() => composerRef.current?.focus()} onRestoreCheckpoint={() => void restoreCheckpoint()} hasCheckpoints={checkpoints.length > 0} />
         {scopeOpen && thread && (
           <section className="project-agent-project-scope-card project-agent-floating-card" aria-label="限定项目范围">
             <header><div><strong>项目范围</strong><span>只能访问选中项目，实心圆=当前。</span></div><button type="button" onClick={() => setScopeOpen(false)} aria-label="关闭项目范围">×</button></header>
@@ -476,7 +471,7 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
             <div><button type="button" onClick={() => thread && void loadThread(thread.id)}>↻ 刷新</button><button type="button" onClick={() => setError(null)} aria-label="关闭错误提示">×</button></div>
           </div>
         )}
-        <div className="agent-workbench-body">
+        <div className={`agent-workbench-body${detailOpen ? '' : ' agent-detail-collapsed'}`}>
           <ThreadSidebar ref={sidebarRef} threads={threads} activeId={thread?.id} currentProjectId={projectId} busy={busy}
             onSelect={(id) => { void (async () => { if (thread && !(await pauseBeforeLeaving(thread))) return; await loadThread(id); })(); }}
             onNew={() => void startNewThread(projectId)}
@@ -486,22 +481,23 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
             onRestore={(id) => void restoreThread(id)}
             onDelete={(id) => void deleteThread(id)} />
           <ConversationSurface thread={thread} busy={busy} manualApproval={!localMode}
-            onOpenDetail={setActiveDetail}
+            onControl={(action) => void control(action)}
+            onInterrupt={() => composerRef.current?.focus()}
+            onRestoreCheckpoint={() => void restoreCheckpoint()}
+            hasCheckpoints={checkpoints.length > 0}
+            onOpenDetail={openDetail}
             onSendQuick={(text) => void send(text)}
-            onConfirmPlan={(revision) => void confirmPlan(revision)}
-            onRejectPlan={(feedback) => void rejectPlan(feedback)}
             onApprove={(approvalId, approved) => void decideOperation(approvalId, approved)}
-            onRetryPlanning={() => void control('replan')}
-            onSwitchMode={(mode) => void setMode(mode)}
+            onRetryPlanning={() => void control('retry')}
             onUseExample={() => void send('创建一个员工信息查询编辑项目，包含部门字典、录入表单、查询表单和完整测试数据')} />
-          <DetailLayer thread={thread} active={activeDetail} onClose={() => setActiveDetail(null)}
-            onOpenTask={(taskId) => setActiveDetail({ key: `task:${taskId}`, kind: 'task', state: 'idle', title: '', meta: '', ref: { taskId } })}
-            onRetryTask={() => void control('retry')} />
+          <DetailLayer thread={thread} active={activeDetail} onClose={dismissDetail} />
         </div>
+        {detailOpen && <button type="button" className="agent-detail-backdrop" aria-label="关闭详情" tabIndex={-1} onClick={dismissDetail} />}
+        {!detailOpen && <button type="button" className="agent-detail-reopen" title="打开详情" aria-label="打开详情" onClick={() => setDetailOpen(true)}>▸ 详情</button>}
         <footer className="agent-composer">
           <textarea ref={composerRef} rows={1} value={prompt} onChange={(event) => setPrompt(event.target.value)}
             onKeyDown={(event) => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') void send(); }}
-            placeholder={awaitingPlan ? '需求或修改意见…' : running ? '新要求（安全边界转向）…' : pausedForQuestion ? '补充说明…' : '描述目标、约束…'} />
+            placeholder={running ? '新要求（安全边界转向）…' : pausedForQuestion ? '补充说明…' : '描述目标、约束…'} />
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
             <button type="button" className="agent-btn agent-btn-primary" disabled={busy || !prompt.trim()} onClick={() => void send()}>{composerLabel}</button>
             <span className="agent-composer-hint">⌘/Ctrl + Enter</span>

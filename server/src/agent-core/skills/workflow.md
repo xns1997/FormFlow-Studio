@@ -35,6 +35,19 @@
 4. 删除节点前检查是否仍被连线引用；有引用时 `cascade=true` 并等待确认。
 5. 完成后运行 `workflow.validate`（按流程范围）+ `project.validate` 全项目结构。
 
+### 保存/写回工作流配方（表单提交 → 数据写回）
+
+「表单提交后更新数据表」必须走流程，不能用表单规则。标准三节点：
+`workflow:import`（输入表单数据）→ `behavior:submit`（校验 + 写回）→ `workflow:export`（成功/变更/写回事件）。
+
+**优先使用 `workflow.generate_from_table`**（arguments: projectId/tableId/sheetName/id/name/baseRevision/idempotencyKey）：系统按表与主键生成节点/端口/连线全部合法的写回工作流，避免手拼节点出错；生成后用 `form_component.upsert` 把表单按钮的 `props.flowTriggers`（对象 { 事件名: { enabled: true, workflowId } }）指向该流程 id。
+
+`behavior:submit` 的 `propertiesJson` 关键参数：`validateFirst`、`writeBackMode`（upsert/update）、`writeBackTableId`、`writeBackSheetName`、`writeBackKeyField`、`writeBackKeyFormField`、`writeBackFieldMap`（表单字段 → 表列，用真实列名）。
+
+端口连接：`workflow:import.out:formData → behavior:submit.in:formData`、`out:originalData → in:originalData`；`behavior:submit.out:success/changeLog/writeBack/fileData → workflow:export.in:success/changeLog/writeBack/fileData`。
+
+先在 `catalog.workflow_nodes.list` 查真实 specId 与端口，再建边；参数必须引用真实表、Sheet 与字段。
+
 ## 调用示例（照抄结构，替换真实值；节点与端口必须真实存在）
 
 创建一条已验证可用的简单流程（表单加载 → 条件判断 → 记录日志）：
@@ -48,6 +61,11 @@
 
 - 流程节点、边、端口引用必须全部有效；连线必须连接到真实端口。
 - 删除流程/节点/连线属于破坏性操作，需要确认。
+
+## 验证指引
+
+- 写操作成功后系统会自动运行 `project.validate`；流程改动额外运行 `workflow.validate`（按流程范围）。
+- 校验失败时读取报错中的节点/端口引用，用 `workflow.get` 核对真实端口后修复。
 
 ## 常见错误与修复
 

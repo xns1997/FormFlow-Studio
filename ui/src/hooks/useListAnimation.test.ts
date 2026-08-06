@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { staggerDelay } from './useListAnimation';
+import { mergeRowsWithLeaving, staggerDelay } from './useListAnimation';
 
 test('stagger delays increase while intervals shrink (accelerating) and stay capped', () => {
   const delays = Array.from({ length: 20 }, (_, index) => staggerDelay(index));
@@ -18,4 +18,20 @@ test('stagger delays increase while intervals shrink (accelerating) and stay cap
   assert.ok(staggerDelay(999) <= 320);
   assert.equal(staggerDelay(999), staggerDelay(500));
   assert.equal(staggerDelay(999), 300);
+});
+
+test('mergeRowsWithLeaving keeps keys unique when items reappear mid-leave', () => {
+  const items = [
+    { key: 'a', item: { id: 1 } },
+    { key: 'b', item: { id: 2 } },
+  ];
+  const leaving = [
+    { key: 'a', item: { id: 1 } }, // 已重新出现在 items 中 → 丢弃
+    { key: 'c', item: { id: 3 } },
+    { key: 'c', item: { id: 3 } }, // leaving 内部重复 → 丢弃
+  ];
+  const rows = mergeRowsWithLeaving(items, leaving);
+  assert.deepEqual(rows.map((row) => row.key), ['a', 'b', 'c']);
+  assert.deepEqual(rows.map((row) => row.leaving), [false, false, true]);
+  assert.equal(new Set(rows.map((row) => row.key)).size, rows.length, '返回的 key 必须唯一');
 });

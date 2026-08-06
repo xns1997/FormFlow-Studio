@@ -5,7 +5,7 @@ import { evaluateToolPolicy, isReleaseApply, isWriteTool, stableIdempotencyKey, 
 test('policy treats reads as allowed and deletions as confirmation required', () => {
   assert.equal(evaluateToolPolicy('project.get', '请修改项目').level, 'allowed');
   assert.equal(evaluateToolPolicy('form.create', '请创建表单').level, 'allowed');
-  const destructive = evaluateToolPolicy('project.delete', '请删除旧项目', { id: 't', title: '清理旧数据', instruction: '删除', acceptance: [], scope: 'project', access: 'write', status: 'pending', attempt: 0, maxAttempts: 3, toolSteps: 0, evidence: [], createdAt: '', updatedAt: '' });
+  const destructive = evaluateToolPolicy('project.delete', '请删除旧项目');
   assert.equal(destructive.level, 'confirmation_required');
   const forbidden = evaluateToolPolicy('project.delete', '不要删除任何内容，只能更新');
   assert.equal(forbidden.level, 'forbidden');

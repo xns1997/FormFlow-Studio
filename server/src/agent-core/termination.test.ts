@@ -8,7 +8,7 @@ import type { AgentThread } from './types';
 
 function thread(): AgentThread {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: 'pat_t',
     tenantId: 'local',
     userId: 'local',
@@ -17,8 +17,8 @@ function thread(): AgentThread {
     title: 't',
     profileId: 'p',
     capabilityBundleVersionId: 'b',
-    mode: 'plan',
     status: 'executing',
+    turns: [],
     messages: [],
     summary: '',
     events: [],
@@ -47,51 +47,55 @@ test('no-progress detection requires two consecutive identical fingerprints', ()
   assert.equal(NO_PROGRESS_THRESHOLD, 2);
 });
 
-test('task completion changes the fingerprint and resets no-progress', () => {
+test('dynamic plan update changes the fingerprint and resets no-progress', () => {
   const value = thread();
   const first = progressFingerprint(value);
-  value.plan = {
-    id: 'plan_1',
-    revision: 1,
-    request: 'r',
-    goal: 'g',
-    successCriteria: [],
-    summary: '',
-    assumptions: [],
-    risks: [],
-    status: 'confirmed',
-    createdAt: new Date().toISOString(),
-    tasks: [{ id: 't1', title: 't1', instruction: 'i', scope: 'project', access: 'write', acceptance: [], status: 'passed', attempt: 0, maxAttempts: 3, toolSteps: 1, evidence: [], createdAt: '', updatedAt: '' }],
-  };
+  value.dynamicPlan = { goal: 'g2', successCriteria: [], summary: '', steps: [], assumptions: [], risks: [], updatedAt: new Date().toISOString(), updatedBy: 'model' };
   const second = progressFingerprint(value);
   assert.notEqual(first, second);
   recordProgress(value, first);
   assert.equal(value.consecutiveNoProgress, 0);
 });
 
-test('successful tool observations count as progress (read steps do not stall)', () => {
+test('reads count as progress before the first write and within a post-write allowance', () => {
   const value = thread();
   const before = progressFingerprint(value);
   value.events = [
     { id: 'e1', seq: 1, type: 'tool_observation', data: { toolName: 'project.get', status: 'succeeded', summary: '读取完成' }, createdAt: new Date().toISOString() },
     { id: 'e2', seq: 2, type: 'tool_observation', data: { toolName: 'project.validate', status: 'succeeded', summary: '校验通过' }, createdAt: new Date().toISOString() },
   ];
-  const after = progressFingerprint(value);
-  assert.notEqual(before, after);
+  assert.notEqual(progressFingerprint(value), before, '首个写之前：成功只读算进展');
   recordProgress(value, before);
   assert.equal(value.consecutiveNoProgress, 0);
+  value.events.push({ id: 'e3', seq: 3, type: 'tool_observation', data: { toolName: 'data_source.create', status: 'succeeded', summary: '建表', changes: ['创建数据表'] }, createdAt: new Date().toISOString() });
+  const afterWrite = progressFingerprint(value);
+  for (let i = 0; i < 5; i += 1) {
+    value.events.push({ id: `e${4 + i}`, seq: 4 + i, type: 'tool_observation', data: { toolName: 'project.get', status: 'succeeded', summary: '额度内读取' }, createdAt: new Date().toISOString() });
+  }
+  assert.notEqual(progressFingerprint(value), afterWrite, '写后读额度内：只读仍算进展');
+  for (let i = 0; i < 10; i += 1) {
+    value.events.push({ id: `e${9 + i}`, seq: 9 + i, type: 'tool_observation', data: { toolName: 'project.get', status: 'succeeded', summary: '超额读取' }, createdAt: new Date().toISOString() });
+  }
+  const overQuota = progressFingerprint(value);
+  value.events.push({ id: 'e_last', seq: 999, type: 'tool_observation', data: { toolName: 'project.get', status: 'succeeded', summary: '再读一次' }, createdAt: new Date().toISOString() });
+  assert.equal(progressFingerprint(value), overQuota, '写后读额度用尽：纯只读不再算进展');
+  recordProgress(value, overQuota);
+  assert.ok(value.consecutiveNoProgress >= 1, '读额度用尽后只读应累计无进展');
 });
 
-test('same blocking condition three times marks the thread blocked', () => {
+test('same blocking condition repeated to the threshold marks the thread blocked', () => {
   const value = thread();
   const fingerprint = blockingFingerprint('validation', '项目结构校验未通过');
   recordBlockedCondition(value, fingerprint);
   recordBlockedCondition(value, fingerprint);
   assert.equal(blocked(value), false);
   recordBlockedCondition(value, fingerprint);
-  assert.equal(value.blockedCount, 3);
+  assert.equal(blocked(value), false);
+  recordBlockedCondition(value, fingerprint);
+  recordBlockedCondition(value, fingerprint);
+  assert.equal(value.blockedCount, 5);
   assert.equal(blocked(value), true);
-  assert.equal(BLOCKED_THRESHOLD, 3);
+  assert.equal(BLOCKED_THRESHOLD, 5);
   const other = blockingFingerprint('permission', '无权访问');
   recordBlockedCondition(value, other);
   assert.equal(value.blockedCount, 1);

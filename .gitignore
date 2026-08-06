@@ -21,6 +21,10 @@ server/data/tool-imports/
 server/data/data/*
 server/data/files/*
 server/data/reports/*
+server/data/cache/
+server/data/history/
+server/data/agent-artifacts/
+server/data/agent-checkpoints/
 server/data/project-mutation-replays.json
 server/data/tool-mutation-replays.json
 server/data/configs/llm-management.json

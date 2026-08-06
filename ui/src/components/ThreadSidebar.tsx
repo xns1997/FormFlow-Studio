@@ -6,7 +6,7 @@ type Filter = 'all' | 'active' | 'attention' | 'completed';
 
 function threadFilterStatus(thread: ProjectAgentThread): Filter {
   if (['completed', 'stopped'].includes(thread.status)) return 'completed';
-  if (['awaiting_plan_approval', 'awaiting_operation_approval', 'paused', 'blocked', 'failed'].includes(thread.status)) return 'attention';
+  if (['awaiting_operation_approval', 'paused', 'blocked', 'failed'].includes(thread.status)) return 'attention';
   return 'active';
 }
 
@@ -38,7 +38,7 @@ const ThreadSidebar = forwardRef<ThreadSidebarHandle, {
     return threads.filter((thread) => {
       if (filter !== 'all' && threadFilterStatus(thread) !== filter) return false;
       if (!q) return true;
-      return `${thread.title}\n${thread.plan?.goal || ''}\n${threadProjectScope(thread).join(' ')}`.toLocaleLowerCase().includes(q);
+      return `${thread.title}\n${thread.dynamicPlan?.goal || ''}\n${threadProjectScope(thread).join(' ')}`.toLocaleLowerCase().includes(q);
     });
   }, [threads, query, filter]);
   const animatedRows = useListAnimation(filtered, (thread) => thread.id);
@@ -67,6 +67,7 @@ const ThreadSidebar = forwardRef<ThreadSidebarHandle, {
           <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>
         ))}
       </div>
+      <div className="agent-sidebar-total">共 {filtered.length} 条</div>
       <div className="agent-sidebar-actions" style={{ padding: '0 10px 8px' }}>
         <button type="button" className="agent-btn agent-btn-primary" style={{ width: '100%' }} disabled={busy} onClick={onNew}>+ 新建</button>
       </div>
@@ -74,7 +75,7 @@ const ThreadSidebar = forwardRef<ThreadSidebarHandle, {
         {!groupEntries.length && <div className="agent-empty-state" style={{ padding: '24px 12px' }}><strong>没有匹配的线程</strong><p>调整筛选条件，或新建一个线程。</p></div>}
         {groupEntries.map(([label, items]) => (
           <section key={label} className="agent-thread-group">
-            <h4>{label}</h4>
+            <h4>{label} · {items.length}</h4>
             {items.map((thread) => {
               const pinned = Boolean(thread.pinnedAt);
               return (
@@ -97,7 +98,7 @@ const ThreadSidebar = forwardRef<ThreadSidebarHandle, {
                       <span className={`agent-badge ${threadFilterStatus(thread) === 'attention' ? 'agent-badge-warning' : threadFilterStatus(thread) === 'completed' ? 'agent-badge-muted' : 'agent-badge-accent'}`} title={thread.status}>{statusLabelsShort[thread.status]}</span>
                       <span className="agent-row-copy">
                         <strong>{thread.title}</strong>
-                        <small>{thread.plan?.goal || '无目标'}{pinned ? ' · 📌' : ''}</small>
+                        <small>{thread.dynamicPlan?.goal || '无目标'}{pinned ? ' · 📌' : ''}</small>
                       </span>
                     </button>
                   )}

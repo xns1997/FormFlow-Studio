@@ -43,9 +43,17 @@
 - 每个表单有默认展示入口；删除表单会检查 release 默认引用，必要时 `cascade=true` 并确认。
 - 删除控件会级联清理子控件与绑定，属于破坏性操作，需要确认。
 
+## 验证指引
+
+- 写操作成功后系统会自动运行 `project.validate`，并检查表单引用/绑定是否完整。
+- 完成后用 `form.preview` 核对字段、控件与绑定；`ruleCode/behaviors` 的验证由 behavior 领域的形式化验证负责。
+
 ## 常见错误与修复
 
 - 用 `form.update` 改规则/行为被拒 → 改走 behavior 领域工具。
+- 创建的表单是空壳（0 控件、0 绑定）会被结构校验拦截 → 用 `form.generate_from_table`（按列与主键自动生成控件+绑定），或 `form.create` 后立即用 `form_component.upsert`/`form_binding.upsert` 补齐；不要交付没有控件的表单。
+- `CONTROL_TYPE_MISMATCH`（如「字段 归还时间 应使用日期时间控件」）→ 用 `form_component.upsert` 把该控件 type 改成期望类型：日期/时间列用 `datePicker`/`dateRange`/`timePicker`，数值列用 `number`，照片列用 `upload`/`imageUpload`；组件 id 取错误路径最后一段。
+- 表单按钮触发流程：先 `workflow.create` 创建流程，再用 `form_component.upsert` 给按钮配置 `props.flowTriggers`（引用真实 workflow id）；`form_component.upsert` 缺少 props/events 会被拒，参照 `form.get` 返回的真实控件结构。
 - 控件 ID 或字段绑定拼错 → 先 `form.get` 读取真实标识。
 - 按钮没有动作 → 事件脚本必须非空，或 flowTrigger 引用真实存在的 workflow。
 - 布局被规范化导致差异 → 以服务端返回结果为准，重新读取后继续。

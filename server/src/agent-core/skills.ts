@@ -16,6 +16,7 @@ import { TOOL_CALL_GUIDANCE } from './tool-call-guidance';
 import type { CapabilityBundleVersion, ScopeConfig } from './types';
 
 const SKILLS_DIR = join(env.repositoryRoot, 'server', 'src', 'agent-core', 'skills');
+const GENERAL_SKILL_PATH = join(SKILLS_DIR, 'agent-loop.md');
 
 export interface SkillMeta {
   role: McpRole;
@@ -50,6 +51,15 @@ export function skillFor(role: McpRole): DistilledSkill {
     loaded.set(role, skill);
   }
   return skill;
+}
+
+/** 通用智能体循环 skill：恒常注入，教模型动态决策、计划维护与验证闭环。 */
+export function generalLoopSkill(): string {
+  try {
+    return readFileSync(GENERAL_SKILL_PATH, 'utf8').trim();
+  } catch {
+    return '';
+  }
 }
 
 /** Compact catalog used by the planner and decision engine to pick a scope. */

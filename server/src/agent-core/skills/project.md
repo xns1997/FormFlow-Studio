@@ -43,6 +43,11 @@
 - 删除项目（`project.delete`）必须等待用户确认；确认后清出会话项目范围。
 - `release.apply` 永远不可调用；发布只做到 `release.preview`。
 
+## 验证指引
+
+- 每次写操作成功后，系统会自动对项目运行 `project.validate`；未通过时按返回的结构问题清单逐项修复。
+- 创建/导入后主动给出 revision 与资源清单（数据表/表单/流程/行为数量），作为完成证据。
+
 ## 常见错误与修复
 
 - 用旧 revision 写入 → 重新 `project.get`，基于最新 revision 重算，不要原样重放。

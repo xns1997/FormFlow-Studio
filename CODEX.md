@@ -55,13 +55,15 @@
 - 交付：`project.package.validate/export`
 - 发布：`release.get/update/preview`（`release.apply` 永远不可用）
 
-前端项目智能体使用 `/api/ai/project-agent/v4/threads` 建立线程（thread）。智能体采用**单一主循环**（类 Codex 架构）：先只读检查项目并生成可确认的目标契约（goal、successCriteria、任务清单），确认后每次迭代由同一个智能体决定下一步调用哪个 MCP 角色作用域的工具；写工具前自动刷新最新 revision，删除/覆盖等待用户确认，`release.apply` 永远不可用。工具结果压缩成简练观察回灌模型；确定性门禁不因任何确认放宽——写任务通过前必须 `project.validate`，线程完成必须通过结构校验及计划包含的质量/交付门禁（`release.preview`）。连续两步无证据/状态推进时暂停提问，同一阻塞条件连续三次未解决标记 blocked 并提问，决策步预算超限暂停。进度通过带单调 `seq` 的 SSE 事件流发布，暂停、停止和转向在工具边界生效。旧 `/api/ai/project-agent/v2` 与 V1 端点已移除。
+前端项目智能体使用 `/api/ai/project-agent/v5/threads` 建立线程（thread）。智能体采用 **Codex 式单一主循环**：一次用户输入 = 一个 Turn，先只读检查项目并生成**动态展示型计划**（goal、successCriteria、summary、steps，仅用于展示与上下文，不约束执行、无需确认），随后循环内由同一个智能体动态决定下一步调用哪个 MCP 角色作用域的工具，可用 harness 工具 `plan.update` 随时修订动态计划。写工具前自动刷新最新 revision 并注入稳定幂等键，删除/覆盖独立等待确认，`release.apply` 永远不可用。工具结果压缩成简练观察回灌模型；写成功后自动运行最小验证（结构校验，行为/规则写入追加形式化验证），Turn 完成必须通过自审、结构校验、形式化验证、回归测试与 `release.preview`。连续无进展自动给出纠正指引继续执行，同类问题收敛到阈值后才会标记 blocked 并提问；决策步预算超限暂停。进度通过带单调 `seq` 的 SSE 事件流发布，暂停、停止和转向在工具边界生效。旧 V4/V2/V1 端点与 v1 记录已彻底移除/忽略，启动时只加载 schemaVersion=2 的线程。
 
-循环增强能力（v2.7+）：决策支持 `batchReads` 一步并行最多 3 个只读工具（写/破坏性仍一步一个）；瞬时错误与 revision 冲突自动恢复（消耗 `maxRecoveryCycles` 预算，预算用尽才暂停）；执行中可用 `replan` 只重规划剩余任务（goal 模式自动确认）；大工具结果自动转存 artifact，模型可用内置只读工具 `context.read_artifact` 分段回读；提示词超过 `context.maxPromptChars`（默认 40000）时触发结构化上下文压缩（保留目标/约束/决策/验证/剩余工作）；写任务首次执行前自动建立项目检查点（`/checkpoints/restore` 由用户显式回滚）；写计划完成前必须运行回归测试（`project_test.generate/run`，预存失败不阻塞、引入失败必须修复）并通过模型自审；每 turn 记录运行指标（`/threads/:id/metrics`、管理员 `/metrics`）。模型路由支持按用途（plan/decision/summarize/verify）选路（`ModelRoute.purpose`）。
+Agent Core 按 **harness 组件**拆分（`server/src/agent-core/harness/`）：`agent-loop`（领域无关驱动）、`prompts`（PromptAssembler）、`events`（EventEmitter）；`tools/permissions/verification/recovery/context` 由 `formflow-harness.ts` 把 FormFlow 的 MCP 工具、门禁、skill 与 revision/检查点实现为接口注入，模型可替换、副作用必须走工具。
 
-行为规则在写任务完成与线程最终门禁中还会运行**形式化验证**：对每个携带 Behavior Rule DSL 的表单执行 `rule_verify.model`（有界显式状态模型检查），静态错误、疑似无限触发链或迁移确定性不一致都会阻止任务/线程完成；模型反例路径会回灌给智能体用于修复。
+循环能力：决策支持 `batchReads` 一步并行最多 3 个只读工具（写/破坏性仍一步一个）；瞬时错误与 revision 冲突自动恢复（消耗 `maxRecoveryCycles` 预算，预算用尽才暂停）；大工具结果自动转存 artifact，模型可用内置只读工具 `context.read_artifact` 分段回读；提示词超过 `context.maxPromptChars`（默认 40000）时触发结构化上下文压缩（保留目标/约束/决策/验证/剩余工作）；写操作前自动建立项目检查点（`/checkpoints/restore` 由用户显式回滚）；Turn 完成前必须运行回归测试（`project_test.generate/run`，预存失败不阻塞、引入失败必须修复）并通过模型自审；每 turn 记录运行指标（`/threads/:id/metrics`、管理员 `/metrics`）。模型路由支持按用途（plan/decision/summarize/verify）选路（`ModelRoute.purpose`）。
 
-线程支持两种执行模式（`PATCH /threads/:id {mode}` 或随 turn 覆盖）：**计划模式**默认生成目标契约并等待用户确认后执行；**目标模式**（`mode: "goal"`）在规划后自动确认并立即进入主循环，智能体自主「走一步看一步」，用户可随时暂停、打断（转向）、继续或停止。
+行为规则在写后验证与 Turn 最终门禁中还会运行**形式化验证**：对每个携带 Behavior Rule DSL 的表单执行 `rule_verify.model`（有界显式状态模型检查），静态错误、疑似无限触发链或迁移确定性不一致都会阻止 Turn 完成；模型反例路径会回灌给智能体用于修复。
+
+线程不区分计划/目标模式：提交 Turn 即动态执行，用户可随时暂停、打断（转向）、继续或停止。
 
 工具总数和具体 Schema 以实时 `tools/list` 为准。
 

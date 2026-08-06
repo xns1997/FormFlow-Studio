@@ -1,11 +1,20 @@
 import React from 'react';
 import {
-  buildEventLog, evidenceKindLabel, formatSummaryText, messageById, modeLabels, planProgress, taskById, taskStatusLabels,
-  type ProjectAgentEvidence, type ProjectAgentThread, type SurfaceItem,
+  evidenceKindLabel, formatSummaryText, humanEventSummary, messageById, planProgress,
+  type ProjectAgentEvent, type ProjectAgentEvidence, type ProjectAgentThread, type SurfaceItem,
 } from './projectAgentUiModel';
 
+function EventRow({ event }: { event: ProjectAgentEvent }) {
+  const toolName = String(event.data?.toolName || '');
+  return (
+    <div className="agent-event-row">
+      <code>#{event.seq}</code>
+      <span className="agent-event-copy"><strong>{toolName ? `${toolName} · ${event.type}` : event.type}</strong><span>{formatSummaryText(humanEventSummary(event), 120).short}</span></span>
+    </div>
+  );
+}
+
 function EvidenceList({ items }: { items: ProjectAgentEvidence[] }) {
-  // 折叠完全相同的摘要，让重复的工具观察不再刷屏。
   const rows: Array<{ item: ProjectAgentEvidence; count: number }> = [];
   for (const item of items) {
     const key = typeof item.summary === 'string' ? item.summary : JSON.stringify(item.summary ?? '');
@@ -38,17 +47,17 @@ function EvidenceList({ items }: { items: ProjectAgentEvidence[] }) {
 }
 
 export default function DetailLayer({
-  thread, active, onClose, onOpenTask, onRetryTask,
+  thread, active, onClose,
 }: {
   thread: ProjectAgentThread | null;
   active: SurfaceItem | null;
   onClose: () => void;
-  onOpenTask: (taskId: string) => void;
-  onRetryTask: (taskId: string) => void;
 }) {
-  const plan = thread?.plan;
-  const progress = planProgress(thread || { plan: undefined, status: 'idle' } as unknown as ProjectAgentThread);
-  const events = thread ? buildEventLog(thread, 40) : [];
+  const plan = thread?.dynamicPlan;
+  const progress = planProgress(thread || ({ dynamicPlan: undefined, status: 'idle', events: [], turns: [], messages: [] } as unknown as ProjectAgentThread));
+  const totalEvents = thread?.events.length ?? 0;
+  const recentEvents = thread ? [...thread.events].slice(-12).reverse() : [];
+  const olderEvents = thread && totalEvents > 12 ? [...thread.events].slice(0, -12).reverse() : [];
 
   const planDetail = (
     <div className="agent-detail-scroll">
@@ -56,39 +65,40 @@ export default function DetailLayer({
         <section className="agent-detail-section">
           <h4>◎ 目标</h4>
           <p>{plan.goal}</p>
-          <p style={{ marginTop: 6, color: 'var(--text-secondary)' }}>{thread?.mode ? `${modeLabels[thread.mode]} · ` : ''}{plan.summary}</p>
+          {plan.summary && <p style={{ marginTop: 6, color: 'var(--text-secondary)' }}>{plan.summary}</p>}
         </section>
         <section className="agent-detail-section">
           <h4>✓ 完成标准</h4>
           <ul className="agent-checks">{plan.successCriteria.map((item) => <li key={item}>✓ {item}</li>)}</ul>
         </section>
+        {plan.steps.length > 0 && (
+          <section className="agent-detail-section">
+            <h4>☰ 当前思路（{plan.steps.length} 步）</h4>
+            <ol>{plan.steps.map((step, index) => <li key={`${index}:${step}`}>{step}</li>)}</ol>
+          </section>
+        )}
+        {(plan.assumptions.length > 0 || plan.risks.length > 0) && (
+          <section className="agent-detail-section">
+            <h4>⚠ 假设/风险</h4>
+            <ul>{plan.assumptions.map((item) => <li key={`a:${item}`}>假设：{item}</li>)}</ul>
+            <ul>{plan.risks.map((item) => <li key={`r:${item}`}>风险：{item}</li>)}</ul>
+          </section>
+        )}
         <section className="agent-detail-section">
-          <h4>⚠ 假设/风险</h4>
-          <ul>{plan.assumptions.map((item) => <li key={`a:${item}`}>假设：{item}</li>)}</ul>
-          <ul>{plan.risks.map((item) => <li key={`r:${item}`}>风险：{item}</li>)}</ul>
+          <h4>◷ 更新时间</h4>
+          <p>{new Date(plan.updatedAt).toLocaleString('zh-CN')}{plan.updatedBy === 'model' ? ' · 智能体修订' : ' · 系统初始化'}</p>
         </section>
-        <section className="agent-detail-section">
-          <h4>☰ 步骤（{progress.passed}/{progress.total}）</h4>
-          <div className="agent-progress" aria-label={`任务完成度 ${progress.percent}%`}><span style={{ width: `${progress.percent}%` }} /></div>
-          <div className="agent-event-log" style={{ marginTop: 8 }}>
-            {plan.tasks.map((task) => (
-              <button key={task.id} type="button" className="agent-event-row" style={{ width: '100%', textAlign: 'left', cursor: 'pointer' }} onClick={() => onOpenTask(task.id)} aria-label={`任务详情：${task.title}`}>
-                <span className={`agent-status-icon`} data-state={task.status === 'passed' ? 'passed' : task.status === 'failed' ? 'failed' : task.status === 'running' ? 'running' : task.status === 'blocked' ? 'blocked' : 'idle'}>{task.status === 'passed' ? '✓' : task.status === 'failed' ? '!' : task.status === 'running' ? '↻' : '·'}</span>
-                <span className="agent-event-copy"><strong>{task.title}</strong><span>{taskStatusLabels[task.status]}{task.attempt ? ` · ×${task.attempt}` : ''}{task.evidence.length ? ` · ▦${task.evidence.length}` : ''}</span></span>
-              </button>
-            ))}
-          </div>
-        </section>
-      </> : <div className="agent-empty-state"><strong>暂无计划</strong><p>发送需求后，这里会展示目标契约与任务清单。</p></div>}
+      </> : <div className="agent-empty-state"><strong>暂无计划</strong><p>发送需求后，这里会展示动态计划与执行时间线。</p></div>}
       <section className="agent-detail-section">
-        <h4>≡ 事件（{events.length}）</h4>
+        <h4>≡ 事件 · 最近 {recentEvents.length} / 共 {totalEvents}</h4>
         <div className="agent-event-log">
-          {events.slice(-12).reverse().map((event) => (
-            <div key={event.seq} className="agent-event-row">
-              <code>#{event.seq}</code>
-              <span className="agent-event-copy"><strong>{event.toolName ? `${event.toolName} · ${event.type}` : event.type}</strong><span>{formatSummaryText(event.summary, 120).short}</span></span>
-            </div>
-          ))}
+          {recentEvents.map((event) => <EventRow key={event.seq} event={event} />)}
+          {olderEvents.length > 0 && (
+            <details className="agent-event-more">
+              <summary>查看更早的 {olderEvents.length} 条</summary>
+              {olderEvents.map((event) => <EventRow key={event.seq} event={event} />)}
+            </details>
+          )}
         </div>
       </section>
     </div>
@@ -97,46 +107,24 @@ export default function DetailLayer({
   let sheet: React.ReactNode = null;
   let sheetTitle = '';
   if (active && thread) {
-    if (active.kind === 'message' || active.kind === 'completion' || active.kind === 'question') {
+    if (active.kind === 'message') {
       const message = messageById(thread, active.ref.messageId);
-      sheetTitle = active.kind === 'completion' ? '✓ 完成' : active.kind === 'question' ? '? 决定' : 'ℹ';
+      sheetTitle = message?.role === 'user' ? '◎ 你' : 'ℹ 智能体';
       sheet = (
         <div className="agent-detail-scroll">
-          <section className="agent-detail-section"><h4>{message?.kind === 'prompt' ? '◎ 你' : 'ℹ 内容'}</h4><p>{message?.content || active.title}</p></section>
-          {active.kind === 'question' && message?.questions?.[0] && (
-            <>
-              {message.questions[0].taskId ? (() => {
-                const task = taskById(thread, message!.questions![0].taskId!);
-                return task ? (
-                  <section className="agent-detail-section">
-                    <h4>▸ 步骤</h4>
-                    <button type="button" className="agent-event-row" style={{ width: '100%', textAlign: 'left', cursor: 'pointer' }} onClick={() => onOpenTask(task.id)} aria-label={`打开任务详情：${task.title}`}>
-                      <span className="agent-status-icon" data-state={task.status === 'passed' ? 'passed' : task.status === 'failed' ? 'failed' : task.status === 'running' ? 'running' : task.status === 'blocked' ? 'blocked' : 'idle'}>{task.status === 'passed' ? '✓' : task.status === 'failed' ? '!' : task.status === 'running' ? '↻' : '·'}</span>
-                      <span className="agent-event-copy"><strong>{task.title}</strong><span>{taskStatusLabels[task.status]}{task.attempt ? ` · ×${task.attempt}` : ''}</span></span>
-                    </button>
-                  </section>
-                ) : null;
-              })() : null}
-              {message.questions[0].context && <section className="agent-detail-section"><h4>ℹ 原因</h4><p>{message.questions[0].context}</p></section>}
-              {message.questions[0].options?.length ? (
-                <section className="agent-detail-section"><h4>▸ 可回复</h4><ul>{message.questions[0].options.map((option) => <li key={option.label}><strong>{option.label}</strong>{option.description ? `：${option.description}` : ''}</li>)}</ul></section>
-              ) : null}
-            </>
-          )}
+          <section className="agent-detail-section"><h4>{sheetTitle}</h4><p>{message?.content || active.title}</p></section>
           {message && <section className="agent-detail-section"><h4>◷ 时间</h4><p>{new Date(message.createdAt).toLocaleString('zh-CN')}</p></section>}
         </div>
       );
-    } else if (active.kind === 'task') {
-      const task = taskById(thread, active.ref.taskId);
-      sheetTitle = '▸ 任务';
-      sheet = task ? (
+    } else if (active.kind === 'event') {
+      const event = thread.events.find((item) => item.seq === active.ref.eventSeq);
+      sheetTitle = '▸ 事件';
+      sheet = event ? (
         <div className="agent-detail-scroll">
-          <section className="agent-detail-section"><h4>▸ 任务</h4><p>{task.title}</p><p style={{ marginTop: 4, color: 'var(--text-secondary)' }}>{task.scope} · {taskStatusLabels[task.status]}{task.attempt ? ` · ×${task.attempt}` : ''}</p></section>
-          <section className="agent-detail-section"><h4>ℹ 说明</h4><p>{task.instruction}</p></section>
-          <section className="agent-detail-section"><h4>✓ 验收</h4><ul className="agent-checks">{task.acceptance.map((item, index) => <li key={item} className={index < task.evidence.length ? 'passed' : ''}><i>{index < task.evidence.length ? '✓' : '○'}</i><span>{item}</span></li>)}</ul></section>
-          {task.evidence.length > 0 && <section className="agent-detail-section"><h4>▦ 证据（{task.evidence.length}）</h4><EvidenceList items={task.evidence} /></section>}
-          {task.error && <section className="agent-detail-section"><h4>✕ 错误</h4><p style={{ color: 'var(--danger)' }}>{task.error}</p></section>}
-          {task.status === 'failed' && <div className="agent-approval-actions"><button type="button" className="agent-btn" onClick={() => onRetryTask(task.id)}>重试任务</button></div>}
+          <section className="agent-detail-section"><h4>▸ 事件</h4><p>{humanEventSummary(event)}</p></section>
+          <section className="agent-detail-section"><h4>⚙ 类型</h4><p>{event.type}</p></section>
+          {event.data && <section className="agent-detail-section"><h4>⇥ 载荷</h4><pre style={{ fontSize: 11, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', background: 'var(--panel-soft)', borderRadius: 8, padding: 10, margin: 0 }}>{JSON.stringify(event.data, null, 2)}</pre></section>}
+          <section className="agent-detail-section"><h4>◷ 时间</h4><p>{new Date(event.createdAt).toLocaleString('zh-CN')}</p></section>
         </div>
       ) : null;
     } else if (active.kind === 'approval') {
@@ -158,7 +146,7 @@ export default function DetailLayer({
         </div>
       );
     } else if (active.kind === 'plan') {
-      sheetTitle = '◎ 计划';
+      sheetTitle = '◎ 当前计划';
       sheet = planDetail;
     }
   }
@@ -166,8 +154,8 @@ export default function DetailLayer({
   return (
     <aside className="agent-detail" aria-label="详情">
       <div className="agent-detail-header">
-        <strong>{active ? sheetTitle : '计划详情'}</strong>
-        {active && <button type="button" className="agent-btn agent-btn-ghost" onClick={onClose} aria-label="关闭详情">完成</button>}
+        <strong>{active ? sheetTitle : '当前计划'}</strong>
+        <button type="button" className="agent-btn agent-icon-btn" onClick={onClose} aria-label="关闭详情" title="关闭详情">✕</button>
       </div>
       {active && sheet ? (
         <div className="agent-detail-sheet">{sheet}</div>

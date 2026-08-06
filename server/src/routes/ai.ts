@@ -12,11 +12,11 @@ import { createRuleAgentSession, getRuleAgentSession, listRuleAgentSessions, sav
 import { applyRuleProposal, createRuleProposal, formContext, inferRuleAgentIntent, lintRuleCode, readRuleReference, runRuleSandbox } from '../services/rule-agent';
 import { canAccessProject, type ProjectAccess } from '../services/permission';
 import { readProjectPackage } from '../services/project-package-store';
-import { projectAgentV4Router } from './project-agent-v4';
+import { projectAgentV5Router } from './project-agent-v5';
 import { formatCode } from '../services/code-formatter';
 
 const router = Router();
-router.use('/project-agent/v4', projectAgentV4Router);
+router.use('/project-agent/v5', projectAgentV5Router);
 
 type AiRequest = {
   provider?: 'openai' | 'local';

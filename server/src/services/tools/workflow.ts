@@ -3,6 +3,7 @@
  */
 import { assertRevision, requireProject, toolError, validateProjectModel } from '../project-authoring';
 import { normalizeWorkflowNode, normalizeWorkflowEdge, normalizeWorkflowItem, workflowEdgeSchema, workflowItemSchema, workflowNodeSchema } from '../tool-shared';
+import { createSaveWorkflow } from '../../../../shared/formflow-core/formScaffold';
 import type { RegisterFn, ToolHelpers } from './types';
 
 /** 注册流程域工具（工作流 CRUD/校验）。 */
@@ -12,6 +13,31 @@ export function registerWorkflowTools(register: RegisterFn, h: ToolHelpers) {
   register({ name: 'workflow.list', title: 'workflow 列表', description: '列出项目 workflow。', inputSchema: h.schema(['projectId'], { projectId: h.string }), risk: 'read', requiredAccess: 'view', examples: [{ summary: '列出项目流程', arguments: { projectId: 'device_mgmt' } }], handler: (input, context) => requireProject(projectId(input, context)).workflows || [] });
   register({ name: 'workflow.get', title: '读取 workflow', description: '读取指定 workflow。', inputSchema: h.schema(['projectId', 'id'], { projectId: h.string, id: h.string }), risk: 'read', requiredAccess: 'view', examples: [{ summary: '读取流程结构与端口', arguments: { projectId: 'device_mgmt', id: 'device_review' } }], handler: (input, context) => findById(requireProject(projectId(input, context)).workflows || [], input.id, 'WORKFLOW_NOT_FOUND') });
   for (const action of ['create', 'update'] as const) register({ name: `workflow.${action}`, title: `${action === 'create' ? '创建' : '更新'} workflow`, description: `按稳定 ID ${action === 'create' ? '创建' : '替换'}工作流；节点使用 specId/position/data，连线使用 source/target 节点 ID 和 out:/in: 端口。`, inputSchema: h.schema(['projectId', 'item', 'baseRevision', 'idempotencyKey'], { projectId: h.string, id: h.string, item: workflowItemSchema, baseRevision: h.string, idempotencyKey: h.string }), risk: 'write', requiredAccess: 'edit', examples: [{ summary: '创建一条已验证可用的流程（表单加载→条件→日志）', arguments: { projectId: 'device_mgmt', id: 'device_review', baseRevision: '<revision>', idempotencyKey: 'wf-1', item: { id: 'device_review', name: '设备巡检审批', nodes: [{ id: 'n1', specId: 'behavior-on-form-load', label: '表单加载', position: { x: 40, y: 40 } }, { id: 'n2', specId: 'behavior-condition', label: '评分判断', position: { x: 280, y: 40 } }, { id: 'n3', specId: 'behavior-log', label: '记录日志', position: { x: 520, y: 40 } }], edges: [{ id: 'e1', source: 'n1', sourceHandle: 'out:trigger', target: 'n2', targetHandle: 'in:trigger' }, { id: 'e2', source: 'n2', sourceHandle: 'out:true', target: 'n3', targetHandle: 'in:trigger' }] } }, success: { revision: '…' }, errors: [{ code: 'RESOURCE_EXISTS', message: 'workflow 已存在' }, { code: 'PROJECT_VALIDATION_FAILED', message: '流程结构无效（空节点/端口错误；behavior-notify 无输入端口不能作终点）' }] }], handler: (input, context) => { const project = requireProject(projectId(input, context)); assertRevision(project, input.baseRevision); project.workflows ||= []; const item = normalizeWorkflowItem(input.item, input.id); if (!item.id) throw toolError('INVALID_ID', 'item.id 不能为空', 'item.id'); if (action === 'create' && project.workflows.some((entry: any) => entry.id === item.id)) throw toolError('RESOURCE_EXISTS', 'workflow 已存在'); upsert(project.workflows, item); project.config.updatedAt = new Date().toISOString(); return h.commitProject(project); } });
+  register({
+    name: 'workflow.generate_from_table',
+    title: '从数据表生成保存/写回工作流',
+    description: '按数据表与主键生成标准写回工作流（workflow:import → behavior:submit（writeBack 指向该表）→ workflow:export），节点/端口/连线全部合法；生成后再用 form_component.upsert 把表单按钮的 props.flowTriggers 指向该流程 id。',
+    inputSchema: h.schema(['projectId', 'tableId', 'sheetName', 'id', 'baseRevision', 'idempotencyKey'], { projectId: h.string, tableId: h.string, sheetName: h.string, id: h.string, name: h.string, baseRevision: h.string, idempotencyKey: h.string }),
+    risk: 'write',
+    requiredAccess: 'edit',
+    examples: [{ summary: '为设备台账表生成保存工作流', arguments: { projectId: 'device_mgmt', tableId: 'device', sheetName: 'Sheet1', id: 'device_save', baseRevision: '<revision>', idempotencyKey: 'wf-gen-1' }, success: { revision: '…' }, errors: [{ code: 'WORKFLOW_EXISTS', message: '工作流已存在' }, { code: 'KEY_REQUIRED', message: '写回工作流需要表主键（keyFields）' }] }],
+    handler: (input, context) => {
+      const project = requireProject(projectId(input, context));
+      assertRevision(project, input.baseRevision);
+      if (!input.tableId || !input.id) throw toolError('INVALID_ARGUMENT', 'tableId 与 id 必填');
+      const table = findById(project.srcTable || [], input.tableId, 'TABLE_NOT_FOUND');
+      const sheet = (table.sheets || []).find((item: any) => item.name === input.sheetName) || table.sheets?.[0];
+      if (!sheet) throw toolError('SHEET_NOT_FOUND', 'Sheet 不存在');
+      const fields = (sheet.columns || []).map((column: any) => ({ name: column.name }));
+      const workflow = createSaveWorkflow(table, sheet, fields, { id: input.id, name: input.name || `保存${sheet.name}`, now: new Date().toISOString() });
+      if (!workflow) throw toolError('KEY_REQUIRED', '写回工作流需要表主键（keyFields）', 'keyFields');
+      if ((project.workflows || []).some((item: any) => item.id === workflow.id)) throw toolError('WORKFLOW_EXISTS', '工作流已存在');
+      project.workflows ||= [];
+      project.workflows.push(workflow);
+      project.config.updatedAt = new Date().toISOString();
+      return h.commitProject(project);
+    },
+  });
   register({ name: 'workflow.delete', title: '删除 workflow', description: '删除指定 workflow。', inputSchema: h.schema(['projectId', 'id', 'baseRevision', 'idempotencyKey'], { projectId: h.string, id: h.string, baseRevision: h.string, idempotencyKey: h.string, confirmationToken: h.string, cascade: h.boolean }), risk: 'destructive', requiredAccess: 'edit', impact: (input) => ({ type: 'workflow', id: input.id }), examples: [{ summary: '删除流程（需确认）', arguments: { projectId: 'device_mgmt', id: 'device_review', baseRevision: '<revision>', idempotencyKey: 'wf-del-1' } }], handler: (input, context) => { const project = requireProject(projectId(input, context)); assertRevision(project, input.baseRevision); const refs = (project.forms || []).filter((form: any) => JSON.stringify(form).includes(input.id)); if (refs.length && !input.cascade) throw toolError('RESOURCE_REFERENCED', '流程仍被表单引用', 'id', { forms: refs.map((item: any) => item.id) }); remove(project.workflows || [], input.id); project.config.updatedAt = new Date().toISOString(); return h.commitProject(project); } });
 
   // Node and edge CRUD

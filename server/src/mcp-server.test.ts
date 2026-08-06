@@ -59,13 +59,21 @@ test('MCP transport removes the aggregate endpoint and validates specialist role
     const loadedProject = await fetch(`${root}/api/ai/mcp-roles/project/tools/project.get/invoke`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ arguments: { projectId } }) });
     assert.match(JSON.stringify(await loadedProject.json()), /HTTP 首次创建/);
 
-    const created = await fetch(`${root}/api/ai/project-agent/v4/threads`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }); const thread = await created.json() as any;
-    assert.equal(created.status, 201); assert.equal(thread.schemaVersion, 1); assert.equal(thread.status, 'idle');
-    const snapshot = await fetch(`${root}/api/ai/project-agent/v4/threads/${thread.id}`); assert.equal(snapshot.status, 200); assert.equal((await snapshot.json() as any).id, thread.id);
-    const stored = agentCore.getAgentThread(thread.id)!; agentCore.appendAgentThreadEvent(stored, 'task_started', { taskId: 'read-1' }); agentCore.appendAgentThreadEvent(stored, 'task_completed', { taskId: 'read-1' });
-    const replay = await fetch(`${root}/api/ai/project-agent/v4/threads/${thread.id}/events?afterSeq=1`); const replayBody = await replay.json() as any; assert.deepEqual(replayBody.events.map((event: any) => event.seq), [2]);
-    const retryWithoutFailure = await fetch(`${root}/api/ai/project-agent/v4/threads/${thread.id}/turns/retry`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }); assert.equal(retryWithoutFailure.status, 422); assert.match(JSON.stringify(await retryWithoutFailure.json()), /规划失败记录不存在/);
-    const bundles = await fetch(`${root}/api/ai/project-agent/v4/capability-bundles`); assert.equal(bundles.status, 200); assert.ok((await bundles.json() as any[]).some((item) => item.status === 'published'));
+    const created = await fetch(`${root}/api/ai/project-agent/v5/threads`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }); const thread = await created.json() as any;
+    assert.equal(created.status, 201); assert.equal(thread.schemaVersion, 2); assert.equal(thread.status, 'idle');
+    const snapshot = await fetch(`${root}/api/ai/project-agent/v5/threads/${thread.id}`); assert.equal(snapshot.status, 200); assert.equal((await snapshot.json() as any).id, thread.id);
+    const stored = agentCore.getAgentThread(thread.id)!; agentCore.appendAgentThreadEvent(stored, 'tool_call', { toolName: 'project.get' });
+    const replay = await fetch(`${root}/api/ai/project-agent/v5/threads/${thread.id}/events?afterSeq=0`); const replayBody = await replay.json() as any; assert.deepEqual(replayBody.events.map((event: any) => event.seq), [1]); assert.equal(replayBody.total, 1, '事件响应应携带线程事件总数');
+    const retryWithoutFailure = await fetch(`${root}/api/ai/project-agent/v5/threads/${thread.id}/turns/retry`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }); assert.equal(retryWithoutFailure.status, 422); assert.match(JSON.stringify(await retryWithoutFailure.json()), /只有失败状态可以重试/);
+    const bundles = await fetch(`${root}/api/ai/project-agent/v5/capability-bundles`); assert.equal(bundles.status, 200); assert.ok((await bundles.json() as any[]).some((item) => item.status === 'published'));
+    // ?scope= 必须被尊重：此前 /threads 忽略 scope，all 会退化按 unbound 过滤。
+    const scopeAll = await fetch(`${root}/api/ai/project-agent/v5/threads?scope=all`); assert.equal(scopeAll.status, 200); const scopeAllBody = await scopeAll.json() as any; const allThreads = scopeAllBody.items as any[];
+    assert.equal(typeof scopeAllBody.total, 'number', '线程列表应携带总数');
+    assert.ok(allThreads.some((item: any) => item.id === thread.id), 'scope=all 应包含新建的未绑定线程');
+    const scopeProject = await fetch(`${root}/api/ai/project-agent/v5/threads?scope=project&projectId=${projectId}`); assert.equal(scopeProject.status, 200); const projectThreads = (await scopeProject.json() as any).items as any[];
+    assert.equal(projectThreads.some((item: any) => item.id === thread.id), false, 'project 作用域不应包含未绑定线程');
+    const scopeUnbound = await fetch(`${root}/api/ai/project-agent/v5/threads?scope=unbound`); assert.equal(scopeUnbound.status, 200); const unboundThreads = (await scopeUnbound.json() as any).items as any[];
+    assert.ok(unboundThreads.some((item: any) => item.id === thread.id), 'unbound 作用域应包含未绑定线程');
   } finally { await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve())); }
 });
 

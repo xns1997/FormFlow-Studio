@@ -39,6 +39,11 @@
 - 交付完成必须基于 `release.preview` 的真实结果（ready 状态与阻断清单），不能自报成功。
 - 删除 output 属于破坏性操作，需要确认。
 
+## 验证指引
+
+- 最终完成门禁包含 `project.package.validate` 与 `release.preview`：预检必须返回 ready 且无阻断项。
+- 预检引用旧 revision 时先重新读取项目；发布永远停留在 preview，不提供任何 apply 路径。
+
 ## 常见错误与修复
 
 - 想“直接发布” → 不存在该路径；最多做到 release.preview，并把 ready 状态报告给用户。

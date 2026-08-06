@@ -1,0 +1,52 @@
+{
+  "threadTitle": "小任务序列：员工信息管理",
+  "perTask": {
+    "maxSeconds": 600,
+    "maxToolCalls": 40
+  },
+  "tasks": [
+    {
+      "title": "创建空项目",
+      "finalGate": false,
+      "prompt": "创建一个新的空 FormFlow 项目，只填元信息：名称=员工信息管理，描述=管理员工信息，包括部门与员工数据录入、查询与编辑，标签=人力资源、员工管理。不要创建数据表或表单。"
+    },
+    {
+      "title": "创建部门数据表",
+      "finalGate": false,
+      "prompt": "在现有项目 {projectId} 上创建部门数据表：字段 部门编号/部门名称，主键 部门编号，内置 2 行示例数据（D-01 技术部、D-02 销售部）。不要新建项目。"
+    },
+    {
+      "title": "创建员工数据表",
+      "finalGate": false,
+      "prompt": "在现有项目 {projectId} 上创建员工数据表：字段 员工编号/姓名/部门/手机号/入职日期，主键 员工编号，内置 2 行示例数据。不要新建项目。"
+    },
+    {
+      "title": "生成员工录入表单",
+      "finalGate": false,
+      "maxToolCalls": 80,
+      "prompt": "在现有项目 {projectId} 上用 form.generate_from_table 生成员工录入表单（模式 create），表单必须有控件与绑定，不要创建空表单。不要新建项目。"
+    },
+    {
+      "title": "生成部门查询修改表单",
+      "finalGate": false,
+      "maxToolCalls": 80,
+      "prompt": "在现有项目 {projectId} 上用 form.generate_from_table 生成部门查询修改表单（模式 lookup-edit），表单必须有控件与绑定，不要创建空表单。不要新建项目。"
+    },
+    {
+      "title": "配置员工表单规则",
+      "finalGate": false,
+      "prompt": "在现有项目 {projectId} 上给员工录入表单配置表单规则：提交前校验 姓名 与 手机号 必填（用 rule_code.update，先 rule_syntax.lint）。不要新建项目。"
+    },
+    {
+      "title": "生成并运行回归测试",
+      "finalGate": false,
+      "maxToolCalls": 80,
+      "prompt": "在现有项目 {projectId} 上生成并运行回归测试，确认全部通过（project_test.generate / project_test.run）。不要新建项目。"
+    },
+    {
+      "title": "质量检查与发布预检",
+      "finalGate": true,
+      "prompt": "在现有项目 {projectId} 上执行项目质量检查与发布预检（project.quality.inspect、release.preview），确认 ready 后输出交付报告，逐条列出证据：项目 ID、数据表清单、表单清单、规则代码、测试结果、发布预检状态。不要调用 release.apply。不要新建项目。"
+    }
+  ]
+}

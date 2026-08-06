@@ -297,32 +297,30 @@ export const llmApi = {
     applyProposal: (id: string, data: { sessionId: string; projectId: string; baseRuleHash: string; confirmFailedTests?: boolean }) => request(`/ai/rule-agent/proposals/${encodeURIComponent(id)}/apply`, { method: 'POST', body: JSON.stringify(data) }),
   },
   projectAgent: {
-    threads: (query: { projectId?: string; scope?: ProjectAgentSessionScope } = {}) => { const params = new URLSearchParams(); if (query.projectId) params.set('projectId', query.projectId); else if (query.scope) params.set('scope', query.scope); const suffix = params.size ? `?${params}` : ''; return request(`/ai/project-agent/v4/threads${suffix}`); },
-    history: (query: { q?: string; status?: 'active' | 'attention' | 'completed'; projectId?: string; archived?: boolean; cursor?: string; limit?: number } = {}) => { const params = new URLSearchParams(); if (query.q) params.set('q', query.q); if (query.status) params.set('status', query.status); if (query.projectId) params.set('projectId', query.projectId); if (query.archived) params.set('archived', 'true'); if (query.cursor) params.set('cursor', query.cursor); if (query.limit) params.set('limit', String(query.limit)); return request(`/ai/project-agent/v4/threads/history?${params}`); },
-    createThread: (data: { projectId?: string; projectIds?: string[]; title?: string; profileId?: string; capabilityBundleVersionId?: string; mode?: 'plan' | 'goal' }) => request('/ai/project-agent/v4/threads', { method: 'POST', body: JSON.stringify(data) }),
-    setProjects: (id: string, data: { projectIds: string[]; currentProjectId?: string }) => request(`/ai/project-agent/v4/threads/${encodeURIComponent(id)}/projects`, { method: 'PUT', body: JSON.stringify(data) }),
-    getThread: (id: string, projectId?: string) => request(`/ai/project-agent/v4/threads/${encodeURIComponent(id)}${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`),
-    turn: (id: string, data: { prompt: string; projectId?: string }) => request(`/ai/project-agent/v4/threads/${encodeURIComponent(id)}/turns`, { method: 'POST', body: JSON.stringify(data), timeoutMs: 180_000 }),
-    retryTurn: (id: string, projectId?: string) => request(`/ai/project-agent/v4/threads/${encodeURIComponent(id)}/turns/retry`, { method: 'POST', body: JSON.stringify({ projectId }), timeoutMs: 180_000 }),
-    confirmPlan: (threadId: string, data: { acknowledged: boolean; planRevision: number; projectId?: string }) => request(`/ai/project-agent/v4/threads/${encodeURIComponent(threadId)}/plan/confirm`, { method: 'POST', body: JSON.stringify(data) }),
-    rejectPlan: (threadId: string, data: { feedback?: string; projectId?: string }) => request(`/ai/project-agent/v4/threads/${encodeURIComponent(threadId)}/plan/reject`, { method: 'POST', body: JSON.stringify(data), timeoutMs: 180_000 }),
-    control: (id: string, data: { action: 'pause' | 'continue' | 'stop' | 'retry' | 'replan'; projectId?: string }) => request(`/ai/project-agent/v4/threads/${encodeURIComponent(id)}/control`, { method: 'POST', body: JSON.stringify(data) }),
-    steer: (id: string, data: { prompt: string; projectId?: string }) => request(`/ai/project-agent/v4/threads/${encodeURIComponent(id)}/steer`, { method: 'POST', body: JSON.stringify(data), timeoutMs: 180_000 }),
-    decideOperation: (threadId: string, operationId: string, data: { approved: boolean; automatic?: boolean; projectId?: string }) => request(`/ai/project-agent/v4/threads/${encodeURIComponent(threadId)}/operations/${encodeURIComponent(operationId)}/decision`, { method: 'POST', body: JSON.stringify(data) }),
-    checkpoints: (id: string, projectId?: string) => request(`/ai/project-agent/v4/threads/${encodeURIComponent(id)}/checkpoints${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`),
-    restoreCheckpoint: (id: string, data: { checkpointPath?: string; projectId?: string }) => request(`/ai/project-agent/v4/threads/${encodeURIComponent(id)}/checkpoints/restore`, { method: 'POST', body: JSON.stringify(data) }),
-    metrics: (id: string, projectId?: string) => request(`/ai/project-agent/v4/threads/${encodeURIComponent(id)}/metrics${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`),
-    allMetrics: () => request('/ai/project-agent/v4/metrics'),
-    archive: (id: string, projectId?: string) => request(`/ai/project-agent/v4/threads/${encodeURIComponent(id)}${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`, { method: 'DELETE' }),
-    permanentlyDelete: (id: string, projectId?: string) => request(`/ai/project-agent/v4/threads/${encodeURIComponent(id)}/permanent${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`, { method: 'DELETE', body: JSON.stringify({ confirmed: true }) }),
-    updateMetadata: (id: string, data: { title?: string; pinned?: boolean; mode?: 'plan' | 'goal' }, projectId?: string) => request(`/ai/project-agent/v4/threads/${encodeURIComponent(id)}${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    restore: (id: string, projectId?: string) => request(`/ai/project-agent/v4/threads/${encodeURIComponent(id)}/restore${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`, { method: 'POST' }),
-    events: (id: string, afterSeq = 0, projectId?: string) => request(`/ai/project-agent/v4/threads/${encodeURIComponent(id)}/events?afterSeq=${afterSeq}${projectId ? `&projectId=${encodeURIComponent(projectId)}` : ''}`),
+    threads: (query: { projectId?: string; scope?: ProjectAgentSessionScope } = {}) => { const params = new URLSearchParams(); if (query.projectId) params.set('projectId', query.projectId); else if (query.scope) params.set('scope', query.scope); const suffix = params.size ? `?${params}` : ''; return request(`/ai/project-agent/v5/threads${suffix}`); },
+    history: (query: { q?: string; status?: 'active' | 'attention' | 'completed'; projectId?: string; archived?: boolean; cursor?: string; limit?: number } = {}) => { const params = new URLSearchParams(); if (query.q) params.set('q', query.q); if (query.status) params.set('status', query.status); if (query.projectId) params.set('projectId', query.projectId); if (query.archived) params.set('archived', 'true'); if (query.cursor) params.set('cursor', query.cursor); if (query.limit) params.set('limit', String(query.limit)); return request(`/ai/project-agent/v5/threads/history?${params}`); },
+    createThread: (data: { projectId?: string; projectIds?: string[]; title?: string; profileId?: string; capabilityBundleVersionId?: string }) => request('/ai/project-agent/v5/threads', { method: 'POST', body: JSON.stringify(data) }),
+    setProjects: (id: string, data: { projectIds: string[]; currentProjectId?: string }) => request(`/ai/project-agent/v5/threads/${encodeURIComponent(id)}/projects`, { method: 'PUT', body: JSON.stringify(data) }),
+    getThread: (id: string, projectId?: string) => request(`/ai/project-agent/v5/threads/${encodeURIComponent(id)}${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`),
+    turn: (id: string, data: { prompt: string; projectId?: string }) => request(`/ai/project-agent/v5/threads/${encodeURIComponent(id)}/turns`, { method: 'POST', body: JSON.stringify(data), timeoutMs: 180_000 }),
+    retryTurn: (id: string, projectId?: string) => request(`/ai/project-agent/v5/threads/${encodeURIComponent(id)}/turns/retry`, { method: 'POST', body: JSON.stringify({ projectId }), timeoutMs: 180_000 }),
+    control: (id: string, data: { action: 'pause' | 'continue' | 'stop' | 'retry'; projectId?: string }) => request(`/ai/project-agent/v5/threads/${encodeURIComponent(id)}/control`, { method: 'POST', body: JSON.stringify(data) }),
+    steer: (id: string, data: { prompt: string; projectId?: string }) => request(`/ai/project-agent/v5/threads/${encodeURIComponent(id)}/steer`, { method: 'POST', body: JSON.stringify(data), timeoutMs: 180_000 }),
+    decideOperation: (threadId: string, operationId: string, data: { approved: boolean; automatic?: boolean; projectId?: string }) => request(`/ai/project-agent/v5/threads/${encodeURIComponent(threadId)}/operations/${encodeURIComponent(operationId)}/decision`, { method: 'POST', body: JSON.stringify(data) }),
+    checkpoints: (id: string, projectId?: string) => request(`/ai/project-agent/v5/threads/${encodeURIComponent(id)}/checkpoints${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`),
+    restoreCheckpoint: (id: string, data: { checkpointPath?: string; projectId?: string }) => request(`/ai/project-agent/v5/threads/${encodeURIComponent(id)}/checkpoints/restore`, { method: 'POST', body: JSON.stringify(data) }),
+    metrics: (id: string, projectId?: string) => request(`/ai/project-agent/v5/threads/${encodeURIComponent(id)}/metrics${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`),
+    allMetrics: () => request('/ai/project-agent/v5/metrics'),
+    archive: (id: string, projectId?: string) => request(`/ai/project-agent/v5/threads/${encodeURIComponent(id)}${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`, { method: 'DELETE' }),
+    permanentlyDelete: (id: string, projectId?: string) => request(`/ai/project-agent/v5/threads/${encodeURIComponent(id)}/permanent${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`, { method: 'DELETE', body: JSON.stringify({ confirmed: true }) }),
+    updateMetadata: (id: string, data: { title?: string; pinned?: boolean }, projectId?: string) => request(`/ai/project-agent/v5/threads/${encodeURIComponent(id)}${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    restore: (id: string, projectId?: string) => request(`/ai/project-agent/v5/threads/${encodeURIComponent(id)}/restore${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`, { method: 'POST' }),
+    events: (id: string, afterSeq = 0, projectId?: string) => request(`/ai/project-agent/v5/threads/${encodeURIComponent(id)}/events?afterSeq=${afterSeq}${projectId ? `&projectId=${encodeURIComponent(projectId)}` : ''}`),
     streamEvents: async (id: string, afterSeq: number, onEvent: (event: any) => void, signal?: AbortSignal, projectId?: string, lifecycle?: { onOpen?(): void; onClose?(): void; onState?(state: ReconnectingStreamState): void; reconnect?: boolean }) => {
       const controller = signal ? undefined : new AbortController();
       const activeSignal = signal || controller!.signal;
       const open = async (cursor: number, streamSignal: AbortSignal) => {
-        const stream = await transport.stream(`/ai/project-agent/v4/threads/${encodeURIComponent(id)}/events?afterSeq=${cursor}${projectId ? `&projectId=${encodeURIComponent(projectId)}` : ''}`, { signal: streamSignal });
+        const stream = await transport.stream(`/ai/project-agent/v5/threads/${encodeURIComponent(id)}/events?afterSeq=${cursor}${projectId ? `&projectId=${encodeURIComponent(projectId)}` : ''}`, { signal: streamSignal });
         return stream.frames;
       };
       const consumeFrame = (frame: { data: string; id?: string }, cursor: number) => {
@@ -358,12 +356,12 @@ export const llmApi = {
       });
     },
     capabilityBundles: {
-      list: () => request('/ai/project-agent/v4/capability-bundles'),
-      scopes: (id: string) => request(`/ai/project-agent/v4/capability-bundles/${encodeURIComponent(id)}/scopes`),
-      create: (data: any) => request('/ai/project-agent/v4/capability-bundles', { method: 'POST', body: JSON.stringify(data) }),
-      update: (id: string, data: any) => request(`/ai/project-agent/v4/capability-bundles/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(data) }),
-      validate: (id: string) => request(`/ai/project-agent/v4/capability-bundles/${encodeURIComponent(id)}/validate`, { method: 'POST' }),
-      publish: (id: string) => request(`/ai/project-agent/v4/capability-bundles/${encodeURIComponent(id)}/publish`, { method: 'POST' }),
+      list: () => request('/ai/project-agent/v5/capability-bundles'),
+      scopes: (id: string) => request(`/ai/project-agent/v5/capability-bundles/${encodeURIComponent(id)}/scopes`),
+      create: (data: any) => request('/ai/project-agent/v5/capability-bundles', { method: 'POST', body: JSON.stringify(data) }),
+      update: (id: string, data: any) => request(`/ai/project-agent/v5/capability-bundles/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(data) }),
+      validate: (id: string) => request(`/ai/project-agent/v5/capability-bundles/${encodeURIComponent(id)}/validate`, { method: 'POST' }),
+      publish: (id: string) => request(`/ai/project-agent/v5/capability-bundles/${encodeURIComponent(id)}/publish`, { method: 'POST' }),
     },
   },
 };

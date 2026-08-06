@@ -2,10 +2,10 @@
  * Agent Core public API. The v4 route and consumers import from here.
  */
 export type {
-  AgentPlan, AgentTask, AgentThread, AgentEvidence, CapabilityBundleVersion,
+  AgentThread, AgentEvidence, CapabilityBundleVersion, DynamicPlan,
   FailureClass, LoopDecision, LoopObservation, LoopQuestion, PendingApproval,
   RunContext, ScopeConfig, ThreadEvent, ThreadHistoryPage, ThreadHistorySummary,
-  ThreadHistoryStatus, ThreadMessage, ThreadStatus, TaskAccess, TaskStatus, AgentMode,
+  ThreadHistoryStatus, ThreadMessage, ThreadStatus, TurnRecord, TurnStatus,
   ArtifactMeta, LoopBatchRead, TestBaseline, ThreadContext, TurnMetrics,
 } from './types';
 export { MAX_BATCH_READS } from './types';
@@ -17,22 +17,21 @@ export {
   listAgentThreads, listCapabilityBundles, listThreadHistory, publishCapabilityBundle,
   releaseAgentThreadLease, renewAgentThreadLease, restoreAgentThread, saveAgentThread,
   saveCapabilityBundleDraft, setAgentThreadProjectScope, subscribeAgentThreadEvents,
-  threadEventsAfter, threadProjectIds, updateAgentThreadMetadata, validateBundle, setAgentThreadMode,
+  threadEventsAfter, threadProjectIds, updateAgentThreadMetadata, validateBundle,
   bumpThreadMetric, compactThreadMessages, readAgentArtifact, resetThreadMetrics,
   setThreadContext, storeAgentArtifact, flushThreadMetrics, listThreadMetrics,
 } from './store';
 
 export { chat, streamChat } from './llm';
-export { ground, planTurn, replanWithFeedback, replanRemaining, confirmPlan, validatePlanTasks } from './planner';
+export { ground, initializeDynamicPlan, validateDynamicPlan, applyDynamicPlanUpdate } from './planner';
 export {
-  appendToolObservation, classifyFailure, executeAction, executePlan, recordToolResult,
-  shouldAutoApproveOperation,
+  appendToolObservation, classifyFailure, executeAction, runTurn, recordToolResult,
 } from './loop';
-export { runFinalGates, verifyCompletedTask, captureTestBaseline, testGateApplies, GateFailure } from './gates';
+export { runFinalGates, verifyProjectAfterWrite, captureTestBaseline, testGateApplies, GateFailure } from './gates';
 export { maybeCompactContext, structuredThreadContext, maxPromptChars } from './context';
 export { createProjectCheckpoint, listThreadCheckpoints, restoreProjectCheckpoint } from './checkpoints';
 export {
   evaluateToolPolicy, isReleaseApply, isWriteTool, resolveScope, stableIdempotencyKey,
-  toolProjectId, toolRisk,
+  toolProjectId, toolRisk, shouldAutoApproveOperation,
 } from './policy';
-export { skillCatalog, skillDocument, effectiveScopeTools, skillFor, structuredToolDocs } from './skills';
+export { skillCatalog, skillDocument, effectiveScopeTools, skillFor, structuredToolDocs, generalLoopSkill } from './skills';

@@ -15,130 +15,133 @@ process.env.FORMFLOW_DATA_DIR = join(testRoot, 'data');
 
 const { executeLlmTool } = await import('../services/llm-tools');
 const { projectPackagePath } = await import('../services/project-package-store');
+const { goalDeliverableGaps } = await import('./gates');
 const {
-  createAgentThread, executeAction, executePlan, getAgentThread, initializeAgentStore, saveAgentThread,
+  createAgentThread, executeAction, getAgentThread, initializeAgentStore, runTurn, saveAgentThread,
 } = await import('./index');
 
 test.after(() => rmSync(testRoot, { recursive: true, force: true }));
 
 const run = { tenantId: 'local', userId: 'local', requestId: 'req_test' };
 
-function confirmedPlan(thread: AgentThread, tasks: NonNullable<AgentThread['plan']>['tasks']) {
+function threadWithPlan(projectIds: string[] = [], currentProjectId?: string): AgentThread {
+  const thread = createAgentThread({ tenantId: run.tenantId, userId: run.userId, projectIds, currentProjectId, profileId: 'default-cloud' });
   const now = new Date().toISOString();
-  thread.plan = {
-    id: 'plan_loop',
-    revision: 1,
-    request: '测试计划',
+  thread.dynamicPlan = {
     goal: '完成测试',
     successCriteria: ['项目可读'],
     summary: '',
+    steps: ['建数据表', '建表单'],
     assumptions: [],
     risks: [],
-    status: 'confirmed',
-    createdAt: now,
-    tasks,
+    updatedAt: now,
+    updatedBy: 'system',
   };
+  thread.status = 'idle';
+  thread.turns = [];
+  thread.turnId = undefined;
+  saveAgentThread(thread);
   return thread;
 }
 
-test('single loop executes write tasks, verifies and completes', async () => {
+test('single turn executes tools dynamically and completes without confirmation', async () => {
   await initializeAgentStore();
   const created = await executeLlmTool('project.initialize', { id: 'loop_ok', name: 'Loop 测试', templateId: 'game_analytics', idempotencyKey: 'loop-k1' }, { tenantId: run.tenantId, projectId: 'loop_ok', userId: run.userId, requestId: run.requestId, mcpRole: 'project' });
   assert.equal(created.ok, true);
 
-  const thread = createAgentThread({ tenantId: run.tenantId, userId: run.userId, projectIds: ['loop_ok'], currentProjectId: 'loop_ok', profileId: 'default-cloud' });
-  const now = new Date().toISOString();
-  confirmedPlan(thread, [
-    { id: 't1', title: '更新项目名称', instruction: '把项目名称改为 Loop 测试已更新', scope: 'project', access: 'write', projectId: 'loop_ok', acceptance: ['名称已更新'], status: 'pending', attempt: 0, maxAttempts: 3, toolSteps: 0, evidence: [], createdAt: now, updatedAt: now },
-    { id: 't2', title: '创建测试表单', instruction: '创建 id 为 f1 的表单', scope: 'form', access: 'write', projectId: 'loop_ok', acceptance: ['表单存在'], status: 'pending', attempt: 0, maxAttempts: 3, toolSteps: 0, evidence: [], createdAt: now, updatedAt: now },
-  ]);
-  saveAgentThread(thread);
-
+  const thread = threadWithPlan(['loop_ok'], 'loop_ok');
   const steps: LoopDecision[] = [
-    { action: 'act', summary: '更新项目', toolName: 'project.update', scope: 'project', arguments: { projectId: 'loop_ok', config: { name: 'Loop 测试已更新' } }, taskId: 't1' },
-    { action: 'act', summary: '创建表单', toolName: 'form.create', scope: 'form', arguments: { projectId: 'loop_ok', id: 'f1', name: '测试表单' }, taskId: 't2' },
-    { action: 'complete', summary: '全部完成', completeTaskIds: ['t1', 't2'], finalAnswer: '完成' },
+    { action: 'act', summary: '更新项目', toolName: 'project.update', scope: 'project', arguments: { projectId: 'loop_ok', config: { name: 'Loop 测试已更新' } } },
+    { action: 'complete', summary: '全部完成', finalAnswer: '完成' },
   ];
   let index = 0;
-  await executePlan(thread, run, {
+  await runTurn(thread, run, {
     decide: async () => steps[Math.min(index++, steps.length - 1)],
     selfReview: async () => ({ issues: [] }),
   });
 
   const final = getAgentThread(thread.id)!;
   assert.equal(final.status, 'completed');
-  assert.equal(final.plan?.status, 'executed');
-  assert.equal(final.plan?.tasks.every((task) => task.status === 'passed'), true);
-  assert.ok(final.projectRevisions['loop_ok']);
+  assert.equal(final.turns.at(-1)?.status, 'completed');
+  assert.ok(final.events.some((event) => event.type === 'verification.completed'), '写后应运行验证引擎');
   const project = await executeLlmTool('project.get', { projectId: 'loop_ok' }, { tenantId: run.tenantId, projectId: 'loop_ok', userId: run.userId, requestId: run.requestId, mcpRole: 'project' });
   assert.equal((project as any).data?.project?.config?.name, 'Loop 测试已更新');
-  const forms = await executeLlmTool('form.list', { projectId: 'loop_ok' }, { tenantId: run.tenantId, projectId: 'loop_ok', userId: run.userId, requestId: run.requestId, mcpRole: 'form' });
-  assert.ok((forms as any).data?.some((form: any) => form.id === 'f1'));
 });
 
-test('destructive tool pauses for user approval and pendingApproval is recorded', async () => {
+test('plan.update revises the dynamic plan and emits plan.updated', async () => {
   await initializeAgentStore();
-  const thread = createAgentThread({ tenantId: run.tenantId, userId: run.userId, projectIds: ['loop_ok'], currentProjectId: 'loop_ok', profileId: 'default-cloud' });
-  const now = new Date().toISOString();
-  confirmedPlan(thread, [
-    { id: 'del', title: '删除测试表单', instruction: '删除 id 为 f1 的表单', scope: 'form', access: 'write', projectId: 'loop_ok', acceptance: ['表单已删除'], status: 'pending', attempt: 0, maxAttempts: 3, toolSteps: 0, evidence: [], createdAt: now, updatedAt: now },
-  ]);
-  saveAgentThread(thread);
+  const thread = threadWithPlan(['loop_ok'], 'loop_ok');
+  const steps: LoopDecision[] = [
+    { action: 'act', summary: '调整计划', toolName: 'plan.update', scope: 'project', arguments: { steps: ['先建表', '再建表单', '最后验证'] } },
+    { action: 'complete', summary: '完成', finalAnswer: '完成' },
+  ];
+  let index = 0;
+  await runTurn(thread, run, {
+    decide: async () => steps[Math.min(index++, steps.length - 1)],
+    selfReview: async () => ({ issues: [] }),
+  });
+  const final = getAgentThread(thread.id)!;
+  assert.equal(final.status, 'completed');
+  assert.equal(final.dynamicPlan?.steps.length, 3);
+  assert.equal(final.dynamicPlan?.updatedBy, 'model');
+  assert.ok(final.events.some((event) => event.type === 'plan.updated'));
+});
 
-  await executePlan(thread, run, { decide: async () => ({ action: 'act', summary: '删除表单', toolName: 'form.delete', scope: 'form', arguments: { projectId: 'loop_ok', id: 'f1' }, taskId: 'del' }) });
+test('destructive tool pauses for user approval and pendingApproval carries turnId', async () => {
+  await initializeAgentStore();
+  const thread = threadWithPlan(['loop_ok'], 'loop_ok');
+  await runTurn(thread, run, {
+    decide: async () => ({ action: 'act', summary: '删除表单', toolName: 'form.delete', scope: 'form', arguments: { projectId: 'loop_ok', id: 'f1' } }),
+    selfReview: async () => ({ issues: [] }),
+  });
   const waiting = getAgentThread(thread.id)!;
   assert.equal(waiting.status, 'awaiting_operation_approval');
   assert.ok(waiting.pendingApproval);
   assert.equal(waiting.pendingApproval!.toolName, 'form.delete');
-
-  const approved = await executeLlmTool('form.delete', { ...waiting.pendingApproval!.arguments, confirmationToken: waiting.pendingApproval!.confirmation.token }, { tenantId: run.tenantId, projectId: 'loop_ok', userId: run.userId, requestId: run.requestId, mcpRole: 'form' });
-  assert.equal(approved.ok, true);
+  assert.equal(waiting.pendingApproval!.turnId, waiting.turnId);
 });
 
-test('repeated no-progress pauses the loop and asks the user', async () => {
+test('no-progress auto-continues and escalates to blocked instead of pausing repeatedly', async () => {
   await initializeAgentStore();
-  const thread = createAgentThread({ tenantId: run.tenantId, userId: run.userId, projectIds: ['loop_ok'], currentProjectId: 'loop_ok', profileId: 'default-cloud' });
-  const now = new Date().toISOString();
-  confirmedPlan(thread, [
-    { id: 'bad', title: '写入不存在的项目', instruction: '尝试写入缺失项目', scope: 'form', access: 'write', projectId: 'missing', acceptance: ['写入成功'], status: 'pending', attempt: 0, maxAttempts: 3, toolSteps: 0, evidence: [], createdAt: now, updatedAt: now },
-  ]);
-  saveAgentThread(thread);
-
-  await executePlan(thread, run, {
-    decide: async () => ({ action: 'act', summary: '尝试写入', toolName: 'form.create', scope: 'form', arguments: { projectId: 'missing', id: 'f2', name: 'x' }, taskId: 'bad' }),
+  const thread = threadWithPlan(['loop_ok'], 'loop_ok');
+  await runTurn(thread, run, {
+    decide: async () => { throw new Error('决策无效，无法选择合法工具'); },
     selfReview: async () => ({ issues: [] }),
   });
   const final = getAgentThread(thread.id)!;
-  assert.equal(final.status, 'paused');
-  const question = final.messages.find((message) => message.kind === 'question');
-  assert.ok(question);
-  assert.ok(question!.questions?.length, '暂停提问必须携带结构化问题');
-  assert.match(question!.questions![0].question, /连续失败/);
-  assert.equal(question!.questions![0].taskId, 'bad', '提问必须携带关联任务 id');
-  assert.equal(question!.questions![0].taskTitle, '写入不存在的项目', '提问必须携带关联任务标题');
-  assert.ok(question!.questions![0].context?.includes('当前任务'), '问题需说明当前卡在哪个任务');
-  assert.ok(question!.questions![0].context?.includes('最近失败'), '问题需说明最近一次失败原因');
-  assert.ok(question!.questions![0].options?.some((option) => option.label.includes('继续')), '问题需提供可一键回复的选项');
-  assert.ok(final.events.some((event) => event.type === 'question_asked'));
+  assert.equal(final.status, 'blocked');
+  assert.ok(final.events.some((event) => event.type === 'no_progress_auto_continue'), '应记录自动继续事件');
+  assert.equal(final.messages.filter((message) => message.kind === 'question').length, 1, '只在收敛后 blocked 提问一次');
 });
 
-test('user steer after a stall resets no-progress and the loop completes', async () => {
+test('verification read tools are exempt from the read-before-write guard', async () => {
   await initializeAgentStore();
-  const thread = createAgentThread({ tenantId: run.tenantId, userId: run.userId, profileId: 'default-cloud' });
-  const now = new Date().toISOString();
-  confirmedPlan(thread, [
-    { id: 'read1', title: '只读核对', instruction: '核对项目现状', scope: 'project', access: 'read', acceptance: ['已核对'], status: 'pending', attempt: 0, maxAttempts: 3, toolSteps: 0, evidence: [], createdAt: now, updatedAt: now },
-  ]);
+  const thread = threadWithPlan(['loop_ok'], 'loop_ok');
+  let reads = 0;
+  await runTurn(thread, run, {
+    decide: async () => {
+      reads += 1;
+      return { action: 'act', summary: '运行校验', toolName: 'project.validate', scope: 'project', arguments: { projectId: 'loop_ok' } };
+    },
+    selfReview: async () => ({ issues: [] }),
+  });
+  const final = getAgentThread(thread.id)!;
+  assert.ok(reads >= 2, '验证类只读应被执行');
+  assert.ok(!final.events.some((event) => event.type === 'tool_observation' && /本轮已拒绝只读工具/.test(String(event.data?.summary || ''))), '验证类只读不应被只读护栏拦截');
+  assert.ok(['blocked', 'paused'].includes(final.status), '纯只读最终由无进展收敛收尾');
+});
+
+test('steer after a stall resets counters and the loop completes', async () => {
+  await initializeAgentStore();
+  const thread = threadWithPlan(['loop_ok'], 'loop_ok');
   thread.status = 'paused';
   thread.consecutiveNoProgress = 2;
   thread.pendingSteer = '继续，先做只读核对';
   saveAgentThread(thread);
-
-  await executePlan(thread, run, {
-    decide: async () => ({ action: 'complete', summary: '核对完成', completeTaskIds: ['read1'], finalAnswer: '完成' }),
+  await runTurn(thread, run, {
+    decide: async () => ({ action: 'complete', summary: '完成', finalAnswer: '完成' }),
     selfReview: async () => ({ issues: [] }),
   });
-
   const final = getAgentThread(thread.id)!;
   assert.equal(final.status, 'completed');
   assert.equal(final.consecutiveNoProgress, 0);
@@ -162,7 +165,7 @@ test('creating a project binds the thread to the new project', async () => {
   assert.ok(thread.events.some((event) => event.type === 'thread_project_bound'));
 });
 
-test('write task with cyclic rule code fails formal verification and cannot complete', async () => {
+test('cyclic rule code fails final formal verification and cannot complete', async () => {
   await initializeAgentStore();
   const created = await executeLlmTool('project.create', { id: 'loop_verify', name: '验证循环', idempotencyKey: 'loop-v1' }, { tenantId: run.tenantId, projectId: 'loop_verify', userId: run.userId, requestId: run.requestId, mcpRole: 'project' });
   assert.equal(created.ok, true, JSON.stringify(created));
@@ -181,34 +184,223 @@ test('write task with cyclic rule code fails formal verification and cannot comp
   }, { tenantId: run.tenantId, projectId: 'loop_verify', userId: run.userId, requestId: run.requestId, mcpRole: 'form' });
   assert.equal(form.ok, true, JSON.stringify(form));
 
-  // 直接注入静态分析拦不住的运行时循环（rule_code.update 会拒绝该代码，这里模拟已存在的坏规则）。
   const behaviorsPath = join(projectPackagePath('loop_verify'), 'forms', 'calc.behaviors.json');
   const behaviors = JSON.parse(readFileSync(behaviorsPath, 'utf8'));
   behaviors.ruleCode = 'compute $A = $B + 1 watch($B)\ncompute $B = $A + 1 watch($A)';
   writeFileSync(behaviorsPath, JSON.stringify(behaviors, null, 2));
 
-  const thread = createAgentThread({ tenantId: run.tenantId, userId: run.userId, projectIds: ['loop_verify'], currentProjectId: 'loop_verify', profileId: 'default-cloud' });
-  const now = new Date().toISOString();
-  confirmedPlan(thread, [
-    { id: 't1', title: '编写计算规则', instruction: '为 calc 表单编写计算规则并通过形式化验证', scope: 'behavior', access: 'write', projectId: 'loop_verify', acceptance: ['规则通过形式化验证'], status: 'pending', attempt: 0, maxAttempts: 2, toolSteps: 0, evidence: [], createdAt: now, updatedAt: now },
-  ]);
+  const thread = threadWithPlan(['loop_verify'], 'loop_verify');
+  thread.dynamicPlan = { ...thread.dynamicPlan!, goal: '为 calc 表单编写计算规则并通过形式化验证', successCriteria: ['规则通过形式化验证'], summary: '', steps: ['编写规则', '形式化验证'], assumptions: [], risks: [], updatedAt: new Date().toISOString(), updatedBy: 'system' };
   saveAgentThread(thread);
 
-  let index = 0;
-  await executePlan(thread, run, {
-    decide: async () => {
-      if (index === 0) {
-        index += 1;
-        return { action: 'complete', summary: '声称完成', completeTaskIds: ['t1'], finalAnswer: '完成' };
-      }
-      return { action: 'pause', summary: '停止', questions: [] };
-    },
+  await runTurn(thread, run, {
+    decide: async () => ({ action: 'complete', summary: '声称完成', finalAnswer: '完成' }),
     selfReview: async () => ({ issues: [] }),
   });
 
   const final = getAgentThread(thread.id)!;
   assert.notEqual(final.status, 'completed');
-  const task = final.plan!.tasks[0];
-  assert.ok(['failed', 'blocked'].includes(task.status), task.status);
-  assert.match(task.error || '', /形式化验证/);
+  assert.ok(final.events.some((event) => event.type === 'gate_failed' && /形式化验证/.test(String(event.data?.failures?.join('') || ''))), '最终门禁应捕获循环规则');
+});
+
+test('goal deliverable gaps detect missing forms and rules', () => {
+  const thread = threadWithPlan();
+  thread.dynamicPlan = {
+    ...thread.dynamicPlan!,
+    goal: '生成设备台账查询修改表单与借用登记表单并配置行为规则',
+    successCriteria: ['至少两个表单', '行为规则通过形式化验证', '内置示例数据'],
+  };
+  const project = {
+    forms: [{ id: 'device_ledger_edit', ruleCode: '', behaviors: [] }],
+    srcTable: [{ id: 'device_ledger', sheets: [{ rowCount: 0 }] }],
+    workflows: [],
+    outputs: [],
+  };
+  const gaps = goalDeliverableGaps(thread, project as any);
+  assert.ok(gaps.some((item) => item.includes('2 个表单')), `缺少表单检查：${gaps.join('；')}`);
+  assert.ok(gaps.some((item) => item.includes('表单缺少控件')), `缺少空表单检查：${gaps.join('；')}`);
+  assert.ok(gaps.some((item) => item.includes('表单规则')), `缺少规则检查：${gaps.join('；')}`);
+  assert.ok(gaps.some((item) => item.includes('示例')), `缺少示例数据检查：${gaps.join('；')}`);
+});
+
+test('goal deliverable gaps anchor to the user prompt even with a vague plan', () => {
+  const thread = threadWithPlan();
+  thread.messages.push({ id: 'm_u', role: 'user', kind: 'prompt', content: '创建设备台账查询修改表单与借用登记表单并配置行为规则，内置示例数据', createdAt: new Date().toISOString() });
+  thread.dynamicPlan = { ...thread.dynamicPlan!, goal: '完成设备借出项目', successCriteria: ['项目可交付'] };
+  const project = {
+    forms: [{ id: 'f1', design: { components: [{ id: 'c1' }] } }],
+    srcTable: [{ id: 'device', sheets: [{ rowCount: 0 }] }],
+    workflows: [],
+    outputs: [],
+  };
+  const gaps = goalDeliverableGaps(thread, project as any);
+  assert.ok(gaps.some((item) => item.includes('2 个表单')), `提示词应锚定表单要求：${gaps.join('；')}`);
+  assert.ok(gaps.some((item) => item.includes('表单规则')), `提示词应锚定规则要求：${gaps.join('；')}`);
+  assert.ok(gaps.some((item) => item.includes('示例')), `提示词应锚定示例数据要求：${gaps.join('；')}`);
+});
+
+test('goal deliverable gaps ignore explicit non-creation tasks', () => {
+  const thread = threadWithPlan();
+  thread.messages.push({ id: 'm_neg', role: 'user', kind: 'prompt', content: '创建空项目，只填元信息：名称=员工信息管理，描述=包括数据录入、查询与编辑，标签=人力资源。不要创建数据表或表单。', createdAt: new Date().toISOString() });
+  thread.dynamicPlan = { ...thread.dynamicPlan!, goal: '创建空项目', successCriteria: ['项目元信息完整'] };
+  const project = { forms: [], srcTable: [], workflows: [], outputs: [] };
+  assert.deepEqual(goalDeliverableGaps(thread, project as any), [], '明确不建表/表单的任务不应被误判交付物缺失');
+});
+
+test('completion is rejected when goal deliverables are missing', async () => {
+  await initializeAgentStore();
+  const created = await executeLlmTool('project.create', { id: 'deliv_miss', name: '交付物缺失', idempotencyKey: 'deliv-k1' }, { tenantId: run.tenantId, projectId: 'deliv_miss', userId: run.userId, requestId: run.requestId, mcpRole: 'project' });
+  assert.equal(created.ok, true, JSON.stringify(created));
+  const loaded = await executeLlmTool('project.get', { projectId: 'deliv_miss' }, { tenantId: run.tenantId, projectId: 'deliv_miss', userId: run.userId, requestId: run.requestId, mcpRole: 'project' });
+  const form = await executeLlmTool('form.create', {
+    projectId: 'deliv_miss', id: 'f1', name: '查询表单', baseRevision: (loaded as any).data.revision, idempotencyKey: 'deliv-f1',
+    design: { id: 'd1', name: 'f1', formMode: 'edit', components: [], bindings: [] },
+  }, { tenantId: run.tenantId, projectId: 'deliv_miss', userId: run.userId, requestId: run.requestId, mcpRole: 'form' });
+  assert.equal(form.ok, true, JSON.stringify(form));
+
+  const thread = threadWithPlan(['deliv_miss'], 'deliv_miss');
+  thread.dynamicPlan = { ...thread.dynamicPlan!, goal: '生成查询表单与登记表单并配置行为规则', successCriteria: ['至少两个表单', '行为规则存在'] };
+  saveAgentThread(thread);
+
+  await runTurn(thread, run, {
+    decide: async () => ({ action: 'complete', summary: '声称完成', finalAnswer: '完成' }),
+    selfReview: async () => ({ issues: [] }),
+  });
+  const final = getAgentThread(thread.id)!;
+  assert.notEqual(final.status, 'completed');
+  assert.ok(final.events.some((event) => event.type === 'gate_failed' && /目标交付物缺失/.test(JSON.stringify(event.data))), '最终门禁应拒绝缺失交付物');
+});
+
+test('unbound thread cannot fake completion for a project-building goal', async () => {
+  await initializeAgentStore();
+  const thread = threadWithPlan();
+  thread.dynamicPlan = { ...thread.dynamicPlan!, goal: '从零创建并交付一个设备借出项目', successCriteria: ['项目可交付'] };
+  saveAgentThread(thread);
+  await runTurn(thread, run, {
+    decide: async () => ({ action: 'complete', summary: '声称完成', finalAnswer: '完成' }),
+    selfReview: async () => ({ issues: [] }),
+  });
+  const final = getAgentThread(thread.id)!;
+  assert.notEqual(final.status, 'completed');
+  assert.ok(final.events.some((event) => event.type === 'gate_failed' && /尚未创建或绑定任何项目/.test(JSON.stringify(event.data))), '未建项目不得假完成');
+});
+
+test('missing linkage workflow is auto-created so completion can pass', async () => {
+  await initializeAgentStore();
+  const created = await executeLlmTool('project.create', { id: 'link_auto', name: '联动自动', idempotencyKey: 'link-auto-k1' }, { tenantId: run.tenantId, projectId: 'link_auto', userId: run.userId, requestId: run.requestId, mcpRole: 'project' });
+  assert.equal(created.ok, true, JSON.stringify(created));
+  const loaded = await executeLlmTool('project.get', { projectId: 'link_auto' }, { tenantId: run.tenantId, projectId: 'link_auto', userId: run.userId, requestId: run.requestId, mcpRole: 'project' });
+  const table = await executeLlmTool('data_table.create', {
+    projectId: 'link_auto', id: 'device', columns: [{ name: '编号', type: 'string' }, { name: '状态', type: 'string' }], keyFields: ['编号'],
+    baseRevision: (loaded as any).data.revision, idempotencyKey: 'link-auto-t1',
+  }, { tenantId: run.tenantId, projectId: 'link_auto', userId: run.userId, requestId: run.requestId, mcpRole: 'data' });
+  assert.equal(table.ok, true, JSON.stringify(table));
+
+  const thread = threadWithPlan(['link_auto'], 'link_auto');
+  thread.dynamicPlan = { ...thread.dynamicPlan!, goal: '构建跨表状态联动流程', successCriteria: ['联动流程存在且含节点'] };
+  saveAgentThread(thread);
+  await runTurn(thread, run, {
+    decide: async () => ({ action: 'complete', summary: '完成', finalAnswer: '完成' }),
+    selfReview: async () => ({ issues: [] }),
+  });
+  const final = getAgentThread(thread.id)!;
+  assert.equal(final.status, 'completed', `自动生成联动流程后应可完成：${final.events.filter((event) => event.type === 'gate_failed').map((event) => JSON.stringify(event.data)).join('；')}`);
+  assert.ok(final.events.some((event) => event.type === 'auto_repair' && event.data?.toolName === 'workflow.generate_from_table'), '应记录自动生成工作流事件');
+});
+
+test('missing form rule is auto-created so completion can pass', async () => {
+  await initializeAgentStore();
+  const created = await executeLlmTool('project.create', { id: 'rule_auto', name: '规则自动', idempotencyKey: 'rule-auto-k1' }, { tenantId: run.tenantId, projectId: 'rule_auto', userId: run.userId, requestId: run.requestId, mcpRole: 'project' });
+  assert.equal(created.ok, true, JSON.stringify(created));
+  const loaded = await executeLlmTool('project.get', { projectId: 'rule_auto' }, { tenantId: run.tenantId, projectId: 'rule_auto', userId: run.userId, requestId: run.requestId, mcpRole: 'project' });
+  const table = await executeLlmTool('data_table.create', {
+    projectId: 'rule_auto', id: 'employee', columns: [{ name: '员工编号', type: 'string' }, { name: '姓名', type: 'string' }, { name: '手机号', type: 'string' }],
+    keyFields: ['员工编号'], rows: [{ 员工编号: 'E1', 姓名: '张三', 手机号: '13800000000' }],
+    baseRevision: (loaded as any).data.revision, idempotencyKey: 'rule-auto-t1',
+  }, { tenantId: run.tenantId, projectId: 'rule_auto', userId: run.userId, requestId: run.requestId, mcpRole: 'data' });
+  assert.equal(table.ok, true, JSON.stringify(table));
+  const loaded2 = await executeLlmTool('project.get', { projectId: 'rule_auto' }, { tenantId: run.tenantId, projectId: 'rule_auto', userId: run.userId, requestId: run.requestId, mcpRole: 'project' });
+  const form = await executeLlmTool('form.generate_from_table', {
+    projectId: 'rule_auto', tableId: 'employee', sheetName: 'Sheet1', id: 'employee_edit', mode: 'create',
+    baseRevision: (loaded2 as any).data.revision, idempotencyKey: 'rule-auto-f1',
+  }, { tenantId: run.tenantId, projectId: 'rule_auto', userId: run.userId, requestId: run.requestId, mcpRole: 'form' });
+  assert.equal(form.ok, true, JSON.stringify(form));
+
+  const thread = threadWithPlan(['rule_auto'], 'rule_auto');
+  thread.messages.push({ id: 'm_prompt', role: 'user', kind: 'prompt', content: '员工录入表单提交前校验 姓名 与 手机号 必填', createdAt: new Date().toISOString() });
+  thread.dynamicPlan = { ...thread.dynamicPlan!, goal: '构建员工录入表单并配置提交前校验规则', successCriteria: ['表单规则存在'] };
+  saveAgentThread(thread);
+  await runTurn(thread, run, {
+    decide: async () => ({ action: 'complete', summary: '完成', finalAnswer: '完成' }),
+    selfReview: async () => ({ issues: [] }),
+  });
+  const final = getAgentThread(thread.id)!;
+  assert.equal(final.status, 'completed', `自动写入表单规则后应可完成：${final.events.filter((event) => event.type === 'gate_failed').map((event) => JSON.stringify(event.data)).join('；')}`);
+  assert.ok(final.events.some((event) => event.type === 'auto_repair' && event.data?.toolName === 'rule_code.update'), '应记录自动写规则事件');
+});
+
+test('light completion gate validates deliverables without regression or preview', async () => {
+  await initializeAgentStore();
+  const created = await executeLlmTool('project.create', { id: 'light_ok', name: '轻量门禁', idempotencyKey: 'light-k1' }, { tenantId: run.tenantId, projectId: 'light_ok', userId: run.userId, requestId: run.requestId, mcpRole: 'project' });
+  assert.equal(created.ok, true, JSON.stringify(created));
+  const loaded = await executeLlmTool('project.get', { projectId: 'light_ok' }, { tenantId: run.tenantId, projectId: 'light_ok', userId: run.userId, requestId: run.requestId, mcpRole: 'project' });
+  const table = await executeLlmTool('data_table.create', {
+    projectId: 'light_ok', id: 'device', columns: [{ name: '编号', type: 'string' }], keyFields: ['编号'], rows: [{ 编号: 'D1' }],
+    baseRevision: (loaded as any).data.revision, idempotencyKey: 'light-t1',
+  }, { tenantId: run.tenantId, projectId: 'light_ok', userId: run.userId, requestId: run.requestId, mcpRole: 'data' });
+  assert.equal(table.ok, true, JSON.stringify(table));
+
+  const thread = threadWithPlan(['light_ok'], 'light_ok');
+  thread.dynamicPlan = { ...thread.dynamicPlan!, goal: '创建设备数据表', successCriteria: ['数据表存在'] };
+  thread.completionGate = 'light';
+  saveAgentThread(thread);
+  await runTurn(thread, run, {
+    decide: async () => ({ action: 'complete', summary: '完成', finalAnswer: '完成' }),
+    selfReview: async () => ({ issues: [] }),
+  });
+  const final = getAgentThread(thread.id)!;
+  assert.equal(final.status, 'completed', '轻量门禁下应快速完成');
+  const evidenceKinds = final.events.filter((event) => event.type === 'gate_evidence').map((event) => event.data?.kind);
+  assert.ok(!evidenceKinds.includes('scenario_result'), '轻量门禁不应运行回归');
+  assert.ok(!evidenceKinds.includes('delivery_preview'), '轻量门禁不应运行发布预检');
+});
+
+test('repeated lint without write auto-applies the rule', async () => {
+  await initializeAgentStore();
+  const created = await executeLlmTool('project.create', { id: 'lint_auto', name: 'lint 自动写入', idempotencyKey: 'lint-k1' }, { tenantId: run.tenantId, projectId: 'lint_auto', userId: run.userId, requestId: run.requestId, mcpRole: 'project' });
+  assert.equal(created.ok, true, JSON.stringify(created));
+  const loaded = await executeLlmTool('project.get', { projectId: 'lint_auto' }, { tenantId: run.tenantId, projectId: 'lint_auto', userId: run.userId, requestId: run.requestId, mcpRole: 'project' });
+  const table = await executeLlmTool('data_table.create', {
+    projectId: 'lint_auto', id: 'employee', columns: [{ name: '员工编号', type: 'string' }, { name: '姓名', type: 'string' }, { name: '手机号', type: 'string' }],
+    keyFields: ['员工编号'], rows: [{ 员工编号: 'E1', 姓名: '张三', 手机号: '13800000000' }],
+    baseRevision: (loaded as any).data.revision, idempotencyKey: 'lint-t1',
+  }, { tenantId: run.tenantId, projectId: 'lint_auto', userId: run.userId, requestId: run.requestId, mcpRole: 'data' });
+  assert.equal(table.ok, true, JSON.stringify(table));
+  const loaded2 = await executeLlmTool('project.get', { projectId: 'lint_auto' }, { tenantId: run.tenantId, projectId: 'lint_auto', userId: run.userId, requestId: run.requestId, mcpRole: 'project' });
+  const form = await executeLlmTool('form.generate_from_table', {
+    projectId: 'lint_auto', tableId: 'employee', sheetName: 'Sheet1', id: 'employee_edit', mode: 'create',
+    baseRevision: (loaded2 as any).data.revision, idempotencyKey: 'lint-f1',
+  }, { tenantId: run.tenantId, projectId: 'lint_auto', userId: run.userId, requestId: run.requestId, mcpRole: 'form' });
+  assert.equal(form.ok, true, JSON.stringify(form));
+
+  const thread = threadWithPlan(['lint_auto'], 'lint_auto');
+  thread.messages.push({ id: 'm_lint', role: 'user', kind: 'prompt', content: '给员工录入表单配置规则：提交前校验 姓名 与 手机号 必填', createdAt: new Date().toISOString() });
+  thread.dynamicPlan = { ...thread.dynamicPlan!, goal: '配置员工表单规则', successCriteria: ['表单规则存在'] };
+  thread.completionGate = 'light';
+  saveAgentThread(thread);
+  const code = 'before submit -> require($姓名, $手机号)';
+  let calls = 0;
+  await runTurn(thread, run, {
+    decide: async () => {
+      calls += 1;
+      if (calls <= 3) {
+        return { action: 'act', summary: 'lint', toolName: 'rule_syntax.lint', scope: 'behavior', arguments: { projectId: 'lint_auto', formId: 'employee_edit', code } };
+      }
+      return { action: 'complete', summary: '完成', finalAnswer: '完成' };
+    },
+    selfReview: async () => ({ issues: [] }),
+  });
+  const final = getAgentThread(thread.id)!;
+  assert.equal(final.status, 'completed', '重复 lint 后应自动写入规则并完成');
+  assert.ok(final.events.some((event) => event.type === 'auto_repair' && event.data?.toolName === 'rule_code.update'), '应记录自动写规则事件');
 });

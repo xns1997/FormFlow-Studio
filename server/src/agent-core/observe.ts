@@ -5,7 +5,7 @@
 import type { ToolResult } from '../services/tool-shared';
 import type { LoopDecision, LoopObservation, ThreadEvent } from './types';
 
-type ToolCallShape = Pick<LoopDecision, 'toolName' | 'scope' | 'taskId' | 'arguments'>;
+type ToolCallShape = Pick<LoopDecision, 'toolName' | 'scope' | 'arguments'>;
 
 function truncate(value: unknown, maxChars = 1200): string {
   const text = typeof value === 'string' ? value : JSON.stringify(value);
@@ -65,7 +65,6 @@ export function observeToolResult(decision: ToolCallShape, result: ToolResult): 
     const changes = Array.isArray(data?.changes) ? data.changes.map(String) : [];
     const summary = data?.summary ? readable(data.summary) : toolSummary(decision.toolName, result.data);
     return {
-      taskId: decision.taskId,
       toolName: decision.toolName,
       scope: decision.scope,
       status: 'succeeded',
@@ -77,7 +76,6 @@ export function observeToolResult(decision: ToolCallShape, result: ToolResult): 
   }
   if ('status' in result && result.status === 'confirmation_required') {
     return {
-      taskId: decision.taskId,
       toolName: decision.toolName,
       scope: decision.scope,
       status: 'waiting_confirmation',
@@ -88,7 +86,6 @@ export function observeToolResult(decision: ToolCallShape, result: ToolResult): 
     };
   }
   if (!('error' in result)) return {
-    taskId: decision.taskId,
     toolName: decision.toolName,
     scope: decision.scope,
     status: 'failed',
@@ -99,7 +96,6 @@ export function observeToolResult(decision: ToolCallShape, result: ToolResult): 
   };
   const error = result.error;
   return {
-    taskId: decision.taskId,
     toolName: decision.toolName,
     scope: decision.scope,
     status: 'failed',

@@ -13,7 +13,7 @@ import { MCP_ROLE_CATALOG } from '../services/formflow-tool-registry';
 import { serverDataPath } from '../config/paths';
 import { env } from '../config/env';
 import type {
-  AgentThread, AgentMode, CapabilityBundleVersion, PendingApproval, ThreadEvent,
+  AgentThread, CapabilityBundleVersion, PendingApproval, ThreadEvent,
   ThreadHistoryPage, ThreadHistorySummary, ThreadHistoryStatus, ThreadMessage, ThreadStatus,
   ArtifactMeta, ThreadContext, TurnMetrics,
 } from './types';
@@ -68,7 +68,7 @@ export function defaultCapabilityBundle(ownerId = 'system'): CapabilityBundleVer
       knowledge: [],
     })),
     context: { recentMessages: 8, maxSummaryChars: 6000, maxPromptChars: 40000 },
-    budget: { maxDecisionSteps: 40, maxAttempts: 3, maxToolSteps: 24, maxRecoveryCycles: 6 },
+    budget: { maxDecisionSteps: 128, maxAttempts: 3, maxToolSteps: 24, maxRecoveryCycles: 6 },
     createdAt: now,
     publishedAt: now,
   };
@@ -135,7 +135,7 @@ export function saveCapabilityBundleDraft(input: Partial<CapabilityBundleVersion
     status: 'draft',
     scopes: input.scopes?.length ? input.scopes : defaultCapabilityBundle(ownerId).scopes,
     context: input.context || { recentMessages: 8, maxSummaryChars: 6000, maxPromptChars: 40000 },
-    budget: input.budget || { maxDecisionSteps: 40, maxAttempts: 3, maxToolSteps: 24, maxRecoveryCycles: 6 },
+    budget: input.budget || { maxDecisionSteps: 128, maxAttempts: 3, maxToolSteps: 24, maxRecoveryCycles: 6 },
     createdAt: existing?.createdAt || now,
   };
   const next = existing ? items.map((item) => (item.id === existing.id ? value : item)) : [...items, value];
@@ -209,14 +209,12 @@ export function initializeAgentStore() {
       if (bundleRows.rows.length) writeJson(BUNDLE_STORE_PATH, bundleRows.rows.map((row) => row.payload));
       pool = candidate;
     }
-    const recovered = threads();
+    const recovered = threads().filter((thread) => (thread as any).schemaVersion === 2);
     let changed = false;
     for (const thread of recovered) {
-      if (!thread.mode) { thread.mode = 'plan'; changed = true; }
       if (typeof thread.recoveryCycles !== 'number') { thread.recoveryCycles = 0; changed = true; }
-      if (['planning', 'executing'].includes(thread.status)) {
+      if (thread.status === 'executing') {
         thread.status = 'paused';
-        for (const task of thread.plan?.tasks || []) if (task.status === 'running') task.status = 'pending';
         appendEventRaw(thread, 'execution_recovered', { reason: 'server_restart', checkpointRevision: thread.projectRevisions[thread.currentProjectId || ''] });
         changed = true;
       } else if (thread.status === 'awaiting_operation_approval') {
@@ -293,7 +291,7 @@ export function createAgentThread(input: { tenantId: string; userId: string; pro
   if (!bundle || bundle.status !== 'published') throw new Error('请选择已发布且有权使用的能力包版本');
   const now = new Date().toISOString();
   const value: AgentThread = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: `pat_${randomUUID()}`,
     tenantId: input.tenantId,
     userId: input.userId,
@@ -303,8 +301,8 @@ export function createAgentThread(input: { tenantId: string; userId: string; pro
     title: input.title || '项目智能体',
     profileId: input.profileId,
     capabilityBundleVersionId: bundle.id,
-    mode: 'plan',
     status: 'idle',
+    turns: [],
     messages: [],
     summary: '',
     events: [],
@@ -325,8 +323,11 @@ export function createAgentThread(input: { tenantId: string; userId: string; pro
 /** 读取线程（不存在返回 undefined）。 */
 export function getAgentThread(id: string) {
   const live = liveThreads.get(id);
-  if (live) return live;
-  const value = threads().find((item) => item.id === id);
+  if (live) {
+    if ((live as any).schemaVersion === 2) return live;
+    liveThreads.delete(id);
+  }
+  const value = threads().find((item) => item.id === id && (item as any).schemaVersion === 2);
   if (value) liveThreads.set(id, value);
   return value;
 }
@@ -348,6 +349,7 @@ export function listAgentThreads(scope: { tenantId: string; userId: string; proj
   const kind = scope.scopeKind || (scope.projectId ? 'project' : 'unbound');
   if (kind === 'project' && !scope.projectId) throw new Error('按项目查询线程时 projectId 不能为空');
   return threads()
+    .filter((item) => (item as any).schemaVersion === 2)
     .map((item) => liveThreads.get(item.id) || (liveThreads.set(item.id, item), item))
     .filter((item) => {
       if (item.archived || item.tenantId !== scope.tenantId || item.userId !== scope.userId) return false;
@@ -360,23 +362,22 @@ export function listAgentThreads(scope: { tenantId: string; userId: string; proj
 
 /** 线程状态 → 历史页展示状态。 */
 export function threadHistoryStatus(status: ThreadStatus): ThreadHistoryStatus {
-  if (['awaiting_plan_approval', 'awaiting_operation_approval', 'paused', 'blocked', 'failed'].includes(status)) return 'attention';
+  if (['awaiting_operation_approval', 'paused', 'blocked', 'failed'].includes(status)) return 'attention';
   if (['completed', 'stopped'].includes(status)) return 'completed';
   return 'active';
 }
 
 function historySummary(thread: AgentThread): ThreadHistorySummary {
-  const tasks = thread.plan?.tasks || [];
   return {
     id: thread.id,
     title: thread.title,
     projectIds: threadProjectIds(thread),
     status: threadHistoryStatus(thread.status),
-    goal: thread.plan?.goal || '',
+    goal: thread.dynamicPlan?.goal || '',
     taskProgress: {
-      total: tasks.length,
-      passed: tasks.filter((task) => task.status === 'passed').length,
-      failed: tasks.filter((task) => task.status === 'failed').length,
+      total: 0,
+      passed: 0,
+      failed: 0,
       complete: thread.status === 'completed',
     },
     pinnedAt: thread.pinnedAt,
@@ -415,6 +416,7 @@ export function listThreadHistory(input: { tenantId: string; userId: string; q?:
   const limit = Math.max(1, Math.min(100, Number(input.limit) || 30));
   const cursor = decodeHistoryCursor(input.cursor);
   const items = threads()
+    .filter((item) => (item as any).schemaVersion === 2)
     .map((item) => liveThreads.get(item.id) || (liveThreads.set(item.id, item), item))
     .filter((item) => item.tenantId === input.tenantId && item.userId === input.userId && item.archived === Boolean(input.archived) && (!canInclude || canInclude(item)))
     .map(historySummary)
@@ -428,7 +430,7 @@ export function listThreadHistory(input: { tenantId: string; userId: string; q?:
     if (exact >= 0) start = exact + 1;
   }
   const page = items.slice(start, start + limit);
-  return { items: page, nextCursor: start + limit < items.length && page.length ? historyCursor(page.at(-1)!) : undefined };
+  return { items: page, total: items.length, nextCursor: start + limit < items.length && page.length ? historyCursor(page.at(-1)!) : undefined };
 }
 
 /** 查找项目的活动线程（可排除指定线程）。 */
@@ -472,13 +474,6 @@ export function updateAgentThreadMetadata(value: AgentThread, input: { title?: s
     value.title = title;
   }
   if (input.pinned !== undefined) value.pinnedAt = input.pinned ? new Date().toISOString() : undefined;
-  return saveAgentThread(value);
-}
-
-/** 切换线程模式（plan / goal）。 */
-export function setAgentThreadMode(value: AgentThread, mode: AgentMode) {
-  if (!['plan', 'goal'].includes(mode)) throw new Error('执行模式必须是 plan 或 goal');
-  value.mode = mode;
   return saveAgentThread(value);
 }
 

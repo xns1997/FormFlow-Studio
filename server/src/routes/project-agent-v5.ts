@@ -1,6 +1,7 @@
 /**
- * Project Agent V4 — thin HTTP/SSE route over the single-loop agent core.
- * All orchestration lives in server/src/agent-core/*.
+ * Project Agent V5 — thin HTTP/SSE route over the v2 single-loop dynamic core.
+ * No plan confirmation, no mode switch, no task checklist: a turn starts the
+ * Codex-style loop immediately; users steer/pause/stop at any time.
  */
 import { randomUUID } from 'node:crypto';
 import { Router, type Response } from 'express';
@@ -12,13 +13,12 @@ import { executeLlmTool } from '../services/llm-tools';
 import { llmManagement } from '../services/llm-management';
 import { listFormFlowTools } from '../services/formflow-tool-registry';
 import {
+  addThreadMessage,
   appendAgentThreadEvent,
   archiveAgentThread,
-  confirmPlan,
   createAgentThread,
   deleteAgentThread,
   effectiveScopeTools,
-  executePlan,
   findActiveProjectThread,
   getAgentThread,
   getCapabilityBundle,
@@ -26,12 +26,14 @@ import {
   initializeAgentStore,
   listAgentThreads,
   listCapabilityBundles,
+  listThreadCheckpoints,
   listThreadHistory,
-  planTurn,
+  listThreadMetrics,
   publishCapabilityBundle,
   recordToolResult,
-  replanWithFeedback,
   restoreAgentThread,
+  restoreProjectCheckpoint,
+  runTurn,
   saveAgentThread,
   saveCapabilityBundleDraft,
   setAgentThreadProjectScope,
@@ -42,15 +44,10 @@ import {
   structuredToolDocs,
   updateAgentThreadMetadata,
   validateBundle,
-  addThreadMessage,
   evaluateToolPolicy,
   shouldAutoApproveOperation,
-  setAgentThreadMode,
   type AgentThread,
   type RunContext,
-  listThreadCheckpoints,
-  restoreProjectCheckpoint,
-  listThreadMetrics,
 } from '../agent-core';
 
 const router = Router();
@@ -69,10 +66,12 @@ function requestId(req: AuthRequest) {
 }
 
 function scope(req: AuthRequest) {
+  const scopeKind = ['all', 'project', 'unbound'].includes(String(req.query.scope || '')) ? String(req.query.scope) as 'all' | 'project' | 'unbound' : undefined;
   return {
     tenantId: (req as AuthRequest & { tenantId?: string }).tenantId || 'local',
     userId: req.user?.id || 'local',
     projectId: String(req.body?.projectId || req.query.projectId || '') || undefined,
+    scopeKind,
   };
 }
 
@@ -87,7 +86,7 @@ function param(value: string | string[]) {
 
 function errorResponse(res: Response, error: unknown, id: string) {
   const message = error instanceof Error ? error.message : String(error);
-  const status = /无权/.test(message) ? 403 : /不存在|不能为空|尚未|必须|无效|循环|依赖|发布|确认/.test(message) ? 422 : 500;
+  const status = /无权/.test(message) ? 403 : /不存在|不能为空|尚未|必须|失败|无效|循环|依赖|发布|确认/.test(message) ? 422 : 500;
   res.status(status).json({ error: message, requestId: id });
 }
 
@@ -125,60 +124,49 @@ function writeSse(res: Response, event: { type: string; seq?: number; data: any 
 
 router.get('/threads', (req: AuthRequest, res) => {
   try {
-    const current = scope(req);
-    const requested = String(req.query.scope || '');
-    if (requested && !['unbound', 'all'].includes(requested)) throw new Error('线程查询 scope 无效');
-    res.json(listAgentThreads({
-      ...current,
-      scopeKind: current.projectId ? 'project' : requested === 'all' ? 'all' : 'unbound',
-    }));
+    const items = listAgentThreads(scope(req));
+    res.json({ items, total: items.length });
   } catch (error) {
     errorResponse(res, error, requestId(req));
   }
 });
 
 router.post('/threads', (req: AuthRequest, res) => {
+  const id = requestId(req);
   try {
-    const current = scope(req);
-    const projectIds = [...new Set([...requestedProjectIds(req), ...(current.projectId ? [current.projectId] : [])])];
-    assertProjectScopeAccess(req, projectIds);
-    const profileId = String(req.body.profileId || llmManagement.getProjectAgentProfileId({ tenantId: current.tenantId, projectId: current.projectId }));
-    const thread = createAgentThread({
-      ...current,
+    const projectIds = requestedProjectIds(req);
+    const bound = String(req.body.projectId || '') || projectIds[0];
+    if (bound) assertProjectScopeAccess(req, [bound]);
+    if (projectIds.length) assertProjectScopeAccess(req, projectIds);
+    const value = createAgentThread({
+      tenantId: scope(req).tenantId,
+      userId: scope(req).userId,
       projectIds,
-      currentProjectId: current.projectId || (projectIds.length === 1 ? projectIds[0] : undefined),
-      title: req.body.title,
-      profileId,
-      capabilityBundleVersionId: req.body.capabilityBundleVersionId,
+      currentProjectId: bound,
+      title: String(req.body.title || ''),
+      profileId: String(req.body.profileId || 'default-cloud'),
+      capabilityBundleVersionId: String(req.body.capabilityBundleVersionId || 'cap_default_v1'),
     });
-    if (req.body.mode === 'goal') setAgentThreadMode(thread, 'goal');
-    res.status(201).json(thread);
+    res.status(201).json(value);
   } catch (error) {
-    errorResponse(res, error, requestId(req));
+    errorResponse(res, error, id);
   }
 });
 
 router.get('/threads/history', (req: AuthRequest, res) => {
   try {
-    const current = scope(req);
-    const status = String(req.query.status || '');
-    if (status && !['active', 'attention', 'completed'].includes(status)) throw new Error('历史任务状态筛选无效');
-    const result = listThreadHistory(
-      {
-        ...current,
-        q: String(req.query.q || ''),
-        status: (status || undefined) as 'active' | 'attention' | 'completed' | undefined,
-        projectId: String(req.query.projectId || '') || undefined,
-        archived: String(req.query.archived || '') === 'true',
-        cursor: String(req.query.cursor || '') || undefined,
-        limit: Number(req.query.limit || 30),
-      },
-      (thread) => threadProjectIds(thread).every((projectId) => {
-        const project = readProjectPackage(projectId);
-        return !project || canAccessProject(req.user, project, 'view');
-      }),
-    );
-    res.json(result);
+    const value = scope(req);
+    const status = ['active', 'attention', 'completed'].includes(String(req.query.status)) ? String(req.query.status) as 'active' | 'attention' | 'completed' : undefined;
+    res.json(listThreadHistory({
+      tenantId: value.tenantId,
+      userId: value.userId,
+      q: String(req.query.q || ''),
+      status,
+      projectId: String(req.query.projectId || ''),
+      archived: req.query.archived === 'true',
+      cursor: String(req.query.cursor || ''),
+      limit: Number(req.query.limit || 30),
+    }));
   } catch (error) {
     errorResponse(res, error, requestId(req));
   }
@@ -193,81 +181,71 @@ router.get('/threads/:id', (req: AuthRequest, res) => {
 });
 
 router.patch('/threads/:id', (req: AuthRequest, res) => {
+  const id = requestId(req);
   try {
-    const allowed = new Set(['title', 'pinned', 'mode']);
-    const unexpected = Object.keys(req.body || {}).filter((key) => !allowed.has(key));
-    if (unexpected.length) throw new Error(`不支持更新线程字段：${unexpected.join('、')}`);
     const thread = threadFor(req);
-    if (req.body.mode !== undefined) setAgentThreadMode(thread, String(req.body.mode) === 'goal' ? 'goal' : 'plan');
-    res.json(updateAgentThreadMetadata(thread, {
-      title: req.body.title === undefined ? undefined : String(req.body.title),
-      pinned: req.body.pinned === undefined ? undefined : req.body.pinned === true,
-    }));
+    res.json(updateAgentThreadMetadata(thread, { title: req.body.title, pinned: req.body.pinned }));
   } catch (error) {
-    errorResponse(res, error, requestId(req));
-  }
-});
-
-router.post('/threads/:id/restore', (req: AuthRequest, res) => {
-  try {
-    res.json(restoreAgentThread(threadFor(req)));
-  } catch (error) {
-    errorResponse(res, error, requestId(req));
+    errorResponse(res, error, id);
   }
 });
 
 router.put('/threads/:id/projects', (req: AuthRequest, res) => {
+  const id = requestId(req);
   try {
     const thread = threadFor(req);
-    if (['executing', 'awaiting_operation_approval'].includes(thread.status) || hasAgentThreadLease(thread.id)) throw new Error('请先暂停当前任务，再调整限定项目');
     const projectIds = requestedProjectIds(req);
-    const currentProjectId = String(req.body.currentProjectId || '') || undefined;
     assertProjectScopeAccess(req, projectIds);
-    const previous = threadProjectIds(thread);
-    const removed = previous.filter((projectId) => !projectIds.includes(projectId));
-    const referenced = thread.plan?.tasks.filter((task) => task.projectId && removed.includes(task.projectId) && !['passed', 'superseded', 'cancelled'].includes(task.status)) || [];
-    if (referenced.length) throw new Error(`以下未完成任务仍使用要移除的项目：${referenced.map((task) => task.title).join('、')}`);
-    setAgentThreadProjectScope(thread, projectIds, currentProjectId);
-    appendAgentThreadEvent(thread, 'thread_project_scope_changed', { previousProjectIds: previous, projectIds: threadProjectIds(thread), currentProjectId: thread.currentProjectId, reason: 'user_updated_scope' });
-    res.json(thread);
+    res.json(setAgentThreadProjectScope(thread, projectIds, String(req.body.currentProjectId || '')));
   } catch (error) {
-    errorResponse(res, error, requestId(req));
+    errorResponse(res, error, id);
+  }
+});
+
+router.post('/threads/:id/restore', (req: AuthRequest, res) => {
+  const id = requestId(req);
+  try {
+    res.json(restoreAgentThread(threadFor(req)));
+  } catch (error) {
+    errorResponse(res, error, id);
   }
 });
 
 router.delete('/threads/:id/permanent', async (req: AuthRequest, res) => {
+  const id = requestId(req);
   try {
     const thread = threadFor(req);
-    if (req.body?.confirmed !== true) throw new Error('永久删除需要明确确认');
-    if (['executing', 'awaiting_operation_approval'].includes(thread.status) || hasAgentThreadLease(thread.id)) throw new Error('任务仍在执行，请先等待安全暂停');
+    if (req.body.confirmed !== true) throw new Error('需要确认后才能永久删除');
     res.json(await deleteAgentThread(thread));
   } catch (error) {
-    errorResponse(res, error, requestId(req));
+    errorResponse(res, error, id);
   }
 });
 
 router.delete('/threads/:id', (req: AuthRequest, res) => {
+  const id = requestId(req);
   try {
     res.json(archiveAgentThread(threadFor(req)));
   } catch (error) {
-    errorResponse(res, error, requestId(req));
+    errorResponse(res, error, id);
   }
 });
 
-// ─── Events (SSE) ────────────────────────────────────────────────────────────
+// ─── Events / SSE ────────────────────────────────────────────────────────────
 
 router.get('/threads/:id/events', (req: AuthRequest, res) => {
+  const id = requestId(req);
   try {
     const thread = threadFor(req);
-    const after = Number(req.query.afterSeq || req.headers['last-event-id'] || 0);
     if (!req.headers.accept?.includes('text/event-stream')) {
-      return res.json({ events: threadEventsAfter(thread, after), lastSeq: thread.events.at(-1)?.seq || 0 });
+      res.json({ events: threadEventsAfter(thread, Number(req.query.afterSeq || 0)), total: thread.events.length });
+      return;
     }
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
-    threadEventsAfter(thread, after).forEach((event) => writeSse(res, event));
+    threadEventsAfter(thread, Number(req.query.afterSeq || 0)).forEach((event) => writeSse(res, event));
     const unsubscribe = subscribeAgentThreadEvents(thread.id, (event) => writeSse(res, event));
     const heartbeat = setInterval(() => res.write(': heartbeat\n\n'), 15_000);
     req.on('close', () => {
@@ -275,33 +253,19 @@ router.get('/threads/:id/events', (req: AuthRequest, res) => {
       unsubscribe();
     });
   } catch (error) {
-    if (!res.headersSent) errorResponse(res, error, requestId(req));
+    if (!res.headersSent) errorResponse(res, error, id);
     else res.end();
   }
 });
 
 // ─── Turns ───────────────────────────────────────────────────────────────────
 
-function failPlanningTurn(thread: AgentThread, error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  thread.status = 'failed';
-  appendAgentThreadEvent(thread, 'turn_failed', { turnId: thread.turnId, stage: 'planning', error: message, retryable: true });
-  saveAgentThread(thread);
-}
-
-function resetBlockedOrFailedTasks(thread: AgentThread) {
-  let changed = false;
-  for (const task of thread.plan?.tasks || []) {
-    if (['failed', 'blocked'].includes(task.status)) {
-      task.status = 'pending';
-      task.attempt = 0;
-      task.error = undefined;
-      task.failureClass = undefined;
-      task.updatedAt = new Date().toISOString();
-      changed = true;
-    }
-  }
-  if (changed) appendAgentThreadEvent(thread, 'recovery_reset', { reason: 'user_continue' });
+function resetTurnCounters(thread: AgentThread) {
+  thread.consecutiveNoProgress = 0;
+  thread.blockedCount = 0;
+  thread.blockedConditionFingerprint = undefined;
+  thread.decisionSteps = 0;
+  thread.recoveryCycles = 0;
 }
 
 router.post('/threads/:id/turns', async (req: AuthRequest, res) => {
@@ -314,15 +278,6 @@ router.post('/threads/:id/turns', async (req: AuthRequest, res) => {
     if (!prompt) throw new Error('prompt 不能为空');
     if (thread.pendingApproval) throw new Error('当前有待确认操作');
     const run = context(req);
-    thread.turnId = `paturn_${randomUUID()}`;
-    appendAgentThreadEvent(thread, 'turn_started', { turnId: thread.turnId });
-
-    if (req.body.mode === 'goal' || req.body.mode === 'plan') {
-      if (thread.mode !== req.body.mode) {
-        setAgentThreadMode(thread, req.body.mode);
-        appendAgentThreadEvent(thread, 'mode_changed', { mode: req.body.mode, reason: 'user_turn_override' });
-      }
-    }
 
     if (hasAgentThreadLease(thread.id) || thread.status === 'executing') {
       thread.controlSignal = 'steer';
@@ -341,32 +296,22 @@ router.post('/threads/:id/turns', async (req: AuthRequest, res) => {
       unsubscribe = subscribeAgentThreadEvents(thread.id, (event) => writeSse(res, event));
     }
 
-    const hasConfirmedPlan = thread.plan?.status === 'confirmed';
-    if (hasConfirmedPlan && !['awaiting_plan_approval', 'planning'].includes(thread.status)) {
-      addThreadMessage(thread, 'user', 'prompt', prompt, thread.turnId);
-      appendAgentThreadEvent(thread, 'user_input_applied', { turnId: thread.turnId });
-      thread.consecutiveNoProgress = 0;
-      thread.blockedCount = 0;
-      thread.blockedConditionFingerprint = undefined;
-      thread.decisionSteps = 0;
-      resetBlockedOrFailedTasks(thread);
-      saveAgentThread(thread);
-      void executePlan(thread, run);
-    } else {
-      await planTurn(thread, prompt, run);
-      if (thread.mode === 'goal' && thread.plan?.status === 'pending') {
-        confirmPlan(thread);
-        appendAgentThreadEvent(thread, 'goal_mode_auto_started', { planId: thread.plan.id, planRevision: thread.plan.revision });
-        void executePlan(thread, run);
-      }
-    }
+    // 新用户输入 = 新 Turn：立即进入动态执行，无需确认、无需模式。
+    thread.turnId = `paturn_${randomUUID()}`;
+    thread.completionGate = req.body.finalGate === false ? 'light' : 'full';
+    addThreadMessage(thread, 'user', 'prompt', prompt, thread.turnId);
+    appendAgentThreadEvent(thread, 'user_input_applied', { turnId: thread.turnId });
+    resetTurnCounters(thread);
+    thread.pendingApproval = undefined;
+    thread.status = 'idle';
+    saveAgentThread(thread);
+    void runTurn(thread, run);
 
     appendAgentThreadEvent(thread, 'turn_completed', { turnId: thread.turnId, status: thread.status });
     const payload = { turnId: thread.turnId, thread };
     if (wantsStream) res.end();
     else res.status(202).json(payload);
   } catch (error) {
-    if (thread && ['planning'].includes(thread.status)) failPlanningTurn(thread, error);
     if (res.headersSent) {
       writeSse(res, { type: 'error', data: { error: error instanceof Error ? error.message : String(error), requestId: id } });
       res.end();
@@ -380,59 +325,16 @@ router.post('/threads/:id/turns', async (req: AuthRequest, res) => {
 
 router.post('/threads/:id/turns/retry', async (req: AuthRequest, res) => {
   const id = requestId(req);
-  let thread: AgentThread | undefined;
   try {
-    thread = threadFor(req);
-    if (thread.pendingApproval) throw new Error('当前有待确认操作');
-    if (hasAgentThreadLease(thread.id) || thread.status === 'executing') throw new Error('当前任务仍在执行，不能重试规划');
-    const failure = [...thread.events].reverse().find((event) => event.type === 'turn_failed' && event.data?.stage === 'planning' && event.data?.retryable !== false);
-    const prompt = [...thread.messages].reverse().find((message) => message.role === 'user')?.content;
-    if (!failure || !prompt) throw new Error('可重试的规划失败记录不存在');
+    const thread = threadFor(req);
+    if (thread.status !== 'failed') throw new Error('只有失败状态可以重试');
+    thread.status = 'idle';
+    resetTurnCounters(thread);
     thread.turnId = `paturn_${randomUUID()}`;
-    appendAgentThreadEvent(thread, 'turn_retry_requested', { turnId: thread.turnId, retryOf: failure.data?.turnId, stage: 'planning' });
-    appendAgentThreadEvent(thread, 'turn_started', { turnId: thread.turnId, retryOf: failure.data?.turnId });
-    await planTurn(thread, prompt, context(req));
-    appendAgentThreadEvent(thread, 'turn_completed', { turnId: thread.turnId, status: thread.status, retryOf: failure.data?.turnId });
+    saveAgentThread(thread);
+    void runTurn(thread, context(req));
     res.status(202).json({ turnId: thread.turnId, thread });
   } catch (error) {
-    if (thread && ['planning'].includes(thread.status)) failPlanningTurn(thread, error);
-    errorResponse(res, error, id);
-  }
-});
-
-// ─── Plan ────────────────────────────────────────────────────────────────────
-
-router.post('/threads/:id/plan/confirm', (req: AuthRequest, res) => {
-  const id = requestId(req);
-  try {
-    const thread = threadFor(req);
-    const plan = thread.plan;
-    if (!plan || plan.status !== 'pending') throw new Error('待确认计划不存在');
-    if (req.body.acknowledged !== true) throw new Error('请先核对并确认目标、成功标准和风险边界');
-    if (Number(req.body.planRevision) !== Number(plan.revision)) throw new Error('计划已发生变化，请重新生成并核对');
-    const current = scope(req);
-    for (const projectId of threadProjectIds(thread)) {
-      const conflict = findActiveProjectThread({ tenantId: current.tenantId, userId: current.userId, projectId }, thread.id);
-      if (conflict) throw new Error(`项目 ${projectId} 的线程「${conflict.title}」仍在执行，必须先暂停或停止该线程`);
-    }
-    confirmPlan(thread);
-    void executePlan(thread, context(req));
-    res.status(202).json({ thread });
-  } catch (error) {
-    errorResponse(res, error, id);
-  }
-});
-
-router.post('/threads/:id/plan/reject', async (req: AuthRequest, res) => {
-  const id = requestId(req);
-  try {
-    const thread = threadFor(req);
-    if (!thread.plan || thread.plan.status !== 'pending') throw new Error('待确认计划不存在');
-    const feedback = String(req.body.feedback || '').trim();
-    await replanWithFeedback(thread, feedback || '请重新规划', context(req));
-    res.status(202).json({ thread });
-  } catch (error) {
-    if (threadFor(req) && ['planning'].includes(threadFor(req).status)) failPlanningTurn(threadFor(req), error);
     errorResponse(res, error, id);
   }
 });
@@ -445,33 +347,20 @@ router.post('/threads/:id/operations/:operationId/decision', async (req: AuthReq
     const thread = threadFor(req);
     const approval = thread.pendingApproval;
     if (!approval || approval.id !== param(req.params.operationId)) throw new Error('待确认操作不存在');
-    const task = thread.plan?.tasks.find((item) => item.id === approval.taskId);
     const run = context(req);
 
     if (req.body.approved !== true) {
       thread.pendingApproval = undefined;
-      if (task) {
-        task.status = 'failed';
-        task.error = '用户拒绝破坏性操作';
-        task.failureClass = 'user_rejected';
-        task.updatedAt = new Date().toISOString();
-      }
       appendAgentThreadEvent(thread, 'approval_decided', { approvalId: approval.id, approved: false });
       thread.status = 'paused';
       saveAgentThread(thread);
       return res.json({ thread });
     }
 
-    const policy = evaluateToolPolicy(approval.toolName, thread.plan?.request || '', task);
+    const policy = evaluateToolPolicy(approval.toolName, thread.dynamicPlan?.goal || '');
     if (policy.level === 'forbidden') {
       thread.pendingApproval = undefined;
-      if (task) {
-        task.status = 'blocked';
-        task.error = policy.userMessage;
-        task.failureClass = 'permission';
-        task.updatedAt = new Date().toISOString();
-      }
-      appendAgentThreadEvent(thread, 'operation_blocked', { approvalId: approval.id, taskId: task?.id, toolName: approval.toolName, reason: policy.reason, summary: policy.userMessage });
+      appendAgentThreadEvent(thread, 'operation_blocked', { approvalId: approval.id, toolName: approval.toolName, reason: policy.reason, summary: policy.userMessage });
       thread.status = 'paused';
       saveAgentThread(thread);
       return res.status(200).json({ thread, blocked: true });
@@ -499,15 +388,15 @@ router.post('/threads/:id/operations/:operationId/decision', async (req: AuthReq
     const outcome = await recordToolResult(thread, run, {
       toolName: approval.toolName,
       scope: approval.scope,
-      taskId: approval.taskId,
       arguments: approval.arguments,
     }, approval.scope, result);
 
     if (outcome === 'waiting') {
       return res.status(202).json({ thread });
     }
+    thread.status = 'idle';
     saveAgentThread(thread);
-    void executePlan(thread, run);
+    void runTurn(thread, run);
     res.status(202).json({ thread });
   } catch (error) {
     errorResponse(res, error, id);
@@ -521,7 +410,7 @@ router.post('/threads/:id/control', (req: AuthRequest, res) => {
   try {
     const thread = threadFor(req);
     const action = String(req.body.action || '');
-    if (!['pause', 'continue', 'stop', 'retry', 'replan'].includes(action)) throw new Error('控制动作无效');
+    if (!['pause', 'continue', 'stop', 'retry'].includes(action)) throw new Error('控制动作无效');
     const running = hasAgentThreadLease(thread.id) || thread.status === 'executing';
 
     if (action === 'pause') {
@@ -531,50 +420,27 @@ router.post('/threads/:id/control', (req: AuthRequest, res) => {
     if (action === 'stop') {
       thread.pendingApproval = undefined;
       if (running) thread.controlSignal = 'stop';
-      else {
-        thread.status = 'stopped';
-        for (const task of thread.plan?.tasks || []) if (['pending', 'running'].includes(task.status)) task.status = 'cancelled';
-      }
+      else thread.status = 'stopped';
     }
     if (action === 'retry') {
-      thread.blockedCount = 0;
-      thread.blockedConditionFingerprint = undefined;
-      thread.consecutiveNoProgress = 0;
-      for (const task of thread.plan?.tasks || []) {
-        if (task.status === 'failed' || task.status === 'blocked') {
-          task.status = 'pending';
-          task.error = undefined;
-          task.failureClass = undefined;
-          task.attempt = 0;
-          task.updatedAt = new Date().toISOString();
-        }
-      }
+      resetTurnCounters(thread);
+      thread.pendingApproval = undefined;
       appendAgentThreadEvent(thread, 'recovery_reset', { reason: 'user_retry' });
-    }
-    if (action === 'replan') {
-      if (thread.plan) {
-        if (thread.plan.status === 'confirmed' || thread.plan.status === 'executed') thread.plan.status = 'superseded';
-        for (const task of thread.plan.tasks) if (['pending', 'running'].includes(task.status)) task.status = 'cancelled';
-      }
-      thread.status = 'idle';
     }
 
     appendAgentThreadEvent(thread, 'execution_control', { action });
     if (action === 'continue' || action === 'retry') {
       if (thread.pendingApproval) throw new Error('当前有待确认操作');
       thread.controlSignal = undefined;
-      thread.decisionSteps = 0;
-      resetBlockedOrFailedTasks(thread);
-      if (thread.plan?.status === 'confirmed') {
+      resetTurnCounters(thread);
+      if (thread.status === 'blocked' || thread.status === 'failed') {
         thread.status = 'idle';
-        void executePlan(thread, context(req));
+        if (action === 'retry') thread.turnId = `paturn_${randomUUID()}`;
       } else {
-        thread.status = 'paused';
+        thread.status = 'idle';
       }
-    }
-    if (action === 'replan') {
-      const lastPrompt = [...thread.messages].reverse().find((message) => message.role === 'user')?.content;
-      if (lastPrompt) void planTurn(thread, lastPrompt, context(req));
+      saveAgentThread(thread);
+      void runTurn(thread, context(req));
     }
     res.status(202).json({ thread });
   } catch (error) {
@@ -597,24 +463,17 @@ router.post('/threads/:id/steer', (req: AuthRequest, res) => {
     }
     thread.turnId = `paturn_${randomUUID()}`;
     addThreadMessage(thread, 'user', 'prompt', prompt, thread.turnId);
-    thread.consecutiveNoProgress = 0;
-    thread.blockedCount = 0;
-    thread.blockedConditionFingerprint = undefined;
-    thread.decisionSteps = 0;
-    resetBlockedOrFailedTasks(thread);
-    if (thread.plan?.status === 'confirmed') {
-      thread.status = 'idle';
-      void executePlan(thread, context(req));
-    } else {
-      void planTurn(thread, prompt, context(req));
-    }
+    resetTurnCounters(thread);
+    thread.status = 'idle';
+    saveAgentThread(thread);
+    void runTurn(thread, context(req));
     res.status(202).json({ thread });
   } catch (error) {
     errorResponse(res, error, id);
   }
 });
 
-// ─── Checkpoints（写前自动快照 + 用户回滚） ──────────────────────────────────
+// ─── Checkpoints ─────────────────────────────────────────────────────────────
 
 router.get('/threads/:id/checkpoints', (req: AuthRequest, res) => {
   try {
@@ -650,7 +509,7 @@ router.post('/threads/:id/checkpoints/restore', async (req: AuthRequest, res) =>
   }
 });
 
-// ─── Metrics（运行统计） ───────────────────────────────────────────────────────
+// ─── Metrics ─────────────────────────────────────────────────────────────────
 
 router.get('/threads/:id/metrics', (req: AuthRequest, res) => {
   try {
@@ -757,4 +616,4 @@ router.post('/capability-bundles/:id/publish', (req: AuthRequest, res) => {
   }
 });
 
-export { router as projectAgentV4Router };
+export { router as projectAgentV5Router };

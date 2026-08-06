@@ -25,8 +25,8 @@ export function inspectProjectSemantics(project: JsonObject): ValidationIssue[] 
     for (const component of form.design?.components || []) {
       const field = fieldName(component); const path = `forms.${form.id}.${component.id}`;
       const column = sheet?.columns?.find((item: any) => item.name === field);
-      if (photoField.test(field) && !['upload', 'fileUpload', 'imageUpload'].includes(component.type)) errors.push(issue('CONTROL_TYPE_MISMATCH', path, `字段 ${field} 应使用文件或图片上传控件`));
-      else if (dateField.test(field) && !['datePicker', 'dateRange', 'timePicker'].includes(component.type)) errors.push(issue('CONTROL_TYPE_MISMATCH', path, `字段 ${field} 应使用日期时间控件`));
+      if (photoField.test(field) && !['upload', 'fileUpload', 'imageUpload'].includes(component.type)) errors.push(issue('CONTROL_TYPE_MISMATCH', path, `字段 ${field} 应使用文件或图片上传控件（upload/fileUpload/imageUpload）`));
+      else if (dateField.test(field) && !['datePicker', 'dateRange', 'timePicker'].includes(component.type)) errors.push(issue('CONTROL_TYPE_MISMATCH', path, `字段 ${field} 应使用日期时间控件（datePicker/dateRange/timePicker）`));
       else if (textField.test(field) && !enumeratedField.test(field) && component.type === 'select') errors.push(issue('CONTROL_TYPE_MISMATCH', path, `文本字段 ${field} 不应使用无来源的选择控件`));
       else if (column?.dataType === 'number' && component.type !== 'number') errors.push(issue('CONTROL_TYPE_MISMATCH', path, `数值字段 ${field} 应使用 number 控件`));
       if (component.type === 'select' && !(component.props?.options || []).length && !component.props?.optionsConfig && !component.props?.dataSource) errors.push(issue('SELECT_WITHOUT_OPTIONS', path, `选择字段 ${field || component.id} 没有静态选项或可验证的动态来源`));

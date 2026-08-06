@@ -1,20 +1,19 @@
 /**
- * Agent Core domain types.
+ * Agent Core domain types (v2, schemaVersion 2).
  *
- * Single-loop project agent: a thread owns one active plan (goal contract +
- * task checklist), a message list, and a monotonic event stream. There is no
- * coordinator/expert dual-track and no gRPC agent runtime; the loop calls
- * MCP tools directly under role scopes.
+ * Codex-style single-loop dynamic execution: a thread owns a dynamic plan
+ * (display only), a message list, a monotonic event stream and a sequence of
+ * turns. Each turn runs the model↔tool↔verification loop until completion,
+ * a user question, an approval, or a terminal failure. v1 task-checklist
+ * records are ignored entirely.
  */
 import type { AuthUser } from '../middleware/auth';
 import type { McpRole } from '../services/tool-shared';
 
-// ─── Thread / plan / task ─────────────────────────────────────────────────────
+// ─── Thread / dynamic plan / turn ────────────────────────────────────────────
 
 export type ThreadStatus =
   | 'idle'
-  | 'planning'
-  | 'awaiting_plan_approval'
   | 'executing'
   | 'awaiting_operation_approval'
   | 'paused'
@@ -23,7 +22,16 @@ export type ThreadStatus =
   | 'stopped'
   | 'failed';
 
-export type AgentMode = 'plan' | 'goal';
+export type TurnStatus =
+  | 'created'
+  | 'preparing'
+  | 'running_model'
+  | 'running_tool'
+  | 'waiting_approval'
+  | 'verifying'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
 
 export type ThreadMessageKind = 'prompt' | 'commentary' | 'answer' | 'question' | 'approval';
 
@@ -38,8 +46,6 @@ export interface ThreadMessage {
   createdAt: string;
 }
 
-export type TaskAccess = 'read' | 'write';
-export type TaskStatus = 'pending' | 'running' | 'passed' | 'failed' | 'blocked' | 'superseded' | 'cancelled';
 export type FailureClass =
   | 'transient'
   | 'revision_conflict'
@@ -63,49 +69,36 @@ export interface AgentEvidence {
   createdAt: string;
 }
 
-export interface AgentTask {
-  id: string;
-  title: string;
-  instruction: string;
-  scope: McpRole;
-  access: TaskAccess;
-  projectId?: string;
-  acceptance: string[];
-  status: TaskStatus;
-  attempt: number;
-  maxAttempts: number;
-  toolSteps: number;
-  startRevision?: string;
-  endRevision?: string;
-  evidence: AgentEvidence[];
-  error?: string;
-  failureClass?: FailureClass;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export type PlanStatus = 'pending' | 'confirmed' | 'rejected' | 'executed' | 'superseded';
-
-export interface AgentPlan {
-  id: string;
-  revision: number;
-  request: string;
+/**
+ * 动态展示型计划：由 grounding 初始化、模型通过 plan.update 随时修订。
+ * 仅用于展示与上下文，不约束执行、无需用户确认。
+ */
+export interface DynamicPlan {
   goal: string;
   successCriteria: string[];
   summary: string;
+  /** 当前思路/剩余步骤的简要列表（展示用）。 */
+  steps: string[];
   assumptions: string[];
   risks: string[];
-  tasks: AgentTask[];
-  status: PlanStatus;
-  rejectReason?: string;
-  createdAt: string;
-  confirmedAt?: string;
+  updatedAt: string;
+  updatedBy: 'model' | 'system';
+}
+
+/** 一次用户输入对应的 Turn 记录（状态由事件流驱动）。 */
+export interface TurnRecord {
+  id: string;
+  userInput: string;
+  status: TurnStatus;
+  startedAt: string;
+  completedAt?: string;
+  failureReason?: string;
 }
 
 export interface PendingApproval {
   id: string;
   toolName: string;
-  taskId: string;
+  turnId: string;
   scope: McpRole;
   arguments: Record<string, any>;
   projectId?: string;
@@ -123,7 +116,7 @@ export interface ThreadEvent {
 }
 
 export interface AgentThread {
-  schemaVersion: 1;
+  schemaVersion: 2;
   id: string;
   tenantId: string;
   userId: string;
@@ -135,10 +128,12 @@ export interface AgentThread {
   title: string;
   profileId: string;
   capabilityBundleVersionId: string;
-  mode: AgentMode;
   status: ThreadStatus;
   turnId?: string;
-  plan?: AgentPlan;
+  dynamicPlan?: DynamicPlan;
+  /** 动态计划对应的最近用户消息 id（用于判断新输入是否需要重新规划）。 */
+  dynamicPlanPromptId?: string;
+  turns: TurnRecord[];
   messages: ThreadMessage[];
   summary: string;
   events: ThreadEvent[];
@@ -157,12 +152,14 @@ export interface AgentThread {
   artifacts?: Record<string, ArtifactMeta>;
   /** 当前 turn 的运行指标。 */
   turnMetrics?: TurnMetrics;
-  /** 每个写任务执行前自动建立的检查点引用。 */
+  /** 写操作前自动建立的检查点引用（按 projectId+revision 去重）。 */
   checkpointRefs?: string[];
-  /** 执行开始时的测试基线（写计划）。 */
+  /** 执行开始时的测试基线。 */
   testBaseline?: TestBaseline;
-  /** 已完成自审的计划 revision（避免重复自审）。 */
-  selfReviewedPlanRevision?: number;
+  /** 已完成自审的动态计划 key（dynamicPlan.updatedAt），避免重复自审。 */
+  selfReviewedPlanKey?: string;
+  /** 当前 turn 的完成门禁模式：light（结构+交付物覆盖，跳过回归/预检）或 full（默认，完整门禁）。 */
+  completionGate?: 'light' | 'full';
   pinnedAt?: string;
   archived: boolean;
   createdAt: string;
@@ -178,7 +175,7 @@ export interface RunContext {
 
 // ─── Loop decision / observation ──────────────────────────────────────────────
 
-export type LoopAction = 'act' | 'complete' | 'ask_user' | 'pause' | 'replan';
+export type LoopAction = 'act' | 'ask_user' | 'complete';
 
 /** 一步决策内最多允许的批量只读调用数（写/破坏性仍一步一个）。 */
 export const MAX_BATCH_READS = 3;
@@ -187,18 +184,14 @@ export interface LoopBatchRead {
   toolName: string;
   scope?: McpRole;
   arguments?: Record<string, any>;
-  taskId?: string;
 }
 
 export interface LoopQuestion {
   header: string;
   question: string;
   kind: 'choice' | 'text';
-  /** 为什么需要用户补充：当前任务、最近失败、进度等上下文。 */
+  /** 为什么需要用户补充：当前目标、最近失败、进度等上下文。 */
   context?: string;
-  /** 关联的计划步骤（任务），用于前端把提问与步骤交叉展示。 */
-  taskId?: string;
-  taskTitle?: string;
   options?: Array<{ label: string; description?: string }>;
 }
 
@@ -211,10 +204,6 @@ export interface LoopDecision {
   arguments?: Record<string, any>;
   /** 批量只读（最多 MAX_BATCH_READS 个，全部必须是只读工具）。 */
   batchReads?: LoopBatchRead[];
-  /** replan 动作的原因/约束（action=replan 时必填）。 */
-  replanReason?: string;
-  taskId?: string;
-  completeTaskIds?: string[];
   questions?: LoopQuestion[];
   finalAnswer?: string;
 }
@@ -262,7 +251,6 @@ export interface TestBaseline {
 }
 
 export interface LoopObservation {
-  taskId?: string;
   toolName?: string;
   scope?: McpRole;
   status: 'succeeded' | 'failed' | 'waiting_confirmation' | 'refreshed';
@@ -319,5 +307,6 @@ export interface ThreadHistorySummary {
 
 export interface ThreadHistoryPage {
   items: ThreadHistorySummary[];
+  total: number;
   nextCursor?: string;
 }

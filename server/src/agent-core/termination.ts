@@ -7,24 +7,38 @@ import type { AgentThread } from './types';
 
 /** 连续无进展阈值（达到则暂停提问）。 */
 export const NO_PROGRESS_THRESHOLD = 2;
-/** 同一阻塞条件连续阈值（达到则标记 blocked）。 */
-export const BLOCKED_THRESHOLD = 3;
+/** 同一阻塞条件连续阈值（达到则标记 blocked；配合无进展纠正给模型更多修正机会）。 */
+export const BLOCKED_THRESHOLD = 5;
 
 /** 当前进度的稳定指纹（用于检测连续无进展）。 */
 export function progressFingerprint(thread: AgentThread) {
-  const tasks = (thread.plan?.tasks || []).map((task) => `${task.id}:${task.status}:${task.attempt}:${task.evidence.length}`);
-  let lastSuccessfulObservation = 0;
+  let lastProgress = 0;
+  let hasWrittenOrVerified = false;
+  let postWriteReadsCounted = 0;
+  /** 距上次写/验证之间允许的「读额度」：读够真实 id/列名后应继续写；每次写/验证会重置额度。 */
+  const POST_WRITE_READ_ALLOWANCE = 12;
   for (const event of thread.events) {
-    if (event.type === 'tool_observation' && event.data?.status === 'succeeded') {
-      lastSuccessfulObservation = Math.max(lastSuccessfulObservation, event.seq);
+    const isWrite = event.type === 'tool_observation' && event.data?.status === 'succeeded' && (event.data?.changes || []).length > 0;
+    const isVerify = event.type === 'verification.completed' || (event.type === 'tool_observation' && event.data?.toolName === 'verify.write' && event.data?.status === 'succeeded');
+    if (isWrite || isVerify) {
+      hasWrittenOrVerified = true;
+      postWriteReadsCounted = 0;
+      lastProgress = Math.max(lastProgress, event.seq);
+    } else if (!hasWrittenOrVerified && event.type === 'tool_observation' && event.data?.status === 'succeeded') {
+      // 首个写/验证之前：成功只读也算进展（探索期），避免开局即被误判无进展。
+      lastProgress = Math.max(lastProgress, event.seq);
+    } else if (hasWrittenOrVerified && event.type === 'tool_observation' && event.data?.status === 'succeeded' && postWriteReadsCounted < POST_WRITE_READ_ALLOWANCE) {
+      // 写后有有限读额度：读取真实 id/列名/现状用，超出后只读不再算进展（防读空转）。
+      postWriteReadsCounted += 1;
+      lastProgress = Math.max(lastProgress, event.seq);
     }
   }
   return JSON.stringify({
-    tasks,
     revisions: thread.projectRevisions,
     summaryLength: thread.summary.length,
-    evidenceCount: (thread.plan?.tasks || []).reduce((total, task) => total + task.evidence.length, 0),
-    lastSuccessfulObservation,
+    messageCount: thread.messages.length,
+    planUpdatedAt: thread.dynamicPlan?.updatedAt,
+    lastSuccessfulObservation: lastProgress,
   });
 }
 

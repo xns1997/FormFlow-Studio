@@ -9,6 +9,29 @@ export interface ListAnimationRow<T> {
   style: CSSProperties;
 }
 
+/**
+ * 合并当前项与离场占位：key 已重新出现的离场项直接丢弃，
+ * 保证返回的 key 唯一（重复 key 会让 React 丢失/重复 DOM 并报警）。
+ */
+export function mergeRowsWithLeaving<T, K extends string | number>(
+  items: Array<{ key: K; item: T }>,
+  leaving: Array<{ key: K; item: T }>,
+): Array<{ key: K; item: T; leaving: boolean }> {
+  const currentKeys = new Set(items.map((entry) => entry.key));
+  const seen = new Set<K>();
+  const rows: Array<{ key: K; item: T; leaving: boolean }> = [];
+  for (const entry of items) {
+    rows.push({ ...entry, leaving: false });
+    seen.add(entry.key);
+  }
+  for (const entry of leaving) {
+    if (currentKeys.has(entry.key) || seen.has(entry.key)) continue;
+    seen.add(entry.key);
+    rows.push({ ...entry, leaving: true });
+  }
+  return rows;
+}
+
 const DEFAULT_MS = 350;
 const STAGGER_BASE_MS = 60;
 const STAGGER_FACTOR = 0.8;
@@ -80,7 +103,10 @@ export function useListAnimation<T, K extends string | number>(
         .map((key) => ({ key, item: byKeyRef.current.get(key) }))
         .filter((entry): entry is { key: K; item: T } => entry.item !== undefined);
       if (gone.length) {
-        setLeaving((current) => [...current, ...gone]);
+        setLeaving((current) => {
+          const existing = new Set(current.map((row) => row.key));
+          return [...current, ...gone.filter((entry) => !existing.has(entry.key))];
+        });
         for (const entry of gone) {
           const timer = window.setTimeout(() => {
             setLeaving((current) => current.filter((row) => row.key !== entry.key));
@@ -121,24 +147,17 @@ export function useListAnimation<T, K extends string | number>(
     return items.map((item, index) => ({ key: keys[index], item, state: 'entered' as const, style: {} }));
   }
 
-  const rows: ListAnimationRow<T>[] = [];
-  for (let index = 0; index < items.length; index += 1) {
-    const item = items[index];
-    const key = keys[index];
-    const delay = pendingRef.current.get(key);
-    if (delay !== undefined) {
-      rows.push({
-        key,
-        item,
-        state: 'entering',
-        style: { animation: `list-enter ${enterMs}ms cubic-bezier(0.16, 1, 0.3, 1) both`, animationDelay: `${delay}ms` },
-      });
-    } else {
-      rows.push({ key, item, state: 'entered', style: {} });
+  return mergeRowsWithLeaving(
+    items.map((item, index) => ({ key: keys[index], item })),
+    leaving,
+  ).map((entry) => {
+    if (entry.leaving) {
+      return { key: entry.key, item: entry.item, state: 'leaving' as const, style: { animation: `list-leave ${exitMs}ms ease-in both` } };
     }
-  }
-  for (const entry of leaving) {
-    rows.push({ key: entry.key, item: entry.item, state: 'leaving', style: { animation: `list-leave ${exitMs}ms ease-in both` } });
-  }
-  return rows;
+    const delay = pendingRef.current.get(entry.key);
+    if (delay !== undefined) {
+      return { key: entry.key, item: entry.item, state: 'entering' as const, style: { animation: `list-enter ${enterMs}ms cubic-bezier(0.16, 1, 0.3, 1) both`, animationDelay: `${delay}ms` } };
+    }
+    return { key: entry.key, item: entry.item, state: 'entered' as const, style: {} };
+  });
 }
