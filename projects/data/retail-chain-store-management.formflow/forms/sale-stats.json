@@ -1,0 +1,104 @@
+{
+  "bindings": [
+    {
+      "config": {
+        "sheetName": "销售明细",
+        "tableId": "sales"
+      },
+      "id": "stats-binding",
+      "sourceId": "sales",
+      "targetId": "stats-table",
+      "type": "table"
+    }
+  ],
+  "components": [
+    {
+      "fieldBinding": "统计维度",
+      "height": 72,
+      "id": "stat-dim",
+      "props": {
+        "label": "统计维度",
+        "name": "统计维度",
+        "options": [
+          {
+            "label": "门店",
+            "value": "门店"
+          },
+          {
+            "label": "商品",
+            "value": "商品"
+          },
+          {
+            "label": "支付方式",
+            "value": "支付方式"
+          }
+        ]
+      },
+      "type": "select",
+      "width": 260,
+      "x": 60,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "height": 48,
+      "id": "stat-btn",
+      "props": {
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "sale-stats-flow"
+          }
+        },
+        "label": "生成统计",
+        "name": "生成统计"
+      },
+      "type": "button",
+      "width": 260,
+      "x": 360,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "height": 72,
+      "id": "stats-table",
+      "props": {
+        "label": "统计结果",
+        "name": "统计结果"
+      },
+      "type": "table",
+      "width": 260,
+      "x": 660,
+      "y": 60,
+      "zIndex": 2
+    }
+  ],
+  "coordinateSpace": "window-content-v1",
+  "createdAt": "2026-08-06T00:00:00.000Z",
+  "formMode": "detail",
+  "formWindow": {
+    "height": 700,
+    "props": {
+      "background": "#ffffff",
+      "borderRadius": 12,
+      "padding": 24,
+      "resetText": "重置",
+      "showFooter": false,
+      "submitText": "提交",
+      "subtitle": "",
+      "title": "销售统计"
+    },
+    "width": 980,
+    "x": 40,
+    "y": 40
+  },
+  "gridSize": 10,
+  "id": "sale-stats",
+  "name": "销售统计",
+  "updatedAt": "2026-08-06T00:00:00.000Z",
+  "viewport": {
+    "panX": 0,
+    "panY": 0,
+    "zoom": 1
+  }
+}

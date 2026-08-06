@@ -1,8 +1,0 @@
-{
-  "mode": "design",
-  "allowDesigner": true,
-  "allowBehaviorEditor": true,
-  "allowWorkflowEditor": true,
-  "defaultFormId": "data_entry_form",
-  "defaultSheet": "Sheet1"
-}

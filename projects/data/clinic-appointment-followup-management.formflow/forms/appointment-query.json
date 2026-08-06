@@ -1,0 +1,148 @@
+{
+  "bindings": [
+    {
+      "config": {
+        "sheetName": "预约记录",
+        "tableId": "appointments"
+      },
+      "id": "ap-binding",
+      "sourceId": "appointments",
+      "targetId": "ap-table",
+      "type": "table"
+    }
+  ],
+  "components": [
+    {
+      "fieldBinding": "科室",
+      "height": 72,
+      "id": "q-dept",
+      "props": {
+        "label": "科室",
+        "name": "科室",
+        "options": [
+          {
+            "label": "内科",
+            "value": "内科"
+          },
+          {
+            "label": "外科",
+            "value": "外科"
+          },
+          {
+            "label": "儿科",
+            "value": "儿科"
+          },
+          {
+            "label": "妇产科",
+            "value": "妇产科"
+          },
+          {
+            "label": "骨科",
+            "value": "骨科"
+          },
+          {
+            "label": "眼科",
+            "value": "眼科"
+          }
+        ]
+      },
+      "type": "select",
+      "width": 260,
+      "x": 60,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "状态",
+      "height": 72,
+      "id": "q-status",
+      "props": {
+        "label": "状态",
+        "name": "状态",
+        "options": [
+          {
+            "label": "已预约",
+            "value": "已预约"
+          },
+          {
+            "label": "已就诊",
+            "value": "已就诊"
+          },
+          {
+            "label": "已取消",
+            "value": "已取消"
+          },
+          {
+            "label": "待改期",
+            "value": "待改期"
+          }
+        ]
+      },
+      "type": "select",
+      "width": 260,
+      "x": 360,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "height": 48,
+      "id": "ap-query-btn",
+      "props": {
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "appointment-query-flow"
+          }
+        },
+        "label": "查询预约",
+        "name": "查询预约"
+      },
+      "type": "button",
+      "width": 260,
+      "x": 660,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "height": 72,
+      "id": "ap-table",
+      "props": {
+        "label": "预约记录",
+        "name": "预约记录"
+      },
+      "type": "table",
+      "width": 260,
+      "x": 60,
+      "y": 160,
+      "zIndex": 2
+    }
+  ],
+  "coordinateSpace": "window-content-v1",
+  "createdAt": "2026-08-06T00:00:00.000Z",
+  "formMode": "detail",
+  "formWindow": {
+    "height": 700,
+    "props": {
+      "background": "#ffffff",
+      "borderRadius": 12,
+      "padding": 24,
+      "resetText": "重置",
+      "showFooter": false,
+      "submitText": "提交",
+      "subtitle": "",
+      "title": "预约查询"
+    },
+    "width": 980,
+    "x": 40,
+    "y": 40
+  },
+  "gridSize": 10,
+  "id": "appointment-query",
+  "name": "预约查询",
+  "updatedAt": "2026-08-06T00:00:00.000Z",
+  "viewport": {
+    "panX": 0,
+    "panY": 0,
+    "zoom": 1
+  }
+}

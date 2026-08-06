@@ -1,0 +1,240 @@
+{
+  "bindings": [
+    {
+      "config": {
+        "sheetName": "销售明细",
+        "tableId": "sales"
+      },
+      "id": "sale-binding",
+      "sourceId": "sales",
+      "targetId": "sale-table",
+      "type": "table"
+    }
+  ],
+  "components": [
+    {
+      "fieldBinding": "开始日期",
+      "height": 72,
+      "id": "start-date",
+      "props": {
+        "label": "开始日期",
+        "name": "开始日期"
+      },
+      "type": "datePicker",
+      "width": 260,
+      "x": 60,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "结束日期",
+      "height": 72,
+      "id": "end-date",
+      "props": {
+        "label": "结束日期",
+        "name": "结束日期"
+      },
+      "type": "datePicker",
+      "width": 260,
+      "x": 360,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "门店编号",
+      "height": 72,
+      "id": "q-store",
+      "props": {
+        "label": "门店编号",
+        "name": "门店编号",
+        "options": [
+          {
+            "label": "ST0001",
+            "value": "ST0001"
+          },
+          {
+            "label": "ST0002",
+            "value": "ST0002"
+          },
+          {
+            "label": "ST0003",
+            "value": "ST0003"
+          },
+          {
+            "label": "ST0004",
+            "value": "ST0004"
+          },
+          {
+            "label": "ST0005",
+            "value": "ST0005"
+          },
+          {
+            "label": "ST0006",
+            "value": "ST0006"
+          },
+          {
+            "label": "ST0007",
+            "value": "ST0007"
+          },
+          {
+            "label": "ST0008",
+            "value": "ST0008"
+          },
+          {
+            "label": "ST0009",
+            "value": "ST0009"
+          },
+          {
+            "label": "ST0010",
+            "value": "ST0010"
+          },
+          {
+            "label": "ST0011",
+            "value": "ST0011"
+          },
+          {
+            "label": "ST0012",
+            "value": "ST0012"
+          },
+          {
+            "label": "ST0013",
+            "value": "ST0013"
+          },
+          {
+            "label": "ST0014",
+            "value": "ST0014"
+          },
+          {
+            "label": "ST0015",
+            "value": "ST0015"
+          },
+          {
+            "label": "ST0016",
+            "value": "ST0016"
+          },
+          {
+            "label": "ST0017",
+            "value": "ST0017"
+          },
+          {
+            "label": "ST0018",
+            "value": "ST0018"
+          },
+          {
+            "label": "ST0019",
+            "value": "ST0019"
+          },
+          {
+            "label": "ST0020",
+            "value": "ST0020"
+          },
+          {
+            "label": "ST0021",
+            "value": "ST0021"
+          },
+          {
+            "label": "ST0022",
+            "value": "ST0022"
+          },
+          {
+            "label": "ST0023",
+            "value": "ST0023"
+          },
+          {
+            "label": "ST0024",
+            "value": "ST0024"
+          },
+          {
+            "label": "ST0025",
+            "value": "ST0025"
+          },
+          {
+            "label": "ST0026",
+            "value": "ST0026"
+          },
+          {
+            "label": "ST0027",
+            "value": "ST0027"
+          },
+          {
+            "label": "ST0028",
+            "value": "ST0028"
+          },
+          {
+            "label": "ST0029",
+            "value": "ST0029"
+          },
+          {
+            "label": "ST0030",
+            "value": "ST0030"
+          }
+        ]
+      },
+      "type": "select",
+      "width": 260,
+      "x": 660,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "height": 48,
+      "id": "query-btn",
+      "props": {
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "sale-query-flow"
+          }
+        },
+        "label": "查询销售",
+        "name": "查询销售"
+      },
+      "type": "button",
+      "width": 260,
+      "x": 60,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "height": 72,
+      "id": "sale-table",
+      "props": {
+        "label": "销售明细",
+        "name": "销售明细"
+      },
+      "type": "table",
+      "width": 260,
+      "x": 360,
+      "y": 160,
+      "zIndex": 2
+    }
+  ],
+  "coordinateSpace": "window-content-v1",
+  "createdAt": "2026-08-06T00:00:00.000Z",
+  "formMode": "detail",
+  "formWindow": {
+    "height": 700,
+    "props": {
+      "background": "#ffffff",
+      "borderRadius": 12,
+      "padding": 24,
+      "resetText": "重置",
+      "showFooter": false,
+      "submitText": "提交",
+      "subtitle": "",
+      "title": "销售查询"
+    },
+    "width": 980,
+    "x": 40,
+    "y": 40
+  },
+  "gridSize": 10,
+  "id": "sale-query",
+  "name": "销售查询",
+  "updatedAt": "2026-08-06T00:00:00.000Z",
+  "viewport": {
+    "panX": 0,
+    "panY": 0,
+    "zoom": 1
+  }
+}

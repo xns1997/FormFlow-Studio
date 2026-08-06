@@ -1,0 +1,4 @@
+{
+  "behaviors": [],
+  "ruleCode": "before submit -> require($课程ID, $课程名称, $分类, $课时数, $学费, $教师, $开班日期)\nwhen $学费 <= 0 -> message(\"学费必须大于 0\", error)\n"
+}

@@ -1,0 +1,104 @@
+{
+  "bindings": [
+    {
+      "config": {
+        "sheetName": "随访记录",
+        "tableId": "followups"
+      },
+      "id": "fu-stats-binding",
+      "sourceId": "followups",
+      "targetId": "fu-stats-table",
+      "type": "table"
+    }
+  ],
+  "components": [
+    {
+      "fieldBinding": "统计维度",
+      "height": 72,
+      "id": "fu-stat",
+      "props": {
+        "label": "统计维度",
+        "name": "统计维度",
+        "options": [
+          {
+            "label": "科室",
+            "value": "科室"
+          },
+          {
+            "label": "随访方式",
+            "value": "随访方式"
+          },
+          {
+            "label": "医生",
+            "value": "医生"
+          }
+        ]
+      },
+      "type": "select",
+      "width": 260,
+      "x": 60,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "height": 48,
+      "id": "fu-stat-btn",
+      "props": {
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "followup-stats-flow"
+          }
+        },
+        "label": "生成统计",
+        "name": "生成统计"
+      },
+      "type": "button",
+      "width": 260,
+      "x": 360,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "height": 72,
+      "id": "fu-stats-table",
+      "props": {
+        "label": "随访统计结果",
+        "name": "随访统计结果"
+      },
+      "type": "table",
+      "width": 260,
+      "x": 660,
+      "y": 60,
+      "zIndex": 2
+    }
+  ],
+  "coordinateSpace": "window-content-v1",
+  "createdAt": "2026-08-06T00:00:00.000Z",
+  "formMode": "detail",
+  "formWindow": {
+    "height": 700,
+    "props": {
+      "background": "#ffffff",
+      "borderRadius": 12,
+      "padding": 24,
+      "resetText": "重置",
+      "showFooter": false,
+      "submitText": "提交",
+      "subtitle": "",
+      "title": "随访统计"
+    },
+    "width": 980,
+    "x": 40,
+    "y": 40
+  },
+  "gridSize": 10,
+  "id": "followup-stats",
+  "name": "随访统计",
+  "updatedAt": "2026-08-06T00:00:00.000Z",
+  "viewport": {
+    "panX": 0,
+    "panY": 0,
+    "zoom": 1
+  }
+}

@@ -1,8 +1,0 @@
-{
-  "mode": "design",
-  "defaultFormId": "inspection_record_form",
-  "defaultSheet": "巡检记录",
-  "allowDesigner": true,
-  "allowBehaviorEditor": true,
-  "allowWorkflowEditor": true
-}

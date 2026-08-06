@@ -1,0 +1,74 @@
+{
+  "fixtures": [
+    {
+      "id": "fixture-clinic-appointment-followup-management-sample",
+      "name": "医疗演示样例数据",
+      "rows": [],
+      "sheetName": "patients",
+      "tableId": "patients"
+    }
+  ],
+  "profiles": [
+    {
+      "id": "patients-profile",
+      "name": "patients 画像",
+      "rowCount": 30,
+      "scenarios": [
+        "normal",
+        "boundary",
+        "empty",
+        "duplicate_key"
+      ],
+      "seed": 20260806,
+      "sheetName": "patients",
+      "tableId": "patients"
+    },
+    {
+      "id": "appointments-profile",
+      "name": "appointments 画像",
+      "rowCount": 30,
+      "scenarios": [
+        "normal",
+        "boundary",
+        "empty",
+        "duplicate_key"
+      ],
+      "seed": 20260806,
+      "sheetName": "appointments",
+      "tableId": "appointments"
+    },
+    {
+      "id": "followups-profile",
+      "name": "followups 画像",
+      "rowCount": 30,
+      "scenarios": [
+        "normal",
+        "boundary",
+        "empty",
+        "duplicate_key"
+      ],
+      "seed": 20260806,
+      "sheetName": "followups",
+      "tableId": "followups"
+    }
+  ],
+  "runs": [
+    {
+      "coverage": 100,
+      "id": "run-clinic-appointment-followup-management-20260806",
+      "name": "医疗演示回归运行",
+      "passed": true,
+      "ranAt": "2026-08-06T00:00:00.000Z",
+      "suiteId": "suite-clinic-appointment-followup-management-20260806"
+    }
+  ],
+  "suites": [
+    {
+      "cases": [],
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "id": "suite-clinic-appointment-followup-management-20260806",
+      "name": "医疗演示回归套件",
+      "seed": 20260806
+    }
+  ]
+}

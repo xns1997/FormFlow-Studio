@@ -1,0 +1,272 @@
+{
+  "exportedAt": "2026-08-06T00:00:00.000Z",
+  "workflows": [
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "患者档案写回",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "patient-save-flow",
+      "name": "患者档案保存",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"patient\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "预约记录写回与展示",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "appointment-book-flow",
+      "name": "预约登记流程",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"appointment\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "按条件查询预约",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "e2",
+          "source": "n2",
+          "sourceHandle": "out:rows",
+          "target": "n3",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "appointment-query-flow",
+      "name": "预约查询流程",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"criteria\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "generic:criteria-filter",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n3",
+          "position": {
+            "x": 680,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "随访记录登记与状态展示",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "e2",
+          "source": "n2",
+          "sourceHandle": "out:rows",
+          "target": "n3",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "followup-status-flow",
+      "name": "随访状态流程",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"followup\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "generic:criteria-filter",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n3",
+          "position": {
+            "x": 680,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "按维度汇总随访记录",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "e2",
+          "source": "n2",
+          "sourceHandle": "out:result",
+          "target": "n3",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "followup-stats-flow",
+      "name": "随访统计汇总",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"dimension\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{\"dimensions\":[\"随访方式\"],\"metrics\":[\"随访ID\"]}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "data:group-aggregate",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n3",
+          "position": {
+            "x": 680,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ]
+}

@@ -1,0 +1,203 @@
+{
+  "bindings": [],
+  "components": [
+    {
+      "fieldBinding": "课程ID",
+      "height": 72,
+      "id": "course-id",
+      "props": {
+        "label": "课程ID",
+        "name": "课程ID",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 60,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "课程名称",
+      "height": 72,
+      "id": "course-name",
+      "props": {
+        "label": "课程名称",
+        "name": "课程名称",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 360,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "分类",
+      "height": 72,
+      "id": "course-cat",
+      "props": {
+        "label": "分类",
+        "name": "分类",
+        "options": [
+          {
+            "label": "编程",
+            "value": "编程"
+          },
+          {
+            "label": "设计",
+            "value": "设计"
+          },
+          {
+            "label": "外语",
+            "value": "外语"
+          },
+          {
+            "label": "财会",
+            "value": "财会"
+          }
+        ],
+        "required": true
+      },
+      "type": "select",
+      "width": 260,
+      "x": 660,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "课时数",
+      "height": 72,
+      "id": "course-hours",
+      "props": {
+        "label": "课时数",
+        "name": "课时数",
+        "required": true
+      },
+      "type": "number",
+      "width": 260,
+      "x": 60,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "学费",
+      "height": 72,
+      "id": "course-fee",
+      "props": {
+        "label": "学费",
+        "name": "学费",
+        "required": true
+      },
+      "type": "number",
+      "width": 260,
+      "x": 360,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "教师",
+      "height": 72,
+      "id": "course-teacher",
+      "props": {
+        "label": "教师",
+        "name": "教师",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 660,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "开班日期",
+      "height": 72,
+      "id": "course-date",
+      "props": {
+        "label": "开班日期",
+        "name": "开班日期",
+        "required": true
+      },
+      "type": "datePicker",
+      "width": 260,
+      "x": 60,
+      "y": 260,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "状态",
+      "height": 72,
+      "id": "course-status",
+      "props": {
+        "label": "状态",
+        "name": "状态",
+        "options": [
+          {
+            "label": "招生中",
+            "value": "招生中"
+          },
+          {
+            "label": "已开班",
+            "value": "已开班"
+          },
+          {
+            "label": "已结课",
+            "value": "已结课"
+          }
+        ]
+      },
+      "type": "select",
+      "width": 260,
+      "x": 360,
+      "y": 260,
+      "zIndex": 2
+    },
+    {
+      "height": 48,
+      "id": "save-course",
+      "props": {
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "course-save-flow"
+          }
+        },
+        "label": "保存课程",
+        "name": "保存课程"
+      },
+      "type": "button",
+      "width": 260,
+      "x": 660,
+      "y": 260,
+      "zIndex": 2
+    }
+  ],
+  "coordinateSpace": "window-content-v1",
+  "createdAt": "2026-08-06T00:00:00.000Z",
+  "formMode": "edit",
+  "formWindow": {
+    "height": 700,
+    "props": {
+      "background": "#ffffff",
+      "borderRadius": 12,
+      "padding": 24,
+      "resetText": "重置",
+      "showFooter": false,
+      "submitText": "提交",
+      "subtitle": "",
+      "title": "课程维护"
+    },
+    "width": 980,
+    "x": 40,
+    "y": 40
+  },
+  "gridSize": 10,
+  "id": "course-maintain",
+  "name": "课程维护",
+  "updatedAt": "2026-08-06T00:00:00.000Z",
+  "viewport": {
+    "panX": 0,
+    "panY": 0,
+    "zoom": 1
+  }
+}

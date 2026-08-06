@@ -1,0 +1,21 @@
+{
+  "sheets": [
+    {
+      "behaviors": [
+        {
+          "code": "if (字段 === '金额' && 数量 && 单价 && value !== 数量 * 单价) showMessage('金额与数量×单价不一致', 'warning');",
+          "createdAt": "2026-08-06T00:00:00.000Z",
+          "enabled": true,
+          "event": "fieldChange",
+          "id": "sales-amount-check",
+          "name": "销售金额一致性检查",
+          "priority": 0,
+          "updatedAt": "2026-08-06T00:00:00.000Z"
+        }
+      ],
+      "sheetName": "销售明细",
+      "tableId": "sales",
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ]
+}

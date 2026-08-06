@@ -1,0 +1,12 @@
+{
+  "exportedAt": "2026-08-06T00:00:00.000Z",
+  "outputs": [
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "format": "xlsx",
+      "id": "progress-report-export",
+      "name": "进度报表导出",
+      "size": 0
+    }
+  ]
+}

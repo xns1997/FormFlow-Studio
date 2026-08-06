@@ -1,0 +1,15 @@
+{
+  "behaviors": [
+    {
+      "code": "console.log('training-demo: 表单加载')",
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "enabled": true,
+      "event": "formLoad",
+      "id": "audit-log",
+      "name": "全局操作留痕",
+      "priority": 0,
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ],
+  "exportedAt": "2026-08-06T00:00:00.000Z"
+}

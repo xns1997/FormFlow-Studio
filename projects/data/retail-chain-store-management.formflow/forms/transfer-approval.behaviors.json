@@ -1,0 +1,4 @@
+{
+  "behaviors": [],
+  "ruleCode": "before submit -> require($审批人, $审批结果)\nwhen $审批结果 == \"驳回\" -> message(\"请填写驳回原因\", warning)\n"
+}

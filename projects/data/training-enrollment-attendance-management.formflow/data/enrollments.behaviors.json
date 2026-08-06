@@ -1,0 +1,21 @@
+{
+  "sheets": [
+    {
+      "behaviors": [
+        {
+          "code": "if (字段 === '审批状态') console.log('审批状态变更：' + value);",
+          "createdAt": "2026-08-06T00:00:00.000Z",
+          "enabled": true,
+          "event": "fieldChange",
+          "id": "enroll-status-check",
+          "name": "审批状态变更留痕",
+          "priority": 0,
+          "updatedAt": "2026-08-06T00:00:00.000Z"
+        }
+      ],
+      "sheetName": "报名记录",
+      "tableId": "enrollments",
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ]
+}

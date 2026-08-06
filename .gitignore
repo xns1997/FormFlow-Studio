@@ -36,6 +36,7 @@ output/
 docs/compose/
 .playwright-cli/
 .claude/
+# 会话生成的临时演示项目不入库；官方演示包（retail/clinic/training/construction 等）按名称正常跟踪。
 projects/data/proj_*.formflow/
 projects/data/device_*.formflow/
 projects/data/employee_management_demo.formflow/

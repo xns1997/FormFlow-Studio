@@ -1,0 +1,12 @@
+{
+  "exportedAt": "2026-08-06T00:00:00.000Z",
+  "outputs": [
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "format": "xlsx",
+      "id": "sale-stat-export",
+      "name": "销售统计导出",
+      "size": 0
+    }
+  ]
+}

@@ -1,0 +1,306 @@
+{
+  "bindings": [],
+  "components": [
+    {
+      "fieldBinding": "进度ID",
+      "height": 72,
+      "id": "pro-id",
+      "props": {
+        "label": "进度ID",
+        "name": "进度ID",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 60,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "项目ID",
+      "height": 72,
+      "id": "pro-project",
+      "props": {
+        "label": "项目ID",
+        "name": "项目ID",
+        "options": [
+          {
+            "label": "PRJ0001",
+            "value": "PRJ0001"
+          },
+          {
+            "label": "PRJ0002",
+            "value": "PRJ0002"
+          },
+          {
+            "label": "PRJ0003",
+            "value": "PRJ0003"
+          },
+          {
+            "label": "PRJ0004",
+            "value": "PRJ0004"
+          },
+          {
+            "label": "PRJ0005",
+            "value": "PRJ0005"
+          },
+          {
+            "label": "PRJ0006",
+            "value": "PRJ0006"
+          },
+          {
+            "label": "PRJ0007",
+            "value": "PRJ0007"
+          },
+          {
+            "label": "PRJ0008",
+            "value": "PRJ0008"
+          },
+          {
+            "label": "PRJ0009",
+            "value": "PRJ0009"
+          },
+          {
+            "label": "PRJ0010",
+            "value": "PRJ0010"
+          },
+          {
+            "label": "PRJ0011",
+            "value": "PRJ0011"
+          },
+          {
+            "label": "PRJ0012",
+            "value": "PRJ0012"
+          },
+          {
+            "label": "PRJ0013",
+            "value": "PRJ0013"
+          },
+          {
+            "label": "PRJ0014",
+            "value": "PRJ0014"
+          },
+          {
+            "label": "PRJ0015",
+            "value": "PRJ0015"
+          },
+          {
+            "label": "PRJ0016",
+            "value": "PRJ0016"
+          },
+          {
+            "label": "PRJ0017",
+            "value": "PRJ0017"
+          },
+          {
+            "label": "PRJ0018",
+            "value": "PRJ0018"
+          },
+          {
+            "label": "PRJ0019",
+            "value": "PRJ0019"
+          },
+          {
+            "label": "PRJ0020",
+            "value": "PRJ0020"
+          },
+          {
+            "label": "PRJ0021",
+            "value": "PRJ0021"
+          },
+          {
+            "label": "PRJ0022",
+            "value": "PRJ0022"
+          },
+          {
+            "label": "PRJ0023",
+            "value": "PRJ0023"
+          },
+          {
+            "label": "PRJ0024",
+            "value": "PRJ0024"
+          },
+          {
+            "label": "PRJ0025",
+            "value": "PRJ0025"
+          },
+          {
+            "label": "PRJ0026",
+            "value": "PRJ0026"
+          },
+          {
+            "label": "PRJ0027",
+            "value": "PRJ0027"
+          },
+          {
+            "label": "PRJ0028",
+            "value": "PRJ0028"
+          },
+          {
+            "label": "PRJ0029",
+            "value": "PRJ0029"
+          },
+          {
+            "label": "PRJ0030",
+            "value": "PRJ0030"
+          }
+        ],
+        "required": true
+      },
+      "type": "select",
+      "width": 260,
+      "x": 360,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "上报日期",
+      "height": 72,
+      "id": "pro-date",
+      "props": {
+        "label": "上报日期",
+        "name": "上报日期",
+        "required": true
+      },
+      "type": "datePicker",
+      "width": 260,
+      "x": 660,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "完成百分比",
+      "height": 72,
+      "id": "pro-percent",
+      "props": {
+        "label": "完成百分比",
+        "name": "完成百分比",
+        "required": true
+      },
+      "type": "number",
+      "width": 260,
+      "x": 60,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "本期完成内容",
+      "height": 72,
+      "id": "pro-content",
+      "props": {
+        "label": "本期完成内容",
+        "name": "本期完成内容",
+        "required": true
+      },
+      "type": "textarea",
+      "width": 260,
+      "x": 360,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "问题风险",
+      "height": 72,
+      "id": "pro-risk",
+      "props": {
+        "label": "问题风险",
+        "name": "问题风险"
+      },
+      "type": "textarea",
+      "width": 260,
+      "x": 660,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "验收结果",
+      "height": 72,
+      "id": "pro-accept",
+      "props": {
+        "label": "验收结果",
+        "name": "验收结果",
+        "options": [
+          {
+            "label": "待验收",
+            "value": "待验收"
+          },
+          {
+            "label": "已验收",
+            "value": "已验收"
+          },
+          {
+            "label": "验收不通过",
+            "value": "验收不通过"
+          }
+        ]
+      },
+      "type": "select",
+      "width": 260,
+      "x": 60,
+      "y": 260,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "上报人",
+      "height": 72,
+      "id": "pro-reporter",
+      "props": {
+        "label": "上报人",
+        "name": "上报人",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 360,
+      "y": 260,
+      "zIndex": 2
+    },
+    {
+      "height": 48,
+      "id": "pro-submit",
+      "props": {
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "progress-acceptance"
+          }
+        },
+        "label": "提交进度",
+        "name": "提交进度"
+      },
+      "type": "button",
+      "width": 260,
+      "x": 660,
+      "y": 260,
+      "zIndex": 2
+    }
+  ],
+  "coordinateSpace": "window-content-v1",
+  "createdAt": "2026-08-06T00:00:00.000Z",
+  "formMode": "create",
+  "formWindow": {
+    "height": 700,
+    "props": {
+      "background": "#ffffff",
+      "borderRadius": 12,
+      "padding": 24,
+      "resetText": "重置",
+      "showFooter": false,
+      "submitText": "提交",
+      "subtitle": "",
+      "title": "进度上报"
+    },
+    "width": 980,
+    "x": 40,
+    "y": 40
+  },
+  "gridSize": 10,
+  "id": "progress-report",
+  "name": "进度上报",
+  "updatedAt": "2026-08-06T00:00:00.000Z",
+  "viewport": {
+    "panX": 0,
+    "panY": 0,
+    "zoom": 1
+  }
+}

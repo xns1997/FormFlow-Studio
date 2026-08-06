@@ -1,0 +1,311 @@
+{
+  "bindings": [],
+  "components": [
+    {
+      "fieldBinding": "合同ID",
+      "height": 72,
+      "id": "con-id",
+      "props": {
+        "label": "合同ID",
+        "name": "合同ID",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 60,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "项目ID",
+      "height": 72,
+      "id": "con-project",
+      "props": {
+        "label": "项目ID",
+        "name": "项目ID",
+        "options": [
+          {
+            "label": "PRJ0001",
+            "value": "PRJ0001"
+          },
+          {
+            "label": "PRJ0002",
+            "value": "PRJ0002"
+          },
+          {
+            "label": "PRJ0003",
+            "value": "PRJ0003"
+          },
+          {
+            "label": "PRJ0004",
+            "value": "PRJ0004"
+          },
+          {
+            "label": "PRJ0005",
+            "value": "PRJ0005"
+          },
+          {
+            "label": "PRJ0006",
+            "value": "PRJ0006"
+          },
+          {
+            "label": "PRJ0007",
+            "value": "PRJ0007"
+          },
+          {
+            "label": "PRJ0008",
+            "value": "PRJ0008"
+          },
+          {
+            "label": "PRJ0009",
+            "value": "PRJ0009"
+          },
+          {
+            "label": "PRJ0010",
+            "value": "PRJ0010"
+          },
+          {
+            "label": "PRJ0011",
+            "value": "PRJ0011"
+          },
+          {
+            "label": "PRJ0012",
+            "value": "PRJ0012"
+          },
+          {
+            "label": "PRJ0013",
+            "value": "PRJ0013"
+          },
+          {
+            "label": "PRJ0014",
+            "value": "PRJ0014"
+          },
+          {
+            "label": "PRJ0015",
+            "value": "PRJ0015"
+          },
+          {
+            "label": "PRJ0016",
+            "value": "PRJ0016"
+          },
+          {
+            "label": "PRJ0017",
+            "value": "PRJ0017"
+          },
+          {
+            "label": "PRJ0018",
+            "value": "PRJ0018"
+          },
+          {
+            "label": "PRJ0019",
+            "value": "PRJ0019"
+          },
+          {
+            "label": "PRJ0020",
+            "value": "PRJ0020"
+          },
+          {
+            "label": "PRJ0021",
+            "value": "PRJ0021"
+          },
+          {
+            "label": "PRJ0022",
+            "value": "PRJ0022"
+          },
+          {
+            "label": "PRJ0023",
+            "value": "PRJ0023"
+          },
+          {
+            "label": "PRJ0024",
+            "value": "PRJ0024"
+          },
+          {
+            "label": "PRJ0025",
+            "value": "PRJ0025"
+          },
+          {
+            "label": "PRJ0026",
+            "value": "PRJ0026"
+          },
+          {
+            "label": "PRJ0027",
+            "value": "PRJ0027"
+          },
+          {
+            "label": "PRJ0028",
+            "value": "PRJ0028"
+          },
+          {
+            "label": "PRJ0029",
+            "value": "PRJ0029"
+          },
+          {
+            "label": "PRJ0030",
+            "value": "PRJ0030"
+          }
+        ],
+        "required": true
+      },
+      "type": "select",
+      "width": 260,
+      "x": 360,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "合同名称",
+      "height": 72,
+      "id": "con-name",
+      "props": {
+        "label": "合同名称",
+        "name": "合同名称",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 660,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "合同方",
+      "height": 72,
+      "id": "con-party",
+      "props": {
+        "label": "合同方",
+        "name": "合同方",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 60,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "合同金额",
+      "height": 72,
+      "id": "con-amount",
+      "props": {
+        "label": "合同金额",
+        "name": "合同金额",
+        "required": true
+      },
+      "type": "number",
+      "width": 260,
+      "x": 360,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "签订日期",
+      "height": 72,
+      "id": "con-sign",
+      "props": {
+        "label": "签订日期",
+        "name": "签订日期",
+        "required": true
+      },
+      "type": "datePicker",
+      "width": 260,
+      "x": 660,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "生效日期",
+      "height": 72,
+      "id": "con-effect",
+      "props": {
+        "label": "生效日期",
+        "name": "生效日期",
+        "required": true
+      },
+      "type": "datePicker",
+      "width": 260,
+      "x": 60,
+      "y": 260,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "合同状态",
+      "height": 72,
+      "id": "con-status",
+      "props": {
+        "label": "合同状态",
+        "name": "合同状态",
+        "options": [
+          {
+            "label": "草拟",
+            "value": "草拟"
+          },
+          {
+            "label": "待审批",
+            "value": "待审批"
+          },
+          {
+            "label": "已生效",
+            "value": "已生效"
+          },
+          {
+            "label": "已归档",
+            "value": "已归档"
+          }
+        ]
+      },
+      "type": "select",
+      "width": 260,
+      "x": 360,
+      "y": 260,
+      "zIndex": 2
+    },
+    {
+      "height": 48,
+      "id": "con-submit",
+      "props": {
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "contract-approval"
+          }
+        },
+        "label": "提交合同审批",
+        "name": "提交合同审批"
+      },
+      "type": "button",
+      "width": 260,
+      "x": 660,
+      "y": 260,
+      "zIndex": 2
+    }
+  ],
+  "coordinateSpace": "window-content-v1",
+  "createdAt": "2026-08-06T00:00:00.000Z",
+  "formMode": "create",
+  "formWindow": {
+    "height": 700,
+    "props": {
+      "background": "#ffffff",
+      "borderRadius": 12,
+      "padding": 24,
+      "resetText": "重置",
+      "showFooter": false,
+      "submitText": "提交",
+      "subtitle": "",
+      "title": "合同登记"
+    },
+    "width": 980,
+    "x": 40,
+    "y": 40
+  },
+  "gridSize": 10,
+  "id": "contract-entry",
+  "name": "合同登记",
+  "updatedAt": "2026-08-06T00:00:00.000Z",
+  "viewport": {
+    "panX": 0,
+    "panY": 0,
+    "zoom": 1
+  }
+}

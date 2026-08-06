@@ -1,0 +1,36 @@
+{
+  "sources": [
+    {
+      "behaviorsFile": "inventory.behaviors.json",
+      "fileName": "retail-inventory.json",
+      "fileType": "json",
+      "id": "inventory",
+      "metaFile": "inventory.meta.json",
+      "uploadedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "behaviorsFile": "products.behaviors.json",
+      "fileName": "retail-products.json",
+      "fileType": "json",
+      "id": "products",
+      "metaFile": "products.meta.json",
+      "uploadedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "behaviorsFile": "sales.behaviors.json",
+      "fileName": "retail-sales.json",
+      "fileType": "json",
+      "id": "sales",
+      "metaFile": "sales.meta.json",
+      "uploadedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "behaviorsFile": "stores.behaviors.json",
+      "fileName": "retail-stores.json",
+      "fileType": "json",
+      "id": "stores",
+      "metaFile": "stores.meta.json",
+      "uploadedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ]
+}

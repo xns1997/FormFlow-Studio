@@ -1,0 +1,384 @@
+{
+  "bindings": [],
+  "components": [
+    {
+      "fieldBinding": "学员ID",
+      "height": 72,
+      "id": "att-student",
+      "props": {
+        "label": "学员ID",
+        "name": "学员ID",
+        "options": [
+          {
+            "label": "S0001",
+            "value": "S0001"
+          },
+          {
+            "label": "S0002",
+            "value": "S0002"
+          },
+          {
+            "label": "S0003",
+            "value": "S0003"
+          },
+          {
+            "label": "S0004",
+            "value": "S0004"
+          },
+          {
+            "label": "S0005",
+            "value": "S0005"
+          },
+          {
+            "label": "S0006",
+            "value": "S0006"
+          },
+          {
+            "label": "S0007",
+            "value": "S0007"
+          },
+          {
+            "label": "S0008",
+            "value": "S0008"
+          },
+          {
+            "label": "S0009",
+            "value": "S0009"
+          },
+          {
+            "label": "S0010",
+            "value": "S0010"
+          },
+          {
+            "label": "S0011",
+            "value": "S0011"
+          },
+          {
+            "label": "S0012",
+            "value": "S0012"
+          },
+          {
+            "label": "S0013",
+            "value": "S0013"
+          },
+          {
+            "label": "S0014",
+            "value": "S0014"
+          },
+          {
+            "label": "S0015",
+            "value": "S0015"
+          },
+          {
+            "label": "S0016",
+            "value": "S0016"
+          },
+          {
+            "label": "S0017",
+            "value": "S0017"
+          },
+          {
+            "label": "S0018",
+            "value": "S0018"
+          },
+          {
+            "label": "S0019",
+            "value": "S0019"
+          },
+          {
+            "label": "S0020",
+            "value": "S0020"
+          },
+          {
+            "label": "S0021",
+            "value": "S0021"
+          },
+          {
+            "label": "S0022",
+            "value": "S0022"
+          },
+          {
+            "label": "S0023",
+            "value": "S0023"
+          },
+          {
+            "label": "S0024",
+            "value": "S0024"
+          },
+          {
+            "label": "S0025",
+            "value": "S0025"
+          },
+          {
+            "label": "S0026",
+            "value": "S0026"
+          },
+          {
+            "label": "S0027",
+            "value": "S0027"
+          },
+          {
+            "label": "S0028",
+            "value": "S0028"
+          },
+          {
+            "label": "S0029",
+            "value": "S0029"
+          },
+          {
+            "label": "S0030",
+            "value": "S0030"
+          }
+        ],
+        "required": true
+      },
+      "type": "select",
+      "width": 260,
+      "x": 60,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "课程ID",
+      "height": 72,
+      "id": "att-course",
+      "props": {
+        "label": "课程ID",
+        "name": "课程ID",
+        "options": [
+          {
+            "label": "C0001",
+            "value": "C0001"
+          },
+          {
+            "label": "C0002",
+            "value": "C0002"
+          },
+          {
+            "label": "C0003",
+            "value": "C0003"
+          },
+          {
+            "label": "C0004",
+            "value": "C0004"
+          },
+          {
+            "label": "C0005",
+            "value": "C0005"
+          },
+          {
+            "label": "C0006",
+            "value": "C0006"
+          },
+          {
+            "label": "C0007",
+            "value": "C0007"
+          },
+          {
+            "label": "C0008",
+            "value": "C0008"
+          },
+          {
+            "label": "C0009",
+            "value": "C0009"
+          },
+          {
+            "label": "C0010",
+            "value": "C0010"
+          },
+          {
+            "label": "C0011",
+            "value": "C0011"
+          },
+          {
+            "label": "C0012",
+            "value": "C0012"
+          },
+          {
+            "label": "C0013",
+            "value": "C0013"
+          },
+          {
+            "label": "C0014",
+            "value": "C0014"
+          },
+          {
+            "label": "C0015",
+            "value": "C0015"
+          },
+          {
+            "label": "C0016",
+            "value": "C0016"
+          },
+          {
+            "label": "C0017",
+            "value": "C0017"
+          },
+          {
+            "label": "C0018",
+            "value": "C0018"
+          },
+          {
+            "label": "C0019",
+            "value": "C0019"
+          },
+          {
+            "label": "C0020",
+            "value": "C0020"
+          },
+          {
+            "label": "C0021",
+            "value": "C0021"
+          },
+          {
+            "label": "C0022",
+            "value": "C0022"
+          },
+          {
+            "label": "C0023",
+            "value": "C0023"
+          },
+          {
+            "label": "C0024",
+            "value": "C0024"
+          },
+          {
+            "label": "C0025",
+            "value": "C0025"
+          },
+          {
+            "label": "C0026",
+            "value": "C0026"
+          },
+          {
+            "label": "C0027",
+            "value": "C0027"
+          },
+          {
+            "label": "C0028",
+            "value": "C0028"
+          },
+          {
+            "label": "C0029",
+            "value": "C0029"
+          },
+          {
+            "label": "C0030",
+            "value": "C0030"
+          }
+        ],
+        "required": true
+      },
+      "type": "select",
+      "width": 260,
+      "x": 360,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "上课日期",
+      "height": 72,
+      "id": "att-date",
+      "props": {
+        "label": "上课日期",
+        "name": "上课日期",
+        "required": true
+      },
+      "type": "datePicker",
+      "width": 260,
+      "x": 660,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "出勤状态",
+      "height": 72,
+      "id": "att-status",
+      "props": {
+        "label": "出勤状态",
+        "name": "出勤状态",
+        "options": [
+          {
+            "label": "出勤",
+            "value": "出勤"
+          },
+          {
+            "label": "缺勤",
+            "value": "缺勤"
+          },
+          {
+            "label": "请假",
+            "value": "请假"
+          }
+        ],
+        "required": true
+      },
+      "type": "select",
+      "width": 260,
+      "x": 60,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "请假原因",
+      "height": 72,
+      "id": "att-leave",
+      "props": {
+        "label": "请假原因",
+        "name": "请假原因"
+      },
+      "type": "textarea",
+      "width": 260,
+      "x": 360,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "height": 48,
+      "id": "att-submit",
+      "props": {
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "attendance-save-flow"
+          }
+        },
+        "label": "保存考勤",
+        "name": "保存考勤"
+      },
+      "type": "button",
+      "width": 260,
+      "x": 660,
+      "y": 160,
+      "zIndex": 2
+    }
+  ],
+  "coordinateSpace": "window-content-v1",
+  "createdAt": "2026-08-06T00:00:00.000Z",
+  "formMode": "create",
+  "formWindow": {
+    "height": 700,
+    "props": {
+      "background": "#ffffff",
+      "borderRadius": 12,
+      "padding": 24,
+      "resetText": "重置",
+      "showFooter": false,
+      "submitText": "提交",
+      "subtitle": "",
+      "title": "考勤批量录入"
+    },
+    "width": 980,
+    "x": 40,
+    "y": 40
+  },
+  "gridSize": 10,
+  "id": "attendance-batch",
+  "name": "考勤批量录入",
+  "updatedAt": "2026-08-06T00:00:00.000Z",
+  "viewport": {
+    "panX": 0,
+    "panY": 0,
+    "zoom": 1
+  }
+}

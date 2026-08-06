@@ -1,0 +1,8 @@
+{
+  "allowBehaviorEditor": true,
+  "allowDesigner": true,
+  "allowWorkflowEditor": true,
+  "defaultFormId": "student-create",
+  "defaultSheet": "学员档案",
+  "mode": "design"
+}

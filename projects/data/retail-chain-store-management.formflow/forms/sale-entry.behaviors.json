@@ -1,0 +1,25 @@
+{
+  "behaviors": [
+    {
+      "code": "if (字段 === '数量' || 字段 === '单价') { const q = getValue('数量'), p = getValue('单价'); if (q && p) setValue('金额', q * p); }",
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "enabled": true,
+      "event": "fieldChange",
+      "id": "amount-calc",
+      "name": "金额自动计算",
+      "priority": 0,
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "code": "if (字段 === '数量' && !value) showMessage('数量不能为空', 'error');",
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "enabled": true,
+      "event": "fieldChange",
+      "id": "qty-validate",
+      "name": "数量必填校验",
+      "priority": 0,
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ],
+  "ruleCode": "before submit -> require($销售单号, $门店编号, $商品编码, $数量, $单价)\nwhen $数量 < 1 -> message(\"数量必须为正数\", error)\n"
+}

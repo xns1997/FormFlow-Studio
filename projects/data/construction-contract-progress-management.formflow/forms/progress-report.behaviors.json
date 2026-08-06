@@ -1,0 +1,15 @@
+{
+  "behaviors": [
+    {
+      "code": "if (字段 === '完成百分比' && (value < 0 || value > 100)) showMessage('完成百分比必须在 0-100 之间', 'error');",
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "enabled": true,
+      "event": "fieldChange",
+      "id": "pro-percent-check",
+      "name": "完成百分比范围校验",
+      "priority": 0,
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ],
+  "ruleCode": "before submit -> require($进度ID, $项目ID, $上报日期, $完成百分比, $本期完成内容, $上报人)\nwhen $完成百分比 > 100 -> message(\"完成百分比不能超过 100\", error)\n"
+}

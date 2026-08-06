@@ -1,0 +1,15 @@
+{
+  "behaviors": [
+    {
+      "code": "if (字段 === '出勤状态' && value === '请假' && !getValue('请假原因')) showMessage('请假必须填写原因', 'error');",
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "enabled": true,
+      "event": "fieldChange",
+      "id": "att-leave-check",
+      "name": "请假原因必填校验",
+      "priority": 0,
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ],
+  "ruleCode": "before submit -> require($学员ID, $课程ID, $上课日期, $出勤状态)\nwhen $出勤状态 == \"请假\" -> require($请假原因)\n"
+}

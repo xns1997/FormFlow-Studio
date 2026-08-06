@@ -1,0 +1,40 @@
+{
+  "defaultFormId": "student-create",
+  "forms": [
+    {
+      "behaviorsFileName": "attendance-batch.behaviors.json",
+      "fileName": "attendance-batch.json",
+      "formMode": "create",
+      "id": "attendance-batch",
+      "name": "考勤批量录入"
+    },
+    {
+      "behaviorsFileName": "course-maintain.behaviors.json",
+      "fileName": "course-maintain.json",
+      "formMode": "edit",
+      "id": "course-maintain",
+      "name": "课程维护"
+    },
+    {
+      "behaviorsFileName": "enrollment-entry.behaviors.json",
+      "fileName": "enrollment-entry.json",
+      "formMode": "create",
+      "id": "enrollment-entry",
+      "name": "报名登记"
+    },
+    {
+      "behaviorsFileName": "score-query.behaviors.json",
+      "fileName": "score-query.json",
+      "formMode": "detail",
+      "id": "score-query",
+      "name": "考勤成绩查询"
+    },
+    {
+      "behaviorsFileName": "student-create.behaviors.json",
+      "fileName": "student-create.json",
+      "formMode": "create",
+      "id": "student-create",
+      "name": "学员建档"
+    }
+  ]
+}

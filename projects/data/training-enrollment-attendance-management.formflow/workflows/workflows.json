@@ -1,0 +1,314 @@
+{
+  "exportedAt": "2026-08-06T00:00:00.000Z",
+  "workflows": [
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "学员档案写回",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "student-save-flow",
+      "name": "学员档案保存",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"student\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "课程信息写回",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "course-save-flow",
+      "name": "课程信息保存",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"course\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "学员报名审批流转",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "e2",
+          "source": "n2",
+          "sourceHandle": "out:trueBranch",
+          "target": "n3",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "enrollment-approval",
+      "name": "报名审批流程",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"enrollment\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "generic:condition-branch",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n3",
+          "position": {
+            "x": 680,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "考勤记录写回",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "attendance-save-flow",
+      "name": "考勤记录保存",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"attendance\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "按学员课程查询考勤",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "e2",
+          "source": "n2",
+          "sourceHandle": "out:rows",
+          "target": "n3",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "attendance-query-flow",
+      "name": "考勤查询流程",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"criteria\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "generic:criteria-filter",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n3",
+          "position": {
+            "x": 680,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "按课程汇总出勤率",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "e2",
+          "source": "n2",
+          "sourceHandle": "out:result",
+          "target": "n3",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "attendance-summary-flow",
+      "name": "考勤汇总流程",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"dimension\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{\"dimensions\":[\"课程ID\"],\"metrics\":[\"考勤ID\"]}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "data:group-aggregate",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n3",
+          "position": {
+            "x": 680,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ]
+}

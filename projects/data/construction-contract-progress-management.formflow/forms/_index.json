@@ -1,0 +1,40 @@
+{
+  "defaultFormId": "project-create",
+  "forms": [
+    {
+      "behaviorsFileName": "contract-approval.behaviors.json",
+      "fileName": "contract-approval.json",
+      "formMode": "edit",
+      "id": "contract-approval",
+      "name": "合同审批"
+    },
+    {
+      "behaviorsFileName": "contract-entry.behaviors.json",
+      "fileName": "contract-entry.json",
+      "formMode": "create",
+      "id": "contract-entry",
+      "name": "合同登记"
+    },
+    {
+      "behaviorsFileName": "progress-report.behaviors.json",
+      "fileName": "progress-report.json",
+      "formMode": "create",
+      "id": "progress-report",
+      "name": "进度上报"
+    },
+    {
+      "behaviorsFileName": "project-create.behaviors.json",
+      "fileName": "project-create.json",
+      "formMode": "create",
+      "id": "project-create",
+      "name": "项目建档"
+    },
+    {
+      "behaviorsFileName": "project-dashboard.behaviors.json",
+      "fileName": "project-dashboard.json",
+      "formMode": "detail",
+      "id": "project-dashboard",
+      "name": "项目看板"
+    }
+  ]
+}

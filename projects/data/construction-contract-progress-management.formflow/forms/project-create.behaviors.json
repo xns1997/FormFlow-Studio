@@ -1,0 +1,15 @@
+{
+  "behaviors": [
+    {
+      "code": "if (字段 === '计划结束日期' && value && 计划开始日期 && value < 计划开始日期) showMessage('计划结束日期不能早于开始日期', 'error');",
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "enabled": true,
+      "event": "fieldChange",
+      "id": "prj-date-check",
+      "name": "计划日期先后校验",
+      "priority": 0,
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ],
+  "ruleCode": "before submit -> require($项目ID, $项目名称, $项目类型, $项目经理, $预算金额)\nwhen $预算金额 <= 0 -> message(\"预算金额必须大于 0\", error)\n"
+}

@@ -1,0 +1,212 @@
+{
+  "bindings": [],
+  "components": [
+    {
+      "fieldBinding": "学员ID",
+      "height": 72,
+      "id": "stu-id",
+      "props": {
+        "label": "学员ID",
+        "name": "学员ID",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 60,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "姓名",
+      "height": 72,
+      "id": "stu-name",
+      "props": {
+        "label": "姓名",
+        "name": "姓名",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 360,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "性别",
+      "height": 72,
+      "id": "stu-gender",
+      "props": {
+        "label": "性别",
+        "name": "性别",
+        "options": [
+          {
+            "label": "男",
+            "value": "男"
+          },
+          {
+            "label": "女",
+            "value": "女"
+          }
+        ],
+        "required": true
+      },
+      "type": "select",
+      "width": 260,
+      "x": 660,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "年龄",
+      "height": 72,
+      "id": "stu-age",
+      "props": {
+        "label": "年龄",
+        "name": "年龄",
+        "required": true
+      },
+      "type": "number",
+      "width": 260,
+      "x": 60,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "手机号",
+      "height": 72,
+      "id": "stu-phone",
+      "props": {
+        "label": "手机号",
+        "name": "手机号",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 360,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "报名渠道",
+      "height": 72,
+      "id": "stu-channel",
+      "props": {
+        "label": "报名渠道",
+        "name": "报名渠道",
+        "options": [
+          {
+            "label": "线上广告",
+            "value": "线上广告"
+          },
+          {
+            "label": "老带新",
+            "value": "老带新"
+          },
+          {
+            "label": "门店咨询",
+            "value": "门店咨询"
+          },
+          {
+            "label": "地推",
+            "value": "地推"
+          }
+        ]
+      },
+      "type": "select",
+      "width": 260,
+      "x": 660,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "建档日期",
+      "height": 72,
+      "id": "stu-date",
+      "props": {
+        "label": "建档日期",
+        "name": "建档日期",
+        "required": true
+      },
+      "type": "datePicker",
+      "width": 260,
+      "x": 60,
+      "y": 260,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "状态",
+      "height": 72,
+      "id": "stu-status",
+      "props": {
+        "label": "状态",
+        "name": "状态",
+        "options": [
+          {
+            "label": "在读",
+            "value": "在读"
+          },
+          {
+            "label": "结业",
+            "value": "结业"
+          },
+          {
+            "label": "退学",
+            "value": "退学"
+          }
+        ]
+      },
+      "type": "select",
+      "width": 260,
+      "x": 360,
+      "y": 260,
+      "zIndex": 2
+    },
+    {
+      "height": 48,
+      "id": "save-student",
+      "props": {
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "student-save-flow"
+          }
+        },
+        "label": "保存学员",
+        "name": "保存学员"
+      },
+      "type": "button",
+      "width": 260,
+      "x": 660,
+      "y": 260,
+      "zIndex": 2
+    }
+  ],
+  "coordinateSpace": "window-content-v1",
+  "createdAt": "2026-08-06T00:00:00.000Z",
+  "formMode": "create",
+  "formWindow": {
+    "height": 640,
+    "props": {
+      "background": "#ffffff",
+      "borderRadius": 12,
+      "padding": 24,
+      "resetText": "重置",
+      "showFooter": false,
+      "submitText": "提交",
+      "subtitle": "",
+      "title": "学员建档"
+    },
+    "width": 980,
+    "x": 40,
+    "y": 40
+  },
+  "gridSize": 10,
+  "id": "student-create",
+  "name": "学员建档",
+  "updatedAt": "2026-08-06T00:00:00.000Z",
+  "viewport": {
+    "panX": 0,
+    "panY": 0,
+    "zoom": 1
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "behaviors": [
+    {
+      "code": "if (字段 === '手机号' && value && !/^1\\d{10}$/.test(value)) showMessage('手机号格式不正确', 'error');",
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "enabled": true,
+      "event": "fieldChange",
+      "id": "pat-phone-check",
+      "name": "手机号格式校验",
+      "priority": 0,
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ],
+  "ruleCode": "before submit -> require($患者ID, $姓名, $性别, $年龄, $手机号, $建档日期)\n"
+}

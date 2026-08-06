@@ -1,0 +1,4 @@
+{
+  "behaviors": [],
+  "ruleCode": "before submit -> require($审批人, $审批结果)\n"
+}

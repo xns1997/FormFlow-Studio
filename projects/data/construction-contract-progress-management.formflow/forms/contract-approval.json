@@ -1,0 +1,121 @@
+{
+  "bindings": [],
+  "components": [
+    {
+      "fieldBinding": "合同ID",
+      "height": 72,
+      "id": "con-id-approval",
+      "props": {
+        "label": "合同ID",
+        "name": "合同ID",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 60,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "审批人",
+      "height": 72,
+      "id": "con-approver",
+      "props": {
+        "label": "审批人",
+        "name": "审批人",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 360,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "审批意见",
+      "height": 72,
+      "id": "con-opinion",
+      "props": {
+        "label": "审批意见",
+        "name": "审批意见"
+      },
+      "type": "textarea",
+      "width": 260,
+      "x": 660,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "审批结果",
+      "height": 72,
+      "id": "con-result",
+      "props": {
+        "label": "审批结果",
+        "name": "审批结果",
+        "options": [
+          {
+            "label": "通过",
+            "value": "通过"
+          },
+          {
+            "label": "驳回",
+            "value": "驳回"
+          }
+        ],
+        "required": true
+      },
+      "type": "select",
+      "width": 260,
+      "x": 60,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "height": 48,
+      "id": "con-approval-submit",
+      "props": {
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "contract-approval"
+          }
+        },
+        "label": "提交审批",
+        "name": "提交审批"
+      },
+      "type": "button",
+      "width": 260,
+      "x": 360,
+      "y": 160,
+      "zIndex": 2
+    }
+  ],
+  "coordinateSpace": "window-content-v1",
+  "createdAt": "2026-08-06T00:00:00.000Z",
+  "formMode": "edit",
+  "formWindow": {
+    "height": 640,
+    "props": {
+      "background": "#ffffff",
+      "borderRadius": 12,
+      "padding": 24,
+      "resetText": "重置",
+      "showFooter": false,
+      "submitText": "提交",
+      "subtitle": "",
+      "title": "合同审批"
+    },
+    "width": 980,
+    "x": 40,
+    "y": 40
+  },
+  "gridSize": 10,
+  "id": "contract-approval",
+  "name": "合同审批",
+  "updatedAt": "2026-08-06T00:00:00.000Z",
+  "viewport": {
+    "panX": 0,
+    "panY": 0,
+    "zoom": 1
+  }
+}

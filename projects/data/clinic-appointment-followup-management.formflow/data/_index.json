@@ -1,0 +1,28 @@
+{
+  "sources": [
+    {
+      "behaviorsFile": "appointments.behaviors.json",
+      "fileName": "clinic-appointments.json",
+      "fileType": "json",
+      "id": "appointments",
+      "metaFile": "appointments.meta.json",
+      "uploadedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "behaviorsFile": "followups.behaviors.json",
+      "fileName": "clinic-followups.json",
+      "fileType": "json",
+      "id": "followups",
+      "metaFile": "followups.meta.json",
+      "uploadedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "behaviorsFile": "patients.behaviors.json",
+      "fileName": "clinic-patients.json",
+      "fileType": "json",
+      "id": "patients",
+      "metaFile": "patients.meta.json",
+      "uploadedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ]
+}

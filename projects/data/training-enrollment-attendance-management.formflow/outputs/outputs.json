@@ -1,0 +1,12 @@
+{
+  "exportedAt": "2026-08-06T00:00:00.000Z",
+  "outputs": [
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "format": "xlsx",
+      "id": "attendance-summary-export",
+      "name": "考勤汇总导出",
+      "size": 0
+    }
+  ]
+}

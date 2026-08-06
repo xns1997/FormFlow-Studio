@@ -1,0 +1,36 @@
+{
+  "sources": [
+    {
+      "behaviorsFile": "attendance.behaviors.json",
+      "fileName": "training-attendance.json",
+      "fileType": "json",
+      "id": "attendance",
+      "metaFile": "attendance.meta.json",
+      "uploadedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "behaviorsFile": "courses.behaviors.json",
+      "fileName": "training-courses.json",
+      "fileType": "json",
+      "id": "courses",
+      "metaFile": "courses.meta.json",
+      "uploadedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "behaviorsFile": "enrollments.behaviors.json",
+      "fileName": "training-enrollments.json",
+      "fileType": "json",
+      "id": "enrollments",
+      "metaFile": "enrollments.meta.json",
+      "uploadedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "behaviorsFile": "students.behaviors.json",
+      "fileName": "training-students.json",
+      "fileType": "json",
+      "id": "students",
+      "metaFile": "students.meta.json",
+      "uploadedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ]
+}

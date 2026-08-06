@@ -1,0 +1,8 @@
+{
+  "allowBehaviorEditor": true,
+  "allowDesigner": true,
+  "allowWorkflowEditor": true,
+  "defaultFormId": "sale-entry",
+  "defaultSheet": "销售明细",
+  "mode": "design"
+}

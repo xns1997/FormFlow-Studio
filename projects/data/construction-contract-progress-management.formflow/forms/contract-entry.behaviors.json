@@ -1,0 +1,15 @@
+{
+  "behaviors": [
+    {
+      "code": "if (字段 === '合同金额' && value <= 0) showMessage('合同金额必须大于 0', 'error');",
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "enabled": true,
+      "event": "fieldChange",
+      "id": "con-amount-check",
+      "name": "合同金额校验",
+      "priority": 0,
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ],
+  "ruleCode": "before submit -> require($合同ID, $项目ID, $合同名称, $合同方, $合同金额, $签订日期)\nwhen $合同状态 == \"待审批\" -> message(\"待审批合同需走合同审批流程\", warning)\n"
+}

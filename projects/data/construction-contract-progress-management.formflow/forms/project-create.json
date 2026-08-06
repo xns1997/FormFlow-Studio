@@ -1,0 +1,226 @@
+{
+  "bindings": [],
+  "components": [
+    {
+      "fieldBinding": "项目ID",
+      "height": 72,
+      "id": "prj-id",
+      "props": {
+        "label": "项目ID",
+        "name": "项目ID",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 60,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "项目名称",
+      "height": 72,
+      "id": "prj-name",
+      "props": {
+        "label": "项目名称",
+        "name": "项目名称",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 360,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "项目类型",
+      "height": 72,
+      "id": "prj-type",
+      "props": {
+        "label": "项目类型",
+        "name": "项目类型",
+        "options": [
+          {
+            "label": "住宅",
+            "value": "住宅"
+          },
+          {
+            "label": "商业",
+            "value": "商业"
+          },
+          {
+            "label": "市政",
+            "value": "市政"
+          },
+          {
+            "label": "工业",
+            "value": "工业"
+          },
+          {
+            "label": "教育",
+            "value": "教育"
+          }
+        ],
+        "required": true
+      },
+      "type": "select",
+      "width": 260,
+      "x": 660,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "项目经理",
+      "height": 72,
+      "id": "prj-manager",
+      "props": {
+        "label": "项目经理",
+        "name": "项目经理",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 60,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "项目地点",
+      "height": 72,
+      "id": "prj-loc",
+      "props": {
+        "label": "项目地点",
+        "name": "项目地点",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 360,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "计划开始日期",
+      "height": 72,
+      "id": "prj-start",
+      "props": {
+        "label": "计划开始日期",
+        "name": "计划开始日期",
+        "required": true
+      },
+      "type": "datePicker",
+      "width": 260,
+      "x": 660,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "计划结束日期",
+      "height": 72,
+      "id": "prj-end",
+      "props": {
+        "label": "计划结束日期",
+        "name": "计划结束日期",
+        "required": true
+      },
+      "type": "datePicker",
+      "width": 260,
+      "x": 60,
+      "y": 260,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "预算金额",
+      "height": 72,
+      "id": "prj-budget",
+      "props": {
+        "label": "预算金额",
+        "name": "预算金额",
+        "required": true
+      },
+      "type": "number",
+      "width": 260,
+      "x": 360,
+      "y": 260,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "状态",
+      "height": 72,
+      "id": "prj-status",
+      "props": {
+        "label": "状态",
+        "name": "状态",
+        "options": [
+          {
+            "label": "筹备",
+            "value": "筹备"
+          },
+          {
+            "label": "在建",
+            "value": "在建"
+          },
+          {
+            "label": "验收",
+            "value": "验收"
+          },
+          {
+            "label": "竣工",
+            "value": "竣工"
+          }
+        ]
+      },
+      "type": "select",
+      "width": 260,
+      "x": 660,
+      "y": 260,
+      "zIndex": 2
+    },
+    {
+      "height": 48,
+      "id": "save-project",
+      "props": {
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "project-save-flow"
+          }
+        },
+        "label": "保存项目",
+        "name": "保存项目"
+      },
+      "type": "button",
+      "width": 260,
+      "x": 60,
+      "y": 360,
+      "zIndex": 2
+    }
+  ],
+  "coordinateSpace": "window-content-v1",
+  "createdAt": "2026-08-06T00:00:00.000Z",
+  "formMode": "create",
+  "formWindow": {
+    "height": 700,
+    "props": {
+      "background": "#ffffff",
+      "borderRadius": 12,
+      "padding": 24,
+      "resetText": "重置",
+      "showFooter": false,
+      "submitText": "提交",
+      "subtitle": "",
+      "title": "项目建档"
+    },
+    "width": 980,
+    "x": 40,
+    "y": 40
+  },
+  "gridSize": 10,
+  "id": "project-create",
+  "name": "项目建档",
+  "updatedAt": "2026-08-06T00:00:00.000Z",
+  "viewport": {
+    "panX": 0,
+    "panY": 0,
+    "zoom": 1
+  }
+}

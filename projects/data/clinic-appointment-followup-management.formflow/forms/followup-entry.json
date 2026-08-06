@@ -1,0 +1,519 @@
+{
+  "bindings": [],
+  "components": [
+    {
+      "fieldBinding": "随访ID",
+      "height": 72,
+      "id": "fu-id",
+      "props": {
+        "label": "随访ID",
+        "name": "随访ID",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 60,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "患者ID",
+      "height": 72,
+      "id": "fu-patient",
+      "props": {
+        "label": "患者ID",
+        "name": "患者ID",
+        "options": [
+          {
+            "label": "P0001",
+            "value": "P0001"
+          },
+          {
+            "label": "P0002",
+            "value": "P0002"
+          },
+          {
+            "label": "P0003",
+            "value": "P0003"
+          },
+          {
+            "label": "P0004",
+            "value": "P0004"
+          },
+          {
+            "label": "P0005",
+            "value": "P0005"
+          },
+          {
+            "label": "P0006",
+            "value": "P0006"
+          },
+          {
+            "label": "P0007",
+            "value": "P0007"
+          },
+          {
+            "label": "P0008",
+            "value": "P0008"
+          },
+          {
+            "label": "P0009",
+            "value": "P0009"
+          },
+          {
+            "label": "P0010",
+            "value": "P0010"
+          },
+          {
+            "label": "P0011",
+            "value": "P0011"
+          },
+          {
+            "label": "P0012",
+            "value": "P0012"
+          },
+          {
+            "label": "P0013",
+            "value": "P0013"
+          },
+          {
+            "label": "P0014",
+            "value": "P0014"
+          },
+          {
+            "label": "P0015",
+            "value": "P0015"
+          },
+          {
+            "label": "P0016",
+            "value": "P0016"
+          },
+          {
+            "label": "P0017",
+            "value": "P0017"
+          },
+          {
+            "label": "P0018",
+            "value": "P0018"
+          },
+          {
+            "label": "P0019",
+            "value": "P0019"
+          },
+          {
+            "label": "P0020",
+            "value": "P0020"
+          },
+          {
+            "label": "P0021",
+            "value": "P0021"
+          },
+          {
+            "label": "P0022",
+            "value": "P0022"
+          },
+          {
+            "label": "P0023",
+            "value": "P0023"
+          },
+          {
+            "label": "P0024",
+            "value": "P0024"
+          },
+          {
+            "label": "P0025",
+            "value": "P0025"
+          },
+          {
+            "label": "P0026",
+            "value": "P0026"
+          },
+          {
+            "label": "P0027",
+            "value": "P0027"
+          },
+          {
+            "label": "P0028",
+            "value": "P0028"
+          },
+          {
+            "label": "P0029",
+            "value": "P0029"
+          },
+          {
+            "label": "P0030",
+            "value": "P0030"
+          }
+        ],
+        "required": true
+      },
+      "type": "select",
+      "width": 260,
+      "x": 360,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "预约ID",
+      "height": 72,
+      "id": "fu-appointment",
+      "props": {
+        "label": "预约ID",
+        "name": "预约ID",
+        "options": [
+          {
+            "label": "AP0001",
+            "value": "AP0001"
+          },
+          {
+            "label": "AP0002",
+            "value": "AP0002"
+          },
+          {
+            "label": "AP0003",
+            "value": "AP0003"
+          },
+          {
+            "label": "AP0004",
+            "value": "AP0004"
+          },
+          {
+            "label": "AP0005",
+            "value": "AP0005"
+          },
+          {
+            "label": "AP0006",
+            "value": "AP0006"
+          },
+          {
+            "label": "AP0007",
+            "value": "AP0007"
+          },
+          {
+            "label": "AP0008",
+            "value": "AP0008"
+          },
+          {
+            "label": "AP0009",
+            "value": "AP0009"
+          },
+          {
+            "label": "AP0010",
+            "value": "AP0010"
+          },
+          {
+            "label": "AP0011",
+            "value": "AP0011"
+          },
+          {
+            "label": "AP0012",
+            "value": "AP0012"
+          },
+          {
+            "label": "AP0013",
+            "value": "AP0013"
+          },
+          {
+            "label": "AP0014",
+            "value": "AP0014"
+          },
+          {
+            "label": "AP0015",
+            "value": "AP0015"
+          },
+          {
+            "label": "AP0016",
+            "value": "AP0016"
+          },
+          {
+            "label": "AP0017",
+            "value": "AP0017"
+          },
+          {
+            "label": "AP0018",
+            "value": "AP0018"
+          },
+          {
+            "label": "AP0019",
+            "value": "AP0019"
+          },
+          {
+            "label": "AP0020",
+            "value": "AP0020"
+          },
+          {
+            "label": "AP0021",
+            "value": "AP0021"
+          },
+          {
+            "label": "AP0022",
+            "value": "AP0022"
+          },
+          {
+            "label": "AP0023",
+            "value": "AP0023"
+          },
+          {
+            "label": "AP0024",
+            "value": "AP0024"
+          },
+          {
+            "label": "AP0025",
+            "value": "AP0025"
+          },
+          {
+            "label": "AP0026",
+            "value": "AP0026"
+          },
+          {
+            "label": "AP0027",
+            "value": "AP0027"
+          },
+          {
+            "label": "AP0028",
+            "value": "AP0028"
+          },
+          {
+            "label": "AP0029",
+            "value": "AP0029"
+          },
+          {
+            "label": "AP0030",
+            "value": "AP0030"
+          },
+          {
+            "label": "AP0031",
+            "value": "AP0031"
+          },
+          {
+            "label": "AP0032",
+            "value": "AP0032"
+          },
+          {
+            "label": "AP0033",
+            "value": "AP0033"
+          },
+          {
+            "label": "AP0034",
+            "value": "AP0034"
+          },
+          {
+            "label": "AP0035",
+            "value": "AP0035"
+          },
+          {
+            "label": "AP0036",
+            "value": "AP0036"
+          },
+          {
+            "label": "AP0037",
+            "value": "AP0037"
+          },
+          {
+            "label": "AP0038",
+            "value": "AP0038"
+          },
+          {
+            "label": "AP0039",
+            "value": "AP0039"
+          },
+          {
+            "label": "AP0040",
+            "value": "AP0040"
+          },
+          {
+            "label": "AP0041",
+            "value": "AP0041"
+          },
+          {
+            "label": "AP0042",
+            "value": "AP0042"
+          },
+          {
+            "label": "AP0043",
+            "value": "AP0043"
+          },
+          {
+            "label": "AP0044",
+            "value": "AP0044"
+          },
+          {
+            "label": "AP0045",
+            "value": "AP0045"
+          }
+        ],
+        "required": true
+      },
+      "type": "select",
+      "width": 260,
+      "x": 660,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "随访日期",
+      "height": 72,
+      "id": "fu-date",
+      "props": {
+        "label": "随访日期",
+        "name": "随访日期",
+        "required": true
+      },
+      "type": "datePicker",
+      "width": 260,
+      "x": 60,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "随访方式",
+      "height": 72,
+      "id": "fu-way",
+      "props": {
+        "label": "随访方式",
+        "name": "随访方式",
+        "options": [
+          {
+            "label": "电话",
+            "value": "电话"
+          },
+          {
+            "label": "上门",
+            "value": "上门"
+          },
+          {
+            "label": "视频",
+            "value": "视频"
+          },
+          {
+            "label": "微信",
+            "value": "微信"
+          }
+        ],
+        "required": true
+      },
+      "type": "select",
+      "width": 260,
+      "x": 360,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "健康状况",
+      "height": 72,
+      "id": "fu-health",
+      "props": {
+        "label": "健康状况",
+        "name": "健康状况",
+        "required": true
+      },
+      "type": "textarea",
+      "width": 260,
+      "x": 660,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "下次随访日期",
+      "height": 72,
+      "id": "fu-next",
+      "props": {
+        "label": "下次随访日期",
+        "name": "下次随访日期"
+      },
+      "type": "datePicker",
+      "width": 260,
+      "x": 60,
+      "y": 260,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "随访医生",
+      "height": 72,
+      "id": "fu-doctor",
+      "props": {
+        "label": "随访医生",
+        "name": "随访医生",
+        "options": [
+          {
+            "label": "王医生",
+            "value": "王医生"
+          },
+          {
+            "label": "李医生",
+            "value": "李医生"
+          },
+          {
+            "label": "赵医生",
+            "value": "赵医生"
+          },
+          {
+            "label": "陈医生",
+            "value": "陈医生"
+          },
+          {
+            "label": "周医生",
+            "value": "周医生"
+          },
+          {
+            "label": "吴医生",
+            "value": "吴医生"
+          }
+        ],
+        "required": true
+      },
+      "type": "select",
+      "width": 260,
+      "x": 360,
+      "y": 260,
+      "zIndex": 2
+    },
+    {
+      "height": 48,
+      "id": "fu-submit",
+      "props": {
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "followup-status-flow"
+          }
+        },
+        "label": "保存随访",
+        "name": "保存随访"
+      },
+      "type": "button",
+      "width": 260,
+      "x": 660,
+      "y": 260,
+      "zIndex": 2
+    }
+  ],
+  "coordinateSpace": "window-content-v1",
+  "createdAt": "2026-08-06T00:00:00.000Z",
+  "formMode": "create",
+  "formWindow": {
+    "height": 700,
+    "props": {
+      "background": "#ffffff",
+      "borderRadius": 12,
+      "padding": 24,
+      "resetText": "重置",
+      "showFooter": false,
+      "submitText": "提交",
+      "subtitle": "",
+      "title": "随访登记"
+    },
+    "width": 980,
+    "x": 40,
+    "y": 40
+  },
+  "gridSize": 10,
+  "id": "followup-entry",
+  "name": "随访登记",
+  "updatedAt": "2026-08-06T00:00:00.000Z",
+  "viewport": {
+    "panX": 0,
+    "panY": 0,
+    "zoom": 1
+  }
+}

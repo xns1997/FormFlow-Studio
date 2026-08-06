@@ -1,0 +1,15 @@
+{
+  "behaviors": [
+    {
+      "code": "if (字段 === '下次随访日期' && value && 随访日期 && value < 随访日期) showMessage('下次随访日期不能早于本次随访日期', 'error');",
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "enabled": true,
+      "event": "fieldChange",
+      "id": "fu-next-check",
+      "name": "下次随访日期校验",
+      "priority": 0,
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ],
+  "ruleCode": "before submit -> require($随访ID, $患者ID, $预约ID, $随访日期, $随访方式, $健康状况, $随访医生)\n"
+}

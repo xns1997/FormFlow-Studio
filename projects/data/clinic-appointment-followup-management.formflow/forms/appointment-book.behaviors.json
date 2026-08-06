@@ -1,0 +1,15 @@
+{
+  "behaviors": [
+    {
+      "code": "if (字段 === '预约日期' && value && value < '2026-08-06') showMessage('预约日期不能早于今天', 'error');",
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "enabled": true,
+      "event": "fieldChange",
+      "id": "ap-date-check",
+      "name": "预约日期不得早于今天",
+      "priority": 0,
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ],
+  "ruleCode": "before submit -> require($预约ID, $患者ID, $科室, $医生, $预约日期, $时间段)\nwhen $状态 == \"待改期\" -> message(\"待改期预约需走改期审批\", warning)\n"
+}

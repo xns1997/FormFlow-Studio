@@ -1,0 +1,230 @@
+{
+  "exportedAt": "2026-08-06T00:00:00.000Z",
+  "workflows": [
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "项目档案写回",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "project-save-flow",
+      "name": "项目档案保存",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"project\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "合同审批流转",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "e2",
+          "source": "n2",
+          "sourceHandle": "out:trueBranch",
+          "target": "n3",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "contract-approval",
+      "name": "合同审批流程",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"contract\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "generic:condition-branch",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n3",
+          "position": {
+            "x": 680,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "进度上报与验收",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "e2",
+          "source": "n2",
+          "sourceHandle": "out:rows",
+          "target": "n3",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "progress-acceptance",
+      "name": "进度验收流程",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"progress\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "generic:criteria-filter",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n3",
+          "position": {
+            "x": 680,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "按项目查询进度",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "e2",
+          "source": "n2",
+          "sourceHandle": "out:rows",
+          "target": "n3",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "progress-query-flow",
+      "name": "进度查询流程",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"criteria\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "generic:criteria-filter",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n3",
+          "position": {
+            "x": 680,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ]
+}

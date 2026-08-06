@@ -1,0 +1,212 @@
+{
+  "bindings": [
+    {
+      "config": {
+        "sheetName": "进度上报",
+        "tableId": "progress"
+      },
+      "id": "dash-binding",
+      "sourceId": "progress",
+      "targetId": "dash-table",
+      "type": "table"
+    }
+  ],
+  "components": [
+    {
+      "fieldBinding": "项目ID",
+      "height": 72,
+      "id": "dash-project",
+      "props": {
+        "label": "项目ID",
+        "name": "项目ID",
+        "options": [
+          {
+            "label": "PRJ0001",
+            "value": "PRJ0001"
+          },
+          {
+            "label": "PRJ0002",
+            "value": "PRJ0002"
+          },
+          {
+            "label": "PRJ0003",
+            "value": "PRJ0003"
+          },
+          {
+            "label": "PRJ0004",
+            "value": "PRJ0004"
+          },
+          {
+            "label": "PRJ0005",
+            "value": "PRJ0005"
+          },
+          {
+            "label": "PRJ0006",
+            "value": "PRJ0006"
+          },
+          {
+            "label": "PRJ0007",
+            "value": "PRJ0007"
+          },
+          {
+            "label": "PRJ0008",
+            "value": "PRJ0008"
+          },
+          {
+            "label": "PRJ0009",
+            "value": "PRJ0009"
+          },
+          {
+            "label": "PRJ0010",
+            "value": "PRJ0010"
+          },
+          {
+            "label": "PRJ0011",
+            "value": "PRJ0011"
+          },
+          {
+            "label": "PRJ0012",
+            "value": "PRJ0012"
+          },
+          {
+            "label": "PRJ0013",
+            "value": "PRJ0013"
+          },
+          {
+            "label": "PRJ0014",
+            "value": "PRJ0014"
+          },
+          {
+            "label": "PRJ0015",
+            "value": "PRJ0015"
+          },
+          {
+            "label": "PRJ0016",
+            "value": "PRJ0016"
+          },
+          {
+            "label": "PRJ0017",
+            "value": "PRJ0017"
+          },
+          {
+            "label": "PRJ0018",
+            "value": "PRJ0018"
+          },
+          {
+            "label": "PRJ0019",
+            "value": "PRJ0019"
+          },
+          {
+            "label": "PRJ0020",
+            "value": "PRJ0020"
+          },
+          {
+            "label": "PRJ0021",
+            "value": "PRJ0021"
+          },
+          {
+            "label": "PRJ0022",
+            "value": "PRJ0022"
+          },
+          {
+            "label": "PRJ0023",
+            "value": "PRJ0023"
+          },
+          {
+            "label": "PRJ0024",
+            "value": "PRJ0024"
+          },
+          {
+            "label": "PRJ0025",
+            "value": "PRJ0025"
+          },
+          {
+            "label": "PRJ0026",
+            "value": "PRJ0026"
+          },
+          {
+            "label": "PRJ0027",
+            "value": "PRJ0027"
+          },
+          {
+            "label": "PRJ0028",
+            "value": "PRJ0028"
+          },
+          {
+            "label": "PRJ0029",
+            "value": "PRJ0029"
+          },
+          {
+            "label": "PRJ0030",
+            "value": "PRJ0030"
+          }
+        ]
+      },
+      "type": "select",
+      "width": 260,
+      "x": 60,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "height": 48,
+      "id": "dash-query-btn",
+      "props": {
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "progress-query-flow"
+          }
+        },
+        "label": "查询进度",
+        "name": "查询进度"
+      },
+      "type": "button",
+      "width": 260,
+      "x": 360,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "height": 72,
+      "id": "dash-table",
+      "props": {
+        "label": "进度明细",
+        "name": "进度明细"
+      },
+      "type": "table",
+      "width": 260,
+      "x": 660,
+      "y": 60,
+      "zIndex": 2
+    }
+  ],
+  "coordinateSpace": "window-content-v1",
+  "createdAt": "2026-08-06T00:00:00.000Z",
+  "formMode": "detail",
+  "formWindow": {
+    "height": 700,
+    "props": {
+      "background": "#ffffff",
+      "borderRadius": 12,
+      "padding": 24,
+      "resetText": "重置",
+      "showFooter": false,
+      "submitText": "提交",
+      "subtitle": "",
+      "title": "项目看板"
+    },
+    "width": 980,
+    "x": 40,
+    "y": 40
+  },
+  "gridSize": 10,
+  "id": "project-dashboard",
+  "name": "项目看板",
+  "updatedAt": "2026-08-06T00:00:00.000Z",
+  "viewport": {
+    "panX": 0,
+    "panY": 0,
+    "zoom": 1
+  }
+}

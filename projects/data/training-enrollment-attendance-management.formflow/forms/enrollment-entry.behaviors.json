@@ -1,0 +1,15 @@
+{
+  "behaviors": [
+    {
+      "code": "if (字段 === '缴费金额' && value < 0) showMessage('缴费金额不能为负', 'error');",
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "enabled": true,
+      "event": "fieldChange",
+      "id": "enroll-fee-check",
+      "name": "缴费金额校验",
+      "priority": 0,
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ],
+  "ruleCode": "before submit -> require($报名ID, $学员ID, $课程ID, $报名日期, $缴费金额)\nwhen $审批状态 == \"已驳回\" -> message(\"驳回报名请补充原因\", warning)\n"
+}

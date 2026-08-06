@@ -1,0 +1,4 @@
+{
+  "behaviors": [],
+  "ruleCode": "before submit -> require($学员ID, $姓名, $性别, $年龄, $手机号, $建档日期)\n"
+}

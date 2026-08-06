@@ -1,0 +1,577 @@
+{
+  "bindings": [],
+  "components": [
+    {
+      "fieldBinding": "调拨单号",
+      "height": 72,
+      "id": "trans-no",
+      "props": {
+        "label": "调拨单号",
+        "name": "调拨单号",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 60,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "调出门店",
+      "height": 72,
+      "id": "from-store",
+      "props": {
+        "label": "调出门店",
+        "name": "调出门店",
+        "options": [
+          {
+            "label": "ST0001",
+            "value": "ST0001"
+          },
+          {
+            "label": "ST0002",
+            "value": "ST0002"
+          },
+          {
+            "label": "ST0003",
+            "value": "ST0003"
+          },
+          {
+            "label": "ST0004",
+            "value": "ST0004"
+          },
+          {
+            "label": "ST0005",
+            "value": "ST0005"
+          },
+          {
+            "label": "ST0006",
+            "value": "ST0006"
+          },
+          {
+            "label": "ST0007",
+            "value": "ST0007"
+          },
+          {
+            "label": "ST0008",
+            "value": "ST0008"
+          },
+          {
+            "label": "ST0009",
+            "value": "ST0009"
+          },
+          {
+            "label": "ST0010",
+            "value": "ST0010"
+          },
+          {
+            "label": "ST0011",
+            "value": "ST0011"
+          },
+          {
+            "label": "ST0012",
+            "value": "ST0012"
+          },
+          {
+            "label": "ST0013",
+            "value": "ST0013"
+          },
+          {
+            "label": "ST0014",
+            "value": "ST0014"
+          },
+          {
+            "label": "ST0015",
+            "value": "ST0015"
+          },
+          {
+            "label": "ST0016",
+            "value": "ST0016"
+          },
+          {
+            "label": "ST0017",
+            "value": "ST0017"
+          },
+          {
+            "label": "ST0018",
+            "value": "ST0018"
+          },
+          {
+            "label": "ST0019",
+            "value": "ST0019"
+          },
+          {
+            "label": "ST0020",
+            "value": "ST0020"
+          },
+          {
+            "label": "ST0021",
+            "value": "ST0021"
+          },
+          {
+            "label": "ST0022",
+            "value": "ST0022"
+          },
+          {
+            "label": "ST0023",
+            "value": "ST0023"
+          },
+          {
+            "label": "ST0024",
+            "value": "ST0024"
+          },
+          {
+            "label": "ST0025",
+            "value": "ST0025"
+          },
+          {
+            "label": "ST0026",
+            "value": "ST0026"
+          },
+          {
+            "label": "ST0027",
+            "value": "ST0027"
+          },
+          {
+            "label": "ST0028",
+            "value": "ST0028"
+          },
+          {
+            "label": "ST0029",
+            "value": "ST0029"
+          },
+          {
+            "label": "ST0030",
+            "value": "ST0030"
+          }
+        ],
+        "required": true
+      },
+      "type": "select",
+      "width": 260,
+      "x": 360,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "调入门店",
+      "height": 72,
+      "id": "to-store",
+      "props": {
+        "label": "调入门店",
+        "name": "调入门店",
+        "options": [
+          {
+            "label": "ST0001",
+            "value": "ST0001"
+          },
+          {
+            "label": "ST0002",
+            "value": "ST0002"
+          },
+          {
+            "label": "ST0003",
+            "value": "ST0003"
+          },
+          {
+            "label": "ST0004",
+            "value": "ST0004"
+          },
+          {
+            "label": "ST0005",
+            "value": "ST0005"
+          },
+          {
+            "label": "ST0006",
+            "value": "ST0006"
+          },
+          {
+            "label": "ST0007",
+            "value": "ST0007"
+          },
+          {
+            "label": "ST0008",
+            "value": "ST0008"
+          },
+          {
+            "label": "ST0009",
+            "value": "ST0009"
+          },
+          {
+            "label": "ST0010",
+            "value": "ST0010"
+          },
+          {
+            "label": "ST0011",
+            "value": "ST0011"
+          },
+          {
+            "label": "ST0012",
+            "value": "ST0012"
+          },
+          {
+            "label": "ST0013",
+            "value": "ST0013"
+          },
+          {
+            "label": "ST0014",
+            "value": "ST0014"
+          },
+          {
+            "label": "ST0015",
+            "value": "ST0015"
+          },
+          {
+            "label": "ST0016",
+            "value": "ST0016"
+          },
+          {
+            "label": "ST0017",
+            "value": "ST0017"
+          },
+          {
+            "label": "ST0018",
+            "value": "ST0018"
+          },
+          {
+            "label": "ST0019",
+            "value": "ST0019"
+          },
+          {
+            "label": "ST0020",
+            "value": "ST0020"
+          },
+          {
+            "label": "ST0021",
+            "value": "ST0021"
+          },
+          {
+            "label": "ST0022",
+            "value": "ST0022"
+          },
+          {
+            "label": "ST0023",
+            "value": "ST0023"
+          },
+          {
+            "label": "ST0024",
+            "value": "ST0024"
+          },
+          {
+            "label": "ST0025",
+            "value": "ST0025"
+          },
+          {
+            "label": "ST0026",
+            "value": "ST0026"
+          },
+          {
+            "label": "ST0027",
+            "value": "ST0027"
+          },
+          {
+            "label": "ST0028",
+            "value": "ST0028"
+          },
+          {
+            "label": "ST0029",
+            "value": "ST0029"
+          },
+          {
+            "label": "ST0030",
+            "value": "ST0030"
+          }
+        ],
+        "required": true
+      },
+      "type": "select",
+      "width": 260,
+      "x": 660,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "商品编码",
+      "height": 72,
+      "id": "trans-prod",
+      "props": {
+        "label": "商品编码",
+        "name": "商品编码",
+        "options": [
+          {
+            "label": "P0001",
+            "value": "P0001"
+          },
+          {
+            "label": "P0002",
+            "value": "P0002"
+          },
+          {
+            "label": "P0003",
+            "value": "P0003"
+          },
+          {
+            "label": "P0004",
+            "value": "P0004"
+          },
+          {
+            "label": "P0005",
+            "value": "P0005"
+          },
+          {
+            "label": "P0006",
+            "value": "P0006"
+          },
+          {
+            "label": "P0007",
+            "value": "P0007"
+          },
+          {
+            "label": "P0008",
+            "value": "P0008"
+          },
+          {
+            "label": "P0009",
+            "value": "P0009"
+          },
+          {
+            "label": "P0010",
+            "value": "P0010"
+          },
+          {
+            "label": "P0011",
+            "value": "P0011"
+          },
+          {
+            "label": "P0012",
+            "value": "P0012"
+          },
+          {
+            "label": "P0013",
+            "value": "P0013"
+          },
+          {
+            "label": "P0014",
+            "value": "P0014"
+          },
+          {
+            "label": "P0015",
+            "value": "P0015"
+          },
+          {
+            "label": "P0016",
+            "value": "P0016"
+          },
+          {
+            "label": "P0017",
+            "value": "P0017"
+          },
+          {
+            "label": "P0018",
+            "value": "P0018"
+          },
+          {
+            "label": "P0019",
+            "value": "P0019"
+          },
+          {
+            "label": "P0020",
+            "value": "P0020"
+          },
+          {
+            "label": "P0021",
+            "value": "P0021"
+          },
+          {
+            "label": "P0022",
+            "value": "P0022"
+          },
+          {
+            "label": "P0023",
+            "value": "P0023"
+          },
+          {
+            "label": "P0024",
+            "value": "P0024"
+          },
+          {
+            "label": "P0025",
+            "value": "P0025"
+          },
+          {
+            "label": "P0026",
+            "value": "P0026"
+          },
+          {
+            "label": "P0027",
+            "value": "P0027"
+          },
+          {
+            "label": "P0028",
+            "value": "P0028"
+          },
+          {
+            "label": "P0029",
+            "value": "P0029"
+          },
+          {
+            "label": "P0030",
+            "value": "P0030"
+          },
+          {
+            "label": "P0031",
+            "value": "P0031"
+          },
+          {
+            "label": "P0032",
+            "value": "P0032"
+          },
+          {
+            "label": "P0033",
+            "value": "P0033"
+          },
+          {
+            "label": "P0034",
+            "value": "P0034"
+          },
+          {
+            "label": "P0035",
+            "value": "P0035"
+          },
+          {
+            "label": "P0036",
+            "value": "P0036"
+          },
+          {
+            "label": "P0037",
+            "value": "P0037"
+          },
+          {
+            "label": "P0038",
+            "value": "P0038"
+          },
+          {
+            "label": "P0039",
+            "value": "P0039"
+          },
+          {
+            "label": "P0040",
+            "value": "P0040"
+          }
+        ],
+        "required": true
+      },
+      "type": "select",
+      "width": 260,
+      "x": 60,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "调拨数量",
+      "height": 72,
+      "id": "trans-qty",
+      "props": {
+        "label": "调拨数量",
+        "name": "调拨数量",
+        "required": true
+      },
+      "type": "number",
+      "width": 260,
+      "x": 360,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "申请原因",
+      "height": 72,
+      "id": "trans-reason",
+      "props": {
+        "label": "申请原因",
+        "name": "申请原因"
+      },
+      "type": "textarea",
+      "width": 260,
+      "x": 660,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "申请人",
+      "height": 72,
+      "id": "applicant",
+      "props": {
+        "label": "申请人",
+        "name": "申请人",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 60,
+      "y": 260,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "申请日期",
+      "height": 72,
+      "id": "apply-date",
+      "props": {
+        "label": "申请日期",
+        "name": "申请日期",
+        "required": true
+      },
+      "type": "datePicker",
+      "width": 260,
+      "x": 360,
+      "y": 260,
+      "zIndex": 2
+    },
+    {
+      "height": 48,
+      "id": "submit-trans",
+      "props": {
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "transfer-approval"
+          }
+        },
+        "label": "提交申请",
+        "name": "提交申请"
+      },
+      "type": "button",
+      "width": 260,
+      "x": 660,
+      "y": 260,
+      "zIndex": 2
+    }
+  ],
+  "coordinateSpace": "window-content-v1",
+  "createdAt": "2026-08-06T00:00:00.000Z",
+  "formMode": "create",
+  "formWindow": {
+    "height": 700,
+    "props": {
+      "background": "#ffffff",
+      "borderRadius": 12,
+      "padding": 24,
+      "resetText": "重置",
+      "showFooter": false,
+      "submitText": "提交",
+      "subtitle": "",
+      "title": "库存调拨申请"
+    },
+    "width": 980,
+    "x": 40,
+    "y": 40
+  },
+  "gridSize": 10,
+  "id": "transfer-request",
+  "name": "库存调拨申请",
+  "updatedAt": "2026-08-06T00:00:00.000Z",
+  "viewport": {
+    "panX": 0,
+    "panY": 0,
+    "zoom": 1
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "defaultFormId": "patient-create",
+  "forms": [
+    {
+      "behaviorsFileName": "appointment-book.behaviors.json",
+      "fileName": "appointment-book.json",
+      "formMode": "create",
+      "id": "appointment-book",
+      "name": "预约登记"
+    },
+    {
+      "behaviorsFileName": "appointment-query.behaviors.json",
+      "fileName": "appointment-query.json",
+      "formMode": "detail",
+      "id": "appointment-query",
+      "name": "预约查询"
+    },
+    {
+      "behaviorsFileName": "followup-entry.behaviors.json",
+      "fileName": "followup-entry.json",
+      "formMode": "create",
+      "id": "followup-entry",
+      "name": "随访登记"
+    },
+    {
+      "behaviorsFileName": "followup-stats.behaviors.json",
+      "fileName": "followup-stats.json",
+      "formMode": "detail",
+      "id": "followup-stats",
+      "name": "随访统计"
+    },
+    {
+      "behaviorsFileName": "patient-create.behaviors.json",
+      "fileName": "patient-create.json",
+      "formMode": "create",
+      "id": "patient-create",
+      "name": "患者建档"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "allowBehaviorEditor": true,
+  "allowDesigner": true,
+  "allowWorkflowEditor": true,
+  "defaultFormId": "project-create",
+  "defaultSheet": "项目信息",
+  "mode": "design"
+}

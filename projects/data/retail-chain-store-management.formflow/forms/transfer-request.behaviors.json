@@ -1,0 +1,15 @@
+{
+  "behaviors": [
+    {
+      "code": "if (字段 === '调拨数量' && value < 1) showMessage('调拨数量必须大于 0', 'error');",
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "enabled": true,
+      "event": "fieldChange",
+      "id": "trans-qty-check",
+      "name": "调拨数量校验",
+      "priority": 0,
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ],
+  "ruleCode": "before submit -> require($调拨单号, $调出门店, $调入门店, $商品编码, $调拨数量)\nwhen $调出门店 == $调入门店 -> message(\"调出与调入门店不能相同\", error)\n"
+}

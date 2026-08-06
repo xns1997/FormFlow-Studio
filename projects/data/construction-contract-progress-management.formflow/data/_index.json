@@ -1,0 +1,28 @@
+{
+  "sources": [
+    {
+      "behaviorsFile": "contracts.behaviors.json",
+      "fileName": "construction-contracts.json",
+      "fileType": "json",
+      "id": "contracts",
+      "metaFile": "contracts.meta.json",
+      "uploadedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "behaviorsFile": "progress.behaviors.json",
+      "fileName": "construction-progress.json",
+      "fileType": "json",
+      "id": "progress",
+      "metaFile": "progress.meta.json",
+      "uploadedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "behaviorsFile": "projects.behaviors.json",
+      "fileName": "construction-projects.json",
+      "fileType": "json",
+      "id": "projects",
+      "metaFile": "projects.meta.json",
+      "uploadedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ]
+}

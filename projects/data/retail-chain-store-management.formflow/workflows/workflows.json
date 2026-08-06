@@ -1,0 +1,291 @@
+{
+  "exportedAt": "2026-08-06T00:00:00.000Z",
+  "workflows": [
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "销售数据写回与展示",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "sale-record-sync",
+      "name": "销售记录同步",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"sales\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "调拨申请审批流转",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:value"
+        },
+        {
+          "id": "e2",
+          "source": "n2",
+          "sourceHandle": "out:trueBranch",
+          "target": "n3",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "transfer-approval",
+      "name": "调拨审批流程",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"approval\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "generic:condition-branch",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n3",
+          "position": {
+            "x": 680,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "按条件查询销售明细",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "e2",
+          "source": "n2",
+          "sourceHandle": "out:rows",
+          "target": "n3",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "sale-query-flow",
+      "name": "销售查询流程",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"criteria\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "generic:criteria-filter",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n3",
+          "position": {
+            "x": 680,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "按门店查询库存台账",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "e2",
+          "source": "n2",
+          "sourceHandle": "out:rows",
+          "target": "n3",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "inventory-query-flow",
+      "name": "库存查询流程",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"criteria\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "generic:criteria-filter",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n3",
+          "position": {
+            "x": 680,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    },
+    {
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "description": "按维度汇总销售额",
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n1",
+          "sourceHandle": "out:value",
+          "target": "n2",
+          "targetHandle": "in:data"
+        },
+        {
+          "id": "e2",
+          "source": "n2",
+          "sourceHandle": "out:result",
+          "target": "n3",
+          "targetHandle": "in:data"
+        }
+      ],
+      "id": "sale-stats-flow",
+      "name": "销售统计汇总",
+      "nodes": [
+        {
+          "data": {
+            "propertiesJson": "{\"name\":\"dimension\",\"valueType\":\"object\"}"
+          },
+          "id": "n1",
+          "position": {
+            "x": 80,
+            "y": 120
+          },
+          "specId": "generic:value-input",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{\"dimensions\":[\"门店编号\"],\"metrics\":[\"金额\"]}"
+          },
+          "id": "n2",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "data:group-aggregate",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{}"
+          },
+          "id": "n3",
+          "position": {
+            "x": 680,
+            "y": 120
+          },
+          "specId": "generic:display-table",
+          "type": "custom"
+        }
+      ],
+      "updatedAt": "2026-08-06T00:00:00.000Z"
+    }
+  ]
+}

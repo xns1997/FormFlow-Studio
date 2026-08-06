@@ -1,0 +1,121 @@
+{
+  "bindings": [],
+  "components": [
+    {
+      "fieldBinding": "调拨单号",
+      "height": 72,
+      "id": "trans-no-approval",
+      "props": {
+        "label": "调拨单号",
+        "name": "调拨单号",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 60,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "审批人",
+      "height": 72,
+      "id": "approver",
+      "props": {
+        "label": "审批人",
+        "name": "审批人",
+        "required": true
+      },
+      "type": "input",
+      "width": 260,
+      "x": 360,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "审批意见",
+      "height": 72,
+      "id": "approval-opinion",
+      "props": {
+        "label": "审批意见",
+        "name": "审批意见"
+      },
+      "type": "textarea",
+      "width": 260,
+      "x": 660,
+      "y": 60,
+      "zIndex": 2
+    },
+    {
+      "fieldBinding": "审批结果",
+      "height": 72,
+      "id": "approval-result",
+      "props": {
+        "label": "审批结果",
+        "name": "审批结果",
+        "options": [
+          {
+            "label": "通过",
+            "value": "通过"
+          },
+          {
+            "label": "驳回",
+            "value": "驳回"
+          }
+        ],
+        "required": true
+      },
+      "type": "select",
+      "width": 260,
+      "x": 60,
+      "y": 160,
+      "zIndex": 2
+    },
+    {
+      "height": 48,
+      "id": "approval-submit",
+      "props": {
+        "flowTriggers": {
+          "onClick": {
+            "enabled": true,
+            "workflowId": "transfer-approval"
+          }
+        },
+        "label": "提交审批",
+        "name": "提交审批"
+      },
+      "type": "button",
+      "width": 260,
+      "x": 360,
+      "y": 160,
+      "zIndex": 2
+    }
+  ],
+  "coordinateSpace": "window-content-v1",
+  "createdAt": "2026-08-06T00:00:00.000Z",
+  "formMode": "edit",
+  "formWindow": {
+    "height": 640,
+    "props": {
+      "background": "#ffffff",
+      "borderRadius": 12,
+      "padding": 24,
+      "resetText": "重置",
+      "showFooter": false,
+      "submitText": "提交",
+      "subtitle": "",
+      "title": "调拨审批"
+    },
+    "width": 980,
+    "x": 40,
+    "y": 40
+  },
+  "gridSize": 10,
+  "id": "transfer-approval",
+  "name": "调拨审批",
+  "updatedAt": "2026-08-06T00:00:00.000Z",
+  "viewport": {
+    "panX": 0,
+    "panY": 0,
+    "zoom": 1
+  }
+}

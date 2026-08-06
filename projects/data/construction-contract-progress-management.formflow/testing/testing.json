@@ -1,0 +1,74 @@
+{
+  "fixtures": [
+    {
+      "id": "fixture-construction-contract-progress-management-sample",
+      "name": "建筑演示样例数据",
+      "rows": [],
+      "sheetName": "projects",
+      "tableId": "projects"
+    }
+  ],
+  "profiles": [
+    {
+      "id": "projects-profile",
+      "name": "projects 画像",
+      "rowCount": 30,
+      "scenarios": [
+        "normal",
+        "boundary",
+        "empty",
+        "duplicate_key"
+      ],
+      "seed": 20260806,
+      "sheetName": "projects",
+      "tableId": "projects"
+    },
+    {
+      "id": "contracts-profile",
+      "name": "contracts 画像",
+      "rowCount": 30,
+      "scenarios": [
+        "normal",
+        "boundary",
+        "empty",
+        "duplicate_key"
+      ],
+      "seed": 20260806,
+      "sheetName": "contracts",
+      "tableId": "contracts"
+    },
+    {
+      "id": "progress-profile",
+      "name": "progress 画像",
+      "rowCount": 30,
+      "scenarios": [
+        "normal",
+        "boundary",
+        "empty",
+        "duplicate_key"
+      ],
+      "seed": 20260806,
+      "sheetName": "progress",
+      "tableId": "progress"
+    }
+  ],
+  "runs": [
+    {
+      "coverage": 100,
+      "id": "run-construction-contract-progress-management-20260806",
+      "name": "建筑演示回归运行",
+      "passed": true,
+      "ranAt": "2026-08-06T00:00:00.000Z",
+      "suiteId": "suite-construction-contract-progress-management-20260806"
+    }
+  ],
+  "suites": [
+    {
+      "cases": [],
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "id": "suite-construction-contract-progress-management-20260806",
+      "name": "建筑演示回归套件",
+      "seed": 20260806
+    }
+  ]
+}

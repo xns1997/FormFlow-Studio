@@ -1,0 +1,47 @@
+{
+  "defaultFormId": "sale-entry",
+  "forms": [
+    {
+      "behaviorsFileName": "inventory-dashboard.behaviors.json",
+      "fileName": "inventory-dashboard.json",
+      "formMode": "detail",
+      "id": "inventory-dashboard",
+      "name": "库存看板"
+    },
+    {
+      "behaviorsFileName": "sale-entry.behaviors.json",
+      "fileName": "sale-entry.json",
+      "formMode": "create",
+      "id": "sale-entry",
+      "name": "销售录入"
+    },
+    {
+      "behaviorsFileName": "sale-query.behaviors.json",
+      "fileName": "sale-query.json",
+      "formMode": "detail",
+      "id": "sale-query",
+      "name": "销售查询"
+    },
+    {
+      "behaviorsFileName": "sale-stats.behaviors.json",
+      "fileName": "sale-stats.json",
+      "formMode": "detail",
+      "id": "sale-stats",
+      "name": "销售统计"
+    },
+    {
+      "behaviorsFileName": "transfer-approval.behaviors.json",
+      "fileName": "transfer-approval.json",
+      "formMode": "edit",
+      "id": "transfer-approval",
+      "name": "调拨审批"
+    },
+    {
+      "behaviorsFileName": "transfer-request.behaviors.json",
+      "fileName": "transfer-request.json",
+      "formMode": "create",
+      "id": "transfer-request",
+      "name": "库存调拨申请"
+    }
+  ]
+}

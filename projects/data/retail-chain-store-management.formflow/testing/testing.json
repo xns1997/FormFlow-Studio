@@ -1,0 +1,88 @@
+{
+  "fixtures": [
+    {
+      "id": "fixture-retail-chain-store-management-sample",
+      "name": "零售演示样例数据",
+      "rows": [],
+      "sheetName": "stores",
+      "tableId": "stores"
+    }
+  ],
+  "profiles": [
+    {
+      "id": "stores-profile",
+      "name": "stores 画像",
+      "rowCount": 30,
+      "scenarios": [
+        "normal",
+        "boundary",
+        "empty",
+        "duplicate_key"
+      ],
+      "seed": 20260806,
+      "sheetName": "stores",
+      "tableId": "stores"
+    },
+    {
+      "id": "products-profile",
+      "name": "products 画像",
+      "rowCount": 30,
+      "scenarios": [
+        "normal",
+        "boundary",
+        "empty",
+        "duplicate_key"
+      ],
+      "seed": 20260806,
+      "sheetName": "products",
+      "tableId": "products"
+    },
+    {
+      "id": "sales-profile",
+      "name": "sales 画像",
+      "rowCount": 30,
+      "scenarios": [
+        "normal",
+        "boundary",
+        "empty",
+        "duplicate_key"
+      ],
+      "seed": 20260806,
+      "sheetName": "sales",
+      "tableId": "sales"
+    },
+    {
+      "id": "inventory-profile",
+      "name": "inventory 画像",
+      "rowCount": 30,
+      "scenarios": [
+        "normal",
+        "boundary",
+        "empty",
+        "duplicate_key"
+      ],
+      "seed": 20260806,
+      "sheetName": "inventory",
+      "tableId": "inventory"
+    }
+  ],
+  "runs": [
+    {
+      "coverage": 100,
+      "id": "run-retail-chain-store-management-20260806",
+      "name": "零售演示回归运行",
+      "passed": true,
+      "ranAt": "2026-08-06T00:00:00.000Z",
+      "suiteId": "suite-retail-chain-store-management-20260806"
+    }
+  ],
+  "suites": [
+    {
+      "cases": [],
+      "createdAt": "2026-08-06T00:00:00.000Z",
+      "id": "suite-retail-chain-store-management-20260806",
+      "name": "零售演示回归套件",
+      "seed": 20260806
+    }
+  ]
+}
