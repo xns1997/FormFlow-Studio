@@ -1,6 +1,6 @@
 # FormFlow Studio
 
-![Version](https://img.shields.io/badge/version-1.14.0-4f46e5)
+![Version](https://img.shields.io/badge/version-1.16.0-4f46e5)
 ![License](https://img.shields.io/badge/license-MIT-22c55e)
 ![CI](https://github.com/xns1997/FormFlow-Studio/actions/workflows/ci.yml/badge.svg)
 ![Release](https://github.com/xns1997/FormFlow-Studio/actions/workflows/release.yml/badge.svg)
@@ -36,7 +36,7 @@ FormFlow 的应对是把规则、契约与事件 API 统一建模为事实来源
 | 共享领域核心 | `shared/formflow-core` | 行为 DSL 文法（Chevrotain）、解析与静态分析、有界模型检查、事件契约、字段推断、表单脚手架 |
 | 服务端 | `server` | Express API、七领域 MCP（project / data / form / workflow / behavior / quality / delivery）、项目包校验、oxfmt 代码格式化 |
 | 客户端 | `ui` | React 19 + Vite；表单设计器（X6）、流程画布、Monaco 语言服务（DSL / 事件 JS）、数据工作台（AG Grid） |
-| 智能体平台 | `server` agent 模块 | 单循环 V4：`batchReads`、`replan`、artifact 转存、回归测试门禁、模型自审、运行指标 |
+| 智能体平台 | `server` agent 模块 | Codex 式单循环 V5：harness 化（agent-loop / prompts / events + formflow-harness 注入）、动态计划、`batchReads`、artifact 转存、回归测试门禁、模型自审、运行指标 |
 
 ## 3. 核心机制
 
@@ -63,7 +63,7 @@ FormFlow 的应对是把规则、契约与事件 API 统一建模为事实来源
 
 ### 3.5 智能体与 MCP
 
-七领域角色化 MCP；写操作强制 revision + 幂等键 + 破坏性确认；发布仅 `release.preview`，`release.apply` 永远不可用；写任务完成前必须通过回归测试与模型自审，确定性门禁不因任何确认放宽。
+七领域角色化 MCP；写操作强制 revision + 幂等键 + 破坏性确认；发布仅 `release.preview`，`release.apply` 永远不可用；Turn 完成前必须通过自审、结构校验、形式化验证、回归测试与 `release.preview`，确定性门禁不因任何确认放宽。
 
 ## 4. 质量与工程
 

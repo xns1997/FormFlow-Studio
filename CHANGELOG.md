@@ -1,3 +1,16 @@
+# [1.16.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.15.0...v1.16.0) (2026-08-06)
+
+
+### Bug Fixes
+
+* 演示项目流程改为现代 import/export 模式（四包 21 流程运行时引擎全部通过） ([1a2c0ca](https://github.com/xns1997/FormFlow-Studio/commit/1a2c0cad4b1d593cab729c07f4c2b747962bb50f))
+
+
+### Features
+
+* 重建四个行业官方演示项目包（零售/医疗/教育/建筑） ([8d5384a](https://github.com/xns1997/FormFlow-Studio/commit/8d5384ae7772ae70134daee75b0fdaad1628a68b))
+* 智能体平台 V5 Codex 式单循环重写：harness 组件拆分、动态展示型计划、Turn 级最终门禁（自审/结构/形式化/回归/预检）与 UI 统一卡片会话流；新增 `workflow.generate_from_table` 一步生成保存/写回工作流 ([8127d2e](https://github.com/xns1997/FormFlow-Studio/commit/8127d2e3bf46784e4d0b1fe53f740e234839eca4))
+
 ## [1.15.1](https://github.com/xns1997/FormFlow-Studio/compare/v1.15.0...v1.15.1) (2026-08-05)
 
 
