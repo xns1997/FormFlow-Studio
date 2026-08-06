@@ -7,10 +7,10 @@
       "edges": [
         {
           "id": "e1",
-          "source": "n1",
-          "sourceHandle": "out:value",
-          "target": "n2",
-          "targetHandle": "in:data"
+          "source": "import",
+          "sourceHandle": "out:formData",
+          "target": "export",
+          "targetHandle": "in:formData"
         }
       ],
       "id": "sale-record-sync",
@@ -18,26 +18,26 @@
       "nodes": [
         {
           "data": {
-            "propertiesJson": "{\"name\":\"sales\",\"valueType\":\"object\"}"
+            "propertiesJson": "{\"outputPorts\":[{\"name\":\"formData\",\"type\":\"object\"}]}"
           },
-          "id": "n1",
+          "id": "import",
           "position": {
             "x": 80,
             "y": 120
           },
-          "specId": "generic:value-input",
+          "specId": "workflow:import",
           "type": "custom"
         },
         {
           "data": {
-            "propertiesJson": "{}"
+            "propertiesJson": "{\"inputPorts\":[{\"name\":\"formData\",\"type\":\"object\"}]}"
           },
-          "id": "n2",
+          "id": "export",
           "position": {
             "x": 380,
             "y": 120
           },
-          "specId": "generic:display-table",
+          "specId": "workflow:export",
           "type": "custom"
         }
       ],
@@ -49,17 +49,17 @@
       "edges": [
         {
           "id": "e1",
-          "source": "n1",
-          "sourceHandle": "out:value",
-          "target": "n2",
+          "source": "import",
+          "sourceHandle": "out:formData",
+          "target": "branch",
           "targetHandle": "in:value"
         },
         {
           "id": "e2",
-          "source": "n2",
+          "source": "branch",
           "sourceHandle": "out:trueBranch",
-          "target": "n3",
-          "targetHandle": "in:data"
+          "target": "export",
+          "targetHandle": "in:result"
         }
       ],
       "id": "transfer-approval",
@@ -67,21 +67,21 @@
       "nodes": [
         {
           "data": {
-            "propertiesJson": "{\"name\":\"approval\",\"valueType\":\"object\"}"
+            "propertiesJson": "{\"outputPorts\":[{\"name\":\"formData\",\"type\":\"object\"}]}"
           },
-          "id": "n1",
+          "id": "import",
           "position": {
             "x": 80,
             "y": 120
           },
-          "specId": "generic:value-input",
+          "specId": "workflow:import",
           "type": "custom"
         },
         {
           "data": {
             "propertiesJson": "{}"
           },
-          "id": "n2",
+          "id": "branch",
           "position": {
             "x": 380,
             "y": 120
@@ -91,14 +91,14 @@
         },
         {
           "data": {
-            "propertiesJson": "{}"
+            "propertiesJson": "{\"inputPorts\":[{\"name\":\"result\",\"type\":\"any\"}]}"
           },
-          "id": "n3",
+          "id": "export",
           "position": {
             "x": 680,
             "y": 120
           },
-          "specId": "generic:display-table",
+          "specId": "workflow:export",
           "type": "custom"
         }
       ],
@@ -110,17 +110,17 @@
       "edges": [
         {
           "id": "e1",
-          "source": "n1",
-          "sourceHandle": "out:value",
-          "target": "n2",
-          "targetHandle": "in:data"
+          "source": "import",
+          "sourceHandle": "out:formData",
+          "target": "query",
+          "targetHandle": "in:trigger"
         },
         {
           "id": "e2",
-          "source": "n2",
+          "source": "query",
           "sourceHandle": "out:rows",
-          "target": "n3",
-          "targetHandle": "in:data"
+          "target": "export",
+          "targetHandle": "in:rows"
         }
       ],
       "id": "sale-query-flow",
@@ -128,38 +128,38 @@
       "nodes": [
         {
           "data": {
-            "propertiesJson": "{\"name\":\"criteria\",\"valueType\":\"object\"}"
+            "propertiesJson": "{\"outputPorts\":[{\"name\":\"formData\",\"type\":\"object\"}]}"
           },
-          "id": "n1",
+          "id": "import",
           "position": {
             "x": 80,
             "y": 120
           },
-          "specId": "generic:value-input",
+          "specId": "workflow:import",
           "type": "custom"
         },
         {
           "data": {
-            "propertiesJson": "{}"
+            "propertiesJson": "{\"tableId\":\"sales\",\"sheetName\":\"销售明细\",\"queryType\":\"findRows\"}"
           },
-          "id": "n2",
+          "id": "query",
           "position": {
             "x": 380,
             "y": 120
           },
-          "specId": "generic:criteria-filter",
+          "specId": "behavior-data-query",
           "type": "custom"
         },
         {
           "data": {
-            "propertiesJson": "{}"
+            "propertiesJson": "{\"inputPorts\":[{\"name\":\"rows\",\"type\":\"json-rows\"}]}"
           },
-          "id": "n3",
+          "id": "export",
           "position": {
             "x": 680,
             "y": 120
           },
-          "specId": "generic:display-table",
+          "specId": "workflow:export",
           "type": "custom"
         }
       ],
@@ -171,17 +171,17 @@
       "edges": [
         {
           "id": "e1",
-          "source": "n1",
-          "sourceHandle": "out:value",
-          "target": "n2",
-          "targetHandle": "in:data"
+          "source": "import",
+          "sourceHandle": "out:formData",
+          "target": "query",
+          "targetHandle": "in:trigger"
         },
         {
           "id": "e2",
-          "source": "n2",
+          "source": "query",
           "sourceHandle": "out:rows",
-          "target": "n3",
-          "targetHandle": "in:data"
+          "target": "export",
+          "targetHandle": "in:rows"
         }
       ],
       "id": "inventory-query-flow",
@@ -189,38 +189,38 @@
       "nodes": [
         {
           "data": {
-            "propertiesJson": "{\"name\":\"criteria\",\"valueType\":\"object\"}"
+            "propertiesJson": "{\"outputPorts\":[{\"name\":\"formData\",\"type\":\"object\"}]}"
           },
-          "id": "n1",
+          "id": "import",
           "position": {
             "x": 80,
             "y": 120
           },
-          "specId": "generic:value-input",
+          "specId": "workflow:import",
           "type": "custom"
         },
         {
           "data": {
-            "propertiesJson": "{}"
+            "propertiesJson": "{\"tableId\":\"inventory\",\"sheetName\":\"库存台账\",\"queryType\":\"findRows\"}"
           },
-          "id": "n2",
+          "id": "query",
           "position": {
             "x": 380,
             "y": 120
           },
-          "specId": "generic:criteria-filter",
+          "specId": "behavior-data-query",
           "type": "custom"
         },
         {
           "data": {
-            "propertiesJson": "{}"
+            "propertiesJson": "{\"inputPorts\":[{\"name\":\"rows\",\"type\":\"json-rows\"}]}"
           },
-          "id": "n3",
+          "id": "export",
           "position": {
             "x": 680,
             "y": 120
           },
-          "specId": "generic:display-table",
+          "specId": "workflow:export",
           "type": "custom"
         }
       ],
@@ -232,17 +232,24 @@
       "edges": [
         {
           "id": "e1",
-          "source": "n1",
-          "sourceHandle": "out:value",
-          "target": "n2",
-          "targetHandle": "in:data"
+          "source": "import",
+          "sourceHandle": "out:formData",
+          "target": "query",
+          "targetHandle": "in:trigger"
         },
         {
           "id": "e2",
-          "source": "n2",
-          "sourceHandle": "out:result",
-          "target": "n3",
-          "targetHandle": "in:data"
+          "source": "query",
+          "sourceHandle": "out:rows",
+          "target": "group",
+          "targetHandle": "in:rows"
+        },
+        {
+          "id": "e3",
+          "source": "group",
+          "sourceHandle": "out:rows",
+          "target": "export",
+          "targetHandle": "in:rows"
         }
       ],
       "id": "sale-stats-flow",
@@ -250,23 +257,35 @@
       "nodes": [
         {
           "data": {
-            "propertiesJson": "{\"name\":\"dimension\",\"valueType\":\"object\"}"
+            "propertiesJson": "{\"outputPorts\":[{\"name\":\"formData\",\"type\":\"object\"}]}"
           },
-          "id": "n1",
+          "id": "import",
           "position": {
             "x": 80,
             "y": 120
           },
-          "specId": "generic:value-input",
+          "specId": "workflow:import",
+          "type": "custom"
+        },
+        {
+          "data": {
+            "propertiesJson": "{\"tableId\":\"sales\",\"sheetName\":\"销售明细\",\"queryType\":\"findRows\"}"
+          },
+          "id": "query",
+          "position": {
+            "x": 380,
+            "y": 120
+          },
+          "specId": "behavior-data-query",
           "type": "custom"
         },
         {
           "data": {
             "propertiesJson": "{\"dimensions\":[\"门店编号\"],\"metrics\":[\"金额\"]}"
           },
-          "id": "n2",
+          "id": "group",
           "position": {
-            "x": 380,
+            "x": 680,
             "y": 120
           },
           "specId": "data:group-aggregate",
@@ -274,14 +293,14 @@
         },
         {
           "data": {
-            "propertiesJson": "{}"
+            "propertiesJson": "{\"inputPorts\":[{\"name\":\"rows\",\"type\":\"json-rows\"}]}"
           },
-          "id": "n3",
+          "id": "export",
           "position": {
-            "x": 680,
+            "x": 980,
             "y": 120
           },
-          "specId": "generic:display-table",
+          "specId": "workflow:export",
           "type": "custom"
         }
       ],
