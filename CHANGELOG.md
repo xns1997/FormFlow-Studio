@@ -1,3 +1,17 @@
+# [1.16.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.15.1...v1.16.0) (2026-08-07)
+
+
+### Bug Fixes
+
+* 演示项目流程改为现代 import/export 模式 ([1a2c0ca](https://github.com/xns1997/FormFlow-Studio/commit/1a2c0cad4b1d593cab729c07f4c2b747962bb50f))
+
+
+### Features
+
+* 实体 JSON 双模式、全局按钮/动效统一与交互动效补齐 ([9428a5c](https://github.com/xns1997/FormFlow-Studio/commit/9428a5cfe567df2d7f21159364040e81bd49d872))
+* 智能体平台 V5 Codex 式单循环重写与 UI 会话流升级 ([8127d2e](https://github.com/xns1997/FormFlow-Studio/commit/8127d2e3bf46784e4d0b1fe53f740e234839eca4))
+* 重建四个行业官方演示项目包 ([8d5384a](https://github.com/xns1997/FormFlow-Studio/commit/8d5384ae7772ae70134daee75b0fdaad1628a68b))
+
 # [1.16.0](https://github.com/xns1997/FormFlow-Studio/compare/v1.15.0...v1.16.0) (2026-08-06)
 
 
