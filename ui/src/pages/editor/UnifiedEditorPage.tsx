@@ -12,8 +12,8 @@ import { Toolbox } from '../../designer/Toolbox';
 import { PropertyPanel } from '../../designer/PropertyPanel';
 import { FORM_WINDOW_CELL_ID, formWindowToComponent } from '../../designer/formWindowModel';
 import { useProjectStore } from '../../project/store';
-import type { FormEntry, BehaviorFile, DesignComponent } from '../../project/types';
-import { createFormEntry } from '../../project/types';
+import type { FormEntry, BehaviorFile, DesignComponent, DesignFile } from '../../project/types';
+import { createDefaultFormWindow, createFormEntry, normalizeDesignFile } from '../../project/types';
 import CodeEditor from '../../components/CodeEditor';
 import BehaviorDslEditor from '../../components/BehaviorDslEditor';
 import {
@@ -46,6 +46,9 @@ import ProjectWorkspaceTabs, { type ProjectWorkspaceMode } from './ProjectWorksp
 import { SectionErrorBoundary } from '../../components/SectionErrorBoundary';
 import { loadEditorDraft, saveEditorDraft } from '../../services/io/draftStore';
 import { currentOfflineScopeKey } from '../../services/io/api';
+import { getAllControls } from '../../designer/registry';
+import { JsonModeView } from '../../services/schemaEditor/JsonModeView';
+import { useJsonModeEditor } from '../../services/schemaEditor/useJsonModeEditor';
 
 // 编辑模式：决定中间/右侧布局
 type EditMode = 'design' | 'behavior' | 'flow' | 'data' | 'settings';
@@ -62,6 +65,7 @@ export default function UnifiedEditorPage() {
   const [activeFormId, setActiveFormId] = useState<string | null>(null);
   const [renamingFormId, setRenamingFormId] = useState<string | null>(null);
   const [formNameDraft, setFormNameDraft] = useState('');
+  const [jsonPendingFormId, setJsonPendingFormId] = useState<string | null>(null);
   const [leftPanelTab, setLeftPanelTab] = useState<'controls' | 'fields' | 'forms' | 'rules' | 'behaviors' | 'workflows'>('controls');
   const initialMode = searchParams.get('mode');
   const [editMode, setEditMode] = useState<EditMode>(initialMode && ['design', 'behavior', 'flow', 'data', 'settings'].includes(initialMode) ? initialMode as EditMode : 'design');
@@ -280,6 +284,8 @@ export default function UnifiedEditorPage() {
     setShowTemplateCenter(true);
   }, [store]);
   const openTemplateCenter = useCallback(() => openTemplateCenterView('library'), [openTemplateCenterView]);
+  const openTemplateCenterRef = useRef(openTemplateCenter);
+  openTemplateCenterRef.current = openTemplateCenter;
 
   const closeTemplateCenter = useCallback(() => {
     setShowTemplateCenter(false);
@@ -345,19 +351,41 @@ export default function UnifiedEditorPage() {
     setSearchParams(next, { replace: true });
   }, [editMode, activeFormId, designer.selectedId, editingBehaviorId]);
 
+  const modeSyncTimerRef = useRef<number | null>(null);
+  const centerRef = useRef<HTMLDivElement>(null);
+  const prevModeRef = useRef<EditMode>(editMode);
   useEffect(() => {
     const requestedMode = searchParams.get('mode');
     if (requestedMode === 'template') {
-      openTemplateCenter();
+      openTemplateCenterRef.current();
       return;
     }
     if (requestedMode && ['design', 'behavior', 'flow', 'data', 'settings'].includes(requestedMode) && requestedMode !== editMode) {
-      setEditMode(requestedMode as EditMode);
-      if (requestedMode === 'flow') setLeftPanelTab('workflows');
-      else if (requestedMode === 'behavior') setLeftPanelTab('behaviors');
-      else if (requestedMode === 'design') setLeftPanelTab('controls');
+      // 跳过 URL 写入 effect 与 searchParams 提交之间的竞态窗口：
+      // 仅在 URL 仍停留在最新 mode 时才应用，避免过期回写覆盖当前模式。
+      if (modeSyncTimerRef.current) window.clearTimeout(modeSyncTimerRef.current);
+      modeSyncTimerRef.current = window.setTimeout(() => {
+        const latest = new URLSearchParams(window.location.search).get('mode');
+        if (latest !== requestedMode) return;
+        setEditMode(requestedMode as EditMode);
+        if (requestedMode === 'flow') setLeftPanelTab('workflows');
+        else if (requestedMode === 'behavior') setLeftPanelTab('behaviors');
+        else if (requestedMode === 'design') setLeftPanelTab('controls');
+      }, 0);
     }
-  }, [searchParams, openTemplateCenter]);
+    return () => { if (modeSyncTimerRef.current) window.clearTimeout(modeSyncTimerRef.current); };
+  }, [searchParams, editMode]);
+
+  // 工作区模式切换时对中间内容区做一次极短淡入，避免内容硬切；复用现有 page-fade-in 关键帧。
+  useEffect(() => {
+    if (prevModeRef.current === editMode) return;
+    prevModeRef.current = editMode;
+    const el = centerRef.current;
+    if (!el) return;
+    el.classList.remove('unified-mode-enter');
+    void el.offsetWidth;
+    el.classList.add('unified-mode-enter');
+  }, [editMode]);
 
   useEffect(() => {
     const componentId = searchParams.get('component');
@@ -438,6 +466,48 @@ export default function UnifiedEditorPage() {
       return updated;
     }));
   }, [activeFormId, designer, store]);
+
+  const handleApplyDesignJson = useCallback((value: unknown) => {
+    if (!activeFormId || !value || typeof value !== 'object') return;
+    const raw = value as Partial<DesignFile>;
+    const design = normalizeDesignFile({
+      ...raw,
+      id: String(raw.id || activeFormId),
+      name: String(raw.name || raw.id || '表单'),
+      components: Array.isArray(raw.components) ? raw.components : [],
+      bindings: Array.isArray(raw.bindings) ? raw.bindings : [],
+      viewport: raw.viewport || { zoom: 1, panX: 0, panY: 0 },
+      gridSize: typeof raw.gridSize === 'number' && raw.gridSize > 0 ? raw.gridSize : 10,
+      coordinateSpace: raw.coordinateSpace || 'window-content-v1',
+      formWindow: raw.formWindow || createDefaultFormWindow(String(raw.name || '表单')),
+      createdAt: raw.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    } as DesignFile, String(raw.name || '表单'));
+    structuredEditPendingRef.current = true;
+    designer.loadDesign(design);
+    const now = new Date().toISOString();
+    const updated = { ...design, updatedAt: now };
+    setForms((prev) => prev.map((f) => f.id === activeFormId ? { ...f, design: updated, updatedAt: now } : f));
+    void store.updateForm?.(activeFormId, { design: updated });
+  }, [activeFormId, designer, store]);
+
+  const designJsonSemanticContext = useMemo(() => ({
+    componentTypes: getAllControls().map((control) => control.type),
+    fieldNames: fieldDescriptors.map((field) => field.name),
+  }), [fieldDescriptors]);
+  const designJson = useJsonModeEditor({
+    kind: 'design',
+    entityKey: activeFormId || 'none',
+    committed: activeForm?.design || null,
+    semanticContext: designJsonSemanticContext,
+    onApply: handleApplyDesignJson,
+  });
+
+  useEffect(() => {
+    if (!jsonPendingFormId || activeFormId !== jsonPendingFormId) return;
+    setJsonPendingFormId(null);
+    designJson.enterJson();
+  }, [jsonPendingFormId, activeFormId, designJson]);
 
   const fixContext = useMemo(
     () => ({ components: designer.components, tables: project?.srcTable || [], workflows: allWorkflows }),
@@ -726,6 +796,22 @@ export default function UnifiedEditorPage() {
           )}
           {editMode === 'design' && (
             <>
+              <div className="design-json-mode-switch" role="tablist" aria-label="表单编辑模式">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={designJson.mode === 'visual'}
+                  className={designJson.mode === 'visual' ? 'active' : ''}
+                  onClick={() => { if (designJson.mode === 'json') designJson.exitToVisual(); }}
+                >可视化</button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={designJson.mode === 'json'}
+                  className={designJson.mode === 'json' ? 'active' : ''}
+                  onClick={() => designJson.enterJson()}
+                >JSON</button>
+              </div>
               <button type="button" onClick={() => setShowDiagnostics(true)} className="toolbar-btn">完成度 {diagnosticSummary.score}</button>
               <button type="button" onClick={handleSaveDesign} className="toolbar-btn">保存</button>
             </>
@@ -844,6 +930,13 @@ export default function UnifiedEditorPage() {
                       title="重命名表单"
                       onClick={(event) => { event.stopPropagation(); beginFormRename(form); }}
                     >✎</button>
+                    <button
+                      type="button"
+                      className="unified-list-json"
+                      aria-label={`JSON 编辑 ${form.name}`}
+                      title="JSON 编辑"
+                      onClick={(event) => { event.stopPropagation(); setActiveFormId(form.id); setJsonPendingFormId(form.id); }}
+                    >JSON</button>
                     <button type="button" className="unified-list-delete" onClick={(e) => { e.stopPropagation(); handleDeleteForm(form.id); }}>×</button>
                   </div>
                 ))}
@@ -1022,13 +1115,32 @@ export default function UnifiedEditorPage() {
         </div>
 
         {/* 中间：行为模式保留只读可选择表单；流程模式使用纯流程画布 */}
-        <div className="unified-center">
-          {editMode === 'design' && <SectionErrorBoundary name="表单设计区"><div className="chain-form-pane"><DesignCanvas
+        <div ref={centerRef} className="unified-center">
+          {editMode === 'design' && <SectionErrorBoundary name="表单设计区">{designJson.mode === 'json' && activeForm ? (
+            <div className="chain-form-pane json-mode-page">
+              <JsonModeView
+                kind="design"
+                entityKey={activeForm.id}
+                title={`${activeForm.name} · 表单设计 JSON`}
+                text={designJson.entry.text}
+                parseError={designJson.entry.parseError}
+                structuralErrors={designJson.entry.structuralErrors}
+                semanticIssues={designJson.entry.semanticIssues}
+                semanticContext={designJsonSemanticContext}
+                onTextChange={designJson.setDraftText}
+                onValidate={designJson.updateStructuralMarkers}
+                onApply={designJson.applyJson}
+                onDiscard={designJson.discardJson}
+                onExitToVisual={() => { designJson.exitToVisual(); }}
+                height="100%"
+              />
+            </div>
+          ) : <div className="chain-form-pane"><DesignCanvas
             designer={designer}
             formId={activeForm?.id}
             onNavigateToData={switchToData}
             onBeforeDesignMutation={() => { structuredEditPendingRef.current = true; }}
-          /></div></SectionErrorBoundary>}
+          /></div>}</SectionErrorBoundary>}
           {editMode === 'behavior' && <SectionErrorBoundary name="行为预览区"><div className="chain-form-pane behavior-readonly-pane">
             <DesignCanvas
               designer={designer}

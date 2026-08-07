@@ -1,26 +1,4 @@
-/* ── 下拉选择 ───────────────────────────────────────────── */
-
-@keyframes dropdown-enter {
-  from {
-    opacity: 0;
-    transform: translateY(-4px) scaleY(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scaleY(1);
-  }
-}
-
-@keyframes dropdown-exit {
-  from {
-    opacity: 1;
-    transform: translateY(0) scaleY(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-4px) scaleY(0.95);
-  }
-}
+/* ── 下拉选择（关键帧统一在 animations-enhanced.css）──────────── */
 
 .lg-select {
   width: 100%;
@@ -36,7 +14,7 @@
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 36px;
-  transition: all 0.2s;
+  transition: all var(--duration-fast);
   outline: none;
 }
 
@@ -53,11 +31,11 @@
 /* Dropdown popup animation */
 .lg-select-popup,
 .ant-select-dropdown {
-  animation: dropdown-enter 0.2s ease-out forwards;
+  animation: dropdown-enter var(--duration-fast) var(--ease-out) forwards;
   transform-origin: top center;
 }
 
 .lg-select-popup.closing,
 .ant-select-dropdown.closing {
-  animation: dropdown-exit 0.15s ease-in forwards;
+  animation: dropdown-exit var(--duration-fast) var(--ease-in) forwards;
 }

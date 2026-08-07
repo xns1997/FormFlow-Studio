@@ -37,7 +37,7 @@
   height: 100%;
   background: var(--accent);
   border-radius: 2px;
-  transition: width 0.3s ease;
+  transition: width var(--duration-normal) var(--ease-out);
 }
 
 .lg-required-progress-text {
@@ -61,7 +61,7 @@
   color: var(--success);
   font-size: 10px;
   font-weight: 700;
-  animation: check-pop 0.25s ease;
+  animation: check-pop var(--duration-normal) var(--ease-out);
 }
 
 @keyframes check-pop {

@@ -1,5 +1,6 @@
 @import './variables.css';
 @import './button-system.css';
+@import './controls-base.css';
 @import './layout.css';
 @import './agent-workbench.css';
 @import './sidebar.css';
@@ -20,7 +21,6 @@
 @import './renderer-checkbox.css';
 @import './renderer-switch.css';
 @import './renderer-rating.css';
-@import './renderer-button.css';
 @import './renderer-container.css';
 @import './renderer-range.css';
 @import './renderer-modal.css';
@@ -32,6 +32,7 @@
 @import './renderer-misc.css';
 @import './output-preview.css';
 @import './components-code-editor.css';
+@import './schema-json-mode.css';
 @import './components-chart.css';
 @import './components-form.css';
 @import './components-misc.css';

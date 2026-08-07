@@ -1,0 +1,111 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "formflow://schemas/table-config.json",
+  "title": "数据表配置",
+  "description": "单个 Sheet 的 TableConfig 配置面。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "tableName",
+    "keyFields",
+    "columnWidths",
+    "frozenColumns",
+    "frozenRows",
+    "defaultSort",
+    "hiddenColumns",
+    "lockedColumns",
+    "columnDescriptions",
+    "columnTags",
+    "headerHeight",
+    "rowHeight",
+    "alternateRowColor",
+    "showGridLines",
+    "showRowNumbers",
+    "autoFitColumns",
+    "filterEnabled",
+    "sortEnabled",
+    "groupByColumn"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "tableName": { "type": "string" },
+    "keyFields": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "keyValidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hasNulls", "duplicateCount", "valid", "checkedAt"],
+      "properties": {
+        "hasNulls": { "type": "boolean" },
+        "duplicateCount": { "type": "number", "minimum": 0 },
+        "valid": { "type": "boolean" },
+        "checkedAt": { "type": "string" }
+      }
+    },
+    "columnWidths": {
+      "type": "object",
+      "additionalProperties": { "type": "number", "minimum": 0 }
+    },
+    "frozenColumns": { "type": "number", "minimum": 0 },
+    "frozenRows": { "type": "number", "minimum": 0 },
+    "defaultSort": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["column", "ascending"],
+      "properties": {
+        "column": { "type": "string" },
+        "ascending": { "type": "boolean" }
+      }
+    },
+    "hiddenColumns": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "lockedColumns": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "columnDescriptions": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "columnTags": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string" }
+      }
+    },
+    "headerHeight": { "type": "number", "minimum": 20 },
+    "rowHeight": { "type": "number", "minimum": 16 },
+    "alternateRowColor": { "type": "boolean" },
+    "showGridLines": { "type": "boolean" },
+    "showRowNumbers": { "type": "boolean" },
+    "autoFitColumns": { "type": "boolean" },
+    "filterEnabled": { "type": "boolean" },
+    "sortEnabled": { "type": "boolean" },
+    "groupByColumn": { "type": ["number", "null"], "minimum": 0 },
+    "rowOrder": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "autoSave": { "type": "boolean" },
+    "sequenceRules": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["start", "step", "formatter"],
+        "properties": {
+          "start": { "type": "number" },
+          "step": { "type": "number" },
+          "formatter": { "type": "string" },
+          "onlyWhenEmpty": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

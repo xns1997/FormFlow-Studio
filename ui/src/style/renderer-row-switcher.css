@@ -25,7 +25,7 @@
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--duration-fast);
   flex-shrink: 0;
   line-height: 1;
   padding: 0;
@@ -53,7 +53,7 @@
   border-radius: 8px;
   background: var(--panel);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--duration-fast);
 }
 
 .row-switcher-trigger:hover {
@@ -104,7 +104,7 @@
   height: 100%;
   background: var(--accent);
   border-radius: 1px;
-  transition: width 0.25s ease;
+  transition: width var(--duration-normal) var(--ease-out);
 }
 
 /* ── Row Dropdown ──────────────────────────────────────── */
@@ -120,7 +120,7 @@
   border-radius: var(--radius-lg);
   box-shadow: 0 12px 36px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06);
   overflow: hidden;
-  animation: row-dropdown-in 0.15s ease;
+  animation: row-dropdown-in var(--duration-fast) var(--ease-out);
 }
 
 @keyframes row-dropdown-in {
@@ -190,7 +190,7 @@
   padding: 7px 10px;
   font-size: 12px;
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background var(--duration-instant);
 }
 
 .row-option:hover {

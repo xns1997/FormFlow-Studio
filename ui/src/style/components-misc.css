@@ -17,7 +17,7 @@
   border: var(--border);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--duration-fast);
 }
 
 .project-item:hover {
@@ -60,7 +60,7 @@
   display: flex;
   gap: var(--space-xs);
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity var(--duration-fast);
 }
 
 .project-item:hover .project-item-actions {
@@ -73,7 +73,7 @@
   border: var(--border);
   border-radius: var(--radius);
   background: var(--panel);
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-out);
 }
 
 .project-item-actions button:hover {

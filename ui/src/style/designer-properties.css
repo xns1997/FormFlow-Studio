@@ -186,7 +186,7 @@ details.properties-group > summary {
 }
 
 details.properties-group > summary::-webkit-details-marker { display: none; }
-details.properties-group > summary::before { content: '›'; margin-right: 6px; color: var(--muted); transform: rotate(90deg); transition: transform .15s ease; }
+details.properties-group > summary::before { content: '›'; margin-right: 6px; color: var(--muted); transform: rotate(90deg); transition: transform var(--duration-fast) var(--ease-out); }
 details.properties-group:not([open]) > summary::before { transform: rotate(0deg); }
 details.properties-group > summary > span { margin-right: auto; }
 details.properties-group > summary > small { color: var(--muted); font-size: 10px; font-weight: 500; }
@@ -243,7 +243,7 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
   gap: 2px;
   margin-left: auto;
   opacity: 0;
-  transition: opacity .15s ease;
+  transition: opacity var(--duration-fast) var(--ease-out);
 }
 
 .prop-field:hover .property-field-actions,
@@ -360,7 +360,7 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
   box-shadow: 0 2px 6px rgba(15,23,42,.10), inset 0 1px 0 rgba(255,255,255,.92);
   color: var(--text);
   cursor: pointer;
-  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
 }
 
 .property-summary-button:hover {
@@ -534,7 +534,7 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
   background: rgba(255,255,255,.96);
   box-shadow: 0 2px 5px rgba(15,23,42,.08), inset 0 1px 0 rgba(255,255,255,.9);
   outline: none;
-  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
 }
 
 .prop-field input:focus,
@@ -556,7 +556,7 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
   border-radius: 8px;
   background: linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
   box-shadow: 0 2px 6px rgba(15,23,42,.10), inset 0 1px 0 rgba(255,255,255,.92);
-  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
 }
 
 .designer-properties .ff-antd-form-scope .ant-input:hover,
@@ -675,7 +675,7 @@ details.properties-group:not([open]) > summary { margin-bottom: 0; }
 }
 
 .prop-event-header::-webkit-details-marker { display: none; }
-.prop-event-header::before { content: '›'; color: var(--muted); font-size: 16px; transition: transform .15s ease; }
+.prop-event-header::before { content: '›'; color: var(--muted); font-size: 16px; transition: transform var(--duration-fast) var(--ease-out); }
 .prop-event[open] > .prop-event-header::before { transform: rotate(90deg); }
 
 .prop-event-key {

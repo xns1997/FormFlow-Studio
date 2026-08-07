@@ -469,7 +469,7 @@
   height: 8px;
   border-radius: 50%;
   background: var(--accent);
-  animation: td-pulse 1.5s ease-in-out infinite;
+  animation: td-pulse 1.5s var(--ease-in-out) infinite;
 }
 @keyframes td-pulse {
   0%, 100% { opacity: 0.3; transform: scale(0.8); }

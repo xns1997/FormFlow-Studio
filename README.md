@@ -1,6 +1,6 @@
 # FormFlow Studio
 
-![Version](https://img.shields.io/badge/version-1.16.0-4f46e5)
+![Version](https://img.shields.io/badge/version-1.17.0-4f46e5)
 ![License](https://img.shields.io/badge/license-MIT-22c55e)
 ![CI](https://github.com/xns1997/FormFlow-Studio/actions/workflows/ci.yml/badge.svg)
 ![Release](https://github.com/xns1997/FormFlow-Studio/actions/workflows/release.yml/badge.svg)
@@ -35,7 +35,7 @@ FormFlow 的应对是把规则、契约与事件 API 统一建模为事实来源
 | --- | --- | --- |
 | 共享领域核心 | `shared/formflow-core` | 行为 DSL 文法（Chevrotain）、解析与静态分析、有界模型检查、事件契约、字段推断、表单脚手架 |
 | 服务端 | `server` | Express API、七领域 MCP（project / data / form / workflow / behavior / quality / delivery）、项目包校验、oxfmt 代码格式化 |
-| 客户端 | `ui` | React 19 + Vite；表单设计器（X6）、流程画布、Monaco 语言服务（DSL / 事件 JS）、数据工作台（AG Grid） |
+| 客户端 | `ui` | React 19 + Vite；表单设计器（X6）、流程画布、Monaco 语言服务（DSL / 事件 JS / 实体 JSON Schema）、数据工作台（AG Grid）、统一设计系统（令牌 + 动效） |
 | 智能体平台 | `server` agent 模块 | Codex 式单循环 V5：harness 化（agent-loop / prompts / events + formflow-harness 注入）、动态计划、`batchReads`、artifact 转存、回归测试门禁、模型自审、运行指标 |
 
 ## 3. 核心机制
@@ -56,6 +56,13 @@ FormFlow 的应对是把规则、契约与事件 API 统一建模为事实来源
 
 - 规则 DSL：悬停文档、参数提示、快速修复、大纲与折叠、全量格式化、规则驱动内联补全、语义高亮——全部在自定义 Provider 层实现，不引入 LSP。
 - 事件 JS：TS worker 提供类型底座（按事件契约自动生成的 `.d.ts` + 中文 JSDoc），自定义增强覆盖字符串参数内上下文补全、ghost text、`await`/引用修复。
+- 实体 JSON 双模式：表单设计、流程、数据表配置、项目设置四类实体可在可视化与整文档 JSON 之间双向切换；JSON 编辑按实体 JSON Schema（`shared/schemas/`）提供结构 lint 与补全，并叠加语义层校验（控件类型、节点 specId、ID 唯一、连线端点、字段/表引用、主键与排序列）。
+
+### 3.6 设计系统与动效
+
+- 唯一规范来源：[`docs/design-system.md`](./docs/design-system.md)；设计令牌（颜色/几何/层级/动效）只允许定义于 `ui/src/style/variables.css`。
+- 动效分层：交互状态（按钮/输入/卡片）见 `button-system.css` 与 `controls-base.css`；关键帧与过渡应用层统一在 `animations-enhanced.css`，全部引用动效令牌并遵守 `prefers-reduced-motion`。
+- 关键帧命名全局唯一；校验命令见设计系统文档 §5（裸时长/裸缓动扫描、重名扫描、令牌越界扫描）。
 
 ### 3.4 事件契约单一事实来源
 
@@ -92,6 +99,7 @@ Windows 请改用 `powershell -ExecutionPolicy Bypass -File scripts/init-env.ps1
 | [`docs/behavior-event-reference.md`](./docs/behavior-event-reference.md) | 事件与上下文 Reference |
 | [`docs/llm-tools-mcp.md`](./docs/llm-tools-mcp.md) | MCP / HTTP 工具说明 |
 | [`docs/project-creation-spec.md`](./docs/project-creation-spec.md) | 项目编排规范 |
+| [`docs/design-system.md`](./docs/design-system.md) | 设计令牌、交互状态、动效阶梯与组件配方（唯一规范来源） |
 | [`docs/llm-provider.md`](./docs/llm-provider.md) · [`docs/pgvector.md`](./docs/pgvector.md) | 大模型 Provider 与向量检索 |
 | [`docs/readme/mermaid-flowchart-guidelines.md`](./docs/readme/mermaid-flowchart-guidelines.md) | Mermaid 流程图规范 |
 

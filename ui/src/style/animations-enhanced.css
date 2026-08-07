@@ -3,29 +3,22 @@
    Spring-based animations, micro-interactions, and dynamic transitions
    ══════════════════════════════════════════════════════════════════════ */
 
-/* ── iOS Spring Animation Curves ────────────────────────────────────── */
-:root {
-  /* iOS-standard spring curves */
-  --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --spring-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  --spring-snappy: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --spring-gentle: cubic-bezier(0.4, 0, 0.2, 1);
-
-  /* Duration tokens */
-  --duration-instant: 0.1s;
-  --duration-fast: 0.2s;
-  --duration-normal: 0.3s;
-  --duration-slow: 0.4s;
-  --duration-slower: 0.5s;
-
-  /* Easing tokens */
-  --ease-in: cubic-bezier(0.4, 0, 1, 1);
-  --ease-out: cubic-bezier(0, 0, 0.2, 1);
-  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* 动效令牌已迁移至 variables.css（唯一来源）；本文件只保留动画关键帧与过渡应用层。 */
 
 /* ── Button Micro-Interactions ──────────────────────────────────────── */
-:where(button:not([class]), .ui-btn) {
+.ui-btn,
+.toolbar-btn,
+.agent-btn,
+.behavior-toolbar-btn,
+.unified-add-btn,
+.lg-btn,
+.onboarding-btn,
+.card-mode-btn,
+.btn-primary,
+.btn-secondary,
+.ui-btn-secondary,
+button.primary,
+button:not([class]) {
   transition:
     transform var(--duration-fast) var(--spring-bounce),
     box-shadow var(--duration-fast) var(--spring-smooth),
@@ -34,18 +27,47 @@
     color var(--duration-fast) var(--ease-out);
 }
 
-:where(button:not([class]), .ui-btn):hover:not(:disabled) {
+.ui-btn:hover:not(:disabled),
+.toolbar-btn:hover:not(:disabled),
+.agent-btn:hover:not(:disabled),
+.behavior-toolbar-btn:hover:not(:disabled),
+.unified-add-btn:hover:not(:disabled),
+.lg-btn:hover:not(:disabled),
+.onboarding-btn:hover:not(:disabled),
+.card-mode-btn:hover:not(:disabled),
+.btn-primary:hover:not(:disabled),
+.btn-secondary:hover:not(:disabled),
+.ui-btn-secondary:hover:not(:disabled),
+button.primary:hover:not(:disabled),
+button:not([class]):hover:not(:disabled) {
   transform: translateY(-1px) scale(1.02);
 }
 
-:where(button:not([class]), .ui-btn):active:not(:disabled) {
+.ui-btn:active:not(:disabled),
+.toolbar-btn:active:not(:disabled),
+.agent-btn:active:not(:disabled),
+.behavior-toolbar-btn:active:not(:disabled),
+.unified-add-btn:active:not(:disabled),
+.lg-btn:active:not(:disabled),
+.onboarding-btn:active:not(:disabled),
+.card-mode-btn:active:not(:disabled),
+.btn-primary:active:not(:disabled),
+.btn-secondary:active:not(:disabled),
+.ui-btn-secondary:active:not(:disabled),
+button.primary:active:not(:disabled),
+button:not([class]):active:not(:disabled) {
   transform: translateY(0) scale(0.98);
   transition-duration: var(--duration-instant);
 }
 
 /* Primary button pulse on hover */
-.ui-btn-primary:hover:not(:disabled) {
-  animation: button-pulse 0.6s var(--spring-smooth);
+.ui-btn-primary:hover:not(:disabled),
+.agent-btn-primary:hover:not(:disabled),
+.lg-btn-primary:hover:not(:disabled),
+.onboarding-btn--primary:hover:not(:disabled),
+.btn-primary:hover:not(:disabled),
+button.primary:hover:not(:disabled) {
+  animation: button-pulse var(--duration-slower) var(--spring-smooth);
 }
 
 @keyframes button-pulse {
@@ -95,7 +117,7 @@
 }
 
 .sidebar-item.active {
-  animation: sidebar-active 0.3s var(--spring-bounce);
+  animation: sidebar-active var(--duration-normal) var(--spring-bounce);
 }
 
 @keyframes sidebar-active {
@@ -164,7 +186,7 @@
 
 .tabs .tab.active,
 .ant-segmented-item-selected {
-  animation: tab-activate 0.3s var(--spring-bounce);
+  animation: tab-activate var(--duration-normal) var(--spring-bounce);
 }
 
 @keyframes tab-activate {
@@ -208,17 +230,17 @@
 }
 
 .modal-overlay {
-  animation: modal-overlay-enter 0.25s var(--ease-out) forwards;
+  animation: modal-overlay-enter var(--duration-normal) var(--ease-out) forwards;
 }
 
 .modal-content,
 .modal-container {
-  animation: modal-content-enter 0.35s var(--spring-snappy) forwards;
+  animation: modal-content-enter var(--duration-normal) var(--spring-snappy) forwards;
 }
 
 .modal-overlay.modal-exiting .modal-content,
 .modal-overlay.modal-exiting .modal-container {
-  animation: modal-content-exit 0.2s var(--ease-in) forwards;
+  animation: modal-content-exit var(--duration-fast) var(--ease-in) forwards;
 }
 
 /* ── Toast and Notification Animations ──────────────────────────────── */
@@ -245,16 +267,16 @@
 }
 
 .toast-enter {
-  animation: toast-slide-in 0.35s var(--spring-snappy) forwards;
+  animation: toast-slide-in var(--duration-normal) var(--spring-snappy) forwards;
 }
 
 .toast-exit {
-  animation: toast-slide-out 0.25s var(--ease-in) forwards;
+  animation: toast-slide-out var(--duration-normal) var(--ease-in) forwards;
 }
 
 /* Notification cascade */
 .notification-item {
-  animation: notification-pop 0.3s var(--spring-bounce) backwards;
+  animation: notification-pop var(--duration-normal) var(--spring-bounce) backwards;
 }
 
 @keyframes notification-pop {
@@ -293,13 +315,13 @@
 
 .lg-select-popup,
 .ant-select-dropdown {
-  animation: dropdown-enter 0.2s var(--spring-snappy) forwards;
+  animation: dropdown-enter var(--duration-fast) var(--spring-snappy) forwards;
   transform-origin: top center;
 }
 
 .lg-select-popup.closing,
 .ant-select-dropdown.closing {
-  animation: dropdown-exit 0.15s var(--ease-in) forwards;
+  animation: dropdown-exit var(--duration-fast) var(--ease-in) forwards;
 }
 
 /* ── Loading and Skeleton Animations ────────────────────────────────── */
@@ -320,7 +342,7 @@
     var(--fill-secondary) 63%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
+  animation: shimmer 1.5s var(--ease-in-out) infinite;
   border-radius: var(--radius-sm);
 }
 
@@ -331,7 +353,7 @@
 }
 
 .spinner {
-  animation: spin 0.8s linear infinite;
+  animation: spin var(--duration-slower) var(--ease-linear) infinite;
 }
 
 /* Pulse animation for loading states */
@@ -341,7 +363,7 @@
 }
 
 .loading-pulse {
-  animation: pulse 1.5s ease-in-out infinite;
+  animation: pulse 1.5s var(--ease-in-out) infinite;
 }
 
 /* ── Progress Bar Animations ───────────────────────────────────────── */
@@ -350,7 +372,7 @@
 }
 
 .progress-bar {
-  animation: progress-fill 0.5s var(--ease-out) forwards;
+  animation: progress-fill var(--duration-slow) var(--ease-out) forwards;
 }
 
 .progress-bar.indeterminate {
@@ -361,7 +383,7 @@
     transparent 100%
   );
   background-size: 200% 100%;
-  animation: progress-indeterminate 1.5s ease-in-out infinite;
+  animation: progress-indeterminate 1.5s var(--ease-in-out) infinite;
 }
 
 @keyframes progress-indeterminate {
@@ -410,7 +432,7 @@
     transparent 60%
   );
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity var(--duration-normal);
 }
 
 .ripple:active::after {
@@ -420,17 +442,17 @@
 
 /* ── Stagger Children Animation ────────────────────────────────────── */
 .stagger-children > * {
-  animation: stagger-fade-in 0.3s var(--spring-snappy) backwards;
+  animation: stagger-fade-in var(--duration-normal) var(--spring-snappy) backwards;
 }
 
 .stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
-.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
-.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
-.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
-.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
-.stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+.stagger-children > *:nth-child(2) { animation-delay: var(--duration-instant); }
+.stagger-children > *:nth-child(3) { animation-delay: var(--duration-fast); }
+.stagger-children > *:nth-child(4) { animation-delay: var(--duration-fast); }
+.stagger-children > *:nth-child(5) { animation-delay: var(--duration-normal); }
+.stagger-children > *:nth-child(6) { animation-delay: var(--duration-normal); }
 /* 超过六个的子项同样入场，延迟封顶。 */
-.stagger-children > *:nth-child(n+7) { animation-delay: 0.35s; }
+.stagger-children > *:nth-child(n+7) { animation-delay: var(--duration-normal); }
 
 @keyframes stagger-fade-in {
   from {
@@ -451,7 +473,7 @@
 }
 
 .shake {
-  animation: shake 0.5s var(--spring-bounce);
+  animation: shake var(--duration-slow) var(--spring-bounce);
 }
 
 /* ── Success Checkmark Animation ───────────────────────────────────── */
@@ -470,7 +492,7 @@
 }
 
 .checkmark {
-  animation: checkmark 0.5s var(--spring-snappy) forwards;
+  animation: checkmark var(--duration-slow) var(--spring-snappy) forwards;
 }
 
 /* ── Number Count Up Animation ─────────────────────────────────────── */
@@ -486,7 +508,7 @@
 }
 
 .count-up {
-  animation: count-up 0.4s var(--spring-snappy) forwards;
+  animation: count-up var(--duration-slow) var(--spring-snappy) forwards;
 }
 
 /* ── Floating Action Button Animation ──────────────────────────────── */
@@ -502,7 +524,7 @@
 }
 
 .fab {
-  animation: fab-enter 0.4s var(--spring-bounce) forwards;
+  animation: fab-enter var(--duration-slow) var(--spring-bounce) forwards;
 }
 
 .fab:hover {
@@ -513,8 +535,107 @@
   transform: scale(0.9) rotate(-5deg);
 }
 
+/* ── 工作区模式切换淡入（复用 layout.css 的 page-fade-in 关键帧） ──── */
+.unified-mode-enter {
+  animation: page-fade-in var(--duration-fast) var(--ease-out);
+}
+
+/* ── 项目智能体抽屉进出场 ─────────────────────────────────────────── */
+.project-agent-drawer {
+  animation: project-agent-drawer-enter var(--duration-normal) var(--spring-snappy);
+  transform-origin: right bottom;
+}
+
+.project-agent-drawer.project-agent-drawer-anchored {
+  transform-origin: right top;
+}
+
+.project-agent-drawer.project-agent-drawer-exiting {
+  animation: project-agent-drawer-exit var(--duration-fast) var(--ease-out) forwards;
+}
+
+@keyframes project-agent-drawer-enter {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes project-agent-drawer-exit {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(14px) scale(0.97); }
+}
+
+/* ── 调试抽屉展开/收起 ────────────────────────────────────────────── */
+/* 收起态是 188×52 的小胶囊、展开态是 460px×72vh 面板，两者无变换等价物，
+   此处是唯一的 width/height 过渡例外；仅单个固定定位元素，代价可控。 */
+.debug-drawer {
+  transition:
+    width var(--duration-normal) var(--ease-out),
+    height var(--duration-normal) var(--ease-out);
+}
+
+.debug-drawer__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  animation: debug-body-enter var(--duration-fast) var(--ease-out);
+}
+
+@keyframes debug-body-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── 触发锚定的浮层弹出（agent 菜单 / 项目范围卡 / 筛选弹层共用） ───── */
+@keyframes popover-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.agent-row-menu .agent-menu,
+.project-agent-project-scope-card {
+  transform-origin: right top;
+  animation: popover-in var(--duration-fast) var(--spring-snappy);
+}
+
+/* ── 智能体错误横幅 ────────────────────────────────────────────────── */
+.project-agent-error {
+  animation: error-banner-enter var(--duration-fast) var(--ease-out);
+}
+
+@keyframes error-banner-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── 设计器 details 手风琴（属性分组 / 工具箱数据表） ──────────────── */
+/* 渐进增强：不支持 interpolate-size / ::details-content 的浏览器保持瞬时展开。 */
+details.properties-group,
+details.toolbox-data-table,
+details.toolbox-data-sheet {
+  interpolate-size: allow-keywords;
+}
+
+details.properties-group::details-content,
+details.toolbox-data-table::details-content,
+details.toolbox-data-sheet::details-content {
+  block-size: 0;
+  overflow: clip;
+  transition:
+    block-size var(--duration-fast) var(--ease-out),
+    content-visibility var(--duration-fast) allow-discrete;
+}
+
+details.properties-group[open]::details-content,
+details.toolbox-data-table[open]::details-content,
+details.toolbox-data-sheet[open]::details-content {
+  block-size: auto;
+  content-visibility: visible;
+}
+
 /* ── Reduced Motion Support ────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
+  /* reduced-motion 有意值：时长压到感知阈值以下，见 docs/design-system.md §5 */
   *,
   *::before,
   *::after {

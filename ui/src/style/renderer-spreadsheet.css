@@ -128,7 +128,7 @@
 
 .rs-cell {
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background var(--duration-instant);
 }
 
 .rs-cell:hover { background: var(--panel-soft); }

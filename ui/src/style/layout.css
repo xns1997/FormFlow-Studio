@@ -12,15 +12,15 @@
 }
 
 .page-transition-enter {
-  animation: page-fade-in 0.2s ease-out forwards;
+  animation: page-fade-in var(--duration-fast) var(--ease-out) forwards;
 }
 
 .page-transition-exit {
-  animation: page-fade-out 0.15s ease-in forwards;
+  animation: page-fade-out var(--duration-fast) var(--ease-in) forwards;
 }
 
 .tab-content {
-  animation: page-fade-in 0.15s ease-out forwards;
+  animation: page-fade-in var(--duration-fast) var(--ease-out) forwards;
 }
 
 /* ── 三栏布局系统 ────────────────────────────────────── */
@@ -79,7 +79,7 @@
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-out);
 }
 
 .tabs .tab.active {
@@ -139,7 +139,7 @@
   border-radius: var(--radius);
   background: var(--panel);
   color: var(--text);
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-out);
 }
 .actions button:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
 
@@ -242,8 +242,8 @@
 .project-agent-card-status.superseded { color: var(--text-secondary); background: var(--fill); text-decoration: line-through; }
 .project-agent-card-status.stopped { color: var(--text-secondary); background: var(--fill); }
 .project-agent-progress-track { height: 6px; margin: 0 12px 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
-.project-agent-progress-track span { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width .3s ease; }
-.project-agent-progress-card.overview.running .project-agent-progress-track span { background-size: 24px 24px; animation: project-agent-progress 1s linear infinite; }
+.project-agent-progress-track span { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width var(--duration-normal) var(--ease-out); }
+.project-agent-progress-card.overview.running .project-agent-progress-track span { background-size: 24px 24px; animation: project-agent-progress 1s var(--ease-linear) infinite; }
 @keyframes project-agent-progress { to { filter: brightness(1.18); } }
 .project-agent-progress-card > footer { display: flex; flex-wrap: wrap; gap: 6px 12px; padding: 0 12px 10px; color: var(--text-secondary); font: 10px ui-monospace, SFMono-Regular, Menlo, monospace; }
 .project-agent-progress-card details { border-top: 1px solid var(--line); padding: 8px 12px; color: var(--text-secondary); font-size: 11px; }
@@ -293,7 +293,7 @@
   border-bottom-right-radius: 0;
 }
 .project-agent-resize-handle { position: absolute; z-index: 4; inset: 0 auto 0 -5px; width: 10px; cursor: ew-resize; touch-action: none; }
-.project-agent-resize-handle::after { content: ''; position: absolute; top: 42%; bottom: 42%; left: 4px; width: 2px; border-radius: 2px; background: var(--line-strong); opacity: 0; transition: opacity .15s; }
+.project-agent-resize-handle::after { content: ''; position: absolute; top: 42%; bottom: 42%; left: 4px; width: 2px; border-radius: 2px; background: var(--line-strong); opacity: 0; transition: opacity var(--duration-fast); }
 .project-agent-resize-handle:hover::after, .project-agent-resize-handle:focus::after { opacity: 1; }
 .project-agent-resize-handle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .project-agent-drawer > .project-agent-workbench-header { flex: 0 0 auto; min-height: 58px; padding: 10px 12px 10px 16px; align-items: center; background: linear-gradient(135deg, var(--accent-soft), var(--panel) 65%); }
@@ -301,9 +301,8 @@
 .project-agent-workbench-title strong { color: var(--text); font-size: 14px; }
 .project-agent-workbench-title small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .project-agent-header-actions { position: relative; display: flex !important; flex-direction: row !important; align-items: center; gap: 6px !important; }
-.project-agent-header-actions > button, .project-agent-more-menu > summary { min-height: 30px; border: 1px solid var(--line) !important; border-radius: 7px; padding: 5px 9px; background: var(--panel) !important; color: var(--text); font-size: 11px !important; line-height: 1; cursor: pointer; }
+.project-agent-header-actions > button, .project-agent-more-menu > summary { min-height: 30px; border-radius: 7px; padding: 5px 9px; color: var(--text); font-size: 11px !important; line-height: 1; cursor: pointer; }
 .project-agent-header-actions > button.danger { border-color: color-mix(in srgb, var(--danger) 28%, transparent) !important; color: var(--danger); }
-.project-agent-header-actions > button.primary { border-color: var(--accent) !important; background: var(--accent) !important; color: #fff; }
 .project-agent-header-actions > button:disabled { opacity: .45; cursor: not-allowed; }
 .project-agent-header-actions > .project-agent-close { width: 32px; padding: 0; border-color: transparent !important; background: transparent !important; font-size: 22px !important; }
 .project-agent-connection-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 14px; padding: 5px 8px; background: var(--fill); color: var(--text-secondary); font-size: 10px; white-space: nowrap; }
@@ -364,9 +363,9 @@
 .project-agent-stagebar span.passed i { background: var(--success); color: #fff; }
 .project-agent-stagebar span.failed i { background: var(--danger); color: #fff; }
 .project-agent-workbench-tabs { flex: 0 0 auto; display: flex; gap: 4px; border-bottom: 1px solid var(--line); padding: 0 16px; background: var(--panel); }
-.project-agent-workbench-tabs button { position: relative; border: 0; padding: 9px 12px 10px; background: transparent; color: var(--text-secondary); cursor: pointer; font-size: 12px; transition: color 0.15s ease; }
+.project-agent-workbench-tabs button { position: relative; border: 0; padding: 9px 12px 10px; background: transparent; color: var(--text-secondary); cursor: pointer; font-size: 12px; transition: color var(--duration-fast) var(--ease-out); }
 .project-agent-workbench-tabs button.active { color: var(--accent); font-weight: 650; }
-.project-agent-workbench-tabs button.active::after { content: ''; position: absolute; right: 8px; bottom: -1px; left: 8px; height: 2px; border-radius: 2px; background: var(--accent); animation: tab-indicator-enter 0.2s ease-out forwards; }
+.project-agent-workbench-tabs button.active::after { content: ''; position: absolute; right: 8px; bottom: -1px; left: 8px; height: 2px; border-radius: 2px; background: var(--accent); animation: tab-indicator-enter var(--duration-fast) var(--ease-out) forwards; }
 .project-agent-workbench-tabs button span { margin-left: 4px; border-radius: 9px; padding: 1px 5px; background: var(--fill); color: var(--text-secondary); font-size: 10px; }
 @keyframes tab-indicator-enter { from { transform: scaleX(0); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
 .project-agent-connection-notice { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid color-mix(in srgb, var(--warning) 28%, transparent); padding: 7px 14px; background: var(--warning-soft); color: var(--warning); }
@@ -376,7 +375,7 @@
 .project-agent-connection-notice span { font-size: 10px; }
 .project-agent-connection-notice button { border: 1px solid currentColor; border-radius: 6px; padding: 5px 8px; background: transparent; color: inherit; cursor: pointer; font-size: 10px; white-space: nowrap; }
 .project-agent-activity-notice { position: relative; flex: 0 0 auto; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; overflow: hidden; border-bottom: 1px solid var(--accent-line); padding: 9px 14px 11px; background: linear-gradient(90deg, var(--accent-soft), var(--panel)); }
-.project-agent-activity-spinner { position: relative; display: grid; place-items: center; width: 25px; height: 25px; border: 2px solid var(--accent-soft); border-top-color: var(--accent); border-radius: 50%; animation: project-agent-spin .9s linear infinite; }
+.project-agent-activity-spinner { position: relative; display: grid; place-items: center; width: 25px; height: 25px; border: 2px solid var(--accent-soft); border-top-color: var(--accent); border-radius: 50%; animation: project-agent-spin var(--duration-slower) var(--ease-linear) infinite; }
 .project-agent-activity-spinner i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
 .project-agent-activity-copy { min-width: 0; display: grid; gap: 1px; }
 .project-agent-activity-copy strong { color: var(--accent); font-size: 13px; line-height: 1.35; }
@@ -384,10 +383,10 @@
 .project-agent-activity-copy small { overflow: hidden; color: var(--text-secondary); font-size: 10px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
 .project-agent-activity-side { display: flex; align-items: center; gap: 7px; }
 .project-agent-activity-side b { display: inline-flex; align-items: center; gap: 5px; border-radius: 10px; padding: 3px 7px; background: var(--accent-soft); color: var(--accent); font-size: 10px; white-space: nowrap; }
-.project-agent-activity-side b i { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: project-agent-pulse .8s infinite alternate; }
+.project-agent-activity-side b i { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: project-agent-pulse var(--duration-slower) infinite alternate; }
 .project-agent-activity-side button { min-height: 28px; border: 1px solid var(--warning); border-radius: 7px; padding: 4px 9px; background: var(--panel); color: var(--warning); cursor: pointer; font-size: 10px; }
 .project-agent-activity-track { position: absolute; right: 0; bottom: 0; left: 0; height: 2px; overflow: hidden; background: var(--accent-soft); }
-.project-agent-activity-track i { position: absolute; width: 32%; height: 100%; background: linear-gradient(90deg, transparent, var(--accent), transparent); animation: project-agent-activity-slide 1.5s ease-in-out infinite; }
+.project-agent-activity-track i { position: absolute; width: 32%; height: 100%; background: linear-gradient(90deg, transparent, var(--accent), transparent); animation: project-agent-activity-slide 1.5s var(--ease-in-out) infinite; }
 .project-agent-activity-notice.stale { border-color: color-mix(in srgb, var(--warning) 28%, transparent); background: var(--warning-soft); }
 .project-agent-activity-notice.stale .project-agent-activity-copy strong { color: var(--warning); }
 .project-agent-activity-notice.stale .project-agent-activity-side b { background: var(--warning-soft); color: var(--warning); }
@@ -871,7 +870,6 @@
 .project-agent-history-status.completed { color: var(--success); }
 .project-agent-history-detail-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); padding: 8px 12px; background: var(--panel); }
 .project-agent-history-detail-actions > span { color: var(--text-secondary); font-size: 11px; }
-.project-agent-history-detail-actions button.primary { border-color: var(--accent); background: var(--accent); color: #fff; }
 .project-agent-history-detail > .project-agent-timeline { flex: 1 1 auto; min-height: 0; }
 .project-agent-history-mode :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .project-agent-floating-card {
@@ -921,7 +919,7 @@
 .project-agent-statusbar .project-agent-stagebar span.passed i { background: var(--success); color: #fff; }
 .project-agent-statusbar .project-agent-stagebar span.failed i { background: var(--danger); color: #fff; }
 .project-agent-status-progress { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; overflow: hidden; background: var(--fill); }
-.project-agent-status-progress span { display: block; height: 100%; border-radius: 2px; background: var(--accent); transition: width .2s ease; }
+.project-agent-status-progress span { display: block; height: 100%; border-radius: 2px; background: var(--accent); transition: width var(--duration-fast) var(--ease-out); }
 .project-agent-status-actions { display: flex; align-items: center; gap: 4px; }
 .project-agent-status-actions button { min-height: 28px; border: 1px solid var(--line); border-radius: 7px; padding: 5px 9px; background: var(--panel); color: var(--text); cursor: pointer; font-size: 11px; }
 .project-agent-status-actions button.danger { color: var(--danger); }
@@ -1008,7 +1006,7 @@
 .project-agent-task-disclosure > summary > span { display: grid; gap: 2px; }
 .project-agent-task-disclosure > summary strong { color: var(--text); font-size: 12px; }
 .project-agent-task-disclosure > summary small { color: var(--text-secondary); font-size: 11px; font-weight: 400; }
-.project-agent-task-disclosure > summary > i { color: var(--text-secondary); font-size: 18px; font-style: normal; transition: transform .15s ease; }
+.project-agent-task-disclosure > summary > i { color: var(--text-secondary); font-size: 18px; font-style: normal; transition: transform var(--duration-fast) var(--ease-out); }
 .project-agent-task-disclosure[open] > summary > i { transform: rotate(90deg); }
 .project-agent-disclosure-content,
 .project-agent-task-history,
@@ -1126,7 +1124,7 @@
   border-radius: var(--radius);
   border: var(--border);
   background: var(--panel);
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-out);
 }
 
 .page-header .header-actions button:hover {
@@ -1178,7 +1176,7 @@
   text-decoration: none;
   font-size: 12px;
   font-weight: 500;
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-out);
 }
 
 .system-settings-tab:hover {
@@ -1474,7 +1472,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: var(--panel-soft);
-  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+  transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
 }
 
 .llm-settings-item:hover {
@@ -1984,7 +1982,7 @@
   border: var(--border);
   border-radius: var(--radius-lg);
   background: var(--panel);
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-out);
 }
 
 .settings-form label > input:focus,
@@ -2031,7 +2029,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: var(--panel-soft);
-  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
 }
 
 .settings-option-item:hover {

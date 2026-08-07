@@ -25,7 +25,7 @@ import type { SchemaProperty } from '../../../nodes/excel-api-types';
 import { useProjectStore } from '../../project/store';
 import { executeFlow, topologicalSort, type FlowExecutionResult, type NodeExecutionResult } from '../../services/engine/flowEngine';
 import { rangeToAddress } from '../../services/data/rangeResolver';
-import type { SrcTableEntry } from '../../project/types';
+import type { SrcTableEntry, WorkflowFile } from '../../project/types';
 import type { RangeRef } from '../../models';
 import RangeSelector from '../../components/RangeSelector';
 import TypeDisplayer from '../../components/TypeDisplayer';
@@ -35,7 +35,6 @@ import CodeEditor from '../../components/CodeEditor';
 import { AntdCompatSelect } from '../../components/AntdFormControls';
 import { createCustomJsNodeExtraLib, createCustomJsNodeSuggestions, getNodeEffectivePorts, isCustomJsNodeSpec, parseCustomJsPortDefinitions, resolveNodeProperties, toCustomJsPortMap } from '../../services/config/customJsNode';
 import { formatStructuredProperty, isStructuredProperty, parseStructuredProperty } from '../../services/data/structuredProperties';
-import { jsonSuggestions } from '../../components/codeEditorSuggestions';
 import NodePalette, { QuickNodePicker } from '../../components/NodePalette';
 import { createQuickNodeConnection, findBestCompatiblePort, portTypesCompatible, type NodeConnectionContext } from '../../services/config/nodeDiscovery';
 import { createWorkflowIoScaffold, ensureWorkflowIo } from '../../services/engine/workflowIo';
@@ -43,6 +42,10 @@ import { layoutWorkflow, type LayoutDiagnostics, type MeasuredNodeBox } from '..
 import { isRemovedWorkflowNode } from '../../services/engine/removedWorkflowNodes';
 import { createFlowRecipe, FLOW_RECIPES, validateFlowRecipeParams, type FlowRecipeId } from '../../services/engine/flowRecipes';
 import { recordAuthoringEvent } from '../../services/formGeneration/authoringTelemetry';
+import { JsonModeView } from '../../services/schemaEditor/JsonModeView';
+import { useJsonModeEditor } from '../../services/schemaEditor/useJsonModeEditor';
+import { schemaPropertyToJsonSchema } from '../../services/schemaEditor/converters';
+import { ensureJsonSchema, portValueSchemaUri } from '../../services/schemaEditor/registry';
 import {
   buildProjectSheetValue,
   createNode,
@@ -628,6 +631,7 @@ function StructuredSchemaEditor({ prop, value, disabled, editorPath, onCommit }:
   const [error, setError] = useState<string | null>(null);
   const pendingValueRef = useRef<unknown>(value);
   const committedTextRef = useRef(externalText);
+  const schemaUri = portValueSchemaUri(prop.type, prop.name);
 
   useEffect(() => {
     setText(externalText);
@@ -639,7 +643,7 @@ function StructuredSchemaEditor({ prop, value, disabled, editorPath, onCommit }:
   return (
     <div className={`structured-property-editor ${error ? 'invalid' : ''}`}>
       <CodeEditor
-        path={editorPath}
+        path={schemaUri}
         value={text}
         onChange={(next) => {
           setText(next);
@@ -659,9 +663,7 @@ function StructuredSchemaEditor({ prop, value, disabled, editorPath, onCommit }:
         height={180}
         minHeight={120}
         lineNumbers
-        suggestions={jsonSuggestions}
-        autoSuggestPolicy="json-contextual"
-        suggestionTriggerCharacters={['"', ':', ',', '{', '[']}
+        providers={[(monaco) => { ensureJsonSchema(monaco, schemaUri, schemaPropertyToJsonSchema(prop)); }]}
         options={{ folding: true, lineNumbersMinChars: 2, scrollbar: { vertical: 'hidden', horizontal: 'auto' } }}
         compact
         fullscreen={!disabled}
@@ -867,6 +869,7 @@ export default function CanvasPage() {
   const [paletteOpen, setPaletteOpen] = useState(true);
   const [leftSidebarTab, setLeftSidebarTab] = useState<'workflows' | 'nodes' | 'fields'>('workflows');
   const [currentWorkflowId, setCurrentWorkflowId] = useState<string | null>(null);
+  const [jsonPendingWorkflowId, setJsonPendingWorkflowId] = useState<string | null>(null);
   const [flowRunning, setFlowRunning] = useState(false);
   const [flowResult, setFlowResult] = useState<FlowExecutionResult | null>(null);
   const [debugNodeId, setDebugNodeId] = useState<string | null>(null);
@@ -1418,6 +1421,88 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
     if (loadedNodes.length > 0) setSelectedNodeId(loadedNodes[0].id);
   }, [project, registry, updateWorkflow]);
 
+  const workflowJsonCommitted = useMemo(() => {
+    const wf = project?.workflows.find((w) => w.id === currentWorkflowId);
+    if (!wf) return null;
+    const { versions: _versions, ...rest } = wf;
+    return rest;
+  }, [project?.workflows, currentWorkflowId]);
+
+  const workflowJsonSemanticContext = useMemo(() => ({
+    nodeSpecIds: registry?.specs.map((spec) => spec.id) || [],
+    nodePropertiesBySpec: Object.fromEntries(
+      (registry?.specs || []).map((spec) => [
+        spec.id,
+        spec.properties.map((prop) => ({ name: prop.name, required: prop.required, type: prop.type })),
+      ]),
+    ),
+    tableIds: (project?.srcTable || []).map((table) => table.id),
+    sheetNamesByTable: Object.fromEntries(
+      (project?.srcTable || []).map((table) => [table.id, table.sheets.map((sheet) => sheet.name)]),
+    ),
+  }), [registry, project?.srcTable]);
+
+  const handleApplyWorkflowJson = useCallback((value: unknown) => {
+    if (!registry || !currentWorkflowId) return;
+    const wf = value as WorkflowFile;
+    if (!wf || !Array.isArray(wf.nodes) || !Array.isArray(wf.edges)) return;
+    const loadedNodes: FlowNode[] = wf.nodes.map((n) => {
+      const spec = resolveCanvasNodeSpec(registry, n.specId);
+      if (!spec) return null;
+      const savedOutputs = n.data?.outputs;
+      const savedError = n.data?.error;
+      let parsedProps: Record<string, unknown> = {};
+      try {
+        parsedProps = typeof n.data?.propertiesJson === 'string'
+          ? JSON.parse(n.data.propertiesJson)
+          : (n.data || {});
+      } catch { /* malformed JSON keeps empty props */ }
+      return {
+        id: n.id,
+        type: 'formflow' as const,
+        position: n.position,
+        data: {
+          specId: n.specId,
+          label: spec.label,
+          kind: spec.kind,
+          category: spec.category,
+          description: spec.description,
+          propertiesJson: JSON.stringify(parsedProps),
+          connectedPortsJson: '[]',
+          ...(savedOutputs ? { outputs: savedOutputs } : {}),
+          ...(savedError ? { error: savedError } : {}),
+        },
+      };
+    }).filter(Boolean) as FlowNode[];
+    const loadedEdges: Edge[] = dedupeEdges(wf.edges.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      sourceHandle: e.sourceHandle,
+      targetHandle: e.targetHandle,
+      animated: true,
+      type: 'smoothstep' as const,
+    })));
+    setNodes(loadedNodes);
+    setEdges(loadedEdges);
+    setSelectedNodeId(loadedNodes[0]?.id || null);
+    window.requestAnimationFrame(() => reactFlow.fitView({ padding: 0.2, duration: 250 }));
+  }, [registry, currentWorkflowId, reactFlow]);
+
+  const workflowJson = useJsonModeEditor({
+    kind: 'workflow',
+    entityKey: currentWorkflowId || 'none',
+    committed: workflowJsonCommitted,
+    semanticContext: workflowJsonSemanticContext,
+    onApply: handleApplyWorkflowJson,
+  });
+
+  useEffect(() => {
+    if (!jsonPendingWorkflowId || currentWorkflowId !== jsonPendingWorkflowId) return;
+    setJsonPendingWorkflowId(null);
+    workflowJson.enterJson();
+  }, [jsonPendingWorkflowId, currentWorkflowId, workflowJson]);
+
   // Ensure the canvas always has an active workflow context.
   useEffect(() => {
     if (!project || !registry) return;
@@ -1631,19 +1716,27 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
                 </div>
                 <div className="workflow-instance-list" data-testid="workflow-instance-list">
                   {(project?.workflows || []).map((workflow) => (
-                    <button
-                      type="button"
-                      key={workflow.id}
-                      className={`workflow-instance-item ${currentWorkflowId === workflow.id ? 'active' : ''}`}
-                      aria-current={currentWorkflowId === workflow.id ? 'true' : undefined}
-                      onClick={() => loadWorkflow(workflow.id)}
-                    >
-                      <span className="workflow-instance-icon" aria-hidden="true">⚡</span>
-                      <span className="workflow-instance-main">
-                        <strong>{workflow.name}</strong>
-                        <small>{workflow.nodes?.length || 0} 个节点 · {workflow.edges?.length || 0} 条连线</small>
-                      </span>
-                    </button>
+                    <div className="workflow-instance-row" key={workflow.id}>
+                      <button
+                        type="button"
+                        className={`workflow-instance-item ${currentWorkflowId === workflow.id ? 'active' : ''}`}
+                        aria-current={currentWorkflowId === workflow.id ? 'true' : undefined}
+                        onClick={() => loadWorkflow(workflow.id)}
+                      >
+                        <span className="workflow-instance-icon" aria-hidden="true">⚡</span>
+                        <span className="workflow-instance-main">
+                          <strong>{workflow.name}</strong>
+                          <small>{workflow.nodes?.length || 0} 个节点 · {workflow.edges?.length || 0} 条连线</small>
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className="workflow-instance-json"
+                        aria-label={`JSON 编辑 ${workflow.name}`}
+                        title="JSON 编辑"
+                        onClick={(event) => { event.stopPropagation(); loadWorkflow(workflow.id); setJsonPendingWorkflowId(workflow.id); }}
+                      >JSON</button>
+                    </div>
                   ))}
                   {(project?.workflows || []).length === 0 && <div className="workflow-instance-empty">暂无流程实例</div>}
                 </div>
@@ -1707,6 +1800,24 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
           }}>← 返回流程绑定</button>}
           <span>流程: {project?.workflows.length || 0} 个</span>
           {currentWorkflowId && <span className="workflow-id">当前: {project?.workflows.find((w) => w.id === currentWorkflowId)?.name}</span>}
+          {currentWorkflowId && (
+            <div className="design-json-mode-switch" role="tablist" aria-label="流程编辑模式">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={workflowJson.mode === 'visual'}
+                className={workflowJson.mode === 'visual' ? 'active' : ''}
+                onClick={() => { if (workflowJson.mode === 'json') workflowJson.exitToVisual(); }}
+              >可视化</button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={workflowJson.mode === 'json'}
+                className={workflowJson.mode === 'json' ? 'active' : ''}
+                onClick={() => workflowJson.enterJson()}
+              >JSON</button>
+            </div>
+          )}
           <button type="button" onClick={saveWorkflow}>保存流程</button>
           <button type="button" onClick={() => setShowRecipeModal(true)}>从配方创建</button>
           <button type="button" onClick={handleAutoLayout} disabled={nodes.length === 0}>自动整理流程</button>
@@ -1758,30 +1869,51 @@ ${flowData.edges.map(e => `<tr><td><code>${e.source}</code></td><td><code>${e.ta
             </button>
           </div>
         </div>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onEdgeDoubleClick={openEdgeInsertPicker}
-          onConnectStart={onConnectStart}
-          onConnectEnd={onConnectEnd}
-          isValidConnection={isValidConnection}
-          onNodeClick={(_e, n) => setSelectedNodeId(n.id)}
-          defaultEdgeOptions={{ type: 'smoothstep', animated: true }}
-          fitView
-        >
-          <Background /><MiniMap pannable zoomable nodeColor={(n) => {
-            const kind = (n.data as FlowNodeData)?.kind;
-            if (kind === 'behavior') return '#8b5cf6';
-            if (kind === 'xlsx-method') return '#2563eb';
-            if (kind === 'generic') return '#ea580c';
-            if (kind === 'scenario') return '#0f766e';
-            return '#6b7280';
-          }} /><Controls />
-        </ReactFlow>
+        {workflowJson.mode === 'json' && currentWorkflowId ? (
+          <div className="canvas-json-page">
+            <JsonModeView
+              kind="workflow"
+              entityKey={currentWorkflowId}
+              title={`${project?.workflows.find((w) => w.id === currentWorkflowId)?.name || '流程'} · 流程 JSON`}
+              text={workflowJson.entry.text}
+              parseError={workflowJson.entry.parseError}
+              structuralErrors={workflowJson.entry.structuralErrors}
+              semanticIssues={workflowJson.entry.semanticIssues}
+              semanticContext={workflowJsonSemanticContext}
+              onTextChange={workflowJson.setDraftText}
+              onValidate={workflowJson.updateStructuralMarkers}
+              onApply={workflowJson.applyJson}
+              onDiscard={workflowJson.discardJson}
+              onExitToVisual={() => { workflowJson.exitToVisual(); }}
+              height="100%"
+            />
+          </div>
+        ) : (
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onEdgeDoubleClick={openEdgeInsertPicker}
+            onConnectStart={onConnectStart}
+            onConnectEnd={onConnectEnd}
+            isValidConnection={isValidConnection}
+            onNodeClick={(_e, n) => setSelectedNodeId(n.id)}
+            defaultEdgeOptions={{ type: 'smoothstep', animated: true }}
+            fitView
+          >
+            <Background /><MiniMap pannable zoomable nodeColor={(n) => {
+              const kind = (n.data as FlowNodeData)?.kind;
+              if (kind === 'behavior') return '#8b5cf6';
+              if (kind === 'xlsx-method') return '#2563eb';
+              if (kind === 'generic') return '#ea580c';
+              if (kind === 'scenario') return '#0f766e';
+              return '#6b7280';
+            }} /><Controls />
+          </ReactFlow>
+        )}
       </section>
       <Modal open={showRecipeModal} onClose={() => setShowRecipeModal(false)} width="min(680px, 92vw)">
         <ModalHeader title="从流程配方创建" onClose={() => setShowRecipeModal(false)} />

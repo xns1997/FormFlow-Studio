@@ -3,6 +3,11 @@
 import './services/engine/urlSearchParamsShim';
 // 必须在任何 CodeEditor 挂载前装配本地 Monaco（CDN 被拦截时远程 worker 失败会致编辑器无 model）。
 import './services/monacoSetup';
+// 注册实体 JSON Schema，使 Monaco 对表单/流程/数据/设置 JSON 模型做结构 lint 与补全。
+import * as monaco from 'monaco-editor';
+import type { Monaco } from '@monaco-editor/react';
+import { setupEntityJsonSchemas } from './services/schemaEditor/registry';
+setupEntityJsonSchemas(monaco as unknown as Monaco);
 
 import '@xyflow/react/dist/style.css';
 import 'antd/dist/reset.css';

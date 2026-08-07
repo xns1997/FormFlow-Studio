@@ -6,7 +6,7 @@
     position: fixed;
     left: -260px;
     z-index: 1000;
-    transition: left 0.3s ease;
+    transition: left var(--duration-normal) var(--ease-out);
   }
   .sidebar.open { left: 0; }
   .sidebar-toggle { display: flex !important; }

@@ -19,7 +19,7 @@
   border-radius: 22px;
   background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,245,249,0.9));
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--duration-fast) var(--ease-out);
 }
 
 .lg-upload:hover {
@@ -102,7 +102,7 @@
   font-size: 13px;
   font-weight: 600;
   box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-  animation: toast-in 0.3s ease, toast-out 0.3s ease 1.7s forwards;
+  animation: toast-in var(--duration-normal) var(--ease-out), toast-out var(--duration-normal) var(--ease-out) 1.7s forwards;
   pointer-events: none;
 }
 

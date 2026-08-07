@@ -168,7 +168,7 @@
   height: 100%;
   background: var(--accent);
   border-radius: 3px;
-  transition: width 0.3s;
+  transition: width var(--duration-normal);
 }
 
 .dist-count {
@@ -270,7 +270,7 @@
 .osc-bar-fill {
   height: 100%;
   border-radius: 4px;
-  transition: width 0.3s;
+  transition: width var(--duration-normal);
 }
 
 .osc-metric-value {

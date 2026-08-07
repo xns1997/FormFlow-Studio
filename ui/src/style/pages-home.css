@@ -12,7 +12,7 @@
   border-radius: var(--radius);
   background: var(--panel-soft);
   cursor: default;
-  transition: all 0.15s;
+  transition: all var(--duration-fast);
 }
 
 .upload-zone:hover {
@@ -67,7 +67,7 @@
   border-radius: var(--radius);
   background: var(--panel);
   width: 200px;
-  transition: all 0.2s;
+  transition: all var(--duration-fast);
 }
 
 .projects-search input:focus {
@@ -102,7 +102,7 @@
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--duration-fast);
 }
 
 .projects-view-toggle button:hover {
@@ -195,7 +195,7 @@
   border: var(--border);
   box-shadow: var(--card-shadow);
   cursor: default;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all var(--duration-fast) cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
 }
 
@@ -210,7 +210,7 @@
 .project-card:active {
   transform: translateY(0);
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  transition-duration: 0.1s;
+  transition-duration: var(--duration-instant);
 }
 
 .card-cover {
@@ -259,21 +259,6 @@
 
 .card-mode-btn {
   flex: 1;
-  padding: 6px 10px;
-  font-size: 11px;
-  font-weight: 500;
-  border: var(--border);
-  border-radius: var(--radius);
-  background: var(--panel-soft);
-  color: var(--text);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.card-mode-btn:hover {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--accent);
 }
 
 .card-actions {
@@ -281,7 +266,7 @@
   gap: 6px;
   margin-top: auto;
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity var(--duration-fast);
 }
 
 .project-card:hover .card-actions {
@@ -297,7 +282,7 @@
   background: var(--panel);
   color: var(--text);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--duration-fast);
 }
 
 .card-actions button:not(.ui-btn):hover {
@@ -335,7 +320,7 @@
   background: var(--panel);
   box-shadow: var(--card-shadow);
   outline: none;
-  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease, background .18s ease;
+  transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
 }
 
 .projects-page .project-card:hover,
@@ -407,7 +392,7 @@
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -.012em;
-  transition: color .15s ease;
+  transition: color var(--duration-fast) var(--ease-out);
 }
 
 .projects-page .card-name-button:hover { color: var(--accent); }
@@ -488,7 +473,7 @@
   background: var(--accent-soft);
   color: var(--accent);
   font-weight: 650;
-  transition: background .15s ease, color .15s ease, box-shadow .15s ease, transform .15s ease;
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
 }
 
 .projects-page .card-mode-btn:hover {
@@ -524,8 +509,8 @@
   box-shadow: none;
   color: var(--muted);
   font-size: 11px;
-  font-weight: 550;
-  transition: background .15s ease, color .15s ease;
+  font-weight: 600;
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
 }
 
 .projects-page .card-actions .ui-btn:hover { background: var(--accent-soft); color: var(--accent); }
@@ -690,7 +675,7 @@
   text-align: left;
   padding: var(--space-lg);
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: transform var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
 }
 
 .project-wizard-mode-card:hover,
@@ -802,7 +787,7 @@
   color: var(--text);
   padding: 11px 12px;
   font: inherit;
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-out);
 }
 
 .project-wizard-form input:focus,

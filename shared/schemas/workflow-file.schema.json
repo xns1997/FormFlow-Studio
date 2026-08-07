@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "formflow://schemas/workflow-file.json",
+  "title": "流程文件",
+  "description": "单个流程的 WorkflowFile 配置面（不含自动生成的 versions 快照）。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "description",
+    "nodes",
+    "edges",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "specId", "position", "data"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string" },
+          "specId": { "type": "string" },
+          "position": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["x", "y"],
+            "properties": {
+              "x": { "type": "number" },
+              "y": { "type": "number" }
+            }
+          },
+          "data": { "type": "object" }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "source", "target"],
+        "properties": {
+          "id": { "type": "string" },
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "sourceHandle": { "type": "string" },
+          "targetHandle": { "type": "string" }
+        }
+      }
+    },
+    "createdAt": { "type": "string" },
+    "updatedAt": { "type": "string" }
+  }
+}

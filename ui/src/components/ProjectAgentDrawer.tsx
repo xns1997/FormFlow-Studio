@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { llmApi, projectApi } from '../services/io/api';
+import { prefersReducedMotion } from '../services/animation';
 import { useProjectStore } from '../project/store';
 import ThreadSidebar, { type ThreadSidebarHandle } from './ThreadSidebar';
 import ConversationSurface from './ConversationSurface';
@@ -39,7 +40,9 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
   const lastSeq = useRef(0);
   const refreshTimer = useRef<number | undefined>(undefined);
   const automaticApprovalIds = useRef(new Set<string>());
+  const closeTimerRef = useRef<number | null>(null);
   const [open, setOpen] = useState(false);
+  const [exiting, setExiting] = useState(false);
   const [threads, setThreads] = useState<ProjectAgentThread[]>([]);
   const [thread, setThread] = useState<ProjectAgentThread | null>(null);
   const [activeDetail, setActiveDetail] = useState<SurfaceItem | null>(null);
@@ -169,9 +172,22 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
   }, [open, launcherVariant, width]);
 
   const closeDrawer = useCallback(() => {
-    setOpen(false);
-    window.requestAnimationFrame(() => launcherRef.current?.focus());
-  }, []);
+    if (exiting) return;
+    if (prefersReducedMotion()) {
+      setExiting(false);
+      setOpen(false);
+      window.requestAnimationFrame(() => launcherRef.current?.focus());
+      return;
+    }
+    setExiting(true);
+    closeTimerRef.current = window.setTimeout(() => {
+      setExiting(false);
+      setOpen(false);
+      window.requestAnimationFrame(() => launcherRef.current?.focus());
+    }, 200);
+  }, [exiting]);
+
+  useEffect(() => () => { if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current); }, []);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -429,8 +445,8 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
   const mergedDrawerStyle = useMemo(() => open ? drawerStyle : { width }, [drawerStyle, open, width]);
   const composerLabel = running ? '转向' : pausedForQuestion ? '回答' : '发送';
 
-  const drawerNode = open ? (
-    <aside className={`project-agent-drawer ${launcherVariant === 'nav' ? 'project-agent-drawer-anchored' : ''}`} style={mergedDrawerStyle} aria-label="项目智能体">
+  const drawerNode = (open || exiting) ? (
+    <aside className={`project-agent-drawer ${launcherVariant === 'nav' ? 'project-agent-drawer-anchored' : ''}${exiting ? ' project-agent-drawer-exiting' : ''}`} style={mergedDrawerStyle} aria-label="项目智能体">
       <div className="project-agent-resize-handle" role="separator" aria-label="调整项目智能体工作台宽度" aria-orientation="vertical" aria-valuemin={860} aria-valuemax={1180} aria-valuenow={width} tabIndex={0} onPointerDown={beginResize} onKeyDown={resizeByKeyboard} />
       <div className="agent-workbench">
         <header className="agent-workbench-header">
@@ -509,7 +525,7 @@ export default function ProjectAgentDrawer({ projectId, launcherVariant = 'float
 
   return (
     <>
-      <button ref={launcherRef} type="button" className={launcherClassName} onClick={() => setOpen((value) => !value)} aria-label="项目智能体" aria-expanded={open}>
+      <button ref={launcherRef} type="button" className={launcherClassName} onClick={() => (open ? closeDrawer() : setOpen(true))} aria-label="项目智能体" aria-expanded={open}>
         <span aria-hidden="true">✦</span>
         <span className={launcherVariant === 'nav' ? 'nav-label' : undefined}>项目智能体</span>
       </button>

@@ -7,6 +7,9 @@ import { useProjectStore } from '../../project/store';
 import { normalizeProjectStructure } from '../../project/manager';
 import { createVersion, getVersions, restoreVersion, type ProjectVersion } from '../../services/io/projectVersionHistory';
 import { buildDocsPath, buildWorkspacePath, type ProjectSettingsSection } from '../../services/io/routes';
+import type { ProjectConfig, ProjectSettings } from '../../project/types';
+import { JsonModeView } from '../../services/schemaEditor/JsonModeView';
+import { useJsonModeEditor } from '../../services/schemaEditor/useJsonModeEditor';
 
 const sectionMeta: Record<ProjectSettingsSection, { title: string; description: string; docSlug?: string }> = {
   general: { title: '常规', description: '维护项目名称、描述、作者和版本信息。', docSlug: 'context-reference' },
@@ -97,6 +100,34 @@ export default function SettingsPage() {
     setVersionLabel('');
   }, [project, versionLabel, versions]);
 
+  const settingsJsonCommitted = useMemo(
+    () => project ? { config: project.config, settings: project.settings } : null,
+    [project],
+  );
+
+  const handleApplySettingsJson = useCallback((value: unknown) => {
+    if (!project || !value || typeof value !== 'object') return;
+    const next = value as { config?: Partial<ProjectConfig>; settings?: Partial<ProjectSettings> };
+    if (!next.config || !next.settings) return;
+    const now = new Date().toISOString();
+    const updated = {
+      ...project,
+      config: { ...project.config, ...next.config, id: project.config.id, updatedAt: now } as ProjectConfig,
+      settings: { ...project.settings, ...next.settings, updatedAt: now } as ProjectSettings,
+    };
+    void setProject(updated);
+    setSaved(true);
+    window.setTimeout(() => setSaved(false), 2000);
+  }, [project, setProject]);
+
+  const settingsJson = useJsonModeEditor({
+    kind: 'settings',
+    entityKey: project?.config.id || 'none',
+    committed: settingsJsonCommitted,
+    semanticContext: {},
+    onApply: handleApplySettingsJson,
+  });
+
   const restoreVer = useCallback((versionId: string) => {
     if (!project) return;
     const restored = restoreVersion(project.config.id, versionId);
@@ -119,10 +150,31 @@ export default function SettingsPage() {
           <div className="settings-toolbar-actions">
             <Link to={buildWorkspacePath(id || project.config.id, 'designer')} className="ui-btn ui-btn-xs ui-btn-subtle">← 返回编辑器</Link>
             <Link to={docLink} className="docs-link-button">查看相关文档</Link>
+            <button type="button" onClick={() => settingsJson.enterJson()} className="ui-btn ui-btn-xs ui-btn-subtle settings-json-entry">JSON</button>
             <button type="button" onClick={save} className={`ui-btn ui-btn-xs ${saved ? 'ui-btn-success' : 'ui-btn-subtle'}`}>{saved ? '✓ 已保存' : '保存'}</button>
           </div>
         </div>
         <div className="page-section-body">
+          {settingsJson.mode === 'json' ? (
+            <div className="settings-json-pane">
+              <JsonModeView
+                kind="settings"
+                entityKey={project.config.id}
+                title={`${project.config.name} · 项目设置 JSON`}
+                text={settingsJson.entry.text}
+                parseError={settingsJson.entry.parseError}
+                structuralErrors={settingsJson.entry.structuralErrors}
+                semanticIssues={settingsJson.entry.semanticIssues}
+                semanticContext={{}}
+                onTextChange={settingsJson.setDraftText}
+                onValidate={settingsJson.updateStructuralMarkers}
+                onApply={settingsJson.applyJson}
+                onDiscard={settingsJson.discardJson}
+                onExitToVisual={() => { settingsJson.exitToVisual(); }}
+                height="100%"
+              />
+            </div>
+          ) : (
           <div className="settings-page-body project-settings-body">
           {isEmbeddedMode && (
             <div className="project-settings-section-tabs">
@@ -262,6 +314,7 @@ export default function SettingsPage() {
             </section>
           )}
           </div>
+          )}
         </div>
       </div>
       <div className="page-inspector project-settings-inspector">

@@ -101,7 +101,7 @@ button { min-width: var(--control-height-sm); min-height: var(--control-height-s
   background: var(--fill-secondary) !important;
   color: var(--text) !important;
   box-shadow: none !important;
-  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+  transition: border-color var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
 }
 
 :where(input, textarea, select)::placeholder,

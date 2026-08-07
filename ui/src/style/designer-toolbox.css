@@ -226,7 +226,7 @@
   cursor: pointer;
   text-align: left;
   user-select: none;
-  transition: color 0.15s ease;
+  transition: color var(--duration-fast) var(--ease-out);
 }
 
 .toolbox-category-header:hover {
@@ -295,7 +295,7 @@
   color: var(--text);
   background: color-mix(in srgb, var(--panel-soft) 72%, transparent);
   user-select: none;
-  transition: color 0.15s ease, background 0.15s ease;
+  transition: color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
 }
 
 .toolbox-item:focus-visible {

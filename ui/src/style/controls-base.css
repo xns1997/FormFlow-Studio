@@ -1,0 +1,52 @@
+/* 输入控件基底：裸 input / select / textarea 的统一外观与交互态。
+ * 仅使用 :where() 提供零特异性兜底，具体上下文（工具栏/表格等）可自行覆盖布局尺寸。
+ * 规范见 docs/design-system.md 第 2 / 4.2 节。 */
+:where(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+  select,
+  textarea
+) {
+  min-height: var(--control-height);
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out);
+}
+
+:where(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+  select,
+  textarea
+):hover:not(:disabled) {
+  border-color: var(--accent-line);
+}
+
+:where(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+  select,
+  textarea
+):focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+:where(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+  select,
+  textarea
+):disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+::placeholder {
+  color: var(--text-tertiary);
+}

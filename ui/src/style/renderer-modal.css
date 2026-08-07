@@ -1,36 +1,4 @@
-/* ── 弹窗 ───────────────────────────────────────────────── */
-
-@keyframes modal-overlay-enter {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes modal-overlay-exit {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-@keyframes modal-content-enter {
-  from {
-    opacity: 0;
-    transform: translateY(16px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes modal-content-exit {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(8px) scale(0.98);
-  }
-}
+/* ── 弹窗（关键帧统一在 animations-enhanced.css）──────────────── */
 
 .modal-overlay {
   position: fixed;
@@ -42,11 +10,11 @@
   padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
   background: rgba(0,0,0,0.4);
   backdrop-filter: blur(4px);
-  animation: modal-overlay-enter 0.2s ease-out forwards;
+  animation: modal-overlay-enter var(--duration-fast) var(--ease-out) forwards;
 }
 
 .modal-overlay.modal-exiting {
-  animation: modal-overlay-exit 0.15s ease-in forwards;
+  animation: modal-overlay-exit var(--duration-fast) var(--ease-in) forwards;
 }
 
 .modal-content,
@@ -59,12 +27,12 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  animation: modal-content-enter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: modal-content-enter var(--duration-normal) cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .modal-overlay.modal-exiting .modal-content,
 .modal-overlay.modal-exiting .modal-container {
-  animation: modal-content-exit 0.15s ease-in forwards;
+  animation: modal-content-exit var(--duration-fast) var(--ease-in) forwards;
 }
 
 .modal-header {
@@ -143,11 +111,11 @@
 }
 
 .toast-enter {
-  animation: toast-enter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: toast-enter var(--duration-normal) cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .toast-exit {
-  animation: toast-exit 0.15s ease-in forwards;
+  animation: toast-exit var(--duration-fast) var(--ease-in) forwards;
 }
 
 /* ── 通知项动画 ──────────────────────────────────────── */

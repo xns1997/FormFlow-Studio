@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: width 0.2s ease-out;
+  transition: width var(--duration-fast) var(--ease-out);
 }
 
 .sidebar.collapsed {
@@ -42,7 +42,7 @@
   padding: 6px 8px;
   border-radius: var(--radius);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background var(--duration-fast);
 }
 
 .sidebar-item:hover { background: var(--panel-soft); }
@@ -61,7 +61,7 @@
   color: var(--muted);
   border-radius: var(--radius);
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity var(--duration-fast);
 }
 .sidebar-item:hover .sidebar-item-delete { opacity: 1; }
 .sidebar-item-delete:hover { background: #fee2e2; color: var(--danger); }

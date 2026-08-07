@@ -87,6 +87,18 @@
   padding: 8px;
 }
 
+.workflow-instance-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.workflow-instance-row .workflow-instance-item {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
 .workflow-instance-item {
   display: flex;
   width: 100%;
@@ -185,7 +197,7 @@
   border: var(--border);
   border-radius: var(--radius);
   background: var(--panel);
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-out);
 }
 
 .palette-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
@@ -209,7 +221,7 @@
   background: var(--panel);
   color: var(--muted);
   font-size: 10px;
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-out);
 }
 .palette-group-filter button.active { background: var(--accent-soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 30%, var(--line)); font-weight: 600; }
 
@@ -499,31 +511,6 @@
   font-size: 11px;
 }
 
-.canvas-toolbar button {
-  padding: var(--space-xs) var(--space-sm);
-  font-size: 11px;
-  border: var(--border);
-  border-radius: var(--radius);
-  background: var(--panel);
-  transition: all 0.15s ease;
-}
-
-.canvas-toolbar button:hover {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.canvas-toolbar button.primary {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-}
-
-.canvas-toolbar button.primary:hover {
-  background: #1d4ed8;
-}
-
 .canvas-toolbar select,
 .canvas-toolbar .ant-select {
   padding: var(--space-xs) var(--space-sm);
@@ -580,12 +567,6 @@
   flex-shrink: 0;
   color: var(--muted);
   font-size: 10px;
-}
-
-.canvas-log-modal .modal-footer button.primary {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
 }
 
 .canvas-log-modal-body {
@@ -813,14 +794,6 @@
 .canvas-inspector .schema-config .primary {
   width: 100%;
   margin-top: 10px;
-  padding: 7px 14px;
-  font-size: 12px;
-  font-weight: 600;
-  border: none;
-  border-radius: var(--radius);
-  background: var(--accent);
-  color: #fff;
-  cursor: pointer;
 }
 
 .canvas-inspector .inspector-run-bar {
@@ -831,10 +804,6 @@
 .canvas-inspector .inspector-run-bar .ui-btn-primary {
   width: 100%;
 }
-
-.canvas-inspector .inspector-run-bar .ui-btn-primary:hover { background: linear-gradient(180deg, #4f8ff8 0%, #1d4ed8 100%); }
-
-.canvas-inspector .schema-config .primary:hover { background: #1d4ed8; }
 
 .canvas-inspector .schema-fields {
   display: flex;
@@ -894,7 +863,7 @@
   border-radius: var(--radius);
   background: var(--panel);
   color: var(--text);
-  transition: border-color 0.15s;
+  transition: border-color var(--duration-fast);
 }
 
 .canvas-inspector .schema-field input:focus,

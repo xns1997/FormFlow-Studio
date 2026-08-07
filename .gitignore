@@ -40,6 +40,13 @@ output/
 docs/compose/
 .playwright-cli/
 .claude/
+# Graphify 分析产物（临时生成，不入库）
+.graphify-work/
+graphify-out/
+**/graphify-out/
+**/.graphify_ast.json
+**/.graphify_chunks/
+**/.graphify_detect.json
 # 会话生成的临时演示项目不入库；官方演示包（retail/clinic/training/construction 等）按名称正常跟踪。
 projects/data/proj_*.formflow/
 projects/data/device_*.formflow/

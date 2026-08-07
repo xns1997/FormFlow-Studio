@@ -55,6 +55,8 @@ import {
   BoxPlotChart,
 } from '../../components/DataCharts';
 import DataTemplateRecommendationModal from './DataTemplateRecommendationModal';
+import { JsonModeView } from '../../services/schemaEditor/JsonModeView';
+import { useJsonModeEditor } from '../../services/schemaEditor/useJsonModeEditor';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -238,6 +240,7 @@ export default function DataPreviewPage({
 
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [activeSheetIdx, setActiveSheetIdx] = useState(0);
+  const [jsonPendingSheetKey, setJsonPendingSheetKey] = useState<string | null>(null);
   const [totalRows, setTotalRows] = useState(0);
   const [queryTotal, setQueryTotal] = useState(0);
   const [searchDraft, setSearchDraft] = useState('');
@@ -326,6 +329,32 @@ export default function DataPreviewPage({
     if (!selectedTable || !activeSheet || !currentConfig) return;
     await saveSheetConfig(selectedTable.id, activeSheet.name, { ...currentConfig, ...patch });
   }, [selectedTable, activeSheet, currentConfig, saveSheetConfig]);
+
+  const tableJsonSemanticContext = useMemo(() => ({
+    headers: activeSheet?.headers || [],
+  }), [activeSheet?.headers]);
+
+  const handleApplyTableJson = useCallback((value: unknown) => {
+    if (!selectedTable || !activeSheet || !currentConfig || !value || typeof value !== 'object') return;
+    void saveSheetConfig(selectedTable.id, activeSheet.name, { ...currentConfig, ...(value as Partial<TableConfig>) });
+  }, [selectedTable, activeSheet, currentConfig, saveSheetConfig]);
+
+  const tableJson = useJsonModeEditor({
+    kind: 'table-config',
+    entityKey: currentViewKey || 'none',
+    committed: currentConfig,
+    semanticContext: tableJsonSemanticContext,
+    onApply: handleApplyTableJson,
+  });
+
+  useEffect(() => {
+    if (!jsonPendingSheetKey) return;
+    const [tableId, indexStr] = jsonPendingSheetKey.split(':');
+    const index = Number(indexStr);
+    if (selectedTable?.id !== tableId || activeSheetIdx !== index) return;
+    setJsonPendingSheetKey(null);
+    tableJson.enterJson();
+  }, [jsonPendingSheetKey, selectedTable?.id, activeSheetIdx, tableJson]);
 
   const workbench = useDataWorkbench({
     viewKey: currentViewKey,
@@ -1826,6 +1855,7 @@ export default function DataPreviewPage({
               <button id="data-preview-tab-table" type="button" role="tab" aria-selected={activeTab === 'table'} aria-controls="data-preview-panel" className={activeTab === 'table' ? 'sheet-tab active' : 'sheet-tab'} onClick={() => setActiveTab('table')}>数据表</button>
               <button id="data-preview-tab-describe" type="button" role="tab" aria-selected={activeTab === 'describe'} aria-controls="data-preview-panel" className={activeTab === 'describe' ? 'sheet-tab active' : 'sheet-tab'} onClick={() => setActiveTab('describe')}>数据概览</button>
               <button id="data-preview-tab-config" type="button" role="tab" aria-selected={activeTab === 'config'} aria-controls="data-preview-panel" className={activeTab === 'config' ? 'sheet-tab active' : 'sheet-tab'} onClick={() => setActiveTab('config')}>配置</button>
+              <button id="data-preview-tab-json" type="button" role="tab" aria-selected={tableJson.mode === 'json'} aria-controls="data-preview-panel" className={tableJson.mode === 'json' ? 'sheet-tab active' : 'sheet-tab'} onClick={() => tableJson.enterJson()}>JSON</button>
             </div>
             {activeSheet && <span className="data-preview-summary">{queryTotal !== totalRows ? `${queryTotal} / ${totalRows}` : totalRows} 行 × {activeSheetData?.colCount || 0} 列</span>}
             <button
@@ -1926,6 +1956,25 @@ export default function DataPreviewPage({
             <div className="data-preview-empty-panel">
               <p>{project?.srcTable.length ? '选择左侧数据表查看预览' : '创建或上传数据表开始工作'}</p>
             </div>
+          ) : tableJson.mode === 'json' ? (
+            <div className="data-preview-json-pane">
+              <JsonModeView
+                kind="table-config"
+                entityKey={currentViewKey || 'none'}
+                title={`${selectedTable?.fileName || ''} / ${activeSheet?.name || ''} · 表配置 JSON`}
+                text={tableJson.entry.text}
+                parseError={tableJson.entry.parseError}
+                structuralErrors={tableJson.entry.structuralErrors}
+                semanticIssues={tableJson.entry.semanticIssues}
+                semanticContext={tableJsonSemanticContext}
+                onTextChange={tableJson.setDraftText}
+                onValidate={tableJson.updateStructuralMarkers}
+                onApply={tableJson.applyJson}
+                onDiscard={tableJson.discardJson}
+                onExitToVisual={() => { if (tableJson.exitToVisual()) setActiveTab('config'); }}
+                height="100%"
+              />
+            </div>
           ) : activeTab === 'table' ? (
             <div className="data-preview-table-pane">
               {selectedTable && selectedTable.sheets.length > 1 && (
@@ -1939,6 +1988,15 @@ export default function DataPreviewPage({
                     >
                       {sheet.name}
                       <span className="sheet-count">{sheet.rowCount}</span>
+                      <span
+                        className="sheet-tab-json"
+                        role="button"
+                        tabIndex={0}
+                        title="JSON 编辑该表配置"
+                        aria-label={`JSON 编辑 ${sheet.name}`}
+                        onClick={(event) => { event.stopPropagation(); if (selectedTable) { switchDataContext(selectedTable.id, index); setJsonPendingSheetKey(`${selectedTable.id}:${index}`); } }}
+                        onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); if (selectedTable) { switchDataContext(selectedTable.id, index); setJsonPendingSheetKey(`${selectedTable.id}:${index}`); } } }}
+                      >JSON</span>
                     </button>
                   ))}
                 </div>

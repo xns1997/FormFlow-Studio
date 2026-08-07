@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "formflow://schemas/design-file.json",
+  "title": "表单设计文件",
+  "description": "单个表单的 DesignFile 配置面：窗体、控件与绑定。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "viewport",
+    "gridSize",
+    "coordinateSpace",
+    "formWindow",
+    "components",
+    "bindings",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "formMode": {
+      "enum": ["create", "edit", "detail", "lookup-edit"]
+    },
+    "templateKey": { "type": "string" },
+    "templateParameters": { "type": "object" },
+    "generatedBy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["templateId", "templateVersion", "instanceId", "generatedAt"],
+      "properties": {
+        "templateId": { "type": "string" },
+        "templateVersion": { "type": "string" },
+        "instanceId": { "type": "string" },
+        "generatedAt": { "type": "string" }
+      }
+    },
+    "viewport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["zoom", "panX", "panY"],
+      "properties": {
+        "zoom": { "type": "number", "minimum": 0.1 },
+        "panX": { "type": "number" },
+        "panY": { "type": "number" }
+      }
+    },
+    "gridSize": { "type": "number", "minimum": 1 },
+    "coordinateSpace": {
+      "enum": ["window-content-v1"]
+    },
+    "formWindow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "width", "height", "props"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "width": { "type": "number", "minimum": 320 },
+        "height": { "type": "number", "minimum": 240 },
+        "props": { "type": "object" }
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "x", "y", "width", "height", "props"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string" },
+          "x": { "type": "number" },
+          "y": { "type": "number" },
+          "width": { "type": "number", "minimum": 1 },
+          "height": { "type": "number", "minimum": 1 },
+          "props": { "type": "object" },
+          "parentId": { "type": "string" },
+          "fieldBinding": { "type": "string" },
+          "behaviorBindings": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "children": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "locked": { "type": "boolean" },
+          "visible": { "type": "boolean" },
+          "zIndex": { "type": "number" }
+        }
+      }
+    },
+    "bindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "sourceId", "targetId", "type", "config"],
+        "properties": {
+          "id": { "type": "string" },
+          "sourceId": { "type": "string" },
+          "targetId": { "type": "string" },
+          "type": { "enum": ["field", "behavior"] },
+          "config": { "type": "object" }
+        }
+      }
+    },
+    "createdAt": { "type": "string" },
+    "updatedAt": { "type": "string" }
+  }
+}

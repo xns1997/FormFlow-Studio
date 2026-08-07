@@ -165,7 +165,7 @@
   color: #0f172a;
   font-size: 12px;
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color var(--duration-fast);
 }
 
 .diagnostic-panel__search:focus {
@@ -200,7 +200,7 @@
   color: #64748b;
   font-size: 11px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--duration-fast);
 }
 
 .diagnostic-tab:hover {
@@ -238,7 +238,7 @@
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.88);
   overflow: hidden;
-  transition: box-shadow 0.15s;
+  transition: box-shadow var(--duration-fast);
 }
 
 .diagnostic-item--expanded {
@@ -253,7 +253,7 @@
   padding: 10px 12px;
   cursor: pointer;
   outline: none;
-  transition: background 0.1s;
+  transition: background var(--duration-instant);
 }
 
 .diagnostic-item__header:hover {
@@ -555,7 +555,7 @@
   padding: 6px 8px;
   border-radius: 8px;
   font-size: 12px;
-  transition: background 0.15s;
+  transition: background var(--duration-fast);
 }
 
 .dataflow-node:hover {
@@ -743,7 +743,7 @@
   font-size: 10px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--duration-fast);
   flex-shrink: 0;
   padding: 0;
   line-height: 1;
@@ -768,7 +768,7 @@
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
   border: 1px solid rgba(148, 163, 184, 0.14);
   backdrop-filter: blur(12px);
-  animation: tooltip-enter 0.15s ease-out;
+  animation: tooltip-enter var(--duration-fast) var(--ease-out);
 }
 
 @keyframes tooltip-enter {
@@ -830,7 +830,7 @@
   border-radius: 12px;
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4);
   pointer-events: none;
-  animation: highlight-pulse 1.5s ease-in-out infinite;
+  animation: highlight-pulse 1.5s var(--ease-in-out) infinite;
 }
 
 @keyframes highlight-pulse {
@@ -848,7 +848,7 @@
   box-shadow: 0 24px 64px rgba(15, 23, 42, 0.2);
   border: 1px solid rgba(148, 163, 184, 0.14);
   backdrop-filter: blur(18px);
-  animation: tooltip-enter 0.2s ease-out;
+  animation: tooltip-enter var(--duration-fast) var(--ease-out);
 }
 
 .onboarding-tooltip__step {
@@ -881,36 +881,4 @@
 .onboarding-tooltip__nav {
   display: flex;
   gap: 8px;
-}
-
-.onboarding-btn {
-  padding: 6px 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(255, 255, 255, 0.9);
-  color: #475569;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.onboarding-btn:hover {
-  background: rgba(248, 250, 252, 0.9);
-}
-
-.onboarding-btn--skip {
-  color: #94a3b8;
-  border-color: transparent;
-  background: transparent;
-  font-size: 11px;
-}
-
-.onboarding-btn--primary {
-  background: #2563eb;
-  color: #fff;
-  border-color: #2563eb;
-}
-
-.onboarding-btn--primary:hover {
-  background: #1d4ed8;
 }

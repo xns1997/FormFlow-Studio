@@ -40,27 +40,6 @@
   gap: var(--space-xs);
 }
 
-.behavior-toolbar-btn {
-  padding: var(--space-xs) var(--space-sm);
-  font-size: 10px;
-  border: var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--panel);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.behavior-toolbar-btn:hover {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.behavior-toolbar-btn.primary {
-  font-size: 11px;
-  padding: var(--space-xs) var(--space-sm);
-}
-
 .behavior-empty-state {
   text-align: center;
   padding: var(--space-xl) 0;
@@ -103,7 +82,7 @@
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-out);
 }
 
 .behavior-mode-btn.active {
@@ -128,7 +107,7 @@
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-out);
 }
 
 .behavior-tab-btn.active {

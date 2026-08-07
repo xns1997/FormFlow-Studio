@@ -80,7 +80,7 @@
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
-  transition: color 0.16s ease, background-color 0.16s ease;
+  transition: color var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out);
 }
 
 .project-workspace-link:hover {
@@ -370,7 +370,6 @@
 .behavior-control-info dt { color: var(--muted); }
 .behavior-control-info dd { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .behavior-create-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
-.behavior-create-actions .primary { background: var(--accent); color: white; border-color: var(--accent); }
 .behavior-create-actions button:disabled { opacity: .5; cursor: not-allowed; }
 
 /* 中间画布 */
@@ -445,20 +444,6 @@
   color: var(--muted);
 }
 
-.unified-add-btn {
-  padding: var(--space-xs) var(--space-sm);
-  font-size: 10px;
-  border: var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--panel);
-  cursor: pointer;
-}
-
-.unified-add-btn:hover {
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-
 .unified-list-item {
   display: flex;
   align-items: center;
@@ -466,7 +451,7 @@
   padding: 6px var(--space-sm);
   cursor: pointer;
   border-radius: var(--radius-sm);
-  transition: background 0.1s;
+  transition: background var(--duration-instant);
 }
 
 .unified-list-item:hover {
@@ -657,7 +642,7 @@
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: all var(--duration-fast) var(--ease-out);
   white-space: nowrap;
 }
 
@@ -770,7 +755,7 @@
   border-radius: var(--radius);
   margin-bottom: 6px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--duration-fast);
 }
 
 .behavior-overview-item:hover {
@@ -903,7 +888,7 @@
 .rule-agent-message.assistant { align-self: flex-start; border: var(--border); background: var(--panel); }
 .rule-agent-composer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px; padding: 9px; border-top: var(--border); background: var(--panel); }
 .rule-agent-composer textarea { min-width: 0; resize: none; padding: 7px 8px; border: var(--border); border-radius: 7px; font: inherit; font-size: 11px; }
-.rule-agent-composer button, .rule-agent-actions .primary { border-color: var(--accent); background: var(--accent); color: #fff; }
+.rule-agent-composer button { border-color: var(--accent); background: var(--accent); color: #fff; }
 .rule-agent-empty { display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 1px dashed var(--line); border-radius: 9px; color: var(--muted); font-size: 11px; }
 .rule-agent-empty button { padding: 5px 7px; border: 0; border-radius: 5px; background: var(--panel); color: var(--accent); text-align: left; cursor: pointer; }
 .rule-agent-working { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 10px; }

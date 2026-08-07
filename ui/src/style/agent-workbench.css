@@ -32,30 +32,10 @@
 .agent-workbench-header .agent-title small { font-size: 11px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .agent-workbench-header .agent-spacer { flex: 1 1 auto; }
 
-.agent-btn {
-  border: var(--border);
-  border-radius: var(--radius-sm);
-  padding: 6px 14px;
-  min-height: 28px;
-  background: var(--panel);
-  color: var(--text);
-  font-size: 12px;
-  cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
-}
-.agent-btn:hover:not(:disabled) { background: var(--fill); }
-.agent-btn:disabled { opacity: 0.45; cursor: default; }
-.agent-btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.agent-btn-primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
-.agent-btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
-.agent-btn-danger:hover:not(:disabled) { filter: brightness(0.94); }
-.agent-btn-ghost { background: transparent; border-color: transparent; color: var(--accent); }
-.agent-btn-ghost:hover:not(:disabled) { background: var(--accent-soft); }
-.agent-btn:focus-visible, .agent-row:focus-visible, .agent-card:focus-visible, .agent-list-row:focus-visible {
+.agent-row:focus-visible, .agent-card:focus-visible, .agent-list-row:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
-.agent-icon-btn { min-width: 30px; padding: 6px 8px; line-height: 1; }
 
 .agent-badge {
   display: inline-flex;
@@ -122,7 +102,7 @@
   border-radius: 50%;
   border: 2px solid color-mix(in srgb, var(--accent) 25%, transparent);
   border-top-color: var(--accent);
-  animation: agent-spin 0.9s linear infinite;
+  animation: agent-spin var(--duration-slower) var(--ease-linear) infinite;
 }
 .agent-running-copy { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .agent-running-copy strong { font-size: 11px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -130,7 +110,7 @@
 
 .agent-progress { position: relative; height: 5px; border-radius: 3px; background: var(--fill); overflow: hidden; }
 .agent-progress > span { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--accent); transition: width var(--duration-normal) var(--ease-out); }
-.agent-progress.is-busy > span { background: linear-gradient(90deg, var(--accent-soft), var(--accent), var(--accent-soft)); background-size: 200% 100%; animation: agent-indeterminate 1.4s linear infinite; }
+.agent-progress.is-busy > span { background: linear-gradient(90deg, var(--accent-soft), var(--accent), var(--accent-soft)); background-size: 200% 100%; animation: agent-indeterminate 1.4s var(--ease-linear) infinite; }
 @keyframes agent-indeterminate { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 
 /* ── Three columns ────────────────────────────────────────────────────────── */
@@ -236,7 +216,7 @@
 .agent-card {
   transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
 }
-.agent-card.is-running { border-color: var(--accent-line); animation: agent-card-run-pulse 1.6s ease-in-out infinite; }
+.agent-card.is-running { border-color: var(--accent-line); animation: agent-card-run-pulse 1.6s var(--ease-in-out) infinite; }
 @keyframes agent-card-run-pulse {
   0%, 100% { box-shadow: 0 0 0 0 var(--accent-soft); }
   50% { box-shadow: 0 0 0 3px var(--accent-soft); }
@@ -244,7 +224,7 @@
 .agent-card.is-failed { border-color: var(--danger); background: var(--danger-soft); }
 .agent-card.is-passed { border-color: var(--success); background: var(--success-soft); }
 .agent-card.is-blocked { border-color: var(--warning-line, var(--warning)); background: var(--warning-soft); }
-.agent-card.is-attention { border-color: var(--warning-line, var(--warning)); background: var(--warning-soft); animation: agent-card-attention-pulse 1.8s ease-in-out infinite; }
+.agent-card.is-attention { border-color: var(--warning-line, var(--warning)); background: var(--warning-soft); animation: agent-card-attention-pulse 1.8s var(--ease-in-out) infinite; }
 @keyframes agent-card-attention-pulse {
   0%, 100% { border-color: var(--warning-line, var(--warning)); }
   50% { border-color: color-mix(in srgb, var(--warning) 45%, transparent); }
@@ -266,7 +246,7 @@
 .agent-card.agent-card-linked {
   border-color: var(--warning);
   box-shadow: 0 0 0 3px var(--warning-soft), var(--card-shadow-hover);
-  animation: agent-card-pulse 0.9s ease-in-out 2;
+  animation: agent-card-pulse var(--duration-slower) var(--ease-in-out) 2;
 }
 @keyframes agent-card-pulse {
   0%, 100% { border-color: var(--warning); }
@@ -275,7 +255,7 @@
 
 /* ── 内容区动效与符号 ─────────────────────────────────────────────── */
 .agent-surface-stack > .agent-card {
-  animation: agent-card-in .22s ease both;
+  animation: agent-card-in .22s var(--ease-out) both;
 }
 @keyframes agent-card-in {
   from { opacity: 0; transform: translateY(6px); }
@@ -284,9 +264,9 @@
 .agent-card-message { background: var(--panel-soft); }
 .agent-status-icon[data-sender='user'] { color: var(--accent); font-weight: 700; }
 .agent-status-icon[data-sender='agent'] { color: var(--text-secondary); }
-.agent-status-icon[data-state='running'] { animation: agent-spin 1.1s linear infinite; }
+.agent-status-icon[data-state='running'] { animation: agent-spin 1.1s var(--ease-linear) infinite; }
 @keyframes agent-spin { to { transform: rotate(360deg); } }
-.agent-status-icon[data-state='attention'] { animation: agent-pulse-soft 1.5s ease-in-out infinite; }
+.agent-status-icon[data-state='attention'] { animation: agent-pulse-soft 1.5s var(--ease-in-out) infinite; }
 @keyframes agent-pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
 .agent-progress > span { position: relative; overflow: hidden; }
 .agent-progress > span::after {
@@ -326,7 +306,7 @@
 }
 .agent-status-icon[data-state='passed'] { color: var(--success); background: var(--success-soft); }
 .agent-status-icon[data-state='failed'] { color: var(--danger); background: var(--danger-soft); }
-.agent-status-icon[data-state='running'] { color: var(--accent); background: var(--accent-soft); animation: agent-pulse 1.2s ease-in-out infinite; }
+.agent-status-icon[data-state='running'] { color: var(--accent); background: var(--accent-soft); animation: agent-pulse 1.2s var(--ease-in-out) infinite; }
 .agent-status-icon[data-state='blocked'] { color: var(--danger); background: var(--danger-soft); }
 .agent-status-icon[data-state='attention'] { color: var(--warning); background: var(--warning-soft); }
 @keyframes agent-pulse { 50% { opacity: 0.55; } }
@@ -350,7 +330,7 @@
   color: var(--text);
   font-size: 11px;
   cursor: pointer;
-  transition: border-color .15s ease, box-shadow .15s ease;
+  transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
 }
 .agent-question-task:hover { border-color: var(--warning); box-shadow: 0 0 0 3px var(--warning-soft); }
 .agent-question-task .agent-question-task-label {
@@ -423,7 +403,7 @@
   align-items: flex-start;
   gap: 8px;
   padding: 7px 12px;
-  animation: agent-row-in 200ms var(--ease-out) both;
+  animation: agent-row-in var(--duration-fast) var(--ease-out) both;
 }
 .agent-timeline-row + .agent-timeline-row { border-top: 1px dashed var(--border-subtle); }
 .agent-timeline-row .agent-status-icon { margin-top: 1px; }
@@ -507,7 +487,7 @@
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  animation: agent-row-in 200ms var(--ease-out) both;
+  animation: agent-row-in var(--duration-fast) var(--ease-out) both;
 }
 .agent-checklist-row::before {
   content: '';
@@ -522,8 +502,8 @@
 .agent-checklist-row:hover { background: var(--fill); }
 .agent-checklist-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .agent-checklist-running { background: var(--accent-soft); }
-.agent-checklist-running::before { background: var(--accent); animation: agent-bar-pulse 1.4s ease-in-out infinite; }
-.agent-checklist-row.agent-card-linked { background: var(--warning-soft); animation: agent-row-pulse 0.9s ease-in-out 2; }
+.agent-checklist-running::before { background: var(--accent); animation: agent-bar-pulse 1.4s var(--ease-in-out) infinite; }
+.agent-checklist-row.agent-card-linked { background: var(--warning-soft); animation: agent-row-pulse var(--duration-slower) var(--ease-in-out) 2; }
 .agent-checklist-row.agent-card-linked::before { background: var(--warning); }
 @keyframes agent-row-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @keyframes agent-bar-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
@@ -544,7 +524,7 @@
   -webkit-backdrop-filter: var(--blur);
   box-shadow: var(--shadow-md);
   padding: 12px 14px;
-  animation: agent-panel-in 260ms var(--ease-out);
+  animation: agent-panel-in var(--duration-normal) var(--ease-out);
 }
 @keyframes agent-panel-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .agent-action-block { display: flex; flex-direction: column; gap: 8px; }
@@ -686,7 +666,7 @@ button.agent-event-row:focus-visible { outline: 2px solid var(--accent); outline
   display: flex;
   flex-direction: column;
   background: var(--panel-elevated);
-  animation: agent-sheet-in 220ms var(--ease-out);
+  animation: agent-sheet-in var(--duration-fast) var(--ease-out);
 }
 @keyframes agent-sheet-in { from { transform: translateX(18px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 

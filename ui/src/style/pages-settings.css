@@ -208,7 +208,7 @@
   background: var(--panel-soft);
   cursor: pointer;
   box-shadow: var(--card-shadow);
-  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  transition: border-color var(--duration-fast), background var(--duration-fast), box-shadow var(--duration-fast);
   position: relative;
 }
 

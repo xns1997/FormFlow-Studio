@@ -19,7 +19,7 @@
   border-radius: var(--radius);
   background: var(--panel);
   box-shadow: var(--card-shadow);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
 }
 
 .behavior-doc-hero,
@@ -130,7 +130,7 @@
   border-radius: 8px;
   background: var(--panel-soft);
   border-left: 3px solid transparent;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color var(--duration-fast), background var(--duration-fast);
 }
 
 .docs-table-row:hover {
@@ -362,7 +362,7 @@
   font-weight: 600;
   line-height: 1.4;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast);
   user-select: none;
 }
 
@@ -394,7 +394,7 @@
   font-size: 12px;
   color: var(--text);
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color var(--duration-fast);
 }
 
 .docs-search-wrapper input:focus {
@@ -435,7 +435,7 @@
   text-decoration: none;
   font-weight: 500;
   line-height: 1;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
 }
 
 button.docs-breadcrumb-link {
@@ -504,7 +504,7 @@ button.docs-breadcrumb-link {
   text-align: left;
   line-height: 1.5;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition: background var(--duration-instant), color var(--duration-instant);
 }
 
 .docs-sidebar-item:hover {
@@ -530,7 +530,7 @@ button.docs-breadcrumb-link {
   color: var(--muted);
   font-size: 11px;
   cursor: pointer;
-  transition: color 0.12s;
+  transition: color var(--duration-instant);
 }
 
 .docs-sidebar-back-top:hover {
@@ -550,7 +550,7 @@ button.docs-breadcrumb-link {
   box-shadow: var(--card-shadow);
   text-decoration: none;
   color: var(--text);
-  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s, transform 0.15s;
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast), background var(--duration-fast), transform var(--duration-fast);
 }
 
 .doc-event-card:hover,
@@ -610,7 +610,7 @@ button.docs-breadcrumb-link {
   color: var(--text);
   font-size: 12px;
   font-weight: 600;
-  transition: border-color 0.15s;
+  transition: border-color var(--duration-fast);
   max-width: 48%;
   cursor: pointer;
   text-align: left;
@@ -677,7 +677,7 @@ button.docs-breadcrumb-link {
   color: #94a3b8;
   font-size: 11px;
   cursor: pointer;
-  transition: color 0.12s, border-color 0.12s;
+  transition: color var(--duration-instant), border-color var(--duration-instant);
 }
 
 .doc-code-copy:hover {
@@ -786,7 +786,7 @@ button.docs-breadcrumb-link {
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition: background var(--duration-instant), color var(--duration-instant);
 }
 
 .doc-modal-back-btn:hover {
@@ -862,7 +862,7 @@ button.docs-breadcrumb-link {
   font-size: 12px;
   color: var(--text);
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color var(--duration-fast);
 }
 
 .docs-search-input:focus {
@@ -926,7 +926,7 @@ button.docs-breadcrumb-link {
   font-size: 13px;
   color: var(--text);
   outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
 }
 
 .docs-home-search input:focus {
@@ -962,7 +962,7 @@ button.docs-breadcrumb-link {
   background: var(--panel);
   text-decoration: none;
   color: var(--text);
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast), transform var(--duration-fast);
   cursor: pointer;
 }
 
@@ -1051,7 +1051,7 @@ button.docs-breadcrumb-link {
   background: var(--panel);
   text-decoration: none;
   color: var(--text);
-  transition: border-color 0.15s;
+  transition: border-color var(--duration-fast);
 }
 
 .docs-home-hot-item:hover {
@@ -1191,7 +1191,7 @@ button.docs-breadcrumb-link {
   color: var(--text-secondary);
   font-size: 13px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-out);
 }
 
 .docs-playground-scenario-tab:hover {
@@ -1237,7 +1237,7 @@ button.docs-breadcrumb-link {
   font-size: 12px;
   font-family: var(--font-mono);
   text-decoration: none;
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-out);
 }
 
 .docs-playground-event-link::before {
@@ -1629,7 +1629,7 @@ button.docs-breadcrumb-link {
   font-size: 13px;
   background: var(--panel-soft);
   user-select: none;
-  transition: background 0.15s;
+  transition: background var(--duration-fast);
 }
 
 .docs-collapse-header:hover {
@@ -1643,9 +1643,9 @@ button.docs-breadcrumb-link {
 .docs-collapse-arrow {
   font-size: 11px;
   display: inline-block;
-  transition: transform 0.2s ease;
+  transition: transform var(--duration-fast) var(--ease-out);
   color: var(--muted);
-  transition: transform 0.2s;
+  transition: transform var(--duration-fast);
   flex-shrink: 0;
 }
 
@@ -1846,7 +1846,7 @@ mark.docs-search-highlight {
   text-align: left;
   font-size: 13px;
   color: var(--text);
-  transition: background 0.1s;
+  transition: background var(--duration-instant);
 }
 
 .docs-search-suggestion-item:hover {
@@ -1959,7 +1959,7 @@ mark.docs-search-highlight {
   gap: 6px;
   padding: 4px 8px;
   border-radius: 6px;
-  transition: background 0.15s;
+  transition: background var(--duration-fast);
   cursor: default;
 }
 
@@ -2096,7 +2096,7 @@ mark.docs-search-highlight {
   color: #94a3b8;
   font-size: 11px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--duration-fast);
 }
 
 .code-sandbox-btn:hover {
@@ -2161,7 +2161,7 @@ mark.docs-search-highlight {
 }
 
 .flow-preview-canvas rect {
-  transition: filter 0.15s ease, stroke-width 0.15s ease;
+  transition: filter var(--duration-fast) var(--ease-out), stroke-width var(--duration-fast) var(--ease-out);
   cursor: pointer;
 }
 
@@ -2188,7 +2188,7 @@ mark.docs-search-highlight {
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--duration-fast);
 }
 
 .docs-insert-node-btn:hover:not(:disabled) {
@@ -2229,7 +2229,7 @@ mark.docs-search-highlight {
   background: linear-gradient(135deg, var(--panel-soft), var(--panel));
   cursor: pointer;
   text-align: left;
-  transition: all 0.2s ease;
+  transition: all var(--duration-fast) var(--ease-out);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
@@ -2285,7 +2285,7 @@ mark.docs-search-highlight {
   background: var(--panel-soft);
   cursor: pointer;
   font-size: 14px;
-  transition: all 0.15s;
+  transition: all var(--duration-fast);
   flex-shrink: 0;
 }
 
@@ -2308,7 +2308,7 @@ mark.docs-search-highlight {
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--duration-fast);
 }
 
 .docs-designer-open-btn:hover {
@@ -2471,7 +2471,7 @@ mark.docs-search-highlight {
   background: var(--surface);
   color: var(--text);
   text-decoration: none;
-  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+  transition: transform var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
 }
 
 .docs-v2-task-grid > a:hover,
@@ -2613,7 +2613,7 @@ mark.docs-search-highlight {
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
   text-decoration: none;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
 }
 
 .docs-v2-tree a:hover,
@@ -2799,7 +2799,7 @@ mark.docs-search-highlight {
   display: grid;
   grid-template-columns: minmax(160px, 280px) 1fr;
   border-bottom: 1px solid var(--line);
-  transition: background 0.12s ease;
+  transition: background var(--duration-instant) var(--ease-out);
 }
 
 .docs-v2-table-row:hover {
@@ -3144,19 +3144,19 @@ mark.docs-search-highlight {
 }
 
 .docs-v2-article {
-  animation: docs-fadeIn 0.3s ease both;
+  animation: docs-fadeIn var(--duration-normal) var(--ease-out) both;
 }
 
 .docs-v2-section {
-  animation: docs-fadeIn 0.35s ease both;
+  animation: docs-fadeIn var(--duration-normal) var(--ease-out) both;
 }
 
 .docs-playground-scenario-tab {
-  animation: docs-scaleIn 0.2s ease both;
+  animation: docs-scaleIn var(--duration-fast) var(--ease-out) both;
 }
 
 .docs-v2-tree a {
-  transition: background 0.15s ease, color 0.15s ease, padding-left 0.2s ease;
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), padding-left var(--duration-fast) var(--ease-out);
 }
 
 .docs-v2-tree a:hover {
@@ -3180,7 +3180,7 @@ mark.docs-search-highlight {
 }
 
 .docs-v2-pager a {
-  transition: border-color 0.15s ease, transform 0.15s ease;
+  transition: border-color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
 }
 
 .docs-v2-pager a:hover {

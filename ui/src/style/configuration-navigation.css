@@ -200,5 +200,5 @@ details.properties-group > summary .property-group-status { margin-right: 0; }
   45% { background: rgba(37,99,235,.08); }
 }
 .property-task-nav button.active,
-.properties-group:target { animation: property-target-flash .8s ease; }
+.properties-group:target { animation: property-target-flash var(--duration-slower) var(--ease-out); }
 .property-group-summary { margin: 6px 10px; padding: 6px 8px; border-radius: 6px; background: var(--panel-soft); color: var(--muted); font-size: 11px; line-height: 1.4; }

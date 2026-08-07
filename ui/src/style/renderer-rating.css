@@ -11,7 +11,7 @@
   border: none;
   color: var(--line);
   cursor: pointer;
-  transition: color 0.15s;
+  transition: color var(--duration-fast);
   padding: 0;
   text-shadow: 0 6px 14px rgba(245,158,11,0.12);
 }
@@ -36,7 +36,7 @@
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 700;
-  transition: all 0.2s ease;
+  transition: all var(--duration-fast) var(--ease-out);
 }
 
 .lg-segmented-item.active {

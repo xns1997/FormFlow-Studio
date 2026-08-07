@@ -15,7 +15,7 @@
   border-radius: var(--radius-xl);
   background: var(--panel);
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-  transition: box-shadow 0.2s;
+  transition: box-shadow var(--duration-fast);
 }
 
 .lg-card:hover {

@@ -306,7 +306,7 @@
   color: var(--danger);
   font-size: 12px;
   line-height: 1.4;
-  animation: error-shake 0.3s ease-out;
+  animation: error-shake var(--duration-normal) var(--ease-out);
 }
 
 .form-field-error::before {
@@ -319,7 +319,7 @@
   color: var(--danger);
   font-size: 11px;
   margin-top: 4px;
-  animation: page-fade-in 0.15s ease-out;
+  animation: page-fade-in var(--duration-fast) var(--ease-out);
 }
 
 /* 错误状态输入框 */

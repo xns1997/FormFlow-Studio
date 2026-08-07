@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "formflow://schemas/project-settings.json",
+  "title": "项目设置",
+  "description": "项目 config 与 settings 的组合配置面。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["config", "settings"],
+  "properties": {
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "description", "version", "createdAt", "updatedAt", "author", "tags"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "version": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "author": { "type": "string" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["behavior", "publish", "workflow", "updatedAt"],
+      "properties": {
+        "behavior": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enableJsScripts",
+            "enableNodeBehavior",
+            "scriptTimeout",
+            "errorStrategy",
+            "loopProtection",
+            "enableDebugDrawer",
+            "autoOpenDebugDrawerOnWarnOrError",
+            "mirrorScriptLogsToConsole",
+            "enableServerDebugApi"
+          ],
+          "properties": {
+            "enableJsScripts": { "type": "boolean" },
+            "enableNodeBehavior": { "type": "boolean" },
+            "scriptTimeout": { "type": "number", "minimum": 0 },
+            "errorStrategy": { "enum": ["show-error", "silent"] },
+            "loopProtection": { "type": "number", "minimum": 1 },
+            "enableDebugDrawer": { "type": "boolean" },
+            "autoOpenDebugDrawerOnWarnOrError": { "type": "boolean" },
+            "mirrorScriptLogsToConsole": { "type": "boolean" },
+            "enableServerDebugApi": { "type": "boolean" }
+          }
+        },
+        "publish": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["format", "allowWriteBack", "generateChangeLog", "outputFileName"],
+          "properties": {
+            "format": { "enum": ["json", "xlsx", "csv", "html"] },
+            "allowWriteBack": { "type": "boolean" },
+            "generateChangeLog": { "type": "boolean" },
+            "outputFileName": { "type": "string" }
+          }
+        },
+        "workflow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["maxConcurrency", "retryCount", "nodeTimeout", "overallTimeout", "errorStrategy"],
+          "properties": {
+            "maxConcurrency": { "type": "number", "minimum": 1 },
+            "retryCount": { "type": "number", "minimum": 0 },
+            "nodeTimeout": { "type": "number", "minimum": 1 },
+            "overallTimeout": { "type": "number", "minimum": 1 },
+            "errorStrategy": { "enum": ["abort", "continue", "skip"] }
+          }
+        },
+        "updatedAt": { "type": "string" }
+      }
+    }
+  }
+}

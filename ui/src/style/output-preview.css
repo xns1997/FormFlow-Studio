@@ -29,7 +29,6 @@
   font-size: 11px;
 }
 .output-preview-toolbar button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-.output-preview-toolbar button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .output-preview-tabs { display: inline-flex; padding: 2px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
 .output-preview-tabs button { height: 24px; border: 0; background: transparent; }
 .output-preview-tabs button.active { color: var(--accent); background: var(--accent-soft); font-weight: 600; }

@@ -21,7 +21,7 @@
   border-radius: 8px;
   background: var(--panel);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--duration-fast);
   white-space: nowrap;
   font-size: 12px;
   color: var(--muted);
@@ -74,7 +74,7 @@
 }
 
 .lg-wizard-body {
-  animation: wizard-slide 0.25s ease;
+  animation: wizard-slide var(--duration-normal) var(--ease-out);
 }
 
 @keyframes wizard-slide {

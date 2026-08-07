@@ -1,9 +1,36 @@
-:where(button:not([class]), .ui-btn) {
+/* ════════════════════════════════════════════════════════════════
+ * 全局按钮系统（唯一事实来源）
+ *
+ * 所有操作按钮共享同一套视觉语言：
+ * - 基础类：.ui-btn（推荐）、无 class 的裸 <button>
+ * - 兼容别名：.toolbar-btn / .agent-btn / .behavior-toolbar-btn /
+ *   .unified-add-btn / .lg-btn / .onboarding-btn / .card-mode-btn /
+ *   .btn-primary / .btn-secondary / .ui-btn-secondary
+ * - 变体：primary / success / danger / subtle / ghost / icon
+ * - 尺寸：xs / sm / 默认 / lg
+ * 其他 CSS 文件不得再单独定义这些类的视觉样式；如需布局微调，
+ * 只保留 flex/gap/margin 等布局属性。
+ * ════════════════════════════════════════════════════════════════ */
+
+/* ── 基础样式 ────────────────────────────────────────────────── */
+.ui-btn,
+.toolbar-btn,
+.agent-btn,
+.behavior-toolbar-btn,
+.unified-add-btn,
+.lg-btn,
+.onboarding-btn,
+.card-mode-btn,
+.btn-primary,
+.btn-secondary,
+.ui-btn-secondary,
+button.primary,
+button:not([class]) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: var(--control-height);
+  min-height: var(--control-height, 32px);
   padding: 7px 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -12,29 +39,79 @@
   font-size: 12px;
   font-weight: 600;
   line-height: 1;
-  box-shadow: 0 4px 14px rgba(24,24,28,0.06), inset 0 1px 0 rgba(255,255,255,0.68);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(24, 24, 28, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.68);
+  transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
 }
 
-:where(button:not([class]), .ui-btn):hover:not(:disabled) {
+.ui-btn:hover:not(:disabled),
+.toolbar-btn:hover:not(:disabled),
+.agent-btn:hover:not(:disabled),
+.behavior-toolbar-btn:hover:not(:disabled),
+.unified-add-btn:hover:not(:disabled),
+.lg-btn:hover:not(:disabled),
+.onboarding-btn:hover:not(:disabled),
+.card-mode-btn:hover:not(:disabled),
+.btn-primary:hover:not(:disabled),
+.btn-secondary:hover:not(:disabled),
+.ui-btn-secondary:hover:not(:disabled),
+button.primary:hover:not(:disabled),
+button:not([class]):hover:not(:disabled) {
   border-color: var(--accent-line);
   background: var(--panel-elevated);
   color: var(--accent);
-  box-shadow: 0 8px 20px var(--accent-soft), inset 0 1px 0 rgba(255,255,255,0.72);
+  box-shadow: 0 8px 20px var(--accent-soft), inset 0 1px 0 rgba(255, 255, 255, 0.72);
   transform: translateY(-1px);
 }
 
-:where(button:not([class]), .ui-btn):active:not(:disabled) {
+.ui-btn:active:not(:disabled),
+.toolbar-btn:active:not(:disabled),
+.agent-btn:active:not(:disabled),
+.behavior-toolbar-btn:active:not(:disabled),
+.unified-add-btn:active:not(:disabled),
+.lg-btn:active:not(:disabled),
+.onboarding-btn:active:not(:disabled),
+.card-mode-btn:active:not(:disabled),
+.btn-primary:active:not(:disabled),
+.btn-secondary:active:not(:disabled),
+.ui-btn-secondary:active:not(:disabled),
+button.primary:active:not(:disabled),
+button:not([class]):active:not(:disabled) {
   transform: translateY(0);
   box-shadow: var(--shadow-sm);
 }
 
-:where(button:not([class]), .ui-btn):focus-visible {
+.ui-btn:focus-visible,
+.toolbar-btn:focus-visible,
+.agent-btn:focus-visible,
+.behavior-toolbar-btn:focus-visible,
+.unified-add-btn:focus-visible,
+.lg-btn:focus-visible,
+.onboarding-btn:focus-visible,
+.card-mode-btn:focus-visible,
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.ui-btn-secondary:focus-visible,
+button.primary:focus-visible,
+button:not([class]):focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow-md);
 }
 
-:where(button:not([class]), .ui-btn):disabled {
+.ui-btn:disabled,
+.toolbar-btn:disabled,
+.agent-btn:disabled,
+.behavior-toolbar-btn:disabled,
+.unified-add-btn:disabled,
+.lg-btn:disabled,
+.onboarding-btn:disabled,
+.card-mode-btn:disabled,
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.ui-btn-secondary:disabled,
+button.primary:disabled,
+button:not([class]):disabled {
   cursor: not-allowed;
   opacity: 0.52;
   box-shadow: none;
@@ -43,7 +120,19 @@
   position: relative;
 }
 
-:where(button:not([class]), .ui-btn):disabled::after {
+.ui-btn:disabled::after,
+.toolbar-btn:disabled::after,
+.agent-btn:disabled::after,
+.behavior-toolbar-btn:disabled::after,
+.unified-add-btn:disabled::after,
+.lg-btn:disabled::after,
+.onboarding-btn:disabled::after,
+.card-mode-btn:disabled::after,
+.btn-primary:disabled::after,
+.btn-secondary:disabled::after,
+.ui-btn-secondary:disabled::after,
+button.primary:disabled::after,
+button:not([class]):disabled::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -52,34 +141,46 @@
     45deg,
     transparent,
     transparent 2px,
-    rgba(0,0,0,0.03) 2px,
-    rgba(0,0,0,0.03) 4px
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
   );
   pointer-events: none;
 }
 
-.ui-btn {
-  cursor: pointer;
-}
+/* 旧版基础选择器保留说明：基础样式使用普通选择器，确保覆盖
+   variables.css 中 button { font: inherit } 等元素级重置。 */
 
-.ui-btn-primary {
+/* ── 变体：primary ───────────────────────────────────────────── */
+.ui-btn-primary,
+.agent-btn-primary,
+.lg-btn-primary,
+.onboarding-btn--primary,
+.btn-primary,
+button.primary {
   border-color: color-mix(in srgb, var(--accent) 72%, #0057b8 28%);
   background: linear-gradient(180deg, #1688ff 0%, var(--accent) 58%, #0067da 100%);
   color: #fff;
-  box-shadow: 0 7px 18px rgba(0,122,255,0.24), inset 0 1px 0 rgba(255,255,255,0.26);
+  box-shadow: 0 7px 18px rgba(0, 122, 255, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.26);
 }
 
-.ui-btn-primary:hover:not(:disabled) {
+.ui-btn-primary:hover:not(:disabled),
+.agent-btn-primary:hover:not(:disabled),
+.lg-btn-primary:hover:not(:disabled),
+.onboarding-btn--primary:hover:not(:disabled),
+.btn-primary:hover:not(:disabled),
+button.primary:hover:not(:disabled) {
   color: #fff;
   border-color: var(--accent-hover);
   background: linear-gradient(180deg, #2993ff, var(--accent-hover));
+  box-shadow: 0 10px 24px rgba(0, 122, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
+/* ── 变体：success / danger ──────────────────────────────────── */
 .ui-btn-success {
   border-color: color-mix(in srgb, var(--success) 68%, #15803d 32%);
   background: linear-gradient(180deg, #34d399 0%, var(--success) 100%);
   color: #fff;
-  box-shadow: 0 12px 24px rgba(22,163,74,0.2), inset 0 1px 0 rgba(255,255,255,0.22);
+  box-shadow: 0 12px 24px rgba(22, 163, 74, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
 .ui-btn-success:hover:not(:disabled) {
@@ -88,46 +189,61 @@
   background: linear-gradient(180deg, #4ade80 0%, #15803d 100%);
 }
 
-.ui-btn-danger {
+.ui-btn-danger,
+.agent-btn-danger {
   border-color: color-mix(in srgb, var(--danger) 72%, #991b1b 28%);
   background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
   color: #fff;
-  box-shadow: 0 12px 24px rgba(220,38,38,0.22), inset 0 1px 0 rgba(255,255,255,0.2);
+  box-shadow: 0 12px 24px rgba(220, 38, 38, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.ui-btn-danger:hover:not(:disabled) {
+.ui-btn-danger:hover:not(:disabled),
+.agent-btn-danger:hover:not(:disabled) {
   color: #fff;
   border-color: #991b1b;
   background: linear-gradient(180deg, #f87171 0%, #b91c1c 100%);
 }
 
-.ui-btn-subtle {
-  background: linear-gradient(180deg, rgba(248,250,252,0.98), rgba(241,245,249,0.96));
+/* ── 变体：subtle / secondary / ghost / icon ─────────────────── */
+.ui-btn-subtle,
+.btn-secondary,
+.ui-btn-secondary {
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.96));
   color: var(--muted);
 }
 
-.ui-btn-subtle:hover:not(:disabled) {
+.ui-btn-subtle:hover:not(:disabled),
+.btn-secondary:hover:not(:disabled),
+.ui-btn-secondary:hover:not(:disabled) {
   color: var(--text);
 }
 
-.ui-btn-ghost {
+.ui-btn-ghost,
+.agent-btn-ghost,
+.onboarding-btn--skip {
   border-color: transparent;
   background: transparent;
   box-shadow: none;
 }
 
-.ui-btn-ghost:hover:not(:disabled) {
+.ui-btn-ghost:hover:not(:disabled),
+.agent-btn-ghost:hover:not(:disabled),
+.onboarding-btn--skip:hover:not(:disabled) {
   background: var(--accent-soft);
   color: var(--accent);
   box-shadow: none;
 }
 
-.ui-btn-icon {
+.ui-btn-icon,
+.agent-icon-btn {
   min-width: 32px;
   padding-inline: 8px;
 }
 
-.ui-btn-xs {
+/* ── 尺寸：xs / sm / lg ──────────────────────────────────────── */
+.ui-btn-xs,
+.unified-add-btn,
+.behavior-toolbar-btn {
   min-height: 26px;
   padding: 4px 8px;
   border-radius: var(--radius-sm);
@@ -140,7 +256,15 @@
   font-size: 11px;
 }
 
-/* 工具栏按钮 */
+.ui-btn-lg,
+.lg-btn {
+  min-height: 44px;
+  padding: 12px 20px;
+  font-size: 14px;
+  border-radius: var(--radius-md);
+}
+
+/* ── 工具栏按钮（紧凑、贴近面板）────────────────────────────── */
 .ui-btn-toolbar {
   min-height: 28px;
   padding: var(--space-xs) var(--space-sm);
@@ -149,7 +273,7 @@
   background: var(--panel);
   border: var(--border);
   box-shadow: none;
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-out);
 }
 
 .ui-btn-toolbar:hover {
@@ -160,22 +284,24 @@
   transform: none;
 }
 
-.ui-btn-toolbar.active {
-  background: var(--accent-soft);
+/* ── Ant Design 按钮对齐全局语言 ─────────────────────────────── */
+.ant-btn {
+  font-weight: 600;
+  border-radius: var(--radius);
+}
+
+.ant-btn-default:not(:disabled):hover {
   border-color: var(--accent);
   color: var(--accent);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) :where(button:not([class]), .ui-btn) {
-    border-color: var(--line);
-    background: rgba(58, 58, 60, 0.82);
-    box-shadow: 0 4px 14px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.08);
-  }
+.ant-btn-primary {
+  border-color: color-mix(in srgb, var(--accent) 72%, #0057b8 28%);
+  background: linear-gradient(180deg, #1688ff 0%, var(--accent) 58%, #0067da 100%);
+  box-shadow: 0 7px 18px rgba(0, 122, 255, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.26);
 }
 
-:root[data-theme="dark"] :where(button:not([class]), .ui-btn) {
-  border-color: var(--line);
-  background: rgba(58, 58, 60, 0.82);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.08);
+.ant-btn-primary:not(:disabled):hover {
+  border-color: var(--accent-hover);
+  background: linear-gradient(180deg, #2993ff, var(--accent-hover));
 }

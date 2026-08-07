@@ -73,7 +73,7 @@ body {
   font-weight: 510;
   text-decoration: none;
   white-space: nowrap;
-  transition: background-color 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  transition: background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
 }
 
 .nav-link:hover {
@@ -312,6 +312,7 @@ button.nav-link { border-color: transparent; background: transparent; font: inhe
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* reduced-motion 有意值：时长压到感知阈值以下，见 docs/design-system.md §5 */
   *, *::before, *::after {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;

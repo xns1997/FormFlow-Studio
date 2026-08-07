@@ -176,7 +176,7 @@ export default function DebugDrawer({
         </button>
       </div>
       {open && (
-        <>
+        <div className="debug-drawer__body">
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) repeat(2, minmax(112px, 132px))', gap: 8, padding: 12, borderBottom: '1px solid rgba(148,163,184,0.14)', background: 'rgba(248,250,252,0.76)', flex: '0 0 auto' }}>
             <input
               value={search}
@@ -315,7 +315,7 @@ export default function DebugDrawer({
               );
             })}
           </div>
-        </>
+        </div>
       )}
     </div>
   );

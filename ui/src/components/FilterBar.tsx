@@ -9,6 +9,7 @@
  */
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { AntdCompatSelect } from './AntdFormControls';
+import { prefersReducedMotion } from '../services/animation';
 import {
   FILTER_TYPE_LABELS,
   FILTER_TYPES_BY_DATA_TYPE,
@@ -51,6 +52,8 @@ export interface FilterBarProps {
 
 export function FilterBar({ filterModel, columns, onFilterChange, onClearAll }: FilterBarProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
+  const [leaving, setLeaving] = useState<Set<string>>(() => new Set());
+  const leavingTimersRef = useRef<Map<string, number>>(new Map());
   const popoverRef = useRef<HTMLDivElement>(null);
 
   // Build chip list from filter model
@@ -77,8 +80,25 @@ export function FilterBar({ filterModel, columns, onFilterChange, onClearAll }: 
   }, [editingField]);
 
   const handleDeleteChip = useCallback((field: string) => {
-    onFilterChange(field, null);
-  }, [onFilterChange]);
+    if (leaving.has(field)) return;
+    // 先播 150ms 离场动画，再真正移除筛选，保证进出路径对称。
+    if (prefersReducedMotion()) {
+      onFilterChange(field, null);
+      return;
+    }
+    setLeaving((current) => new Set(current).add(field));
+    const timer = window.setTimeout(() => {
+      leavingTimersRef.current.delete(field);
+      setLeaving((current) => { const next = new Set(current); next.delete(field); return next; });
+      onFilterChange(field, null);
+    }, 150);
+    leavingTimersRef.current.set(field, timer);
+  }, [leaving, onFilterChange]);
+
+  useEffect(() => () => {
+    leavingTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    leavingTimersRef.current.clear();
+  }, []);
 
   const handleEditChip = useCallback((field: string) => {
     setEditingField(field);
@@ -89,7 +109,7 @@ export function FilterBar({ filterModel, columns, onFilterChange, onClearAll }: 
   return (
     <div className="filter-bar">
       {chips.map((chip) => (
-        <div key={chip.field} className="filter-bar-chip" onClick={() => handleEditChip(chip.field)}>
+        <div key={chip.field} className={`filter-bar-chip${leaving.has(chip.field) ? ' is-leaving' : ''}`} onClick={() => handleEditChip(chip.field)}>
           <span className="filter-bar-chip-label">{chip.label}</span>
           <button
             type="button"
@@ -108,7 +128,7 @@ export function FilterBar({ filterModel, columns, onFilterChange, onClearAll }: 
                 options={columns.find((c) => c.name === chip.field)?.sampleValues}
                 popupContainer={() => popoverRef.current}
                 onApply={(rule) => { onFilterChange(chip.field, rule); setEditingField(null); }}
-                onDelete={() => { onFilterChange(chip.field, null); setEditingField(null); }}
+                onDelete={() => { handleDeleteChip(chip.field); setEditingField(null); }}
                 onCancel={() => setEditingField(null)}
               />
             </div>

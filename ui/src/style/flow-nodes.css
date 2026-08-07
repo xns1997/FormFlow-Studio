@@ -25,7 +25,17 @@
 .flow-node.behavior { border-left-color: var(--paused); }
 .flow-node.method { border-left-color: var(--accent); }
 .flow-node.selected { outline: 2px solid var(--accent-line); }
-.flow-node.debug-active { outline: 3px solid var(--warning); box-shadow: 0 0 12px color-mix(in srgb, var(--warning) 40%, transparent); }
+.flow-node.debug-active {
+  outline: 3px solid var(--warning);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--warning) 40%, transparent);
+  animation: flow-node-pulse var(--duration-slower) var(--spring-smooth) 1;
+}
+
+@keyframes flow-node-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--warning) 0%, transparent); }
+  40% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--warning) 30%, transparent); }
+  100% { box-shadow: 0 0 12px color-mix(in srgb, var(--warning) 40%, transparent); }
+}
 
 .flow-node-kicker {
   font-size: 10px;
@@ -131,7 +141,7 @@
   position: absolute;
   z-index: 10;
   cursor: crosshair;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: transform var(--duration-fast), box-shadow var(--duration-fast);
 }
 
 .port-handle:hover {
@@ -194,10 +204,8 @@
   border: 3px solid var(--line);
   border-top-color: var(--accent);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spin var(--duration-slower) var(--ease-linear) infinite;
 }
-
-@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Misc ────────────────────────────────────────────── */
 

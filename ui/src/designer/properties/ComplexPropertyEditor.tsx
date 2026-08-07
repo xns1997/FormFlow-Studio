@@ -1,7 +1,6 @@
 import React from 'react';
 import { Suspense, lazy, useState } from 'react';
 import Modal, { ModalFooter, ModalHeader } from '../../components/Modal';
-import { jsonSuggestions } from '../../components/codeEditorSuggestions';
 import { extractPropertyReferences } from '../../services/engine/propertyExpression';
 import { compileRegex } from '../../services/engine/regexTester';
 import { isCompositePropDef } from '../types';
@@ -9,6 +8,8 @@ import { PropertyFieldActions } from './PropertyFieldActions';
 import type { PropertyEditorContext } from './propertyEditorRegistry';
 import { getPropertyEditorDescriptor } from './propertyEditorRegistry';
 import { VisualPropertyEditor } from './visuals/VisualPropertyEditor';
+import { propDefToJsonSchema } from '../../services/schemaEditor/converters';
+import { ensureJsonSchema, propertySchemaUri } from '../../services/schemaEditor/registry';
 
 const LazyCodeEditor = lazy(() => import('../../components/CodeEditor'));
 type DraftMode = 'visual' | 'source';
@@ -61,6 +62,7 @@ export function ComplexPropertyEditor(context: PropertyEditorContext & { kind: s
     setMode(next);
   };
   const sourceLanguage = ['regex', 'expression', 'template'].includes(kind) ? 'plaintext' : 'json';
+  const jsonSchemaUri = sourceLanguage === 'json' ? propertySchemaUri(kind, def.key) : undefined;
   const apply = () => {
     const normalized = descriptor?.normalize ? descriptor.normalize(draft, context) : draft;
     const error = descriptor?.validate?.(normalized, context) || '';
@@ -86,7 +88,7 @@ export function ComplexPropertyEditor(context: PropertyEditorContext & { kind: s
           setSource(next);
           if (sourceLanguage === 'plaintext') { setDraft(next); setSourceError(kind === 'regex' ? compileRegex(next) || '' : ''); return; }
           try { setDraft(JSON.parse(next)); setSourceError(''); } catch (error) { setSourceError(error instanceof Error ? error.message : String(error)); }
-        }} language={sourceLanguage} title={title} theme="light" height={460} minHeight={320} lineNumbers suggestions={sourceLanguage === 'json' ? jsonSuggestions : undefined} compact fullscreen /></Suspense>{sourceError && <div className="property-editor-error">源码无效：{sourceError}</div>}</div>}{applyError && <div className="property-editor-error">配置无效：{applyError}</div>}
+        }} language={sourceLanguage} path={jsonSchemaUri} title={title} theme="light" height={460} minHeight={320} lineNumbers providers={jsonSchemaUri ? [(monaco) => { ensureJsonSchema(monaco, jsonSchemaUri, propDefToJsonSchema(def)); }] : undefined} compact fullscreen /></Suspense>{sourceError && <div className="property-editor-error">源码无效：{sourceError}</div>}</div>}{applyError && <div className="property-editor-error">配置无效：{applyError}</div>}
       </div>
       <ModalFooter><button type="button" className="toolbar-btn" onClick={() => { const next = cloneValue(defaultDraft(context)); setDraft(next); setSource(JSON.stringify(next, null, 2)); setSourceError(''); setApplyError(''); setVisualValid(true); }}>恢复默认</button><span className="modal-footer-spacer" /><button type="button" className="toolbar-btn" onClick={() => setOpen(false)}>取消</button><button type="button" className="toolbar-btn primary" disabled={!valid} onClick={apply}>应用</button></ModalFooter>
     </Modal>}
